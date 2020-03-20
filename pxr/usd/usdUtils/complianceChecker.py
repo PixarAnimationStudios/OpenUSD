@@ -22,6 +22,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 from pxr import Ar
 
 def _IsPackageOrPackagedLayer(layer):
@@ -43,7 +45,7 @@ class BaseRuleChecker(object):
 
     def _Msg(self, msg):
         if self._verbose:
-            print msg
+            print(msg)
 
     def GetFailedChecks(self):
         return self._failedChecks
@@ -526,14 +528,14 @@ class ComplianceChecker(object):
 
     @staticmethod 
     def DumpAllRules():
-        print 'Base rules:'
+        print('Base rules:')
         for ruleNum, rule in enumerate(GetBaseRules()):
-            print '[%s] %s' % (ruleNum + 1, rule.GetDescription())
-        print '-' * 30
-        print 'ARKit rules: '
+            print('[%s] %s' % (ruleNum + 1, rule.GetDescription()))
+        print('-' * 30)
+        print('ARKit rules: ')
         for ruleNum, rule in enumerate(GetBaseRules()):
-            print '[%s] %s' % (ruleNum + 1, rule.GetDescription())
-        print '-' * 30
+            print('[%s] %s' % (ruleNum + 1, rule.GetDescription()))
+        print('-' * 30)
             
     def __init__(self, arkit=False, skipARKitRootLayerCheck=False,
                  rootPackageOnly=False, skipVariants=False, verbose=False):
@@ -551,7 +553,7 @@ class ComplianceChecker(object):
 
     def _Msg(self, msg):
         if self._verbose:
-            print msg
+            print(msg)
     
     def _AddError(self, errMsg):
         self._errors.append(errMsg)
@@ -567,10 +569,10 @@ class ComplianceChecker(object):
 
     def DumpRules(self):
         descriptions = [rule.GetDescription() for rule in self._rules]
-        print 'Checking rules: '
+        print('Checking rules: ')
         for ruleNum, rule in enumerate(descriptions):
-            print '[%s] %s' % (ruleNum + 1, rule)
-        print '-' * 30
+            print('[%s] %s' % (ruleNum + 1, rule))
+        print('-' * 30)
 
     def GetFailedChecks(self):
         failedChecks = []
