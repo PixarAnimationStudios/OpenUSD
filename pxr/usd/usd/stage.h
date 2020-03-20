@@ -1884,11 +1884,11 @@ private:
     // Specialized Value Resolution
     // --------------------------------------------------------------------- //
 
-    // Specifier composition is special.  See comments in .cpp in
-    // _ComposeSpecifier. This method returns either the authored specifier or
-    // the fallback value registered in Sdf.
-    SdfSpecifier _GetSpecifier(const UsdPrim &prim) const;
-    SdfSpecifier _GetSpecifier(Usd_PrimDataConstPtr primData) const;
+    // Helpers for resolving values for metadata fields requiring
+    // special behaviors.
+    static SdfSpecifier _GetSpecifier(Usd_PrimDataConstPtr primData);
+    static TfToken _GetKind(Usd_PrimDataConstPtr primData);
+    static bool _IsActive(Usd_PrimDataConstPtr primData);
 
     // Custom is true if it is true anywhere in the stack.
     bool _IsCustom(const UsdProperty &prop) const;
@@ -2001,10 +2001,6 @@ private:
     void _GetPrimTypeNameImpl(const UsdPrim &prim,
                               bool useFallbacks,
                               Composer *composer) const;
-
-    template <class Composer>
-    bool _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
-                               bool useFallbacks, Composer *composer) const;
 
     template <class Composer>
     bool _GetSpecialMetadataImpl(const UsdObject &obj,

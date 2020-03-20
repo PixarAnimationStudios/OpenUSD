@@ -5703,23 +5703,123 @@ UsdStage::_SetValueImpl(
 }
 
 // --------------------------------------------------------------------- //
-// Specialized Value Resolution
+// Helpers for Metadata Resolution
 // --------------------------------------------------------------------- //
 
+template <class Composer>
+static bool
+_GetFallbackMetadataImpl(Usd_PrimDataConstPtr primData,
+                         const TfToken& propName,
+                         const TfToken &fieldName,
+                         const TfToken &keyPath,
+                         Composer *composer)
+{
+    // Look for a fallback value in the definition.
+    // NOTE: This code is performance critical.
+    composer->ConsumeUsdFallback(
+        primData->GetPrimDefinition(), propName, fieldName, keyPath);
+    return composer->IsDone();
+}
+
+template <class Composer>
+static bool
+_ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
+                            const TfToken& propName,
+                            const TfToken& fieldName,
+                            const TfToken& keyPath,
+                            bool useFallbacks,
+                            Usd_Resolver* res,
+                            Composer *composer)
+{
+    // Main resolution loop.
+    SdfPath specPath = res->GetLocalPath(propName);
+    bool gotOpinion = false;
+
+    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
+        if (isNewNode) {
+            specPath = res->GetLocalPath(propName);
+        }
+
+        // Consume an authored opinion here, if one exists.
+        gotOpinion |= composer->ConsumeAuthored(
+            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
+        
+        if (composer->IsDone()) {
+            return true;
+        }
+    }
+
+    if (useFallbacks) {
+        _GetFallbackMetadataImpl(
+            primData, propName, fieldName, keyPath, composer);
+    }
+
+    return gotOpinion || composer->IsDone();
+}
+
+// --------------------------------------------------------------------- //
+// Specialized Metadata Resolution
+// --------------------------------------------------------------------- //
+
+template <class Composer>
+static bool
+_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
+                      bool useFallbacks, Composer *composer);
+
 SdfSpecifier
-UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData) const
+UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData)
 {
     SdfSpecifier result = SdfSpecifierOver;
     SdfAbstractDataTypedValue<SdfSpecifier> resultVal(&result);
     TypeSpecificValueComposer<SdfSpecifier> composer(&resultVal);
-    _GetPrimSpecifierImpl(primData, /*useFallbacks=*/true, &composer);
+    _GetPrimSpecifierImpl(primData, /* useFallbacks = */ true, &composer);
     return result;
 }
 
-SdfSpecifier
-UsdStage::_GetSpecifier(const UsdPrim &prim) const
+template <class Composer>
+static bool 
+_GetPrimKindImpl(Usd_PrimDataConstPtr primData,
+                 bool useFallbacks, Composer *composer)
 {
-    return _GetSpecifier(get_pointer(prim._Prim()));
+    Usd_Resolver resolver(&primData->GetPrimIndex());
+    return _ComposeGeneralMetadataImpl(
+        primData, TfToken(), SdfFieldKeys->Kind, TfToken(), useFallbacks, 
+        &resolver, composer);
+}
+
+TfToken
+UsdStage::_GetKind(Usd_PrimDataConstPtr primData)
+{
+    TfToken kind;
+    SdfAbstractDataTypedValue<TfToken> resultValue(&kind);
+    TypeSpecificValueComposer<TfToken> composer(&resultValue);
+
+    // We don't allow fallbacks for kind.
+    _GetPrimKindImpl(primData, /* useFallbacks = */ false, &composer);
+    return kind;
+}
+
+template <class Composer>
+static bool 
+_GetPrimActiveImpl(Usd_PrimDataConstPtr primData,
+                   bool useFallbacks, Composer *composer)
+{
+    Usd_Resolver resolver(&primData->GetPrimIndex());
+    return _ComposeGeneralMetadataImpl(
+        primData, TfToken(), SdfFieldKeys->Active, TfToken(), useFallbacks, 
+        &resolver, composer);
+}
+
+bool
+UsdStage::_IsActive(Usd_PrimDataConstPtr primData)
+{
+    bool active = true;
+    SdfAbstractDataTypedValue<bool> resultValue(&active);
+    TypeSpecificValueComposer<bool> composer(&resultValue);
+
+    // We don't allow fallbacks for active.
+    _GetPrimActiveImpl(primData, /* useFallbacks = */ false, &composer);
+    return active;
 }
 
 bool
@@ -5898,21 +5998,6 @@ UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
 }
 
 template <class Composer>
-static bool
-_GetFallbackMetadataImpl(Usd_PrimDataConstPtr primData,
-                         const TfToken& propName,
-                         const TfToken &fieldName,
-                         const TfToken &keyPath,
-                         Composer *composer)
-{
-    // Look for a fallback value in the definition.
-    // NOTE: This code is performance critical.
-    composer->ConsumeUsdFallback(
-        primData->GetPrimDefinition(), propName, fieldName, keyPath);
-    return composer->IsDone();
-}
-
-template <class Composer>
 void
 UsdStage::_GetAttrTypeImpl(const UsdAttribute &attr,
                            const TfToken &fieldName,
@@ -6015,13 +6100,14 @@ UsdStage::_GetPrimTypeNameImpl(const UsdPrim &prim, bool useFallbacks,
 }
 
 template <class Composer>
-bool
-UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
-                                bool useFallbacks, Composer *composer) const
+static bool
+_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
+                      bool useFallbacks, Composer *composer)
 {
     // Handle the pseudo root as a special case.
-    if (primData == _pseudoRoot)
+    if (primData->GetPath().IsAbsoluteRootPath()) {
         return false;
+    }
 
     // Instance master prims are always defined -- see Usd_PrimData for
     // details. Since the fallback for specifier is 'over', we have to
@@ -6226,6 +6312,20 @@ UsdStage::_GetSpecialMetadataImpl(const UsdObject &obj,
             _GetPrimSpecifierImpl(
                 get_pointer(obj._Prim()), useFallbacks, composer);
             return true;
+        } else if (fieldName == SdfFieldKeys->Kind) {
+            // XXX: We do not not respect fallback kind values during
+            // Usd_PrimData composition (see _GetKind), but we do allow
+            // fallback values here to maintain existing behavior. However,
+            // we may want to force the useFallbacks flag to false here for
+            // consistency.
+            _GetPrimKindImpl(
+                get_pointer(obj._Prim()), useFallbacks, composer);
+            return true;
+        } else if (fieldName == SdfFieldKeys->Active) {
+            // XXX: See comment in the handling of 'kind' re: fallback values.
+            _GetPrimActiveImpl(
+                get_pointer(obj._Prim()), useFallbacks, composer);
+            return true;
         }
     }
 
@@ -6314,42 +6414,6 @@ UsdStage::_GetGeneralMetadataImpl(const UsdObject &obj,
     }
     
     return true;
-}
-
-template <class Composer>
-static bool
-_ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
-                            const TfToken& propName,
-                            const TfToken& fieldName,
-                            const TfToken& keyPath,
-                            bool useFallbacks,
-                            Usd_Resolver* res,
-                            Composer *composer)
-{
-    // Main resolution loop.
-    SdfPath specPath = res->GetLocalPath(propName);
-    bool gotOpinion = false;
-
-    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
-        if (isNewNode) {
-            specPath = res->GetLocalPath(propName);
-        }
-
-        // Consume an authored opinion here, if one exists.
-        gotOpinion |= composer->ConsumeAuthored(
-            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
-        
-        if (composer->IsDone()) {
-            return true;
-        }
-    }
-
-    if (useFallbacks) {
-        _GetFallbackMetadataImpl(
-            primData, propName, fieldName, keyPath, composer);
-    }
-
-    return gotOpinion || composer->IsDone();
 }
 
 bool
