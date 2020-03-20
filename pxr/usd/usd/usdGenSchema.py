@@ -1277,10 +1277,6 @@ if __name__ == '__main__':
         Print.Err('Usage Error: First positional argument must be a USD schema file.')
         parser.print_help()
         sys.exit(1)
-    if not os.path.isdir(codeGenPath):
-        Print.Err('Usage Error: Second positional argument must be a directory to contain generated code.')
-        parser.print_help()
-        sys.exit(1)
     if args.templatePath and not os.path.isdir(templatePath):
         Print.Err('Usage Error: templatePath argument must be the path to the codegenTemplates.')
         parser.print_help()
@@ -1313,6 +1309,9 @@ if __name__ == '__main__':
         #
         # Generate Code from Templates
         #
+        if not os.path.isdir(codeGenPath):
+            os.makedirs(codeGenPath)
+
         j2_env = Environment(loader=FileSystemLoader(templatePath),
                              trim_blocks=True)
         j2_env.globals.update(Camel=_CamelCase,
