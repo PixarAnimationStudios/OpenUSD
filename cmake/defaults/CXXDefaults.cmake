@@ -25,6 +25,11 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
+# Require C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
