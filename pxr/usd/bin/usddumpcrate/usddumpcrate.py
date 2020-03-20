@@ -22,15 +22,15 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
+from __future__ import print_function
 import argparse, sys, os
 from pxr import Sdf, Usd
 
 def Err(msg):
-    print >>sys.stderr, 'Error: ' + msg
+    print('Error: ' + msg, file=sys.stderr)
 
 def PrintReport(fname, info, summaryOnly):
-    print '@%s@' % fname, 'file version', info.GetFileVersion()
+    print('@%s@' % fname, 'file version', info.GetFileVersion())
     ss = info.GetSummaryStats()
     print ('  %s specs, %s paths, %s tokens, %s strings, '
            '%s fields, %s field sets' % 
@@ -38,11 +38,11 @@ def PrintReport(fname, info, summaryOnly):
             ss.numUniqueStrings, ss.numUniqueFields, ss.numUniqueFieldSets))
     if summaryOnly:
         return
-    print '  Structural Sections:'
+    print('  Structural Sections:')
     for sec in info.GetSections():
-        print '    %16s %16d bytes at offset 0x%X' % (
-            sec.name, sec.size, sec.start)
-    print ''
+        print('    %16s %16d bytes at offset 0x%X' % (
+            sec.name, sec.size, sec.start))
+    print()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -55,7 +55,7 @@ def main():
 
     args = parser.parse_args()
 
-    print 'Usd crate software version', Usd.CrateInfo().GetSoftwareVersion()
+    print('Usd crate software version', Usd.CrateInfo().GetSoftwareVersion())
 
     for fname in args.inputFiles:
         try:

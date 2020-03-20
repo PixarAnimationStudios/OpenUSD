@@ -22,6 +22,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+
 import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 
 
@@ -67,7 +70,7 @@ assert results.clipPath is not None, "must specify a clip path(--clipPath)"
 assert results.usdFiles is not None, "must specify clip files"
 
 if os.path.isfile(results.out):
-    print "Warning: merging with current result layer"
+    print("Warning: merging with current result layer")
 
 outLayerGenerated = False
 topologyLayerGenerated = False
