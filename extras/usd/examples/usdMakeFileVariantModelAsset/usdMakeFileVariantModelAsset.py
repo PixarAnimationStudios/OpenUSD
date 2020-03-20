@@ -37,6 +37,8 @@ The names of the created variations will be taken directly from the basename
 of their corresponding input file.
 '''
 
+from __future__ import print_function
+
 from pxr import Tf, Kind, Sdf, Usd
 
 # ToDo:
@@ -55,23 +57,23 @@ def CreateModelStage(assetName,
                      defaultVariantSelection=None):
     # Preconditions....
     if not Tf.IsValidIdentifier(assetName):
-        print "assetName '%s' must be a valid identifier. Aborting." % \
-            assetName
+        print("assetName '%s' must be a valid identifier. Aborting." %
+            assetName)
         return None
     if variantSetName and not Tf.IsValidIdentifier(variantSetName):
-        print "variantSetName '%s' must be a valid identifier. Aborting." % \
-            variantSetName
+        print("variantSetName '%s' must be a valid identifier. Aborting." %
+            variantSetName)
         return None
     if filesToReference and len(filesToReference) > 1 and not variantSetName:
         # For now, we only allow multiple files to reference if we're switching
         # them with a variantSet.  We can relax this restriction when we can
         # make internal payload arcs (bug #119960)
-        print "Cannot create multiple-file-reference without a variantSet. Aborting"
+        print("Cannot create multiple-file-reference without a variantSet. Aborting")
         return None
     if not Kind.Registry.IsA(kind, Kind.Tokens.model):
-        print "kind '%s' is not a valid model kind, which must be one of:" % \
-            kind
-        print Kind.Registry.GetAllKinds()
+        print("kind '%s' is not a valid model kind, which must be one of:" %
+            kind)
+        print(Kind.Registry.GetAllKinds())
         return None
     
     # Create the root file for the stage, and make it ASCII text.

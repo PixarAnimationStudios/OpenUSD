@@ -28,6 +28,8 @@ Creates an asset file that consists of a top level layer and sublayers for
 shading and geometry.
 '''
 
+from __future__ import print_function
+
 import os
 from pxr import Kind, Sdf, Usd, UsdGeom
 
@@ -69,7 +71,7 @@ def main():
 def _CreateAsset(assetName, assetDir, assetKind, addShadingVariantLayer):
     assetFilePath = os.path.join(assetDir, '%s.usd' % assetName)
 
-    print "Creating asset at %s" % assetFilePath
+    print("Creating asset at %s" % assetFilePath)
     # Make the layer ascii - good for readability, plus the file is small
     rootLayer = Sdf.Layer.CreateNew(assetFilePath, args = {'format':'usda'})
     assetStage = Usd.Stage.Open(rootLayer)
@@ -113,7 +115,7 @@ def _CreateAndReferenceLayers(assetPrim, assetDir, refs):
         assetPrim.GetReferences().AddReference(refLayerPath)
 
     # If you want to print things out, you can do:
-    #print rootLayer.ExportToString()
+    #print(rootLayer.ExportToString())
 
 if __name__ == '__main__':
     main()

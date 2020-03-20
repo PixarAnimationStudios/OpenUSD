@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 import os
 ASSET_BASE = os.path.join(os.getcwd(), 'models')
 TABLE_HEIGHT = 74.5
@@ -52,9 +54,9 @@ def main():
 
     stage.GetEditTarget().GetLayer().Save()
 
-    print '==='
-    print 'usdview %s' % shotFilePath
-    print 'usdcat %s' % layoutLayerFilePath
+    print('===')
+    print('usdview %s' % shotFilePath)
+    print('usdcat %s' % layoutLayerFilePath)
 
 def _SetupBilliards(stage):
     from pxr import Kind, Sdf, Usd, UsdGeom

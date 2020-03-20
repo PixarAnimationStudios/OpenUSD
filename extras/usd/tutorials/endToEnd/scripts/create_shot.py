@@ -28,6 +28,8 @@ Creates a shot with separate layers for departments.
 
 '''
 
+from __future__ import print_function
+
 import os
 def main():
     import optparse
@@ -67,7 +69,7 @@ def _CreateShot(shotName, shotDir, baseLayer):
 
     from pxr import Usd, UsdGeom
     shotStage = Usd.Stage.CreateNew(shotFilePath)
-    print "Creating shot at %s" % shotFilePath
+    print("Creating shot at %s" % shotFilePath)
 
     _CreateAndAddSubLayers(shotStage, shotName, shotDir, [
         './%s_sim.usd' % shotName,
@@ -95,7 +97,7 @@ def _CreateAndAddSubLayers(stage, shotName, shotDir, subLayers):
         rootLayer.subLayerPaths.append(subLayerPath)
 
     # If you want to print things out, you can do:
-    #print rootLayer.ExportToString()
+    #print(rootLayer.ExportToString())
 
 if __name__ == '__main__':
     main()
