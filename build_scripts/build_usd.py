@@ -947,8 +947,11 @@ def InstallOpenVDB(context, force, buildArgs):
             '-DOPENVDB_BUILD_UNITTESTS=OFF'
         ]
 
-        extraArgs.append('-DBOOST_ROOT="{instDir}"'
-                         .format(instDir=context.instDir))
+        # Make sure to use boost installed by the build script and not any
+        # system installed boost
+        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+
         extraArgs.append('-DBLOSC_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
         extraArgs.append('-DTBB_ROOT="{instDir}"'
@@ -1330,6 +1333,10 @@ def InstallUSD(context, force, buildArgs):
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
 
+        # Make sure to use boost installed by the build script and not any
+        # system installed boost
+        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
         extraArgs += buildArgs
 
         RunCMake(context, force, extraArgs)
@@ -1727,7 +1734,7 @@ if context.buildImaging:
                              OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [BLOSC, OPENEXR, OPENVDB]
+        requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
     
     if context.buildOIIO:
         requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
