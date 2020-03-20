@@ -23,7 +23,7 @@
 #
 from qt import QtCore, QtGui, QtWidgets
 from usdviewContextMenuItem import UsdviewContextMenuItem
-import os, subprocess
+import os, subprocess, sys
 from pxr import Ar
 
 #
