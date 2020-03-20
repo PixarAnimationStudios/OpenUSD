@@ -1,3 +1,3 @@
 def testUsdviewInputFunction(mw):
-    print 'callback'
+    print('callback')
     return 5

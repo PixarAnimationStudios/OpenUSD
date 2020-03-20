@@ -102,7 +102,9 @@ class TestUsdView(Usdviewq.Launcher):
         # Grab the function from the input python file
         # if it doesn't contain our expected callback fn, bail
         localVars = {}
-        execfile(filePath, localVars)
+        with open(filePath) as inputFile:
+            code = compile(inputFile.read(), filePath, 'exec')
+            exec(code, localVars)
         callBack = localVars.get(TEST_USD_VIEW_CALLBACK_IDENT)
         if not callBack:
             sys.stderr.write('Invalid file supplied, must contain a function of '

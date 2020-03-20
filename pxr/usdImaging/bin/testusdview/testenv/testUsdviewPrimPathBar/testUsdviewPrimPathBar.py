@@ -55,7 +55,7 @@ def _assertPathIsProp(appController):
 
 def _assertSelectedPrims(appController, primNames):
     primView = appController._ui.primView
-    paths = map(str.strip, primNames.split(','))
+    paths = list(map(str.strip, primNames.split(',')))
     selected = primView.selectedItems()
 
     assert len(selected) == len(paths)
