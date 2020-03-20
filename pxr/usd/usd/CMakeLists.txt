@@ -544,6 +544,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUsdzFileFormat
+    DEST testUsdUsdzFileFormat_pread
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUsdzResolver
     DEST testUsdUsdzResolver
 )
@@ -918,6 +923,14 @@ pxr_register_test(testUsdTimeValueAuthoringCpp
 pxr_register_test(testUsdUsdzFileFormat
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUsdzFileFormat_pread
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
+    ENV
+        USDC_USE_PREAD=1
     EXPECTED_RETURN_CODE 0
 )
 
