@@ -1741,7 +1741,8 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
     HdSelection::HighlightMode const& highlightMode,
     SdfPath const &cachePath,
     UsdPrim const &usdPrim,
-    VtIntArray const &instanceIndices,
+    int const hydraInstanceIndex,
+    VtIntArray const &parentInstanceIndices,
     HdSelectionSharedPtr const &result) const
 {
     HD_TRACE_FUNCTION();
@@ -1774,13 +1775,36 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
             return false;
         }
 
+        // Compose instance indices, if we don't have an explicit index.
+        // UsdImaging only adds instance indices in the case of usd instances,
+        // so if we don't have an explicit index we want to add all PI
+        // instances of the given prototype.
+        VtIntArray instanceIndices;
+        if (hydraInstanceIndex == -1 && parentInstanceIndices.size() != 0) {
+            _InstancerData const* instrData =
+                TfMapLookupPtr(_instancerData, instancerPath);
+            if (instrData == nullptr) {
+                return false;
+            }
+            // XXX: Using _GetTimeWithOffset here is a bit of a hack?
+            _InstanceMap instanceMap = _ComputeInstanceMap(
+                cachePath, *instrData, _GetTimeWithOffset(0.0));
+            VtIntArray const& indices = instanceMap[proto.protoRootPath];
+            for (const int pi : parentInstanceIndices) {
+                for (size_t i = 0; i < indices.size(); ++i) {
+                    instanceIndices.push_back(pi * indices.size() + i);
+                }
+            }
+        }
+
         // We want the path comparison in PopulateSelection to always succeed
         // (since we've verified the path above), so take the prim at
         // cachePath.GetPrimPath, since that's guaranteed to exist and be a
         // prefix...
         UsdPrim prefixPrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
         return proto.adapter->PopulateSelection(
-            highlightMode, cachePath, prefixPrim, instanceIndices, result);
+            highlightMode, cachePath, prefixPrim,
+            hydraInstanceIndex, instanceIndices, result);
     } else {
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, cachePath);
@@ -1830,14 +1854,12 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
                 }
             }
 
+            UsdPrim selectionPrim;
             if (selectionCount == selectionPathVec.size()) {
                 // If we've accounted for the whole selection path, fully
                 // populate this prototype.
-                UsdPrim prefixPrim =
+                selectionPrim =
                     _GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
-                added |= pair.second.adapter->PopulateSelection(
-                    highlightMode, pair.first, prefixPrim,
-                    instanceIndices, result);
             }
             else if (selectionCount != 0 &&
                      instanceCount == pair.second.paths.size()) {
@@ -1850,12 +1872,28 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
                     selectionPathVec.rend() - selectionCount);
                 SdfPath residualPath =
                     _GetPrimPathFromInstancerChain(residualPathVec);
-                UsdPrim selectionPrim = _GetPrim(residualPath);
-
-                added |= pair.second.adapter->PopulateSelection(
-                    highlightMode, pair.first, selectionPrim,
-                    instanceIndices, result);
+                selectionPrim = _GetPrim(residualPath);
+            } else {
+                continue;
             }
+
+            // Compose instance indices, if we don't have an explicit index.
+            VtIntArray instanceIndices;
+            if (hydraInstanceIndex == -1 && parentInstanceIndices.size() != 0) {
+                _InstanceMap instanceMap = _ComputeInstanceMap(
+                    cachePath, *instrData, _GetTimeWithOffset(0.0));
+                VtIntArray const& indices =
+                    instanceMap[pair.second.protoRootPath];
+                for (const int pi : parentInstanceIndices) {
+                    for (size_t i = 0; i < indices.size(); ++i) {
+                        instanceIndices.push_back(pi * indices.size() + i);
+                    }
+                }
+            }
+
+            added |= pair.second.adapter->PopulateSelection(
+                highlightMode, pair.first, selectionPrim,
+                hydraInstanceIndex, instanceIndices, result);
         }
 
         return added;

@@ -324,12 +324,39 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
+
+    // Add the given usdPrim to the HdSelection object, to mark it for
+    // selection highlighting. cachePath is the path of the object referencing
+    // this adapter.
+    //
+    // If an instance index is provided to Delegate::PopulateSelection, it's
+    // interpreted as a hydra instance index and left unchanged (to make
+    // picking/selection round-tripping work).  Otherwise, instance adapters
+    // will build up a composite instance index range at each level.
+    //
+    // Consider:
+    //   /World/A (2 instances)
+    //           /B (2 instances)
+    //             /C (gprim)
+    // ... to select /World/A, instance 0, you want to select cartesian
+    // coordinates (0, *) -> (0, 0) and (0, 1).  The flattened representation
+    // of this is:
+    //   index = coordinate[0] * instance_count[1] + coordinate[1]
+    // Likewise, for one more nesting level you get:
+    //   index = c[0] * count[1] * count[2] + c[1] * count[2] + c[2]
+    // ... since the adapter for /World/A has no idea what count[1+] are,
+    // this needs to be built up.  The delegate initially sets
+    // parentInstanceIndices to [].  /World/A sets this to [0].  /World/A/B,
+    // since it is selecting *, adds all possible instance indices:
+    // 0 * 2 + 0 = 0, 0 * 2 + 1 = 1. /World/A/B/C is a gprim, and adds
+    // instances [0,1] to its selection.
     USDIMAGING_API
     virtual bool PopulateSelection(
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,
         UsdPrim const &usdPrim,
-        VtIntArray const &instanceIndices,
+        int const hydraInstanceIndex,
+        VtIntArray const &parentInstanceIndices,
         HdSelectionSharedPtr const &result) const;
 
     // ---------------------------------------------------------------------- //

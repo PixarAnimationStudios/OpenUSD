@@ -173,11 +173,12 @@ public:
     // ---------------------------------------------------------------------- //
 
     virtual bool PopulateSelection(
-                                HdSelection::HighlightMode const& highlightMode,
-                                SdfPath const &cachePath,
-                                UsdPrim const &usdPrim,
-                                VtIntArray const &instanceIndices,
-                                HdSelectionSharedPtr const &result) const override;
+        HdSelection::HighlightMode const& highlightMode,
+        SdfPath const &cachePath,
+        UsdPrim const &usdPrim,
+        int const hydraInstanceIndex,
+        VtIntArray const &parentInstanceIndices,
+        HdSelectionSharedPtr const &result) const override;
 
     virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
                                             SdfPath const &protoCachePath,

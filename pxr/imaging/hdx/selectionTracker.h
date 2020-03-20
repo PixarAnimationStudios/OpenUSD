@@ -53,7 +53,8 @@ typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 /// (b) a set of instances of an rprim, wherein each instance is highlighted
 /// (c) a set of subprimitives of an rprim, wherein each subprim is highlighted.
 /// Subprimitives support is limited to elements (faces of meshes, or
-/// individual curves of basis curves), edges of meshes and points of meshes.
+/// individual curves of basis curves), edges of meshes/curves,
+///  and points of meshes.
 /// 
 /// * While the goal is have an architecture that is extensible by rendering
 /// backends, the current implementation is heavily influenced by the Stream(GL)

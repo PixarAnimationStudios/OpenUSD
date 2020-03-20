@@ -181,7 +181,8 @@ public:
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,
         UsdPrim const &usdPrim,
-        VtIntArray const &instanceIndices,
+        int const hydraInstanceIndex,
+        VtIntArray const &parentInstanceIndices,
         HdSelectionSharedPtr const &result) const override;
 
     // ---------------------------------------------------------------------- //

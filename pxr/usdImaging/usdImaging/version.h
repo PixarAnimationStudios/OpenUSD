@@ -42,8 +42,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 10 - Add "UsdPrim" parameter to adapter PopulateSelection.
 // Version 11 - PopulateSelection takes "usdPath" (relative to USD stage),
 //              rather than a path with the delegate root.
+// Version 12 - Adapter PopulateSelection signature change to adapt to
+//              flat instance indices in hydra selection.
 
-#define USD_IMAGING_API_VERSION 11
+#define USD_IMAGING_API_VERSION 12
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

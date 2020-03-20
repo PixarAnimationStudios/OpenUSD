@@ -2076,13 +2076,6 @@ UsdImagingDelegate::PopulateSelection(
     }
     SdfPath rootPath = usdPrim.GetPath();
 
-    // If you select a point instancer, no instance specified means select
-    // all instances.
-    VtIntArray instanceIndices;
-    if (instanceIndex != ALL_INSTANCES) {
-        instanceIndices.push_back(instanceIndex);
-    }
-
     SdfPathVector affectedCachePaths;
     _GatherDependencies(rootPath, &affectedCachePaths);
 
@@ -2106,8 +2099,8 @@ UsdImagingDelegate::PopulateSelection(
         TF_DEBUG(USDIMAGING_SELECTION).Msg("- affected hydra prim: %s\n",
                 affectedCachePath.GetText());
 
-        added |= adapter->PopulateSelection(highlightMode,
-                affectedCachePath, selectedPrim, instanceIndices, result);
+        added |= adapter->PopulateSelection(highlightMode, affectedCachePath,
+                selectedPrim, instanceIndex, VtIntArray(), result);
     }
     return added;
 }

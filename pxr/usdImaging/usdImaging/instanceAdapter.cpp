@@ -2148,13 +2148,15 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 {
     _PopulateInstanceSelectionFn(
             UsdPrim const& usdPrim_,
-            VtIntArray const& instanceIndices_,
+            int const hydraInstanceIndex_,
+            VtIntArray const& parentInstanceIndices_,
             _InstancerData const* instrData_,
             UsdImagingInstanceAdapter const* adapter_,
             HdSelection::HighlightMode const& highlightMode_,
             HdSelectionSharedPtr const& result_)
         : usdPrim(usdPrim_)
-        , instanceIndices(instanceIndices_)
+        , hydraInstanceIndex(hydraInstanceIndex_)
+        , parentInstanceIndices(parentInstanceIndices_)
         , instrData(instrData_)
         , adapter(adapter_)
         , highlightMode(highlightMode_)
@@ -2239,15 +2241,22 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
             }
         }
 
+        // Create an instanceIndices that selects this instance, for use if the
+        // paths match.
+        // XXX: Ignore parentInstanceIndices since instanceAdapter can't
+        // have a parent.
+        VtIntArray instanceIndices;
+        if (hydraInstanceIndex == -1) {
+            instanceIndices.push_back((int)instanceIdx);
+        }
+
         if (selectionCount == selectionPathVec.size()) {
-            // Select everything in this instance.
-            VtIntArray tuple(instanceIndices);
-            tuple.push_back((int)instanceIdx);
             for (auto const& pair : instrData->primMap) {
                 UsdPrim prefixPrim =
                     adapter->_GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
                 added |= pair.second.adapter->PopulateSelection(
-                    highlightMode, pair.first, prefixPrim, tuple, result);
+                    highlightMode, pair.first, prefixPrim,
+                    hydraInstanceIndex, instanceIndices, result);
             }
         }
         else if (selectionCount != 0 &&
@@ -2263,8 +2272,6 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
                 adapter->_GetPrimPathFromInstancerChain(residualPathVec);
             UsdPrim selectionPrim = adapter->_GetPrim(residualPath);
 
-            VtIntArray tuple(instanceIndices);
-            tuple.push_back((int)instanceIdx);
             for (auto const& pair : instrData->primMap) {
                 if (pair.second.path.HasPrefix(
                     selectionPathVec[selectionCount])) {
@@ -2284,14 +2291,16 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
                     continue;
                 }
                 added |= pair.second.adapter->PopulateSelection(
-                    highlightMode, pair.first, selectionPrim, tuple, result);
+                    highlightMode, pair.first, selectionPrim,
+                    hydraInstanceIndex, instanceIndices, result);
             }
         }
         return true;
     }
 
     UsdPrim const& usdPrim;
-    VtIntArray const& instanceIndices;
+    int const hydraInstanceIndex;
+    VtIntArray const& parentInstanceIndices;
     _InstancerData const* instrData;
     UsdImagingInstanceAdapter const* adapter;
     HdSelection::HighlightMode const& highlightMode;
@@ -2306,7 +2315,8 @@ UsdImagingInstanceAdapter::PopulateSelection(
     HdSelection::HighlightMode const& highlightMode,
     SdfPath const &cachePath,
     UsdPrim const &usdPrim,
-    VtIntArray const &instanceIndices,
+    int const hydraInstanceIndex,
+    VtIntArray const &parentInstanceIndices,
     HdSelectionSharedPtr const &result) const
 {
     HD_TRACE_FUNCTION();
@@ -2361,20 +2371,22 @@ UsdImagingInstanceAdapter::PopulateSelection(
         }
 
         // Compose the instance indices.
-        std::vector<VtIntArray> indexTuples;
-        for (size_t i = 0; i < instrData->numInstancesToDraw; ++i) {
-            VtIntArray tuple(instanceIndices);
-            tuple.push_back(i);
-            indexTuples.push_back(tuple);
+        // If hydraInstanceIndex != -1, just pass that through; otherwise,
+        // add the native instances to the parentInstanceIndices we pass
+        // down.
+        // XXX: We're ignoring parentInstanceIndices here since we
+        // know the instance adapter can't have a parent.
+        VtIntArray instanceIndices;
+        if (hydraInstanceIndex == -1) {
+            for (size_t i = 0; i < instrData->numInstancesToDraw; ++i) {
+                instanceIndices.push_back(i);
+            }
         }
 
         // Populate selection.
-        bool added = false;
-        for (auto const& tuple : indexTuples) {
-            added |= proto.adapter->PopulateSelection(
-                    highlightMode, cachePath, selectionPrim, tuple, result);
-        }
-        return added;
+        return proto.adapter->PopulateSelection(
+            highlightMode, cachePath, selectionPrim,
+            hydraInstanceIndex, instanceIndices, result);
     } else {
         SdfPath const* instancerPath =
             TfMapLookupPtr(_instanceToInstancerMap, cachePath);
@@ -2390,8 +2402,8 @@ UsdImagingInstanceAdapter::PopulateSelection(
             "PopulateSelection: instance = %s instancer = %s\n",
             cachePath.GetText(), instancerPath->GetText());
 
-        _PopulateInstanceSelectionFn populateFn(usdPrim, instanceIndices,
-            instrData, this, highlightMode, result);
+        _PopulateInstanceSelectionFn populateFn(usdPrim, hydraInstanceIndex,
+            parentInstanceIndices, instrData, this, highlightMode, result);
         _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &populateFn);
 
         return populateFn.added;

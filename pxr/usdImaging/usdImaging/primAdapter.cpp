@@ -410,7 +410,8 @@ UsdImagingPrimAdapter::PopulateSelection(
     HdSelection::HighlightMode const& mode,
     SdfPath const &cachePath,
     UsdPrim const &usdPrim,
-    VtIntArray const &instanceIndices,
+    int const hydraInstanceIndex,
+    VtIntArray const &parentInstanceIndices,
     HdSelectionSharedPtr const &result) const
 {
     // usdPrim (the original prim selection) might point to a parent node of
@@ -425,16 +426,26 @@ UsdImagingPrimAdapter::PopulateSelection(
 
     const SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
 
-    // insert itself into the selection map.
-    if (instanceIndices.size() == 0) {
+    // Insert gprim into the selection map.
+    // If "hydraInstanceIndex" is set, just use that.
+    // Otherwise, parentInstanceIndices either points to an arry of flat indices
+    // to highlight, or (if it's empty) it indicates highlight all indices.
+    if (hydraInstanceIndex != -1) {
+        VtIntArray indices(1, hydraInstanceIndex);
+        result->AddInstance(mode, indexPath, indices);
+    } else if (parentInstanceIndices.size() == 0) {
         result->AddRprim(mode, indexPath);
     } else {
-        result->AddInstance(mode, indexPath, instanceIndices);
+        result->AddInstance(mode, indexPath, parentInstanceIndices);
     }
 
     if (TfDebug::IsEnabled(USDIMAGING_SELECTION)) {
         std::stringstream ss;
-        ss << instanceIndices;
+        if (hydraInstanceIndex != -1) {
+            ss << hydraInstanceIndex;
+        } else {
+            ss << parentInstanceIndices;
+        }
         TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s %s\n",
             indexPath.GetText(), ss.str().c_str());
     }

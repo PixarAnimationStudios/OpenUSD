@@ -243,14 +243,14 @@ HdxColorizeSelectionTask::_ColorizeSelection()
         // Skip the colorizing if we can't look up prim ID
         return;
     }
-    //int32_t *iiddata = reinterpret_cast<int32_t*>(_instanceId->Map());
+    int32_t *iiddata = reinterpret_cast<int32_t*>(_instanceId->Map());
     int32_t *eiddata = reinterpret_cast<int32_t*>(_elementId->Map());
 
     for (size_t i = 0; i < _outputBufferSize; ++i) {
         GfVec4f output = GfVec4f(0,0,0,1);
 
         int primId = piddata ? piddata[i] : -1;
-        //int instanceId = iiddata ? iiddata[i] : -1;
+        int instanceId = iiddata ? iiddata[i] : -1;
         int elementId = eiddata ? eiddata[i] : -1;
 
         for (int mode = 0; mode < _selectionOffsets[0]; ++mode) {
@@ -272,15 +272,19 @@ HdxColorizeSelectionTask::_ColorizeSelection()
                 bool sel = bool(selectionData & 0x1);
                 int nextOffset = selectionData >> 1;
 
-                // XXX: Instance highlighting? We currently encode it
-                // per-level, and it's too expensive to look up rprims here
-                // to find out how many levels of instancing they have.
-                // We should change the encoding to flattened index.
-
-                // See if the next block is the ELEMENT block; it should be,
-                // unless there's an instance selection.
                 if (nextOffset != 0 && !sel) {
                     int subprimType = _selectionOffsets[nextOffset];
+                    if (subprimType == 3 /* INSTANCE */) {
+                        int imin = _selectionOffsets[nextOffset+1];
+                        int imax = _selectionOffsets[nextOffset+2];
+                        if (instanceId >= imin && instanceId < imax) {
+                            offset = nextOffset + 3 + instanceId - imin;
+                            selectionData = _selectionOffsets[offset];
+                            sel = sel || bool(selectionData & 0x1);
+                            nextOffset = selectionData >> 1;
+                        }
+                    }
+                    subprimType = _selectionOffsets[nextOffset];
                     if (subprimType == 0 /* ELEMENT */) {
                         int emin = _selectionOffsets[nextOffset+1];
                         int emax = _selectionOffsets[nextOffset+2];
@@ -288,6 +292,7 @@ HdxColorizeSelectionTask::_ColorizeSelection()
                             offset = nextOffset + 3 + elementId - emin;
                             selectionData = _selectionOffsets[offset];
                             sel = sel || bool(selectionData & 0x1);
+                            nextOffset = selectionData >> 1;
                         }
                     }
                 }
@@ -313,11 +318,9 @@ HdxColorizeSelectionTask::_ColorizeSelection()
     }
 
     _primId->Unmap();
-    /*
     if (iiddata) {
         _instanceId->Unmap();
     }
-    */
     if (eiddata) {
         _elementId->Unmap();
     }
