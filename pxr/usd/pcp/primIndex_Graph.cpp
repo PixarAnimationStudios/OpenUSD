@@ -33,8 +33,6 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/bind.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 const size_t PcpPrimIndex_Graph::_Node::_invalidNodeIndex;
