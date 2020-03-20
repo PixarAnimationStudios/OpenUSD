@@ -109,6 +109,11 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenGL
     if (PXR_ENABLE_GL_SUPPORT)
+        # Prefer legacy GL library over GLVND libraries if both
+        # are installed.
+        if (POLICY CMP0072)
+            cmake_policy(SET CMP0072 OLD)
+        endif()
         find_package(OpenGL REQUIRED)
         find_package(GLEW REQUIRED)
     endif()
