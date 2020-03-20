@@ -20,15 +20,6 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
 endif()
 
-set (optionalCppFiles "")
-set (plugInfo plugInfo_NoOIIO.json)
-if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-    set (plugInfo plugInfo.json)
-    list(APPEND optionalCppFiles oiioImage.cpp)
-    list(APPEND optionalLibs ${OIIO_LIBRARIES} ${OPENEXR_LIBRARY})
-    list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS} ${OPENEXR_INCLUDE_DIRS})
-endif()
-
 if (PXR_ENABLE_OPENVDB_SUPPORT)
     list(APPEND optionalPublicClasses vdbTextureData)
     list(APPEND optionalLibs ${OPENEXR_Half_LIBRARY} ${OPENVDB_LIBRARY})
@@ -108,7 +99,6 @@ pxr_library(glf
         textureContainerImpl.h
 
     CPPFILES
-        ${optionalCppFiles}
         stbImage.cpp
 
     PYTHON_CPPFILES
@@ -132,7 +122,7 @@ pxr_library(glf
         __init__.py
 
     RESOURCE_FILES
-        ${plugInfo}:plugInfo.json 
+        plugInfo.json
         shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx
