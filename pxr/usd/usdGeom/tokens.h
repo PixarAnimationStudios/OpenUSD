@@ -534,6 +534,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMesh
     const TfToken subdivisionScheme;
+    /// \brief "tangents"
+    /// 
+    /// UsdGeomHermiteCurves
+    const TfToken tangents;
     /// \brief "triangleSubdivisionRule"
     /// 
     /// UsdGeomMesh

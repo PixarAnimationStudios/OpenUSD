@@ -291,9 +291,11 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveBasis = HdTokens->catmullRom;
     }
     else if(curveBasis == UsdGeomTokens->hermite) {
+        TF_WARN("Hermite basis is deprecated: '%s'", prim.GetPath().GetText());
         topoCurveBasis = HdTokens->hermite;
     }
     else if(curveBasis == UsdGeomTokens->power) {
+        TF_WARN("Power basis is deprecated: '%s'", prim.GetPath().GetText());
         topoCurveBasis = HdTokens->power;
     }
     else {

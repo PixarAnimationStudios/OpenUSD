@@ -1984,13 +1984,16 @@ class NurbsPatch "NurbsPatch" (
 }
 
 class "Curves" (
-    doc = """Base class for BasisCurves and NurbsCurves.  The BasisCurves
-             schema is designed to be analagous to offline renderers' notion
-             of batched curves (such as the classical RIB definition via
-             Basis and Curves statements), while the NurbsCurve schema
-             is designed to be analgous to the NURBS curves found in packages
-             like Maya and Houdini while retaining their consistency with the 
-             RenderMan specification for NURBS Patches."""
+    doc = """Base class for UsdGeomBasisCurves, UsdGeomNurbsCurves, and
+             UsdGeomHermiteCurves.  The BasisCurves schema is designed to be
+             analagous to offline renderers' notion of batched curves (such as
+             the classical RIB definition via Basis and Curves statements),
+             while the NurbsCurve schema is designed to be analgous to the
+             NURBS curves found in packages like Maya and Houdini while
+             retaining their consistency with the RenderMan specification for
+             NURBS Patches. HermiteCurves are useful for the
+             interchange of animation guides and paths.
+             """
 )
 {
     vector3f[] accelerations (
@@ -2365,7 +2368,11 @@ class BasisCurves "BasisCurves" (
     )
     uniform token basis = "bezier" (
         allowedTokens = ["bezier", "bspline", "catmullRom", "hermite", "power"]
-        doc = "The basis specifies the vstep and matrix used for cubic interpolation."
+        doc = """The basis specifies the vstep and matrix used for cubic 
+        interpolation.  \\note The 'hermite' and 'power' tokens have been
+        marked as deprecated for the 20.05 release of USD and are targeted
+        for removal in the 20.08 release. We've provided UsdGeomHermiteCurves
+        as an alternative for the 'hermite' basis."""
     )
     int[] curveVertexCounts (
         doc = """Curves-derived primitives can represent multiple distinct,
@@ -3607,5 +3614,199 @@ class "XformCommonAPI" (
     to allow such sparse authoring."""
 )
 {
+}
+
+class HermiteCurves "HermiteCurves" (
+    doc = """This schema specifies a cubically hermite interpolated curve as
+    sometimes used for defining guides for animation. While hermite curves can
+    be useful because they interpolate their points, they are not well supported
+    by high-end renderers for imaging. Therefore, while we include this schema
+    for interchange, we strongly recommend the use of UsdGeomBasisCurves as
+    the representation of curves intended to be rendered (ie. hair or grass).
+    Hermite curves can be converted to a Bezier representation (though not
+    losslessly).
+
+    Point Interpolation
+    
+    The initial cubic curve segment is defined by the first two points and
+    first two tangents. Additional segments are defined by additional 
+    point / tangent pairs.  The number of segments for non-batched hermite
+    curve would be len(hermite.points) - 1.  The total number of segments
+    for the batched UsdGeomHermiteCurves representation is
+    len(points) - len(curveVertexCounts).
+
+    Primvar, Width, and Normal Interpolation
+
+    Primvar interpolation is not well specified for this type as it is not
+    intended as a rendering representation. We suggest that per point
+    primvars would be linearly interpolated across the point and should 
+    be tagged as 'varying'.
+
+    It is not immediately clear how to specify cubic or 'vertex' interpolation
+    for this type, as we lack a specification for primvar tangents. This
+    also means that width and normal interpolation should be restricted to
+    varying (linear), uniform (per curve element), or constant (per prim).
+    """
+)
+{
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
+    int[] curveVertexCounts (
+        doc = """Curves-derived primitives can represent multiple distinct,
+        potentially disconnected curves.  The length of 'curveVertexCounts'
+        gives the number of such curves, and each element describes the
+        number of vertices in the corresponding curve"""
+    )
+    uniform bool doubleSided = 0 (
+        doc = """Although some renderers treat all parametric or polygonal
+        surfaces as if they were effectively laminae with outward-facing
+        normals on both sides, some renderers derive significant optimizations
+        by considering these surfaces to have only a single outward side,
+        typically determined by control-point winding order and/or 
+        orientation.  By doing so they can perform \"backface culling\" to
+        avoid drawing the many polygons of most closed surfaces that face away
+        from the viewer.
+        
+        However, it is often advantageous to model thin objects such as paper
+        and cloth as single, open surfaces that must be viewable from both
+        sides, always.  Setting a gprim's doubleSided attribute to 
+        \\c true instructs all renderers to disable optimizations such as
+        backface culling for the gprim, and attempt (not all renderers are able
+        to do so, but the USD reference GL renderer always will) to provide
+        forward-facing normals on each side of the surface for lighting
+        calculations."""
+    )
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
+    normal3f[] normals (
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
+    )
+    uniform token orientation = "rightHanded" (
+        allowedTokens = ["rightHanded", "leftHanded"]
+        doc = """Orientation specifies whether the gprim's surface normal 
+        should be computed using the right hand rule, or the left hand rule.
+        Please see for a deeper explanation and
+        generalization of orientation to composed scenes with transformation
+        hierarchies."""
+    )
+    point3f[] points (
+        doc = """The primary geometry attribute for all PointBased
+        primitives, describes points in (local) space."""
+    )
+    color3f[] primvars:displayColor (
+        doc = '''It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.  DisplayColor serves this role; because it is a
+        UsdGeomPrimvar, it can also be used as a gprim override for any shader
+        that consumes a displayColor parameter.'''
+    )
+    float[] primvars:displayOpacity (
+        doc = """Companion to displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be independently overridden, and because shaders rarely consume
+        rgba parameters."""
+    )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
+    vector3f[] tangents = [] (
+        doc = """Defines the outgoing trajectory tangent for each point. 
+                 Tangents should be the same size as the points attribute."""
+    )
+    vector3f[] velocities (
+        doc = """If provided, 'velocities' should be used by renderers to 
+
+        compute positions between samples for the 'points' attribute, rather
+        than interpolating between neighboring 'points' samples.  This is the
+        only reasonable means of computing motion blur for topologically
+        varying PointBased primitives.  It follows that the length of each
+        'velocities' sample must match the length of the corresponding
+        'points' sample.  Velocity is measured in position units per second,
+        as per most simulation software. To convert to position units per
+        UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
+        
+        See also ."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
+    float[] widths (
+        doc = """Provides width specification for the curves, whose application
+        will depend on whether the curve is oriented (normals are defined for
+        it), in which case widths are \"ribbon width\", or unoriented, in which
+        case widths are cylinder width.  'widths' is not a generic Primvar,
+        but the number of elements in this attribute will be determined by
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
+    )
+    uniform token[] xformOpOrder (
+        doc = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims.
+        
+        You should rarely, if ever, need to manipulate this attribute directly.
+        It is managed by the AddXformOp(), SetResetXformStack(), and
+        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
+        GetLocalTransformation()."""
+    )
 }
 
