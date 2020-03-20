@@ -37,7 +37,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
     
     def test_PrimMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
-            "TestUsdSchemaRegistryMetadataTest")
+            "MetadataTest")
         self.assertTrue(primDef)
 
         self.assertEqual(set(primDef.ListMetadataFields()), 
@@ -59,7 +59,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
-            "TestUsdSchemaRegistryMetadataTest")
+            "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testAttr")), 
             set(["allowedTokens", "default", "displayGroup", "displayName", 
@@ -99,7 +99,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
     def test_RelationshipMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
-            "TestUsdSchemaRegistryMetadataTest")
+            "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testRel")), 
             set(["displayGroup", "displayName", "documentation", "hidden", 

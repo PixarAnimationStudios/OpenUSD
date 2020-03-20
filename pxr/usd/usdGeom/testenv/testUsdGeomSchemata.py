@@ -418,17 +418,19 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertEqual(ids, resolvedIds)
      
 
-    def test_Bug111239(self):
-        # This bug broke the schema registry for prims whose typenames authored in
-        # scene description were their canonical C++ typenames, rather than their
-        # alias under UsdSchemaBase.  For example, if you had a prim with typename
-        # 'UsdGeomSphere' instead of 'Sphere', we would not find builtins for the
-        # prim with typename 'UsdGeomSphere'.
+    def test_Revert_Bug111239(self):
+        # This used to test a change for Bug111239, but now tests that this
+        # fix has been reverted. We no longer allow the C++ typename be used as
+        # a prim's typename.
         s = Usd.Stage.CreateInMemory()
         sphere = s.DefinePrim('/sphere', typeName='Sphere')
-        usdGeomSphere = s.DefinePrim('/usdGeomSphere', typeName='UsdGeomSphere')
+        tfTypeName = UsdGeom.Sphere._GetStaticTfType().typeName
+        self.assertEqual(tfTypeName, 'UsdGeomSphere')
+        usdGeomSphere = s.DefinePrim('/usdGeomSphere', typeName='tfTypeName')
+        self.assertTrue(UsdGeom.Sphere(sphere))
         self.assertTrue('radius' in [a.GetName() for a in sphere.GetAttributes()])
-        self.assertTrue('radius' in [a.GetName() for a in usdGeomSphere.GetAttributes()])
+        self.assertFalse(UsdGeom.Sphere(usdGeomSphere))
+        self.assertFalse('radius' in [a.GetName() for a in usdGeomSphere.GetAttributes()])
 
     def test_ComputeExtent(self):
 

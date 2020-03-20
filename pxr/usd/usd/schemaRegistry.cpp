@@ -226,16 +226,13 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     // So we'll store the necessary info about these prim types in this struct
     // so we can create their definitions after the main loop.
     struct _PrimDefInfo {
-        TfToken typeNameToken;
         TfToken usdTypeNameToken;
         SdfPrimSpecHandle primSpec;
         TfTokenVector fallbackAPISchemas;
 
-        _PrimDefInfo(const TfToken &typeNameToken_,
-                     const TfToken &usdTypeNameToken_,
+        _PrimDefInfo(const TfToken &usdTypeNameToken_,
                      const SdfPrimSpecHandle &primSpec_)
-        : typeNameToken(typeNameToken_)
-        , usdTypeNameToken(usdTypeNameToken_)
+        : usdTypeNameToken(usdTypeNameToken_)
         , primSpec(primSpec_) {}
     };
     std::vector<_PrimDefInfo> primTypesWithAPISchemas;
@@ -248,17 +245,10 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         if (aliases.size() == 1) {
             SdfPath primPath = SdfPath::AbsoluteRootPath().
                 AppendChild(TfToken(aliases.front()));
-            // XXX: Using tokens as keys means we can look up by prim
-            //      type token, rather than converting a prim type token
-            //      to a TfType and looking up by that, which requires
-            //      an expensive lookup (including a lock).
-            //
-            //      We should be registering by name only but TfType
-            //      doesn't return the type name (or aliases) by TfToken
-            //      and we can't afford to construct a TfToken from the
-            //      string returned by TfType when looking up by
-            //      type.  TfType should be fixed/augmented.
-            TfToken typeNameToken(type.GetTypeName());
+            // We register prim definitions by the schema type name which is the
+            // name of the defining prim in the schema as well as the TfType
+            // alias. The actual TfType's typename (i.e. C++ type name) is not a
+            // valid typename for a prim.
             const TfToken &usdTypeNameToken = primPath.GetNameToken();
 
             // We only map type names for types that have an underlying prim
@@ -276,10 +266,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                     // prim definition to applied API schema map.
                     if (appliedAPISchemaNames.find(usdTypeNameToken) != 
                             appliedAPISchemaNames.end()) {
-                        // Add it to the map using both the USD type name and 
-                        // TfType name.
-                        _appliedAPIPrimDefinitions[typeNameToken] = 
-                            _appliedAPIPrimDefinitions[usdTypeNameToken] = 
+                        // Add it to the map using the USD type name.
+                        _appliedAPIPrimDefinitions[usdTypeNameToken] = 
                             new UsdPrimDefinition(primSpec, 
                                                   /*isAPISchema=*/ true);
                     }
@@ -292,12 +280,11 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                     if (_schematics->HasField(primPath, UsdTokens->apiSchemas, 
                                               &fallbackAPISchemaListOp)) {
                         primTypesWithAPISchemas.emplace_back(
-                            typeNameToken, usdTypeNameToken, primSpec);
+                            usdTypeNameToken, primSpec);
                         fallbackAPISchemaListOp.ApplyOperations(
                             &primTypesWithAPISchemas.back().fallbackAPISchemas);
                     } else {
-                        _concreteTypedPrimDefinitions[typeNameToken] = 
-                            _concreteTypedPrimDefinitions[usdTypeNameToken] = 
+                        _concreteTypedPrimDefinitions[usdTypeNameToken] = 
                             new UsdPrimDefinition(primSpec, 
                                                   /*isAPISchema=*/ false);
                     }
@@ -314,7 +301,6 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         // opinions on the prim spec are stronger than the API schema fallbacks
         // here.
         UsdPrimDefinition *primDef =
-            _concreteTypedPrimDefinitions[it.typeNameToken] = 
             _concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
             new UsdPrimDefinition();
         _ApplyAPISchemasToPrimDefinition(primDef, it.fallbackAPISchemas);
