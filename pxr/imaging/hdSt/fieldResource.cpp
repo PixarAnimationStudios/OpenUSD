@@ -32,19 +32,15 @@ static
 GfBBox3d
 _GetBoundingBox(const GlfTextureHandleRefPtr &textureHandle)
 {
-    // Eventually, we want to use an abstract class like GlfFieldTexture
-    // to abstract away the fact that this is baked by an OpenVDB file.
-    using FieldTextureRefPtr = GlfVdbTextureRefPtr;
-
     if (!textureHandle) {
         return GfBBox3d();
     }
-    FieldTextureRefPtr const vdbTexture = TfDynamic_cast<FieldTextureRefPtr>(
+    GlfFieldTextureRefPtr const fieldTexture = TfDynamic_cast<GlfFieldTextureRefPtr>(
         textureHandle->GetTexture());
-    if (!vdbTexture) {
+    if (!fieldTexture) {
         return GfBBox3d();
     }
-    return vdbTexture->GetBoundingBox();
+    return fieldTexture->GetBoundingBox();
 }
 
 HdStFieldResource::HdStFieldResource(const GlfTextureHandleRefPtr &textureHandle)

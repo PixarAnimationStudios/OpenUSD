@@ -22,14 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/volume.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/glf/vdbTexture.h"
-#include "pxr/imaging/glf/vdbTextureContainer.h"
+#include "pxr/imaging/glf/textureContainer.h"
+#include "pxr/imaging/glf/textureContainerImpl.h"
 
 #include "pxr/usd/sdf/types.h"
 
@@ -40,6 +41,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fieldName)
 );
 
+typedef TfWeakPtr< GlfFieldTextureContainer > GlfFieldContainerPtr;
+
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
   : HdField(id)
   , _fieldType(fieldType)
@@ -49,29 +52,30 @@ HdStField::HdStField(SdfPath const& id, TfToken const & fieldType)
 
 HdStField::~HdStField() = default;
 
-// Obtain texture handle for grid with name fieldName in OpenVDB file at
-// given path.
+// Obtain texture handle for field at the given path.
 static
 GlfTextureHandleRefPtr
-_GetVdbTexture(std::string const &path,
+_GetFieldTexture(std::string const &path,
                TfToken const &fieldName)
 {
     // First query the texture registry for the texture container for
-    // the OpenVDB file.
+    // the field
     GlfTextureHandleRefPtr const containerHandle = 
         GlfTextureRegistry::GetInstance().GetTextureHandle(
             TfToken(path));
     if (!containerHandle) {
         return TfNullPtr;
     }
-    
-    GlfVdbTextureContainerPtr const container =
-        TfDynamic_cast<GlfVdbTextureContainerPtr>(
+
+    GlfFieldContainerPtr const container =
+        TfDynamic_cast<GlfFieldContainerPtr>(
             containerHandle->GetTexture());
     if (!container) {
-        TF_CODING_ERROR("When trying to create texture for VDB grid, "
-                        "texture handle does not contain vdb texture "
-                        "container.");
+        // OpenVDB plugin not installed
+        TF_DEBUG(HDST_FIELD).Msg(
+            "When trying to create texture for field, "
+            "texture handle does not contain texture "
+            "container.");
         return TfNullPtr;
     }
 
@@ -147,7 +151,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
             // sprim and is not run multi-threadedly.
             // 
             _fieldResource = boost::make_shared<HdStFieldResource>(
-                _GetVdbTexture(resolvedPath, fieldName));
+                _GetFieldTexture(resolvedPath, fieldName));
             texInstance.SetValue(_fieldResource);
         } else {
             HdStFieldResourceSharedPtr const fieldResource =

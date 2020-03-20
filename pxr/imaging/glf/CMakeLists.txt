@@ -20,12 +20,6 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
 endif()
 
-if (PXR_ENABLE_OPENVDB_SUPPORT)
-    list(APPEND optionalPublicClasses vdbTextureData)
-    list(APPEND optionalLibs ${OPENEXR_Half_LIBRARY} ${OPENVDB_LIBRARY})
-    list(APPEND optionalIncludeDirs ${OPENVDB_INCLUDE_DIR})
-endif()
-
 pxr_library(glf
     LIBRARIES
         ar
@@ -58,6 +52,7 @@ pxr_library(glf
         contextCaps
         diagnostic
         drawTarget
+        fieldTexture
         glew
         glContext
         glRawContext
@@ -79,8 +74,6 @@ pxr_library(glf
         uvTextureData
         uvTextureStorage
         uvTextureStorageData
-        vdbTexture
-        vdbTextureContainer
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -116,7 +109,6 @@ pxr_library(glf
         wrapTextureRegistry.cpp
         wrapUVTexture.cpp
         wrapUVTextureStorage.cpp
-        wrapVdbTexture.cpp
 
     PYMODULE_FILES
         __init__.py

@@ -1256,9 +1256,9 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=OFF')
 
             if context.enableOpenVDB:
-                extraArgs.append('-DPXR_ENABLE_OPENVDB_SUPPORT=ON')
+                extraArgs.append('-DPXR_BUILD_OPENVDB_PLUGIN=ON')
             else:
-                extraArgs.append('-DPXR_ENABLE_OPENVDB_SUPPORT=OFF')
+                extraArgs.append('-DPXR_BUILD_OPENVDB_PLUGIN=OFF')
 
             if context.buildEmbree:
                 if context.embreeLocation:

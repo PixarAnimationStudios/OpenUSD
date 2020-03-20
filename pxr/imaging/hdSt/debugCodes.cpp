@@ -57,6 +57,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MATERIAL_REMOVED,
         "Report when a material is removed");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_FIELD,
+        "Report field drawing notices");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

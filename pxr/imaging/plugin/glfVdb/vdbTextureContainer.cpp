@@ -21,17 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#include "pxr/imaging/glf/vdbTextureContainer.h"
+#include "pxr/imaging/plugin/glfVdb/vdbTextureContainer.h"
 
-#include "pxr/imaging/glf/vdbTexture.h"
+#include "pxr/imaging/plugin/glfVdb/vdbTexture.h"
 #include "pxr/imaging/glf/textureContainerImpl.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-template class GlfTextureContainer<TfToken>;
 
 TF_REGISTRY_FUNCTION(TfType)
 {

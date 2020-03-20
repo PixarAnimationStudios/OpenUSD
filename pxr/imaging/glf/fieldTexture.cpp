@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,21 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+/// \file fieldTexture.cpp
+//
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/imaging/glf/fieldTexture.h"
 
-TF_WRAP_MODULE
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
 {
-    TF_WRAP( Diagnostic );
-    TF_WRAP( DrawTarget );
-    TF_WRAP( Texture );
-    TF_WRAP( TextureRegistry );
-    TF_WRAP( BaseTexture );
-    TF_WRAP( UVTexture );
-    TF_WRAP( UVTextureStorage );
-    TF_WRAP( Glew );
-    TF_WRAP( SimpleLight );
-    TF_WRAP( SimpleMaterial );
+    TfType::Define<GlfFieldTexture, TfType::Bases<GlfBaseTexture> >();
 }
+
+int
+GlfFieldTexture::GetNumDimensions() const
+{
+    return 3;
+}
+
+const GfBBox3d &
+GlfFieldTexture::GetBoundingBox()
+{
+    return _boundingBox;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

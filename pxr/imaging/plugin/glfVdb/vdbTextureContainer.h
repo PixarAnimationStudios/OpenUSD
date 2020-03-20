@@ -43,7 +43,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTextureContainer);
 ///
 /// A container for 3-dimension textures read from the grids in an OpenVDB file
 ///
-class GlfVdbTextureContainer : public GlfTextureContainer<TfToken> {
+class GlfVdbTextureContainer : public GlfFieldTextureContainer {
 public:
     /// Creates a new container for the OpenVDB file \p filePath
     GLF_API

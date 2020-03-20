@@ -42,7 +42,6 @@
 #include "pxr/imaging/hf/diagnostic.h"
 
 #include "pxr/imaging/hio/glslfx.h"
-#include "pxr/imaging/glf/vdbTexture.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -656,7 +655,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // Note that then extents on the volume are with respect to the volume's
     // prim space but the localVolumeBBox might have an additional transform
     // (from the field).
-    if (!(extents.IsEmpty() || extents.Contains(
+    if (!(extents.IsEmpty() || !localVolumeBBox.GetVolume() || extents.Contains(
               localVolumeBBox.ComputeAlignedRange()))) {
         HF_VALIDATION_WARN(
             GetId(),

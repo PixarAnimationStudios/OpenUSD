@@ -121,7 +121,7 @@ if (PXR_BUILD_IMAGING)
         add_definitions(-DPXR_PTEX_SUPPORT_ENABLED)
     endif()
     # --OpenVDB
-    if (PXR_ENABLE_OPENVDB_SUPPORT)
+    if (PXR_BUILD_OPENVDB_PLUGIN)
         find_package(OpenEXR REQUIRED)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)

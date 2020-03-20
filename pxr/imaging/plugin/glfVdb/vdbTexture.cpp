@@ -24,13 +24,9 @@
 /// \file vdbTexture.cpp
 // 
 
-#include "pxr/imaging/glf/vdbTexture.h"
-#include "pxr/imaging/glf/vdbTextureContainer.h"
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
-#include "pxr/imaging/glf/vdbTextureData.h"
-#else
-#include "pxr/imaging/glf/baseTextureData.h"
-#endif
+#include "pxr/imaging/plugin/glfVdb/vdbTexture.h"
+#include "pxr/imaging/plugin/glfVdb/vdbTextureContainer.h"
+#include "pxr/imaging/plugin/glfVdb/vdbTextureData.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
@@ -42,12 +38,6 @@ GlfVdbTexture::New(
     TfToken const &gridName)
 {
     return TfCreateRefPtr(new GlfVdbTexture(textureContainer, gridName));
-}
-
-int
-GlfVdbTexture::GetNumDimensions() const
-{
-    return 3;
 }
 
 GlfVdbTexture::GlfVdbTexture(
@@ -77,9 +67,6 @@ GlfVdbTexture::IsMinFilterSupported(GLenum filter)
 void
 GlfVdbTexture::_ReadTexture()
 {
-
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
-
     GlfVdbTextureDataRefPtr const texData =
         GlfVdbTextureData::New(
             _textureContainer->GetFilePath().GetString(),
@@ -90,12 +77,6 @@ GlfVdbTexture::_ReadTexture()
         texData->Read(0, _GenerateMipmap());
         _boundingBox = texData->GetBoundingBox();
     }
-
-#else
-
-    GlfBaseTextureDataRefPtr texData;
-
-#endif
 
     _UpdateTexture(texData);
     _CreateTexture(texData, _GenerateMipmap());

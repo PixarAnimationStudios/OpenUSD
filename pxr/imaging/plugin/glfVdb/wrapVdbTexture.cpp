@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,21 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/imaging/plugin/glfVdb/vdbTexture.h"
+
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
+
+#include <boost/python/bases.hpp>
+#include <boost/python/class.hpp>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP( Diagnostic );
-    TF_WRAP( DrawTarget );
-    TF_WRAP( Texture );
-    TF_WRAP( TextureRegistry );
-    TF_WRAP( BaseTexture );
-    TF_WRAP( UVTexture );
-    TF_WRAP( UVTextureStorage );
-    TF_WRAP( Glew );
-    TF_WRAP( SimpleLight );
-    TF_WRAP( SimpleMaterial );
+void wrapVdbTexture()
+{    
+    using This = GlfVdbTexture;
+    using ThisPtr = GlfVdbTexturePtr;
+
+    using NewSig = GlfVdbTextureRefPtr(*)(const std::string &);
+
+    class_<This, bases<GlfBaseTexture>, ThisPtr, 
+           boost::noncopyable>("VdbTexture", no_init)
+        .def(TfPyRefAndWeakPtr())
+        .def(TfMakePyConstructor(NewSig(&This::New)))
+        ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(GlfVdbTexture)

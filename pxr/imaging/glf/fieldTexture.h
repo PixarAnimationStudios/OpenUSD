@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_VDB_TEXTURE_H
-#define PXR_IMAGING_GLF_VDB_TEXTURE_H
+#ifndef PXR_IMAGING_GLF_FIELD_TEXTURE_H
+#define PXR_IMAGING_GLF_FIELD_TEXTURE_H
 
-/// \file glf/vdbTexture.h
+/// \file glf/fieldTexture.h
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
@@ -35,55 +35,26 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTextureContainer);
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTexture);
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfFieldTexture);
 
-/// \class GlfVdbTexture
+/// \class GlfFieldTexture
 ///
-/// Represents a 3-dimensional texture read from grid in an OpenVDB file.
+/// Represents an abstract 3-dimensional texture read from a volume field
 ///
-/// This texture is supposed to be held by a GlfVdbTextureContainer which
-/// tells this texture also what OpenVDB file to read.
-///
-class GlfVdbTexture : public GlfBaseTexture {
+class GlfFieldTexture : public GlfBaseTexture {
 public:
-    /// Creates a new texture instance for the grid named \gridName in
-    /// the OpenVDB file opened by \p textureContainer.
-    GLF_API
-    static GlfVdbTextureRefPtr New(
-        GlfVdbTextureContainerRefPtr const &textureContainer,
-        TfToken const &gridName);
-
-    /// Returns the transform of the grid in the OpenVDB file as well as the
-    /// bounding box of the samples in the corresponding OpenVDB tree.
+    /// Returns the transform and bouding box of the field.
     ///
     /// This pair of information is encoded as GfBBox3d.
     GLF_API
-    const GfBBox3d &GetBoundingBox();
+    virtual const GfBBox3d &GetBoundingBox();
 
     int GetNumDimensions() const override;
-    
-    GLF_API
-    VtDictionary GetTextureInfo(bool forceLoad) override;
-
-    GLF_API
-    bool IsMinFilterSupported(GLenum filter) override;
 
 protected:
-    GLF_API
-    GlfVdbTexture(
-        GlfVdbTextureContainerRefPtr const &textureContainer,
-        TfToken const &gridName);
 
     GLF_API
-    void _ReadTexture() override;
-
-    GLF_API
-    bool _GenerateMipmap() const;
-
-private:
-    GlfVdbTextureContainerRefPtr const _textureContainer;
-    const TfToken _gridName;
+    virtual void _ReadTexture() = 0;
 
     GfBBox3d _boundingBox;
 };
@@ -91,4 +62,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // GLF_VDBTEXTURE_H
+#endif // PXR_IMAGING_GLF_FIELD_TEXTURE_H
