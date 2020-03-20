@@ -39,6 +39,7 @@
 
 #include <initializer_list>
 #include <iosfwd>
+#include <map>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
