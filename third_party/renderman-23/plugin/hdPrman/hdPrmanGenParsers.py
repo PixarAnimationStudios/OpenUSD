@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 from distutils.spawn import find_executable
 from tempfile import mkdtemp
 from argparse import ArgumentParser
@@ -53,7 +55,7 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
         exit('*** Missing files:\n' + '\n'.join(installedNames - generatedNames))
 
     diffs = {}
-    for i in xrange(0, len(installedFiles)):
+    for i in range(0, len(installedFiles)):
         installedExists = isfile(installedFiles[i])
         generatedExists = isfile(generatedFiles[i])
 
@@ -139,10 +141,10 @@ def _runBisonAndFlexCommands(configuration):
                                   + [flexFiles[index]])
     
     for index, base in enumerate(bases):
-        print 'Running bison on %s' % (base + '.yy')
+        print('Running bison on %s' % (base + '.yy'))
         call(bisonCommand(index))
 
-        print 'Running flex on %s' % (base + '.ll')
+        print('Running flex on %s' % (base + '.ll'))
         with open(flexGenSources[index], 'w') as outputFile:
             call(flexCommand(index), stdout=outputFile)
 
@@ -221,7 +223,7 @@ def _canonicalizeFiles(sourceFiles, generatedFiles):
         replacements.append((oldFileName, newFileName))
 
     for renamedFile in renamed:
-        print 'Fixing line directives in ' + basename(renamedFile)
+        print('Fixing line directives in ' + basename(renamedFile))
 
         with open(renamedFile, 'r+') as inputFile:
             data = inputFile.read()
@@ -319,7 +321,7 @@ def _getSconsBuildEnvSetting(environmentVariable, configuration):
     command = [find_executable('scons'), '-u', 
                '-Qq', '--echo=' + environmentVariable]
     line, _ = Popen(command, stdout=PIPE).communicate()
-    _, envSettingValue = line.strip().split(' = ')
+    _, envSettingValue = line.decode('UTF-8').strip().split(' = ')
 
     if not envSettingValue:
         exit('*** Unable to determine ' + environmentVariable + 'from '
@@ -343,13 +345,16 @@ def _getCMakeBuildEnvSetting(environmentVariable, configuration):
                  'this information is needed for obtaining build environment '
                  'information from CMake.')
 
+    envSettingValue = None
     command = [find_executable('cmake'), '-LA', '-N', srcRootDir]
     output, _ = Popen(command, stdout=PIPE).communicate()
-    line = filter(lambda o: environmentVariable in o, output.split('\n'))[0]
-    _, envSettingValue = line.strip().split('=')
+    for line in output.decode('UTF-8').split('\n'):
+        if environmentVariable in line:
+            _, envSettingValue = line.strip().split('=')
+            break
 
     if not envSettingValue:
-        exit('*** Unable to determine ' + environmentVariable + 'from '
+        exit('*** Unable to determine ' + environmentVariable + ' from '
              'CMake build system. Try supplying it through the command line '
              'options.')
 
@@ -374,9 +379,9 @@ def _getBison(configuration):
 # -----------------------------------------------------------------------------
 
 def _printSection(sectionInfo):
-    print '+-------------------------------------------------+'
-    print sectionInfo
-    print '+-------------------------------------------------+'
+    print('+-------------------------------------------------+')
+    print(sectionInfo)
+    print('+-------------------------------------------------+')
 
 if __name__ == '__main__':
     configuration = _getConfiguration()
