@@ -150,7 +150,15 @@ public:
 
         if (inserted && _initialized) {
             lock.release();
-            TfDebugSymbolsChangedNotice().Send();
+            // Even if the debug registry is initialized, our notice type may
+            // not yet be defined with TfType.  This happens when we're loading
+            // tf itself.  In that case, just skip notifying about changed debug
+            // symbols, since we'll get a fatal error from TfNotice, and nobody
+            // can really be depending on detecting changes to debug symbols
+            // anyway.
+            if (TfType::Find<TfDebugSymbolsChangedNotice>()) {
+                TfDebugSymbolsChangedNotice().Send();
+            }
         }
     }
 
