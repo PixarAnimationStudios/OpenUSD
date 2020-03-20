@@ -80,7 +80,6 @@ pxr_library(tf
         templateString
         tf
         token
-        traits
         type
         typeFunctions
         typeNotice

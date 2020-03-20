@@ -31,7 +31,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/cxxCast.h"
-#include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakPtr.h"
 
@@ -297,7 +296,7 @@ template <class Ptr>
 bool
 TfAnyWeakPtr::_PointerHolder<Ptr>::_IsConst() const
 {
-    return TfTraits::Type<typename Ptr::DataType>::isConst;
+    return std::is_const<typename Ptr::DataType>::value;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

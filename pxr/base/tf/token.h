@@ -34,10 +34,9 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/pointerAndBits.h"
-#include "pxr/base/tf/traits.h"
-
 #include "pxr/base/tf/hashset.h"
+#include "pxr/base/tf/pointerAndBits.h"
+
 #include <atomic>
 #include <iosfwd>
 #include <string>
