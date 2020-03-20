@@ -116,7 +116,6 @@ pxr_library(tf
         pySingleton
         pyTracing
         pyUtils
-        pyWeakObject
         pyWrapContext
         scriptModuleLoader
         wrapTypeHelpers
@@ -168,6 +167,7 @@ pxr_library(tf
         pxrDoubleConversion/fixed-dtoa.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
+        pyWeakObject.h
 
     CPPFILES
         initConfig.cpp
@@ -187,6 +187,7 @@ pxr_library(tf
 
     PYMODULE_CPPFILES
         module.cpp
+        pyWeakObject.cpp
         wrapAnyWeakPtr.cpp
         wrapCallContext.cpp
         wrapDebug.cpp
