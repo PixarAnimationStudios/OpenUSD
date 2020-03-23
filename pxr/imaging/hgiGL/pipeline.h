@@ -24,7 +24,6 @@
 #ifndef PXR_IMAGING_HGIGL_PIPELINE_H
 #define PXR_IMAGING_HGIGL_PIPELINE_H
 
-
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
@@ -39,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HgiGLPipeline
 ///
-/// Vulkan implementation of HgiPipeline.
+/// OpenGL implementation of HgiPipeline.
 ///
 class HgiGLPipeline final : public HgiPipeline
 {
@@ -74,21 +73,25 @@ private:
 private:
     HgiPipelineDesc _descriptor;
 
-    GLint _restoreFramebuffer;
-    GLint _restoreVao;
-    GLboolean _restoreDepthTest;
-    GLboolean _restoreDepthWriteMask;
-    GLboolean _restoreStencilWriteMask;
-    GLint _restoreDepthFunc;
-    GLint _restoreViewport[4];
-    GLboolean _restoreblendEnabled;
-    GLint _restoreColorOp;
-    GLint _restoreAlphaOp;
-    GLint _restoreColorSrcFnOp;
-    GLint _restoreAlphaSrcFnOp;
-    GLint _restoreColorDstFnOp;
-    GLint _restoreAlphaDstFnOp;
-    GLboolean _restoreAlphaToCoverage;
+    int32_t _restoreDrawFramebuffer;
+    int32_t _restoreReadFramebuffer;
+    int32_t _restoreRenderBuffer;
+    int32_t _restoreVao;
+    bool _restoreDepthTest;
+    bool _restoreDepthWriteMask;
+    bool _restoreStencilWriteMask;
+    int32_t _restoreDepthFunc;
+    int32_t _restoreViewport[4];
+    bool _restoreblendEnabled;
+    int32_t _restoreColorOp;
+    int32_t _restoreAlphaOp;
+    int32_t _restoreColorSrcFnOp;
+    int32_t _restoreAlphaSrcFnOp;
+    int32_t _restoreColorDstFnOp;
+    int32_t _restoreAlphaDstFnOp;
+    bool _restoreAlphaToCoverage;
+
+	uint32_t _vao;
 };
 
 

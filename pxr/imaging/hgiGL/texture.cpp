@@ -31,7 +31,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     : HgiTexture(desc)
-    , _descriptor(desc)
     , _textureId(0)
 {
     if (desc.layerCount > 1) {
@@ -150,12 +149,6 @@ HgiGLTexture::~HgiGLTexture()
     }
 
     HGIGL_POST_PENDING_GL_ERRORS();
-}
-
-HgiTextureDesc const&
-HgiGLTexture::GetDescriptor() const
-{
-    return _descriptor;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

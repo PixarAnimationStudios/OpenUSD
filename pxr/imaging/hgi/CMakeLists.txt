@@ -8,6 +8,7 @@ pxr_library(hgi
         tf
 
     PUBLIC_CLASSES
+        attachmentDesc
         blitEncoder
         buffer
         graphicsEncoder
@@ -20,11 +21,11 @@ pxr_library(hgi
         shaderProgram
         texture
         tokens
+        types
 
     PUBLIC_HEADERS
         api.h
         blitEncoderOps.h
         enums.h
         handle.h
-        types.h
 )

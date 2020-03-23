@@ -97,6 +97,18 @@ public:
 
     HGIGL_API
     void DestroyPipeline(HgiPipelineHandle* pipeHandle) override;
+    
+    HGIGL_API
+    const char* GetAPIName() const override {
+        return "opengl";
+    }
+    
+    HGIGL_API
+    void StartFrame() override {};
+
+    HGIGL_API
+    void EndFrame() override {};
+
 
 private:
     HgiGL & operator=(const HgiGL&) = delete;

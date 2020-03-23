@@ -23,6 +23,7 @@
 //
 #include <GL/glew.h>
 #include "pxr/imaging/hgiGL/blitEncoder.h"
+#include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -113,8 +114,6 @@ HgiGLBlitEncoder::CopyTextureGpuToCpu(
     }
 
     // Make sure writes are finished before we read from the texture
-    // XXX We assume for now that nothing else has ensured the barrier is 
-    // inserted before calling CopyTexture.
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     glGetTextureSubImage(
@@ -132,6 +131,36 @@ HgiGLBlitEncoder::CopyTextureGpuToCpu(
         copyOp.cpuDestinationBuffer);
 
     HGIGL_POST_PENDING_GL_ERRORS();
+}
+
+void HgiGLBlitEncoder::CopyBufferCpuToGpu(
+    HgiBufferCpuToGpuOp const& copyOp)
+{
+    if (copyOp.byteSize == 0 ||
+        !copyOp.cpuSourceBuffer ||
+        !copyOp.gpuDestinationBuffer)
+    {
+        return;
+    }
+
+    HgiGLBuffer* glBuffer = static_cast<HgiGLBuffer*>(
+        copyOp.gpuDestinationBuffer.Get());
+
+    // Offset into the src buffer
+    const char* src = ((const char*) copyOp.cpuSourceBuffer) +
+        copyOp.sourceByteOffset;
+
+    // Offset into the dst buffer
+    GLintptr dstOffset = copyOp.destinationByteOffset;
+
+    glNamedBufferSubData(
+        glBuffer->GetBufferId(),
+        dstOffset,
+        copyOp.byteSize,
+        src);
+
+    // Make sure the copy is finished before reads from buffer.
+    glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 }
 
 void 

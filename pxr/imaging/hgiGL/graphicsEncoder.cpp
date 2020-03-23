@@ -35,7 +35,6 @@ HgiGLGraphicsEncoder::HgiGLGraphicsEncoder(
     HgiGraphicsEncoderDesc const& desc)
     : HgiGraphicsEncoder()
 {
-    TF_VERIFY(desc.width>0 && desc.height>0);
 }
 
 HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
@@ -85,6 +84,7 @@ HgiGLGraphicsEncoder::BindVertexBuffers(
     TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
     TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
 
+    // XXX use glBindVertexBuffers to bind all VBs in one go.
     for (size_t i=0; i<vertexBuffers.size(); i++) {
         HgiBufferHandle bufHandle = vertexBuffers[i];
         HgiGLBuffer* buf = static_cast<HgiGLBuffer*>(bufHandle.Get());

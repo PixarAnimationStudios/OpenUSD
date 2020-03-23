@@ -40,51 +40,6 @@ HgiResourceBindings::GetDescriptor() const
     return _descriptor;
 }
 
-HgiVertexAttributeDesc::HgiVertexAttributeDesc()
-    : format(HgiFormatFloat32Vec4)
-    , offset(0)
-    , shaderBindLocation(0)
-{
-}
-
-bool operator==(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs)
-{
-    return lhs.format == rhs.format &&
-           lhs.offset == rhs.offset &&
-           lhs.shaderBindLocation == rhs.shaderBindLocation;
-}
-
-bool operator!=(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs)
-{
-    return !(lhs == rhs);
-}
-
-HgiVertexBufferDesc::HgiVertexBufferDesc()
-    : bindingIndex(0)
-    , vertexStride(0)
-{
-}
-
-bool operator==(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs)
-{
-    return lhs.bindingIndex == rhs.bindingIndex &&
-           lhs.vertexAttributes == rhs.vertexAttributes &&
-           lhs.vertexStride == rhs.vertexStride;
-}
-
-bool operator!=(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs)
-{
-    return !(lhs == rhs);
-}
-
 HgiBufferBindDesc::HgiBufferBindDesc()
     : bindingIndex(0)
     , stageUsage(HgiShaderStageVertex)
@@ -144,8 +99,7 @@ bool operator==(
     return lhs.debugName == rhs.debugName &&
            lhs.pipelineType == rhs.pipelineType &&
            lhs.buffers == rhs.buffers &&
-           lhs.textures == rhs.textures &&
-           lhs.vertexBuffers == rhs.vertexBuffers;
+           lhs.textures == rhs.textures;
 }
 
 bool operator!=(

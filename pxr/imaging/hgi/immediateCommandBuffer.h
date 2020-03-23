@@ -70,6 +70,12 @@ public:
     HGI_API
     virtual HgiBlitEncoderUniquePtr CreateBlitEncoder() = 0;
 
+    HGI_API
+    virtual void BlockUntilSubmitted() = 0;
+
+    HGI_API
+    virtual void BlockUntilCompleted() = 0;
+
 private:
     HgiImmediateCommandBuffer & operator=
         (const HgiImmediateCommandBuffer&) = delete;

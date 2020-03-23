@@ -87,6 +87,7 @@ bool operator!=(
 HgiDepthStencilState::HgiDepthStencilState()
     : depthTestEnabled(true)
     , depthWriteEnabled(true)
+    , depthCompareFn(HgiCompareFunctionLess)
     , stencilTestEnabled(false)
 {
 }
@@ -97,6 +98,7 @@ bool operator==(
 {
     return lhs.depthTestEnabled == rhs.depthTestEnabled &&
            lhs.depthWriteEnabled == rhs.depthWriteEnabled &&
+           lhs.depthCompareFn == rhs.depthCompareFn &&
            lhs.stencilTestEnabled == rhs.stencilTestEnabled;
 }
 
@@ -124,12 +126,60 @@ bool operator==(
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&
            lhs.multiSampleState == rhs.multiSampleState &&
-           lhs.rasterizationState == rhs.rasterizationState;
+           lhs.rasterizationState == rhs.rasterizationState &&
+           lhs.vertexBuffers == rhs.vertexBuffers &&
+           lhs.colorAttachmentDescs == rhs.colorAttachmentDescs &&
+           lhs.depthAttachmentDesc == rhs.depthAttachmentDesc;
 }
 
 bool operator!=(
     const HgiPipelineDesc& lhs,
     const HgiPipelineDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiVertexAttributeDesc::HgiVertexAttributeDesc()
+    : format(HgiFormatFloat32Vec4)
+    , offset(0)
+    , shaderBindLocation(0)
+{
+}
+
+bool operator==(
+    const HgiVertexAttributeDesc& lhs,
+    const HgiVertexAttributeDesc& rhs)
+{
+    return lhs.format == rhs.format &&
+           lhs.offset == rhs.offset &&
+           lhs.shaderBindLocation == rhs.shaderBindLocation;
+}
+
+bool operator!=(
+    const HgiVertexAttributeDesc& lhs,
+    const HgiVertexAttributeDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiVertexBufferDesc::HgiVertexBufferDesc()
+    : bindingIndex(0)
+    , vertexStride(0)
+{
+}
+
+bool operator==(
+    const HgiVertexBufferDesc& lhs,
+    const HgiVertexBufferDesc& rhs)
+{
+    return lhs.bindingIndex == rhs.bindingIndex &&
+           lhs.vertexAttributes == rhs.vertexAttributes &&
+           lhs.vertexStride == rhs.vertexStride;
+}
+
+bool operator!=(
+    const HgiVertexBufferDesc& lhs,
+    const HgiVertexBufferDesc& rhs)
 {
     return !(lhs == rhs);
 }

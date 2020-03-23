@@ -30,6 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiTextureGpuToCpuOp;
+struct HgiBufferCpuToGpuOp;
 struct HgiResolveImageOp;
 
 
@@ -65,9 +66,14 @@ public:
     HGI_API
     virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
 
+    /// Copy new data from cpu into gpu buffer.
+    /// For example copy new data into a uniform block or storage buffer.
+    HGI_API
+    virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
+
     /// Resolve a multi-sample texture (MSAA) so it can be read from.
     HGI_API
-    virtual void ResolveImage(HgiResolveImageOp const& resolveOp)= 0;
+    virtual void ResolveImage(HgiResolveImageOp const& resolveOp) = 0;
 
 protected:
     HGI_API

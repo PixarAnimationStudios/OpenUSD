@@ -502,7 +502,6 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             HgiAttachmentLoadOpDontCare :
             HgiAttachmentLoadOpClear;
 
-        attachmentDesc.texture = hgiTexHandle;
         attachmentDesc.loadOp = loadOp;
         attachmentDesc.storeOp = HgiAttachmentStoreOpStore;
 
@@ -525,11 +524,14 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
         attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
 
         if (aov.aovName == HdAovTokens->depth) {
-            desc.depthAttachment = std::move(attachmentDesc);
-        } else if (TF_VERIFY(desc.colorAttachments.size() < maxColorAttachments, 
-                            "Too many aov bindings for color attachments")) 
+            desc.depthAttachmentDesc = std::move(attachmentDesc);
+            desc.depthTexture = hgiTexHandle;
+        } else if (TF_VERIFY(
+            desc.colorAttachmentDescs.size() < maxColorAttachments,
+            "Too many aov bindings for color attachments"))
         {
-            desc.colorAttachments.emplace_back(std::move(attachmentDesc));
+            desc.colorAttachmentDescs.emplace_back(std::move(attachmentDesc));
+            desc.colorTextures.emplace_back(hgiTexHandle);
         }
     }
 

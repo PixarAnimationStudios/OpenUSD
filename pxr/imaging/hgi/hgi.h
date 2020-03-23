@@ -146,6 +146,18 @@ public:
     /// Destroy a pipeline state object
     HGI_API
     virtual void DestroyPipeline(HgiPipelineHandle* pipeHandle) = 0;
+    
+    /// Return the name of the api (e.g. "opengl")
+    HGI_API
+    virtual const char* GetAPIName() const = 0;
+
+    /// Called at the start of a new rendering frame.
+    HGI_API
+    virtual void StartFrame() = 0;
+
+    /// Called at the end of a rendering frame.
+    HGI_API
+    virtual void EndFrame() = 0;
 
 protected:
     // Returns a unique id for handle creation.

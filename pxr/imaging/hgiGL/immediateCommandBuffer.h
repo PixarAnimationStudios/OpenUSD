@@ -50,6 +50,12 @@ public:
     HGIGL_API
     HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
 
+    HGIGL_API
+    void BlockUntilCompleted() override;
+
+    HGIGL_API
+    void BlockUntilSubmitted() override;
+
 protected:
     friend class HgiGL;
 

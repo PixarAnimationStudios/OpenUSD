@@ -32,49 +32,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLResourceBindings::HgiGLResourceBindings(
     HgiResourceBindingsDesc const& desc)
     : HgiResourceBindings(desc)
-    , _vao()
 {
-    glCreateVertexArrays(1, &_vao);
-    glObjectLabel(GL_VERTEX_ARRAY, _vao, -1, _descriptor.debugName.c_str());
 
-    // Configure the vertex buffers in the vertex array object.
-    for (HgiVertexBufferDesc const& vbo : _descriptor.vertexBuffers) {
-
-        HgiVertexAttributeDescVector const& vas = vbo.vertexAttributes;
-
-        // Describe each vertex attribute in the vertex buffer
-        for (size_t loc=0; loc<vas.size(); loc++) {
-            HgiVertexAttributeDesc const& va = vas[loc];
-
-            uint32_t idx = va.shaderBindLocation;
-            glEnableVertexArrayAttrib(_vao, idx);
-            glVertexArrayAttribBinding(_vao, idx, vbo.bindingIndex);
-            glVertexArrayAttribFormat(
-                _vao, 
-                idx,
-                HgiGLConversions::GetElementCount(va.format),
-                HgiGLConversions::GetFormatType(va.format),
-                GL_FALSE,
-                va.offset);
-        }
-    }
-
-    HGIGL_POST_PENDING_GL_ERRORS();
 }
 
 HgiGLResourceBindings::~HgiGLResourceBindings()
 {
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &_vao);
 }
 
 void
 HgiGLResourceBindings::BindResources()
 {
-    glBindVertexArray(_vao);
-
     std::vector<uint32_t> textures(_descriptor.textures.size(), 0);
 
+    //
+    // Bind Textures
+    //
     for (HgiTextureBindDesc const& texDesc : _descriptor.textures) {
         // OpenGL does not support arrays-of-textures bound to a unit.
         // (Which is different from texture-arrays. See Vulkan/Metal)
@@ -95,10 +68,50 @@ HgiGLResourceBindings::BindResources()
         glBindTextures(0, textures.size(), textures.data());
     }
 
-    // todo here we must loop through .buffers and bind UBO and SSBO buffers.
+    //
+    // Bind Buffers
+    //
+
     // Note that index and vertex buffers are not bound here.
     // They are bound via the GraphicsEncoder.
-    TF_VERIFY(_descriptor.buffers.empty(), "Missing implementation buffers");
+
+    std::vector<uint32_t> ubos(_descriptor.buffers.size(), 0);
+    std::vector<uint32_t> sbos(_descriptor.buffers.size(), 0);
+
+    for (HgiBufferBindDesc const& bufDesc : _descriptor.buffers) {
+        // OpenGL does not support arrays-of-buffers bound to a unit.
+        // (Which is different from buffer-arrays. See Vulkan/Metal)
+        if (!TF_VERIFY(bufDesc.buffers.size() == 1)) continue;
+
+        uint32_t unit = bufDesc.bindingIndex;
+
+        std::vector<uint32_t>* dst = nullptr;
+
+        if (bufDesc.resourceType == HgiBindResourceTypeUniformBuffer) {
+            dst = &ubos;
+        } else if (bufDesc.resourceType == HgiBindResourceTypeStorageBuffer) {
+            dst = &sbos;
+        } else {
+            TF_CODING_ERROR("Unknown buffer type to bind");
+            continue;
+        }
+
+        if (dst->size() <= unit) {
+            dst->resize(unit+1, 0);
+        }
+        HgiBufferHandle const& bufHandle = bufDesc.buffers.front();
+        HgiGLBuffer* glbuffer = static_cast<HgiGLBuffer*>(bufHandle.Get());
+
+        (*dst)[bufDesc.bindingIndex] = glbuffer->GetBufferId();
+    }
+
+    if (!ubos.empty()) {
+        glBindBuffersBase(GL_UNIFORM_BUFFER, 0, ubos.size(), ubos.data());
+    }
+
+    if (!sbos.empty()) {
+        glBindBuffersBase(GL_SHADER_STORAGE_BUFFER,0, sbos.size(), sbos.data());
+    }
 
     HGIGL_POST_PENDING_GL_ERRORS();
 }

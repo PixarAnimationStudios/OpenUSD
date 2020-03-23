@@ -25,6 +25,8 @@
 #define PXR_IMAGING_HGI_TYPES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hgi/api.h"
+#include <stdlib.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -76,6 +78,14 @@ enum HgiFormat
     HgiFormatCount
 };
 
+/// Return the count of components in the given format.
+HGI_API
+size_t HgiGetComponentCount(HgiFormat f);
+
+/// Return the size of a single element of the given format.
+/// For block formats, this will return 0.
+HGI_API
+size_t HgiDataSizeOfFormat(HgiFormat f);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

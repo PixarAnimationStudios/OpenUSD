@@ -69,6 +69,9 @@ public:
 
     HGIGL_API
     static GLenum GetBlendEquation(HgiBlendOp bo);
+
+    HGIGL_API
+    static GLenum GetDepthCompareFunction(HgiCompareFunction cf);
 };
 
 

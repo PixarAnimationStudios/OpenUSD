@@ -39,74 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \struct HgiVertexAttributeDesc
-///
-/// Describes one attribute of a vertex.
-///
-/// <ul>
-/// <li>format:
-///   Format of the vertex attribute.</li>
-/// <li>offset:
-///    The byte offset of the attribute in vertex buffer</li>
-/// <li>shaderBindLocation:
-///    The location of the attribute in the shader. layout(location = X)</li>
-/// </ul>
-///
-struct HgiVertexAttributeDesc
-{
-    HGI_API
-    HgiVertexAttributeDesc();
 
-    HgiFormat format;
-    uint32_t offset;
-    uint32_t shaderBindLocation;
-};
-typedef std::vector<HgiVertexAttributeDesc> HgiVertexAttributeDescVector;
-
-HGI_API
-bool operator==(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs);
-
-HGI_API
-inline bool operator!=(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs);
-
-
-/// \struct HgiVertexBufferDesc
-///
-/// Describes the attributes of a vertex buffer.
-///
-/// <ul>
-/// <li>bindingIndex:
-///    Binding location for this vertex buffer.</li>
-/// <li>vertexAttributes:
-///   List of vertex attributes (in vertex buffer).</li>
-/// <li>vertexStride:
-///   The byte size of a vertex (distance between two vertices).</li>
-/// </ul>
-///
-struct HgiVertexBufferDesc
-{
-    HGI_API
-    HgiVertexBufferDesc();
-
-    uint32_t bindingIndex;
-    HgiVertexAttributeDescVector vertexAttributes;
-    uint32_t vertexStride;
-};
-typedef std::vector<HgiVertexBufferDesc> HgiVertexBufferDescVector;
-
-HGI_API
-bool operator==(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs);
-
-HGI_API
-inline bool operator!=(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs);
 
 
 /// \struct HgiBufferBindDesc
@@ -209,9 +142,6 @@ bool operator!=(
 ///   The buffers to be bound (E.g. uniform or shader storage).</li>
 /// <li>textures:
 ///   The textures to be bound.</li>
-/// <li>vertexBuffers:
-///   Description of the vertex buffers (per-vertex attributes).
-///   The actual VBOs are bound via GraphicsEncoder.</li>
 /// </ul>
 ///
 struct HgiResourceBindingsDesc
@@ -223,7 +153,6 @@ struct HgiResourceBindingsDesc
     HgiPipelineType pipelineType;
     HgiBufferBindDescVector buffers;
     HgiTextureBindDescVector textures;
-    HgiVertexBufferDescVector vertexBuffers;
 };
 
 HGI_API

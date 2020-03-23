@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGLDescriptorCacheItem {
     HgiGraphicsEncoderDesc descriptor;
+    HgiTextureHandle depthTexture;
     uint32_t framebuffer = 0;
 }; 
 
@@ -61,21 +62,24 @@ _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
 {
     HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
     dci->descriptor = desc;
+    dci->depthTexture = desc.depthTexture;
 
     // Create framebuffer
     glCreateFramebuffers(1, &dci->framebuffer);
 
     // Bind color attachments
-    size_t numColorAttachments = desc.colorAttachments.size();
+    size_t numColorAttachments = desc.colorAttachmentDescs.size();
     std::vector<GLenum> drawBuffers(numColorAttachments);
 
+    TF_VERIFY(desc.colorTextures.size() == numColorAttachments,
+        "Number of attachment descriptors and textures don't match");
+    
     //
     // Color attachments
     //
     for (size_t i=0; i<numColorAttachments; i++) {
-        const HgiAttachmentDesc& attachment = desc.colorAttachments[i];
         HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(
-            attachment.texture.Get());
+            desc.colorTextures[i].Get());
 
         if (!TF_VERIFY(glTexture, "Invalid attachment texture")) {
             continue;
@@ -103,7 +107,7 @@ _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
     //
     // Depth attachment
     //
-    HgiTextureHandle depthTex = desc.depthAttachment.texture;
+    HgiTextureHandle depthTex = desc.depthTexture;
     if (depthTex) {
         HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(depthTex.Get());
 
@@ -131,10 +135,7 @@ _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
 static void
 _DestroyDescriptorCacheItem(HgiGLDescriptorCacheItem* dci)
 {
-    if (dci->framebuffer) {
-        TF_VERIFY(glIsFramebuffer(dci->framebuffer),
-            "Tried to free invalid framebuffer");
-
+    if (dci->framebuffer && glIsFramebuffer(dci->framebuffer)) {
         glDeleteFramebuffers(1, &dci->framebuffer);
         dci->framebuffer = 0;
     }
@@ -198,9 +199,9 @@ _BindFramebuffer(HgiGLDescriptorCacheItem* dci)
     bool blendEnabled = false;
 
     // Apply LoadOps
-    for (size_t i=0; i<dci->descriptor.colorAttachments.size(); i++) {
+    for (size_t i=0; i<dci->descriptor.colorAttachmentDescs.size(); i++) {
         HgiAttachmentDesc const& colorAttachment =
-            dci->descriptor.colorAttachments[i];
+            dci->descriptor.colorAttachmentDescs[i];
 
         if (colorAttachment.loadOp == HgiAttachmentLoadOpClear) {
             glClearBufferfv(GL_COLOR, i, colorAttachment.clearValue.data());
@@ -228,8 +229,8 @@ _BindFramebuffer(HgiGLDescriptorCacheItem* dci)
     }
 
     HgiAttachmentDesc const& depthAttachment =
-        dci->descriptor.depthAttachment;
-    if (depthAttachment.texture && 
+        dci->descriptor.depthAttachmentDesc;
+    if (dci->depthTexture &&
         depthAttachment.loadOp == HgiAttachmentLoadOpClear) {
         glClearBufferfv(GL_DEPTH, 0, depthAttachment.clearValue.data());
     }
@@ -261,6 +262,8 @@ HgiGLImmediateCommandBuffer::CreateGraphicsEncoder(
 {
     TRACE_FUNCTION();
 
+    // XXX This check should be removed once the tasks have switched over to
+    // Hgi so that the PresentTask can render to framebuffer (see XXX below).
     if (!desc.HasAttachments()) {
         // XXX For now we do not emit a warning because we have to many
         // pieces that do not yet use Hgi fully.
@@ -269,16 +272,24 @@ HgiGLImmediateCommandBuffer::CreateGraphicsEncoder(
     }
 
     const size_t maxColorAttachments = 8;
-    if (!TF_VERIFY(desc.colorAttachments.size() <= maxColorAttachments,
+    if (!TF_VERIFY(desc.colorAttachmentDescs.size() <= maxColorAttachments,
         "Too many color attachments for OpenGL frambuffer"))
     {
         return nullptr;
     }
 
-    HgiGLDescriptorCacheItem* dci = 
-        _AcquireDescriptorCacheItem(desc, _descriptorCache);
-
-    _BindFramebuffer(dci);
+    // XXX With other API's like Metal and Vulkan having a encoder without
+    // attachments doesn't make a lot of sense.
+    // For OpenGL we will need this for Hgi transition to sometimes assume that
+    // no-attachments means rendering into the globally bound GL framebuffer.
+    // Once HgiInterop is fully in place in the PresentTask we should enable
+    // the error below when there are not attachments.
+    // XXX TF_VERIFY(desc.HasAttachments());
+    if (desc.HasAttachments()) {
+        HgiGLDescriptorCacheItem* dci = 
+            _AcquireDescriptorCacheItem(desc, _descriptorCache);
+        _BindFramebuffer(dci);
+    }
 
     HgiGLGraphicsEncoder* encoder(new HgiGLGraphicsEncoder(desc));
 
@@ -289,6 +300,20 @@ HgiBlitEncoderUniquePtr
 HgiGLImmediateCommandBuffer::CreateBlitEncoder()
 {
     return HgiBlitEncoderUniquePtr(new HgiGLBlitEncoder(this));
+}
+
+void
+HgiGLImmediateCommandBuffer::BlockUntilCompleted()
+{
+    // On other APIs this would be an equivalent of a glFinish()
+    //glFinish();
+}
+
+void
+HgiGLImmediateCommandBuffer::BlockUntilSubmitted()
+{
+    // On other APIs this would be an equivalent of a glFlush()
+    //glFlush();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

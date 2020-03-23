@@ -56,9 +56,6 @@ private:
     HgiGLResourceBindings() = delete;
     HgiGLResourceBindings & operator=(const HgiGLResourceBindings&) = delete;
     HgiGLResourceBindings(const HgiGLResourceBindings&) = delete;
-
-private:
-    uint32_t _vao;
 };
 
 
