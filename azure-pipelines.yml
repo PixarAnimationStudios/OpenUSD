@@ -45,12 +45,15 @@ jobs:
   steps:
   - script: |
       call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-      call set PATH=C:/Python27amd64;C:/Python27amd64/Scripts;%PATH%
-      call python --version
-      call python -m pip install --upgrade pip
-      call python -m pip install PySide
-      call python -m pip install PyOpenGL
-      call python build_scripts/build_usd.py --build-args USD,"-DPYTHON_EXECUTABLE:FILEPATH=C:/Python27amd64/python.exe" --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst
+      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\2.7.17\x64
+      call set PYTHONBIN=%PYTHONLOCATION%\python.exe
+      call set PYTHONBINFW=C:/hostedtoolcache/windows/Python/2.7.17/x64/python.exe
+      call set PATH=%PYTHONLOCATION%;%PYTHONLOCATION%\Scripts;%PATH%
+      call %PYTHONBIN% --version
+      call %PYTHONBIN% -m pip install --upgrade pip
+      call %PYTHONBIN% -m pip install PySide
+      call %PYTHONBIN% -m pip install PyOpenGL
+      call %PYTHONBIN% build_scripts/build_usd.py --build-args USD,"-DPYTHON_EXECUTABLE:FILEPATH=%PYTHONBINFW%" --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst
     displayName: 'Building USD'
   - task: PublishPipelineArtifact@0
     inputs:
