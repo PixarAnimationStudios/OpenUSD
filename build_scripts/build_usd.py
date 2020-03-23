@@ -1108,22 +1108,21 @@ PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions,
 
 def GetPySideInstructions():
     # For licensing reasons, this script cannot install PySide itself.
-    if MacOS():
-        # There are issues with the PySide package available via pip, so
-        # we direct users to installing PySide2 instead.
-        return ('PySide is not installed. If you have pip '
-                'installed, follow the instructions at '
-                'https://wiki.qt.io/Qt_for_Python/GettingStarted '
-                'to install PySide2 from published wheels, '
-                'then re-run this script.\n'
-                'If PySide is already installed, you may need to '
-                'update your PYTHONPATH to indicate where it is '
-                'located.')
-    else:                       
+    if Windows():
+        # There is no distribution of PySide2 for Windows for Python 2.7.
+        # So use PySide instead. See the following for more details:
+        # https://wiki.qt.io/Qt_for_Python/Considerations#Missing_Windows_.2F_Python_2.7_release
         return ('PySide is not installed. If you have pip '
                 'installed, run "pip install PySide" '
                 'to install it, then re-run this script.\n'
                 'If PySide is already installed, you may need to '
+                'update your PYTHONPATH to indicate where it is '
+                'located.')
+    else:                       
+        return ('PySide2 is not installed. If you have pip '
+                'installed, run "pip install PySide2" '
+                'to install it, then re-run this script.\n'
+                'If PySide2 is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
 
@@ -1845,18 +1844,25 @@ if context.buildDocs:
         sys.exit(1)
 
 if PYSIDE in requiredDependencies:
-    # The USD build will skip building usdview if pyside-uic or pyside2-uic is 
+    # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
-    found_pysideUic = any([find_executable(p) for p in pysideUic])
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
     found_pyside2Uic = any([find_executable(p) for p in pyside2Uic])
-    if not found_pysideUic and not found_pyside2Uic:
-        PrintError("pyside-uic not found -- please install PySide and adjust "
-                   "your PATH. (Note that this program may be named {0} "
-                   "depending on your platform)"
+    pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
+    found_pysideUic = any([find_executable(p) for p in pysideUic])
+    if not found_pyside2Uic and not found_pysideUic:
+        if Windows():
+            # Windows does not support PySide2 with Python2.7
+            PrintError("pyside-uic not found -- please install PySide and"
+                       " adjust your PATH. (Note that this program may be named"
+                       " {0} depending on your platform)"
                    .format(" or ".join(pysideUic)))
+        else:
+            PrintError("pyside2-uic not found -- please install PySide2 and"
+                       " adjust your PATH. (Note that this program may be"
+                       " named {0} depending on your platform)"
+                       .format(" or ".join(pyside2Uic)))
         sys.exit(1)
 
 if JPEG in requiredDependencies:
