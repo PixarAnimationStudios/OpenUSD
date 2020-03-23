@@ -1368,9 +1368,16 @@ public:
     /// The timeCodesPerSecond value scales the time ordinate for the samples
     /// contained in the stage to seconds. If timeCodesPerSecond is 24, then a 
     /// sample at time ordinate 24 should be viewed exactly one second after the 
-    /// sample at time ordinate 0. 
+    /// sample at time ordinate 0.
     ///
-    /// The default value of timeCodesPerSecond is 24.
+    /// Like SdfLayer::GetTimeCodesPerSecond, this accessor uses a dynamic
+    /// fallback to framesPerSecond.  The order of precedence is:
+    ///
+    /// \li timeCodesPerSecond from session layer
+    /// \li timeCodesPerSecond from root layer
+    /// \li framesPerSecond from session layer
+    /// \li framesPerSecond from root layer
+    /// \li fallback value of 24
     USD_API
     double GetTimeCodesPerSecond() const;
 

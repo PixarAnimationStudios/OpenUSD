@@ -450,6 +450,35 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             }
         }
     } 
+    else if (field == SdfFieldKeys->TimeCodesPerSecond &&
+            TF_VERIFY(path == SdfPath::AbsoluteRootPath())) {
+        // Changing TCPS.  If the old or new value is empty, the effective old
+        // or new value is the value of FPS, if there is one.  See
+        // SdfLayer::GetTimeCodesPerSecond.
+        const VtValue oldTcps = (
+            !oldVal.IsEmpty() ? oldVal :
+            layer->GetField(path, SdfFieldKeys->FramesPerSecond));
+        const VtValue newTcps = (
+            !newVal.IsEmpty() ? newVal :
+            layer->GetField(path, SdfFieldKeys->FramesPerSecond));
+
+        _GetListFor(changes, layer).DidChangeInfo(
+            path, SdfFieldKeys->TimeCodesPerSecond, oldTcps, newTcps);
+    }
+    else if (field == SdfFieldKeys->FramesPerSecond &&
+            TF_VERIFY(path == SdfPath::AbsoluteRootPath())) {
+        // Announce the change to FPS itself.
+        SdfChangeList &list = _GetListFor(changes, layer);
+        list.DidChangeInfo(path, SdfFieldKeys->FramesPerSecond, oldVal, newVal);
+
+        // If the layer doesn't have a value for TCPS, announce a change to TCPS
+        // also, since FPS serves as a dynamic fallback for TCPS.  See
+        // SdfLayer::GetTimeCodesPerSecond.
+        if (!layer->HasField(path, SdfFieldKeys->TimeCodesPerSecond)) {
+            list.DidChangeInfo(
+                path, SdfFieldKeys->TimeCodesPerSecond, oldVal, newVal);
+        }
+    }
     else if (field == SdfChildrenKeys->ConnectionChildren       ||
         field == SdfChildrenKeys->ExpressionChildren            ||
         field == SdfChildrenKeys->RelationshipTargetChildren    ||

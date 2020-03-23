@@ -8282,10 +8282,17 @@ UsdStage::HasAuthoredTimeCodeRange() const
 double 
 UsdStage::GetTimeCodesPerSecond() const
 {
-    // We expect the SdfSchema to provide a fallback, so simply:
-    double result = 0;
-    GetMetadata(SdfFieldKeys->TimeCodesPerSecond, &result);
-    return result;
+    // Imitate what SdfLayer does: prefer TCPS, but if it isn't set, fall back
+    // dynamically to FPS.  Adapt that rule to include the session layer.  In
+    // order of priority, use: session TCPS, root layer TCPS, session FPS, root
+    // layer FPS.
+    if (HasAuthoredMetadata(SdfFieldKeys->TimeCodesPerSecond)) {
+        double result = 0;
+        GetMetadata(SdfFieldKeys->TimeCodesPerSecond, &result);
+        return result;
+    }
+
+    return GetFramesPerSecond();
 }
 
 void 

@@ -373,6 +373,8 @@ class TestUsdStage(unittest.TestCase):
             assert(stage.GetMetadata("framesPerSecond") == 48.0)
             assert(stage.HasAuthoredMetadata("framesPerSecond"))
             assert(schemaSpec.GetInfo("framesPerSecond") == fallbackFps)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("framesPerSecond")
 
             assert(stage.GetTimeCodesPerSecond() == fallbackTps)
             assert(stage.HasMetadata("timeCodesPerSecond") and 
@@ -382,6 +384,25 @@ class TestUsdStage(unittest.TestCase):
             assert(stage.GetMetadata("timeCodesPerSecond") == 48.0)
             assert(stage.HasAuthoredMetadata("timeCodesPerSecond"))
             assert(schemaSpec.GetInfo("timeCodesPerSecond") == fallbackTps)
+
+            # Test the interaction between TCPS and FPS.  See the implementation
+            # of UsdStage::GetTimeCodesPerSecond for details.
+            with Usd.EditContext(stage, sessionLayer):
+                stage.SetTimeCodesPerSecond(4)
+                stage.SetFramesPerSecond(2)
+            stage.SetTimeCodesPerSecond(3)
+            stage.SetFramesPerSecond(1)
+            assert(stage.GetTimeCodesPerSecond() == 4)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("timeCodesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 3)
+            stage.ClearMetadata("timeCodesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 2)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("framesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 1)
+            stage.ClearMetadata("framesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == fallbackTps)
 
     def test_BadGetPrimAtPath(self):
         for fmt in allFormats:

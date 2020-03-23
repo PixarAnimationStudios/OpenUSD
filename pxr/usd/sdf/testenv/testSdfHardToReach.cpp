@@ -291,6 +291,141 @@ _TestSdfPathFindLongestPrefix()
                  pathMap, SdfPath("/qix"))->first == SdfPath("/"));
 }
 
+static void
+_TestSdfFpsAndTcps()
+{
+    // Test the interplay between framesPerSecond and timeCodesPerSecond, as
+    // documented for SdfLayer::GetTimeCodesPerSecond.
+
+    // Listener that records change notices we receive.
+    class _ChangeListener : public TfWeakBase
+    {
+    public:
+        _ChangeListener(const SdfLayerHandle &layer)
+            : _layer(layer)
+        {
+            TfNotice::Register(
+                TfCreateWeakPtr(this), &_ChangeListener::OnInfoChange, layer);
+            TfNotice::Register(
+                TfCreateWeakPtr(this), &_ChangeListener::OnLayerChange, layer);
+        }
+
+        void OnInfoChange(const SdfNotice::LayerInfoDidChange &n)
+        {
+            _changedFields.push_back(n.key());
+        }
+
+        void OnLayerChange(const SdfNotice::LayersDidChangeSentPerLayer &n)
+        {
+            _changeListVec = n.GetChangeListVec();
+        }
+
+        void ValidateAndClear(
+            const VtValue &oldFps,
+            const VtValue &newFps,
+            const VtValue &oldTcps,
+            const VtValue &newTcps)
+        {
+            // Verify fields have expected new values.
+            TF_AXIOM(_layer->GetFramesPerSecond()
+                == newFps.GetWithDefault(24.0));
+            TF_AXIOM(_layer->GetTimeCodesPerSecond()
+                == newTcps.GetWithDefault(24.0));
+
+            // Verify we received expected LayerInfoDidChange notices.
+            // These come in a deterministic order if both fields change.
+            TfTokenVector expectedFields;
+            if (newFps != oldFps) {
+                expectedFields.push_back(SdfFieldKeys->FramesPerSecond);
+            }
+            if (newTcps != oldTcps) {
+                expectedFields.push_back(SdfFieldKeys->TimeCodesPerSecond);
+            }
+            TF_AXIOM(_changedFields == expectedFields);
+
+            // Verify we received a LayersDidChangeSentPerLayer containing
+            // changes for the psuedo-root.
+            TF_AXIOM(_changeListVec.size() == 1);
+            const auto &entryList = _changeListVec[0].second.GetEntryList();
+            TF_AXIOM(entryList.size() == 1);
+            TF_AXIOM(entryList[0].first == SdfPath::AbsoluteRootPath());
+            const auto &entry = entryList[0].second;
+
+            // Verify we did or did not receive change notification for FPS,
+            // with expected old and new values.
+            const auto &fpsIt =
+                entry.FindInfoChange(SdfFieldKeys->FramesPerSecond);
+            if (newFps != oldFps) {
+                TF_AXIOM(fpsIt != entry.infoChanged.end()
+                    && fpsIt->second.first == oldFps
+                    && fpsIt->second.second == newFps);
+            } else {
+                TF_AXIOM(fpsIt == entry.infoChanged.end());
+            }
+
+            // Verify we did or did not receive change notification for TCPS,
+            // with expected old and new values.
+            const auto &tcpsIt =
+                entry.FindInfoChange(SdfFieldKeys->TimeCodesPerSecond);
+            if (newTcps != oldTcps) {
+                TF_AXIOM(tcpsIt != entry.infoChanged.end()
+                    && tcpsIt->second.first == oldTcps
+                    && tcpsIt->second.second == newTcps);
+            } else {
+                TF_AXIOM(tcpsIt == entry.infoChanged.end());
+            }
+
+            // Clear accumulated notice data.
+            _changedFields.clear();
+            _changeListVec.clear();
+        }
+
+    private:
+        const SdfLayerHandle _layer;
+
+        TfTokenVector _changedFields;
+        SdfLayerChangeListVec _changeListVec;
+    };
+
+    // Create layer and listener.
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
+    _ChangeListener listener(layer);
+
+    // Verify initial state.
+    TF_AXIOM(layer->GetFramesPerSecond() == 24);
+    TF_AXIOM(layer->GetTimeCodesPerSecond() == 24);
+
+    // Add FPS, verify both fields change.
+    layer->SetFramesPerSecond(30);
+    listener.ValidateAndClear(
+        VtValue(), VtValue(30.0),
+        VtValue(), VtValue(30.0));
+
+    // Add TCPS, verify fields take on separate values.
+    layer->SetTimeCodesPerSecond(1000);
+    listener.ValidateAndClear(
+        VtValue(30.0), VtValue(30.0),
+        VtValue(30.0), VtValue(1000.0));
+
+    // Change FPS, verify only FPS changes.
+    layer->SetFramesPerSecond(48);
+    listener.ValidateAndClear(
+        VtValue(30.0), VtValue(48.0),
+        VtValue(1000.0), VtValue(1000.0));
+
+    // Remove TCPS, verify return to dynamic fallback from FPS.
+    layer->ClearTimeCodesPerSecond();
+    listener.ValidateAndClear(
+        VtValue(48.0), VtValue(48.0),
+        VtValue(1000.0), VtValue(48.0));
+
+    // Remove FPS, verify return to initial state.
+    layer->ClearFramesPerSecond();
+    listener.ValidateAndClear(
+        VtValue(48.0), VtValue(),
+        VtValue(48.0), VtValue());
+}
+
 int
 main(int argc, char **argv)
 {
@@ -299,6 +434,7 @@ main(int argc, char **argv)
     _TestSdfLayerTransferContents();
     _TestSdfRelationshipTargetSpecEdits();
     _TestSdfPathFindLongestPrefix();
+    _TestSdfFpsAndTcps();
 
     return 0;
 }

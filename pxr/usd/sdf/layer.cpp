@@ -1571,7 +1571,22 @@ SdfLayer::SetTimeCodesPerSecond( double newVal )
 double
 SdfLayer::GetTimeCodesPerSecond() const
 {
-    return _GetValue<double>(SdfFieldKeys->TimeCodesPerSecond);
+    // If there is an authored value for timeCodesPerSecond, return that.
+    VtValue value;
+    if (HasField(
+            SdfPath::AbsoluteRootPath(),
+            SdfFieldKeys->TimeCodesPerSecond,
+            &value)) {
+        return value.Get<double>();
+    }
+
+    // Otherwise return framesPerSecond as a dynamic fallback.  This allows
+    // layers to lock framesPerSecond and timeCodesPerSecond together by
+    // specifying only framesPerSecond.
+    //
+    // If neither field has an authored value, this will return 24, which is the
+    // final fallback value for both fields.
+    return GetFramesPerSecond();
 }
 
 bool
