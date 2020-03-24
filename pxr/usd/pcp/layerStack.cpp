@@ -567,23 +567,32 @@ PcpLayerStack::GetPathsToPrimsWithRelocates() const
 PcpMapExpression
 PcpLayerStack::GetExpressionForRelocatesAtPath(const SdfPath &path)
 {
-    if (_isUsd) {
-        return PcpMapExpression::Identity();
+    const PcpMapExpression::Variable *var = nullptr;
+    {
+        tbb::spin_mutex::scoped_lock lock{_relocatesVariablesMutex};
+        _RelocatesVarMap::const_iterator i = _relocatesVariables.find(path);
+        if (i != _relocatesVariables.end()) {
+            var = i->second.get();
+        }
     }
 
-    _RelocatesVarMap::iterator i = _relocatesVariables.find(path);
-    if (i != _relocatesVariables.end()) {
-        return i->second->GetExpression();
+    if (var) {
+        return var->GetExpression();
     }
 
     // Create a Variable representing the relocations that affect this path.
-    PcpMapExpression::VariableUniquePtr var =
+    PcpMapExpression::VariableUniquePtr newVar =
         PcpMapExpression::NewVariable(_FilterRelocationsForPath(*this, path));
 
-    // Retain the variable so that we can update it if relocations change.
-    i = _relocatesVariables.emplace(path, std::move(var)).first;
+    {
+        // Retain the variable so that we can update it if relocations change.
+        tbb::spin_mutex::scoped_lock lock{_relocatesVariablesMutex};
+        _RelocatesVarMap::const_iterator i =
+            _relocatesVariables.emplace(path, std::move(newVar)).first;
+        var = i->second.get();
+    }
 
-    return i->second->GetExpression();
+    return var->GetExpression();
 }
 
 void
