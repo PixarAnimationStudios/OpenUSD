@@ -40,8 +40,6 @@ HdxPrmanRenderDelegate::HdxPrmanRenderDelegate(
     std::shared_ptr<HdPrman_Context> context)
     : HdPrmanRenderDelegate(context)
 {
-    context->SetIsInteractive(true);
-    context->SetInstantaneousShutter(false);
     _Initialize(context);
 }
 
@@ -50,10 +48,6 @@ HdxPrmanRenderDelegate::HdxPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
     : HdPrmanRenderDelegate(context, settingsMap)
 {
-    // If we get a settingsMap, assume this is non-interactive batch mode.
-    // Temporary until hydra has a formal notion of batch versus interactive
-    context->SetIsInteractive(false);
-    context->SetInstantaneousShutter(false);
     _Initialize(context);
 }
 

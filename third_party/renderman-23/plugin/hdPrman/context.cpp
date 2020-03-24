@@ -52,6 +52,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdPrman_Context::HdPrman_Context() :
+    rix(nullptr),
+    ri(nullptr),
+    mgr(nullptr),
+    riley(nullptr),
+    _instantaneousShutter(false)
+{
+    /* NOTHING */
+}
+
 void
 HdPrman_Context::IncrementLightLinkCount(TfToken const& name)
 {
@@ -73,18 +83,6 @@ HdPrman_Context::IsLightLinkUsed(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     return _lightLinkRefs.find(name) != _lightLinkRefs.end();
-}
-
-bool
-HdPrman_Context::IsInteractive() const
-{
-    return _isInteractive;
-}
-
-void
-HdPrman_Context::SetIsInteractive(bool isInteractive)
-{
-    _isInteractive = isInteractive;
 }
 
 bool 
