@@ -144,8 +144,8 @@ public:
 
     /// Retrieve the \c TfType corresponding to type \c T.
     ///
-    /// The type \c T must have been defined in the type system or the
-    /// \c TfType corresponding to an unknown type is returned.
+    /// The type \c T must have been declared or defined in the type system or
+    /// the \c TfType corresponding to an unknown type is returned.
     ///
     /// \see IsUnknown()
     ///
@@ -163,8 +163,9 @@ public:
     /// This works for Python subclasses of the C++ type \c T as well,
     /// as long as \c T has been wrapped using TfPyPolymorphic.
     ///
-    /// Of course, the object's type must have been defined in the type
-    /// system or the \c TfType corresponding to an unknown type is returned.
+    /// Of course, the object's type must have been declared or defined in the
+    /// type system or the \c TfType corresponding to an unknown type is
+    /// returned.
     ///
     /// \see IsUnknown()
     ///
@@ -457,6 +458,14 @@ public:
              const std::vector<TfType> & bases,
              DefinitionCallback definitionCallback=nullptr );
 
+    /// Declares a TfType with the given C++ type T and C++ base types Bases.
+    /// Each of the base types will be declared (but not defined) as TfTypes if
+    /// they have not already been.  See the other Declare() methods for more
+    /// details.
+    ///
+    template <typename T, typename BaseTypes = TfType::Bases<>>
+    static TfType const& Declare();
+ 
     /// Define a TfType with the given C++ type T and C++ base types
     /// B.  Each of the base types will be declared (but not defined)
     /// as TfTypes if they have not already been.
