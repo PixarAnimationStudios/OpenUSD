@@ -91,7 +91,7 @@ private:
     int32_t _restoreAlphaDstFnOp;
     bool _restoreAlphaToCoverage;
 
-	uint32_t _vao;
+    uint32_t _vao;
 };
 
 

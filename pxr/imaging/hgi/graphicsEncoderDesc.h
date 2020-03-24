@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   Describes the depth attachment (optional)</li>
 /// <li>colorTextures:
 ///   The color attachment render targets.</li>
-/// <li>depthAttachment:
+/// <li>depthTexture:
 ///   The depth attachment render target (optional)</li>
 /// <li>width:
 ///   Render target width (in pixels)</li>

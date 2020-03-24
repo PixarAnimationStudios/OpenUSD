@@ -150,4 +150,9 @@ HgiGL::DestroyPipeline(HgiPipelineHandle* pipeHandle)
     DestroyObject(pipeHandle);
 }
 
+TfToken const&
+HgiGL::GetAPIName() const {
+    return HgiTokens->OpenGL;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

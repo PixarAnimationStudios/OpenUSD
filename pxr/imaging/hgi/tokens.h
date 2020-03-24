@@ -33,7 +33,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HGI_TOKENS    \
     (taskDriver)      \
-    (renderDriver)
+    (renderDriver)    \
+    (OpenGL)          \
+    (Metal)           \
+    (Vulkan)
 
 TF_DECLARE_PUBLIC_TOKENS(HgiTokens, HGI_API, HGI_TOKENS);
 

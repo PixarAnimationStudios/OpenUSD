@@ -42,7 +42,6 @@ HgiShaderFunction::GetDescriptor() const
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc()
     : shaderStage(0)
-    , languageVersion(0)
     , shaderCode(std::string())
 {
 }

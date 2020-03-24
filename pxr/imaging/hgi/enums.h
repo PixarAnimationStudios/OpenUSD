@@ -307,7 +307,7 @@ enum HgiWinding
 ///
 enum HgiBlendOp
 {
-    HgiBlendOpAdd,
+    HgiBlendOpAdd = 0,
     HgiBlendOpSubtract,
     HgiBlendOpReverseSubtract,
     HgiBlendOpMin,
@@ -322,7 +322,7 @@ enum HgiBlendOp
 ///
 enum HgiBlendFactor
 {
-    HgiBlendFactorZero,
+    HgiBlendFactorZero = 0,
     HgiBlendFactorOne,
     HgiBlendFactorSrcColor,
     HgiBlendFactorOneMinusSrcColor,
@@ -352,7 +352,7 @@ enum HgiBlendFactor
 ///
 enum HgiCompareFunction
 {
-    HgiCompareFunctionNever,
+    HgiCompareFunctionNever = 0,
     HgiCompareFunctionLess,
     HgiCompareFunctionEqual,
     HgiCompareFunctionLEqual,
