@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 from pxr import Tf, UsdUtils
 
 import argparse
@@ -42,7 +43,7 @@ def delegateSetup(stringIncFilders, codePathIncFilters, stringExcFilters,
 
 
 def testCase1():
-    print "Case1: Abort all string errors"
+    print("Case1: Abort all string errors")
     delegate = delegateSetup(["*"], None, [""], None)
     try:
         Tf.RaiseCodingError("")
@@ -50,7 +51,7 @@ def testCase1():
         Tf.RepostErrors(e)
 
 def testCase2():
-    print "Case2: Ignore all string errors"
+    print("Case2: Ignore all string errors")
     delegate = delegateSetup(["*"], None, ["*"], None)
     try:
         Tf.RaiseCodingError("")
@@ -58,7 +59,7 @@ def testCase2():
         Tf.RepostErrors(e)
 
 def testCase3():
-    print "Case3: Empty lists of error filters"
+    print("Case3: Empty lists of error filters")
     delegate = delegateSetup(None, None, None, None)
     try:
         Tf.RaiseCodingError("")
@@ -66,7 +67,7 @@ def testCase3():
         Tf.RepostErrors(e)
 
 def testCase4():
-    print "Case4: Empty lists of inclusion filters for string errors"
+    print("Case4: Empty lists of inclusion filters for string errors")
     delegate = delegateSetup(None, None, ["blah"], None)
     try:
         Tf.RaiseCodingError("")
@@ -74,8 +75,8 @@ def testCase4():
         Tf.RepostErrors(e)
 
 def testCase5():
-    print "Case5: Empty lists of exclude filters for string errors, include " \
-          "list does not contain any error"
+    print("Case5: Empty lists of exclude filters for string errors, include "
+          "list does not contain any error")
     delegate = delegateSetup(["blah"], None, None, None)
     try:
         Tf.RaiseCodingError("error string not included")
@@ -83,8 +84,8 @@ def testCase5():
         Tf.RepostErrors(e)
 
 def testCase5a():
-    print "Case5a: Empty lists of exclude filters for string errors, include " \
-          "list does contain error"
+    print("Case5a: Empty lists of exclude filters for string errors, include "
+          "list does contain error")
     delegate = delegateSetup(["*included*"], None, None, None)
     try:
         Tf.RaiseCodingError("error string included")
@@ -92,7 +93,7 @@ def testCase5a():
         Tf.RepostErrors(e)
 
 def testCase6():
-    print "Case6: Exclude some but abort on at least one string error"
+    print("Case6: Exclude some but abort on at least one string error")
     delegate = delegateSetup(["*abort*"], None, ["*not*"], None);
     try:
         Tf.RaiseCodingError("does not abort")
@@ -108,8 +109,8 @@ def testCase6():
         Tf.RepostErrors(e)
 
 def testCase6a():
-    print "Case6a: All string errors consumed by exclude list without using" \
-            "glob"
+    print("Case6a: All string errors consumed by exclude list without using"
+          "glob")
     delegate = delegateSetup(["*"], None, ["*not*"], None);
     try:
         Tf.RaiseCodingError("does not abort")
@@ -125,7 +126,7 @@ def testCase6a():
         Tf.RepostErrors(e)
 
 def testCase7():
-    print "Case7: Abort all codePath errors"
+    print("Case7: Abort all codePath errors")
     delegate = delegateSetup(None, ["*"], None, [""])
     try:
         Tf.RaiseCodingError("")
@@ -133,7 +134,7 @@ def testCase7():
         Tf.RepostErrors(e)
 
 def testCase8():
-    print "Case8: Ignore all codePath errors"
+    print("Case8: Ignore all codePath errors")
     delegate = delegateSetup(None, ["*"], None, ["*"])
     try:
         Tf.RaiseCodingError("")
@@ -141,7 +142,7 @@ def testCase8():
         Tf.RepostErrors(e)
 
 def testCase9():
-    print "Case9: Empty lists of inclusion filters for codePath errors"
+    print("Case9: Empty lists of inclusion filters for codePath errors")
     delegate = delegateSetup(None, None, ["blah"], None)
     try:
         Tf.RaiseCodingError("")
@@ -149,8 +150,8 @@ def testCase9():
         Tf.RepostErrors(e)
 
 def testCase10():
-    print "Case10: Empty lists of exclude filters for codePath errors, " \
-          "include list does not contain any error"
+    print("Case10: Empty lists of exclude filters for codePath errors, "
+          "include list does not contain any error")
     delegate = delegateSetup(None, ["blah"], None, None)
     try:
         Tf.RaiseCodingError("codePath not included")
@@ -158,8 +159,8 @@ def testCase10():
         Tf.RepostErrors(e)
 
 def testCase10a():
-    print "Case10a: Empty lists of exclude filters for codePath errors, " \
-          "include list does contain error"
+    print("Case10a: Empty lists of exclude filters for codePath errors, "
+          "include list does contain error")
     delegate = delegateSetup(None, ["*test*"], None, None)
     try:
         Tf.RaiseCodingError("codePath included")
@@ -167,7 +168,7 @@ def testCase10a():
         Tf.RepostErrors(e)
 
 def testCase11():
-    print "Case11: Exclude some but abort on at least one codePath error"
+    print("Case11: Exclude some but abort on at least one codePath error")
     # Note this is done using string exclude filters
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     try:
@@ -184,8 +185,8 @@ def testCase11():
         Tf.RepostErrors(e)
 
 def testCase11a():
-    print "Case11a: All string errors consumed by exclude list without using" \
-            "glob"
+    print("Case11a: All string errors consumed by exclude list without using "
+          "glob")
     delegate = delegateSetup(None, ["ConditionalAbort"], None, ["*test*"])
     try:
         Tf.RaiseCodingError("does not abort")
@@ -201,7 +202,7 @@ def testCase11a():
         Tf.RepostErrors(e)
 
 def testCase12():
-    print "Case12: include string error but exclude from path - does not abort"
+    print("Case12: include string error but exclude from path - does not abort")
     delegate = delegateSetup(["*"], None, None, ["*test*"])
     try:
         Tf.RaiseCodingError("does not abort - nothing in pxr is aborted")
@@ -217,7 +218,7 @@ def testCase12():
         Tf.RepostErrors(e)
 
 def testCase12a():
-    print "Case12a: include string error but exclude from path - aborts"
+    print("Case12a: include string error but exclude from path - aborts")
     delegate = delegateSetup(["please"], None, None, ["*usdImaging*"])
     try:
         Tf.RaiseCodingError("does not abort - not in usdImaging")
@@ -233,8 +234,8 @@ def testCase12a():
         Tf.RepostErrors(e)
 
 def testCase13():
-    print "Case13: include codePath error but exclude from string - " \
-          "does not abort"
+    print("Case13: include codePath error but exclude from string - "
+          "does not abort")
     delegate = delegateSetup(None, ["*pxr*"], ["*not*"], None)
     try:
         Tf.RaiseCodingError("does not abort - word not excluded")
@@ -250,7 +251,7 @@ def testCase13():
         Tf.RepostErrors(e)
 
 def testCase13a():
-    print "Case13a: include codePath error but exclude from string - aborts"
+    print("Case13a: include codePath error but exclude from string - aborts")
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     try:
         Tf.RaiseCodingError("does not abort - word not excluded")
@@ -266,26 +267,26 @@ def testCase13a():
         Tf.RepostErrors(e)
 
 def testCase14():
-    print "Case14: test TfWarning filtering - aborts"
+    print("Case14: test TfWarning filtering - aborts")
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     Tf.Warn("does not abort - word not excluded")
     Tf.Warn("lets not abort - word not excluded")
     Tf.Warn("abort please - word excluded")
 
 def testCase14a():
-    print "Case14a: test TfWarning filtering - no aborts"
+    print("Case14a: test TfWarning filtering - no aborts")
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     Tf.Warn("does not abort - word not excluded")
     Tf.Warn("lets not abort - word not excluded")
     Tf.Warn("abort not please - word not excluded")
 
 def testCase15():
-    print "Case15: test Fatal ALWAYS aborts"
+    print("Case15: test Fatal ALWAYS aborts")
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     Tf.Fatal("Aborts, even though word excluded")
 
 def testCase16():
-    print "Case16: test Status NEVER aborts"
+    print("Case16: test Status NEVER aborts")
     delegate = delegateSetup(None, ["*test*"], ["*not*"], None)
     Tf.Status("Does not abort, even though word not excluded")
 
