@@ -39,8 +39,8 @@ assert dynamicFormat
 
 # Find the layer that matches the dynamic file format. There should be exactly
 # one.
-dynamicLayers = filter(lambda l: l.GetFileFormat() == dynamicFormat, 
-                       stage.GetUsedLayers())
+dynamicLayers = list(filter(lambda l: l.GetFileFormat() == dynamicFormat, 
+                            stage.GetUsedLayers()))
 assert len(dynamicLayers) == 1
 
 # Export the dynamic layer as usda for baseline comparison
