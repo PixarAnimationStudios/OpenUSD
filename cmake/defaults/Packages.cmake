@@ -42,13 +42,39 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     find_package(PythonInterp 2.7 REQUIRED)
     find_package(PythonLibs 2.7 REQUIRED)
 
-    # --Boost
     find_package(Boost
         COMPONENTS
             program_options
-            python
         REQUIRED
     )
+
+    if (((${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67") AND
+         (${Boost_VERSION_STRING} VERSION_LESS "1.70")) OR
+        ((${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70") AND
+          Boost_NO_BOOST_CMAKE))
+        # As of boost 1.67 the boost_python component name includes the
+        # associated Python version (e.g. python27, python36). After boost 1.70
+        # the built-in cmake files will deal with this. If we are using boost
+        # that does not have working cmake files, or we are using a new boost
+        # and not using cmake's boost files, we need to do the below.
+        #
+        # Find the component under the versioned name and then set the generic
+        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
+        # logic in each library's CMakeLists.txt.
+        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
+        find_package(Boost
+            COMPONENTS
+                python${python_version_nodot}
+            REQUIRED
+        )
+        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
+    else()
+        find_package(Boost
+            COMPONENTS
+                python
+            REQUIRED
+        )
+    endif()
 
     # --Jinja2
     find_package(Jinja2)
