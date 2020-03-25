@@ -38,9 +38,14 @@ find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
-    # --Python.  We are generally but not completely 2.6 compliant.
-    find_package(PythonInterp 2.7 REQUIRED)
-    find_package(PythonLibs 2.7 REQUIRED)
+    # --Python.
+    if(PXR_USE_PYTHON_3)
+        find_package(PythonInterp 3.0 REQUIRED)
+        find_package(PythonLibs 3.0 REQUIRED)
+    else()
+        find_package(PythonInterp 2.7 REQUIRED)
+        find_package(PythonLibs 2.7 REQUIRED)
+    endif()
 
     find_package(Boost
         COMPONENTS
