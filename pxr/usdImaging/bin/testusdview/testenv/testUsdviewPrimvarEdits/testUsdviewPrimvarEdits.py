@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 
 from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 from pxr.Usdviewq.common import RenderModes, Usd, UsdGeom
@@ -51,7 +52,7 @@ def _takeShot(appController, fileName):
 def _CreatePrimvar(prim, primvarName, primvarType, interpToken, value):
     pv = prim.CreatePrimvar(primvarName, primvarType, interpToken)
     if not pv:
-        print "Failed to create primvar " + str(primvarName)
+        print("Failed to create primvar", str(primvarName))
         return
     pv.Set(value)
 
@@ -66,7 +67,7 @@ def _testAddRemovePrimvarUsedByMaterial(appController):
     prim = stage.GetPrimAtPath("/Scene/Geom/Plane")
     mesh = UsdGeom.Imageable(prim)
     if not mesh:
-        print "Prim " + str(prim.GetPath()) + " is not imageable."
+        print("Prim", str(prim.GetPath()), "is not imageable.")
         return
 
     # The preview surface material has a primvar reader node with the
@@ -101,7 +102,7 @@ def _testAddRemovePrimvarNotUsedByMaterial(appController):
     prim = stage.GetPrimAtPath("/Scene/Geom/Plane")
     mesh = UsdGeom.Imageable(prim)
     if not mesh:
-        print "Prim " + str(prim.GetPath()) + " is not imageable."
+        print("Prim", str(prim.GetPath()), "is not imageable.")
         return
 
     # XXX Adding the primvar results in a resync currently in usdImaging, due to
