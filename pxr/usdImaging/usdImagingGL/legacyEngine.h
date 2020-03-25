@@ -45,7 +45,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -284,7 +284,8 @@ private:
     // For changes from UsdStage.
     TfNotice::Key _objectsChangedNoticeKey;
 
-    typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
+    using _DrawTargetPerContextMap = 
+        std::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr>;
     _DrawTargetPerContextMap _drawTargets;
 };
 
