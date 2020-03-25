@@ -83,7 +83,9 @@ HdStSimpleTextureResource::~HdStSimpleTextureResource()
         if (!glDeleteSamplers) { // GL initialization guard for headless unit test
             return;
         }
-        glDeleteSamplers(1, &_sampler);
+        if (_sampler) {
+            glDeleteSamplers(1, &_sampler);
+        }
     }
 }
 
