@@ -2248,6 +2248,13 @@ UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
     PcpChanges changes;
     changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
     _Recompose(changes);
+
+    // Notify.
+    UsdStageWeakPtr self(this);
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    resyncChanges[SdfPath::AbsoluteRootPath()];
+    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -2259,6 +2266,13 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
     PcpChanges changes;
     changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
     _Recompose(changes);
+
+    // Notify.
+    UsdStageWeakPtr self(this);
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    resyncChanges[SdfPath::AbsoluteRootPath()];
+    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -8416,9 +8430,11 @@ UsdStage::SetInterpolationType(UsdInterpolationType interpolationType)
     if (_interpolationType != interpolationType) {
         _interpolationType = interpolationType;
 
-        // Emit StageContentsChanged, as interpolated attributes values
-        // have likely changed.
+        // Notify, as interpolated attributes values have likely changed.
         UsdStageWeakPtr self(this);
+        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+        resyncChanges[SdfPath::AbsoluteRootPath()];
+        UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
         UsdNotice::StageContentsChanged(self).Send(self);
     }
 }

@@ -55,9 +55,16 @@ typedef std::function<bool (const UsdNotice::ObjectsChanged &)> TestFn;
 
 struct _NoticeTester : public TfWeakBase
 {
-    _NoticeTester(const UsdStageWeakPtr &stage) : _stage(stage) {
+    _NoticeTester(const UsdStageWeakPtr &stage)
+        : _stage(stage)
+        , _invokedTestFunctions(false) {
         TfNotice::Register(
             TfCreateWeakPtr(this), &_NoticeTester::_Handle, stage);
+    }
+
+    ~_NoticeTester() {
+        // Ensure that any test functions were invoked at least once.
+        TF_AXIOM(_testFns.empty() || _invokedTestFunctions);
     }
 
     template <class Fn>
@@ -90,10 +97,12 @@ private:
         for (const auto& fn : _testFns) {
             TF_AXIOM(fn(n));
         }
+        _invokedTestFunctions = true;
     }
 
     UsdStageWeakPtr _stage;
     std::vector<TestFn> _testFns;
+    bool _invokedTestFunctions;
 };
 
 void
@@ -505,6 +514,42 @@ TestObjectsChanged()
                     
             });
         rel.AddTarget(SdfPath("/bar"));
+    }
+
+    // Assert that modifying runtime state (i.e. not scene description) on
+    // UsdStage that affects the set of objects on the stage or computed values
+    // sends notification.
+    {
+        printf("Changing load rules, population mask, interpolation type "
+               "should notify\n");
+
+        {
+            _NoticeTester tester(stage);
+            tester.AddTest([](Notice const &n) {
+                    return TF_AXIOM(!n.GetResyncedPaths().empty());
+                });
+            stage->SetLoadRules(UsdStageLoadRules::LoadNone());
+            stage->SetLoadRules(UsdStageLoadRules::LoadAll());
+        }
+
+        {
+            _NoticeTester tester(stage);
+            tester.AddTest([](Notice const &n) {
+                    return TF_AXIOM(!n.GetResyncedPaths().empty());
+                });
+            UsdStagePopulationMask nothingMask({ SdfPath("/no/such/prim") });
+            stage->SetPopulationMask(nothingMask);
+            stage->SetPopulationMask(UsdStagePopulationMask::All());
+        }
+
+        {
+            _NoticeTester tester(stage);
+            tester.AddTest([](Notice const &n) {
+                    return TF_AXIOM(!n.GetResyncedPaths().empty());
+                });
+            stage->SetInterpolationType(UsdInterpolationTypeHeld);
+            stage->SetInterpolationType(UsdInterpolationTypeLinear);
+        }
     }
 }
 
