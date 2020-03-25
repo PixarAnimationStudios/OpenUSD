@@ -21,9 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
-from preferencesUI import Ui_Preferences
-from common import FixableDoubleValidator
+from .qt import QtCore, QtGui, QtWidgets
+from .preferencesUI import Ui_Preferences
+from .common import FixableDoubleValidator
 
 class Preferences(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
