@@ -23,9 +23,9 @@
 #
 
 # USD requires several dependencies that are available via
-# apt-get if using the trusty build environment.
+# apt-get if using the bionic build environment.
 sudo: required
-dist: trusty
+dist: bionic
 
 os:
     - linux
@@ -52,6 +52,7 @@ branches:
   only:
     - master
     - dev
+    - travis_dist_fix
 
 before_install:
   - if [ $TRAVIS_OS_NAME == linux ] ; then
