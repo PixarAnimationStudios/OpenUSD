@@ -109,7 +109,7 @@ additional documentation for running cmake directly.
 - Optional (Can be ignored by passing `--no-python` as an argument to `build_usd.py`)
     - Python (required for [bindings and tests](BUILDING.md#python)) 
     - PyOpenGL (required for [usdview](BUILDING.md#usd-imaging))
-    - PySide or PySide2 (experimental) (required for [usdview](BUILDING.md#usd-imaging))
+    - PySide or PySide2 (required for [usdview](BUILDING.md#usd-imaging))
 
 #### 2. Download the USD source code
 
