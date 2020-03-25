@@ -26,8 +26,6 @@
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/lexical_cast.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///////////////////////////////////////////////////////////////////////////////

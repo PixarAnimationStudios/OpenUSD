@@ -53,7 +53,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -200,8 +199,8 @@ PcpPrimIndex::GetNodeRange(PcpRangeType rangeType) const
     const std::pair<size_t, size_t> range = 
         _graph->GetNodeIndexesForRange(rangeType);
     return PcpNodeRange(
-        PcpNodeIterator(boost::get_pointer(_graph), range.first),
-        PcpNodeIterator(boost::get_pointer(_graph), range.second));
+        PcpNodeIterator(get_pointer(_graph), range.first),
+        PcpNodeIterator(get_pointer(_graph), range.second));
 }
 
 PcpPrimRange 

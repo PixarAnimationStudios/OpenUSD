@@ -29,8 +29,6 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/base/trace/trace.h"
 
-#include <boost/iterator/transform_iterator.hpp>
-
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -38,8 +36,6 @@
 using std::make_pair;
 using std::pair;
 using std::vector;
-
-using boost::dynamic_pointer_cast;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

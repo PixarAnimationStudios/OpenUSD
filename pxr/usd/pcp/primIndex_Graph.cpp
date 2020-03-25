@@ -121,8 +121,7 @@ PcpPrimIndex_Graph::New(const PcpPrimIndex_GraphPtr& copy)
 
     TRACE_FUNCTION();
 
-    return TfCreateRefPtr(
-        new PcpPrimIndex_Graph(*boost::get_pointer(copy)));
+    return TfCreateRefPtr(new PcpPrimIndex_Graph(*get_pointer(copy)));
 }
 
 PcpPrimIndex_Graph::PcpPrimIndex_Graph(const PcpLayerStackSite& rootSite,
@@ -524,7 +523,7 @@ PcpPrimIndex_Graph::InsertChildSubgraph(
 
     const size_t parentNodeIdx = parent._GetNodeIndex();
     const size_t childNodeIdx = 
-        _CreateNodesForSubgraph(*boost::get_pointer(subgraph), arc);
+        _CreateNodesForSubgraph(*get_pointer(subgraph), arc);
 
     return _InsertChildInStrengthOrder(parentNodeIdx, childNodeIdx);
 }

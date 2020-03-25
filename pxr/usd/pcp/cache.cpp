@@ -66,8 +66,6 @@ using std::make_pair;
 using std::pair;
 using std::vector;
 
-using boost::dynamic_pointer_cast;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
@@ -330,7 +328,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
 
             for (const auto& error : primIndex.GetLocalErrors()) {
                 PcpErrorMutedAssetPathPtr typedError = 
-                    dynamic_pointer_cast<PcpErrorMutedAssetPath>(error);
+                    std::dynamic_pointer_cast<PcpErrorMutedAssetPath>(error);
                 if (!typedError) {
                     continue;
                 }
@@ -782,7 +780,7 @@ PcpCache::GetInvalidSublayerIdentifiers() const
         PcpErrorVector errs = (*layerStack)->GetLocalErrors();
         TF_FOR_ALL(e, errs) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(*e)){
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(*e)){
                 result.insert(typedErr->sublayerPath);
             }
         }
@@ -816,7 +814,7 @@ PcpCache::GetInvalidAssetPaths() const
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
                     result[primPath].push_back(typedErr->resolvedAssetPath);
                 }
             }
@@ -1005,7 +1003,7 @@ PcpCache::Reload(PcpChanges* changes)
         const PcpErrorVector errors = (*layerStack)->GetLocalErrors();
         for (const auto& e : errors) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
                 changes->DidMaybeFixSublayer(this,
                                              typedErr->layer,
                                              typedErr->sublayerPath);
@@ -1018,7 +1016,7 @@ PcpCache::Reload(PcpChanges* changes)
             const PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
                     changes->DidMaybeFixAsset(this,
                                               typedErr->site,
                                               typedErr->layer,
@@ -1057,7 +1055,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
                 {
                     changes->DidMaybeFixAsset(this, typedErr->site,
                                               typedErr->layer,
@@ -1076,7 +1074,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
         PcpErrorVector errs = layerStack->GetLocalErrors();
         for (const PcpErrorBasePtr &err: errs) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(err)){
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(err)){
                 changes->DidMaybeFixSublayer(this, typedErr->layer,
                                              typedErr->sublayerPath);
             }
