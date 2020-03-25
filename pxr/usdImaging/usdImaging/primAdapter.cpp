@@ -1046,6 +1046,12 @@ UsdImagingPrimAdapter::_GetCurrentTimeSamplingInterval()
     return _delegate->GetCurrentTimeSamplingInterval();
 }
 
+Usd_PrimFlagsConjunction
+UsdImagingPrimAdapter::_GetDisplayPredicate() const
+{
+    return _delegate->_GetDisplayPredicate();
+}
+
 size_t
 UsdImagingPrimAdapter::SampleTransform(
     UsdPrim const& prim, 
