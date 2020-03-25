@@ -41,7 +41,6 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
-#include <map>
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
