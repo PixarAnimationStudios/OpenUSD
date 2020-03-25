@@ -54,7 +54,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::make_pair;
 using std::set;
 using std::string;
 using std::vector;
@@ -63,10 +62,6 @@ TF_INSTANTIATE_SINGLETON(UsdSchemaRegistry);
 
 TF_MAKE_STATIC_DATA(TfType, _schemaBaseType) {
     *_schemaBaseType = TfType::Find<UsdSchemaBase>();
-}
-
-TF_MAKE_STATIC_DATA(TfType, _apiSchemaBaseType) {
-    *_apiSchemaBaseType = TfType::Find<UsdAPISchemaBase>();
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
