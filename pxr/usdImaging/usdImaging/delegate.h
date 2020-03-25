@@ -60,7 +60,6 @@
 #include "pxr/base/tf/hashset.h"
 
 #include <boost/container/flat_map.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <tbb/spin_rw_mutex.h>
 #include <map>
 #include <string>
