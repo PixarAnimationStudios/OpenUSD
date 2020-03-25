@@ -33,7 +33,6 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/type.h"
 
 #include <set>
 #include <string>
