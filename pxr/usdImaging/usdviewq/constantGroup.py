@@ -25,7 +25,7 @@
 """A module for creating groups of constants. This is similar to the enum
 module, but enum is not available in Python 2's standard library.
 """
-
+import sys
 import types
 
 class _MetaConstantGroup(type):
@@ -84,6 +84,23 @@ class _MetaConstantGroup(type):
         """Iterate over each constant in the group."""
         return iter(self._all)
 
+# We want to define a ConstantGroup class that uses _MetaConstantGroup
+# as its metaclass. The syntax for doing so in Python 3 is not backwards
+# compatible for Python 2, so we cannot just conditionally define one
+# form or the other because that will cause syntax errors when compiling
+# this file. To avoid this we add a layer of indirection through exec().
+if sys.version_info.major >= 3:
+    defineConstantGroup = '''
+class ConstantGroup(object, metaclass=_MetaConstantGroup):
+    """The base constant group class, intended to be inherited by actual groups
+    of constants.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        raise TypeError("ConstantGroup objects cannot be created.")
+'''
+else:
+    defineConstantGroup = '''
 class ConstantGroup(object):
     """The base constant group class, intended to be inherited by actual groups
     of constants.
@@ -92,3 +109,6 @@ class ConstantGroup(object):
 
     def __new__(cls, *args, **kwargs):
         raise TypeError("ConstantGroup objects cannot be created.")
+'''
+
+exec(defineConstantGroup)

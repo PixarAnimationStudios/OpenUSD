@@ -539,7 +539,7 @@ class HUD():
 
         # find the longest key so we know how far from the edge to print
         # add [0] at the end so that max() never gets an empty sequence
-        longestKeyLen = max([len(k) for k in dic.iterkeys()]+[0])
+        longestKeyLen = max([len(k) for k in dic.keys()]+[0])
         margin = int(longestKeyLen*1.4)
 
         painter.setFont(self._HUDFont)

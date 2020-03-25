@@ -376,7 +376,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
             if rootItem.childCount() == 0:
                 self._appController._populateChildren(rootItem)
             rootsToProcess = [rootItem.child(i) for i in 
-                    xrange(rootItem.childCount())]
+                    range(rootItem.childCount())]
             for item in rootsToProcess:
                 PrimViewItem.propagateDrawMode(item, self)
             self.setUpdatesEnabled(True)
