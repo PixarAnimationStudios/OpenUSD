@@ -35,9 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 
-typedef boost::shared_ptr<class UsdImagingCoordSysAdapter>
-    UsdImagingCoordSysAdapterSharedPtr;
-
 /// \class UsdImagingCoordSysAdapter
 ///
 class UsdImagingCoordSysAdapter : public UsdImagingPrimAdapter {
