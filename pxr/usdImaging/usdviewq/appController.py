@@ -2432,7 +2432,7 @@ class AppController(QtCore.QObject):
         # dock the interpreter window next to the main usdview window
         self._interpreter.move(self._mainWindow.x() + self._mainWindow.frameGeometry().width(),
                                self._mainWindow.y())
-        self._interpreter.resize(600, self._mainWindow.size().height()/2)
+        self._interpreter.resize(600, self._mainWindow.size().height()//2)
 
         self._interpreter.show()
         self._interpreter.activateWindow()
@@ -4307,7 +4307,7 @@ class AppController(QtCore.QObject):
     def _accountForFlattening(self,shape):
         """Helper function for computing geomCounts"""
         if len(shape) == 1:
-            return shape[0] / 3
+            return shape[0] // 3
         else:
             return shape[0]
 

@@ -419,7 +419,7 @@ class Reticles(Prim2DDrawTask):
         for i in range(5):
             w = 2.6
             h = ascenders[i & 1] + descenders[i & 1]
-            x = croppedViewport[0] - (w / 2) + ((i + 1) * croppedViewport[2]) / 6
+            x = croppedViewport[0] - (w // 2) + ((i + 1) * croppedViewport[2]) // 6
             bottomY = croppedViewport[1] - ascenders[i & 1]
             topY = croppedViewport[1] + croppedViewport[3] - descenders[i & 1]
             prims.append(FilledRect.fromXYWH((x, bottomY, w, h)))
@@ -430,7 +430,7 @@ class Reticles(Prim2DDrawTask):
             h = 2.6
             leftX = croppedViewport[0] - ascenders[i & 1]
             rightX = croppedViewport[0] + croppedViewport[2] - descenders[i & 1]
-            y = croppedViewport[1] - (h / 2) + ((i + 1) * croppedViewport[3]) / 6
+            y = croppedViewport[1] - (h // 2) + ((i + 1) * croppedViewport[3]) // 6
             prims.append(FilledRect.fromXYWH((leftX, y, w, h)))
             prims.append(FilledRect.fromXYWH((rightX, y, w, h)))
 
@@ -1206,7 +1206,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glUniform4f(glslProgram.uniformLocations["color"],
                        0.82745, 0.39608, 0.1647, 1)
 
-        GL.glDrawArrays(GL.GL_LINES, 0, len(data)/3)
+        GL.glDrawArrays(GL.GL_LINES, 0, len(data)//3)
 
         GL.glDisableVertexAttribArray(0)
         GL.glUseProgram(0)

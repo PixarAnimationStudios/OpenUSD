@@ -474,9 +474,9 @@ class Controller(QtCore.QObject):
             maxLength = maxLength + self._GetStringLengthInPixels(cf, '  ')
 
             # how many columns can we fit on screen?
-            numCols = max(1,width / maxLength)
+            numCols = max(1,width // maxLength)
             # how many rows do we need to fit our data
-            numRows = (len(completions) / numCols) + 1
+            numRows = (len(completions) // numCols) + 1
 
             columnWidth = QtGui.QTextLength(QtGui.QTextLength.FixedLength,
                                             maxLength)

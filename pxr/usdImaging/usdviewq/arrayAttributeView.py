@@ -29,7 +29,7 @@ def _GetLengthOfRange(start, stop, step):
         return 0
 
     k = 1 if step > 0 else -1
-    num = 1 + (stop - k - start) / step
+    num = 1 + (stop - k - start) // step
 
     # note, sign(stop - start) != sign(step) when we have an empty range.  In those
     # cases, "num" ends up non-positive, so we can just take the max(num, 0)
