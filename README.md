@@ -79,7 +79,7 @@ The following dependencies are optional:
 
 The following dependencies are required:
 
- - [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2) (experimental)
+ - [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2)
  - [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/)
 
 Getting and Building the Code
