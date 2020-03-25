@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/ray.h"
+#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
 #include "pxr/base/gf/plane.h"
@@ -114,7 +115,15 @@ IntersectHelper3( const GfRay &self, const GfRange3d &box )
 }
 
 static tuple
-IntersectHelper4( const GfRay &self, const GfVec3d& center, double radius )
+IntersectHelper4( const GfRay &self, const GfBBox3d &box )
+{
+    double enterDist = 0, exitDist = 0;
+    bool result = self.Intersect( box, &enterDist, &exitDist );
+    return make_tuple( result, enterDist, exitDist );
+}
+
+static tuple
+IntersectHelper5( const GfRay &self, const GfVec3d& center, double radius )
 {
     double enterDist = 0, exitDist = 0;
     bool result = self.Intersect( center, radius, &enterDist, &exitDist );
@@ -122,7 +131,7 @@ IntersectHelper4( const GfRay &self, const GfVec3d& center, double radius )
 }
 
 static tuple
-IntersectHelper5(const GfRay &self, 
+IntersectHelper6(const GfRay &self, 
                  const GfVec3d &origin, 
                  const GfVec3d &axis,
                  double radius)
@@ -133,7 +142,7 @@ IntersectHelper5(const GfRay &self,
 }
 
 static tuple
-IntersectHelper6(const GfRay &self, 
+IntersectHelper7(const GfRay &self, 
                  const GfVec3d &origin, 
                  const GfVec3d &axis,
                  double radius,
@@ -254,6 +263,17 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper4,
+              "Intersect( bbox3d ) -> tuple<intersects = bool, enterDist\n"
+              "= float, exitDist = float>\n"
+              //\n"
+              "Intersects the plane with an oriented box in a Gf.BBox3d.\n"
+              "intersects is true if the ray intersects it at all within\n"
+              "bounds. If there is an intersection then enterDist and\n"
+              "exitDist will be the parametric distances to the two\n"
+              "intersection points.\n"
+              "----------------------------------------------------------------------"
+            )
+        .def( "Intersect", IntersectHelper5,
               "Intersect( center, radius ) -> tuple<intersects = bool,\n"
               "enterDist = float, exitDist = float>\n"
               "\n"
@@ -263,7 +283,7 @@ void wrapRay()
               "parametric distances to the two intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper5,
+        .def( "Intersect", IntersectHelper6,
               "Intersect( origin, axis, radius ) -> tuple<intersects = bool,\n"
               "enterDist = float, exitDist = float>\n"
               "\n"
@@ -274,7 +294,7 @@ void wrapRay()
               "intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper6,
+        .def( "Intersect", IntersectHelper7,
               "Intersect( origin, axis, radius, height ) -> \n"
               "tuple<intersects = bool, enterDist = float, exitDist = float>\n"
               "\n"

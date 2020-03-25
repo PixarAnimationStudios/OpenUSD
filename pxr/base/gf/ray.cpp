@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/ray.h"
+#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
 #include "pxr/base/gf/math.h"
@@ -326,10 +327,24 @@ GfRay::Intersect(const GfRange3d &box,
         return false;
         
     if (enterDistance)
-	*enterDistance = maxNearest;
+        *enterDistance = maxNearest;
     if (exitDistance)
         *exitDistance = minFarthest;
     return true;
+}
+
+bool
+GfRay::Intersect(const GfBBox3d& box,
+                 double* enterDistance, double* exitDistance ) const
+{
+    // Transform the ray to the local space of the bbox.
+    GfRay localRay(*this);
+    localRay.Transform(box.GetInverseMatrix());
+
+    // We take advantage of the fact that the time of intersection is
+    // invariant before/after transformation to just return the results of
+    // the intersection in local space.
+    return localRay.Intersect(box.GetRange(), enterDistance, exitDistance);
 }
 
 bool
