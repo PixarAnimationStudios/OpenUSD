@@ -618,7 +618,8 @@ def InstallBoost(context, force, buildArgs):
                 .format(variant="debug" if context.buildDebug else "release"),
             '--with-atomic',
             '--with-program_options',
-            '--with-regex'
+            '--with-regex',
+            '--ignore-site-config'
         ]
 
         if context.buildPython:
