@@ -32,6 +32,7 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,8 +49,9 @@ class HdDriver;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef std::vector<HdDriver*> HdDriverVector;
+
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+using HdDriverVector = std::vector<HdDriver*>;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object

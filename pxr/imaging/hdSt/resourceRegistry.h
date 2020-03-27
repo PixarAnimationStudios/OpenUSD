@@ -42,6 +42,8 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdComputation>
@@ -52,8 +54,6 @@ typedef boost::shared_ptr<class HdStGLSLProgram>
     HdStGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdStPersistentBuffer>
     HdStPersistentBufferSharedPtr;
-typedef boost::shared_ptr<class HdStResourceRegistry>
-    HdStResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdStTextureResource>
     HdStTextureResourceSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResourceHandle>
@@ -66,6 +66,9 @@ typedef boost::shared_ptr<class HdSt_MeshTopology>
     HdSt_MeshTopologySharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency>
     Hd_VertexAdjacencySharedPtr;
+
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
 
 /// \class HdStResourceRegistry
 ///

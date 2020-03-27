@@ -36,11 +36,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 
 /// \class HdResourceRegistry
 ///

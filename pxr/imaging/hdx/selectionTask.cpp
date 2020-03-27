@@ -92,7 +92,7 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
     }
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
     // Only Storm supports buffer array range. Without its registry

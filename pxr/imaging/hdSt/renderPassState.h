@@ -29,9 +29,12 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;

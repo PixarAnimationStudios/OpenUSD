@@ -364,7 +364,7 @@ HdStDrawTarget::_RegisterTextureResourceHandle(
     HF_MALLOC_TAG_FUNCTION();
 
     HdStResourceRegistrySharedPtr const& resourceRegistry =
-         boost::static_pointer_cast<HdStResourceRegistry>(
+         std::static_pointer_cast<HdStResourceRegistry>(
              sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // Create Path for the texture resource

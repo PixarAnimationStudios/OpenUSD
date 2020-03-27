@@ -109,7 +109,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
     HdStResourceRegistrySharedPtr const & resourceRegistry =
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
                               renderIndex.GetResourceRegistry());
 
     HdBufferSourceSharedPtrVector inputs;

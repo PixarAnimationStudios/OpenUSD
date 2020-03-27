@@ -375,7 +375,7 @@ HdStPopulateConstantPrimvars(
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
 
     // Update uniforms

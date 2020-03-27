@@ -83,7 +83,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
     const int numSamples = 8; // Should match glslfx files
 
      HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
     bool createOitBuffers = !_counterBar;

@@ -31,10 +31,13 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStResourceRegistry>
-    HdStResourceRegistrySharedPtr;
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
+
 typedef boost::shared_ptr<class HdSt_ImageShaderRenderPass> 
     HdSt_ImageShaderRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdSt_DrawBatch> 

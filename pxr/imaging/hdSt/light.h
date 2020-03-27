@@ -37,6 +37,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,8 +49,9 @@ typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
 typedef boost::shared_ptr<class HdStTextureResource> 
     HdStTextureResourceSharedPtr;
-typedef boost::shared_ptr<class HdStResourceRegistry>
-    HdStResourceRegistrySharedPtr;
+
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
 
 /// \class HdStLight
 ///

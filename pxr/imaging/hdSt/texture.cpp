@@ -67,7 +67,7 @@ HdStTexture::Sync(HdSceneDelegate *sceneDelegate,
        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdStResourceRegistrySharedPtr const& resourceRegistry =
-            boost::static_pointer_cast<HdStResourceRegistry>(
+            std::static_pointer_cast<HdStResourceRegistry>(
                 renderIndex.GetResourceRegistry());
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
@@ -177,7 +177,7 @@ HdStTexture::_RegisterTextureResource(
         const HdTextureResourceSharedPtr &baseTextureResource)
 {
     HdStResourceRegistrySharedPtr const& resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
     HdStTextureResourceSharedPtr const& textureResource =

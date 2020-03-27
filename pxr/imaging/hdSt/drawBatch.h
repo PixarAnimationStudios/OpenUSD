@@ -33,6 +33,8 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include <boost/shared_ptr.hpp>
+
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,8 +49,9 @@ typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
-typedef boost::shared_ptr<class HdStResourceRegistry>
-    HdStResourceRegistrySharedPtr;
+
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
 
 /// \class HdSt_DrawBatch
 ///

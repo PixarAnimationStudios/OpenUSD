@@ -68,12 +68,13 @@ class HdDriver;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
-typedef std::unordered_map<TfToken,
+
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
+using HdTaskContext = std::unordered_map<TfToken,
                            VtValue,
-                           TfToken::HashFunctor> HdTaskContext;
-typedef std::vector<HdDriver*> HdDriverVector;
+                           TfToken::HashFunctor>;
+using HdDriverVector = std::vector<HdDriver*>;
 
 /// \class HdRenderIndex
 ///

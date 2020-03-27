@@ -99,7 +99,7 @@ HdStRenderPassState::Prepare(
     HdRenderPassState::Prepare(resourceRegistry);
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
+        std::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
 
     VtVec4fArray clipPlanes;
     TF_FOR_ALL(it, GetClipPlanes()) {

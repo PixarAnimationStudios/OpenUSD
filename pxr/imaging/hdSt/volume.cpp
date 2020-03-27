@@ -316,7 +316,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
     GfBBox3d totalFieldBbox;
 
     HdStResourceRegistrySharedPtr resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // Generate new shader from volume shader
@@ -688,7 +688,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
     drawItem->SetGeometricShader(
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry));

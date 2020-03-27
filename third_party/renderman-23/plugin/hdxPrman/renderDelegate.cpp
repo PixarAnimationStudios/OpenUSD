@@ -64,7 +64,7 @@ HdxPrmanRenderDelegate::_Initialize(std::shared_ptr<HdPrman_Context> context)
         _interactiveContext->Begin(this);
     }
 
-    _resourceRegistry = boost::make_shared<HdxPrman_ResourceRegistry>(
+    _resourceRegistry = std::make_shared<HdxPrman_ResourceRegistry>(
         _interactiveContext);
 }
 

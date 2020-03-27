@@ -118,7 +118,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdStResourceRegistrySharedPtr const &resourceRegistry =
-            boost::static_pointer_cast<HdStResourceRegistry>(
+            std::static_pointer_cast<HdStResourceRegistry>(
                 renderIndex.GetResourceRegistry());
 
         // Check with resource registry whether the field resource

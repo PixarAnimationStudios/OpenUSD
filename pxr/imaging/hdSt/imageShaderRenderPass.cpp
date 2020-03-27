@@ -106,7 +106,7 @@ HdSt_ImageShaderRenderPass::_Prepare(TfTokenVector const &renderTags)
     GLF_GROUP_FUNCTION();
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
@@ -140,7 +140,7 @@ HdSt_ImageShaderRenderPass::_Execute(
     if (!TF_VERIFY(stRenderPassState)) return;
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 

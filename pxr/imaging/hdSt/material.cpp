@@ -91,7 +91,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     TF_UNUSED(renderParam);
 
     HdStResourceRegistrySharedPtr const& resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdDirtyBits bits = *dirtyBits;
@@ -241,7 +241,7 @@ HdStMaterial::_GetTextureResourceHandle(
         HdMaterialParam const &param)
 {
     HdStResourceRegistrySharedPtr const& resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdStTextureResourceSharedPtr texResource;
