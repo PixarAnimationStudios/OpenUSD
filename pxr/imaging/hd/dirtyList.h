@@ -37,7 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRenderIndex;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::weak_ptr<class HdDirtyList> HdDirtyListPtr;
 
 /// \class HdDirtyList
 ///

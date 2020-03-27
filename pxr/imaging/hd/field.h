@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bprim.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,7 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(HdFieldTokens, HD_API, HD_FIELD_TOKENS);
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdField> HdFieldSharedPtr;
 typedef std::vector<class HdField const *> HdFieldPtrConstVector;
 
 /// \class HdField
