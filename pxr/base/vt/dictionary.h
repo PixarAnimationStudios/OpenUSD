@@ -481,7 +481,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
     VtDictionary::const_iterator i = dictionary.find(key);
     if (i == dictionary.end() || !i->second.IsHolding<T>())
         return def.val;
-    return i->second.Get<T>();
+    return i->second.UncheckedGet<T>();
 }
 
 /// \overload
@@ -493,7 +493,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
     VtDictionary::const_iterator i = dictionary.find(key);
     if (i == dictionary.end() || !i->second.IsHolding<T>())
         return def.val;
-    return i->second.Get<T>();
+    return i->second.UncheckedGet<T>();
 }
 
 
