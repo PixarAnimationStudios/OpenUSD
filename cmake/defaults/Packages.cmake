@@ -53,9 +53,13 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         REQUIRED
     )
 
-    if (((${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67") AND
-         (${Boost_VERSION_STRING} VERSION_LESS "1.70")) OR
-        ((${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70") AND
+    # Set up a version string for comparisons. This is available
+    # as Boost_VERSION_STRING in CMake 3.14+
+    set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+
+    if (((${boost_version_string} VERSION_GREATER_EQUAL "1.67") AND
+         (${boost_version_string} VERSION_LESS "1.70")) OR
+        ((${boost_version_string} VERSION_GREATER_EQUAL "1.70") AND
           Boost_NO_BOOST_CMAKE))
         # As of boost 1.67 the boost_python component name includes the
         # associated Python version (e.g. python27, python36). After boost 1.70
