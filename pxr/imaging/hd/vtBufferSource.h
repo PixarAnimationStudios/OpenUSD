@@ -35,7 +35,6 @@
 #include "pxr/base/vt/value.h"
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 #include <iosfwd>
 
