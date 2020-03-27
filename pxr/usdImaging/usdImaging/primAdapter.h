@@ -655,7 +655,7 @@ class UsdImagingPrimAdapterFactory : public UsdImagingPrimAdapterFactoryBase {
 public:
     virtual UsdImagingPrimAdapterSharedPtr New() const
     {
-        return UsdImagingPrimAdapterSharedPtr(new T);
+        return std::make_shared<T>();
     }
 };
 
