@@ -220,10 +220,10 @@ UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
 }
 
 
-UsdImagingDelegate::_AdapterSharedPtr const& 
+UsdImagingPrimAdapterSharedPtr const& 
 UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
 {
-    static UsdImagingDelegate::_AdapterSharedPtr const NULL_ADAPTER;
+    static UsdImagingPrimAdapterSharedPtr const NULL_ADAPTER;
 
     // Future Work:
     //  * Only enable plugins on demand.
@@ -264,7 +264,7 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     return _AdapterLookup(adapterKey);
 }
 
-UsdImagingDelegate::_AdapterSharedPtr const& 
+UsdImagingPrimAdapterSharedPtr const& 
 UsdImagingDelegate::_AdapterLookup(TfToken const& adapterKey)
 {
     _AdapterMap::const_iterator it = _adapterMap.find(adapterKey);
@@ -272,7 +272,7 @@ UsdImagingDelegate::_AdapterLookup(TfToken const& adapterKey)
         return it->second;
 
     UsdImagingAdapterRegistry& reg = UsdImagingAdapterRegistry::GetInstance();
-    _AdapterSharedPtr adapter(reg.ConstructAdapter(adapterKey));
+    UsdImagingPrimAdapterSharedPtr adapter(reg.ConstructAdapter(adapterKey));
 
     // For prims that have no PrimAdapter, adapter will be NULL.
     // If the adapter type isn't supported by the render index,
@@ -355,7 +355,7 @@ public:
 
             _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
             if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-                _AdapterSharedPtr const& adapter = primInfo->adapter;
+                UsdImagingPrimAdapterSharedPtr const& adapter=primInfo->adapter;
                 if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
                     adapter->TrackVariability(primInfo->usdPrim,
                                               cachePath,
@@ -380,7 +380,7 @@ public:
 
             _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
             if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-                _AdapterSharedPtr const& adapter = primInfo->adapter;
+                UsdImagingPrimAdapterSharedPtr const& adapter=primInfo->adapter;
                 if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
                     adapter->UpdateForTime(primInfo->usdPrim,
                                            cachePath,
@@ -423,7 +423,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 
         // In this case, the path is coming from our internal state, so it is
         // not prefixed with the delegate ID.
-        _AdapterSharedPtr adapter = primInfo.adapter;
+        UsdImagingPrimAdapterSharedPtr adapter = primInfo.adapter;
 
         if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
@@ -467,7 +467,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         // Merge UsdImaging's own dirty flags with those coming from hydra.
         primInfo->dirtyBits |= dirtyFlags;
 
-        _AdapterSharedPtr &adapter = primInfo->adapter;
+        UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
                     "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
@@ -490,7 +490,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
             continue;
         }
 
-        _AdapterSharedPtr &adapter = primInfo->adapter;
+        UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
                     "[Sync] PREP Instancer: <%s> dirtyFlags: 0x%x [%s]\n",
@@ -632,7 +632,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     WorkDispatcher bindingDispatcher;
 
     // For each root that has been scheduled for repopulation
-    std::vector<std::pair<UsdPrim, _AdapterSharedPtr> > leafPaths;
+    std::vector<std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr> > leafPaths;
     leafPaths.reserve(usdPathsToRepopulate.size());
 
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
@@ -672,7 +672,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                             iter->GetTypeName().GetText());
                 continue;
             }
-            if (_AdapterSharedPtr adapter = _AdapterLookup(*iter)) {
+            if (UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(*iter)){
                 // Schedule the prim for population and discovery
                 // of material bindings.
                 //
@@ -1153,7 +1153,7 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
                 }
                 // If this prim has an adapter, hand this subtree over to
                 // delegate population.
-                _AdapterSharedPtr adapter = _AdapterLookup(*iter);
+                UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (adapter != nullptr) {
                     TF_DEBUG(USDIMAGING_CHANGES).Msg(
                         "[Resync Prim]: Populating <%s>\n",
@@ -1307,7 +1307,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         if (primInfo != nullptr &&
             primInfo->usdPrim.IsValid() &&
             TF_VERIFY(primInfo->adapter, "%s", affectedCachePath.GetText())) {
-            _AdapterSharedPtr &adapter = primInfo->adapter;
+            UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
 
             // For the dirty bits that we've been told changed, go re-discover
             // variability and stage the associated data.
@@ -1377,7 +1377,7 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) &&
         TF_VERIFY(primInfo->adapter, "%s\n", cachePath.GetText())) {
-        _AdapterSharedPtr &adapter = primInfo->adapter;
+        UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
         adapter->UpdateForTime(primInfo->usdPrim, cachePath,
                                _time, requestBits);
     }
@@ -2023,7 +2023,7 @@ UsdImagingDelegate::GetPathForInstanceIndex(const SdfPath &protoRprimId,
             return ConvertCachePathToIndexPath(cachePath);
         }
 
-        _AdapterSharedPtr const& adapter = primInfo->adapter;
+        UsdImagingPrimAdapterSharedPtr const& adapter = primInfo->adapter;
         cachePath = adapter->GetPathForInstanceIndex(
             cachePath, protoIndex, &instanceCount, &resolvedInstancerIndex,
             &resolvedMasterCachePath, &resolvedInstanceContext);
@@ -2127,7 +2127,7 @@ UsdImagingDelegate::PopulateSelection(
             continue;
         }
 
-        _AdapterSharedPtr const &adapter = primInfo->adapter;
+        UsdImagingPrimAdapterSharedPtr const &adapter = primInfo->adapter;
 
         TF_DEBUG(USDIMAGING_SELECTION).Msg("- affected hydra prim: %s\n",
                 affectedCachePath.GetText());

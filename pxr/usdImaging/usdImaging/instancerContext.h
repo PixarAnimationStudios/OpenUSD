@@ -30,12 +30,11 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+using UsdImagingPrimAdapterSharedPtr = 
+    std::shared_ptr<class UsdImagingPrimAdapter>;
 
 /// \class UsdImagingInstancerContext
 ///

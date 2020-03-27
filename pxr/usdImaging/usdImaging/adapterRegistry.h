@@ -33,15 +33,13 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdImagingPrimAdapter;
-typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
 
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \

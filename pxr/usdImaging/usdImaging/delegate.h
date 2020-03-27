@@ -75,7 +75,8 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 
 typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
-typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+
+using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
 
 /// \class UsdImagingDelegate
 ///
@@ -637,14 +638,14 @@ private:
     // ---------------------------------------------------------------------- //
 
     // Usd Prim Type to Adapter lookup table.
-    typedef boost::shared_ptr<UsdImagingPrimAdapter> _AdapterSharedPtr;
-    typedef TfHashMap<TfToken, 
-                         _AdapterSharedPtr, TfToken::HashFunctor> _AdapterMap;
+    typedef TfHashMap<TfToken, UsdImagingPrimAdapterSharedPtr, 
+                TfToken::HashFunctor> _AdapterMap;
     _AdapterMap _adapterMap;
 
     // Per-Hydra-Primitive tracking data
     struct _HdPrimInfo {
-        _AdapterSharedPtr adapter;          // The adapter to use for the prim
+        UsdImagingPrimAdapterSharedPtr adapter; // The adapter to use for the 
+                                                // prim
         UsdPrim           usdPrim;          // Reference to the Usd prim
         HdDirtyBits       timeVaryingBits;  // Dirty Bits to set when
                                             // time changes
@@ -675,9 +676,11 @@ private:
 
     // Only use this method when we think no existing adapter has been
     // established. For example, during initial Population.
-    _AdapterSharedPtr const& _AdapterLookup(UsdPrim const& prim, 
-                                            bool ignoreInstancing = false);
-    _AdapterSharedPtr const& _AdapterLookup(TfToken const& adapterKey);
+    UsdImagingPrimAdapterSharedPtr const& _AdapterLookup(
+                                                UsdPrim const& prim, 
+                                                bool ignoreInstancing = false);
+    UsdImagingPrimAdapterSharedPtr const& _AdapterLookup(
+                                                TfToken const& adapterKey);
 
     // Obtain the prim tracking data for the given cache path.
     _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
