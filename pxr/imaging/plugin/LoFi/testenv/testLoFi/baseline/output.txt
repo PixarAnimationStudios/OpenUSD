@@ -1,0 +1,10 @@
+Creating LoFi RenderDelegate
+Create LoFi Rprim type=mesh id=/MyCube1 instancerId=
+Create RenderPass with Collection=geometry
+* (multithreaded) Sync LoFi Mesh id=/MyCube1
+=> CommitResources RenderDelegate
+=> Execute RenderPass
+Destroy LoFi Rprim id=/MyCube1
+Destroying LoFi RenderDelegate
+Destroying renderPass
+OK
