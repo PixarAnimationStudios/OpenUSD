@@ -66,7 +66,8 @@ class VtValue;
 class HdInstancer;
 class HdDriver;
 
-typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
+using HdDirtyListSharedPtr = std::shared_ptr<class HdDirtyList>;
+
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;

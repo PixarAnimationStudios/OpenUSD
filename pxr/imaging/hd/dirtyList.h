@@ -30,13 +30,13 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/types.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 
-typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
+using HdDirtyListSharedPtr = std::shared_ptr<class HdDirtyList>;
 
 /// \class HdDirtyList
 ///
