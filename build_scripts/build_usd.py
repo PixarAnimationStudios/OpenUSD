@@ -1037,10 +1037,6 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-# Use v1.0.9 on Linux to avoid issues with gcc6: the OCIO build runs into
-# several warnings (unused functions, deprecated auto_ptr usage) that are
-# treated as errors and cause the build to fail.
-#
 # Use v1.1.0 on MacOS and Windows since v1.0.9 doesn't build properly on
 # those platforms.
 if Linux():
@@ -1058,6 +1054,24 @@ def InstallOpenColorIO(context, force, buildArgs):
                      '-DOCIO_BUILD_PYGLUE=OFF',
                      '-DOCIO_BUILD_JNIGLUE=OFF',
                      '-DOCIO_STATIC_JNIGLUE=OFF']
+
+        # The OCIO build treats all warnings as errors but several come up
+        # on various platforms, including:
+        # - On gcc6, v1.1.0 emits many -Wdeprecated-declaration warnings for
+        #   std::auto_ptr
+        # - On clang, v1.1.0 emits a -Wself-assign-field warning. This is fixed
+        #   in https://github.com/AcademySoftwareFoundation/OpenColorIO/commit/0be465feb9ac2d34bd8171f30909b276c1efa996
+        #
+        # To avoid build failures we force all warnings off for this build.
+        if GetVisualStudioCompilerAndVersion():
+            # This doesn't work because CMake stores default flags for
+            # MSVC in CMAKE_CXX_FLAGS and this would overwrite them.
+            # However, we don't seem to get any warnings on Windows
+            # (at least with VS2015 and 2017).
+            # extraArgs.append('-DCMAKE_CXX_FLAGS=/w') 
+            pass
+        else:
+            extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
