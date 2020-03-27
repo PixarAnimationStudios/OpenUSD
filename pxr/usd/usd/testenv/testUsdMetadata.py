@@ -881,8 +881,10 @@ class TestUsdMetadata(unittest.TestCase):
             del binLayer
 
             # Now textFile and roundTripFile should match.
-            a = open(textFile.name).read()
-            b = open(roundTripFile.name).read()
+            with open(textFile.name) as f:
+                a = f.read()
+            with open(roundTripFile.name) as f:
+                b = f.read()
             if a != b:
                 print('\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n'))))
             assert a == b
@@ -944,13 +946,10 @@ class TestUsdMetadata(unittest.TestCase):
         self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
-        
-        
-
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''
