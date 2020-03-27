@@ -996,7 +996,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.8.9.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
@@ -1020,6 +1020,11 @@ def InstallOpenImageIO(context, force, buildArgs):
         # library outside of our build.
         if not context.enablePtex:
             extraArgs.append('-DUSE_PTEX=OFF')
+
+        # Make sure to use boost installed by the build script and not any
+        # system installed boost
+        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -1752,14 +1757,13 @@ if context.buildImaging:
     if context.enablePtex:
         requiredDependencies += [PTEX]
 
-    requiredDependencies += [GLEW,
-                             OPENSUBDIV]
+    requiredDependencies += [GLEW, OPENSUBDIV]
 
     if context.enableOpenVDB:
         requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
     
     if context.buildOIIO:
-        requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+        requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
 
     if context.buildOCIO:
         requiredDependencies += [OPENCOLORIO]

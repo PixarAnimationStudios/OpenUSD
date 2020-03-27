@@ -21,7 +21,7 @@ Our test machines have the following software versions installed
 | Intel TBB     | 4.4 Update 6 | 4.4 Update 6, 2017.0 | 4.4 Update 6, 2017.0 |
 | OpenSubdiv    | 3.0.5, 3.4   | 3.0.5, 3.1.1 | 3.1.1        |
 | GLEW          | 2.0.0        | 2.0.0        | 2.0.0        |
-| OpenImageIO   | 1.7.14       | 1.7.14       | 1.7.14       |
+| OpenImageIO   | 1.8.9        | 1.8.9        | 1.8.9        |
 | OpenColorIO   | 1.0.9        | 1.1.0        | 1.1.0        |
 | OSL           | 1.5.12       | 1.5.12       | 1.5.12       |
 | Ptex          | 2.1.28       | 2.1.28       | 2.1.28       |
