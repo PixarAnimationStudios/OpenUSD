@@ -140,7 +140,7 @@ HdSt_OsdIndexComputation::HasChainedBuffer() const
 }
 
 /*virtual*/
-HdBufferSourceVector
+HdBufferSourceSharedPtrVector
 HdSt_OsdIndexComputation::GetChainedBuffers() const
 {
     return { _primitiveBuffer, _edgeIndicesBuffer };

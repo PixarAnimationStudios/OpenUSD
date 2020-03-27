@@ -318,9 +318,9 @@ HdSt_GetExtComputationPrimvarsComputations(
     HdSceneDelegate *sceneDelegate,
     HdExtComputationPrimvarDescriptorVector const& allCompPrimvars,
     HdDirtyBits dirtyBits,
-    HdBufferSourceVector *sources,
-    HdBufferSourceVector *reserveOnlySources,
-    HdBufferSourceVector *separateComputationSources,
+    HdBufferSourceSharedPtrVector *sources,
+    HdBufferSourceSharedPtrVector *reserveOnlySources,
+    HdBufferSourceSharedPtrVector *separateComputationSources,
     HdComputationVector *computations)
 {
     TF_VERIFY(sources);
@@ -373,7 +373,7 @@ HdSt_GetExtComputationPrimvarsComputations(
 
                         HdBufferSourceSharedPtr gpuComputationSource(
                                 new HdStExtCompGpuComputationBufferSource(
-                                    HdBufferSourceVector(),
+                                    HdBufferSourceSharedPtrVector(),
                                     gpuComputation->GetResource()));
 
                         separateComputationSources->push_back(

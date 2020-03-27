@@ -179,7 +179,7 @@ public:
     /// Append source data for given range to be committed later.
     HDST_API
     void AddSources(HdBufferArrayRangeSharedPtr const &range,
-                    HdBufferSourceVector &sources);
+                    HdBufferSourceSharedPtrVector &sources);
 
     /// Append a source data for given range to be committed later.
     HDST_API
@@ -413,7 +413,7 @@ private:
         }
 
         HdBufferArrayRangeSharedPtr range;
-        HdBufferSourceVector sources;
+        HdBufferSourceSharedPtrVector sources;
     };
 
     typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;

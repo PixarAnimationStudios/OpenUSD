@@ -575,7 +575,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                                                 _topologyId, indexToken);
 
         if(rangeInstance.IsFirstInstance()) {
-            HdBufferSourceVector sources;
+            HdBufferSourceSharedPtrVector sources;
             HdBufferSpecVector bufferSpecs;
 
             if (desc.geomStyle == HdBasisCurvesGeomStylePoints) {
@@ -661,9 +661,9 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetExtComputationPrimvarDescriptors(id,
             HdInterpolationVertex);
 
-    HdBufferSourceVector sources;
-    HdBufferSourceVector reserveOnlySources;
-    HdBufferSourceVector separateComputationSources;
+    HdBufferSourceSharedPtrVector sources;
+    HdBufferSourceSharedPtrVector reserveOnlySources;
+    HdBufferSourceSharedPtrVector separateComputationSources;
     HdComputationVector computations;
     sources.reserve(primvars.size());
 
@@ -796,7 +796,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                   HdInterpolationUniform);
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     sources.reserve(uniformPrimvars.size());
 
     for (HdPrimvarDescriptor const& primvar: uniformPrimvars) {

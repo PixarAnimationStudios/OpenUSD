@@ -699,7 +699,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             boost::make_shared<HdVtBufferSource>(
                 HdTokens->points, _GetCubeVertices(localVolumeBBox));
 
-        HdBufferSourceVector sources = { source };
+        HdBufferSourceSharedPtrVector sources = { source };
 
         if (!HdStIsValidBAR(drawItem->GetVertexPrimvarRange())) {
             HdBufferSpecVector bufferSpecs;
@@ -724,7 +724,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdBufferSourceSharedPtr source(
             new HdVtBufferSource(HdTokens->indices, _GetCubeTriangleIndices()));
 
-        HdBufferSourceVector sources = { source };
+        HdBufferSourceSharedPtrVector sources = { source };
 
         if (!HdStIsValidBAR(drawItem->GetTopologyRange())) {
             HdBufferSpecVector bufferSpecs;

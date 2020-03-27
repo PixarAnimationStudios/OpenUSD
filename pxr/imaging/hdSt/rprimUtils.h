@@ -44,7 +44,7 @@ class HdStDrawItem;
 class HdStInstancer;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
+typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef std::vector<HdComputationSharedPtr> HdComputationVector;
@@ -96,14 +96,14 @@ bool HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range);
 // primvar processing.
 HDST_API
 bool HdStCanSkipBARAllocationOrUpdate(
-    HdBufferSourceVector const& sources,
+    HdBufferSourceSharedPtrVector const& sources,
     HdComputationVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits);
 
 HDST_API
 bool HdStCanSkipBARAllocationOrUpdate(
-    HdBufferSourceVector const& sources,
+    HdBufferSourceSharedPtrVector const& sources,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits);
 

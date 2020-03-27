@@ -310,7 +310,7 @@ HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 
 void
 HdStSurfaceShader::SetBufferSources(
-    HdBufferSourceVector &bufferSources,
+    HdBufferSourceSharedPtrVector &bufferSources,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSources.empty()) {

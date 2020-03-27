@@ -50,7 +50,7 @@ HdStExtComputation::HdStExtComputation(SdfPath const &id)
 // 
 static uint64_t
 _ComputeSharedComputationInputId(uint64_t baseId,
-                                 HdBufferSourceVector const &sources)
+                                 HdBufferSourceSharedPtrVector const &sources)
 {
     size_t inputId = baseId;
     for (HdBufferSourceSharedPtr const &bufferSource : sources) {
@@ -63,7 +63,7 @@ _ComputeSharedComputationInputId(uint64_t baseId,
 
 static HdBufferArrayRangeSharedPtr
 _AllocateComputationDataRange(
-        HdBufferSourceVector & inputs,
+        HdBufferSourceSharedPtrVector & inputs,
         HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
     HdBufferSpecVector bufferSpecs;
@@ -112,7 +112,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         boost::dynamic_pointer_cast<HdStResourceRegistry>(
                               renderIndex.GetResourceRegistry());
 
-    HdBufferSourceVector inputs;
+    HdBufferSourceSharedPtrVector inputs;
     for (TfToken const & inputName: GetSceneInputNames()) {
         VtValue inputValue = sceneDelegate->GetExtComputationInput(
                                                 GetId(), inputName);

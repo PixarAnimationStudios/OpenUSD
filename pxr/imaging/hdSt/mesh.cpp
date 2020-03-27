@@ -384,7 +384,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // create triangle indices, primitiveParam and edgeIndices
                 source = _topology->GetTriangleIndexBuilderComputation(GetId());
             }
-            HdBufferSourceVector sources;
+            HdBufferSourceSharedPtrVector sources;
             sources.push_back(source);
 
             // initialize buffer array
@@ -617,9 +617,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetExtComputationPrimvarDescriptors(id,
             HdInterpolationVertex);
 
-    HdBufferSourceVector sources;
-    HdBufferSourceVector reserveOnlySources;
-    HdBufferSourceVector separateComputationSources;
+    HdBufferSourceSharedPtrVector sources;
+    HdBufferSourceSharedPtrVector reserveOnlySources;
+    HdBufferSourceSharedPtrVector separateComputationSources;
     HdComputationVector computations;
     sources.reserve(primvars.size());
 
@@ -915,7 +915,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
     HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
-    HdBufferSourceVector allSources(sources);
+    HdBufferSourceSharedPtrVector allSources(sources);
     for (HdBufferSourceSharedPtr& src : reserveOnlySources) {
         allSources.emplace_back(src);
     }
@@ -1108,7 +1108,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
     int refineLevel = _GetRefineLevelForDesc(desc);
@@ -1219,7 +1219,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                   HdInterpolationUniform);
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
     int numFaces = _topology ? _topology->GetNumFaces() : 0;

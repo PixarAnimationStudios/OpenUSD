@@ -134,7 +134,7 @@ public:
     /// overrides
     virtual bool HasChainedBuffer() const override;
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual HdBufferSourceVector GetChainedBuffers() const override;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
     virtual bool Resolve() = 0;
 
 protected:

@@ -56,7 +56,7 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
         bool * isPtex = nullptr);
 
     /// The buffer sources created by the above methods.
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
 
     /// The texture descriptors created by the above methods.
     HdStShaderCode::TextureDescriptorVector textures;

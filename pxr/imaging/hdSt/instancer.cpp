@@ -129,7 +129,7 @@ HdStInstancer::UpdateInstancePrimvarRange(HdRprim *prim,
     HdPrimvarDescriptorVector primvars =
         HdStGetInstancerPrimvarDescriptors(this, prim, drawItem, delegate);
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
     // Always reset numInstancePrimvars, for the case the number of
@@ -388,7 +388,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     }
 
     // update instance indices
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtr source(
         new HdVtBufferSource(HdInstancerTokens->instanceIndices,
                              VtValue(instanceIndices)));

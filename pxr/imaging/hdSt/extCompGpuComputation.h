@@ -205,9 +205,9 @@ void HdSt_GetExtComputationPrimvarsComputations(
     HdSceneDelegate *sceneDelegate,
     HdExtComputationPrimvarDescriptorVector const& allCompPrimvars,
     HdDirtyBits dirtyBits,
-    HdBufferSourceVector *sources,
-    HdBufferSourceVector *reserveOnlySources,
-    HdBufferSourceVector *separateComputationSources,
+    HdBufferSourceSharedPtrVector *sources,
+    HdBufferSourceSharedPtrVector *reserveOnlySources,
+    HdBufferSourceSharedPtrVector *separateComputationSources,
     HdComputationVector *computations);
 
 PXR_NAMESPACE_CLOSE_SCOPE

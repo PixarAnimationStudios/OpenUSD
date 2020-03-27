@@ -82,7 +82,7 @@ public:
     static HdExtCompCpuComputationSharedPtr
     CreateComputation(HdSceneDelegate *sceneDelegate,
                       const HdExtComputation &computation,
-                      HdBufferSourceVector *computationSources);
+                      HdBufferSourceSharedPtrVector *computationSources);
 
     HD_API
     virtual ~HdExtCompCpuComputation() = default;

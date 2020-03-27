@@ -113,7 +113,7 @@ public:
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
     void SetBufferSources(
-        HdBufferSourceVector &bufferSources, 
+        HdBufferSourceSharedPtrVector &bufferSources, 
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     HDST_API

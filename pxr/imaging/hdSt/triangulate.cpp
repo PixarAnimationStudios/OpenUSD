@@ -95,7 +95,7 @@ HdSt_TriangleIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceVector
+HdBufferSourceSharedPtrVector
 HdSt_TriangleIndexBuilderComputation::GetChainedBuffers() const
 {
     return { _primitiveParam, _trianglesEdgeIndices };

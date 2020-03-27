@@ -42,7 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtCompGpuComputationBufferSource::HdStExtCompGpuComputationBufferSource(
-        HdBufferSourceVector const &inputs,
+        HdBufferSourceSharedPtrVector const &inputs,
         HdStExtCompGpuComputationResourceSharedPtr const &resource)
  : HdNullBufferSource()
  , _inputs(inputs)

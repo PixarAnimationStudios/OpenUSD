@@ -77,7 +77,7 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
     // index buffer, We setup the BAR to meet this requirement to draw our
     // full-screen triangle for post-process shaders.
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     HdBufferSpecVector bufferSpecs;
 
     HdBufferSourceSharedPtr pointsSource(

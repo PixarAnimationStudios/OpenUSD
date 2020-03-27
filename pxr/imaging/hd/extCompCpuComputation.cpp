@@ -56,7 +56,7 @@ HdExtCompCpuComputationSharedPtr
 HdExtCompCpuComputation::CreateComputation(
     HdSceneDelegate *sceneDelegate,
     const HdExtComputation &computation,
-    HdBufferSourceVector *computationSources)
+    HdBufferSourceSharedPtrVector *computationSources)
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 

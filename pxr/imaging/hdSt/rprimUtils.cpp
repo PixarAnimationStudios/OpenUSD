@@ -176,7 +176,7 @@ HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range)
 
 bool
 HdStCanSkipBARAllocationOrUpdate(
-    HdBufferSourceVector const& sources,
+    HdBufferSourceSharedPtrVector const& sources,
     HdComputationVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits)
@@ -198,7 +198,7 @@ HdStCanSkipBARAllocationOrUpdate(
 
 bool
 HdStCanSkipBARAllocationOrUpdate(
-    HdBufferSourceVector const& sources,
+    HdBufferSourceSharedPtrVector const& sources,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits)
 {
@@ -379,7 +379,7 @@ HdStPopulateConstantPrimvars(
             renderIndex.GetResourceRegistry());
 
     // Update uniforms
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
         GfMatrix4d transform = delegate->GetTransform(id);
         sharedData->bounds.SetMatrix(transform); // for CPU frustum culling
@@ -594,7 +594,7 @@ void HdStProcessTopologyVisibility(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     HdBufferArrayRangeSharedPtr tvBAR = drawItem->GetTopologyVisibilityRange();
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
 
     // For the general case wherein there is no topological invisibility, we
     // don't create a BAR.

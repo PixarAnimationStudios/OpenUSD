@@ -54,7 +54,7 @@ typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
+typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef std::vector<HdComputationSharedPtr> HdComputationVector;
@@ -288,7 +288,7 @@ protected:
     HD_API
     uint64_t
     _ComputeSharedPrimvarId(uint64_t baseId,
-                      HdBufferSourceVector const &sources,
+                      HdBufferSourceSharedPtrVector const &sources,
                       HdComputationVector const &computations) const;
 
 private:

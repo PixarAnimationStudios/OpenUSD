@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdBufferSource;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<HdBufferSource const> HdBufferSourceConstSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
+typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
 
 /// \class HdBufferSource
@@ -133,7 +133,7 @@ public:
 
     /// Returns the vector of chained buffers.
     HD_API
-    virtual HdBufferSourceVector GetChainedBuffers() const;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const;
 
     /// @}
 
