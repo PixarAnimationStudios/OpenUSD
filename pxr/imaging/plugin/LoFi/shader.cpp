@@ -8,12 +8,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 void GLSLShader::OutputInfoLog()
 {
   char buffer[512];
-  glGetShaderInfoLog(_shader, 512, NULL, &buffer[0]);
+  glGetShaderInfoLog(_id, 512, NULL, &buffer[0]);
   std::cout << "COMPILE : " << (std::string)buffer << std::endl;
 }
 
-void GLSLShader::Load(const char* filename)
+void GLSLShader::Load(const char* filename, GLenum type)
 {
+  _type = type;
   std::fstream file;
   file.open(filename, std::ios::in);
   if(file.is_open())
@@ -26,13 +27,8 @@ void GLSLShader::Load(const char* filename)
 
       if(len>0)
       {
-        std::string code;
-        _code = (GLchar*) new char[len+1];
-        code.assign((std::istreambuf_iterator<char>(file)),
+        _code.assign((std::istreambuf_iterator<char>(file)),
                       std::istreambuf_iterator<char>());
-        memcpy(_code, code.c_str(), len * sizeof(char));
-        
-        _code[len] = 0;
       }
       else std::cout << "[LoFi] File is empty : " << filename << std::endl;
     }
@@ -40,31 +36,29 @@ void GLSLShader::Load(const char* filename)
     file.close();   
   }
   else std::cout << "[LoFi] Fail open file : " << filename << std::endl;
+  Compile(_code.c_str(), _type);
 }
 
 void GLSLShader::Set(const char* code)
 {
-  unsigned long len = strlen(code);
-  _code = (GLchar*) new char[len+1];
-  _code[len] = 0;
-  memcpy(_code, code, len);
+  _code = code;
 }
 
 void GLSLShader::Compile(const char* code, GLenum type)
 {
-  _shader = glCreateShader(type);
-
-  glShaderSource(_shader,1,(GLchar**)code,NULL);
-  glCompileShader(_shader);
+  _id = glCreateShader(type);
+  const char* source[1];
+  source[0] = code;
+  glShaderSource(_id, 1, source, NULL);
+  glCompileShader(_id);
   
   GLint status;
-  glGetShaderiv(_shader,GL_COMPILE_STATUS,&status);
+  glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
   if(status)
     std::cout << "[GLSLCreateShader] Success Compiling Shader !"<<std::endl;
   else
   {
     std::cout << "[GLSLCreateShader] Fail Compiling Shader !" <<std::endl;
-  
     // Output Info Log
     OutputInfoLog();
   }
@@ -72,18 +66,20 @@ void GLSLShader::Compile(const char* code, GLenum type)
 
 void GLSLShader::Compile(GLenum type)
 {
-  _shader = glCreateShader(type);
-  
-  glShaderSource(_shader,1,(GLchar**)&_code,NULL);
-  glCompileShader(_shader);
+  _id = glCreateShader(type);
+  const char* code[1];
+  code[0] = _code.c_str();
+  glShaderSource(_id, 1, code, NULL);
+  glCompileShader(_id);
   
   GLint status;
-  glGetShaderiv(_shader,GL_COMPILE_STATUS,&status);
+  glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
   if(status)
     std::cout << "[GLSLCreateShader] Success Compiling Shader !"<<std::endl;
   else
   {
-    std::cout << "[GLSLCreateShader] Fail Compiling Shader !"<<std::endl;
+    std::cout << "[GLSLCreateShader] Fail Compiling Shader !" <<std::endl;
+    // Output Info Log
     OutputInfoLog();
   }
 }
@@ -91,52 +87,54 @@ void GLSLShader::Compile(GLenum type)
 void GLSLProgram::_Build()
 {  
   _pgm = glCreateProgram();
-  GLCheckError("Create Program : ");
   
   if(_vert)
   {
     glAttachShader(_pgm,_vert->Get());
-    GLCheckError("Attach Vertex Shader ");
   }
 
   if(_geom && _geom->Get())
   {
     glAttachShader(_pgm,_geom->Get());
-    GLCheckError("Attach Geometry Shader ");
   }
   
   if(_frag)
   {
     glAttachShader(_pgm,_frag->Get());
-    GLCheckError("Attach Fragment Shader ");
   }
   
   glBindAttribLocation(_pgm,0,"position");
-  
-  glLinkProgram(_pgm);
-  GLCheckError("Link Program : ");
-  
+  glLinkProgram(_pgm);  
   glUseProgram(_pgm);
-  GLCheckError("Use Program : ");
   
-  OutputInfoLog();
-
+  // Note the different functions here: glGetProgram* instead of glGetShader*.
+  GLint status = 0;
+  glGetProgramiv(_pgm, GL_LINK_STATUS, (int *)&status);
+  if(status)
+    std::cout << "[GLSLCreateShader] Success Build Program !"<<std::endl;
+  else
+  {
+    glDeleteProgram(_pgm);
+    std::cout << "[GLSLCreateShader] Fail Build Program !" <<std::endl;
+    OutputInfoLog();
+  }
 }
 
 void GLSLProgram::Build(const char* name, const char* vertex, const char* fragment)
 {
-  _name = name;
-  _vert = new GLSLShader();
-  _vert->Set(vertex);
-  _vert->Compile(GL_VERTEX_SHADER);
-  _ownVertexShader = true;
-  GLCheckError("Compile Vertex Shader : ");
+  std::cout << vertex << std::endl;
+  std::cout << fragment << std::endl;
 
-  _frag = new GLSLShader();
-  _frag->Set(fragment);
-  _frag->Compile(GL_FRAGMENT_SHADER);
-  _ownFragmentShader = true;
-  GLCheckError("Compile Fragment Shader : ");
+  _name = name;
+  GLSLShader vertShader;
+  vertShader.Set(vertex);
+  vertShader.Compile(GL_VERTEX_SHADER);
+  _vert = &vertShader;
+
+  GLSLShader fragShader;
+  fragShader.Set(fragment);
+  fragShader.Compile(fragment, GL_FRAGMENT_SHADER);
+  _frag = &fragShader;
 
   _Build();
 }
@@ -144,23 +142,20 @@ void GLSLProgram::Build(const char* name, const char* vertex, const char* fragme
 void GLSLProgram::Build(const char* name, const char* vertex, const char* geom, const char* fragment)
 {
   _name = name;
-  _vert = new GLSLShader();
-  _vert->Set(vertex);
-  _vert->Compile(GL_VERTEX_SHADER);
-  _ownVertexShader = true;
-  GLCheckError("Compile Vertex Shader : ");
+  GLSLShader vertShader;
+  vertShader.Set(vertex);
+  vertShader.Compile(GL_VERTEX_SHADER);
+  _vert = &vertShader;
 
-  _geom = new GLSLShader();
-  _geom->Set(geom);
-  _geom->Compile(GL_GEOMETRY_SHADER);
-  _ownGeometryShader = true;
-  GLCheckError("Compile Geometry Shader : ");
+  GLSLShader geomShader;
+  geomShader.Set(geom);
+  geomShader.Compile(GL_GEOMETRY_SHADER);
+  _geom = &geomShader;
 
-  _frag = new GLSLShader();
-  _frag->Set(fragment);
-  _frag->Compile(GL_FRAGMENT_SHADER);
-  _ownFragmentShader = true;
-  GLCheckError("Compile Fragment Shader : ");
+  GLSLShader fragShader;
+  fragShader.Set(fragment);
+  fragShader.Compile(GL_FRAGMENT_SHADER);
+  _frag = &fragShader;
 
   _Build();
 }

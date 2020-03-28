@@ -3,8 +3,8 @@
 //
 // unlicensed
 //
-#ifndef EXTRAS_IMAGING_EXAMPLES_HD_LOFI_MESH_H
-#define EXTRAS_IMAGING_EXAMPLES_HD_LOFI_MESH_H
+#ifndef PXR_IMAGING_PLUGIN_LOFI_MESH_H
+#define PXR_IMAGING_PLUGIN_LOFI_MESH_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -152,4 +152,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXTRAS_IMAGING_EXAMPLES_HD_LOFI_MESH_H
+#endif // PXR_IMAGING_PLUGIN_LOFI_MESH_H

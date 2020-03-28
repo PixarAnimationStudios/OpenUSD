@@ -102,7 +102,7 @@ LoFiMesh::Sync(HdSceneDelegate *sceneDelegate,
   // Pull top-level embree state out of the render param.
   LoFiRenderParam *lofiRenderParam =
       static_cast<LoFiRenderParam*>(renderParam);
-  LoFiScene* scene = lofiRenderParam->AcquireSceneForEdit();
+  LoFiScene* scene = lofiRenderParam->GetScene();
 
   // Create lofi geometry objects.
   _PopulateLoFiMesh(sceneDelegate, scene, dirtyBits, desc);

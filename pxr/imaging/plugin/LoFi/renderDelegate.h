@@ -26,7 +26,9 @@ class LoFiRenderParam;
 
 TF_DECLARE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 
+
 class LoFiScene;
+class LoFiRenderer;
 ///
 /// \class LoFiRenderDelegate
 ///
@@ -89,16 +91,8 @@ public:
 
     void CommitResources(HdChangeTracker *tracker) override;
 
-    /// This function returns the default AOV descriptor for a given named AOV.
-    /// This mechanism lets the renderer decide things like what format
-    /// a given AOV will be written as.
-    ///   \param name The name of the AOV whose descriptor we want.
-    ///   \return A descriptor specifying things like what format the AOV
-    ///           output buffer should be.
-    virtual HdAovDescriptor
-        GetDefaultAovDescriptor(TfToken const& name) const override;
-
-    HdRenderParam *GetRenderParam() const override;
+    // Opaque render params used to pass the LoFi Scene around
+    HdRenderParam* GetRenderParam() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
@@ -113,9 +107,11 @@ private:
     // LoFi initialization routine.
     void _Initialize();
 
-
-    // Handle for the top-level LoFi scene, mirroring the Hydra scene.
+    // Handle for the top-level LoFi scene
     LoFiScene* _scene;
+
+    // Handle for the top-level LoFi renderer
+    LoFiRenderer* _renderer;
 
     // A version counter for edits to _scene.
     std::atomic<int> _sceneVersion;
