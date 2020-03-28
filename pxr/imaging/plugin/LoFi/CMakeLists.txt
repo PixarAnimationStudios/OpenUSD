@@ -28,14 +28,17 @@ pxr_plugin(LoFi
         shader
         mesh
         scene
+        renderer
         sceneDelegate
         renderDelegate
-        rendererPlugin
+        renderPassState
         renderPass
-    
+        rendererPlugin
+        
     PUBLIC_HEADERS
         shader.h
         scene.h
+        renderer.h
         renderParam.h
 
 

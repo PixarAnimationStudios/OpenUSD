@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 #include <pxr/imaging/glf/glew.h>
 
 
@@ -55,6 +56,13 @@ GLCheckError(const char* message)
   return false;
 }
 
+static void 
+GLFlushError()
+{
+  GLenum err;
+  while((err = glGetError()) != GL_NO_ERROR){};
+}
+
 enum GLSLShaderType
 {
   SHADER_VERTEX,
@@ -64,57 +72,49 @@ enum GLSLShaderType
     
 class GLSLShader{
 public:
-  GLSLShader():_shader(0),_code(NULL){};
+  GLSLShader():_id(0),_code(""){};
   GLSLShader(const GLSLShader& ) = delete;
   GLSLShader(GLSLShader&&) = delete;
 
   ~GLSLShader()
   {
-    if(_shader)glDeleteShader(_shader);
-    if(_code)delete [] _code;
+    if(_id)glDeleteShader(_id);
   }
-  void Load(const char* filename);
+  void Load(const char* filename, GLenum t);
   void Compile(const char* c, GLenum t);
   void Compile(GLenum t);
   void OutputInfoLog();
-  GLuint Get(){return _shader;};
+  GLuint Get(){return _id;};
   void Set(const char* code);
 private:
-  std::string _path;
-  GLchar* _code;
+  std::string _code;
   GLenum _type;
-  GLuint _shader;
+  GLuint _id;
 };
     
 class GLSLProgram
 {
 friend GLSLShader;
 public:
-  GLSLProgram():_vert(),_geom(),_frag(),_pgm(0),_ownVertexShader(false),
-    _ownGeometryShader(false),_ownFragmentShader(false){};
+  GLSLProgram():_vert(NULL),_geom(NULL),_frag(NULL),_pgm(0){};
   GLSLProgram(const GLSLProgram&) = delete;
   GLSLProgram(GLSLProgram&&) = delete;
 
   ~GLSLProgram()
   {
-    if(_ownFragmentShader && _frag)delete _frag;
-    if(_ownGeometryShader && _geom)delete _geom;
-    if(_ownVertexShader && _vert)delete _vert;
+    if(_pgm)glDeleteProgram(_pgm);
   }
   void _Build();
-  void Build(const char* name, const char* s_vert="", const char* s_frag="");
-  void Build(const char* name, const char* s_vert="", const char* s_geom="", const char* s_frag="");
+  void Build(const char* name, const char* s_vert, const char* s_frag);
+  void Build(const char* name, const char* s_vert, const char* s_geom, const char* s_frag);
   void Build(const char* name, GLSLShader* vertex, GLSLShader* fragment);
   void Build(const char* name, GLSLShader* vertex, GLSLShader* geom, GLSLShader* fragment);
   void OutputInfoLog();
   GLuint Get(){return _pgm;};
 private:
   GLSLShader* _vert;
-  bool _ownVertexShader;
   GLSLShader* _geom;
-  bool _ownGeometryShader;
   GLSLShader* _frag;
-  bool _ownFragmentShader;
   GLuint _pgm;
   std::string _name; 
 };
