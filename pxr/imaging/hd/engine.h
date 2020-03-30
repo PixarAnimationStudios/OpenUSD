@@ -30,8 +30,6 @@
 
 #include "pxr/imaging/hd/task.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
