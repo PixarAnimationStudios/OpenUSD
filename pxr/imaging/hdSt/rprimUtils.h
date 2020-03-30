@@ -47,7 +47,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationVector;
+typedef std::vector<HdComputationSharedPtr> HdComputationSharedPtrVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
 using HdStResourceRegistrySharedPtr = 
@@ -98,7 +98,7 @@ bool HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range);
 HDST_API
 bool HdStCanSkipBARAllocationOrUpdate(
     HdBufferSourceSharedPtrVector const& sources,
-    HdComputationVector const& computations,
+    HdComputationSharedPtrVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits);
 

@@ -57,7 +57,7 @@ using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationVector;
+typedef std::vector<HdComputationSharedPtr> HdComputationSharedPtrVector;
 
 /// \class HdRprim
 ///
@@ -289,7 +289,7 @@ protected:
     uint64_t
     _ComputeSharedPrimvarId(uint64_t baseId,
                       HdBufferSourceSharedPtrVector const &sources,
-                      HdComputationVector const &computations) const;
+                      HdComputationSharedPtrVector const &computations) const;
 
 private:
     SdfPath _instancerId;

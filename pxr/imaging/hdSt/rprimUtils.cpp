@@ -177,7 +177,7 @@ HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range)
 bool
 HdStCanSkipBARAllocationOrUpdate(
     HdBufferSourceSharedPtrVector const& sources,
-    HdComputationVector const& computations,
+    HdComputationSharedPtrVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits)
 {
@@ -203,7 +203,7 @@ HdStCanSkipBARAllocationOrUpdate(
     HdDirtyBits dirtyBits)
 {
     return HdStCanSkipBARAllocationOrUpdate(
-        sources, HdComputationVector(), curRange, dirtyBits);
+        sources, HdComputationSharedPtrVector(), curRange, dirtyBits);
 }
 
 HdBufferSpecVector

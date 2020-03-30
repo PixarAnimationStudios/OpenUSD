@@ -321,7 +321,7 @@ HdSt_GetExtComputationPrimvarsComputations(
     HdBufferSourceSharedPtrVector *sources,
     HdBufferSourceSharedPtrVector *reserveOnlySources,
     HdBufferSourceSharedPtrVector *separateComputationSources,
-    HdComputationVector *computations)
+    HdComputationSharedPtrVector *computations)
 {
     TF_VERIFY(sources);
     TF_VERIFY(reserveOnlySources);

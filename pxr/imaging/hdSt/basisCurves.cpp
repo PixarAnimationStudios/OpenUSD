@@ -664,7 +664,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdComputationVector computations;
+    HdComputationSharedPtrVector computations;
     sources.reserve(primvars.size());
 
     HdSt_GetExtComputationPrimvarsComputations(

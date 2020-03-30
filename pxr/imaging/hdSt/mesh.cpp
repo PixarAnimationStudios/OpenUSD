@@ -484,7 +484,7 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 
 static HdBufferSourceSharedPtr
 _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
-                      HdComputationVector *computations,
+                      HdComputationSharedPtrVector *computations,
                       HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id,
                       HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -556,7 +556,7 @@ _TriangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
 static HdBufferSourceSharedPtr
 _RefinePrimvar(HdBufferSourceSharedPtr const &source,
                bool varying,
-               HdComputationVector *computations,
+               HdComputationSharedPtrVector *computations,
                HdSt_MeshTopologySharedPtr const &topology)
 {
     if (!TF_VERIFY(computations)) return source;
@@ -620,7 +620,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdComputationVector computations;
+    HdComputationSharedPtrVector computations;
     sources.reserve(primvars.size());
 
     int numPoints = _topology ? _topology->GetNumPoints() : 0;
@@ -1250,7 +1250,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdComputationVector computations;
+    HdComputationSharedPtrVector computations;
 
     if (requireFlatNormals && (*dirtyBits & DirtyFlatNormals))
     {
