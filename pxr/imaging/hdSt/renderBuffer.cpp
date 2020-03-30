@@ -81,6 +81,7 @@ HdStRenderBuffer::Allocate(
     // Allocate new GPU resource
     HgiTextureDesc texDesc;
     texDesc.dimensions = _dimensions;
+    texDesc.type = (dimensions[2] > 1) ? HgiTextureType3D : HgiTextureType2D;
     texDesc.format = HdStHgiConversions::GetHgiFormat(_format);
     texDesc.usage = _usage;
     texDesc.sampleCount = HgiSampleCount1;

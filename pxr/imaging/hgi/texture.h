@@ -49,7 +49,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format:
 ///   The format of the texture.
 /// <li>dimensions:
-///   The resolution of the texture (width, height, depth/volume).</li>
+///   The resolution of the texture (width, height, depth).</li>
+/// <li>type:
+///   Type of texture (2D, 3D).</li>
 /// <li>layerCount:
 ///   The number of layers (texture-arrays).</li>
 /// <li>mipLevels:
@@ -71,6 +73,7 @@ struct HgiTextureDesc
     HgiTextureDesc()
     : usage(HgiTextureUsageBitsColorTarget)
     , format(HgiFormatInvalid)
+    , type(HgiTextureType2D)
     , dimensions(0)
     , layerCount(1)
     , mipLevels(1)
@@ -82,6 +85,7 @@ struct HgiTextureDesc
     std::string debugName;
     HgiTextureUsage usage;
     HgiFormat format;
+    HgiTextureType type;
     GfVec3i dimensions;
     uint16_t layerCount;
     uint16_t mipLevels;

@@ -46,6 +46,7 @@ bool operator==(const HgiTextureDesc& lhs,
     return  lhs.debugName == rhs.debugName &&
             lhs.usage == rhs.usage &&
             lhs.format == rhs.format &&
+            lhs.type == rhs.type &&
             lhs.dimensions == rhs.dimensions &&
             lhs.sampleCount == rhs.sampleCount &&
             lhs.pixelsByteSize == rhs.pixelsByteSize

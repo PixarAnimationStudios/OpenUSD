@@ -26,8 +26,72 @@
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+static
+void
+_GlTextureStorageND(
+    const HgiTextureType textureType,
+    const GLuint texture,
+    const GLsizei levels,
+    const GLenum internalformat,
+    const GfVec3i &dimensions)
+{
+    switch(textureType) {
+    case HgiTextureType2D:
+        glTextureStorage2D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], dimensions[1]);
+        break;
+    case HgiTextureType3D:
+        glTextureStorage3D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], dimensions[1], dimensions[2]);
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+        break;
+    }
+}
+
+static
+void
+_GlTextureSubImageND(
+    const HgiTextureType textureType,
+    const GLuint texture,
+    const GLint level,
+    const GfVec3i &offsets,
+    const GfVec3i &dimensions,
+    const GLenum format,
+    const GLenum type,
+    const void * pixels)
+{
+    switch(textureType) {
+    case HgiTextureType2D:
+        glTextureSubImage2D(texture,
+                            level,
+                            offsets[0], offsets[1],
+                            dimensions[0], dimensions[1],
+                            format,
+                            type,
+                            pixels);
+        break;
+    case HgiTextureType3D:
+        glTextureSubImage3D(texture,
+                            level,
+                            offsets[0], offsets[1], offsets[2],
+                            dimensions[0], dimensions[1], dimensions[2],
+                            format,
+                            type,
+                            pixels);
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+        break;
+    }
+}
 
 HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     : HgiTexture(desc)
@@ -37,8 +101,6 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         // XXX Further below we are missing support for layered textures.
         TF_CODING_ERROR("XXX Missing implementation for texture arrays");
     }
-
-    bool isTexture3d = desc.dimensions[2] > 1;
 
     GLenum glInternalFormat = 0;
     GLenum glFormat = 0;
@@ -59,11 +121,11 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
 
     if (desc.sampleCount == HgiSampleCount1) {
         glCreateTextures(
-            isTexture3d ? GL_TEXTURE_3D : GL_TEXTURE_2D, 
+            HgiGLConversions::GetTextureType(desc.type),
             1, 
             &_textureId);
     } else {
-        if (isTexture3d) {
+        if (desc.type != HgiTextureType2D) {
             TF_CODING_ERROR("Only 2d multisample textures are supported");
         }
         glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_textureId);
@@ -86,46 +148,23 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
         glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 
-        if (!isTexture3d) {
-            glTextureStorage2D(
-                _textureId, 
-                mips, 
-                glInternalFormat,
-                desc.dimensions[0],
-                desc.dimensions[1]);
+        _GlTextureStorageND(
+            desc.type,
+            _textureId,
+            mips,
+            glInternalFormat,
+            desc.dimensions);
 
-            if (desc.initialData && desc.pixelsByteSize > 0) {
-                glTextureSubImage2D(
-                    _textureId,
-                    /*mip*/0, 
-                    /*x*/0,/*y*/0,
-                    desc.dimensions[0],
-                    desc.dimensions[1],
-                    glFormat,
-                    glPixelType,
-                    desc.initialData);
-            }
-        } else {
-            glTextureStorage3D(
-                _textureId, 
-                mips, 
-                glInternalFormat,
-                desc.dimensions[0], 
-                desc.dimensions[1], 
-                desc.dimensions[2]);
-
-            if (desc.initialData && desc.pixelsByteSize > 0) {
-                glTextureSubImage3D(
-                    _textureId,
-                    /*mip*/0, 
-                    /*x*/0,/*y*/0,/*z*/0,
-                    desc.dimensions[0],
-                    desc.dimensions[1],
-                    desc.dimensions[2],
-                    glFormat,
-                    glPixelType,
-                    desc.initialData);
-            }
+        if (desc.initialData && desc.pixelsByteSize > 0) {
+            _GlTextureSubImageND(
+                desc.type,
+                _textureId,
+                /*mip*/0,
+                /*offsets*/GfVec3i(0),
+                desc.dimensions,
+                glFormat,
+                glPixelType,
+                desc.initialData);
         }
     } else {
         // Note: Setting sampler state values on multi-sample texture is invalid

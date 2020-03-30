@@ -49,6 +49,28 @@ enum HgiDeviceCapabilitiesBits : HgiBits
 
 typedef HgiBits HgiDeviceCapabilities;
 
+/// \enum HgiTextureType
+///
+/// Describes the kind of texture.
+///
+/// <ul>
+/// <li>HgiTextureType1D:
+///   A one-dimensional texture.</li>
+/// <li>HgiTextureType2D:
+///   A two-dimensional texture.</li>
+/// <li>HgiTextureType3D:
+///   A three-dimensional texture.</li>
+/// </ul>
+///
+enum HgiTextureType
+{
+    HgiTextureType1D = 0,
+    HgiTextureType2D,
+    HgiTextureType3D,
+
+    HgiTextureTypeCount
+};
+
 /// \enum HgiTextureUsageBits
 ///
 /// Describes how the texture will be used. If a texture has multiple uses you

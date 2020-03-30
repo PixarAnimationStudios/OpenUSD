@@ -150,6 +150,14 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
     {HgiCompareFunctionAlways,   GL_ALWAYS},
 };
 
+static uint32_t
+_textureTypeTable[HgiTextureTypeCount][2] =
+{
+    {HgiTextureType1D,           GL_TEXTURE_1D},
+    {HgiTextureType2D,           GL_TEXTURE_2D},
+    {HgiTextureType3D,           GL_TEXTURE_3D}
+};
+
 void
 HgiGLConversions::GetFormat(
         HgiFormat inFormat,
@@ -229,6 +237,12 @@ GLenum
 HgiGLConversions::GetDepthCompareFunction(HgiCompareFunction cf)
 {
     return _compareFunctionTable[cf][1];
+}
+
+GLenum
+HgiGLConversions::GetTextureType(HgiTextureType tt)
+{
+    return _textureTypeTable[tt][1];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
