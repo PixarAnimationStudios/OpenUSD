@@ -38,7 +38,6 @@ TF_MAKE_STATIC_DATA(TfType, _schemaBaseTfType) {
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdTyped, TfType::Bases<UsdSchemaBase> >();
-    TfType::AddAlias<UsdSchemaBase, UsdTyped>("Typed");
 }
 
 UsdTyped::~UsdTyped()
