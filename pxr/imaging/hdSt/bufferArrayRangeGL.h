@@ -41,9 +41,10 @@ typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSh
 
 class HdStBufferResourceGL;
 
-typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
-typedef std::vector<
-    std::pair<TfToken, HdStBufferResourceGLSharedPtr> > HdStBufferResourceGLNamedList;
+using HdStBufferResourceGLSharedPtr = 
+    std::shared_ptr<class HdStBufferResourceGL>;
+using HdStBufferResourceGLNamedList =
+    std::vector< std::pair<TfToken, HdStBufferResourceGLSharedPtr> >;
 
 /// \class HdStBufferArrayRangeGL
 ///

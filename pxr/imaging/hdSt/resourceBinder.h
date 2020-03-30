@@ -32,7 +32,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 
-#include "pxr/base/tf/hashmap.h"
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +41,8 @@ class HdStDrawItem;
 class HdStShaderCode;
 class HdStResourceGL;
 
-typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
+using HdStBufferResourceGLSharedPtr = 
+    std::shared_ptr<class HdStBufferResourceGL>;
 typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;

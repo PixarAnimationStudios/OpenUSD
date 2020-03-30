@@ -1165,7 +1165,7 @@ HdSt_ResourceBinder::Bind(HdBindingRequest const& req) const
     } else if (req.IsResource()) {
         HdBufferResourceSharedPtr res_ = req.GetResource();
         HdStBufferResourceGLSharedPtr res =
-            boost::static_pointer_cast<HdStBufferResourceGL> (res_);
+            std::static_pointer_cast<HdStBufferResourceGL> (res_);
 
         BindBuffer(req.GetName(), res, req.GetByteOffset());
     } else if (req.IsInterleavedBufferArray()) {
@@ -1190,7 +1190,7 @@ HdSt_ResourceBinder::Unbind(HdBindingRequest const& req) const
     } else if (req.IsResource()) {
         HdBufferResourceSharedPtr res_ = req.GetResource();
         HdStBufferResourceGLSharedPtr res =
-            boost::static_pointer_cast<HdStBufferResourceGL> (res_);
+            std::static_pointer_cast<HdStBufferResourceGL> (res_);
 
         UnbindBuffer(req.GetName(), res);
     } else if (req.IsInterleavedBufferArray()) {

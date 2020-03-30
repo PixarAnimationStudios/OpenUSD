@@ -53,8 +53,6 @@ typedef boost::shared_ptr<class HdStDispatchBuffer>
     HdStDispatchBufferSharedPtr;
 typedef boost::shared_ptr<class HdStGLSLProgram>
     HdStGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class HdStPersistentBuffer>
-    HdStPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResource>
     HdStTextureResourceSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResourceHandle>
@@ -63,6 +61,9 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
     HdSt_BasisCurvesTopologySharedPtr;
 typedef boost::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
+
+using HdStPersistentBufferSharedPtr =
+    std::shared_ptr<class HdStPersistentBuffer>; 
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
