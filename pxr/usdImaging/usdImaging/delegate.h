@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
@@ -375,74 +376,13 @@ public:
     virtual HdVolumeFieldDescriptorVector
     GetVolumeFieldDescriptors(SdfPath const &volumeId) override;
 
-    // Instance path resolution
-
-    /// Resolves a \p protoRprimId and \p protoIndex back to original
-    /// instancer path by backtracking nested instancer hierarchy.
-    ///
-    /// The "original instancer" is defined as the rprim corresponding to the
-    /// top-level instanceable reference prim or top-level PointInstancer prim.
-    /// It will be an empty path if the given protoRprimId is not
-    /// instanced.
-    ///
-    /// If the instancer instances heterogeneously, the instance index of the
-    /// prototype rprim doesn't match the instance index in the instancer.
-    ///
-    /// For example, if we have:
-    ///
-    ///     instancer {
-    ///         prototypes = [ A, B, A, B, B ]
-    ///     }
-    ///
-    /// ...then the indices would be:
-    ///
-    ///        protoIndex          instancerIndex
-    ///     A: [0, 1]              [0, 2]
-    ///     B: [0, 1, 2]           [1, 3, 5]
-    ///
-    /// To track this mapping, the \p instancerIndex is returned which
-    /// corresponds to the given protoIndex. ALL_INSTANCES may be returned
-    /// if \p protoRprimId isn't instanced.
-    ///
-    /// Also, note if there are nested instancers, the returned path will
-    /// be the top-level instancer, and the \p instancerIndex will be for
-    /// that top-level instancer. This can lead to situations where, contrary
-    /// to the previous scenario, the instancerIndex has fewer possible values
-    /// than the \p protoIndex:
-    ///
-    /// For example, if we have:
-    ///
-    ///     instancerBottom {
-    ///         prototypes = [ A, A, B ]
-    ///     }
-    ///     instancerTop {
-    ///         prototypes = [ instancerBottom, instancerBottom ]
-    ///     }
-    ///
-    /// ...then the indices might be:
-    ///
-    ///        protoIndex          instancerIndex  (for instancerTop)
-    ///     A: [0, 1, 2, 3]        [0, 0, 1, 1]
-    ///     B: [0, 1]              [0, 1]
-    ///
-    /// because \p instancerIndex are indices for instancerTop, which only has
-    /// two possible indices.
-    ///
-    /// If \p masterCachePath is not NULL, and the input rprim is an instance
-    /// resulting from an instanceable reference (and not from a
-    /// PointInstancer), then it will be set to the cache path of the
-    /// corresponding instance master prim. Otherwise, it will be set to null.
-    ///
-    /// If \p instanceContext is not NULL, it is populated with the list of 
-    /// instance roots that must be traversed to get to the rprim. If this
-    /// list is non-empty, the last prim is always the forwarded rprim.
-    static constexpr int ALL_INSTANCES = -1;
+    // Picking path resolution
+    // Resolves a \p rprimId and \p instanceIndex back to the original USD
+    // gprim and instance index.
     USDIMAGING_API
-    virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoRprimId,
-                                            int protoIndex,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath=NULL,
-                                            SdfPathVector *instanceContext=NULL) override;
+    virtual SdfPath
+    GetScenePrimPath(SdfPath const& rprimId,
+                     int instanceIndex) override;
 
     // ExtComputation support
     USDIMAGING_API
@@ -518,6 +458,7 @@ public:
     /// Populate HdxSelection for given \p path (root) and \p instanceIndex.
     /// If indexPath is an instancer and instanceIndex is ALL_INSTANCES (-1),
     /// all instances will be selected.
+    static constexpr int ALL_INSTANCES = -1;
     USDIMAGING_API
     bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
                            const SdfPath &usdPath,

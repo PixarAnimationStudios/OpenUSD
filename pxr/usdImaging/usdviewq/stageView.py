@@ -2073,9 +2073,9 @@ class StageView(QtOpenGL.QGLWidget):
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quintuple:
+        Returns a quartuple:
           selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex, selectedElementIndex
+          selectedInstanceIndex
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
@@ -2109,7 +2109,6 @@ class StageView(QtOpenGL.QGLWidget):
         results = renderer.TestIntersection(
                 pickFrustum.ComputeViewMatrix(),
                 pickFrustum.ComputeProjectionMatrix(),
-                Gf.Matrix4d(1.0),
                 self._dataModel.stage.GetPseudoRoot(), self._renderParams)
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
             print("Pick results = {}".format(results))
@@ -2160,29 +2159,13 @@ class StageView(QtOpenGL.QGLWidget):
 
             if inImageBounds:
                 selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex, selectedElementIndex = self.pick(
-                                                                pickFrustum)
+                selectedInstanceIndex = self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
                 selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex, selectedElementIndex = \
-                    None, Sdf.Path.emptyPath, None, None, None
-
-            # The call to TestIntersection will return the path to a master prim
-            # (selectedPrimPath) and its instancer (selectedInstancerPath) if 
-            # the prim is instanced.
-            # Figure out which instance was actually picked and use that as our 
-            # selection in this case.
-            if selectedInstancerPath:
-                instancePrimPath, absInstanceIndex = \
-                    renderer.GetPrimPathFromInstanceIndex(
-                        selectedPrimPath, selectedInstanceIndex)
-                if instancePrimPath:
-                    selectedPrimPath = instancePrimPath
-                    selectedInstanceIndex = absInstanceIndex
-            else:
-                selectedInstanceIndex = ALL_INSTANCES
+                selectedInstanceIndex = \
+                    None, Sdf.Path.emptyPath, None, None
 
             if button:
                 self.signalPrimSelected.emit(

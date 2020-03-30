@@ -122,14 +122,6 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &protoCachePath,
-                                            int protoIndex,
-                                            int *instanceCountForThisLevel,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath = NULL,
-                                            SdfPathVector *
-                                                instanceContext = NULL) override;
-
     virtual size_t
     SampleInstancerTransform(UsdPrim const& instancerPrim,
                              SdfPath const& instancerPath,
@@ -169,8 +161,12 @@ public:
         UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
-    /// \name Selection
+    /// \name Picking & selection
     // ---------------------------------------------------------------------- //
+
+    virtual SdfPath GetScenePrimPath(
+        SdfPath const& cachePath,
+        int instanceIndex) const override;
 
     virtual bool PopulateSelection(
         HdSelection::HighlightMode const& highlightMode,
@@ -179,14 +175,6 @@ public:
         int const hydraInstanceIndex,
         VtIntArray const &parentInstanceIndices,
         HdSelectionSharedPtr const &result) const override;
-
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
-                                            SdfPath const &protoCachePath,
-                                            int protoIndex,
-                                            int *instanceCountForThisLevel,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath,
-                                            SdfPathVector *instanceContext) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Volume field information

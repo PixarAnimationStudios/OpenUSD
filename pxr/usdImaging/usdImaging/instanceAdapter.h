@@ -125,14 +125,6 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &protoCachePath,
-                                            int protoIndex,
-                                            int *instanceCountForThisLevel,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath = NULL,
-                                            SdfPathVector *
-                                                instanceContext = NULL) override;
-
     virtual std::vector<VtArray<TfToken>>
     GetInstanceCategories(UsdPrim const& prim) override;
 
@@ -175,8 +167,13 @@ public:
         UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
-    /// \name Selection
+    /// \name Picking & selection
     // ---------------------------------------------------------------------- //
+
+    virtual SdfPath GetScenePrimPath(
+        SdfPath const& cachePath,
+        int instanceIndex) const override;
+
     virtual bool PopulateSelection( 
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,
@@ -308,8 +305,8 @@ private:
     struct _IsInstanceInheritedPrimvarVaryingFn;
     bool _IsInstanceInheritedPrimvarVarying(UsdPrim const& instancer) const;
 
-    struct _GetPathForInstanceIndexFn;
     struct _PopulateInstanceSelectionFn;
+    struct _GetScenePrimPathFn;
 
     // Helper functions for dealing with "actual" instances to be drawn.
     //

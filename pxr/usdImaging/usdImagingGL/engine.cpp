@@ -563,34 +563,31 @@ bool
 UsdImagingGLEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root,
     const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex,
-    int *outHitElementIndex)
+    int *outHitInstanceIndex)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return _legacyImpl->TestIntersection(
             viewMatrix,
             projectionMatrix,
-            worldToLocalSpace,
             root,
             params,
             outHitPoint,
             outHitPrimPath,
             outHitInstancerPath,
-            outHitInstanceIndex,
-            outHitElementIndex);
+            outHitInstanceIndex);
     }
 
     TF_VERIFY(_delegate);
     TF_VERIFY(_taskController);
 
-    // XXX(UsdImagingPaths): Is it correct to map USD root path directly
-    // to the cachePath here?
+    // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
+    // subtree, but the subtree in the hydra namespace might be very different
+    // (e.g. for native instancing).  We need a translation step.
     SdfPath cachePath = root.GetPath();
     SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
     _UpdateHydraCollection(&_intersectCollection, roots, params);
@@ -608,7 +605,7 @@ UsdImagingGLEngine::TestIntersection(
     HdxPickHitVector allHits;
     HdxPickTaskContextParams pickParams;
     pickParams.resolveMode = HdxPickTokens->resolveNearestToCenter;
-    pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
+    pickParams.viewMatrix = viewMatrix;
     pickParams.projectionMatrix = projectionMatrix;
     pickParams.clipPlanes = params.clipPlanes;
     pickParams.collection = _intersectCollection;
@@ -631,6 +628,11 @@ UsdImagingGLEngine::TestIntersection(
                                hit.worldSpaceHitPoint[1],
                                hit.worldSpaceHitPoint[2]);
     }
+
+    hit.objectId = _delegate->GetScenePrimPath(hit.objectId, hit.instanceIndex);
+    hit.instancerId = _delegate->ConvertIndexPathToCachePath(hit.instancerId)
+                        .GetAbsoluteRootOrPrimPath();
+
     if (outHitPrimPath) {
         *outHitPrimPath = hit.objectId;
     }
@@ -640,70 +642,47 @@ UsdImagingGLEngine::TestIntersection(
     if (outHitInstanceIndex) {
         *outHitInstanceIndex = hit.instanceIndex;
     }
-    if (outHitElementIndex) {
-        *outHitElementIndex = hit.elementIndex;
-    }
 
     return true;
 }
 
-SdfPath
-UsdImagingGLEngine::GetRprimPathFromPrimId(int primId) const
+bool
+UsdImagingGLEngine::DecodeIntersection(
+    unsigned char const primIdColor[4],
+    unsigned char const instanceIdColor[4],
+    SdfPath *outHitPrimPath,
+    SdfPath *outHitInstancerPath,
+    int *outHitInstanceIndex)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
-        return _legacyImpl->GetRprimPathFromPrimId(primId);
-    }
-
-    TF_VERIFY(_delegate);
-    return _delegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
-}
-
-SdfPath
-UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
-    GfVec4i const &primIdColor,
-    GfVec4i const &instanceIdColor,
-    int * instanceIndexOut)
-{
-    unsigned char primIdColorBytes[] =  {
-        uint8_t(primIdColor[0]),
-        uint8_t(primIdColor[1]),
-        uint8_t(primIdColor[2]),
-        uint8_t(primIdColor[3])
-    };
-
-    int primId = DecodeIDRenderColor(primIdColorBytes);
-    SdfPath result = GetRprimPathFromPrimId(primId);
-    if (!result.IsEmpty()) {
-        if (instanceIndexOut) {
-            unsigned char instanceIdColorBytes[] =  {
-                uint8_t(instanceIdColor[0]),
-                uint8_t(instanceIdColor[1]),
-                uint8_t(instanceIdColor[2]),
-                uint8_t(instanceIdColor[3])
-            };
-            *instanceIndexOut = DecodeIDRenderColor(instanceIdColorBytes);
-        }
-    }
-    return result;
-}
-
-SdfPath 
-UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
-        const SdfPath &protoRprimId,
-        int protoIndex,
-        int *instancerIndex,
-        SdfPath *masterCachePath,
-        SdfPathVector *instanceContext)
-{
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return SdfPath();
+        return false;
     }
 
     TF_VERIFY(_delegate);
 
-    return _delegate->GetPathForInstanceIndex(protoRprimId, protoIndex,
-                                              instancerIndex, masterCachePath,
-                                              instanceContext);
+    int primId = HdxPickTask::DecodeIDRenderColor(primIdColor);
+    int instanceIdx = HdxPickTask::DecodeIDRenderColor(instanceIdColor);
+    SdfPath primPath =
+        _delegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
+    SdfPath delegateId, instancerId;
+    _delegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(primPath,
+        &delegateId, &instancerId);
+
+    primPath = _delegate->GetScenePrimPath(primPath, instanceIdx);
+    instancerId = _delegate->ConvertIndexPathToCachePath(instancerId)
+                    .GetAbsoluteRootOrPrimPath();
+
+    if (outHitPrimPath) {
+        *outHitPrimPath = primPath;
+    }
+    if (outHitInstancerPath) {
+        *outHitInstancerPath = instancerId;
+    }
+    if (outHitInstanceIndex) {
+        *outHitInstanceIndex = instanceIdx;
+    }
+
+    return !primPath.IsEmpty();
 }
 
 //----------------------------------------------------------------------------

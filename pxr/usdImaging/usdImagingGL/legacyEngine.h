@@ -99,20 +99,15 @@ public:
     void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    SdfPath GetRprimPathFromPrimId(int primId) const;
-
-    USDIMAGINGGL_API
     bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
-        const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root,
         const UsdImagingGLRenderParams& params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL,
-        int *outHitElementIndex = NULL);
+        int *outHitInstanceIndex = NULL);
 
 private:
     bool _SupportsPrimitiveRestartIndex();

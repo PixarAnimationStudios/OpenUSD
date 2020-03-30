@@ -1998,72 +1998,25 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
 }
 
 SdfPath 
-UsdImagingDelegate::GetPathForInstanceIndex(const SdfPath &protoRprimId,
-                                            int protoIndex,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath,
-                                            SdfPathVector *instanceContext)
+UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
+                                            int instanceIndex)
 {
-    SdfPath cachePath = ConvertIndexPathToCachePath(protoRprimId);
+    SdfPath cachePath = ConvertIndexPathToCachePath(rprimId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (!primInfo || !primInfo->adapter) {
+        TF_WARN("GetScenePrimPath: Couldn't find rprim <%s>",
+                rprimId.GetText());
+        return cachePath;
+    }
+
+    SdfPath protoPath = primInfo->adapter->GetScenePrimPath(
+        cachePath, instanceIndex);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "GetPathForInstanceIndex(%s, %d)\n",
-        cachePath.GetText(), protoIndex);
+        "GetScenePrimPath(%s, %d) = %s\n",
+        cachePath.GetText(), instanceIndex, protoPath.GetText());
 
-    // resolve all instancer hierarchy.
-    int instanceCount = 0;
-    int origPrototypeIndex = protoIndex;
-    int resolvedInstancerIndex = ALL_INSTANCES; // PointInstancer may overwrite.
-    SdfPathVector resolvedInstanceContext;
-    SdfPath resolvedMasterCachePath;
-    do {
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (!TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) ||
-            !TF_VERIFY(primInfo->adapter, "%s\n", cachePath.GetText())) {
-            return ConvertCachePathToIndexPath(cachePath);
-        }
-
-        UsdImagingPrimAdapterSharedPtr const& adapter = primInfo->adapter;
-        cachePath = adapter->GetPathForInstanceIndex(
-            cachePath, protoIndex, &instanceCount, &resolvedInstancerIndex,
-            &resolvedMasterCachePath, &resolvedInstanceContext);
-
-        if (cachePath.IsEmpty()) {
-            break;
-        }
-
-        // reach to non-prototype node or native instancer's instance path.
-        if (instanceCount == 0) {
-            break;
-        }
-
-        // decode protoIndex to the next level
-        if (instanceCount > 0) {
-            protoIndex /= instanceCount;
-        }
-
-    } while(true);
-
-    TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
-        "(%s, %d, %s, %s)\n", protoRprimId.GetText(), origPrototypeIndex,
-        cachePath.GetText(), resolvedInstancerIndex,
-        resolvedMasterCachePath.GetText(),
-        resolvedInstanceContext.empty() ? "(empty)" :
-        resolvedInstanceContext.back().GetText());
-
-    if (instancerIndex) {
-        *instancerIndex = resolvedInstancerIndex;
-    }
-
-    if (masterCachePath) {
-        *masterCachePath = resolvedMasterCachePath;
-    }
-
-    if (instanceContext) {
-        *instanceContext = resolvedInstanceContext;
-    }
-
-    return ConvertCachePathToIndexPath(cachePath);
+    return protoPath;
 }
 
 bool

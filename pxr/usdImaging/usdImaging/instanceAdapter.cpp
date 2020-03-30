@@ -1999,15 +1999,15 @@ UsdImagingInstanceAdapter::_ComputeInstanceMap(
     return indices;
 }
 
-struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
+struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
 {
-    _GetPathForInstanceIndexFn(
-        UsdImagingInstanceAdapter* adapter_,
-        SdfPath const &usdPath_,
+    _GetScenePrimPathFn(
+        const UsdImagingInstanceAdapter* adapter_,
         int instanceIndex_,
-        SdfPathVector *instanceContextPaths_)
-        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_),
-          instanceContextPaths(instanceContextPaths_)
+        const SdfPath &protoPath_)
+        : adapter(adapter_)
+        , instanceIndex(instanceIndex_)
+        , protoPath(protoPath_)
     { }
 
     void Initialize(size_t numInstances)
@@ -2017,131 +2017,78 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        if (instanceIdx == static_cast<size_t>(instanceIndex) && instanceContext.size() > 0) {
-            instancePath = instanceContext.back().GetPath();
-
-            if (instanceContextPaths) {
-                for (const UsdPrim &p: instanceContext) {
-                    instanceContextPaths->push_back(p.GetPath());
-                }
+        // If this iteration is the right instance index, compose all the master
+        // paths together to get the instance proxy path.  Include the proto
+        // path, if one was provided.
+        if (instanceIdx == instanceIndex) {
+            SdfPathVector instanceChain;
+            if (!protoPath.IsEmpty()) {
+                instanceChain.push_back(protoPath);
             }
-
+            for (UsdPrim const& prim : instanceContext) {
+                instanceChain.push_back(prim.GetPath());
+            }
+            primPath = adapter->_GetPrimPathFromInstancerChain(instanceChain);
             return false;
         }
         return true;
     }
 
-    UsdImagingInstanceAdapter* adapter;
-    SdfPath usdPath;
-    SdfPath instancePath;
-    int instanceIndex;
-    SdfPathVector *instanceContextPaths;
+    const UsdImagingInstanceAdapter* adapter;
+    const size_t instanceIndex;
+    const SdfPath& protoPath;
+    SdfPath primPath;
 };
 
-/*virtual*/
-SdfPath 
-UsdImagingInstanceAdapter::GetPathForInstanceIndex(
-                    SdfPath const &protoCachePath,
-                    int protoIndex,
-                    int *instanceCount,
-                    int *instancerIndex,
-                    SdfPath *masterCachePath,
-                    SdfPathVector *instanceContext)
+/* virtual */
+SdfPath
+UsdImagingInstanceAdapter::GetScenePrimPath(
+    SdfPath const& cachePath,
+    int instanceIndex) const
 {
-    UsdPrim const &prim = _GetPrim(protoCachePath.GetAbsoluteRootOrPrimPath());
-    if (!prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return SdfPath();
-    }
+    HD_TRACE_FUNCTION();
 
-    if (prim.IsInstance() && !_PrimIsInstancer(prim)) {
-        // This instance prim is handled by this adapter, but it's not
-        // an instancer so the instance index doesn't apply.
-        return SdfPath();
-    }
+    // For child prims (prototypes) and instances, the process is the same:
+    // find the associated hydra instancer, and use the instance index to
+    // look up the composed instance path.  They differ based on whether you
+    // append a prototype path, and how you find the hydra instancer.
+    if (_IsChildPrim(
+            _GetPrim(cachePath.GetAbsoluteRootOrPrimPath()), cachePath)) {
 
-    SdfPath instancerPath = protoCachePath.GetPrimPath();
-    TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "NI: Look for %s [%d]\n", instancerPath.GetText(), protoIndex);
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "GetScenePrimPath: instance proto = %s\n", cachePath.GetText());
 
-    _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
-    if (instIt == _instancerData.end()) {
-        // if it's not found, it may be an instance of other instancer.
-        TF_FOR_ALL(instIt, _instancerData) {
-            _InstancerData& inst = instIt->second;
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(
+            cachePath.GetAbsoluteRootOrPrimPath(),
+            cachePath, &instancerContext);
 
-            if (inst.childPointInstancers.find(instancerPath) !=
-                inst.childPointInstancers.end()) {
-                    return GetPathForInstanceIndex(instIt->first,
-                                                   protoIndex,
-                                                   instanceCount,
-                                                   instancerIndex,
-                                                   masterCachePath,
-                                                   instanceContext);
-            }
+        _GetScenePrimPathFn primPathFn(this, instanceIndex, proto.path);
+        _RunForAllInstancesToDraw(
+            _GetPrim(instancerContext.instancerCachePath), &primPathFn);
+        return primPathFn.primPath;
+    } else {
+
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "GetScenePrimPath: instance = %s\n", cachePath.GetText());
+
+        SdfPath const* instancerPath =
+            TfMapLookupPtr(_instanceToInstancerMap, cachePath);
+        if (instancerPath == nullptr) {
+            return SdfPath();
         }
-        TF_CODING_ERROR("Unknown instancer %s", instancerPath.GetText());
-        return SdfPath();
-    }
-
-    // remap protoIndex
-    //
-    // lookup instanceIndices to get the absolute index to
-    // instancePaths.
-    //
-    // for example:
-    //    if a prototype is instanced into 4 instances,
-    //
-    //         instanceIndices = [0, 1, 2, 3]
-    //
-    //    and say the second instance gets invised,
-    //
-    //         instanceIndices = [0, 2, 3]
-    //
-    // if we pick 3, this function takes protoIndex = 2.
-    // we need to map 2 back to 3 by instanceIndices[protoIndex]
-
-    // XXX: The usage of _GetTimeWithOffset here feels weird...
-    VtIntArray instanceIndices = _ComputeInstanceMap(
-        _GetPrim(instancerPath), instIt->second, _GetTimeWithOffset(0.0));
-
-    int instanceIndex = protoIndex;
-    if (!TF_VERIFY(static_cast<size_t>(instanceIndex) <
-            instanceIndices.size())) {
-        return SdfPath();
-    }
-    instanceIndex = instanceIndices[instanceIndex];
-
-    _GetPathForInstanceIndexFn getPathForInstanceIndexFn(
-        this, instancerPath, instanceIndex, instanceContext);
-
-    _RunForAllInstancesToDraw(prim, &getPathForInstanceIndexFn);
-
-    TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "NI: Found %s\n", getPathForInstanceIndexFn.instancePath.GetText());
-
-    // stop recursion, since we know instanceAdapter doesn't create an instacer
-    // which has a parent instancer.
-    // (actually it can be retrieved at the functor initialization if we like,
-    //  for future extension)
-    if (instanceCount) {
-        *instanceCount = 0;
-    }
-
-    if (masterCachePath) {
-        const auto rprimPathIt = instIt->second.primMap.find(protoCachePath);
-        if (rprimPathIt != instIt->second.primMap.end()) {
-            *masterCachePath = rprimPathIt->second.path;
-
-            TF_DEBUG(USDIMAGING_SELECTION).Msg(
-                "NI: masterCachePath %s\n", masterCachePath->GetText());
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, *instancerPath);
+        if (instrData == nullptr) {
+            return SdfPath();
         }
+        _GetScenePrimPathFn primPathFn(this, instanceIndex,
+            SdfPath::EmptyPath());
+        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathFn);
+        return primPathFn.primPath;
     }
 
-    // intentionally leave instancerIndex as it is, so that
-    // partial selection of point instancer can be passed through.
-
-    return getPathForInstanceIndexFn.instancePath;
+    return SdfPath();
 }
 
 struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn

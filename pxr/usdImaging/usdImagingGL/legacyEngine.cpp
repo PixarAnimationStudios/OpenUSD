@@ -211,16 +211,6 @@ UsdImagingGLLegacyEngine::_PopulateBuffers()
     _AppendSubData<GLuint>(GL_ELEMENT_ARRAY_BUFFER, &offset, _lineVerts);
 }
 
-SdfPath
-UsdImagingGLLegacyEngine::GetRprimPathFromPrimId(int primId) const 
-{
-    _PrimIDMap::const_iterator it = _primIDMap.find(primId);
-    if(it != _primIDMap.end()) {
-        return it->second;
-    }
-    return SdfPath();
-}
-
 void
 UsdImagingGLLegacyEngine::_DrawPolygons(bool drawID)
 {
@@ -1303,14 +1293,12 @@ bool
 UsdImagingGLLegacyEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
     const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex,
-    int *outHitElementIndex)
+    int *outHitInstanceIndex)
 {
     // Choose a framebuffer that's large enough to catch thin slice polys.  No
     // need to go too large though, since the depth writes will accumulate to
@@ -1353,8 +1341,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
             drawTarget->AddAttachment(
                 "instanceId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
             drawTarget->AddAttachment(
-                "elementId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
-            drawTarget->AddAttachment(
                 "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
             drawTarget->Unbind();
         }
@@ -1391,9 +1377,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
 
     glEnable(GL_DEPTH_TEST);
 
-    // Setup the modelview matrix
-    const GfMatrix4d modelViewMatrix = worldToLocalSpace * viewMatrix;
-
     // Set up camera matrices and viewport for picking.
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -1401,7 +1384,7 @@ UsdImagingGLLegacyEngine::TestIntersection(
     
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glLoadMatrixd(modelViewMatrix.GetArray());
+    glLoadMatrixd(viewMatrix.GetArray());
    
     glViewport(0, 0, width, height);
 
@@ -1434,11 +1417,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
-
-    GLubyte elementId[width*height*4];
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("elementId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, elementId);
 
     GLfloat depths[width*height];
     glBindTexture(GL_TEXTURE_2D,
@@ -1481,17 +1459,18 @@ UsdImagingGLLegacyEngine::TestIntersection(
         if (outHitPrimPath) {
             int idIndex = zMinIndex*4;
 
-            *outHitPrimPath = GetRprimPathFromPrimId(
-                    HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
+            int primIdVal = HdxPickTask::DecodeIDRenderColor(&primId[idIndex]);
+            _PrimIDMap::const_iterator it = _primIDMap.find(primIdVal);
+            if(it != _primIDMap.end()) {
+                *outHitPrimPath = it->second;
+            } else {
+                *outHitPrimPath = SdfPath();
+            }
+
             if (outHitInstanceIndex) {
                 *outHitInstanceIndex = HdxPickTask::DecodeIDRenderColor(
                         &instanceId[idIndex]);
             }
-            if (outHitElementIndex) {
-                *outHitElementIndex = HdxPickTask::DecodeIDRenderColor(
-                        &elementId[idIndex]);
-            }
-
         }
     }
 
