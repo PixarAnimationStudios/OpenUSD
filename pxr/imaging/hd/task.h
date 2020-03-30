@@ -36,6 +36,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <memory>
 #include <vector>
 #include <unordered_map>
 #include <boost/shared_ptr.hpp>
@@ -43,16 +44,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
-
-typedef boost::shared_ptr<class HdSceneTask> HdSceneTaskSharedPtr;
-typedef std::vector<HdSceneTaskSharedPtr> HdSceneTaskSharedPtrVector;
+using HdTaskSharedPtr = std::shared_ptr<class HdTask>;
+using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
 
 // We want to use token as a key not std::string, so use an unordered_map over
 // VtDictionary
-typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
-                                                                  HdTaskContext;
+using HdTaskContext = 
+    std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
 
 class HdTask {
 public:

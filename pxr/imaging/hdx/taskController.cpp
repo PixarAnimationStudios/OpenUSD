@@ -1862,8 +1862,8 @@ HdxTaskController::IsConverged() const
 
     HdTaskSharedPtrVector tasks = GetRenderingTasks();
     for (auto const& task : tasks) {
-        boost::shared_ptr<HdxProgressiveTask> progressiveTask =
-            boost::dynamic_pointer_cast<HdxProgressiveTask>(task);
+        std::shared_ptr<HdxProgressiveTask> progressiveTask =
+            std::dynamic_pointer_cast<HdxProgressiveTask>(task);
         if (progressiveTask) {
             converged = converged && progressiveTask->IsConverged();
             if (!converged) {

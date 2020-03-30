@@ -116,8 +116,8 @@ static void CameraAndLightTest()
         new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;
 
-    HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
-                                                               renderPassState);
+    HdTaskSharedPtr drawTask = std::make_shared<Hd_TestTask>(renderPass,
+                                                             renderPassState);
     HdTaskSharedPtrVector tasks = { drawTask };
 
     GfMatrix4d tx(1.0f);

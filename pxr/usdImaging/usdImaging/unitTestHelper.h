@@ -192,7 +192,7 @@ public:
 
     void Draw() {
         HdTaskSharedPtrVector tasks = {
-            boost::make_shared<UsdImaging_TestTask>(_geometryPass, _renderTags)
+            std::make_shared<UsdImaging_TestTask>(_geometryPass, _renderTags)
         };
         _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
     }

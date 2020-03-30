@@ -38,8 +38,6 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
-
 #include <string>
 #include <sstream>
 
@@ -223,7 +221,8 @@ void
 HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 {
     HdTaskSharedPtrVector tasks = {
-        boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState, withGuides)
+        std::make_shared<HdSt_DrawTask>(renderPass, _renderPassState,
+            withGuides)
     };
     _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 
