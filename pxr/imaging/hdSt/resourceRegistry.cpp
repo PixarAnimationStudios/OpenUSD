@@ -87,7 +87,8 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
 }
 
 HdStResourceRegistry::HdStResourceRegistry()
-    : _numBufferSourcesToResolve(0)
+    : _hgi(nullptr)
+    , _numBufferSourcesToResolve(0)
     , _nonUniformAggregationStrategy()
     , _nonUniformImmutableAggregationStrategy()
     , _uniformUboAggregationStrategy()
@@ -167,6 +168,12 @@ HdStResourceRegistry::GetResourceAllocation() const
     HD_PERF_COUNTER_SET(HdPerfTokens->gpuMemoryUsed, gpuMemoryUsed);
 
     return result;
+}
+
+void
+HdStResourceRegistry::SetHgi(Hgi* hgi)
+{
+    _hgi = hgi;
 }
 
 /// ------------------------------------------------------------------------

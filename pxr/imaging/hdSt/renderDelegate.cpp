@@ -193,6 +193,11 @@ HdStRenderDelegate::SetDrivers(HdDriverVector const& drivers)
             break;
         }
     }
+    
+    if (_resourceRegistry) {
+        _resourceRegistry->SetHgi(_hgi);
+    }
+
     TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }
 

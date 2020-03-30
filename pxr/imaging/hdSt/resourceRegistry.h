@@ -35,6 +35,8 @@
 
 #include "pxr/imaging/hdSt/api.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferArrayRegistry.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -89,6 +91,9 @@ public:
 
     HDST_API
     VtDictionary GetResourceAllocation() const override;
+
+    HDST_API
+    void SetHgi(Hgi* hgi);
 
     /// ------------------------------------------------------------------------
     /// BAR allocation API
@@ -418,6 +423,8 @@ private:
         HdBufferArrayRangeSharedPtr range;
         HdBufferSourceSharedPtrVector sources;
     };
+
+    Hgi* _hgi;
 
     typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;
     _PendingSourceList    _pendingSources;
