@@ -144,7 +144,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             if (_passes[shadowId]) {
                 _passes[shadowId]->SetRprimCollection(col);
             } else {
-                _passes[shadowId] = boost::make_shared<HdSt_RenderPass>
+                _passes[shadowId] = std::make_shared<HdSt_RenderPass>
                     (&renderIndex, col);
             }
         }

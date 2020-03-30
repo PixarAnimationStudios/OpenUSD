@@ -40,7 +40,7 @@ class HdRenderIndex;
 class HdRenderDelegate;
 class HdResourceRegistry;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 
 /// \class HdEngine

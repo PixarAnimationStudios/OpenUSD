@@ -227,7 +227,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
             return;
         }
 
-        _renderPass = boost::make_shared<HdSt_ImageShaderRenderPass>(
+        _renderPass = std::make_shared<HdSt_ImageShaderRenderPass>(
             renderIndex, collection);
 
         // We do not use renderDelegate->CreateRenderPassState because

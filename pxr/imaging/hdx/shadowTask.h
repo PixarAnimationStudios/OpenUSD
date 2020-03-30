@@ -49,9 +49,9 @@ class HdStRenderPassState;
 
 typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
+using HdRenderPassSharedPtrVector = std::vector<HdRenderPassSharedPtr>;
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdRenderPassStateSharedPtrVector = 
     std::vector<HdRenderPassStateSharedPtr>;

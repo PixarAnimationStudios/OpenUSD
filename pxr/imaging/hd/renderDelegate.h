@@ -31,11 +31,9 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class SdfPath;
 class HdRprim;
@@ -47,8 +45,7 @@ class HdRenderPass;
 class HdInstancer;
 class HdDriver;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdDriverVector = std::vector<HdDriver*>;

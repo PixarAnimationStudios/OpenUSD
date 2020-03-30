@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 
 /// \class HdxRenderTask

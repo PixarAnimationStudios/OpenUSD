@@ -39,13 +39,12 @@
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
 #include "pxr/imaging/hd/unitTestNullRenderPass.h"
 
+#include <memory>
 #include <string>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<HdRenderPass>;
 
 /// A simple test task that just causes sync processing
 class UsdImaging_TestTask final : public HdTask

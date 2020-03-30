@@ -40,8 +40,7 @@ class HdSceneDelegate;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
-typedef boost::shared_ptr<class HdRenderPass>
-    HdRenderPassSharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 typedef boost::shared_ptr<class HdStRenderPassShader>
     HdStRenderPassShaderSharedPtr;
 
