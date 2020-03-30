@@ -41,8 +41,8 @@ class HdRenderIndex;
 class HdSceneDelegate;
 
 using HdDirtyListSharedPtr = std::shared_ptr<class HdDirtyList>;
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 
 /// \class HdRenderPass

@@ -132,7 +132,7 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
  , _collection(_tokens->testCollection, HdReprSelector())
 {
@@ -153,7 +153,7 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
  , _collection(_tokens->testCollection, HdReprSelector())
 {
@@ -169,7 +169,7 @@ HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 , _collection(_tokens->testCollection, HdReprSelector())
 {

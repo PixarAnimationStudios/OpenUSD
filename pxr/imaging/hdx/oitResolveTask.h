@@ -31,13 +31,15 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdStRenderPassState>
-    HdStRenderPassStateSharedPtr;
+using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
+
 typedef boost::shared_ptr<class HdRenderPass>
     HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassShader>

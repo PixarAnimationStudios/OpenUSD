@@ -135,7 +135,7 @@ HdSt_ImageShaderRenderPass::_Execute(
 
     // Downcast render pass state
     HdStRenderPassStateSharedPtr stRenderPassState =
-        boost::dynamic_pointer_cast<HdStRenderPassState>(
+        std::dynamic_pointer_cast<HdStRenderPassState>(
         renderPassState);
     if (!TF_VERIFY(stRenderPassState)) return;
 

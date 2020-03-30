@@ -28,7 +28,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/make_shared.hpp>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,7 +78,7 @@ HdRenderDelegate::SetDrivers(HdDriverVector const& drivers)
 HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {
-    return boost::make_shared<HdRenderPassState>();
+    return std::make_shared<HdRenderPassState>();
 }
 
 TfToken

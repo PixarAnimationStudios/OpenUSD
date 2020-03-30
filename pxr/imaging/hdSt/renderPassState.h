@@ -34,9 +34,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassShader>

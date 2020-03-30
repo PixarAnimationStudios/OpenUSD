@@ -232,7 +232,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
 
         // We do not use renderDelegate->CreateRenderPassState because
         // ImageShaders always use HdSt
-        _renderPassState = boost::make_shared<HdStRenderPassState>();
+        _renderPassState = std::make_shared<HdStRenderPassState>();
         _renderPassState->SetEnableDepthMask(false);
         _renderPassState->SetColorMask(HdRenderPassState::ColorMaskRGBA);
         _renderPassState->SetBlendEnabled(true);

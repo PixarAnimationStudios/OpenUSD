@@ -48,8 +48,8 @@ class HdInstancer;
 class HdDriver;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdDriverVector = std::vector<HdDriver*>;
 
