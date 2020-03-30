@@ -88,7 +88,17 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Jinja2
     find_package(Jinja2)
 else()
-    find_package(PythonInterp 2.7 REQUIRED)
+    # -- Python
+    # A Python interpreter is still required for certain build options.
+    if (PXR_BUILD_DOCUMENTATION OR PXR_BUILD_TESTS
+        OR PXR_VALIDATE_GENERATED_CODE)
+
+        if(PXR_USE_PYTHON_3)
+            find_package(PythonInterp 3.0 REQUIRED)
+        else()
+            find_package(PythonInterp 2.7 REQUIRED)
+        endif()
+    endif()
  
     # --Boost
     find_package(Boost
