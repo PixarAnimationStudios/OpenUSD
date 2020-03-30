@@ -1898,7 +1898,7 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array

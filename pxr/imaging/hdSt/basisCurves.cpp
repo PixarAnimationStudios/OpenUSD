@@ -355,7 +355,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
         _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
         // add new repr
-        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         *dirtyBits |= HdChangeTracker::NewRepr;

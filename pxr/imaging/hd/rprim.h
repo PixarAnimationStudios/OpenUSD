@@ -49,7 +49,7 @@ class HdMaterial;
 class HdRenderIndex;
 class HdRenderParam;
 
-typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
+using HdReprSharedPtr = std::shared_ptr<HdRepr>;
 
 using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
