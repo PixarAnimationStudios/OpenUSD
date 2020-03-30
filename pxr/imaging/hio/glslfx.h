@@ -33,12 +33,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/scoped_ptr.hpp>
-
 #include <string>
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -257,7 +256,7 @@ private:
     std::vector<std::string> _configOrder;
     std::set<std::string> _seenFiles;
 
-    boost::scoped_ptr<HioGlslfxConfig> _config;
+    std::unique_ptr<HioGlslfxConfig> _config;
 
     bool _valid;
     std::string _invalidReason; // if _valid is false, reason why

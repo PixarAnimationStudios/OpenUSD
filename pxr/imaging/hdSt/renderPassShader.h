@@ -37,6 +37,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -104,7 +106,7 @@ public:
 
 private:
     TfToken _glslfxFile;
-    boost::scoped_ptr<HioGlslfx> _glslfx;
+    std::unique_ptr<HioGlslfx> _glslfx;
     mutable size_t  _hash;
     mutable bool    _hashValid;
 

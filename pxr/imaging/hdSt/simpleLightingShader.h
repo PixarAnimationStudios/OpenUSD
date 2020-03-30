@@ -43,9 +43,9 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -106,7 +106,7 @@ private:
     GlfSimpleLightingContextRefPtr _lightingContext; 
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
-    boost::scoped_ptr<HioGlslfx> _glslfx;
+    std::unique_ptr<HioGlslfx> _glslfx;
 
     HdMaterialParamVector _lightTextureParams;
 };

@@ -33,7 +33,7 @@
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hio/glslfx.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -200,7 +200,7 @@ private:
     HdPolygonMode _polygonMode;
     float _lineWidth;
 
-    boost::scoped_ptr<HioGlslfx> _glslfx;
+    std::unique_ptr<HioGlslfx> _glslfx;
     bool _frustumCullingPass;
     ID _hash;
 
