@@ -31,7 +31,6 @@
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/repr.h"

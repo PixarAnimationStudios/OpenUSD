@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/materialParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
