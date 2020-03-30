@@ -25,9 +25,13 @@ pxr_plugin(LoFi
         ${EMBREE_INCLUDE_DIR}
 
     PUBLIC_CLASSES
+        debugCodes
+        tokens
         shader
+        vertexArray
+        resourceRegistry
+        utils
         mesh
-        scene
         renderer
         sceneDelegate
         renderDelegate
@@ -35,11 +39,10 @@ pxr_plugin(LoFi
         rendererPlugin
         
     PUBLIC_HEADERS
+        api.h
         shader.h
-        scene.h
         renderer.h
         renderParam.h
-
 
     RESOURCE_FILES
         plugInfo.json

@@ -1,12 +1,12 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2020 benmalartre
 //
 // Unlicensed
 //
 #include <iostream>
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/renderDelegate.h"
-#include "pxr/imaging/plugin/LoFi/renderParam.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 
 #include "pxr/imaging/hd/extComputation.h"
@@ -44,7 +44,7 @@ const TfTokenVector LoFiRenderDelegate::SUPPORTED_BPRIM_TYPES =
 
 std::mutex LoFiRenderDelegate::_mutexResourceRegistry;
 std::atomic_int LoFiRenderDelegate::_counterResourceRegistry;
-HdResourceRegistrySharedPtr LoFiRenderDelegate::_resourceRegistry;
+LoFiResourceRegistrySharedPtr LoFiRenderDelegate::_resourceRegistry;
 
 LoFiRenderDelegate::LoFiRenderDelegate()
     : HdRenderDelegate()
@@ -62,26 +62,23 @@ LoFiRenderDelegate::LoFiRenderDelegate(
 void
 LoFiRenderDelegate::_Initialize()
 {
-  // Create the top-level scene.
-  _scene = new LoFiScene();
-
-  // Create the top-level renderer.
-  _renderer = new LoFiRenderer();
-
-  // Store top-level LoFi objects inside a render param that can be
-  // passed to prims during Sync(). Also pass a handle to the render thread.
-  _renderParam = std::make_shared<LoFiRenderParam>(_scene);
-
-  _renderPassState = CreateRenderPassState();
-
-  // Initialize one resource registry for all embree plugins
+  // Initialize one resource registry for all St plugins
+  // It will also add the resource to the logging object so we
+  // can query the resources used by all St plugins later
   std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
-
+  
   if (_counterResourceRegistry.fetch_add(1) == 0) {
-      _resourceRegistry.reset( new HdResourceRegistry() );
+      _resourceRegistry.reset( new LoFiResourceRegistry() );
+      HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
   }
 
-    _resourceRegistry.reset(new HdResourceRegistry());
+  // Create the top-level renderer.
+  _renderer = new LoFiRenderer(_resourceRegistry);
+    
+
+  // Create the RenderPassState Object (???)
+  _renderPassState = CreateRenderPassState();
+
 }
 
 LoFiRenderDelegate::~LoFiRenderDelegate()
@@ -90,28 +87,23 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
   {
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
     if (_counterResourceRegistry.fetch_sub(1) == 1) {
-        _resourceRegistry.reset();
+      _resourceRegistry.reset();
     }
   }
 
-  _renderThread.StopThread();
-
-  // Destroy lofi scene and renderer
-  _renderParam.reset();
-  delete _scene;
   delete _renderer;
-}
-
-HdRenderSettingDescriptorList
-LoFiRenderDelegate::GetRenderSettingDescriptors() const
-{
-    return _settingDescriptors;
 }
 
 void 
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
   //_renderPassState->SetCamera(_sceneDelegate)
+}
+
+HdRenderSettingDescriptorList
+LoFiRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return _settingDescriptors;
 }
 
 TfTokenVector const&
@@ -138,19 +130,13 @@ LoFiRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
-HdRenderParam*
-LoFiRenderDelegate::GetRenderParam() const
-{
-    return _renderParam.get();
-}
-
 HdRenderPassSharedPtr 
 LoFiRenderDelegate::CreateRenderPass(
     HdRenderIndex *index,
     HdRprimCollection const& collection)
 {
     return HdRenderPassSharedPtr(
-      new LoFiRenderPass(index, collection, _scene, _renderer)
+      new LoFiRenderPass(index, collection, _renderer)
     );  
 }
 

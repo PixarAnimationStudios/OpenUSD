@@ -1,3 +1,4 @@
+#line 1 "/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/renderer.h"
 //
 // Copyright 2020 benmalartre
 //
@@ -7,7 +8,8 @@
 #define PXR_IMAGING_PLUGIN_LOFI_RENDERER_H
 
 #include "pxr/pxr.h"
-
+#include "pxr/base/tf/debug.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -19,8 +21,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class LoFiScene;
-
 /// \class LoFiRenderer
 ///
 /// LoFiRenderer implements a low-fidelity opengl 3.3 renderer
@@ -28,14 +28,10 @@ class LoFiScene;
 class LoFiRenderer final {
 public:
     /// Renderer constructor.
-    LoFiRenderer();
+    LoFiRenderer(LoFiResourceRegistrySharedPtr resourceRegistry);
 
     /// Renderer destructor.
     ~LoFiRenderer();
-
-    /// Set the LoFi scene that this renderer will use
-    ///   \param scene The LoFi scene to use.
-    void SetScene(LoFiScene* scene);
 
     /// Specify a new viewport size for the sample/color buffer.
     ///   \param width The new viewport width.
@@ -47,13 +43,8 @@ public:
     ///   \param projMatrix The camera's view-to-NDC projection matrix.
     void SetCamera(const GfMatrix4d& viewMatrix, const GfMatrix4d& projMatrix);
 
-    /// Sets whether to use scene colors while rendering.
-    ///   \param enableSceneColors Whether drawing should sample color, or draw
-    ///                            everything as white.
-    void SetEnableSceneColors(bool enableSceneColors);
-
     /// Set the clear color to use 
-    void GetClearColor(const GfVec4f& clearValue);
+    void SetClearColor(const GfVec4f& clearValue);
 
     /// Rendering entrypoint
     void Render(void);
@@ -78,19 +69,17 @@ private:
     // Clear color
     GfVec4f _clearColor;
 
-    // Our handle to the lofi scene.
-    LoFiScene* _scene;
+    // Resource registry
+    LoFiResourceRegistrySharedPtr _resourceRegistry;
 
     // Our simple glsl program;
-    GLSLProgram         _program;
+    LoFiGLSLProgramSharedPtr       _program;
 
     // Test buffers
     GLuint               _vao;
     GLuint               _vbo;
+    GLuint               _cbo;
     GLuint               _ebo;
-  
-    // Should we enable scene colors?
-    bool _enableSceneColors;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

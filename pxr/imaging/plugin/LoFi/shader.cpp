@@ -1,19 +1,26 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "pxr/base/arch/hash.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void GLSLShader::OutputInfoLog()
+void LoFiGLSLShader::_ComputeHash()
+{
+  _hash = ArchHash(_code.c_str(), _code.size(), 0);;
+}
+
+void LoFiGLSLShader::OutputInfoLog()
 {
   char buffer[512];
   glGetShaderInfoLog(_id, 512, NULL, &buffer[0]);
-  std::cout << "COMPILE : " << (std::string)buffer << std::endl;
+  std::cerr << "[LoFi][Compile GLSL shader] Info log : " << 
+    (std::string)buffer << std::endl;
 }
 
-void GLSLShader::Load(const char* filename, GLenum type)
+void LoFiGLSLShader::Load(const char* filename, GLenum type)
 {
   std::ifstream file;
   file.open(filename, std::ios::in);
@@ -31,29 +38,27 @@ void GLSLShader::Load(const char* filename, GLenum type)
                       std::istreambuf_iterator<char>());
         _code += '\0';
       }
-      else std::cout << "[LoFi] File is empty : " << filename << std::endl;
+      else std::cerr << "[LoFi][Load shader from file] File is empty : " << 
+        filename << std::endl;
     }
-    else std::cout << "[LoFi] File is invalid : " << filename << std::endl;
+    else std::cerr << "[LoFi][Load shader from file] File is invalid : " <<
+      filename << std::endl;
     
   }
-  else std::cout << "[LoFi] Fail open file : " << filename << std::endl;
+  else std::cerr << "[LoFi][Load shader from file] Failure open file : " << 
+    filename << std::endl;
 
   _type = type;
 }
 
-void GLSLShader::Set(const char* code, GLenum type)
+void LoFiGLSLShader::Set(const char* code, GLenum type)
 {
   _code = code;
   _type = type;
 }
 
-void GLSLShader::Compile()
+void LoFiGLSLShader::Compile()
 {
-  std::cout << "COMPILE SHADER CODE FROM FILE " << std::endl;
-  std::cout << _code << std::endl;
-  std::cout << "-------------------------------" << std::endl;
-  std::cout << std::flush;
-
   _id = glCreateShader(_type);
   const char* code[1] = { _code.c_str() };
   glShaderSource(_id, 1, code, NULL);
@@ -61,17 +66,25 @@ void GLSLShader::Compile()
   
   GLint status;
   glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
-  if(status == GL_TRUE)
-    std::cout << "[GLSLCreateShader] Success Compiling Shader !"<<std::endl;
-  else
+  if(status != GL_TRUE)
   {
-    std::cout << "[GLSLCreateShader] Fail Compiling Shader !" <<std::endl;
-    // Output Info Log
+    std::cerr << "[LoFi][Compile Shader] Fail compiling code: \n" << 
+      _code << std::endl;
+
     OutputInfoLog();
   }
+  _ComputeHash();
 }
 
-void GLSLProgram::_Build()
+void LoFiGLSLProgram::_ComputeHash()
+{
+  _hash = 0;
+  if(_vert)boost::hash_combine(_hash, _vert->Hash());
+  if(_geom)boost::hash_combine(_hash, _geom->Hash());
+  if(_frag)boost::hash_combine(_hash, _frag->Hash());
+}
+
+void LoFiGLSLProgram::_Build()
 {  
   _pgm = glCreateProgram();
   
@@ -100,50 +113,54 @@ void GLSLProgram::_Build()
   GLint status = 0;
   glGetProgramiv(_pgm, GL_LINK_STATUS, (int *)&status);
   if(status == GL_TRUE) {
-    std::cout << "[GLSLCreateShader] Success Build Program !"<<std::endl;
+    std::cerr << "[LoFi][Build GLSL program] Success : " << _name <<std::endl;
   } else {
     glDeleteProgram(_pgm);
-    std::cout << "[GLSLCreateShader] Fail Build Program !" <<std::endl;
+    std::cerr << "[LoFi][Build GLSL program] Fail : " << _name << std::endl;
     OutputInfoLog();
   }
   glUseProgram(0);
+  _ComputeHash();
 }
 
-void GLSLProgram::Build(const char* name, const char** vertex, const char** fragment)
+void LoFiGLSLProgram::Build(const char* name, const char** vertex, 
+  const char** fragment)
 {
   _name = name;
-  GLSLShader vertShader;
+  LoFiGLSLShader vertShader;
   vertShader.Set(vertex[0], GL_VERTEX_SHADER);
   _vert = &vertShader;
 
   _geom = NULL;
 
-  GLSLShader fragShader;
+  LoFiGLSLShader fragShader;
   fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();
 }
 
-void GLSLProgram::Build(const char* name, const char** vertex, const char** geom, const char** fragment)
+void LoFiGLSLProgram::Build(const char* name, const char** vertex, 
+  const char** geom, const char** fragment)
 {
   _name = name;
-  GLSLShader vertShader;
+  LoFiGLSLShader vertShader;
   vertShader.Set(vertex[0], GL_VERTEX_SHADER);
   _vert = &vertShader;
 
-  GLSLShader geomShader;
+  LoFiGLSLShader geomShader;
   geomShader.Set(geom[0], GL_GEOMETRY_SHADER);
   _geom = &geomShader;
 
-  GLSLShader fragShader;
+  LoFiGLSLShader fragShader;
   fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();
 }
 
-void GLSLProgram::Build(const char* name, GLSLShader* vertex, GLSLShader* fragment)
+void LoFiGLSLProgram::Build(const char* name, LoFiGLSLShader* vertex, 
+  LoFiGLSLShader* fragment)
 {
   _name = name;
   _vert = vertex;
@@ -152,7 +169,8 @@ void GLSLProgram::Build(const char* name, GLSLShader* vertex, GLSLShader* fragme
   _Build();
 }
 
-void GLSLProgram::Build(const char* name, GLSLShader* vertex, GLSLShader* geom, GLSLShader* fragment)
+void LoFiGLSLProgram::Build(const char* name, LoFiGLSLShader* vertex, 
+  LoFiGLSLShader* geom, LoFiGLSLShader* fragment)
 {
   _name = name;
   _vert = vertex;
@@ -162,12 +180,13 @@ void GLSLProgram::Build(const char* name, GLSLShader* vertex, GLSLShader* geom, 
   _Build();
 }
 
-void GLSLProgram::OutputInfoLog()
+void LoFiGLSLProgram::OutputInfoLog()
 {
   char buffer[1024];
   GLsizei l;
   glGetProgramInfoLog(_pgm,1024,&l,&buffer[0]);
-  std::cout << _name << ":" << (std::string) buffer << std::endl;
+  std::cerr << "[LoFi][Build GLSL program] Info log : " << 
+    (std::string)buffer << std::endl;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

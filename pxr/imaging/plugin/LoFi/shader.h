@@ -3,80 +3,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
-#include <pxr/imaging/glf/glew.h>
+#include <boost/functional/hash.hpp>
+
+#include "pxr/imaging/plugin/LoFi/debugCodes.h"
+#include "pxr/imaging/plugin/LoFi/utils.h"
+#include "pxr/imaging/glf/glew.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// check opengl error
-//----------------------------------------------------------------------------
-static bool 
-GLCheckError(const char* message)
-{
-  GLenum err = glGetError();
-  if(err)
-  {
-    while(err != GL_NO_ERROR)
-    {
-      switch(err)
-      {
-        case GL_INVALID_OPERATION:
-          std::cout << "[OpenGL Error] " << message 
-            << " INVALID_OPERATION" << std::endl;
-          break;
-        case GL_INVALID_ENUM:
-          std::cout << "[OpenGL Error] " << message 
-            << " INVALID_ENUM" << std::endl;
-          break;
-        case GL_INVALID_VALUE:
-          std::cout << "[OpenGL Error] " << message 
-            << " INVALID_VALUE" << std::endl;
-          break;
-        case GL_OUT_OF_MEMORY:
-          std::cout << "[OpenGL Error] " << message 
-            << " OUT_OF_MEMORY" << std::endl;
-          break;
-        case GL_STACK_UNDERFLOW:
-          std::cout << "[OpenGL Error] " << message 
-            << "STACK_UNDERFLOW" <<std::endl;
-          break;
-        case GL_STACK_OVERFLOW:
-          std::cout << "[OpenGL Error] " << message 
-            << "STACK_OVERFLOW" << std::endl;
-          break;
-        default:
-          std::cout << "[OpenGL Error] " << message 
-            << " UNKNOWN_ERROR" << std::endl;
-          break;
-      }
-      err = glGetError();
-    }
-    return true;
-  }
-  return false;
-}
 
-static void 
-GLFlushError()
-{
-  GLenum err;
-  while((err = glGetError()) != GL_NO_ERROR){};
-}
-
-enum GLSLShaderType
+enum LoFiGLSLShaderType
 {
   SHADER_VERTEX,
   SHADER_GEOMETRY,
   SHADER_FRAGMENT
 };
     
-class GLSLShader{
+class LoFiGLSLShader{
 public:
-  GLSLShader():_id(0),_code(""){};
-  GLSLShader(const GLSLShader& ) = delete;
-  GLSLShader(GLSLShader&&) = delete;
+  LoFiGLSLShader():_id(0),_code(""){};
+  LoFiGLSLShader(const LoFiGLSLShader& ) = delete;
+  LoFiGLSLShader(LoFiGLSLShader&&) = delete;
 
-  ~GLSLShader()
+  ~LoFiGLSLShader()
   {
     if(_id)glDeleteShader(_id);
   }
@@ -85,37 +35,69 @@ public:
   void OutputInfoLog();
   GLuint Get(){return _id;};
   void Set(const char* code, GLenum type);
+  void _ComputeHash();
+  size_t Hash(){return _hash;};
+
 private:
   std::string         _code;
   GLenum              _type;
   GLuint              _id;
+  size_t              _hash;
 };
     
-class GLSLProgram
+class LoFiGLSLProgram
 {
-friend GLSLShader;
+friend LoFiGLSLShader;
 public:
-  GLSLProgram():_vert(NULL),_geom(NULL),_frag(NULL),_pgm(0){};
-  GLSLProgram(const GLSLProgram&) = delete;
-  GLSLProgram(GLSLProgram&&) = delete;
-
-  ~GLSLProgram()
+  // constructor (empty program)
+  LoFiGLSLProgram():_vert(NULL),_geom(NULL),_frag(NULL),_pgm(0){};
+  
+  // destructor
+  ~LoFiGLSLProgram()
   {
     if(_pgm)glDeleteProgram(_pgm);
   }
+
+  /// internal build of the glsl program
   void _Build();
+
+  /// build glsl program from vertex and fragment code
   void Build(const char* name, const char** s_vert, const char** s_frag);
-  void Build(const char* name, const char** s_vert, const char** s_geom, const char** s_frag);
-  void Build(const char* name, GLSLShader* vertex, GLSLShader* fragment);
-  void Build(const char* name, GLSLShader* vertex, GLSLShader* geom, GLSLShader* fragment);
+
+  /// build glsl program from vertex, geometry and fragment code
+  void Build(const char* name, const char** s_vert, const char** s_geom, 
+    const char** s_frag);
+
+  /// build glsl program from vertex and fragment LoFiGLSLShader objects
+  void Build(const char* name, LoFiGLSLShader* vertex, 
+    LoFiGLSLShader* fragment);
+
+  /// build glsl program from vertex, geometry and fragment LoFiGLSLShader 
+  /// objects
+  void Build(const char* name, LoFiGLSLShader* vertex,
+    LoFiGLSLShader* geom, LoFiGLSLShader* fragment);
+
+  /// output build program info log
   void OutputInfoLog();
+
+  /// compute hash
+  void _ComputeHash();
+  size_t Hash(){return _hash;};
+
+  /// get GL program id
   GLuint Get(){return _pgm;};
+
+  /// this object is non-copyable
+  //LoFiGLSLProgram(const LoFiGLSLProgram&) = delete;
+  //LoFiGLSLProgram(LoFiGLSLProgram&&) = delete;
+
 private:
-  GLSLShader*         _vert;
-  GLSLShader*         _geom;
-  GLSLShader*         _frag;
-  GLuint              _pgm;
-  std::string         _name; 
+  LoFiGLSLShader*         _vert;
+  LoFiGLSLShader*         _geom;
+  LoFiGLSLShader*         _frag;
+  GLuint                  _pgm;
+  std::string             _name; 
+  size_t                  _hash;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -8,10 +8,7 @@
 #define PXR_IMAGING_PLUGIN_LOFI_RENDER_PARAM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderThread.h"
-
-#include "pxr/imaging/plugin/LoFi/scene.h"
+#include "pxr/imaging/hd/renderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -20,17 +17,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class LoFiRenderParam final : public HdRenderParam {
 public:
-    LoFiRenderParam(LoFiScene* scene): _scene(scene){};
+    LoFiRenderParam(){};
 
     virtual ~LoFiRenderParam() = default;
 
-    LoFiScene* GetScene() 
-    {
-        return _scene;
-    }
-
 private:
-    LoFiScene*          _scene;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

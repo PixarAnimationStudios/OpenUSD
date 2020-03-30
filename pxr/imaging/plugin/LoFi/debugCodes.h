@@ -1,0 +1,27 @@
+//
+// Copyright 2020 benmalartre
+//
+// Unlicensed
+//
+#ifndef PXR_IMAGING_PLUGIN_LOFI_DEBUG_CODES_H
+#define PXR_IMAGING_PLUGIN_LOFI_DEBUG_CODES_H
+
+#include "pxr/pxr.h"
+#include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEBUG_CODES(
+
+  LOFI_PERF,
+  LOFI_REGISTRY,
+  LOFI_RENDERER,
+  LOFI_SHADER,
+  LOFI_ERROR
+);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_IMAGING_PLUGIN_LOFI_DEBUG_CODES_H
