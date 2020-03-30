@@ -213,8 +213,7 @@ GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
                                                        int minorVersion,
                                                        bool coreProfile,
                                                        bool directRendering)
-    : _private(NULL)
-    , _coreProfile(coreProfile)
+    : _coreProfile(coreProfile)
 
 {
     if (!GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
