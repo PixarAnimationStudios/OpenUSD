@@ -45,9 +45,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStDrawItem;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+using Hd_VertexAdjacencySharedPtr = std::shared_ptr<class Hd_VertexAdjacency>;
+using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
+
 typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
 using HdStResourceRegistrySharedPtr =

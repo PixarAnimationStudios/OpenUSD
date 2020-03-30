@@ -749,7 +749,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 // If the primvar has more data than needed, we issue a warning,
                 // but don't skip the primvar update. Truncate the buffer to
                 // the expected length.
-                boost::static_pointer_cast<HdVtBufferSource>(source)
+                std::static_pointer_cast<HdVtBufferSource>(source)
                     ->Truncate(numPoints);
             }
 

@@ -36,9 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStExtCompGpuComputationBufferSource>
-    HdStExtCompGpuComputationBufferSourceSharedPtr;
-
 /// \class HdStExtCompGpuComputationBufferSource
 ///
 /// A Buffer Source that represents input processing for a GPU implementation

@@ -696,7 +696,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* VERTICES */
     {
         HdBufferSourceSharedPtr const source =
-            boost::make_shared<HdVtBufferSource>(
+            std::make_shared<HdVtBufferSource>(
                 HdTokens->points, _GetCubeVertices(localVolumeBBox));
 
         HdBufferSourceSharedPtrVector sources = { source };

@@ -30,12 +30,14 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/extCompInputSource.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtCompCpuComputation;
 
-typedef boost::shared_ptr<HdExtCompCpuComputation>
-                                               HdExtCompCpuComputationSharedPtr;
+using HdExtCompCpuComputationSharedPtr = 
+    std::shared_ptr<HdExtCompCpuComputation>;
 
 ///
 /// An Hd Buffer Source Computation that is used to bind an ExtComputation input

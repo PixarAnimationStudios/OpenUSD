@@ -50,11 +50,11 @@ class HdRenderIndex;
 class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
-typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
+
+using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef std::vector<HdComputationSharedPtr> HdComputationVector;

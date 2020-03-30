@@ -24,12 +24,6 @@
 #ifndef PXR_IMAGING_HD_ST_RESOURCE_REGISTRY_H
 #define PXR_IMAGING_HD_ST_RESOURCE_REGISTRY_H
 
-#include <atomic>
-#include <map>
-#include <memory>
-#include <boost/shared_ptr.hpp>
-#include <tbb/concurrent_vector.h>
-
 #include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 
@@ -44,6 +38,11 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
+#include <boost/shared_ptr.hpp>
+#include <tbb/concurrent_vector.h>
+
+#include <atomic>
+#include <map>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -66,11 +65,11 @@ typedef boost::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdSt_MeshTopology>
     HdSt_MeshTopologySharedPtr;
-typedef boost::shared_ptr<class Hd_VertexAdjacency>
-    Hd_VertexAdjacencySharedPtr;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
+using Hd_VertexAdjacencySharedPtr = 
+    std::shared_ptr<class Hd_VertexAdjacency>;
 
 /// \class HdStResourceRegistry
 ///

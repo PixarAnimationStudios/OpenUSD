@@ -37,6 +37,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,7 +48,6 @@ class HdBufferArrayRange;
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::weak_ptr<HdBufferArrayRange> HdBufferArrayRangePtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 /// \union HdBufferArrayUsageHint
 ///

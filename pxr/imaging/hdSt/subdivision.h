@@ -158,7 +158,7 @@ protected:
 /// so that reducing data copy between osd buffer and HdBufferSource.
 ///
 template <typename VERTEX_BUFFER>
-class HdSt_OsdRefineComputation : public HdBufferSource {
+class HdSt_OsdRefineComputation final : public HdBufferSource {
 public:
     HdSt_OsdRefineComputation(HdSt_MeshTopology *topology,
                             HdBufferSourceSharedPtr const &source,

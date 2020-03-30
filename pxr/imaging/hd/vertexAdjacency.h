@@ -33,18 +33,17 @@
 
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency>
-                Hd_VertexAdjacencySharedPtr;
-typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation>
-                Hd_AdjacencyBuilderComputationSharedPtr;
-typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation>
-                Hd_AdjacencyBuilderComputationPtr;
+using Hd_VertexAdjacencySharedPtr = 
+    std::shared_ptr<class Hd_VertexAdjacency>;
+using Hd_AdjacencyBuilderComputationSharedPtr = 
+    std::shared_ptr<class Hd_AdjacencyBuilderComputation>;
+using Hd_AdjacencyBuilderComputationPtr = 
+    std::weak_ptr<class Hd_AdjacencyBuilderComputation>;
 
 class HdMeshTopology;
 

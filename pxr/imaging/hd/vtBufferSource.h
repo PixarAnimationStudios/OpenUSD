@@ -46,7 +46,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// An implementation of HdBufferSource where the source data value is a
 /// VtValue.
 ///
-class HdVtBufferSource : public HdBufferSource {
+class HdVtBufferSource final : public HdBufferSource
+{
 public:
     /// Constructs a new buffer from a VtValue.
     ///

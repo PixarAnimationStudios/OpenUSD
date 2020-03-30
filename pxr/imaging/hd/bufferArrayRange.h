@@ -38,8 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+
+using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 
 /// \class HdBufferArrayRange
 ///
