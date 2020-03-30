@@ -213,8 +213,6 @@ namespace {
 HdStShaderCodeSharedPtr
 _MakeFallbackVolumeShader()
 {
-    using HioGlslfxSharedPtr = boost::shared_ptr<class HioGlslfx>;
-
     const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
 
     // Note that we use HdStSurfaceShader for a volume shader.
