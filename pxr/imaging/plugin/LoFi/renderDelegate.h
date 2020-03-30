@@ -8,7 +8,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -26,8 +26,6 @@ class LoFiRenderParam;
 
 TF_DECLARE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 
-
-class LoFiScene;
 class LoFiRenderer;
 ///
 /// \class LoFiRenderDelegate
@@ -91,8 +89,7 @@ public:
 
     void CommitResources(HdChangeTracker *tracker) override;
 
-    // Opaque render params used to pass the LoFi Scene around
-    HdRenderParam* GetRenderParam() const override;
+    //HdRenderParam* GetRenderParam() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
@@ -102,34 +99,19 @@ private:
     /// Resource registry used in this render delegate
     static std::mutex _mutexResourceRegistry;
     static std::atomic_int _counterResourceRegistry;
-    static HdResourceRegistrySharedPtr _resourceRegistry;
+    static LoFiResourceRegistrySharedPtr _resourceRegistry;
 
     // LoFi initialization routine.
     void _Initialize();
 
-    // Handle for the top-level LoFi scene
-    LoFiScene* _scene;
-
     // Handle for the top-level LoFi renderer
     LoFiRenderer* _renderer;
 
+    // Handle to the render param to pass
+    //LoFiRenderParam* _renderParams;
+
     // Handle to the renderPassState
     HdRenderPassStateSharedPtr _renderPassState;
-
-    // A version counter for edits to _scene.
-    std::atomic<int> _sceneVersion;
-
-    // A shared LoFiRenderParam object that stores top-level LoFi state;
-    // passed to prims during Sync().
-    std::shared_ptr<LoFiRenderParam> _renderParam;
-
-    // A background render thread for running the actual renders in. The
-    // render thread object manages synchronization between the scene data
-    // and the background-threaded renderer.
-    HdRenderThread _renderThread;
-
-    // An LoFi renderer object, to perform the actual raytracing.
-    //LoFiRenderer _renderer;
 
     // A list of render setting exports.
     HdRenderSettingDescriptorList _settingDescriptors;

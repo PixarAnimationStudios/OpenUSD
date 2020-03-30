@@ -12,6 +12,7 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/plugin/LoFi/vertexArray.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -20,25 +21,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class LoFiScene;
+class LoFiResourceRegistry;
+
 /// \class LoFiMesh
-///
-/// This class is an example of a Hydra Rprim, or renderable object, and it
-/// gets created on a call to HdRenderIndex::InsertRprim() with a type of
-/// HdPrimTypeTokens->mesh.
-///
-/// The prim object's main function is to bridge the scene description and the
-/// renderable representation. The Hydra image generation algorithm will call
-/// HdRenderIndex::SyncAll() before any drawing; this, in turn, will call
-/// Sync() for each mesh with new data.
-///
-/// Sync() is passed a set of dirtyBits, indicating which scene buffers are
-/// dirty. It uses these to pull all of the new scene data and constructs
-/// updated geometry objects.
-///
-/// An rprim's state is lazily populated in Sync(); matching this, Finalize()
-/// can do the heavy work of releasing state (such as handles into the top-level
-/// scene), so that object population and existence aren't tied to each other.
 ///
 class LoFiMesh final : public HdMesh 
 {
@@ -63,15 +48,25 @@ protected:
         TfToken const &reprToken,
         HdDirtyBits *dirtyBits) override;
 
+    void _InitializeMesh( HdSceneDelegate* sceneDelegate,
+                          HdDirtyBits*     dirtyBits,
+                          TfToken const    &reprToken);
+
+    void _UpdateMesh( HdSceneDelegate* sceneDelegate,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const    &reprToken);
+
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
-    void _PopulateLoFiMesh(HdSceneDelegate* sceneDelegate,
-                          LoFiScene*         scene,
-                          HdDirtyBits*     dirtyBits,
-                          HdMeshReprDesc const &desc);
+    /*
+    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
+                               HdDirtyBits dirtyBits);
 
     TfTokenVector _UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate, 
                                                   HdDirtyBits dirtyBits);
+    */
+
+    //void _PopulateTopology(HdSceneDelegate* sceneDelegate);
 
     // Get num points
     const inline int GetNumPoints() const{return _points.size();};
@@ -83,29 +78,41 @@ protected:
     const inline GfVec3f* GetPositionsPtr() const{return _points.cdata();};
 
     // Get normals ptr
-    const inline GfVec3i* GetNormalsPtr() const{return _normals.cdata();};
-
-     // Get indices ptr
-    const inline GfVec3i* GetIndicesPtr() const{return _triangles.cdata();};
+    const inline GfVec3f* GetNormalsPtr() const{return _normals.cdata();};
 
     // Get colors ptr
-    const inline GfVec3i* GetIndicesPtr() const{return _colors.cdata();};
+    const inline GfVec3f* GetColorsPtr() const{return _colors.cdata();};
+
+     // Get indices ptr
+    const inline int* GetIndicesPtr() const{return _triangles.cdata();};
+
+    // Get samples ptr
+    const inline int* GetSamplesPtr() const{return _samples.cdata();};
 
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
     LoFiMesh &operator =(const LoFiMesh&) = delete;
 
 private:
-
-    // Cached scene data. VtArrays are reference counted, so as long as we
-    // only call const accessors keeping them around doesn't incur a buffer
-    // copy.
-    HdMeshTopology                  _topology;
+    uint64_t                        _instanceId;
     GfMatrix4f                      _transform;
     VtArray<GfVec3f>                _points;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
-    VtVec3iArray                    _triangles;
+    VtArray<int>                    _triangles;
+    VtArray<int>                    _samples;
+    LoFiVertexArraySharedPtr        _vertexArray;
+
+    // A local cache of primvar scene data. "data" is a copy-on-write handle to
+    // the actual primvar buffer, and "interpolation" is the interpolation mode
+    // to be used. This cache is used in _PopulateRtMesh to populate the
+    // primvar sampler map in the prototype context, which is used for shading.
+    struct PrimvarSource {
+        VtValue data;
+        HdInterpolation interpolation;
+    };
+    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
