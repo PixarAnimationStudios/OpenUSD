@@ -59,7 +59,7 @@ void
 HdTinyRenderDelegate::_Initialize()
 {
     std::cout << "Creating Tiny RenderDelegate" << std::endl;
-    _resourceRegistry.reset(new HdResourceRegistry());
+    _resourceRegistry = std::make_shared<HdResourceRegistry>();
 }
 
 HdTinyRenderDelegate::~HdTinyRenderDelegate()

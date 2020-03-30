@@ -104,7 +104,7 @@ HdPrmanRenderDelegate::_Initialize()
 
     // Initialize default resource registry. HdxPrman may override this with its
     // resource registry during HdxPrmanRenderDelegate::_Initialize.
-    _resourceRegistry.reset(new HdResourceRegistry());
+    _resourceRegistry = std::make_shared<HdResourceRegistry>();
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     const std::string interactiveIntegrator = 

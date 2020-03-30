@@ -126,7 +126,7 @@ HdStRenderDelegate::_Initialize()
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
     
     if (_counterResourceRegistry.fetch_add(1) == 0) {
-        _resourceRegistry.reset( new HdStResourceRegistry() );
+        _resourceRegistry = std::make_shared<HdStResourceRegistry>();
         HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
     }
 
