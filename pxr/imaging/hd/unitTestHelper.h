@@ -35,7 +35,6 @@
 #include "pxr/base/gf/matrix4d.h"
 
 #include <vector>
-#include <boost/scoped_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
