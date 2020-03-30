@@ -63,13 +63,13 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
     HdSt_BasisCurvesTopologySharedPtr;
 typedef boost::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdSt_MeshTopology>
-    HdSt_MeshTopologySharedPtr;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
 using Hd_VertexAdjacencySharedPtr = 
     std::shared_ptr<class Hd_VertexAdjacency>;
+using HdSt_MeshTopologySharedPtr = 
+    std::shared_ptr<class HdSt_MeshTopology>;
 
 /// \class HdStResourceRegistry
 ///
