@@ -18,7 +18,7 @@ Our test machines have the following software versions installed
 | CMake         | 3.14.6       | 3.16.5       | 3.16.5       |
 | Python        | 2.7.5        | 2.7.5,2.71.0 | 2.7.5,2.7.12 |
 | Boost         | 1.55         | 1.61.0       | 1.61.0       |
-| Intel TBB     | 4.4 Update 6 | 4.4 Update 6, 2017.0 | 4.4 Update 6, 2017.0 |
+| Intel TBB     | 2017 Update 6 | 2017 Update 6 | 2017 Update 6 |
 | OpenSubdiv    | 3.0.5, 3.4   | 3.0.5, 3.1.1 | 3.1.1        |
 | GLEW          | 2.0.0        | 2.0.0        | 2.0.0        |
 | OpenImageIO   | 1.8.9        | 1.8.9        | 1.8.9        |
