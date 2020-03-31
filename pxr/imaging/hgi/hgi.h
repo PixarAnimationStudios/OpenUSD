@@ -29,7 +29,10 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/blitEncoder.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/graphicsEncoder.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
@@ -41,7 +44,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiImmediateCommandBuffer;
 
 /// \class Hgi
 ///
@@ -63,7 +65,7 @@ class HgiImmediateCommandBuffer;
 /// in HdSt was written via OpenGL's immediate style API.
 ///
 ///
-class Hgi 
+class Hgi
 {
 public:
     HGI_API
@@ -72,24 +74,27 @@ public:
     HGI_API
     virtual ~Hgi();
 
-    // Helper function to return a Hgi object for the current platform.
-    // For example on Linux this may return HgiGL while on macOS HgiMetal.
-    // Caller, usually the application, owns the lifetime of the returned Hgi 
-    // pointer and must destroy it during shutdown.
+    /// Helper function to return a Hgi object for the current platform.
+    /// For example on Linux this may return HgiGL while on macOS HgiMetal.
+    /// Caller, usually the application, owns the lifetime of the returned Hgi
+    /// pointer and must destroy it during shutdown.
     HGI_API
     static Hgi* GetPlatformDefaultHgi();
 
-    //
-    // Command Buffers
-    //
-
-    /// Returns the immediate command buffer.
+    /// Returns a graphics encoder for temporary use that is ready to
+    /// execute draw commands. GraphicsEncoder is a lightweight object that
+    /// should be re-acquired each frame (don't hold onto it after EndEncoding).
+    /// This encoder should only be used in the thread that created it.
     HGI_API
-    virtual HgiImmediateCommandBuffer& GetImmediateCommandBuffer() = 0;
+    virtual HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
+        HgiGraphicsEncoderDesc const& desc) = 0;
 
-    //
-    // Resource API
-    //
+    /// Returns a blit encoder for temporary use that is ready to execute
+    /// resource copy commands. BlitEncoder is a lightweight object that
+    /// should be re-acquired each frame (don't hold onto it after EndEncoding).
+    /// This blit encoder can only be used in a single thread.
+    HGI_API
+    virtual HgiBlitEncoderUniquePtr CreateBlitEncoder() = 0;
 
     /// Create a texture in rendering backend.
     HGI_API
@@ -147,7 +152,7 @@ public:
     /// Destroy a pipeline state object
     HGI_API
     virtual void DestroyPipeline(HgiPipelineHandle* pipeHandle) = 0;
-    
+
     /// Return the name of the api (e.g. "OpenGL")
     HGI_API
     virtual TfToken const& GetAPIName() const = 0;

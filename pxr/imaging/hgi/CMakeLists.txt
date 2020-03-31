@@ -14,7 +14,6 @@ pxr_library(hgi
         graphicsEncoder
         graphicsEncoderDesc
         hgi
-        immediateCommandBuffer
         pipeline
         resourceBindings
         shaderFunction

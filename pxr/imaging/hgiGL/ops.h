@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,93 +21,86 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_GRAPHICS_ENCODER_H
-#define PXR_IMAGING_HGI_GL_GRAPHICS_ENCODER_H
+#ifndef PXR_IMAGING_HGIGL_OPS_H
+#define PXR_IMAGING_HGIGL_OPS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
-#include "pxr/imaging/hgi/graphicsEncoder.h"
+
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/blitEncoderOps.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
+
 #include "pxr/imaging/hgiGL/api.h"
 #include "pxr/imaging/hgiGL/device.h"
+
 #include <cstdint>
+#include <functional>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiGraphicsEncoderDesc;
+using HgiGLOpsFn = std::function<void(void)>;
 
-
-/// \class HgiGLGraphicsEncoder
+/// \class HgiGLOps
 ///
-/// OpenGL implementation of HgiGraphicsEncoder.
-///
-class HgiGLGraphicsEncoder final : public HgiGraphicsEncoder
+/// A collection of functions used by encoder to do deferred command recording.
+/// Modern API's support command buffer recording of gfx commands ('deferred').
+/// OpenGL uses 'immediate' mode instead where gfx commands are immediately
+/// processed. We use 'Ops' functions to record our OpenGL function in a list
+/// and only emit them to OpenGL during Commit.
+class HgiGLOps
 {
 public:
     HGIGL_API
-    virtual ~HgiGLGraphicsEncoder();
-
-    /// XXX This function is exposed temporarily for Hgi transition.
-    /// It allows code that is not yet converted to Hgi (e.g. HdSt) to insert
-    /// its opengl calls into the ops-stack of HgiGL to esnure that all commands
-    /// execute in the correct order. Once HdSt has transition fully to Hgi we
-    /// should remove this function.
-    HGIGL_API
-    void InsertFunctionOp(std::function<void(void)> const& fn);
+    static HgiGLOpsFn PushDebugGroup(const char* label);
 
     HGIGL_API
-    void Commit() override;
+    static HgiGLOpsFn PopDebugGroup();
 
     HGIGL_API
-    void SetViewport(GfVec4i const& vp) override;
+    static HgiGLOpsFn CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp);
 
     HGIGL_API
-    void SetScissor(GfVec4i const& sc) override;
+    static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 
     HGIGL_API
-    void BindPipeline(HgiPipelineHandle pipeline) override;
+    static HgiGLOpsFn ResolveImage(HgiResolveImageOp const& resolveOp);
+    
+    HGIGL_API
+    static HgiGLOpsFn SetViewport(GfVec4i const& vp);
 
     HGIGL_API
-    void BindResources(HgiResourceBindingsHandle resources) override;
+    static HgiGLOpsFn SetScissor(GfVec4i const& sc);
 
     HGIGL_API
-    void BindVertexBuffers(
+    static HgiGLOpsFn BindPipeline(HgiPipelineHandle pipeline);
+
+    HGIGL_API
+    static HgiGLOpsFn BindResources(HgiResourceBindingsHandle resources);
+
+    HGIGL_API
+    static HgiGLOpsFn BindVertexBuffers(
         uint32_t firstBinding,
         HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets) override;
+        std::vector<uint32_t> const& byteOffsets);
 
     HGIGL_API
-    void DrawIndexed(
+    static HgiGLOpsFn DrawIndexed(
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t firstIndex,
         uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount);
 
     HGIGL_API
-    void PushDebugGroup(const char* label) override;
-
-    HGIGL_API
-    void PopDebugGroup() override;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLGraphicsEncoder(
+    static HgiGLOpsFn BindFramebufferOp(
         HgiGLDevice* device,
         HgiGraphicsEncoderDesc const& desc);
 
-private:
-    HgiGLGraphicsEncoder() = delete;
-    HgiGLGraphicsEncoder & operator=(const HgiGLGraphicsEncoder&) = delete;
-    HgiGLGraphicsEncoder(const HgiGLGraphicsEncoder&) = delete;
-
-    bool _committed;
-    GLOpsVector _ops;
-
-    // Encoder is used only one frame so storing multi-frame state on encoder
-    // will not survive.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

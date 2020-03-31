@@ -25,259 +25,65 @@
 #include "pxr/imaging/hgiGL/blitEncoder.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hgi/blitEncoderOps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLBlitEncoder::HgiGLBlitEncoder(
-    HgiGLImmediateCommandBuffer* cmdBuf)
+HgiGLBlitEncoder::HgiGLBlitEncoder()
     : HgiBlitEncoder()
-    , _commandBuffer(cmdBuf)
+    , _committed(false)
 {
 
 }
 
 HgiGLBlitEncoder::~HgiGLBlitEncoder()
 {
+    TF_VERIFY(_committed, "Encoder created, but never commited.");
 }
 
 void
-HgiGLBlitEncoder::EndEncoding()
+HgiGLBlitEncoder::Commit()
 {
+    if (!_committed) {
+        _committed = true;
+        HgiGLDevice::Commit(_ops);
+    }
 }
 
 void
 HgiGLBlitEncoder::PushDebugGroup(const char* label)
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, label);
-        }
-
-    #endif
+    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
 }
 
 void
 HgiGLBlitEncoder::PopDebugGroup()
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPopDebugGroup();
-        }
-    #endif
+    _ops.push_back( HgiGLOps::PopDebugGroup() );
 }
 
-void 
+void
 HgiGLBlitEncoder::CopyTextureGpuToCpu(
     HgiTextureGpuToCpuOp const& copyOp)
 {
-    HgiTextureHandle texHandle = copyOp.gpuSourceTexture;
-    HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(texHandle.Get());
-
-    if (!TF_VERIFY(srcTexture && srcTexture->GetTextureId(), 
-        "Invalid texture handle")) {
-        return;
-    }
-
-    if (copyOp.destinationBufferByteSize == 0) {
-        TF_WARN("The size of the data to copy was zero (aborted)");
-        return;
-    }
-
-    HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
-
-    uint32_t layerCnt = copyOp.startLayer + copyOp.numLayers;
-    if (!TF_VERIFY(texDesc.layerCount >= layerCnt,
-        "Texture has less layers than attempted to be copied")) {
-        return;
-    }
-
-    GLenum glInternalFormat = 0;
-    GLenum glFormat = 0;
-    GLenum glPixelType = 0;
-
-    if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
-        HgiGLConversions::GetFormat(
-            texDesc.format, 
-            &glFormat, 
-            &glPixelType,
-            &glInternalFormat);
-    } else if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(texDesc.format == HgiFormatFloat32);
-        glFormat = GL_DEPTH_COMPONENT;
-        glPixelType = GL_FLOAT;
-        glInternalFormat = GL_DEPTH_COMPONENT32F;
-    } else {
-        TF_CODING_ERROR("Unknown HgTextureUsage bit");
-    }
-
-    // Make sure writes are finished before we read from the texture
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-    glGetTextureSubImage(
-        srcTexture->GetTextureId(),
-        copyOp.mipLevel,
-        copyOp.sourceTexelOffset[0], // x offset
-        copyOp.sourceTexelOffset[1], // y offset
-        copyOp.sourceTexelOffset[2], // z offset
-        texDesc.dimensions[0], // width
-        texDesc.dimensions[1], // height
-        texDesc.dimensions[2], // layerCnt
-        glFormat,
-        glPixelType,
-        copyOp.destinationBufferByteSize,
-        copyOp.cpuDestinationBuffer);
-
-    HGIGL_POST_PENDING_GL_ERRORS();
+    _ops.push_back( HgiGLOps::CopyTextureGpuToCpu(copyOp) );
 }
 
 void HgiGLBlitEncoder::CopyBufferCpuToGpu(
     HgiBufferCpuToGpuOp const& copyOp)
 {
-    if (copyOp.byteSize == 0 ||
-        !copyOp.cpuSourceBuffer ||
-        !copyOp.gpuDestinationBuffer)
-    {
-        return;
-    }
-
-    HgiGLBuffer* glBuffer = static_cast<HgiGLBuffer*>(
-        copyOp.gpuDestinationBuffer.Get());
-
-    // Offset into the src buffer
-    const char* src = ((const char*) copyOp.cpuSourceBuffer) +
-        copyOp.sourceByteOffset;
-
-    // Offset into the dst buffer
-    GLintptr dstOffset = copyOp.destinationByteOffset;
-
-    glNamedBufferSubData(
-        glBuffer->GetBufferId(),
-        dstOffset,
-        copyOp.byteSize,
-        src);
-
-    // Make sure the copy is finished before reads from buffer.
-    glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+    _ops.push_back( HgiGLOps::CopyBufferCpuToGpu(copyOp) );
 }
 
-void 
+void
 HgiGLBlitEncoder::ResolveImage(
     HgiResolveImageOp const& resolveOp)
 {
-    // Create framebuffers for resolve.
-    uint32_t readFramebuffer;
-    uint32_t writeFramebuffer;
-    glCreateFramebuffers(1, &readFramebuffer);
-    glCreateFramebuffers(1, &writeFramebuffer);
-
-    // Gather source and destination textures
-    HgiGLTexture* glSrcTexture = static_cast<HgiGLTexture*>(
-        resolveOp.source.Get());
-    HgiGLTexture* glDstTexture = static_cast<HgiGLTexture*>(
-        resolveOp.destination.Get());
-
-    if (!glSrcTexture || !glDstTexture) {
-        TF_CODING_ERROR("No textures provided for resolve");
-        return;
-    }
-
-    uint32_t readAttachment = glSrcTexture->GetTextureId();
-    TF_VERIFY(glIsTexture(readAttachment), "Source is not a texture");
-    uint32_t writeAttachment = glDstTexture->GetTextureId();
-    TF_VERIFY(glIsTexture(writeAttachment), "Destination is not a texture");
-
-    // Update framebuffer bindings
-    if (resolveOp.usage & HgiTextureUsageBitsDepthTarget) {
-        // Depth-only, so no color attachments for read or write
-        // Clear previous color attachment since all attachments must be
-        // written to from fragment shader or texels will be undefined.
-        GLenum drawBufs[1] = {GL_NONE};
-        glNamedFramebufferDrawBuffers(
-            readFramebuffer, 1, drawBufs);
-        glNamedFramebufferDrawBuffers(
-            writeFramebuffer, 1, drawBufs);
-
-        glNamedFramebufferTexture(
-            readFramebuffer, GL_COLOR_ATTACHMENT0, 0, /*level*/0);
-        glNamedFramebufferTexture(
-            writeFramebuffer, GL_COLOR_ATTACHMENT0, 0, /*level*/0);
-
-        glNamedFramebufferTexture(
-            readFramebuffer,
-            GL_DEPTH_ATTACHMENT,
-            readAttachment,
-            /*level*/ 0);
-        glNamedFramebufferTexture(
-            writeFramebuffer,
-            GL_DEPTH_ATTACHMENT, 
-            writeAttachment,
-            /*level*/ 0);
-    } else {
-        // Color-only, so no depth attachments for read or write.
-        // Clear previous depth attachment since all attachments must be
-        // written to from fragment shader or texels will be undefined.
-        GLenum drawBufs[1] = {GL_COLOR_ATTACHMENT0};
-        glNamedFramebufferDrawBuffers(
-            readFramebuffer, 1, drawBufs);
-        glNamedFramebufferDrawBuffers(
-            writeFramebuffer, 1, drawBufs);
-
-        glNamedFramebufferTexture(
-            readFramebuffer, GL_DEPTH_ATTACHMENT, 0, /*level*/0);
-        glNamedFramebufferTexture(
-            writeFramebuffer, GL_DEPTH_ATTACHMENT, 0, /*level*/0);
-
-        glNamedFramebufferTexture(
-            readFramebuffer, 
-            GL_COLOR_ATTACHMENT0, 
-            readAttachment, 
-            /*level*/ 0);
-        glNamedFramebufferTexture(
-            writeFramebuffer, 
-            GL_COLOR_ATTACHMENT0, 
-            writeAttachment,
-            /*level*/ 0);
-    }
-
-    GLenum status = glCheckNamedFramebufferStatus(readFramebuffer,
-                                                  GL_READ_FRAMEBUFFER);
-    TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
-
-    status = glCheckNamedFramebufferStatus(writeFramebuffer,
-                                           GL_DRAW_FRAMEBUFFER);
-    TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
-
-    // Resolve MSAA fbo to a regular fbo
-    GLbitfield mask = (resolveOp.usage & HgiTextureUsageBitsDepthTarget) ? 
-            GL_DEPTH_BUFFER_BIT : GL_COLOR_BUFFER_BIT;
-
-    const GfVec4i& src = resolveOp.sourceRegion;
-    const GfVec4i& dst = resolveOp.destinationRegion;
-
-    // Bind resolve framebuffer
-    GLint restoreRead, restoreWrite;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreRead);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreWrite);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer); // MS
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, writeFramebuffer);// regular
-
-    glBlitFramebuffer(
-        src[0], src[1], src[2], src[3], 
-        dst[0], dst[1], dst[2], dst[3], 
-        mask, 
-        GL_NEAREST);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreRead);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreWrite);
-
-    glDeleteFramebuffers(1, &readFramebuffer);
-    glDeleteFramebuffers(1, &writeFramebuffer);
-
-    HGIGL_POST_PENDING_GL_ERRORS();
+    _ops.push_back( HgiGLOps::ResolveImage(resolveOp) );
 }
 
 

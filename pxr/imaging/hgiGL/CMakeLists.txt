@@ -28,9 +28,11 @@ pxr_library(hgiGL
     PUBLIC_CLASSES
         blitEncoder
         buffer
+        device
+        framebufferCache
         graphicsEncoder
         hgi
-        immediateCommandBuffer
+        ops
         pipeline
         resourceBindings
         shaderFunction

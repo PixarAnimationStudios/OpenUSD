@@ -25,9 +25,12 @@
 
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgiGL/hgi.h"
+#include "pxr/imaging/hgiGL/blitEncoder.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/graphicsEncoder.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
@@ -52,6 +55,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 
 HgiGL::HgiGL()
+    : _device(nullptr)
 {
     static std::once_flag versionOnce;
     std::call_once(versionOnce, [](){
@@ -64,17 +68,41 @@ HgiGL::HgiGL()
         }
     });
 
-    HgiGLSetupGL4Debug();
+    // Create "primary device" (note there is only one for GL)
+    _device = new HgiGLDevice();
 }
 
 HgiGL::~HgiGL()
 {
+    delete _device;
 }
 
-HgiImmediateCommandBuffer&
-HgiGL::GetImmediateCommandBuffer()
+HgiGLDevice*
+HgiGL::GetPrimaryDevice() const
 {
-    return _immediateCommandBuffer;
+    return _device;
+}
+
+HgiGraphicsEncoderUniquePtr
+HgiGL::CreateGraphicsEncoder(
+    HgiGraphicsEncoderDesc const& desc)
+{
+    // XXX We should TF_CODING_ERROR here when there are no attachments, but
+    // during the Hgi transition we allow it to render to global gl framebuffer.
+    if (!desc.HasAttachments()) {
+        // TF_CODING_ERROR("Graphics encoder desc has no attachments");
+        return nullptr;
+    }
+
+    HgiGLGraphicsEncoder* encoder(new HgiGLGraphicsEncoder(_device, desc));
+
+    return HgiGraphicsEncoderUniquePtr(encoder);
+}
+
+HgiBlitEncoderUniquePtr
+HgiGL::CreateBlitEncoder()
+{
+    return HgiBlitEncoderUniquePtr(new HgiGLBlitEncoder());
 }
 
 HgiTextureHandle

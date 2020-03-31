@@ -40,10 +40,25 @@
 #include "pxr/imaging/hgi/graphicsEncoder.h"
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/immediateCommandBuffer.h"
+#include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
+
+// XXX We do not want to include specific HgiXX backends, but we need to do
+// this temporarily until Storm has transitioned fully to Hgi.
+#include "pxr/imaging/hgiGL/graphicsEncoder.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+void
+_ExecuteDraw(
+    HdSt_DrawBatchSharedPtr const& drawBatch,
+    HdStRenderPassStateSharedPtr const& stRenderPassState,
+    HdStResourceRegistrySharedPtr const& resourceRegistry)
+{
+    drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
+    drawBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
+}
 
 HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
     HdRenderIndex *index,
@@ -59,7 +74,7 @@ HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
     _immediateBatch = HdSt_DrawBatchSharedPtr(
         new HdSt_ImmediateDrawBatch(&_drawItemInstance));
 
-    HdStRenderDelegate* renderDelegate = 
+    HdStRenderDelegate* renderDelegate =
         static_cast<HdStRenderDelegate*>(index->GetRenderDelegate());
     _hgi = renderDelegate->GetHgi();
 }
@@ -94,7 +109,7 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
 
     HdDrawingCoord* drawingCoord = _drawItem.GetDrawingCoord();
     _sharedData.barContainer.Set(
-        drawingCoord->GetVertexPrimvarIndex(), 
+        drawingCoord->GetVertexPrimvarIndex(),
         vertexPrimvarRange);
 }
 
@@ -113,7 +128,7 @@ HdSt_ImageShaderRenderPass::_Prepare(TfTokenVector const &renderTags)
     // First time we must create a VertexPrimvar BAR for the triangle and setup
     // the geometric shader that provides the vertex and fragment shaders.
     if (!_sharedData.barContainer.Get(
-            _drawItem.GetDrawingCoord()->GetVertexPrimvarIndex())) 
+            _drawItem.GetDrawingCoord()->GetVertexPrimvarIndex()))
     {
         _SetupVertexPrimvarBAR(resourceRegistry);
 
@@ -150,12 +165,15 @@ HdSt_ImageShaderRenderPass::_Execute(
 
     // Create graphics encoder to render into Aovs.
     HgiGraphicsEncoderDesc desc = stRenderPassState->MakeGraphicsEncoderDesc();
-    HgiImmediateCommandBuffer& icb = _hgi->GetImmediateCommandBuffer();
-    HgiGraphicsEncoderUniquePtr gfxEncoder = icb.CreateGraphicsEncoder(desc);
+    HgiGraphicsEncoderUniquePtr gfxEncoder = _hgi->CreateGraphicsEncoder(desc);
 
     GfVec4i vp;
 
-    // XXX Some tasks do not yet use Aov, so gfx encoder might be null
+    // XXX When there are no aovBindings we get a null encoder.
+    // This would ideally never happen, but currently happens for some
+    // custom prims that spawn an imagingGLengine  with a task controller that
+    // has no aovBindings.
+
     if (gfxEncoder) {
         gfxEncoder->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
 
@@ -169,13 +187,25 @@ HdSt_ImageShaderRenderPass::_Execute(
     }
 
     // Draw
-    _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
-    _immediateBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
+    HdSt_DrawBatchSharedPtr const& batch = _immediateBatch;
+    HgiGLGraphicsEncoder* glGfxEncoder = 
+        dynamic_cast<HgiGLGraphicsEncoder*>(gfxEncoder.get());
+
+    if (gfxEncoder && glGfxEncoder) {
+        // XXX Tmp code path to allow non-hgi code to insert functions into
+        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
+        auto executeDrawOp = [batch, stRenderPassState, resourceRegistry] {
+            _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
+        };
+        glGfxEncoder->InsertFunctionOp(executeDrawOp);
+    } else {
+        _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
+    }
 
     if (gfxEncoder) {
         gfxEncoder->SetViewport(vp);
         gfxEncoder->PopDebugGroup();
-        gfxEncoder->EndEncoding();
+        gfxEncoder->Commit();
 
         // XXX Non-Hgi tasks expect default FB. Remove once all tasks use Hgi.
         glBindFramebuffer(GL_FRAMEBUFFER, fb);

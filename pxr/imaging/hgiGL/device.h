@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,61 +21,60 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_BLIT_ENCODER_H
-#define PXR_IMAGING_HGI_GL_BLIT_ENCODER_H
+#ifndef PXR_IMAGING_HGIGL_DEVICE_H
+#define PXR_IMAGING_HGIGL_DEVICE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/blitEncoder.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/device.h"
+#include "pxr/imaging/hgiGL/framebufferCache.h"
+
+#include <functional>
+#include <ostream>
+#include <fstream>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef std::function<void(void)> HgiGLOpsFn;
+typedef std::vector<HgiGLOpsFn> GLOpsVector;
 
-/// \class HgiGLBlitEncoder
+
+/// \class HgiGlDevice
 ///
-/// OpenGL implementation of HgiBlitEncoder.
+/// OpenGL implementation of GPU device.
+/// Note that there is only one global opengl context / device.
 ///
-class HgiGLBlitEncoder final : public HgiBlitEncoder
-{
+class HgiGLDevice final {
 public:
     HGIGL_API
-    virtual ~HgiGLBlitEncoder();
+    HgiGLDevice();
 
     HGIGL_API
-    void Commit() override;
+    ~HgiGLDevice();
 
+    /// Get a framebuffer that matches the descriptor.
+    /// Do not hold onto the framebuffer Id. Instead re0acquire it every frame.
+    /// Framebuffer are internally managed in a framebuffer cache.
     HGIGL_API
-    void PushDebugGroup(const char* label) override;
+    uint32_t AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc);
 
+    /// Helper function used by encoders to execute all their deferred
+    /// command functions ('ops') during the encoder commit phase.
     HGIGL_API
-    void PopDebugGroup() override;
-
-    HGIGL_API
-    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
-
-    HGIGL_API
-    void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
-
-    HGIGL_API
-    void ResolveImage(HgiResolveImageOp const& resolveOp) override;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLBlitEncoder();
+    static void Commit(GLOpsVector const& ops);
 
 private:
-    HgiGLBlitEncoder & operator=(const HgiGLBlitEncoder&) = delete;
-    HgiGLBlitEncoder(const HgiGLBlitEncoder&) = delete;
+    HgiGLDevice & operator=(const HgiGLDevice&) = delete;
+    HgiGLDevice(const HgiGLDevice&) = delete;
 
-    bool _committed;
-    GLOpsVector _ops;
+    friend std::ofstream& operator<<(
+        std::ofstream& out,
+        const HgiGLDevice& dev);
 
-    // Encoder is used only one frame so storing multi-frame state on encoder
-    // will not survive.
+    HgiGLFramebufferCache _framebufferCache;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

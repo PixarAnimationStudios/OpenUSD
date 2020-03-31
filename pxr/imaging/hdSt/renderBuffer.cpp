@@ -26,7 +26,6 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hgi/blitEncoder.h"
 #include "pxr/imaging/hgi/blitEncoderOps.h"
-#include "pxr/imaging/hgi/immediateCommandBuffer.h"
 #include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -72,10 +71,10 @@ HdStRenderBuffer::Allocate(
     // the usage is for depth. Temp hack: do a string-compare the path which
     // is build out of HdAovTokens.
     const TfToken& bufferName = GetId().GetNameToken();
-    bool _isDepthBuffer = 
+    bool _isDepthBuffer =
         TfStringEndsWith(bufferName.GetString(), HdAovTokens->depth);
 
-    _usage = _isDepthBuffer ? HgiTextureUsageBitsDepthTarget : 
+    _usage = _isDepthBuffer ? HgiTextureUsageBitsDepthTarget :
                               HgiTextureUsageBitsColorTarget;
 
     // Allocate new GPU resource
@@ -116,14 +115,14 @@ HdStRenderBuffer::_Deallocate()
     }
 }
 
-void* 
+void*
 HdStRenderBuffer::Map()
 {
     _mappers.fetch_add(1);
 
     size_t formatByteSize = HdDataSizeOfFormat(_format);
-    size_t dataByteSize = _dimensions[0] * 
-                          _dimensions[1] * 
+    size_t dataByteSize = _dimensions[0] *
+                          _dimensions[1] *
                           _dimensions[2] *
                           formatByteSize;
 
@@ -141,11 +140,10 @@ HdStRenderBuffer::Map()
         copyOp.destinationBufferByteSize = dataByteSize;
 
         // Use blit encoder to record resource copy commands.
-        HgiImmediateCommandBuffer& icb = _hgi->GetImmediateCommandBuffer();
-        HgiBlitEncoderUniquePtr blitEncoder = icb.CreateBlitEncoder();
+        HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
 
         blitEncoder->CopyTextureGpuToCpu(copyOp);
-        blitEncoder->EndEncoding();
+        blitEncoder->Commit();
     }
 
     return _mappedBuffer.data();
@@ -179,15 +177,14 @@ HdStRenderBuffer::Resolve()
     resolveOp.destinationRegion = region;
 
     // Use blit encoder to record resource copy commands.
-    HgiImmediateCommandBuffer& icb = _hgi->GetImmediateCommandBuffer();
-    HgiBlitEncoderUniquePtr blitEncoder = icb.CreateBlitEncoder();
+    HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
 
     blitEncoder->ResolveImage(resolveOp);
-    blitEncoder->EndEncoding();
+    blitEncoder->Commit();
 }
 
-VtValue 
-HdStRenderBuffer::GetResource(bool multiSampled) const 
+VtValue
+HdStRenderBuffer::GetResource(bool multiSampled) const
 {
     if (multiSampled && _multiSampled) {
         return VtValue(_textureMS);

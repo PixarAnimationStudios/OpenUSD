@@ -26,11 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/immediateCommandBuffer.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HgiGLDevice;
 
 
 /// \class HgiGL
@@ -46,16 +47,16 @@ public:
     HGIGL_API
     ~HgiGL();
 
-    //
-    // Command Buffers
-    //
+    // Returns the opengl device.
+    HGIGL_API
+    HgiGLDevice* GetPrimaryDevice() const;
 
     HGIGL_API
-    HgiImmediateCommandBuffer& GetImmediateCommandBuffer() override;
+    HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
+        HgiGraphicsEncoderDesc const& desc) override;
 
-    //
-    // Resources
-    //
+    HGIGL_API
+    HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
 
     HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;
@@ -98,22 +99,21 @@ public:
 
     HGIGL_API
     void DestroyPipeline(HgiPipelineHandle* pipeHandle) override;
-    
+
     HGIGL_API
     TfToken const& GetAPIName() const override;
-    
+
     HGIGL_API
     void StartFrame() override {};
 
     HGIGL_API
     void EndFrame() override {};
 
-
 private:
     HgiGL & operator=(const HgiGL&) = delete;
     HgiGL(const HgiGL&) = delete;
 
-    HgiGLImmediateCommandBuffer _immediateCommandBuffer;
+    HgiGLDevice* _device;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

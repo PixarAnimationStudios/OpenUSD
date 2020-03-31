@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,55 +21,51 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_IMMEDIATE_COMMAND_BUFFER_H
-#define PXR_IMAGING_HGI_GL_IMMEDIATE_COMMAND_BUFFER_H
+#ifndef PXR_IMAGING_HGI_GL_FRAMEBUFFER_CACHE_H
+#define PXR_IMAGING_HGI_GL_FRAMEBUFFER_CACHE_H
+
+#include <ostream>
+#include <fstream>
+#include <vector>
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/immediateCommandBuffer.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::vector<struct HgiGLDescriptorCacheItem*> HgiGLDescriptorCacheVec;
 
-/// \class HgiGLImmediateCommandBuffer
+
+/// \class HgiGLFramebufferCache
 ///
-/// OpenGL implementation of HgiImmediateCommandBuffer
+/// Manages a cache of framebuffer based on graphics encoder descriptors
 ///
-class HgiGLImmediateCommandBuffer final : public HgiImmediateCommandBuffer
+class HgiGLFramebufferCache final
 {
 public:
     HGIGL_API
-    virtual ~HgiGLImmediateCommandBuffer();
+    HgiGLFramebufferCache();
 
     HGIGL_API
-    HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
-        HgiGraphicsEncoderDesc const& desc) override;
+    virtual ~HgiGLFramebufferCache();
 
+    /// Get a framebuffer that matches the descriptor.
+    /// If the framebuffer exists in the cache, it will be returned.
+    /// If none exist that match the descriptor, it will be created.
+    /// Do not hold onto the returned id. Re-acquire it every frame.
     HGIGL_API
-    HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
+    uint32_t AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc);
 
+    /// Clears all framebuffersfrom cache.
+    /// This should generally only be called when the device is being destroyed.
     HGIGL_API
-    void BlockUntilCompleted() override;
-
-    HGIGL_API
-    void BlockUntilSubmitted() override;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLImmediateCommandBuffer();
+    void Clear();
 
 private:
-    HgiGLImmediateCommandBuffer & operator=
-        (const HgiGLImmediateCommandBuffer&) = delete;
-    HgiGLImmediateCommandBuffer(const HgiGLImmediateCommandBuffer&) = delete;
-
     friend std::ostream& operator<<(
         std::ostream& out,
-        const HgiGLImmediateCommandBuffer& cmdBuf);
+        const HgiGLFramebufferCache& fbc);
 
     HgiGLDescriptorCacheVec _descriptorCache;
 };

@@ -24,55 +24,69 @@
 #include <GL/glew.h>
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgiGL/buffer.h"
+#include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsEncoder.h"
+#include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLGraphicsEncoder::HgiGLGraphicsEncoder(
+    HgiGLDevice* device,
     HgiGraphicsEncoderDesc const& desc)
     : HgiGraphicsEncoder()
+    , _committed(false)
 {
+    if (desc.HasAttachments()) {
+        _ops.push_back( HgiGLOps::BindFramebufferOp(device, desc) );
+    }
 }
 
 HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
 {
+    TF_VERIFY(_committed, "Encoder created, but never commited.");
 }
 
 void
-HgiGLGraphicsEncoder::EndEncoding()
+HgiGLGraphicsEncoder::InsertFunctionOp(std::function<void(void)> const& fn)
 {
+    _ops.push_back( fn );
+}
+
+void
+HgiGLGraphicsEncoder::Commit()
+{
+    if (!_committed) {
+        _committed = true;
+        HgiGLDevice::Commit(_ops);
+    }
 }
 
 void
 HgiGLGraphicsEncoder::SetViewport(GfVec4i const& vp)
 {
-    glViewport(vp[0], vp[1], vp[2], vp[3]);
+    _ops.push_back( HgiGLOps::SetViewport(vp) );
 }
 
 void
 HgiGLGraphicsEncoder::SetScissor(GfVec4i const& sc)
 {
-    glScissor(sc[0], sc[1], sc[2], sc[3]);
+    _ops.push_back( HgiGLOps::SetScissor(sc) );
 }
 
 void
 HgiGLGraphicsEncoder::BindPipeline(HgiPipelineHandle pipeline)
 {
-    if (HgiGLPipeline* p = static_cast<HgiGLPipeline*>(pipeline.Get())) {
-        p->BindPipeline();
-    }
+    _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
 
 void
-HgiGLGraphicsEncoder::BindResources(HgiResourceBindingsHandle r)
+HgiGLGraphicsEncoder::BindResources(HgiResourceBindingsHandle res)
 {
-    if (HgiGLResourceBindings* rb= static_cast<HgiGLResourceBindings*>(r.Get())) 
-    {
-        rb->BindResources();
-    }
+    _ops.push_back( HgiGLOps::BindResources(res) );
 }
 
 void
@@ -81,25 +95,8 @@ HgiGLGraphicsEncoder::BindVertexBuffers(
     HgiBufferHandleVector const& vertexBuffers,
     std::vector<uint32_t> const& byteOffsets)
 {
-    TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
-    TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
-
-    // XXX use glBindVertexBuffers to bind all VBs in one go.
-    for (size_t i=0; i<vertexBuffers.size(); i++) {
-        HgiBufferHandle bufHandle = vertexBuffers[i];
-        HgiGLBuffer* buf = static_cast<HgiGLBuffer*>(bufHandle.Get());
-        HgiBufferDesc const& desc = buf->GetDescriptor();
-
-        TF_VERIFY(desc.usage & HgiBufferUsageVertex);
-
-        glBindVertexBuffer(
-            firstBinding + i,
-            buf->GetBufferId(),
-            byteOffsets[i], 
-            desc.vertexStride);
-    }
-
-    HGIGL_POST_PENDING_GL_ERRORS();
+    _ops.push_back( 
+        HgiGLOps::BindVertexBuffers(firstBinding, vertexBuffers, byteOffsets) );
 }
 
 void
@@ -111,46 +108,27 @@ HgiGLGraphicsEncoder::DrawIndexed(
     uint32_t instanceCount,
     uint32_t firstInstance)
 {
-    TF_VERIFY(instanceCount>0);
-
-    HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
-    HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
-
-    // We assume 32bit indices: GL_UNSIGNED_INT
-    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
-
-    glDrawElementsInstancedBaseVertex(
-        GL_TRIANGLES, // XXX GL_PATCHES for tessellation
-        indexCount,
-        GL_UNSIGNED_INT,
-        (void*)(uintptr_t(indexBufferByteOffset)),
-        instanceCount,
-        vertexOffset);
-
-    HGIGL_POST_PENDING_GL_ERRORS();
+    _ops.push_back(
+        HgiGLOps::DrawIndexed(
+            indexBuffer,
+            indexCount,
+            indexBufferByteOffset,
+            vertexOffset,
+            instanceCount,
+            firstInstance)
+        );
 }
 
 void
 HgiGLGraphicsEncoder::PushDebugGroup(const char* label)
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, label);
-        }
-
-    #endif
+    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
 }
 
 void
 HgiGLGraphicsEncoder::PopDebugGroup()
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPopDebugGroup();
-        }
-    #endif
+    _ops.push_back( HgiGLOps::PopDebugGroup() );
 }
 
 

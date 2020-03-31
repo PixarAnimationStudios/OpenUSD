@@ -29,14 +29,18 @@
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+typedef std::unique_ptr<class HgiGraphicsEncoder> HgiGraphicsEncoderUniquePtr;
+
 
 /// \class HgiGraphicsEncoder
 ///
 /// A graphics API independent abstraction of graphics commands.
 /// HgiGraphicsEncoder is a lightweight object that cannot be re-used after
-/// EndEncoding. A new encoder should be acquired from CommandBuffer each frame.
+/// Commit. A new encoder should be acquired from CommandBuffer each frame.
 ///
 /// The API provided by this encoder should be agnostic to whether the
 /// encoder operates via immediate or deferred command buffers.
@@ -49,7 +53,7 @@ public:
 
     /// Finish recording of commands. No further commands can be recorded.
     HGI_API
-    virtual void EndEncoding() = 0;
+    virtual void Commit() = 0;
 
     /// Set viewport [left, BOTTOM, width, height] - OpenGL coords
     HGI_API
