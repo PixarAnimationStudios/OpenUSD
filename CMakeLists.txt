@@ -48,50 +48,8 @@ if (${PXR_BUILD_PRMAN_PLUGIN})
     add_subdirectory(third_party/renderman-${RENDERMAN_VERSION_MAJOR})
 endif()
 
-if (${PXR_BUILD_DOCUMENTATION})
-    # Ensure we have doxygen+graphviz available
-    find_program(DOXYGEN_EXECUTABLE
-        NAMES doxygen
-    )
-    if (NOT EXISTS ${DOXYGEN_EXECUTABLE})                                        
-        message(WARNING "Cannot run doc generation, doxygen not found.")
-        return()
-    endif()
-
-    find_program(DOT_EXECUTABLE
-        NAMES dot
-    )
-    if (NOT EXISTS ${DOT_EXECUTABLE})
-        message(WARNING "Cannot run doc generation, dot not found.")
-        return()
-    endif()
-
-    _pxrDoxyConfig_subst()
-    
-    set(DOCS_DIR "${CMAKE_BINARY_DIR}")
-    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")
-    set(PXR_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
-    set(THIRD_PARTY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party")
-
-    add_custom_target(
-        documentation
-        ALL
-        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${PXR_SOURCE_DIR} ${THIRD_PARTY_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
-        DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
-    )
-
-    set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
-    set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
-    install(
-        DIRECTORY ${BUILT_HTML_DOCS}
-        DESTINATION ${INST_DOCS_ROOT}
-    )
-
-    set(BUILT_XML_DOCS "${DOCS_DIR}/docs/doxy_xml")
-    install(
-        DIRECTORY ${BUILT_XML_DOCS}
-        DESTINATION ${INST_DOCS_ROOT}
-    )
+if (PXR_BUILD_DOCUMENTATION)
+    pxr_build_documentation()
 endif()   
 
 pxr_toplevel_epilogue()

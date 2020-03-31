@@ -23,6 +23,35 @@
 #
 include(Private)
 
+function(pxr_build_documentation)
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/usd/Doxyfile.in
+                   ${CMAKE_BINARY_DIR}/Doxyfile)
+    set(DOCS_DIR "${CMAKE_BINARY_DIR}")
+    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")
+    set(PXR_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
+    set(THIRD_PARTY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party")
+
+    add_custom_target(
+        documentation
+        ALL
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${PXR_SOURCE_DIR} ${THIRD_PARTY_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
+        DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+    )
+
+    set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
+    set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
+    install(
+        DIRECTORY ${BUILT_HTML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+
+    set(BUILT_XML_DOCS "${DOCS_DIR}/docs/doxy_xml")
+    install(
+        DIRECTORY ${BUILT_XML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+endfunction()
+
 function(pxr_python_bin BIN_NAME)
     set(oneValueArgs
         PYTHON_FILE

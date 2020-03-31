@@ -128,6 +128,28 @@ endif()
 
 # Developer Options Package Requirements
 # ----------------------------------------------
+if (PXR_BUILD_DOCUMENTATION)
+    find_program(DOXYGEN_EXECUTABLE
+        NAMES doxygen
+    )
+    if (EXISTS ${DOXYGEN_EXECUTABLE})                                        
+        message(STATUS "Found doxygen: ${DOXYGEN_EXECUTABLE}") 
+    else()
+        message(FATAL_ERROR 
+                "doxygen not found, required for PXR_BUILD_DOCUMENTATION")
+    endif()
+
+    find_program(DOT_EXECUTABLE
+        NAMES dot
+    )
+    if (EXISTS ${DOT_EXECUTABLE})
+        message(STATUS "Found dot: ${DOT_EXECUTABLE}") 
+    else()
+        message(FATAL_ERROR
+                "dot not found, required for PXR_BUILD_DOCUMENTATION")
+    endif()
+endif()
+
 if (PXR_VALIDATE_GENERATED_CODE)
     find_package(BISON 2.4.1 EXACT)
     # Flex 2.5.39+ is required, generated API is generated incorrectly in
@@ -135,7 +157,6 @@ if (PXR_VALIDATE_GENERATED_CODE)
     # the correct (..., yy_size_t len, ...).  Lower at your own peril.
     find_package(FLEX 2.5.39 EXACT)
 endif()
-
 
 # Imaging Components Package Requirements
 # ----------------------------------------------
