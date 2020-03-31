@@ -3,6 +3,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 int 
 LoFiTriangulateMesh(const pxr::VtArray<int>& counts, 
                 const pxr::VtArray<int>& indices, 
@@ -94,17 +95,5 @@ LoFiComputeVertexNormals( const pxr::VtArray<pxr::GfVec3f>& positions,
   for(auto& n: normals) n.Normalize();
 }
 
-template<typename T>
-void 
-LoFiTriangulateData(const VtArray<int>& indices, 
-                    const VtArray<T>& datas,
-                    VtArray<T>& result)
-{
-  result.resize(indices.size());
-  for(int i=0;i<indices.size();++i)
-  {
-    result[i] = datas[indices[i]];
-  }
-};
 
 PXR_NAMESPACE_CLOSE_SCOPE

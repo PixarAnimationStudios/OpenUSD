@@ -28,6 +28,7 @@ pxr_plugin(LoFi
         debugCodes
         tokens
         shader
+        vertexBuffer
         vertexArray
         resourceRegistry
         utils

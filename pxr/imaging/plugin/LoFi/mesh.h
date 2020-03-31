@@ -9,10 +9,14 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/extComputationUtils.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
+//#include "pxr/imaging/hd/extComputation.h"
+//#include "pxr/imaging/hd/extComputationUtils.h"
+//#include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -20,8 +24,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class LoFiResourceRegistry;
 
 /// \class LoFiMesh
 ///
@@ -48,13 +50,17 @@ protected:
         TfToken const &reprToken,
         HdDirtyBits *dirtyBits) override;
 
-    void _InitializeMesh( HdSceneDelegate* sceneDelegate,
-                          HdDirtyBits*     dirtyBits,
-                          TfToken const    &reprToken);
+    void _PopulateMesh( HdSceneDelegate*              sceneDelegate,
+                        HdDirtyBits*                  dirtyBits,
+                        TfToken const                 &reprToken,
+                        LoFiResourceRegistrySharedPtr registry);
 
-    void _UpdateMesh( HdSceneDelegate* sceneDelegate,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const    &reprToken);
+    void _PopulatePrimvar(HdSceneDelegate* sceneDelegate,
+                          HdInterpolation interpolation,
+                          LoFiVertexBufferChannelBits channel,
+                          const VtValue& value,
+                          bool needReallocate);
+  
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
@@ -69,13 +75,13 @@ protected:
     //void _PopulateTopology(HdSceneDelegate* sceneDelegate);
 
     // Get num points
-    const inline int GetNumPoints() const{return _points.size();};
+    const inline int GetNumPoints() const{return _positions.size();};
 
     // Get num triangles
     const inline int GetNumTriangles() const{return _triangles.size();};
 
     // Get positions ptr
-    const inline GfVec3f* GetPositionsPtr() const{return _points.cdata();};
+    const inline GfVec3f* GetPositionsPtr() const{return _positions.cdata();};
 
     // Get normals ptr
     const inline GfVec3f* GetNormalsPtr() const{return _normals.cdata();};
@@ -96,9 +102,10 @@ protected:
 private:
     uint64_t                        _instanceId;
     GfMatrix4f                      _transform;
-    VtArray<GfVec3f>                _points;
+    VtArray<GfVec3f>                _positions;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
+    VtArray<GfVec2f>                _uvs;
     VtArray<int>                    _triangles;
     VtArray<int>                    _samples;
     LoFiVertexArraySharedPtr        _vertexArray;

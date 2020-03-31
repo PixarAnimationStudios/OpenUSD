@@ -5,6 +5,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/plugin/LoFi/mesh.h"
+#include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
@@ -163,15 +164,97 @@ LoFiMesh::_UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate,
 }
 */
 
+void LoFiMesh::_PopulatePrimvar(HdSceneDelegate* sceneDelegate,
+                                HdInterpolation interpolation,
+                                LoFiVertexBufferChannelBits channel,
+                                const VtValue& value,
+                                bool needReallocate)
+{
+  _vertexArray->SetHaveChannel(channel);
+  uint32_t numInputElements = 0;
+  uint32_t numOutputElements = _triangles.size();
+  const char* datasPtr = NULL;
+  switch(channel)
+  {
+    case CHANNEL_POSITION:
+      _positions = value.Get<VtArray<GfVec3f>>();
+      numInputElements = _positions.size();
+      if(!numInputElements) return;
+      datasPtr = (const char*)&_positions.cdata()[0][0];
+      break;
+    case CHANNEL_NORMAL:
+      _normals = value.Get<VtArray<GfVec3f>>();
+      numInputElements = _normals.size();
+      if(!numInputElements) return;
+      datasPtr = (const char*)&_normals.cdata()[0][0];
+      break;
+    case CHANNEL_COLOR:
+      _colors = value.Get<VtArray<GfVec3f>>();
+      numInputElements = _colors.size();
+      if(!numInputElements) return;
+      datasPtr = (const char*)&_colors.cdata()[0][0];
+      break;
+    case CHANNEL_UVS:
+      _uvs = value.Get<VtArray<GfVec2f>>();
+      numInputElements = _uvs.size();
+      if(!numInputElements) return;
+      datasPtr = (const char*)&_uvs.cdata()[0][0];
+      break;
+    default:
+      return;
+  }
 
-void LoFiMesh::_InitializeMesh( HdSceneDelegate*  sceneDelegate,
-                      HdDirtyBits*      dirtyBits,
-                      TfToken const     &reprToken)
+  if(!_vertexArray->HaveBuffer(channel))
+  {
+    LoFiVertexBufferSharedPtr buffer = 
+      LoFiVertexArray::CreateBuffer(channel, numInputElements,
+        numOutputElements);
+    _vertexArray->SetBuffer(channel, buffer);
+  }
+
+  LoFiVertexBufferSharedPtr buffer =
+    _vertexArray->GetBuffer(channel);
+
+  size_t dataHash = 
+    buffer->ComputeDatasHash(datasPtr);
+    
+  if(dataHash != buffer->GetDatasHash())
+  {
+    buffer->SetDatasHash(dataHash);
+    std::cout << "NEW DATA  :( = " << dataHash << std::endl;
+  }
+  else
+  {
+    std::cout << "RECYCLED DATA :D = " << dataHash << std::endl;
+  }
+}
+
+void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
+                              HdDirtyBits*                  dirtyBits,
+                              TfToken const                 &reprToken,
+                              LoFiResourceRegistrySharedPtr registry)
 {
   _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
   const HdMeshReprDesc& desc = descs[0];
 
   const SdfPath& id = GetId();
+
+  // get triangulated topology
+  if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
+  {
+    HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
+
+    LoFiTriangulateMesh(
+      topology.GetFaceVertexCounts(), 
+      topology.GetFaceVertexIndices(),
+      _triangles, 
+      _samples
+    );
+  }
+
+  bool needReallocate = (_triangles.size() != _vertexArray->GetNumElements());
+  std::cout << "VERTEX ARRAY NEED REALLOCATE : " << needReallocate << std::endl;
+  _vertexArray->SetNumElements(_triangles.size());
 
   // get primvars
   HdPrimvarDescriptorVector primvars;
@@ -181,118 +264,72 @@ void LoFiMesh::_InitializeMesh( HdSceneDelegate*  sceneDelegate,
     primvars = GetPrimvarDescriptors(sceneDelegate, interp);
     for (HdPrimvarDescriptor const& pv: primvars) 
     {
-      if(pv.name == HdTokens->normals)
-        std::cout << "Has Normals" << std::endl;
-      else if(pv.name == TfToken("uv") || 
-        pv.name == TfToken("st"))
-        std::cout << "Has UVs" << std::endl;
-      else if(pv.name == TfToken("displayColor"))
-        std::cout << "Has Colors" << std::endl;
-      //else if(pv.name == HdTokens->primvarsDisplayColor)
-      //  std::cout << "Has Normals" << std::endl;
-      //else if(pv.name == HdTokens->texC)
-      //  std::cout << "Has UVs" << std::endl;
+      if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
+      {
+        _primvarSourceMap[pv.name] = {GetPrimvar(sceneDelegate, pv.name), interp};
+        VtValue value = _primvarSourceMap[pv.name].data;
 
+        if(pv.name == HdTokens->points)
+        {
+          _PopulatePrimvar(sceneDelegate,
+                          interp,
+                          CHANNEL_POSITION,
+                          value,
+                          needReallocate);
+        }
+        
+        else if(pv.name == HdTokens->normals)
+        {
+          _PopulatePrimvar(sceneDelegate,
+                          interp,
+                          CHANNEL_NORMAL,
+                          value,
+                          needReallocate);
+        }
+          
+        else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
+        {
+          _PopulatePrimvar(sceneDelegate,
+                          interp,
+                          CHANNEL_UVS,
+                          value,
+                          needReallocate);
+        }
+        else if(pv.name == TfToken("displayColor"))
+        {
+          _PopulatePrimvar(sceneDelegate,
+                          interp,
+                          CHANNEL_COLOR,
+                          value,
+                          needReallocate);
+        }
+        /*
+          std::cout << "Has Colors" << std::endl;
+        //else if(pv.name == HdTokens->primvarsDisplayColor)
+        //  std::cout << "Has Normals" << std::endl;
+        //else if(pv.name == HdTokens->texC)
+        //  std::cout << "Has UVs" << std::endl;
 
-      _primvarSourceMap[pv.name] = {GetPrimvar(sceneDelegate, pv.name), interp};
-      VtValue value = _primvarSourceMap[pv.name].data;
-
-      std::cout << "Primvar : " << pv.name << std::endl;
-      std::cout << "Interpolation : " <<  _primvarSourceMap[pv.name].interpolation << std::endl;
-      std::cout << "Type : " <<  value.GetTypeName() << std::endl;
-      std::cout << "Is Array : " <<  value.IsArrayValued() << std::endl;
+        std::cout << "Primvar : " << pv.name << std::endl;
+        std::cout << "Interpolation : " <<  _primvarSourceMap[pv.name].interpolation << std::endl;
+        std::cout << "Type : " <<  value.GetTypeName() << std::endl;
+        std::cout << "Is Array : " <<  value.IsArrayValued() << std::endl;
+        */
+      }
     }
   }
 
-  // get triangulated topology
-  {
-    HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
+  
 
-    LoFiTriangulateMesh(
-      topology.GetFaceVertexCounts(), 
-      topology.GetFaceVertexIndices(),
-      _triangles, 
-      _samples
-    );
-    std::cout << "NUM TRIANGLES INDICES : " << _triangles.size() << std::endl;
-    std::cout << "NUM SAMPLES INDICES : " << _samples.size() << std::endl;
-
-    std::cout << "TOPO DIRTY NEED AN UPDATE" << std::endl;
-  }
-
+/*
   // get points
   {
     VtValue value = sceneDelegate->Get(id, HdTokens->points);
     _points = value.Get<VtVec3fArray>();
     std::cout << "DEFORM DIRTY NEED AN UPDATE" << std::endl;
   }
-
-  // get normals
-  {
-    // check for authored normals
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals))
-    {
-      std::cout << "WE GOT SOME authord normals :D" << std::endl;
-      VtValue value = sceneDelegate->Get(id, HdTokens->normals);
-      _normals = value.Get<VtVec3fArray>();
-    }
-    else
-    {
-      
-    }
-    
-    
-  }
+*/
   /*
-  if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals) ||
-      HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths) ||
-      HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) 
-  {
-    _UpdatePrimvarSources(sceneDelegate, *dirtyBits);
-  }
-
-  if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
-    _transform = GfMatrix4f(sceneDelegate->GetTransform(id));
-    std::cout << "TRANSFORM DIRTY NEED AN UPDATE" << std::endl;
-  }
-
-  if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-    _UpdateVisibility(sceneDelegate, dirtyBits);
-  }
-  */
-}
-
-void LoFiMesh::_UpdateMesh( HdSceneDelegate* sceneDelegate,
-                  HdDirtyBits*     dirtyBits,
-                  TfToken const    &reprToken)
-{
-  /*
-  _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
-  const HdMeshReprDesc& desc = descs[0];
-
-  const SdfPath& id = GetId();
-
-  if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-    HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
-
-    LoFiTriangulateMesh(
-      topology.GetFaceVertexCounts(), 
-      topology.GetFaceVertexIndices(),
-      _triangles, 
-      _samples
-    );
-    std::cout << "NUM TRIANGLES INDICES : " << _triangles.size() << std::endl;
-    std::cout << "NUM SAMPLES INDICES : " << _samples.size() << std::endl;
-
-    std::cout << "TOPO DIRTY NEED AN UPDATE" << std::endl;
-  }
-
-  if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
-    VtValue value = sceneDelegate->Get(id, HdTokens->points);
-    _points = value.Get<VtVec3fArray>();
-    std::cout << "DEFORM DIRTY NEED AN UPDATE" << std::endl;
-  }
-
   if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals) ||
       HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths) ||
       HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) 
@@ -343,13 +380,10 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
     _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray());
     auto instance = resourceRegistry->RegisterVertexArray(_instanceId);
     instance.SetValue(_vertexArray);  
-      
-    _InitializeMesh(sceneDelegate, dirtyBits, reprToken);
   }
-  else 
-  {
-    _UpdateMesh(sceneDelegate, dirtyBits, reprToken);
-  }
+  
+  _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
+  
   
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
