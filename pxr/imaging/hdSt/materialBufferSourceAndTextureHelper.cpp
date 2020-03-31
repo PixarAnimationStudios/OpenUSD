@@ -103,8 +103,7 @@ private:
 void
 HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
     HdSt_MaterialParam const &param,
-    HdStTextureResourceHandleSharedPtr const &handle,
-    bool * isPtex)
+    HdStTextureResourceHandleSharedPtr const &handle)
 {
     if (!(handle && handle->GetTextureResource())) {
         // we were unable to get the requested resource or
@@ -125,9 +124,6 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
 
     const HdTextureType textureType = texResource->GetTextureType();
     if (textureType == HdTextureType::Ptex) {
-        if (isPtex) {
-            *isPtex = true;
-        }
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
         textures.push_back(tex);

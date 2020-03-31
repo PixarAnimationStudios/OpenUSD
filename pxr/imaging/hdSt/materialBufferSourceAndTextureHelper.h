@@ -48,12 +48,9 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
 
     /// Process material param of type HdSt_MaterialParam::ParamTypeTexture
     /// given the texture requested by the param.
-    ///
-    /// isPtex is set to true if texture request by param is ptex.
     void ProcessTextureMaterialParam(
         HdSt_MaterialParam const &param,
-        HdStTextureResourceHandleSharedPtr const &handle,
-        bool * isPtex = nullptr);
+        HdStTextureResourceHandleSharedPtr const &handle);
 
     /// The buffer sources created by the above methods.
     HdBufferSourceSharedPtrVector sources;

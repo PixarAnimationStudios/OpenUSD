@@ -202,10 +202,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         if (param.IsPrimvar() || param.IsFallback()) {
             sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(param);
         } else if (param.IsTexture()) {
+            if (param.textureType == HdTextureType::Ptex) {
+                hasPtex = true;
+            }
             sourcesAndTextures.ProcessTextureMaterialParam(
                 param, 
-                _GetTextureResourceHandle(sceneDelegate, param),
-                &hasPtex);
+                _GetTextureResourceHandle(sceneDelegate, param));
         }
     }
 
