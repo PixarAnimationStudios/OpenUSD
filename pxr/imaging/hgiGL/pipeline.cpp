@@ -37,7 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLPipeline::HgiGLPipeline(
     HgiPipelineDesc const& desc)
     : HgiPipeline(desc)
-    , _descriptor(desc)
     , _restoreDrawFramebuffer(0)
     , _restoreReadFramebuffer(0)
     , _restoreRenderBuffer(0)
