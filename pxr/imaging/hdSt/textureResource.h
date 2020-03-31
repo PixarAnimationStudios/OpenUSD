@@ -38,15 +38,14 @@
 #include "pxr/base/gf/vec4f.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
-typedef boost::shared_ptr<class HdStSimpleTextureResource> HdStSimpleTextureResourceSharedPtr;
+using HdStTextureResourceSharedPtr = std::shared_ptr<class HdStTextureResource>;
 
 /// HdStTextureResource is an interface to a GL-backed texture.
 class HdStTextureResource : public HdTextureResource, boost::noncopyable {

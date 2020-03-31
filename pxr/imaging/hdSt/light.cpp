@@ -114,7 +114,7 @@ HdStLight::_PrepareDomeLight(
     TF_VERIFY(textureResourceValue.IsHolding<HdTextureResourceSharedPtr>());
     if (textureResourceValue.IsHolding<HdTextureResourceSharedPtr>()) {
         
-        _textureResource = boost::dynamic_pointer_cast<HdStTextureResource>(
+        _textureResource = std::dynamic_pointer_cast<HdStTextureResource>(
                     textureResourceValue.Get<HdTextureResourceSharedPtr>());
 
         // texture resource would be empty if the path could not be resolved

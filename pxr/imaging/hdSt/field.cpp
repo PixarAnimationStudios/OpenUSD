@@ -146,12 +146,12 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
             // sampler and texture handle in Sync without lock since it is an
             // sprim and is not run multi-threadedly.
             // 
-            _fieldResource = boost::make_shared<HdStFieldResource>(
+            _fieldResource = std::make_shared<HdStFieldResource>(
                 _GetVdbTexture(resolvedPath, fieldName));
             texInstance.SetValue(_fieldResource);
         } else {
             HdStFieldResourceSharedPtr const fieldResource =
-                boost::dynamic_pointer_cast<HdStFieldResource>(
+                std::dynamic_pointer_cast<HdStFieldResource>(
                                                 texInstance.GetValue());
             if (_fieldResource == fieldResource) {
                 isNewTexture = false;

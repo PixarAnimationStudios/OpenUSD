@@ -427,7 +427,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
 
             sourcesAndTextures.ProcessTextureMaterialParam(
                 textureParam,
-                boost::make_shared<HdStTextureResourceHandle>(
+                std::make_shared<HdStTextureResourceHandle>(
                     fieldResource));
 
             materialParams.push_back(textureParam);

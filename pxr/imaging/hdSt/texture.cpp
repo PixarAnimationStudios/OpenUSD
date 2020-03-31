@@ -133,7 +133,7 @@ HdStTexture::_GetTextureResource( HdSceneDelegate *sceneDelegate,
                                   const SdfPath &sceneID,
                                   HdTextureResource::ID texID) const
 {
-    return boost::dynamic_pointer_cast<HdStTextureResource>(
+    return std::dynamic_pointer_cast<HdStTextureResource>(
                                 sceneDelegate->GetTextureResource(sceneID));
 }
 
@@ -181,7 +181,7 @@ HdStTexture::_RegisterTextureResource(
             renderIndex->GetResourceRegistry());
 
     HdStTextureResourceSharedPtr const& textureResource =
-        boost::static_pointer_cast<HdStTextureResource>(baseTextureResource);
+        std::static_pointer_cast<HdStTextureResource>(baseTextureResource);
 
     HdResourceRegistry::TextureKey handleKey =
         HdStTextureResourceHandle::GetHandleKey(renderIndex, textureHandleId);

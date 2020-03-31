@@ -47,8 +47,8 @@ class HdResourceRegistry;
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
-typedef boost::shared_ptr<class HdStTextureResource> 
-    HdStTextureResourceSharedPtr;
+
+using HdStTextureResourceSharedPtr = std::shared_ptr<class HdStTextureResource>;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;

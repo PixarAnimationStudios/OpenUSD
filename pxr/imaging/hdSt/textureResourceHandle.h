@@ -29,17 +29,17 @@
 
 #include "pxr/imaging/hd/textureResource.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class SdfPath;
 
-typedef boost::shared_ptr<class HdStTextureResourceHandle>
-                HdStTextureResourceHandleSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResource>
-                HdStTextureResourceSharedPtr;
+using HdStTextureResourceHandleSharedPtr = 
+    std::shared_ptr<class HdStTextureResourceHandle>;
+
+using HdStTextureResourceSharedPtr = std::shared_ptr<class HdStTextureResource>;
 
 /// HdStTextureResourceHandle is an indirect handle to a GL texture resource
 ///

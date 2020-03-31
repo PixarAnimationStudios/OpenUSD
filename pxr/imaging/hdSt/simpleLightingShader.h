@@ -53,8 +53,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStSimpleLightingShader> 
     HdStSimpleLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResource> 
-    HdStTextureResourceSharedPtr;
 
 /// \class HdStSimpleLightingShader
 ///

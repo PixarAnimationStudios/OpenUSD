@@ -301,7 +301,7 @@ HdStMaterial::_GetTextureResourceHandle(
         if (!texResource) {
             HdTextureResourceSharedPtr hdTexResource = 
                 sceneDelegate->GetTextureResource(connection);
-            texResource = boost::static_pointer_cast<HdStTextureResource>(
+            texResource = std::static_pointer_cast<HdStTextureResource>(
                 hdTexResource);
         }
     }

@@ -34,6 +34,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -45,8 +46,8 @@ typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 
-typedef boost::shared_ptr<class HdStTextureResourceHandle>
-                HdStTextureResourceHandleSharedPtr;
+using HdStTextureResourceHandleSharedPtr =
+    std::shared_ptr<class HdStTextureResourceHandle>;
 
 class HdRenderPassState;
 

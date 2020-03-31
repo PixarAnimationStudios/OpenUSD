@@ -34,9 +34,11 @@
 
 #include "pxr/base/gf/bbox3d.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStFieldResource> HdStFieldResourceSharedPtr;
+using HdStFieldResourceSharedPtr = std::shared_ptr<class HdStFieldResource>;
 
 ///
 /// HdStFieldResource

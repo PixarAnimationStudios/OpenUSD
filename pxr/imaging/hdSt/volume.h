@@ -31,11 +31,13 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdStMaterial;
-using HdStFieldResourceSharedPtr = boost::shared_ptr<class HdStFieldResource>;
+using HdStFieldResourceSharedPtr = std::shared_ptr<class HdStFieldResource>;
 using HdStShaderCodeSharedPtr = boost::shared_ptr<class HdStShaderCode>;
 class HdSceneDelegate;
 
