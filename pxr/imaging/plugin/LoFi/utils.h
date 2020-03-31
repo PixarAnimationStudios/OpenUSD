@@ -30,8 +30,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// check opengl error
-//----------------------------------------------------------------------------
 static bool 
 LoFiGLCheckError(const char* message)
 {
@@ -122,6 +120,13 @@ template<typename T>
 void 
 LoFiTriangulateData(const VtArray<int>& indices, 
                     const VtArray<T>& datas,
-                    VtArray<T>& result);
+                    VtArray<T>& result)
+{
+  result.resize(indices.size());
+  for(int i=0;i<indices.size();++i)
+  {
+    result[i] = datas[indices[i]];
+  }
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE

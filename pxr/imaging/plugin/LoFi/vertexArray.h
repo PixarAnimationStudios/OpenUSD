@@ -8,9 +8,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
-//#include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
-//#include "pxr/imaging/plugin/LoFi/elementBuffer.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -19,13 +18,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum LoFiVertexArrayBits {
-  POSITION = 1,
-  NORMAL = 2,
-  COLOR = 3,
-  UVS = 4,
-  TANGENT = 5
-};
+class LoFiVertexBuffer;
 
 typedef boost::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
 
@@ -47,20 +40,42 @@ public:
   // get GL VAO
   GLuint Get(){return _vao;};
 
+  // buffers
+  bool HaveBuffer(LoFiVertexBufferChannelBits channel);
+  LoFiVertexBufferSharedPtr GetBuffer(LoFiVertexBufferChannelBits channel);
+
+  void SetBuffer(LoFiVertexBufferChannelBits channel,
+    LoFiVertexBufferSharedPtr buffer);
+
+  static LoFiVertexBufferSharedPtr 
+  CreateBuffer( LoFiVertexBufferChannelBits channel, 
+                uint32_t numInputElements, 
+                uint32_t numOutputElements);
+
+  // channels
+  inline void SetHaveChannel(LoFiVertexBufferChannelBits channel) { 
+    _channels |= channel;
+  };
+  inline bool HaveChannel(LoFiVertexBufferChannelBits channel) { 
+    return _channels & channel;}
+  ;
+
+  // elements
+  inline uint32_t GetNumElements(){return _numElements;};
+  inline void SetNumElements(uint32_t numElements){_numElements = numElements;};
+  
   void Bind();
   void Unbind();
 
 private:
   // datas
+  LoFiVertexBufferSharedPtrMap      _vbos;
   GLuint                            _vao;
-  std::vector<GLuint>               _vbos;
   GLuint                            _ebo;
 
   // flags
-  bool                              _hasNormal;
-  bool                              _hasColor;
-  bool                              _hasUV;
-  bool                              _hasTangent;
+  uint32_t                          _channels;
+  uint32_t                          _numElements;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
