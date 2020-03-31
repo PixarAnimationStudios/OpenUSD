@@ -40,7 +40,7 @@ class HgiGLBlitEncoder final : public HgiBlitEncoder
 {
 public:
     HGIGL_API
-    virtual ~HgiGLBlitEncoder();
+    ~HgiGLBlitEncoder()  override;
 
     HGIGL_API
     void Commit() override;

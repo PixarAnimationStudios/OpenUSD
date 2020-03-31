@@ -48,7 +48,7 @@ public:
     HgiGLFramebufferCache();
 
     HGIGL_API
-    virtual ~HgiGLFramebufferCache();
+    ~HgiGLFramebufferCache();
 
     /// Get a framebuffer that matches the descriptor.
     /// If the framebuffer exists in the cache, it will be returned.

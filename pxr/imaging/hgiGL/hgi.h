@@ -45,7 +45,7 @@ public:
     HgiGL();
 
     HGIGL_API
-    ~HgiGL();
+    ~HgiGL() override;
 
     // Returns the opengl device.
     HGIGL_API

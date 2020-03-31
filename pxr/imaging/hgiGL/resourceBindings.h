@@ -43,7 +43,7 @@ class HgiGLResourceBindings final : public HgiResourceBindings
 {
 public:
     HGIGL_API
-    virtual ~HgiGLResourceBindings();
+    ~HgiGLResourceBindings() override;
 
     /// Binds the resources to GPU.
     HGIGL_API

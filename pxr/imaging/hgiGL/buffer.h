@@ -39,7 +39,7 @@ class HgiGLBuffer final : public HgiBuffer
 {
 public:
     HGIGL_API
-    virtual ~HgiGLBuffer();
+    ~HgiGLBuffer() override;
 
     uint32_t GetBufferId() const {return _bufferId;}
 

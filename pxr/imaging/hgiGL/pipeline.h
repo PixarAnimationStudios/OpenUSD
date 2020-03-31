@@ -44,7 +44,7 @@ class HgiGLPipeline final : public HgiPipeline
 {
 public:
     HGIGL_API
-    virtual ~HgiGLPipeline();
+    ~HgiGLPipeline() override;
 
     /// Apply pipeline state
     HGIGL_API

@@ -40,7 +40,7 @@ class HgiGLShaderFunction final : public HgiShaderFunction
 {
 public:
     HGIGL_API
-    virtual ~HgiGLShaderFunction();
+    ~HgiGLShaderFunction() override;
 
     HGIGL_API
     bool IsValid() const override;

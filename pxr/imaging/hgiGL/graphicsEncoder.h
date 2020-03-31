@@ -44,7 +44,7 @@ class HgiGLGraphicsEncoder final : public HgiGraphicsEncoder
 {
 public:
     HGIGL_API
-    virtual ~HgiGLGraphicsEncoder();
+    ~HgiGLGraphicsEncoder() override;
 
     /// XXX This function is exposed temporarily for Hgi transition.
     /// It allows code that is not yet converted to Hgi (e.g. HdSt) to insert

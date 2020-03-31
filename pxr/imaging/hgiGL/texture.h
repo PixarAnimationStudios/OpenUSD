@@ -39,7 +39,7 @@ class HgiGLTexture final : public HgiTexture
 {
 public:
     HGIGL_API
-    virtual ~HgiGLTexture();
+    ~HgiGLTexture() override;
 
     /// Returns the internal OpenGL unique Id of the texture.
     uint32_t GetTextureId() const {return _textureId;}

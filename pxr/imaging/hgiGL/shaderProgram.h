@@ -43,7 +43,7 @@ class HgiGLShaderProgram final : public HgiShaderProgram
 {
 public:
     HGIGL_API
-    virtual ~HgiGLShaderProgram();
+    ~HgiGLShaderProgram() override;
 
     HGIGL_API
     bool IsValid() const override;
