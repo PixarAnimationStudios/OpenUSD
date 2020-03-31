@@ -58,8 +58,10 @@ using HdSt_QuadInfoBuilderComputationSharedPtr =
 
 using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
 
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
+
 
 /// \class HdSt_MeshTopology
 ///

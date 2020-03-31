@@ -34,6 +34,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,8 +45,9 @@ typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 typedef std::vector<struct HdExtComputationPrimvarDescriptor>
                           HdExtComputationPrimvarDescriptorVector;
 
-typedef boost::shared_ptr<class HdStExtCompGpuComputation>
-                                HdStExtCompGpuComputationSharedPtr;
+using HdStExtCompGpuComputationSharedPtr = 
+    std::shared_ptr<class HdStExtCompGpuComputation>;
+
 
 /// \class HdStExtCompGpuComputation
 /// A Computation that represents a GPU implementation of a ExtComputation.

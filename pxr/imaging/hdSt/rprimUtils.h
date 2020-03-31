@@ -30,6 +30,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -46,9 +47,10 @@ class HdStInstancer;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationSharedPtrVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;

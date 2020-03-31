@@ -30,14 +30,17 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include <boost/shared_ptr.hpp>
+
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationSharedPtrVector;
+
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 
 /// \class HdComputation
 ///

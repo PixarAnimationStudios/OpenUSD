@@ -38,6 +38,7 @@
 #include "pxr/base/arch/inttypes.h"
 
 #include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,8 +57,9 @@ using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationSharedPtrVector;
+
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 
 /// \class HdRprim
 ///
