@@ -772,7 +772,21 @@ class View(QtWidgets.QTextEdit):
     def insertFromMimeData(self, source):
         if not self._CursorIsInInputArea():
             self._MoveCursorToEndOfInput()
-        super(View, self).insertFromMimeData(source)
+
+        if source.hasText():
+            text = source.text().replace('\r', '')
+            textLines = text.split('\n')
+            if (textLines[-1] == ''):
+                textLines = textLines[:-1]
+            for i in range(len(textLines)):
+                line = textLines[i]
+                cursor = self.textCursor()
+                cursor.movePosition(QtGui.QTextCursor.End)        
+                cursor.insertText(line)
+                cursor.movePosition(QtGui.QTextCursor.End)        
+                self.setTextCursor(cursor)
+                if i < len(textLines) - 1:
+                    self.returnPressed.emit()
 
     def keyPressEvent(self, e):
         """
