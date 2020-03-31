@@ -55,7 +55,7 @@ public:
     /// for \a shaderStageKey
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
 
-    virtual HdMaterialParamVector const& GetParams() const override;
+    virtual HdSt_MaterialParamVector const& GetParams() const override;
 
     virtual bool IsEnabledPrimvarFiltering() const override;
 

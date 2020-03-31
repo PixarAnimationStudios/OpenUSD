@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/resourceGL.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -549,9 +550,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             }
         }
 
-        HdMaterialParamVector params = (*shader)->GetParams();
+        HdSt_MaterialParamVector params = (*shader)->GetParams();
         // for primvar and texture accessors
-        for (HdMaterialParam const& param : params) {
+        for (HdSt_MaterialParam const& param : params) {
             // renderpass texture should be bindfull (for now)
             bool bindless = useBindlessForTexture && 
                                 ((*shader) == drawItem->GetMaterialShader());

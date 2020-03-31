@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/materialParam.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,17 +41,17 @@ class HdSceneDelegate;
 ///
 struct HdSt_MaterialBufferSourceAndTextureHelper
 {
-    /// Process material param of type HdMaterialParam::ParamTypePrimvar
-    /// or HdMaterialParam::ParamTypeFallback
+    /// Process material param of type HdSt_MaterialParam::ParamTypePrimvar
+    /// or HdSt_MaterialParam::ParamTypeFallback
     void ProcessPrimvarOrFallbackMaterialParam(
-        HdMaterialParam const &param);
+        HdSt_MaterialParam const &param);
 
-    /// Process material param of type HdMaterialParam::ParamTypeTexture
+    /// Process material param of type HdSt_MaterialParam::ParamTypeTexture
     /// given the texture requested by the param.
     ///
     /// isPtex is set to true if texture request by param is ptex.
     void ProcessTextureMaterialParam(
-        HdMaterialParam const &param,
+        HdSt_MaterialParam const &param,
         HdStTextureResourceHandleSharedPtr const &handle,
         bool * isPtex = nullptr);
 

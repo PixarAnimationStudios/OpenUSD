@@ -105,7 +105,7 @@ public:
 private:
     HdStTextureResourceHandleSharedPtr
     _GetTextureResourceHandle(HdSceneDelegate *sceneDelegate,
-                              HdMaterialParam const &param);
+                              HdSt_MaterialParam const &param);
 
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;

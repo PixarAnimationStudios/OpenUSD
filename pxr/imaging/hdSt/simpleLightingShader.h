@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 
-#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/version.h"
 
@@ -64,7 +63,7 @@ public:
     HDST_API
     HdStSimpleLightingShader();
     HDST_API
-    virtual ~HdStSimpleLightingShader();
+    ~HdStSimpleLightingShader() override;
 
     /// HdShader overrides
     HDST_API
@@ -84,7 +83,7 @@ public:
 
     /// HdStShaderCode overrides
     HDST_API
-    HdMaterialParamVector const& GetParams() const override;
+    HdSt_MaterialParamVector const& GetParams() const override;
 
     /// HdStLightingShader overrides
     HDST_API
@@ -106,7 +105,7 @@ private:
     bool _useLighting;
     std::unique_ptr<HioGlslfx> _glslfx;
 
-    HdMaterialParamVector _lightTextureParams;
+    HdSt_MaterialParamVector _lightTextureParams;
 };
 
 

@@ -73,7 +73,7 @@ public:
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual HdMaterialParamVector const& GetParams() const override;
+    virtual HdSt_MaterialParamVector const& GetParams() const override;
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
@@ -114,7 +114,7 @@ private:
     HdCullStyle _cullStyle;
 
     TfHashSet<TfToken, TfToken::HashFunctor> _aovReadbackRequests;
-    HdMaterialParamVector _params;
+    HdSt_MaterialParamVector _params;
 
     // No copying
     HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;

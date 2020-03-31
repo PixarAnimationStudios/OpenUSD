@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 void
 HdSt_MaterialBufferSourceAndTextureHelper::
                                     ProcessPrimvarOrFallbackMaterialParam(
-    HdMaterialParam const &param)
+    HdSt_MaterialParam const &param)
 {
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
@@ -102,7 +102,7 @@ private:
 
 void
 HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
-    HdMaterialParam const &param,
+    HdSt_MaterialParam const &param,
     HdStTextureResourceHandleSharedPtr const &handle,
     bool * isPtex)
 {

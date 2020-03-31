@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_MATERIAL_PARAM_H
-#define PXR_IMAGING_HD_MATERIAL_PARAM_H
+#ifndef PXR_IMAGING_HD_ST_MATERIAL_PARAM_H
+#define PXR_IMAGING_HD_ST_MATERIAL_PARAM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
+
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -39,11 +39,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef std::vector<class HdMaterialParam> HdMaterialParamVector;
+using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
 
 // XXX: Docs
-class HdMaterialParam {
+class HdSt_MaterialParam final {
 public:
     typedef size_t ID;
 
@@ -66,26 +65,26 @@ public:
         ParamTypeAdditionalPrimvar
     };
 
-    HD_API
-    HdMaterialParam();
+    HDST_API
+    HdSt_MaterialParam();
 
-    HD_API
-    HdMaterialParam(ParamType paramType,
+    HDST_API
+    HdSt_MaterialParam(ParamType paramType,
                     TfToken const& name, 
                     VtValue const& fallbackValue,
                     SdfPath const& connection=SdfPath(),
                     TfTokenVector const& samplerCoords=TfTokenVector(),
                     HdTextureType textureType = HdTextureType::Uv);
 
-    HD_API
-    ~HdMaterialParam();
+    // No d'tor so that we pick up the implicitly declared default
+    // move c'tor.
 
     /// Computes a hash for all parameters. This hash also includes 
     /// parameter connections (texture, primvar, etc).
-    HD_API
-    static ID ComputeHash(HdMaterialParamVector const &shaders);
+    HDST_API
+    static ID ComputeHash(HdSt_MaterialParamVector const &shaders);
 
-    HD_API
+    HDST_API
     HdTupleType GetTupleType() const;
 
     bool IsField() const {
@@ -118,4 +117,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //PXR_IMAGING_HD_MATERIAL_PARAM_H
+#endif //PXR_IMAGING_HD_ST_MATERIAL_PARAM_H

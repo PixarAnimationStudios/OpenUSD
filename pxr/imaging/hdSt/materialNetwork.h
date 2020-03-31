@@ -27,24 +27,25 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/material.h"
-#include "pxr/imaging/hd/materialParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef std::unique_ptr<class HioGlslfx> HioGlslfxUniquePtr;
-
+using HioGlslfxUniquePtr =
+    std::unique_ptr<class HioGlslfx>;
+using HdSt_MaterialParamVector =
+    std::vector<class HdSt_MaterialParam>;
 
 /// \class HdStMaterialNetwork
 ///
 /// Helps HdStMaterial process a Hydra material network into shader source code
 /// and parameters values.
-class HdStMaterialNetwork {
+class HdStMaterialNetwork final {
 public:
     HDST_API
     HdStMaterialNetwork();
 
     HDST_API
-    virtual ~HdStMaterialNetwork();
+    ~HdStMaterialNetwork();
 
     /// Process a material network topology and extract all the information we
     /// need from it.
@@ -66,7 +67,7 @@ public:
     VtDictionary const& GetMetadata() const;
 
     HDST_API
-    HdMaterialParamVector const& GetMaterialParams() const;
+    HdSt_MaterialParamVector const& GetMaterialParams() const;
 
     /// Primarily used during reload of the material (glslfx may have changed)
     HDST_API
@@ -77,7 +78,7 @@ private:
     std::string _fragmentSource;
     std::string _geometrySource;
     VtDictionary _materialMetadata;
-    HdMaterialParamVector _materialParams;
+    HdSt_MaterialParamVector _materialParams;
     HioGlslfxUniquePtr _surfaceGfx;
 };
 

@@ -37,9 +37,7 @@ HdStMixinShader::HdStMixinShader(
 {
 }
 
-HdStMixinShader::~HdStMixinShader()
-{
-}
+HdStMixinShader::~HdStMixinShader() = default;
 
 HdStShaderCode::ID HdStMixinShader::ComputeHash() const 
 {
@@ -60,7 +58,7 @@ std::string HdStMixinShader::GetSource(TfToken const &shaderStageKey) const
     return baseSource;
 }
 
-HdMaterialParamVector const& HdStMixinShader::GetParams() const 
+HdSt_MaterialParamVector const& HdStMixinShader::GetParams() const 
 {
     return _baseShader->GetParams();
 }

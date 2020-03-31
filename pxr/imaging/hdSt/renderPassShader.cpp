@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -73,10 +74,7 @@ HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
 }
 
 /*virtual*/
-HdStRenderPassShader::~HdStRenderPassShader()
-{
-    // nothing
-}
+HdStRenderPassShader::~HdStRenderPassShader() = default;
 
 /*virtual*/
 HdStRenderPassShader::ID
@@ -306,7 +304,7 @@ HdStRenderPassShader::AddAovReadback(TfToken const &name)
     // allocated a sampler unit and codegen generates an accessor
     // HdGet_NAMEReadback().
     _params.emplace_back(
-        HdMaterialParam::ParamTypeTexture,
+        HdSt_MaterialParam::ParamTypeTexture,
         _GetReadbackName(name),
         VtValue(GfVec4f(0.0)),
         SdfPath(),
@@ -324,11 +322,11 @@ HdStRenderPassShader::RemoveAovReadback(TfToken const &name)
     const TfToken accessorName = _GetReadbackName(name);
     std::remove_if(
         _params.begin(), _params.end(),
-        [&accessorName](const HdMaterialParam &p) {
+        [&accessorName](const HdSt_MaterialParam &p) {
             return p.name == accessorName; });
 }
 
-HdMaterialParamVector const &
+HdSt_MaterialParamVector const &
 HdStRenderPassShader::GetParams() const
 {
     return _params;

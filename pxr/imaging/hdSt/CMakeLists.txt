@@ -111,6 +111,7 @@ pxr_library(hdSt
         immediateDrawBatch
         indirectDrawBatch
         materialBufferSourceAndTextureHelper
+        materialParam
         meshShaderKey
         meshTopology 
         pointsShaderKey

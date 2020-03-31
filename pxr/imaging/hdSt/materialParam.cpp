@@ -21,20 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/materialParam.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/envSetting.h"
 
 #include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdMaterialParam::HdMaterialParam()
-{
-}
+HdSt_MaterialParam::HdSt_MaterialParam() = default;
 
-HdMaterialParam::HdMaterialParam(ParamType paramType,
+HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
                                  TfToken const& name, 
                                  VtValue const& fallbackValue,
                                  SdfPath const& connection,
@@ -49,15 +46,11 @@ HdMaterialParam::HdMaterialParam(ParamType paramType,
 {
 }
 
-HdMaterialParam::~HdMaterialParam()
-{
-}
-
 size_t
-HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
+HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
 {
     size_t hash = 0;
-    for (HdMaterialParam const& param : params) {
+    for (HdSt_MaterialParam const& param : params) {
         boost::hash_combine(hash, param.paramType);
         boost::hash_combine(hash, param.name.Hash());
         boost::hash_combine(hash, param.connection.GetHash());
@@ -70,7 +63,7 @@ HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
 }
 
 HdTupleType
-HdMaterialParam::GetTupleType() const
+HdSt_MaterialParam::GetTupleType() const
 {
     return HdGetValueTupleType(fallbackValue);
 }

@@ -55,7 +55,6 @@ pxr_library(hd
         instanceRegistry
         light
         material
-        materialParam
         mesh
         meshTopology
         meshUtil

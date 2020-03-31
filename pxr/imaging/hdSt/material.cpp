@@ -107,7 +107,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     std::string geometrySource;
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
-    HdMaterialParamVector params;
+    HdSt_MaterialParamVector params;
 
     VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
     if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
@@ -198,7 +198,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
 
     bool hasPtex = false;
-    for (HdMaterialParam const & param: params) {
+    for (HdSt_MaterialParam const & param: params) {
         if (param.IsPrimvar() || param.IsFallback()) {
             sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(param);
         } else if (param.IsTexture()) {
@@ -238,7 +238,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 HdStTextureResourceHandleSharedPtr
 HdStMaterial::_GetTextureResourceHandle(
         HdSceneDelegate *sceneDelegate,
-        HdMaterialParam const &param)
+        HdSt_MaterialParam const &param)
 {
     HdStResourceRegistrySharedPtr const& resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
