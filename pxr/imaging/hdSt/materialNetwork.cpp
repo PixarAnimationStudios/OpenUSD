@@ -148,8 +148,9 @@ _ConvertLegacyHdMaterialNetwork(
         if (iter == result->nodes.end()) {
             continue;
         }
-        iter->second.inputConnections[rel.outputName]
-            .emplace_back( HdSt_MaterialConnection{rel.inputId, rel.inputName});
+        std::vector<HdSt_MaterialConnection> &materialConnections =
+            iter->second.inputConnections[rel.outputName];
+        materialConnections.push_back( {rel.inputId, rel.inputName} );
     }
 
     // Transfer primvars:
@@ -409,7 +410,7 @@ _MakeMaterialParamsForUnconnectedParam(
     param.samplerCoords = TfTokenVector(); /*No UV*/
     param.textureType = HdTextureType::Uv  /*No Texture*/;
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
@@ -425,7 +426,7 @@ _MakeMaterialParamsForAdditionaPrimvar(
     param.samplerCoords = TfTokenVector(); /*No UV*/
     param.textureType = HdTextureType::Uv  /*No Texture*/;
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
@@ -460,7 +461,7 @@ _MakeMaterialParamsForPrimvarInput(
         }
     }
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
@@ -568,7 +569,7 @@ _MakeMaterialParamsForTextureInput(
                 // We do not put the primvar connected to the texture into the
                 // material params. We only wanted to extract the primvar name
                 // and put it into the texture's samplerCoords.
-                //    params.emplace_back(std::move(primvarParam));
+                //    params.push_back(std::move(primvarParam));
                 texParam.samplerCoords = primvarParam.samplerCoords;
             }
         }
@@ -590,7 +591,7 @@ _MakeMaterialParamsForTextureInput(
         }
     }
 
-    params.emplace_back(std::move(texParam));
+    params.push_back(std::move(texParam));
     return params;
 }
 
@@ -637,7 +638,7 @@ _MakeMaterialParamsForFieldInput(
         }
     }
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
