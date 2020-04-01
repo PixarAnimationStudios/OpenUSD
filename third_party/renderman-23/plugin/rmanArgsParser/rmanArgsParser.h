@@ -80,6 +80,8 @@ struct SdrShaderRepresentation;
 ///   * _tag_ *!*
 ///   * _validConnectionTypes_
 ///   * _vstructmember_
+///   * _sdrDefinitionName_ (renames parameter, sends original args param name to
+///                          SdrShaderProperty::GetImplementationName())
 ///   * Note: other uncategorized attributes are available via NdrNode::GetHints()
 /// * <page> _Can be nested_
 ///   * _name_

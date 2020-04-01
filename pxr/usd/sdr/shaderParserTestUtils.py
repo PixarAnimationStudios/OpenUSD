@@ -608,3 +608,8 @@ def TestShaderPropertiesNode(node):
     assert GetType(property) == Tf.Type.FindByName("TfToken")
     assert Ndr._ValidateProperty(node, property)
 
+    # Specific test of implementationName feature, we can skip type-tests
+    property = nodeInputs["normal"]
+    assert property.GetImplementationName() == "aliasedNormalInput"
+    assert Ndr._ValidateProperty(node, property)
+

@@ -66,6 +66,8 @@ struct NdrNodeDiscoveryResult;
 /// OSL Metadata Key    | Destination
 /// ------------------- | ------------
 /// connectable         | IsConnectable()
+/// sdrDefinitionName   | renames parameter, sends original osl param name to 
+///                     | SdrShaderProperty::GetImplementationName()
 /// page                | GetPage()
 /// help                | GetHelp()
 /// label               | GetLabel()

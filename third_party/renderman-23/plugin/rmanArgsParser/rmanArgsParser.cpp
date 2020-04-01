@@ -99,6 +99,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((inputAttr, "input"))
     ((tagAttr, "tag"))
     ((vstructmemberAttr, "vstructmember"))
+    ((sdrDefinitionNameAttr, "sdrDefinitionName"))
 );
 
 // Data that represents an SdrShaderNode before it is turned into one. The
@@ -709,6 +710,7 @@ RmanArgsParserPlugin::_CreateProperty(
         _Get(attributes,
              _xmlAttributeNames->nameAttr,
              TfToken("NAME UNSPECIFIED"));
+    TfToken definitionName;
 
     // Get type name, and determine the size of the array (if an array)
     TfToken typeName;
@@ -728,7 +730,7 @@ RmanArgsParserPlugin::_CreateProperty(
                 _xmlAttributeNames->typeAttr, shaderRep, propName);
         }
     }
-
+    
     // The 'tag' attr is deprecated
     // -------------------------------------------------------------------------
     if (attributes.count(_xmlAttributeNames->tagAttr)) {
@@ -784,6 +786,18 @@ RmanArgsParserPlugin::_CreateProperty(
             }
         }
     }
+
+    // Handle definitionName, which requires changing propName
+    // -------------------------------------------------------------------------
+    if (attributes.count(_xmlAttributeNames->sdrDefinitionNameAttr)) {
+        TfToken definitionName =
+            TfToken(attributes.at(_xmlAttributeNames->sdrDefinitionNameAttr));
+        
+        attributes[SdrPropertyMetadata->ImplementationName] = propName;
+        propName = definitionName;
+        attributes.erase(_xmlAttributeNames->sdrDefinitionNameAttr);
+    }
+ 
 
     // Put any uncategorized attributes into hints
     // -------------------------------------------------------------------------

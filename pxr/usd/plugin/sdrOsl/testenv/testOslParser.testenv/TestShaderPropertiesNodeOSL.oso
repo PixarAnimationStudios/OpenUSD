@@ -32,20 +32,21 @@ param	color	inputPointRoleNone	0 0 0		%meta{string,role,"none"}  %read{214748364
 param	color	inputNormalRoleNone	0 0 0		%meta{string,role,"none"}  %read{2147483647,-1} %write{1,1} %initexpr
 param	color	inputVectorRoleNone	0 0 0		%meta{string,role,"none"}  %read{2147483647,-1} %write{2,2} %initexpr
 oparam	float	outputSurface	1		%meta{string,renderType,"terminal surface"}  %read{2147483647,-1} %write{2147483647,-1}
+param	normal	aliasedNormalInput	1 1 1		%meta{string,sdrDefinitionName,"normal"}  %read{2147483647,-1} %write{2147483647,-1}
 const	point	$const1	1 2 3		%read{0,0} %write{2147483647,-1}
 const	normal	$const2	1 2 3		%read{1,1} %write{2147483647,-1}
 const	vector	$const3	1 2 3		%read{2,2} %write{2147483647,-1}
 code inputPointRoleNone
-# TestShaderPropertiesNodeOSL.osl:64
+# TestShaderPropertiesNodeOSL.osl:63
 #     ]],
-	assign		inputPointRoleNone $const1 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{64} %argrw{"wr"}
+	assign		inputPointRoleNone $const1 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{63} %argrw{"wr"}
 code inputNormalRoleNone
-# TestShaderPropertiesNodeOSL.osl:68
+# TestShaderPropertiesNodeOSL.osl:67
 #     ]],
-	assign		inputNormalRoleNone $const2 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{68} %argrw{"wr"}
+	assign		inputNormalRoleNone $const2 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{67} %argrw{"wr"}
 code inputVectorRoleNone
-# TestShaderPropertiesNodeOSL.osl:72
+# TestShaderPropertiesNodeOSL.osl:71
 #     ]],
-	assign		inputVectorRoleNone $const3 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{72} %argrw{"wr"}
+	assign		inputVectorRoleNone $const3 	%filename{"TestShaderPropertiesNodeOSL.osl"} %line{71} %argrw{"wr"}
 code ___main___
 	end
