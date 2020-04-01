@@ -19,6 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (glslShader)                                \
     (vertexArray)                               \
     (vertexBuffer)                              \
+    (mesh)                                      \
 
 TF_DECLARE_PUBLIC_TOKENS(LoFiTokens, LOFI_API, LOFI_TOKENS);
 

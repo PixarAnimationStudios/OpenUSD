@@ -34,48 +34,68 @@ public:
   // destructor
   ~LoFiVertexArray();
 
-  // allocate
-  void Reallocate();
-
   // get GL VAO
-  GLuint Get(){return _vao;};
+  GLuint Get() const {return _vao;};
 
   // buffers
-  bool HaveBuffer(LoFiVertexBufferChannelBits channel);
-  LoFiVertexBufferSharedPtr GetBuffer(LoFiVertexBufferChannelBits channel);
+  bool HaveBuffer(LoFiVertexBufferChannel channel);
+  LoFiVertexBufferSharedPtr GetBuffer(LoFiVertexBufferChannel channel);
 
-  void SetBuffer(LoFiVertexBufferChannelBits channel,
+  void SetBuffer(LoFiVertexBufferChannel channel,
     LoFiVertexBufferSharedPtr buffer);
 
   static LoFiVertexBufferSharedPtr 
-  CreateBuffer( LoFiVertexBufferChannelBits channel, 
+  CreateBuffer( LoFiVertexBufferChannel channel, 
                 uint32_t numInputElements, 
                 uint32_t numOutputElements);
 
   // channels
-  inline void SetHaveChannel(LoFiVertexBufferChannelBits channel) { 
+  inline void SetHaveChannel(LoFiVertexBufferChannel channel) { 
     _channels |= channel;
   };
-  inline bool HaveChannel(LoFiVertexBufferChannelBits channel) { 
-    return _channels & channel;}
-  ;
+  inline bool HaveChannel(LoFiVertexBufferChannel channel) { 
+    return ((_channels & channel) == channel);
+  };
+
+  // state
+  inline bool NeedReallocate(){return true;};
+  inline bool NeedUpdate(){return true;};
 
   // elements
-  inline uint32_t GetNumElements(){return _numElements;};
+  inline uint32_t GetNumElements() const{return _numElements;};
   inline void SetNumElements(uint32_t numElements){_numElements = numElements;};
-  
-  void Bind();
-  void Unbind();
+
+  // topology
+  inline void SetTopologyPtr(const GfVec3i* topology) {
+    _topology = topology;
+  }
+  const GfVec3i* GetTopologyPtr() const {return _topology;};
+
+  // allocate
+  void Reallocate();
+  void Populate();
+  void Bind() const;
+  void Unbind() const;
+
+  // draw
+  void Draw();
 
 private:
   // datas
-  LoFiVertexBufferSharedPtrMap      _vbos;
+  LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
   GLuint                            _ebo;
 
   // flags
   uint32_t                          _channels;
   uint32_t                          _numElements;
+
+  // topology
+  const GfVec3i*                    _topology;
+
+#ifdef __APPLE__      
+  uint32_t                          _glVersion;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

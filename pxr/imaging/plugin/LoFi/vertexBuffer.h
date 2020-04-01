@@ -17,23 +17,29 @@
 #include "pxr/base/gf/matrix4d.h"
 
 #include <boost/functional/hash.hpp>
-
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-enum LoFiVertexBufferChannelBits : short {
-  CHANNEL_NONE      = 0,
-  CHANNEL_POSITION  = 1,
-  CHANNEL_NORMAL    = 2,
-  CHANNEL_COLOR     = 4,
-  CHANNEL_UVS       = 8,
+enum LoFiVertexBufferChannel : short {
+  CHANNEL_POSITION,
+  CHANNEL_NORMAL,
+  CHANNEL_COLOR,
+  CHANNEL_UVS
+};
+
+enum LoFiVertexBufferState : short {
+  INVALID,
+  TO_REALLOCATE,
+  TO_UPDATE,
+  TO_RECYCLE
 };
 
 
 typedef boost::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
 typedef std::vector<LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrList;
-typedef std::map<LoFiVertexBufferChannelBits, LoFiVertexBufferSharedPtr> 
+typedef std::map<LoFiVertexBufferChannel, LoFiVertexBufferSharedPtr> 
   LoFiVertexBufferSharedPtrMap;
 
 /// \class LoFiVertexBuffer
@@ -43,18 +49,12 @@ class LoFiVertexBuffer
 {
 public:
   // constructor
-  LoFiVertexBuffer( LoFiVertexBufferChannelBits channel, 
+  LoFiVertexBuffer( LoFiVertexBufferChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements);
 
   // destructor
   ~LoFiVertexBuffer();
-
-  // allocate
-  void Reallocate();
-
-  // get opengl vertex buffer object
-  GLuint Get(){return _vbo;};
 
   // hash
   size_t ComputeDatasHash(const char* datas);
@@ -75,21 +75,45 @@ public:
   inline void SetNeedUpdate(bool needUpdate) {
     _needUpdate = needUpdate;
   };
+  inline bool IsValid(){return _valid;};
+  inline void SetValid(bool valid) {_valid = valid;};
 
-  void Bind();
-  void Unbind();
+  inline HdInterpolation GetInterpolation(){return _interpolation;};
+  inline void SetInterpolation(HdInterpolation interpolation) {
+    _interpolation = interpolation;
+  };
+
+  // raw input datas
+  inline const void* GetRawInputDatas(){return _rawInputDatas;};
+  inline void SetRawInputDatas(const char* datas){_rawInputDatas = datas;};
+
+  // compute output datas
+  uint64_t ComputeOutputSize() {return _numOutputElements * _elementSize;};
+  void ComputeOutputDatas(const GfVec3i* samples,
+                          char* outputDatas);
+
+  // opengl
+  void Reallocate();
+  void Populate(const void* triangulatedDatas);
+  GLuint Get() const {return _vbo;};
 
 private: 
   // description
+  std::string                       _name;
   short                             _channel;
   size_t                            _datasHash;
   size_t                            _registryKey;
   uint32_t                          _numInputElements;
   uint32_t                          _numOutputElements;
   uint32_t                          _elementSize;
+  
   bool                              _needReallocate;
   bool                              _needUpdate;
+  bool                              _valid;
   HdInterpolation                   _interpolation;
+
+  // datas
+  const char*                       _rawInputDatas;
 
   // opengl
   GLuint                            _vbo;

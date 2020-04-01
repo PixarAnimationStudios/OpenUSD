@@ -30,10 +30,10 @@ pxr_plugin(LoFi
         shader
         vertexBuffer
         vertexArray
+        drawItem
         resourceRegistry
         utils
         mesh
-        renderer
         sceneDelegate
         renderDelegate
         renderPass
