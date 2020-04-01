@@ -3,8 +3,10 @@
 #include <iostream>
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec3i.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4f.h"
@@ -29,6 +31,15 @@
 #include "pxr/imaging/plugin/LoFi/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+enum LoFiPrimvarInterpolation : short {
+  LoFiInterpolationConstant = 0,
+  LoFiInterpolationUniform,
+  LoFiInterpolationVarying,
+  LoFiInterpolationVertex,
+  LoFiInterpolationFaceVarying,
+  LoFiInterpolationInstance,
+};
 
 static bool 
 LoFiGLCheckError(const char* message)
@@ -84,48 +95,35 @@ LoFiGLFlushError()
   while((err = glGetError()) != GL_NO_ERROR){};
 }
 
+/// Triangulate a polygonal mesh
+/// Samples store a GfVec3i X per triangle vertex where
+///  - X[0] Vertex index on original topology
+///  - X[1] Face index on original topology
+///  - X[2] Sample index on original topology
+int 
+LoFiTriangulateMesh(const VtArray<int>& counts, 
+                    const VtArray<int>& indices, 
+                    VtArray<GfVec3i>& samples);
+
 /// Compute smooth vertex normals on a triangulated polymesh
 void 
 LoFiComputeVertexNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
-                          const VtArray<int>& triangles,
+                          const VtArray<GfVec3i>& samples,
                           VtArray<GfVec3f>& normals);
-/*
-void 
-LoFiComputeVertexColors(const VtArray<GfVec3f>& positions,
-                        const VtArray<int>& counts,
-                        const VtArray<int>& indices,
-                        const VtArray<int>& triangles,
-                        GfVec3f color,
-                        VtArray<GfVec3f>& normals);
 
-void 
-LoFiComputeVertexColors(const VtArray<GfVec3f>& positions,
-                        const VtArray<int>& counts,s
-                        const VtArray<int>& indices,
-                        GfVec3f color,
-                        VtArray<GfVec3f>& normals);
-*/
-
-/// Triangulate a polygonal mesh
-int 
-LoFiTriangulateMesh(const VtArray<int>& counts, 
-                    const VtArray<int>& indices, 
-                    VtArray<int>& triangles,
-                    VtArray<int>& samples);
-
-/// Triangulate mesh datas
+/// Triangulate data
 template<typename T>
-void 
-LoFiTriangulateData(const VtArray<int>& indices, 
-                    const VtArray<T>& datas,
-                    VtArray<T>& result)
+void
+LoFiTriangulateDatas( const VtArray<GfVec3i>& samples,
+                      const VtArray<T>& datas,
+                      VtArray<T>& result)
 {
-  result.resize(indices.size());
-  for(int i=0;i<indices.size();++i)
+  result.resize(samples.size());
+  for(int i=0;i<samples.size();++i)
   {
-    result[i] = datas[indices[i]];
+    result[i] = datas[samples[i][0]];
   }
 };
 

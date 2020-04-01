@@ -105,7 +105,7 @@ private:
     void _Initialize();
 
     // Handle for the top-level LoFi renderer
-    LoFiRenderer* _renderer;
+    //LoFiRenderer* _renderer;
 
     // Handle to the render param to pass
     //LoFiRenderParam* _renderParams;

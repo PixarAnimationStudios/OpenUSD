@@ -29,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class LoFiMesh final : public HdMesh 
 {
+
 public:
     HF_MALLOC_TAG_NEW("new LoFiMesh");
 
@@ -45,6 +46,8 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const    &reprToken) override;
 
+    void InfosLog();
+
 protected:
     void _InitRepr(
         TfToken const &reprToken,
@@ -55,12 +58,12 @@ protected:
                         TfToken const                 &reprToken,
                         LoFiResourceRegistrySharedPtr registry);
 
-    void _PopulatePrimvar(HdSceneDelegate* sceneDelegate,
-                          HdInterpolation interpolation,
-                          LoFiVertexBufferChannelBits channel,
-                          const VtValue& value,
-                          bool needReallocate);
-  
+    LoFiVertexBufferState _PopulatePrimvar( HdSceneDelegate* sceneDelegate,
+                                            HdInterpolation interpolation,
+                                            LoFiVertexBufferChannel channel,
+                                            const VtValue& value,
+                                            bool needReallocate);
+
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
@@ -78,7 +81,10 @@ protected:
     const inline int GetNumPoints() const{return _positions.size();};
 
     // Get num triangles
-    const inline int GetNumTriangles() const{return _triangles.size();};
+    const inline int GetNumTriangles() const{return _samples.size()/3;};
+
+    // Get num samples
+    const inline int GetNumSamples() const{return _samples.size();};
 
     // Get positions ptr
     const inline GfVec3f* GetPositionsPtr() const{return _positions.cdata();};
@@ -89,11 +95,8 @@ protected:
     // Get colors ptr
     const inline GfVec3f* GetColorsPtr() const{return _colors.cdata();};
 
-     // Get indices ptr
-    const inline int* GetIndicesPtr() const{return _triangles.cdata();};
-
     // Get samples ptr
-    const inline int* GetSamplesPtr() const{return _samples.cdata();};
+    const inline GfVec3i* GetSamplesPtr() const{return _samples.cdata();};
 
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
@@ -106,19 +109,8 @@ private:
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
-    VtArray<int>                    _triangles;
-    VtArray<int>                    _samples;
+    VtArray<GfVec3i>                _samples;
     LoFiVertexArraySharedPtr        _vertexArray;
-
-    // A local cache of primvar scene data. "data" is a copy-on-write handle to
-    // the actual primvar buffer, and "interpolation" is the interpolation mode
-    // to be used. This cache is used in _PopulateRtMesh to populate the
-    // primvar sampler map in the prototype context, which is used for shading.
-    struct PrimvarSource {
-        VtValue data;
-        HdInterpolation interpolation;
-    };
-    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
 
 };
 

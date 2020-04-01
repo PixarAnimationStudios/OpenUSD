@@ -4,13 +4,13 @@
 // Unlicensed
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
-LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannelBits channel,
+LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannel channel,
   uint32_t numInputElements, uint32_t numOutputElements)
   : _channel(channel)
   , _datasHash(0)
@@ -20,6 +20,7 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannelBits channel,
   , _needReallocate(true)
   , _needUpdate(true)
   , _interpolation(HdInterpolationConstant)
+  , _vbo(0)
 {
   switch(channel)
   {
@@ -39,22 +40,7 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannelBits channel,
 // destructor
 LoFiVertexBuffer::~LoFiVertexBuffer()
 {
-  std::cerr << "DELETE FUCKIN BUFFER: ";
-  switch(_channel)
-  {
-    case CHANNEL_POSITION:
-      std::cout << "CHANNEL POSITION" << std::endl;
-      break;
-    case CHANNEL_NORMAL:
-      std::cout << "CHANNEL NORMAL" << std::endl;
-      break;
-    case CHANNEL_COLOR:
-      std::cout << "CHANNEL COLOR" << std::endl;
-      break;
-    case CHANNEL_UVS:
-      std::cout << "CHANNEL UVS" << std::endl;
-      break;
-  }
+  if(_vbo)glDeleteBuffers(1, &_vbo);
 }
 
 size_t LoFiVertexBuffer::ComputeDatasHash(const char* datas)
@@ -78,18 +64,99 @@ size_t LoFiVertexBuffer::ComputeRegistryKey()
 // allocate
 void LoFiVertexBuffer::Reallocate()
 {
+  if(!_vbo) glGenBuffers(1, &_vbo);
 
+  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+  glBufferData(
+    GL_ARRAY_BUFFER, 
+    _numOutputElements * _elementSize, 
+    NULL, 
+    GL_DYNAMIC_DRAW
+  );
+  glVertexAttribPointer(_channel, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+  glEnableVertexAttribArray(_channel);
 }
 
-// allocate
-void LoFiVertexBuffer::Bind()
+void LoFiVertexBuffer::Populate(const void* datas)
 {
-
+  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+  glBufferSubData(
+    GL_ARRAY_BUFFER, 
+    0, 
+    _numOutputElements * _elementSize,
+    datas
+  );
 }
 
-void LoFiVertexBuffer::Unbind()
+void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
+                                          char* result)
 {
+  switch(_interpolation) 
+  {
+    case LoFiInterpolationConstant:
+    {
+      for(int i=0;i<_numOutputElements;++i) 
+      {
+        char randomData[_elementSize];
+        for(int j=0;j<_elementSize;++j)randomData[j] = rand();
+        memcpy(result + i * _elementSize, &randomData, _elementSize);
+      }
+      break;
+    }
   
+    case LoFiInterpolationUniform:
+    {
+      for(int i=0;i<_numOutputElements;++i) 
+      {
+        memcpy(
+          (void*)(result + i * _elementSize),
+          (void*)(_rawInputDatas + samples[i][1] * _elementSize), 
+          _elementSize
+        );
+      }
+      break;
+    }
+
+    case LoFiInterpolationVarying:
+    {
+      for(int i=0;i<_numOutputElements;++i) 
+      {
+        memcpy(
+          (void*)(result + i * _elementSize),
+          (void*)(_rawInputDatas + samples[i][0] * _elementSize), 
+          _elementSize
+        );
+      }
+      break;
+    }
+      
+    case LoFiInterpolationVertex:
+    {
+      for(int i=0;i<_numOutputElements;++i) 
+      {
+        memcpy(
+          (void*)(result + i * _elementSize),
+          (void*)(_rawInputDatas + samples[i][0] * _elementSize), 
+          _elementSize
+        );
+      }
+      break;
+    }
+      
+    case LoFiInterpolationFaceVarying:
+    {
+      for(int i=0;i<_numOutputElements;++i) 
+      {
+        memcpy(
+          (void*)(result + i * _elementSize),
+          (void*)(_rawInputDatas + samples[i][2] * _elementSize), 
+          _elementSize
+        );
+      }  
+      break;
+    } 
+  }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

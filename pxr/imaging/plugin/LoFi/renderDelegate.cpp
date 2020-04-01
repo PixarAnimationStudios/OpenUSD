@@ -15,7 +15,7 @@
 
 #include "pxr/imaging/plugin/LoFi/mesh.h"
 #include "pxr/imaging/plugin/LoFi/scene.h"
-#include "pxr/imaging/plugin/LoFi/renderer.h"
+//#include "pxr/imaging/plugin/LoFi/renderer.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -73,10 +73,10 @@ LoFiRenderDelegate::_Initialize()
   }
 
   // Create the top-level renderer.
-  _renderer = new LoFiRenderer(_resourceRegistry);
+  //_renderer = new LoFiRenderer(_resourceRegistry);
     
 
-  // Create the RenderPassState Object (???)
+  // Create the RenderPassState object
   _renderPassState = CreateRenderPassState();
 
 }
@@ -90,14 +90,13 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
       _resourceRegistry.reset();
     }
   }
-
-  delete _renderer;
 }
 
 void 
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
   //_renderPassState->SetCamera(_sceneDelegate)
+  _resourceRegistry->Commit();
 }
 
 HdRenderSettingDescriptorList
@@ -135,9 +134,10 @@ LoFiRenderDelegate::CreateRenderPass(
     HdRenderIndex *index,
     HdRprimCollection const& collection)
 {
-    return HdRenderPassSharedPtr(
-      new LoFiRenderPass(index, collection, _renderer)
-    );  
+  std::cout << "### [LOFI] CREATE RENDER PASS !" << std::endl;
+  return HdRenderPassSharedPtr(
+    new LoFiRenderPass(index, collection)
+  );  
 }
 
 HdRprim *

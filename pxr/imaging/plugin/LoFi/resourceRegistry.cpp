@@ -4,9 +4,13 @@
 // Unlicensed
 //
 #include <iostream>
+#include "pxr/imaging/plugin/Lofi/debugCodes.h"
 #include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
+#include "pxr/imaging/plugin/Lofi/mesh.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class LoFiMesh;
 
 LoFiResourceRegistry::LoFiResourceRegistry()
 {
@@ -39,7 +43,6 @@ template <typename ID, typename T>
 HdInstance<T>
 _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &lofiToken)
 {
-    std::cerr << "Register ID : " << id << std::endl;
     HdInstance<T> instance = registry.GetInstance(id);
     if (instance.IsFirstInstance()) {
       HD_PERF_COUNTER_INCR(lofiToken);
@@ -51,7 +54,6 @@ HdInstance<LoFiVertexArraySharedPtr>
 LoFiResourceRegistry::RegisterVertexArray(
   HdInstance<LoFiVertexArraySharedPtr>::ID id)
 {
-  std::cerr << "REGISTER A FUCKIN VERTEX ARRAY :D" << std::endl;
   return _Register(id, _vertexArrayRegistry, LoFiTokens->vertexArray);
 }
 
@@ -96,9 +98,54 @@ LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id
   else return LoFiGLSLProgramSharedPtr(nullptr);
 }
 
+HdInstance<LoFiMesh*>
+LoFiResourceRegistry::RegisterMesh(
+  HdInstance<LoFiMesh*>::ID id)
+{
+  return _Register(id, _meshesRegistry, LoFiTokens->mesh);
+}
+
+LoFiMesh*
+LoFiResourceRegistry::GetMesh(HdInstance<LoFiMesh*>::ID id)
+{
+  bool found;
+  auto instance = _meshesRegistry.FindInstance(id, &found);
+  if(found) return instance.GetValue();
+  else return NULL;
+}
+
+
 void
 LoFiResourceRegistry::_Commit()
 {
+  /// infos about the mesh in the scene
+  {
+    if(TfDebug::IsEnabled(LOFI_GEOMETRY))
+    {
+      for(const auto instance: _meshesRegistry)
+      {
+        LoFiMesh* mesh = instance.second.value;
+        if(mesh)mesh->InfosLog();
+      }
+    }
+  }
+  
+  {
+    for(auto& instance: _vertexArrayRegistry)
+    {
+      LoFiVertexArraySharedPtr vertexArray = instance.second.value;
+      if(vertexArray->NeedReallocate())
+      {
+        vertexArray->Reallocate();
+        vertexArray->Populate();
+      }
+      else if(vertexArray->NeedUpdate())
+      {
+        vertexArray->Populate();
+      }
+    }
+  }
+  
 }
 
 void
