@@ -77,7 +77,7 @@ struct HgiBufferBindDesc
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
 };
-typedef std::vector<HgiBufferBindDesc> HgiBufferBindDescVector;
+using HgiBufferBindDescVector = std::vector<HgiBufferBindDesc>;
 
 HGI_API
 bool operator==(
@@ -119,7 +119,7 @@ struct HgiTextureBindDesc
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
 };
-typedef std::vector<HgiTextureBindDesc> HgiTextureBindDescVector;
+using HgiTextureBindDescVector = std::vector<HgiTextureBindDesc>;
 
 HGI_API
 bool operator==(
@@ -196,8 +196,8 @@ private:
 
 /// Explicitly instantiate and define ResourceBindings handle
 template class HgiHandle<class HgiResourceBindings>;
-typedef HgiHandle<class HgiResourceBindings> HgiResourceBindingsHandle;
-typedef std::vector<HgiResourceBindingsHandle> HgiResourceBindingsHandleVector;
+using HgiResourceBindingsHandle = HgiHandle<class HgiResourceBindings>;
+using HgiResourceBindingsHandleVector = std::vector<HgiResourceBindingsHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

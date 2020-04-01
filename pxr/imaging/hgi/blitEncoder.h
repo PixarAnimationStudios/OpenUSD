@@ -34,7 +34,7 @@ struct HgiTextureGpuToCpuOp;
 struct HgiBufferCpuToGpuOp;
 struct HgiResolveImageOp;
 
-typedef std::unique_ptr<class HgiBlitEncoder> HgiBlitEncoderUniquePtr;
+using HgiBlitEncoderUniquePtr = std::unique_ptr<class HgiBlitEncoder>;
 
 
 /// \class HgiBlitEncoder

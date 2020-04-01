@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef uint32_t HgiBits;
+using HgiBits = uint32_t;
 
 
 /// \enum HgiDeviceCapabilitiesBits
@@ -47,7 +47,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsPresentation = 1 << 0,
 };
 
-typedef HgiBits HgiDeviceCapabilities;
+using HgiDeviceCapabilities = HgiBits;
 
 /// \enum HgiTextureType
 ///
@@ -101,7 +101,7 @@ enum HgiTextureUsageBits : HgiBits
     HgiTextureUsageCustomBitsBegin = 1 << 4,
 };
 
-typedef HgiBits HgiTextureUsage;
+using HgiTextureUsage = HgiBits;
 
 /// \enum HgiSampleCount
 ///
@@ -183,7 +183,7 @@ enum HgiBufferUsageBits : HgiBits
 
     HgiBufferUsageCustomBitsBegin = 1 << 4,
 };
-typedef HgiBits HgiBufferUsage;
+using HgiBufferUsage = HgiBits;
 
 /// \enum HgiShaderStage
 ///
@@ -204,7 +204,7 @@ enum HgiShaderStageBits : HgiBits
     HgiShaderStageFragment = 1 << 1,
     HgiShaderStageCompute  = 1 << 2
 };
-typedef HgiBits HgiShaderStage;
+using HgiShaderStage = HgiBits;
 
 /// \enum HgiPipelineType
 ///

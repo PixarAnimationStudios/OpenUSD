@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef std::unique_ptr<class HgiGraphicsEncoder> HgiGraphicsEncoderUniquePtr;
+using HgiGraphicsEncoderUniquePtr = std::unique_ptr<class HgiGraphicsEncoder>;
 
 
 /// \class HgiGraphicsEncoder

@@ -104,7 +104,7 @@ private:
     HgiGLGraphicsEncoder(const HgiGLGraphicsEncoder&) = delete;
 
     bool _committed;
-    GLOpsVector _ops;
+    HgiGLOpsVector _ops;
 
     // Encoder is used only one frame so storing multi-frame state on encoder
     // will not survive.

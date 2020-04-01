@@ -114,8 +114,8 @@ private:
 
 /// Explicitly instantiate and define ShaderProgram handle
 template class HgiHandle<class HgiShaderProgram>;
-typedef HgiHandle<class HgiShaderProgram> HgiShaderProgramHandle;
-typedef std::vector<HgiShaderProgramHandle> HgiShaderProgramHandleVector;
+using HgiShaderProgramHandle = HgiHandle<class HgiShaderProgram>;
+using HgiShaderProgramHandleVector = std::vector<HgiShaderProgramHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -83,7 +83,7 @@ struct HgiAttachmentDesc
     HgiBlendOp alphaBlendOp;
 };
 
-typedef std::vector<HgiAttachmentDesc> HgiAttachmentDescVector;
+using HgiAttachmentDescVector = std::vector<HgiAttachmentDesc>;
 
 HGI_API
 bool operator==(

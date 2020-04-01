@@ -123,8 +123,8 @@ private:
 
 /// Explicitly instantiate and define buffer handle
 template class HgiHandle<class HgiBuffer>;
-typedef HgiHandle<class HgiBuffer> HgiBufferHandle;
-typedef std::vector<HgiBufferHandle> HgiBufferHandleVector;
+using HgiBufferHandle = HgiHandle<class HgiBuffer>;
+using HgiBufferHandleVector = std::vector<HgiBufferHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

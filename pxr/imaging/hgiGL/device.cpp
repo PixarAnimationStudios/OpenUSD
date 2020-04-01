@@ -47,7 +47,7 @@ HgiGLDevice::AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc)
 }
 
 void
-HgiGLDevice::Commit(GLOpsVector const & ops)
+HgiGLDevice::Commit(HgiGLOpsVector const & ops)
 {
     for(HgiGLOpsFn const& f : ops) {
         f();

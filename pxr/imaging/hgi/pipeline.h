@@ -61,7 +61,7 @@ struct HgiVertexAttributeDesc
     uint32_t offset;
     uint32_t shaderBindLocation;
 };
-typedef std::vector<HgiVertexAttributeDesc> HgiVertexAttributeDescVector;
+using HgiVertexAttributeDescVector = std::vector<HgiVertexAttributeDesc>;
 
 HGI_API
 bool operator==(
@@ -96,7 +96,7 @@ struct HgiVertexBufferDesc
     HgiVertexAttributeDescVector vertexAttributes;
     uint32_t vertexStride;
 };
-typedef std::vector<HgiVertexBufferDesc> HgiVertexBufferDescVector;
+using HgiVertexBufferDescVector = std::vector<HgiVertexBufferDesc>;
 
 HGI_API
 bool operator==(
@@ -302,8 +302,8 @@ private:
 
 /// Explicitly instantiate and define pipeline handle
 template class HgiHandle<class HgiPipeline>;
-typedef HgiHandle<class HgiPipeline> HgiPipelineHandle;
-typedef std::vector<HgiPipelineHandle> HgiPipelineHandleVector;
+using HgiPipelineHandle = HgiHandle<class HgiPipeline>;
+using HgiPipelineHandleVector = std::vector<HgiPipelineHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef std::vector<struct HgiGLDescriptorCacheItem*> HgiGLDescriptorCacheVec;
+using HgiGLDescriptorCacheVec = std::vector<struct HgiGLDescriptorCacheItem*>;
 
 
 /// \class HgiGLFramebufferCache

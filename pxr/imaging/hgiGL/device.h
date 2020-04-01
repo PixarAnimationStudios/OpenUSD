@@ -36,8 +36,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef std::function<void(void)> HgiGLOpsFn;
-typedef std::vector<HgiGLOpsFn> GLOpsVector;
+using HgiGLOpsFn = std::function<void(void)>;
+using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
 
 
 /// \class HgiGlDevice
@@ -62,7 +62,7 @@ public:
     /// Helper function used by encoders to execute all their deferred
     /// command functions ('ops') during the encoder commit phase.
     HGIGL_API
-    static void Commit(GLOpsVector const& ops);
+    static void Commit(HgiGLOpsVector const& ops);
 
 private:
     HgiGLDevice & operator=(const HgiGLDevice&) = delete;

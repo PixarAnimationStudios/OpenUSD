@@ -140,8 +140,8 @@ private:
 
 /// Explicitly instantiate and define texture handle
 template class HgiHandle<class HgiTexture>;
-typedef HgiHandle<class HgiTexture> HgiTextureHandle;
-typedef std::vector<HgiTextureHandle> HgiTextureHandleVector;
+using HgiTextureHandle = HgiHandle<class HgiTexture>;
+using HgiTextureHandleVector = std::vector<HgiTextureHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
