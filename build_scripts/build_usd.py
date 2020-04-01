@@ -1289,6 +1289,16 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_TESTS=ON')
         else:
             extraArgs.append('-DPXR_BUILD_TESTS=OFF')
+
+        if context.buildExamples:
+            extraArgs.append('-DPXR_BUILD_EXAMPLES=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_EXAMPLES=OFF')
+
+        if context.buildTutorials:
+            extraArgs.append('-DPXR_BUILD_TUTORIALS=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_TUTORIALS=OFF')
             
         if context.buildImaging:
             extraArgs.append('-DPXR_BUILD_IMAGING=ON')
@@ -1500,6 +1510,16 @@ subgroup.add_argument("--tests", dest="build_tests", action="store_true",
 subgroup.add_argument("--no-tests", dest="build_tests", action="store_false",
                       help="Do not build unit tests (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--examples", dest="build_examples", action="store_true",
+                      default=True, help="Build examples (default)")
+subgroup.add_argument("--no-examples", dest="build_examples", action="store_false",
+                      help="Do not build examples")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--tutorials", dest="build_tutorials", action="store_true",
+                      default=True, help="Build tutorials (default)")
+subgroup.add_argument("--no-tutorials", dest="build_tutorials", action="store_false",
+                      help="Do not build tutorials")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--docs", dest="build_docs", action="store_true",
                       default=False, help="Build documentation")
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
@@ -1679,6 +1699,8 @@ class InstallContext:
         self.buildTests = args.build_tests
         self.buildDocs = args.build_docs
         self.buildPython = args.build_python
+        self.buildExamples = args.build_examples
+        self.buildTutorials = args.build_tutorials
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -1943,6 +1965,8 @@ Building with settings:
       Python 3:                 {enablePython3}
     Documentation               {buildDocs}
     Tests                       {buildTests}
+    Examples                    {buildExamples}
+    Tutorials                   {buildTutorials}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
@@ -1992,6 +2016,8 @@ summaryMsg = summaryMsg.format(
     enablePython3=("On" if Python3() else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
+    buildExamples=("On" if context.buildExamples else "Off"),
+    buildTutorials=("On" if context.buildTutorials else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
