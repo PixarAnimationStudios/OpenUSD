@@ -37,7 +37,6 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/arch/inttypes.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 #include <vector>
 
@@ -55,8 +54,8 @@ using HdReprSharedPtr = std::shared_ptr<HdRepr>;
 using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
-typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<HdBufferArrayRange>;
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;

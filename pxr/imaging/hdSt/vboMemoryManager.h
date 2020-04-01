@@ -36,8 +36,8 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <list>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -219,12 +219,12 @@ protected:
         int _capacity;
     };
 
-    typedef boost::shared_ptr<_StripedBufferArray>
-        _StripedBufferArraySharedPtr;
-    typedef boost::shared_ptr<_StripedBufferArrayRange>
-        _StripedBufferArrayRangeSharedPtr;
-    typedef boost::weak_ptr<_StripedBufferArrayRange>
-        _StripedBufferArrayRangePtr;
+    using _StripedBufferArraySharedPtr =
+        std::shared_ptr<_StripedBufferArray>;
+    using _StripedBufferArrayRangeSharedPtr =
+        std::shared_ptr<_StripedBufferArrayRange>;
+    using _StripedBufferArrayRangePtr = 
+        std::weak_ptr<_StripedBufferArrayRange>;
 
     /// striped buffer array
     class _StripedBufferArray : public HdBufferArray {
@@ -315,7 +315,7 @@ protected:
 
         // Helper routine to cast the range shared pointer.
         _StripedBufferArrayRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
-            return boost::static_pointer_cast<_StripedBufferArrayRange>(GetRange(idx).lock());
+            return std::static_pointer_cast<_StripedBufferArrayRange>(GetRange(idx).lock());
         }
     };
 };

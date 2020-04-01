@@ -1365,7 +1365,7 @@ HdStMesh::_GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const
             drawItem->GetVertexPrimvarRange()) {
         if (bar->IsValid()) {
             HdStBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL>
+                std::static_pointer_cast<HdStBufferArrayRangeGL>
                 (bar);
             HdStBufferResourceGLSharedPtr pointsResource =
                 bar_->GetResource(HdTokens->points);

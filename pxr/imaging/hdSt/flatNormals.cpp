@@ -84,11 +84,11 @@ HdSt_FlatNormalsComputationGPU::Execute(
         return;
 
     HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
     HdStBufferArrayRangeGLSharedPtr vertexRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
     HdStBufferArrayRangeGLSharedPtr topologyRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
 
     // buffer resources for GPU computation
     HdStBufferResourceGLSharedPtr points = vertexRange->GetResource(_srcName);

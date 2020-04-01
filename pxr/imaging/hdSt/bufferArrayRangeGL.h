@@ -30,14 +30,15 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdBufferArrayGL;
 
-typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
+using HdStBufferArrayRangeGLSharedPtr = 
+    std::shared_ptr<class HdStBufferArrayRangeGL>;
 
 class HdStBufferResourceGL;
 

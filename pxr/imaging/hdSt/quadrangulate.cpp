@@ -447,7 +447,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
     GLuint program = computeProgram->GetProgram().GetId();
 
     HdStBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // buffer resources for GPU computation
     HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
@@ -455,7 +455,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
         std::static_pointer_cast<HdStBufferResourceGL> (primvar_);
 
     HdStBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
 
     HdBufferResourceSharedPtr quadrangulateTable_ =
         quadrangulateTableRange_->GetResource();

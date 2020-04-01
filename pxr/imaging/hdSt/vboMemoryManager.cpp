@@ -25,7 +25,6 @@
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include <boost/make_shared.hpp>
 #include <vector>
 
 #include "pxr/base/arch/hash.h"
@@ -57,7 +56,7 @@ HdStVBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return boost::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
+    return std::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
         role, bufferSpecs, usageHint);
 }
 
@@ -65,7 +64,7 @@ HdStVBOMemoryManager::CreateBufferArray(
 HdBufferArrayRangeSharedPtr
 HdStVBOMemoryManager::CreateBufferArrayRange()
 {
-    return boost::make_shared<_StripedBufferArrayRange>();
+    return std::make_shared<_StripedBufferArrayRange>();
 }
 
 
@@ -99,7 +98,7 @@ HdStVBOMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _StripedBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedBufferArray> (bufferArray);
+        std::static_pointer_cast<_StripedBufferArray> (bufferArray);
     return bufferArray_->GetBufferSpecs();
 }
 
@@ -114,7 +113,7 @@ HdStVBOMemoryManager::GetResourceAllocation(
     size_t gpuMemoryUsed = 0;
 
     _StripedBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedBufferArray> (bufferArray);
+        std::static_pointer_cast<_StripedBufferArray> (bufferArray);
 
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceGLSharedPtr const & resource = resIt->second;
@@ -284,7 +283,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
     _StripedBufferArraySharedPtr curRangeOwner_ =
-        boost::static_pointer_cast<_StripedBufferArray> (curRangeOwner);
+        std::static_pointer_cast<_StripedBufferArray> (curRangeOwner);
 
     if (!TF_VERIFY(GetResources().size() ==
                       curRangeOwner_->GetResources().size())) {
@@ -376,7 +375,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                 HdStGLBufferRelocator relocator(curId, newId);
                 TF_FOR_ALL (it, ranges) {
                     _StripedBufferArrayRangeSharedPtr range =
-                        boost::static_pointer_cast<_StripedBufferArrayRange>(*it);
+                        std::static_pointer_cast<_StripedBufferArrayRange>(*it);
                     if (!range) {
                         TF_CODING_ERROR("_StripedBufferArrayRange "
                                         "expired unexpectedly.");
@@ -431,7 +430,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     // update ranges
     for (size_t idx = 0; idx < ranges.size(); ++idx) {
         _StripedBufferArrayRangeSharedPtr range =
-            boost::static_pointer_cast<_StripedBufferArrayRange>(ranges[idx]);
+            std::static_pointer_cast<_StripedBufferArrayRange>(ranges[idx]);
         if (!range) {
             TF_CODING_ERROR("_StripedBufferArrayRange expired unexpectedly.");
             continue;

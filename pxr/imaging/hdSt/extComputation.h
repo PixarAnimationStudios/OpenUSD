@@ -37,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 /// \class HdStExtComputation
 ///

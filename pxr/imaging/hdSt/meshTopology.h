@@ -29,9 +29,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/types.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,6 +45,11 @@ using HdBufferSourceWeakPtr =
 using HdBufferSourceSharedPtr = 
     std::shared_ptr<class HdBufferSource>;
 
+using HdBufferArrayRangeSharedPtr =
+    std::shared_ptr<class HdBufferArrayRange>;
+
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+
 using HdSt_AdjacencyBuilderComputationPtr = 
     std::weak_ptr<class HdSt_AdjacencyBuilderComputation>;
 
@@ -58,9 +60,6 @@ using HdSt_QuadInfoBuilderComputationSharedPtr =
 
 using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
-
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
 
 /// \class HdSt_MeshTopology

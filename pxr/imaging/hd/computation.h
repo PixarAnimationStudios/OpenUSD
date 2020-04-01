@@ -37,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;

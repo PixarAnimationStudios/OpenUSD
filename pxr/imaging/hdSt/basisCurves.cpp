@@ -857,17 +857,17 @@ HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
     typedef HdBufferArrayRangeSharedPtr HdBarPtr;
     if (HdBarPtr const& bar = drawItem->GetConstantPrimvarRange()){
         HdStBufferArrayRangeGLSharedPtr bar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
     if (HdBarPtr const& bar = drawItem->GetVertexPrimvarRange()) {
         HdStBufferArrayRangeGLSharedPtr bar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
     if (HdBarPtr const& bar = drawItem->GetElementPrimvarRange()){
         HdStBufferArrayRangeGLSharedPtr bar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
@@ -875,7 +875,7 @@ HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
     for (int i = 0; i < instanceNumLevels; ++i) {
         if (HdBarPtr const& bar = drawItem->GetInstancePrimvarRange(i)) {
             HdStBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+                std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
             hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
         }

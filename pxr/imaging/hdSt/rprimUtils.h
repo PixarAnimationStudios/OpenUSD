@@ -44,7 +44,8 @@ struct HdRprimSharedData;
 class HdStDrawItem;
 class HdStInstancer;
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
+
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;

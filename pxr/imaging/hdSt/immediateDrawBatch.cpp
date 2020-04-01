@@ -195,7 +195,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetTopologyRange();
 
         HdStBufferArrayRangeGLSharedPtr indexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
 
         if (indexBar && (!indexBar->IsAggregatedWith(indexBarCurrent))) {
             binder.UnbindBufferArray(indexBarCurrent);
@@ -210,7 +210,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             topVisBar_ = drawItem->GetTopologyVisibilityRange();
 
         HdStBufferArrayRangeGLSharedPtr topVisBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(topVisBar_);
 
         if (topVisBar && (!topVisBar->IsAggregatedWith(topVisBarCurrent))) {
             binder.UnbindInterleavedBuffer(topVisBarCurrent,
@@ -227,7 +227,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetElementPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr elementBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
 
         if (elementBar && (!elementBar->IsAggregatedWith(elementBarCurrent))) {
             binder.UnbindBufferArray(elementBarCurrent);
@@ -242,7 +242,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetVertexPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr vertexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
 
         if (vertexBar && (!vertexBar->IsAggregatedWith(vertexBarCurrent))) {
             binder.UnbindBufferArray(vertexBarCurrent);
@@ -257,7 +257,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetConstantPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr constantBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
 
         if (constantBar && (!constantBar->IsAggregatedWith(constantBarCurrent))) {
             binder.UnbindConstantBuffer(constantBarCurrent);
@@ -272,7 +272,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetFaceVaryingPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr fvarBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
 
         if (fvarBar && (!fvarBar->IsAggregatedWith(fvarBarCurrent))) {
             binder.UnbindBufferArray(fvarBarCurrent);
@@ -290,7 +290,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 drawItem->GetInstancePrimvarRange(i);
 
             HdStBufferArrayRangeGLSharedPtr instanceBar =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);
+                std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);
 
             if (instanceBar) {
                 if (static_cast<size_t>(i) >= instanceBarCurrents.size()) {
@@ -313,7 +313,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             drawItem->GetInstanceIndexRange();
 
         HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
 
         if (instanceIndexBar && 
             (!instanceIndexBar->IsAggregatedWith(instanceIndexBarCurrent))) {
@@ -330,7 +330,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 ? HdStBufferArrayRangeGLSharedPtr()
                 : program.GetSurfaceShader()->GetShaderData();
         HdStBufferArrayRangeGLSharedPtr shaderBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (shaderBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (shaderBar_);
 
         // shaderBar isn't needed when the material is overridden
         if (shaderBar && (!shaderBar->IsAggregatedWith(shaderBarCurrent))) {

@@ -106,7 +106,7 @@ HdStExtCompGpuComputation::Execute(
     glUseProgram(kernel);
 
     HdStBufferArrayRangeGLSharedPtr outputBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(outputRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(outputRange);
     TF_VERIFY(outputBar);
 
     // Prepare uniform buffer for GPU computation
@@ -134,7 +134,7 @@ HdStExtCompGpuComputation::Execute(
 
     for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
         HdStBufferArrayRangeGLSharedPtr const & inputBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(input);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(input);
 
         for (HdStBufferResourceGLNamedPair const & it:
                         inputBar->GetResources()) {
@@ -197,7 +197,7 @@ HdStExtCompGpuComputation::Execute(
     }
     for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
         HdStBufferArrayRangeGLSharedPtr const & inputBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(input);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(input);
 
         for (HdStBufferResourceGLNamedPair const & it:
                         inputBar->GetResources()) {

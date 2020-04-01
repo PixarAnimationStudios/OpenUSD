@@ -81,7 +81,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     TF_VERIFY(adjacencyRange_);
 
     HdStBufferArrayRangeGLSharedPtr adjacencyRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
 
     // select shader by datatype
     TfToken shaderToken;
@@ -108,7 +108,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     GLuint program = computeProgram->GetProgram().GetId();
 
     HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
 
     // buffer resources for GPU computation
     HdStBufferResourceGLSharedPtr points = range->GetResource(_srcName);

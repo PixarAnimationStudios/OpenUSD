@@ -197,12 +197,12 @@ protected:
         size_t _numElements;
     };
 
-    typedef boost::shared_ptr<_SimpleBufferArray>
-        _SimpleBufferArraySharedPtr;
-    typedef boost::shared_ptr<_SimpleBufferArrayRange>
-        _SimpleBufferArrayRangeSharedPtr;
-    typedef boost::weak_ptr<_SimpleBufferArrayRange>
-        _SimpleBufferArrayRangePtr;
+    using _SimpleBufferArraySharedPtr =
+        std::shared_ptr<_SimpleBufferArray>;
+    using _SimpleBufferArrayRangeSharedPtr =
+        std::shared_ptr<_SimpleBufferArrayRange>;
+    using _SimpleBufferArrayRangePtr =
+        std::weak_ptr<_SimpleBufferArrayRange>;
 
     /// \class _SimpleBufferArray
     ///
@@ -291,7 +291,7 @@ protected:
 
         _SimpleBufferArrayRangeSharedPtr _GetRangeSharedPtr() const {
             return GetRangeCount() > 0
-                ? boost::static_pointer_cast<_SimpleBufferArrayRange>(GetRange(0).lock())
+                ? std::static_pointer_cast<_SimpleBufferArrayRange>(GetRange(0).lock())
                 : _SimpleBufferArrayRangeSharedPtr();
         }
     };

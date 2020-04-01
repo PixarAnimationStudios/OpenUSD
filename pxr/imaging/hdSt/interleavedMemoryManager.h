@@ -37,7 +37,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <list>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -170,12 +170,12 @@ protected:
         size_t _numElements;
     };
 
-    typedef boost::shared_ptr<_StripedInterleavedBuffer>
-        _StripedInterleavedBufferSharedPtr;
-    typedef boost::shared_ptr<_StripedInterleavedBufferRange>
-        _StripedInterleavedBufferRangeSharedPtr;
-    typedef boost::weak_ptr<_StripedInterleavedBufferRange>
-        _StripedInterleavedBufferRangePtr;
+    using _StripedInterleavedBufferSharedPtr =
+        std::shared_ptr<_StripedInterleavedBuffer>;
+    using _StripedInterleavedBufferRangeSharedPtr =
+        std::shared_ptr<_StripedInterleavedBufferRange>;
+    using _StripedInterleavedBufferRangePtr =
+        std::weak_ptr<_StripedInterleavedBufferRange>;
 
     /// striped buffer
     class _StripedInterleavedBuffer : public HdBufferArray {
@@ -268,7 +268,7 @@ protected:
         HdStBufferResourceGLNamedList _resourceList;
 
         _StripedInterleavedBufferRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
-            return boost::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
+            return std::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
         }
 
     };

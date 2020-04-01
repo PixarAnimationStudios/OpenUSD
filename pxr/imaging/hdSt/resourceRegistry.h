@@ -49,8 +49,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 
-typedef boost::shared_ptr<class HdStDispatchBuffer>
-    HdStDispatchBufferSharedPtr;
+using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
+
 typedef boost::shared_ptr<class HdStGLSLProgram>
     HdStGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>

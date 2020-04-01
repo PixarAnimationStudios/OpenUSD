@@ -32,7 +32,7 @@
 
 #include "pxr/base/gf/vec4f.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,7 +47,7 @@ struct HdxSelectionTaskParams
     GfVec4f locateColor;
 };
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 /// \class HdxSelectionTask
 ///
