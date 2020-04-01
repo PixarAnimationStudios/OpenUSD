@@ -96,6 +96,7 @@ protected:
     GLF_API
     virtual void _ReadTexture() = 0;
 
+    GLF_API
     void _ReadTextureIfNotLoaded();
 
     GLF_API

@@ -22,9 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 
 #include "pxr/imaging/plugin/glfVdb/vdbTextureContainer.h"
-
 #include "pxr/imaging/plugin/glfVdb/vdbTexture.h"
-#include "pxr/imaging/glf/textureContainerImpl.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"

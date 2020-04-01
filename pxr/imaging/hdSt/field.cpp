@@ -29,8 +29,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/glf/textureContainer.h"
-#include "pxr/imaging/glf/textureContainerImpl.h"
+#include "pxr/imaging/glf/fieldTextureContainer.h"
 
 #include "pxr/usd/sdf/types.h"
 

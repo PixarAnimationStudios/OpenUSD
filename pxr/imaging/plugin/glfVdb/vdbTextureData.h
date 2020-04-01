@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3i.h"
-#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
@@ -50,7 +49,6 @@ class GlfVdbTextureData_DenseGridHolderBase;
 ///
 class GlfVdbTextureData : public GlfBaseTextureData {
 public:
-    GLF_API
     static GlfVdbTextureDataRefPtr
     New(std::string const &filePath,
         std::string const &gridName,
@@ -59,16 +57,12 @@ public:
     /// See GlfVdbTexture for details
     const GfBBox3d &GetBoundingBox() const { return _boundingBox; }
 
-    GLF_API
     int NumDimensions() const override;
 
-    GLF_API
     int ResizedWidth(int mipLevel = 0) const override;
 
-    GLF_API
     int ResizedHeight(int mipLevel = 0) const override;
 
-    GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
     GLenum GLInternalFormat() const override;

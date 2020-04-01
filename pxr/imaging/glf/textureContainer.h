@@ -80,10 +80,6 @@ protected:
     std::map<Identifier, GlfTextureHandleRefPtr> _textureHandles;
 };
 
-/// Explicitly instantiate for TfToken for fields
-template class GlfTextureContainer<TfToken>;
-typedef GlfTextureContainer<TfToken> GlfFieldTextureContainer;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

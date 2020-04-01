@@ -21,46 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_FIELD_TEXTURE_H
-#define PXR_IMAGING_GLF_FIELD_TEXTURE_H
+#ifndef PXR_IMAGING_GLF_FIELD_TEXTURE_CONTAINER_H
+#define PXR_IMAGING_GLF_FIELD_TEXTURE_CONTAINER_H
 
-/// \file glf/fieldTexture.h
+/// \file glf/fieldTextureContainer.h
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/baseTexture.h"
+#include "pxr/imaging/glf/texture.h"
+#include "pxr/imaging/glf/textureContainer.h"
 
-#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/tf/declarePtrs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfFieldTexture);
-
-/// \class GlfFieldTexture
-///
-/// Represents an abstract 3-dimensional texture read from a volume field
-///
-class GlfFieldTexture : public GlfBaseTexture {
-public:
-    /// Returns the transform and bouding box of the field.
-    ///
-    /// This pair of information is encoded as GfBBox3d.
-    GLF_API
-    virtual const GfBBox3d &GetBoundingBox();
-
-    GLF_API
-    int GetNumDimensions() const override;
-
+class GlfFieldTextureContainer: public GlfTextureContainer<TfToken> {
 protected:
+    // Create texture for a particular frame, subimage, grid, ...
+    virtual GlfTextureRefPtr _CreateTexture(TfToken const &identifier) = 0;
 
-    GLF_API
-    virtual void _ReadTexture() = 0;
-
-    GfBBox3d _boundingBox;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_GLF_FIELD_TEXTURE_H
+#endif // PXR_IMAGING_GLF_FIELD_TEXTURE_CONTAINER_H

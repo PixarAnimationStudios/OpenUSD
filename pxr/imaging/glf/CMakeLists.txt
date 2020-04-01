@@ -53,6 +53,7 @@ pxr_library(glf
         diagnostic
         drawTarget
         fieldTexture
+        fieldTextureContainer
         glew
         glContext
         glRawContext

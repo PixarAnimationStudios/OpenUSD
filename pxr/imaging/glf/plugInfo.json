@@ -22,7 +22,7 @@
                     "GlfFieldTexture" : {
                         "bases": ["GlfBaseTexture"],
                         "textureTypes": [],
-                        "precedence": 3
+                        "precedence": 0
                     },
                     "GlfBaseTexture" : {
                         "bases": ["GlfTexture"],

@@ -49,7 +49,6 @@ class GlfVdbTexture : public GlfFieldTexture {
 public:
     /// Creates a new texture instance for the grid named \gridName in
     /// the OpenVDB file opened by \p textureContainer.
-    GLF_API
     static GlfVdbTextureRefPtr New(
         GlfVdbTextureContainerRefPtr const &textureContainer,
         TfToken const &gridName);
@@ -58,25 +57,19 @@ public:
     /// bounding box of the samples in the corresponding OpenVDB tree.
     ///
     /// This pair of information is encoded as GfBBox3d.
-    GLF_API
     const GfBBox3d &GetBoundingBox() override;
-    
-    GLF_API
+
     VtDictionary GetTextureInfo(bool forceLoad) override;
 
-    GLF_API
     bool IsMinFilterSupported(GLenum filter) override;
 
 protected:
-    GLF_API
     GlfVdbTexture(
         GlfVdbTextureContainerRefPtr const &textureContainer,
         TfToken const &gridName);
 
-    GLF_API
     void _ReadTexture() override;
 
-    GLF_API
     bool _GenerateMipmap() const;
 
 private:

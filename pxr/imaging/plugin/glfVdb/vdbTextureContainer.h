@@ -27,9 +27,8 @@
 /// \file glf/vdbTextureContainer.h
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
-#include "pxr/imaging/glf/textureContainer.h"
+#include "pxr/imaging/glf/fieldTextureContainer.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -46,42 +45,35 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTextureContainer);
 class GlfVdbTextureContainer : public GlfFieldTextureContainer {
 public:
     /// Creates a new container for the OpenVDB file \p filePath
-    GLF_API
     static GlfVdbTextureContainerRefPtr New(TfToken const &filePath);
 
     /// Creates a new container for the OpenVDB file \p filePath
-    GLF_API
     static GlfVdbTextureContainerRefPtr New(std::string const &filePath);
 
-    GLF_API
     ~GlfVdbTextureContainer() override;
 
     /// Returns invalid texture name.
     /// 
     /// Clients are supposed to get texture information from the GlfVdbTexture
-    /// returned by GlfVdbTextureContainer::GetTextureHandle() 
-    GLF_API
+    /// returned by GlfVdbTextureContainer::GetTextureHandle()
     GLuint GetGlTextureName() override;
 
     
     /// Returns empty vector.
     /// 
     /// Clients are supposed to get texture information from the GlfVdbTexture
-    /// returned by GlfVdbTextureContainer::GetTextureHandle() 
-    GLF_API
+    /// returned by GlfVdbTextureContainer::GetTextureHandle()
     BindingVector GetBindings(TfToken const & identifier,
                               GLuint samplerName) override;
 
     /// Returns empty dict.
     /// 
     /// Clients are supposed to get texture information from the GlfVdbTexture
-    /// returned by GlfVdbTextureContainer::GetTextureHandle() 
-    GLF_API
+    /// returned by GlfVdbTextureContainer::GetTextureHandle()
     VtDictionary GetTextureInfo(bool forceLoad) override;
 
     /// The file path of the OpenVDB file
     ///
-    GLF_API
     TfToken const &GetFilePath() const { return _filePath; }
 
 private:
