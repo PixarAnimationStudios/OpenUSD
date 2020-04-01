@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -59,11 +60,11 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     : _lightingContext(GlfSimpleLightingContext::New())
     , _bindingMap(TfCreateRefPtr(new GlfBindingMap()))
     , _useLighting(true)
+    , _glslfx(new HioGlslfx(HdStPackageSimpleLightingShader()))
 {
     _lightingContext->InitUniformBlockBindings(_bindingMap);
     _lightingContext->InitSamplerUnitBindings(_bindingMap);
 
-    _glslfx.reset(new HioGlslfx(HdStPackageSimpleLightingShader()));
 }
 
 HdStSimpleLightingShader::~HdStSimpleLightingShader() = default;

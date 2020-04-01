@@ -79,7 +79,6 @@ pxr_library(hdSt
         renderPass
         renderPassShader
         renderPassState
-        resourceBinder
         resourceGL
         resourceRegistry
         rprimUtils
@@ -116,6 +115,7 @@ pxr_library(hdSt
         meshTopology 
         pointsShaderKey
         quadrangulate
+        resourceBinder
         shaderKey
         subdivision
         subdivision3

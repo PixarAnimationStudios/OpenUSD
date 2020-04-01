@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"

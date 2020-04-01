@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/rprimCollection.h"

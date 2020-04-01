@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hio/glslfx.h"
 

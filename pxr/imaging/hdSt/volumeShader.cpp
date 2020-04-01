@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/staticTokens.h"

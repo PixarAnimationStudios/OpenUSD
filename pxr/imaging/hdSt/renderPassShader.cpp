@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -54,23 +55,18 @@ _GetReadbackName(const TfToken &aovName)
 }
 
 HdStRenderPassShader::HdStRenderPassShader()
-    : HdStShaderCode()
-    , _glslfxFile(HdStPackageRenderPassShader())
-    , _hash(0)
-    , _hashValid(false)
-    , _cullStyle(HdCullStyleNothing)
+    : HdStRenderPassShader(HdStPackageRenderPassShader())
 {
-    _glslfx.reset(new HioGlslfx(_glslfxFile));
 }
 
 HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     : HdStShaderCode()
     , _glslfxFile(glslfxFile)   // user-defined
+    , _glslfx(new HioGlslfx(glslfxFile))
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
 {
-    _glslfx.reset(new HioGlslfx(_glslfxFile));
 }
 
 /*virtual*/

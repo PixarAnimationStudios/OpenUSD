@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/bufferArrayRange.h" // Could forward declare
 
-#include "pxr/imaging/hdSt/resourceBinder.h"  // XXX: including a private class
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -48,6 +48,7 @@ typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 using HdStTextureResourceHandleSharedPtr =
     std::shared_ptr<class HdStTextureResourceHandle>;
 using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
+class HdSt_ResourceBinder;
 class HdRenderPassState;
 
 

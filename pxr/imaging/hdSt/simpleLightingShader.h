@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/version.h"
