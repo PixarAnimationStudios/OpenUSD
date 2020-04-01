@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
     // Insert connection between texture node and terminal
     HdMaterialRelationship rel;
     rel.inputId = textureNode.path;
-    rel.inputName = TfToken("rgba");
+    rel.inputName = TfToken("rgb");
     rel.outputId = terminal1.path;
     rel.outputName = TfToken("texColor");
     network1.relationships.emplace_back(std::move(rel));

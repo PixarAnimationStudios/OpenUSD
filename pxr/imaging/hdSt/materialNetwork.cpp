@@ -406,9 +406,10 @@ _MakeMaterialParamsForUnconnectedParam(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeFallback;
     param.name = paramName;
-    param.connection = SdfPath();          /*No connection*/
-    param.samplerCoords = TfTokenVector(); /*No UV*/
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.connection = SdfPath();           /*No connection*/
+    param.samplerCoords = TfTokenVector();  /*No UV*/
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
     params.push_back(std::move(param));
     return params;
@@ -422,9 +423,10 @@ _MakeMaterialParamsForAdditionaPrimvar(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeAdditionalPrimvar;
     param.name = primvarName;
-    param.connection = SdfPath();          /*No connection*/
-    param.samplerCoords = TfTokenVector(); /*No UV*/
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.connection = SdfPath();           /*No connection*/
+    param.samplerCoords = TfTokenVector();  /*No UV*/
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
     params.push_back(std::move(param));
     return params;
@@ -449,7 +451,8 @@ _MakeMaterialParamsForPrimvarInput(
     param.paramType = HdSt_MaterialParam::ParamTypePrimvar;
     param.name = paramName;
     param.connection = SdfPath("primvar." + nodePath.GetName());
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
     // A node may require 'additional primvars' to function correctly.
     for (auto const& propName: sdrNode->GetAdditionalPrimvarProperties()) {
@@ -491,6 +494,7 @@ _MakeMaterialParamsForTextureInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
+    TfToken const& outputName,
     TfToken const& paramName,
     SdfPathSet* visitedNodes)
 {
@@ -504,6 +508,16 @@ _MakeMaterialParamsForTextureInput(
     HdSt_MaterialParam texParam;
     texParam.paramType = HdSt_MaterialParam::ParamTypeTexture;
     texParam.name = paramName;
+
+    // Get swizzle metadata if possible
+    if (SdrShaderPropertyConstPtr sdrProperty = sdrNode->GetShaderOutput(
+        outputName)) {
+        NdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
+        auto const& it = propMetadata.find(HdStSdrMetadataTokens->swizzle);
+        if (it != propMetadata.end()) {
+            texParam.swizzle = it->second;
+        }
+    }
 
     // Extract texture file path
     std::string filePath;
@@ -667,6 +681,7 @@ _MakeParamsForInputParameter(
             if (upIt != network.nodes.end()) {
 
                 SdfPath const& upstreamPath = upIt->first;
+                TfToken const& upstreamOutputName = con.upstreamOutputName;
                 HdSt_MaterialNode const& upstreamNode = upIt->second;
 
                 SdrShaderNodeConstPtr upstreamSdr = 
@@ -682,6 +697,7 @@ _MakeParamsForInputParameter(
                             network,
                             upstreamNode,
                             upstreamPath,
+                            upstreamOutputName,
                             paramName,
                             visitedNodes);
 

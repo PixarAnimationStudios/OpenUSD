@@ -1177,22 +1177,29 @@ static void _EmitStructAccessor(std::stringstream &str,
     }
 }
 
-static std::string _GetSwizzleString(TfToken const& type)
+static std::string _GetSwizzleString(TfToken const& type, 
+                                     std::string const& swizzle=std::string())
 {
-    std::string swizzle = "";
+    if (!swizzle.empty()) {
+        return "." + swizzle;
+    } 
     if (type == _tokens->vec4 || type == _tokens->ivec4) {
-        // nothing
-    } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
-        swizzle = ".xyz";
-    } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
-        swizzle = ".xy";
-    } else if (type == _tokens->_float || type == _tokens->_int) {
-        swizzle = ".x";
-    } else if (type == _tokens->packed_2_10_10_10) {
-        swizzle = ".x";
+        return "";
+    }
+    if (type == _tokens->vec3 || type == _tokens->ivec3) {
+        return ".xyz";
+    }
+    if (type == _tokens->vec2 || type == _tokens->ivec2) {
+        return ".xy";
+    }
+    if (type == _tokens->_float || type == _tokens->_int) {
+        return ".x";
+    }
+    if (type == _tokens->packed_2_10_10_10) {            
+        return ".x";
     }
 
-    return swizzle;
+    return "";
 }
 
 static int _GetNumComponents(TfToken const& type)
@@ -2657,7 +2664,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
 
         // adjust datatype
-        std::string swizzle = _GetSwizzleString(it->second.dataType);
+        std::string swizzle = _GetSwizzleString(it->second.dataType,
+                                                it->second.swizzle);
 
         HdBinding::Type bindingType = it->first.GetType();
         if (bindingType == HdBinding::FALLBACK) {

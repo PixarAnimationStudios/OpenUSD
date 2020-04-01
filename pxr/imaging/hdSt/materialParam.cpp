@@ -36,13 +36,15 @@ HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
                                  VtValue const& fallbackValue,
                                  SdfPath const& connection,
                                  TfTokenVector const& samplerCoords,
-                                 HdTextureType textureType)
+                                 HdTextureType textureType,
+                                 std::string const& swizzle)
     : paramType(paramType)
     , name(name)
     , fallbackValue(fallbackValue)
     , connection(connection)
     , samplerCoords(samplerCoords)
     , textureType(textureType)
+    , swizzle(swizzle)
 {
 }
 
@@ -58,6 +60,7 @@ HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
             boost::hash_combine(hash, coord.Hash());
         }
         boost::hash_combine(hash, param.textureType);
+        boost::hash_combine(hash, std::hash<std::string>()(param.swizzle));
     }
     return hash;
 }

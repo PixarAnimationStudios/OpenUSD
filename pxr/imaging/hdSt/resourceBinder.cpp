@@ -125,6 +125,22 @@ namespace {
             return HdGetComponentCount(type);
         }
     }
+
+    // Modify datatype if swizzle is specified
+    static HdType _AdjustHdType(HdType type, std::string const &swizzle) {
+        size_t numChannels = swizzle.size();
+        if (numChannels == 4) {
+            return HdTypeFloatVec4;
+        } else if (numChannels == 3) {
+            return HdTypeFloatVec3;
+        } else if (numChannels == 2) {
+            return HdTypeFloatVec2;
+        } else if (numChannels == 1) {
+            return HdTypeFloat;
+        }
+        
+        return type;
+    }
 }
 
 HdSt_ResourceBinder::HdSt_ResourceBinder()
@@ -510,7 +526,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
     // shader parameter bindings
-
     TF_FOR_ALL(shader, shaders) {
 
         // uniform block
@@ -556,9 +571,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             // renderpass texture should be bindfull (for now)
             bool bindless = useBindlessForTexture && 
                                 ((*shader) == drawItem->GetMaterialShader());
+            std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
-                HdStGLConversions::GetGLSLTypename(valueType.type);
+                HdStGLConversions::GetGLSLTypename(_AdjustHdType(valueType.type,
+                                                                 glSwizzle));
             TfToken const& name = param.name;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
 
@@ -582,7 +599,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     metaDataOut->shaderParameterBinding[texelBinding] =
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glName,
-                            /*type=*/glType);
+                            /*type=*/glType,
+                            /*swizzle=*/glSwizzle);
                     _bindingMap[name] = texelBinding; // used for non-bindless
 
                     HdBinding layoutBinding = bindless
@@ -618,6 +636,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/param.name,
                             /*type=*/glType,
+                            /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords);
                     // used for non-bindless
                     _bindingMap[param.name] = textureBinding;
@@ -654,6 +673,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glName,
                             /*type=*/glType,
+                            /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 } else if (param.textureType == HdTextureType::Uvw) {
@@ -669,6 +689,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glName,
                             /*type=*/glType,
+                            /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 }
@@ -686,6 +707,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     = MetaData::ShaderParameterAccessor(
                     /*name=*/glName,
                     /*type=*/glType,
+                    /*swizzle=*/glSwizzle,
                     /*inPrimvars=*/glNames);
             } else if (param.IsFieldRedirect()) {
                 TfToken glFieldName;

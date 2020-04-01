@@ -203,10 +203,13 @@ public:
              ShaderParameterAccessor() {}
              ShaderParameterAccessor(TfToken const &name,
                                      TfToken const &dataType,
+                                     std::string const &swizzle=std::string(),
                                      TfTokenVector const &inPrimvars=TfTokenVector())
-                 : name(name), dataType(dataType), inPrimvars(inPrimvars) {}
+                 : name(name), dataType(dataType), swizzle(swizzle),
+                   inPrimvars(inPrimvars) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
+             std::string swizzle; // e.g. xyzw
              TfTokenVector inPrimvars;  // for primvar renaming and texture coordinates,
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;

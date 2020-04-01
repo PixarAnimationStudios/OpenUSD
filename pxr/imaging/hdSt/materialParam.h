@@ -74,7 +74,8 @@ public:
                     VtValue const& fallbackValue,
                     SdfPath const& connection=SdfPath(),
                     TfTokenVector const& samplerCoords=TfTokenVector(),
-                    HdTextureType textureType = HdTextureType::Uv);
+                    HdTextureType textureType=HdTextureType::Uv,
+                    std::string const& swizzle=std::string());
 
     // No d'tor so that we pick up the implicitly declared default
     // move c'tor.
@@ -112,6 +113,7 @@ public:
     SdfPath connection;
     TfTokenVector samplerCoords;
     HdTextureType textureType;
+    std::string swizzle;
 };
 
 
