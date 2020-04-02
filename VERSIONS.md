@@ -19,7 +19,7 @@ Our test machines have the following software versions installed
 | Python        | 2.7.16, 3.6.8        | 2.7.10, 3.7.7                | 2.7.12, 3.7.4                  |
 | Boost         | 1.61.0, 1.70.0       | 1.61.0, 1.70.0               | 1.61.0, 1.70.0                 |
 | Intel TBB     | 2017 Update 6        | 2017 Update 6                | 2017 Update 6                  |
-| OpenSubdiv    | 3.1.1, 3.4           | 3.1.1                        | 3.1.1                          |
+| OpenSubdiv    | 3.4.3                | 3.4.3                        | 3.4.3                          |
 | GLEW          | 2.0.0                | 2.0.0                        | 2.0.0                          |
 | OpenImageIO   | 1.8.9                | 1.8.9                        | 1.8.9                          |
 | OpenColorIO   | 1.0.9                | 1.1.0                        | 1.1.0                          |
