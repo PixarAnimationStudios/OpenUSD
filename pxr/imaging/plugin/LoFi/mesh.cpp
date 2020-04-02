@@ -490,6 +490,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     
     LoFiVertexBufferSharedPtr buffer = _vertexArray->GetBuffer(CHANNEL_NORMAL);
     buffer->SetNeedReallocate(false);
+    buffer->SetNeedUpdate(true);
     buffer->SetValid(true);
     buffer->SetInterpolation(HdInterpolationVertex);
     buffer->SetRawInputDatas((const char*)_normals.cdata());
@@ -500,6 +501,9 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     
     _vertexArray->SetHaveChannel(CHANNEL_NORMAL);
   }
+
+  // update state
+  _vertexArray->UpdateState();
   
   
 }

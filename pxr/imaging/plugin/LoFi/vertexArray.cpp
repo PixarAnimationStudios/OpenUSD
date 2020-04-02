@@ -15,15 +15,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 LoFiVertexArray::LoFiVertexArray()
 : _vao(0)
 , _channels(0)
+, _needReallocate(true)
+, _needUpdate(true)
 {
-  GlfContextCaps const& caps = GlfContextCaps::GetInstance();
-  _glVersion = caps.glVersion;
 }
 
 // destructor
 LoFiVertexArray::~LoFiVertexArray()
 {
+  if(_vao)glDeleteVertexArrays(1, &_vao);
+}
 
+// state
+void 
+LoFiVertexArray::UpdateState()
+{
+  for(auto elem: _buffers)
+  {
+    LoFiVertexBufferSharedPtr buffer = elem.second;
+    if(buffer->GetNeedUpdate())
+    {
+      _needUpdate = true;
+      break;
+    }
+  }
 }
 
 // allocate
@@ -33,7 +48,7 @@ LoFiVertexArray::Reallocate()
   if(!_vao)
   {
     #ifdef __APPLE__
-      if(_glVersion >= 330) glGenVertexArrays(1, &_vao);
+      if(LOFI_GL_VERSION >= 330) glGenVertexArrays(1, &_vao);
       else glGenVertexArraysAPPLE(1, &_vao);
     #else
       glGenVertexArrays(1, &_vao);
@@ -47,8 +62,8 @@ LoFiVertexArray::Reallocate()
     buffer->Reallocate();
   }
   Unbind();
-  //_needReallocate = false;
-  //_needUpdate = true;
+  _needReallocate = false;
+  _needUpdate = true;
 }
 
 void 
@@ -68,8 +83,9 @@ LoFiVertexArray::Populate()
     }
     
   }
-
   Unbind();
+  _needReallocate = false;
+  _needUpdate = false;
 }
 
 // draw
@@ -86,7 +102,7 @@ void
 LoFiVertexArray::Bind() const
 {
   #ifdef __APPLE__
-    if(_glVersion >= 330) glBindVertexArray(_vao);
+    if(LOFI_GL_VERSION >= 330) glBindVertexArray(_vao);
     else glBindVertexArrayAPPLE(_vao);
   #else
     glBindVertexArray(_vao);
@@ -97,7 +113,7 @@ void
 LoFiVertexArray::Unbind() const 
 {
   #ifdef __APPLE__
-    if(_glVersion >= 330) glBindVertexArray(0);
+    if(LOFI_GL_VERSION >= 330) glBindVertexArray(0);
     else glBindVertexArrayAPPLE(0);
   #else
     glBindVertexArray(0);

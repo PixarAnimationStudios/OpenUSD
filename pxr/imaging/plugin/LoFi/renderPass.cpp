@@ -6,6 +6,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
+#include "pxr/imaging/plugin/LoFi/timer.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -21,7 +22,7 @@ LoFiRenderPass::LoFiRenderPass(
 
 LoFiRenderPass::~LoFiRenderPass()
 {
-  std::cout << "### DELETE LOFI RENDER PASS..." << std::endl;
+  std::cout << "### [LOFI] DELETE RENDER PASS..." << std::endl;
 }
 
 void 
@@ -146,6 +147,7 @@ void
 LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
                           TfTokenVector const &renderTags)
 {
+  uint64_t T = ns();
   /*
   _renderer->SetCamera(
       renderPassState->GetWorldToViewMatrix(), 
@@ -179,9 +181,13 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   glUseProgram(_program->Get());
       
   GfMatrix4f identity(1);
+  GLuint modelUniform = glGetUniformLocation(_program->Get(), "model");
+  GLuint viewUniform = glGetUniformLocation(_program->Get(), "view");
+  GLuint projUniform = glGetUniformLocation(_program->Get(), "projection");
+
   // model matrix
   glUniformMatrix4fv(
-    glGetUniformLocation(_program->Get(), "model"),
+    modelUniform,
     1,
     GL_FALSE,
     &identity[0][0]
@@ -189,7 +195,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   
   // view matrix
   glUniformMatrix4fv(
-    glGetUniformLocation(_program->Get(), "view"),
+    viewUniform,
     1,
     GL_FALSE,
     &GfMatrix4f(viewMatrix)[0][0]
@@ -197,7 +203,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 
   // projection matrix
   glUniformMatrix4fv(
-    glGetUniformLocation(_program->Get(), "projection"),
+    projUniform,
     1,
     GL_FALSE,
     &GfMatrix4f(projMatrix)[0][0]
@@ -210,6 +216,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   // draw red points
   glEnable(GL_POINT_SMOOTH);
   glPointSize(2);
+  uint32_t numDrawItems = 0;
   for(auto drawItem: drawItems)
   {
     const LoFiDrawItem* lofiDrawItem = 
@@ -218,37 +225,29 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     const LoFiVertexArray* vertexArray = lofiDrawItem->GetVertexArray();
     vertexArray->Bind();
 
-    glUniform3fv(
-      glGetUniformLocation(_program->Get(),"color"),
-      1,
-      &green[0]
-    );
-
     // model matrix
     glUniformMatrix4fv(
-      glGetUniformLocation(_program->Get(), "model"),
+      modelUniform,
       1,
       GL_FALSE,
       &GfMatrix4f(drawItem->GetMatrix())[0][0]
     );
 
     glDrawArrays(GL_TRIANGLES, 0, vertexArray->GetNumElements());
-/*
-    glUniform3fv(
-      glGetUniformLocation(_program->Get(),"color"),
-      1,
-      &red[0]
-    );
-    glDrawArrays(GL_POINTS, 0, vertexArray->GetNumElements());
-*/
+
     vertexArray->Unbind();
       /*
     std::cout << "BOUNDS : " << lofiDrawItem->GetBounds() << std::endl;
     std::cout << "VERTEX ARRAY : " << lofiDrawItem->GetVertexArray()->Get() << std::endl;
     std::cout << "MATRIX : " << lofiDrawItem->GetMatrix() << std::endl;
     */
+   numDrawItems++;
   }
+  uint64_t elapsed = ns() - T;
+  std::cout << "### [LOFI] Render took " << (elapsed * 1e-9) << " seconds to complete!" << std::endl;
+  std::cout << "### [LOFI] WE DEAL WITH " << numDrawItems << " DRAW ITEMS..." <<std::endl; 
 /*
+
   // draw red points
   glEnable(GL_POINT_SMOOTH);
   glPointSize(2);

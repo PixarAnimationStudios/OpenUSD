@@ -29,7 +29,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+#ifdef __APPLE__
+extern uint32_t LOFI_GL_VERSION;
+#endif 
 ///
 /// \class LoFiRendererPlugin
 ///
