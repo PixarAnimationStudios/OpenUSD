@@ -7,6 +7,7 @@
 #include "pxr/imaging/plugin/Lofi/debugCodes.h"
 #include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
 #include "pxr/imaging/plugin/Lofi/mesh.h"
+#include "pxr/imaging/plugin/Lofi/timer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -118,6 +119,9 @@ LoFiResourceRegistry::GetMesh(HdInstance<LoFiMesh*>::ID id)
 void
 LoFiResourceRegistry::_Commit()
 {
+  uint64_t T = ns();
+  uint32_t needReallocates = 0;
+  uint32_t needUpdates = 0;
   /// infos about the mesh in the scene
   {
     if(TfDebug::IsEnabled(LOFI_GEOMETRY))
@@ -131,21 +135,27 @@ LoFiResourceRegistry::_Commit()
   }
   
   {
+    
     for(auto& instance: _vertexArrayRegistry)
     {
       LoFiVertexArraySharedPtr vertexArray = instance.second.value;
-      if(vertexArray->NeedReallocate())
+      if(vertexArray->GetNeedReallocate())
       {
+        needReallocates ++;
         vertexArray->Reallocate();
         vertexArray->Populate();
       }
-      else if(vertexArray->NeedUpdate())
+      else if(vertexArray->GetNeedUpdate())
       {
+        needUpdates ++;
         vertexArray->Populate();
       }
     }
   }
-  
+  uint64_t elapsed = ns() - T;
+  std::cout << "### [LOFI] Commit took " << (elapsed * 1e-9) << " seconds to complete!" << std::endl;
+  std::cout << "### [LOFI] Reallocated Vertex Arrays : " << needReallocates << std::endl;
+  std::cout << "### [LOFI] Updated Vertex Arrays : " << needUpdates << std::endl;
 }
 
 void

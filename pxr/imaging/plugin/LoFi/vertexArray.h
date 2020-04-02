@@ -18,6 +18,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef __APPLE__
+extern uint32_t LOFI_GL_VERSION;
+#endif
+
 class LoFiVertexBuffer;
 
 typedef boost::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
@@ -58,8 +62,15 @@ public:
   };
 
   // state
-  inline bool NeedReallocate(){return true;};
-  inline bool NeedUpdate(){return true;};
+  inline bool GetNeedReallocate(){return _needReallocate;};
+  inline void SetNeedReallocate(bool needReallocate) {
+    _needReallocate = needReallocate;
+  };
+  inline bool GetNeedUpdate(){return _needUpdate;};
+  inline void SetNeedUpdate(bool needUpdate) {
+    _needUpdate = needUpdate;
+  };
+  void UpdateState();
 
   // elements
   inline uint32_t GetNumElements() const{return _numElements;};
@@ -89,13 +100,12 @@ private:
   // flags
   uint32_t                          _channels;
   uint32_t                          _numElements;
+  bool                              _needReallocate;
+  bool                              _needUpdate;
 
   // topology
   const GfVec3i*                    _topology;
 
-#ifdef __APPLE__      
-  uint32_t                          _glVersion;
-#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

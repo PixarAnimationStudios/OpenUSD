@@ -24,9 +24,11 @@
 #include "rendererPlugin.h"
 #include "renderDelegate.h"
 
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Register the plugin with the renderer plugin system.
 TF_REGISTRY_FUNCTION(TfType)
@@ -37,6 +39,11 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate*
 LoFiRendererPlugin::CreateRenderDelegate()
 {
+#ifdef __APPLE__
+  const GlfContextCaps& caps = GlfContextCaps::GetInstance();
+  LOFI_GL_VERSION = caps.glVersion;
+  std::cout << "######### LOFI GL VERSION : "<< LOFI_GL_VERSION << std::endl;
+#endif
     return new LoFiRenderDelegate();
 }
 

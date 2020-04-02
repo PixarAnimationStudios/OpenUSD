@@ -41,8 +41,8 @@ pxr_plugin(LoFi
         
     PUBLIC_HEADERS
         api.h
+        timer.h
         shader.h
-        renderer.h
         renderParam.h
 
     RESOURCE_FILES
