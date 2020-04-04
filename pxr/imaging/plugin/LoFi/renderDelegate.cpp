@@ -14,7 +14,6 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/plugin/LoFi/mesh.h"
-#include "pxr/imaging/plugin/LoFi/scene.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/perfLog.h"
