@@ -117,6 +117,11 @@ LoFiComputeVertexNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<GfVec3i>& samples,
                           VtArray<GfVec3f>& normals);
 
+/// Compute random vertex color
+void 
+LoFiComputeVertexColors(  const VtArray<GfVec3f>& positions,
+                          VtArray<GfVec3f>& colors);
+                          
 /// Triangulate data
 template<typename T>
 void

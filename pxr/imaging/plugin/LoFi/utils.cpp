@@ -4,7 +4,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #ifdef __APPLE__
-extern uint32_t LOFI_GL_VERSION = 0;
+uint32_t LOFI_GL_VERSION = 0;
 #endif
 int 
 LoFiTriangulateMesh(const VtArray<int>& counts, 
@@ -93,5 +93,23 @@ LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
   
 }
 
+void 
+LoFiComputeVertexColors(  const VtArray<GfVec3f>& positions,
+                          VtArray<GfVec3f>& colors)
+{
+  // we want smooth vertex normals
+  colors.resize(positions.size());
+  memset(colors.data(), 0.f, colors.size() * sizeof(GfVec3f));
+
+  // set random color per vertex  
+  for(int i = 0; i < colors.size(); ++i)
+  {
+    colors[i] = GfVec3f(
+      (float)rand()/(float)RAND_MAX,
+      (float)rand()/(float)RAND_MAX,
+      (float)rand()/(float)RAND_MAX
+    );
+  }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
