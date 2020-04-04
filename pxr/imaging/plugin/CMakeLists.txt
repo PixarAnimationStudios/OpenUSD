@@ -1,5 +1,5 @@
 add_subdirectory(hdStorm)
-add_subdirectory(LoFi)
+#add_subdirectory(LoFi)
 if (${PXR_BUILD_EMBREE_PLUGIN})
     add_subdirectory(hdEmbree)
 endif()

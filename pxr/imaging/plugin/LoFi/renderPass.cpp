@@ -22,7 +22,6 @@ LoFiRenderPass::LoFiRenderPass(
 
 LoFiRenderPass::~LoFiRenderPass()
 {
-  std::cout << "### [LOFI] DELETE RENDER PASS..." << std::endl;
 }
 
 void 
@@ -46,10 +45,9 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
   {
     program->Build("Simple120", VERTEX_SHADER_120, FRAGMENT_SHADER_120);
   }
-  std::cout << "BUILD SIMPLE SHADER PROGRAM..." << std::endl;
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());
-  std::cout << "REGISTER IN REGISTRY.." << std::endl;
+
   if(instance.IsFirstInstance())
   {
     if(TfDebug::IsEnabled(LOFI_RENDERER)) 
@@ -71,24 +69,21 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     delete program;  
   }
   _program = instance.GetValue();
-  std::cout << "BUILD SIMPLE SHADER PROGRAM DONE.." << std::endl;
+
 }
 
 void
 LoFiRenderPass::_SetupSimpleVertexArray()
 {
-  std::cout << "SETUP SIMPLE VERTEX ARRAY.." << std::endl;
   size_t szp = NUM_TEST_POINTS * 3 * sizeof(float);
   size_t szi = NUM_TEST_INDICES * sizeof(int);
 
 #ifdef __APPLE__
-  if(LOFI_GL_VERSION >= 330)
-  {
+  if(LOFI_GL_VERSION >= 330) {
     glGenVertexArrays(1, &_vao);
     glBindVertexArray(_vao);
   }
-  else
-  {
+  else {
     glGenVertexArraysAPPLE(1, &_vao);
     glBindVertexArrayAPPLE(_vao);
   }
@@ -96,7 +91,6 @@ LoFiRenderPass::_SetupSimpleVertexArray()
   glGenVertexArrays(1, &_vao);
   glBindVertexArray(_vao);
 #endif
-
 
   // specify position attribute
   glGenBuffers(1, &_vbo);
@@ -169,7 +163,6 @@ void
 LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
                           TfTokenVector const &renderTags)
 {
-  uint64_t T = ns();
   /*
   _renderer->SetCamera(
       renderPassState->GetWorldToViewMatrix(), 
@@ -244,6 +237,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     const LoFiDrawItem* lofiDrawItem = 
       reinterpret_cast<const LoFiDrawItem*>(drawItem);
 
+    lofiDrawItem->GetGLSLProgram();
+
     const LoFiVertexArray* vertexArray = lofiDrawItem->GetVertexArray();
     vertexArray->Bind();
 
@@ -265,9 +260,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     */
    numDrawItems++;
   }
-  uint64_t elapsed = ns() - T;
-  std::cout << "### [LOFI] Render took " << (elapsed * 1e-9) << " seconds to complete!" << std::endl;
-  std::cout << "### [LOFI] WE DEAL WITH " << numDrawItems << " DRAW ITEMS..." <<std::endl; 
 /*
 
   // draw red points
