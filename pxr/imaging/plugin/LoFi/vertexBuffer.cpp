@@ -97,9 +97,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
     {
       for(int i=0;i<_numOutputElements;++i) 
       {
-        char randomData[_elementSize];
-        for(int j=0;j<_elementSize;++j)randomData[j] = rand();
-        memcpy(result + i * _elementSize, &randomData, _elementSize);
+        memcpy(result + i * _elementSize, _rawInputDatas, _elementSize);
       }
       break;
     }

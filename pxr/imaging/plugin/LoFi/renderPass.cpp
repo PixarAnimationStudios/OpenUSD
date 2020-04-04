@@ -120,7 +120,8 @@ LoFiRenderPass::_SetupSimpleVertexArray()
   // bind shader program
   glUseProgram(_program->Get());
   glBindAttribLocation(_program->Get(), 0, "position");
-  glBindAttribLocation(_program->Get(), 1, "color");
+  glBindAttribLocation(_program->Get(), 1, "normal");
+  glBindAttribLocation(_program->Get(), 2, "color");
   glLinkProgram(_program->Get());
 
   // unbind vertex array object

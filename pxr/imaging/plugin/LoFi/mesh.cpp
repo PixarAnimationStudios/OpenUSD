@@ -298,11 +298,11 @@ void LoFiMesh:: InfosLog()
 }
 
 LoFiVertexBufferState
-LoFiMesh::_PopulatePrimvar(HdSceneDelegate* sceneDelegate,
-                                HdInterpolation interpolation,
-                                LoFiVertexBufferChannel channel,
-                                const VtValue& value,
-                                bool needReallocate)
+LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
+                            HdInterpolation interpolation,
+                            LoFiVertexBufferChannel channel,
+                            const VtValue& value,
+                            bool needReallocate)
 {
   _vertexArray->SetHaveChannel(channel);
   uint32_t numInputElements = 0;
@@ -414,6 +414,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   _vertexArray->SetNumElements(_samples.size());
   bool pointPositionsUpdated = false;
   bool haveAuthoredNormals = false;
+  bool haveAuthoredDisplayColor = false;
   // get primvars
   HdPrimvarDescriptorVector primvars;
   for (size_t i=0; i < HdInterpolationCount; ++i) 
@@ -460,13 +461,17 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
                           needReallocate);
         }
         
-        else if(pv.name == TfToken("displayColor"))
+        else if(pv.name == TfToken("displayColor") || 
+          pv.name == TfToken("primvars:displayColor"))
         {
-          _PopulatePrimvar(sceneDelegate,
-                          interp,
-                          CHANNEL_COLOR,
-                          value,
-                          needReallocate);
+          LoFiVertexBufferState state =
+            _PopulatePrimvar(sceneDelegate,
+                            interp,
+                            CHANNEL_COLOR,
+                            value,
+                            needReallocate);
+          if(state != LoFiVertexBufferState::INVALID)
+              haveAuthoredDisplayColor = true;
         }
       }
     }
@@ -502,6 +507,32 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     buffer->SetNeedUpdate(true);
     
     _vertexArray->SetHaveChannel(CHANNEL_NORMAL);
+  }
+
+  // if no authored normals compute smooth vertex normals
+  if(!haveAuthoredDisplayColor && needReallocate)
+  {
+    if(!_vertexArray->HaveBuffer(CHANNEL_COLOR) || needReallocate)
+    {
+      LoFiVertexBufferSharedPtr buffer = 
+        LoFiVertexArray::CreateBuffer(CHANNEL_COLOR, _positions.size(),
+          _samples.size());
+      _vertexArray->SetBuffer(CHANNEL_COLOR, buffer);
+    }
+
+    LoFiComputeVertexColors( _positions, _colors);
+    
+    LoFiVertexBufferSharedPtr buffer = _vertexArray->GetBuffer(CHANNEL_COLOR);
+    buffer->SetNeedReallocate(false);
+    buffer->SetValid(true);
+    buffer->SetInterpolation(HdInterpolationVertex);
+    buffer->SetRawInputDatas((const char*)_colors.cdata());
+    size_t dataHash = buffer->ComputeDatasHash((const char*)_colors.cdata());
+      
+    buffer->SetDatasHash(dataHash);
+    buffer->SetNeedUpdate(true);
+    
+    _vertexArray->SetHaveChannel(CHANNEL_COLOR);
   }
 
   // update state
