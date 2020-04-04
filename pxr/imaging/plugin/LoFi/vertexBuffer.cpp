@@ -95,7 +95,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
   {
     case LoFiInterpolationConstant:
     {
-      for(int i=0;i<_numOutputElements;++i) 
+      for(size_t i=0;i<_numOutputElements;++i) 
       {
         memcpy(result + i * _elementSize, _rawInputDatas, _elementSize);
       }
@@ -104,7 +104,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
   
     case LoFiInterpolationUniform:
     {
-      for(int i=0;i<_numOutputElements;++i) 
+      for(size_t i=0;i<_numOutputElements;++i) 
       {
         memcpy(
           (void*)(result + i * _elementSize),
@@ -117,7 +117,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
 
     case LoFiInterpolationVarying:
     {
-      for(int i=0;i<_numOutputElements;++i) 
+      for(size_t i=0;i<_numOutputElements;++i) 
       {
         memcpy(
           (void*)(result + i * _elementSize),
@@ -130,7 +130,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
       
     case LoFiInterpolationVertex:
     {
-      for(int i=0;i<_numOutputElements;++i) 
+      for(size_t i=0;i<_numOutputElements;++i) 
       {
         memcpy(
           (void*)(result + i * _elementSize),
@@ -143,7 +143,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
       
     case LoFiInterpolationFaceVarying:
     {
-      for(int i=0;i<_numOutputElements;++i) 
+      for(size_t i=0;i<_numOutputElements;++i) 
       {
         memcpy(
           (void*)(result + i * _elementSize),
