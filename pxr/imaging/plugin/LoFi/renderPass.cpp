@@ -29,7 +29,6 @@ void
 LoFiRenderPass::_SetupSimpleGLSLProgram()
 {
   // build shader from string
-  GlfContextCaps const& caps = GlfContextCaps::GetInstance();
   LoFiGLSLProgram* program = new LoFiGLSLProgram();
 
   // get resource registry
@@ -39,18 +38,18 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     );
   TF_VERIFY(resourceRegistry);
 
-
-  if(caps.glslVersion >= 330)
+  if(LOFI_GL_VERSION >= 330)
   {
-    program->Build("Simple", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
+    program->Build("Simple330", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
   }
   else
   {
-    program->Build("Simple", VERTEX_SHADER_120, FRAGMENT_SHADER_120);
+    program->Build("Simple120", VERTEX_SHADER_120, FRAGMENT_SHADER_120);
   }
-
+  std::cout << "BUILD SIMPLE SHADER PROGRAM..." << std::endl;
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());
+  std::cout << "REGISTER IN REGISTRY.." << std::endl;
   if(instance.IsFirstInstance())
   {
     if(TfDebug::IsEnabled(LOFI_RENDERER)) 
@@ -72,16 +71,32 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     delete program;  
   }
   _program = instance.GetValue();
+  std::cout << "BUILD SIMPLE SHADER PROGRAM DONE.." << std::endl;
 }
 
 void
 LoFiRenderPass::_SetupSimpleVertexArray()
 {
+  std::cout << "SETUP SIMPLE VERTEX ARRAY.." << std::endl;
   size_t szp = NUM_TEST_POINTS * 3 * sizeof(float);
   size_t szi = NUM_TEST_INDICES * sizeof(int);
 
-  glGenVertexArraysAPPLE(1, &_vao);
-  glBindVertexArrayAPPLE(_vao);
+#ifdef __APPLE__
+  if(LOFI_GL_VERSION >= 330)
+  {
+    glGenVertexArrays(1, &_vao);
+    glBindVertexArray(_vao);
+  }
+  else
+  {
+    glGenVertexArraysAPPLE(1, &_vao);
+    glBindVertexArrayAPPLE(_vao);
+  }
+#else
+  glGenVertexArrays(1, &_vao);
+  glBindVertexArray(_vao);
+#endif
+
 
   // specify position attribute
   glGenBuffers(1, &_vbo);
@@ -125,7 +140,13 @@ LoFiRenderPass::_SetupSimpleVertexArray()
   glLinkProgram(_program->Get());
 
   // unbind vertex array object
-  glBindVertexArrayAPPLE(0);
+#ifdef __APPLE__
+  if(LOFI_GL_VERSION >= 330)glBindVertexArray(0);
+  else glBindVertexArrayAPPLE(0);
+#else
+  glBindVertexArray(0);
+#endif
+  
   glUseProgram(0);
 }
 
