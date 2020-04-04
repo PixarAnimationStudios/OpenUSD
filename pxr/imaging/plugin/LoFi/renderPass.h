@@ -21,9 +21,12 @@ static const char *VERTEX_SHADER_120[1] = {
   "uniform mat4 projection;                                 \n"
   "                                                         \n"
   "attribute vec3 position;                                 \n"
+  "attribute vec3 normal;                                   \n"
   "attribute vec3 color;                                    \n"
+  "varying vec3 vertex_normal;                              \n"
   "varying vec3 vertex_color;                               \n"
   "void main(){                                             \n"
+  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;      \n"
   "    vertex_color = color;                                \n"
   "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
   "    gl_Position = projection * vec4(p,1.0);              \n"
@@ -32,10 +35,12 @@ static const char *VERTEX_SHADER_120[1] = {
 
 static const char *FRAGMENT_SHADER_120[1] = {
   "#version 120                                             \n"
+  "varying vec3 vertex_normal;                              \n"
   "varying vec3 vertex_color;                               \n"
   "void main()                                              \n"
   "{                                                        \n"
-  "	gl_FragColor = vec4(vertex_color,1.0);                  \n"
+  " vec3 color = vertex_normal * vertex_color;              \n"
+  "	gl_FragColor = vec4(vertex_color,1.0);                         \n"
   "}"
 };
 

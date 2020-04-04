@@ -71,7 +71,7 @@ public:
   inline void SetNeedReallocate(bool needReallocate) {
     _needReallocate = needReallocate;
   };
-  inline bool GetNeedUpdate(){return _needUpdate;};
+  inline bool GetNeedUpdate(){return true;};//_needUpdate;};
   inline void SetNeedUpdate(bool needUpdate) {
     _needUpdate = needUpdate;
   };
