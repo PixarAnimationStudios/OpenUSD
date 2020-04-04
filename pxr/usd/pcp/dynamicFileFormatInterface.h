@@ -47,9 +47,7 @@ class VtValue;
 class PcpDynamicFileFormatInterface
 {
 public:
-    /// Provide a virtual destructor defined in the header for better
-    /// compatibility with various compiler/linker combinations that may need
-    /// this to build plugins classes derived from this class.
+    /// Empty virtual destructor to prevent build errors with some compilers.
     virtual ~PcpDynamicFileFormatInterface() {}
 
     /// Derived classes must implement this function to compose prim fields 
