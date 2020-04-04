@@ -3,9 +3,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#ifdef __APPLE__
 uint32_t LOFI_GL_VERSION = 0;
-#endif
+
 int 
 LoFiTriangulateMesh(const VtArray<int>& counts, 
                     const VtArray<int>& indices, 

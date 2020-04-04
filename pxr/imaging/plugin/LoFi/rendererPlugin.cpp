@@ -39,19 +39,18 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate*
 LoFiRendererPlugin::CreateRenderDelegate()
 {
-#ifdef __APPLE__
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   LOFI_GL_VERSION = caps.glVersion;
-  std::cout << "######### LOFI GL VERSION : "<< LOFI_GL_VERSION << std::endl;
-#endif
-    return new LoFiRenderDelegate();
+  return new LoFiRenderDelegate();
 }
 
 HdRenderDelegate*
 LoFiRendererPlugin::CreateRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
 {
-    return new LoFiRenderDelegate(settingsMap);
+const GlfContextCaps& caps = GlfContextCaps::GetInstance();
+LOFI_GL_VERSION = caps.glVersion;
+return new LoFiRenderDelegate(settingsMap);
 }
 
 void

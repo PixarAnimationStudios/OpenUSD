@@ -26,7 +26,7 @@ static const char *VERTEX_SHADER_120[1] = {
   "varying vec3 vertex_normal;                              \n"
   "varying vec3 vertex_color;                               \n"
   "void main(){                                             \n"
-  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;      \n"
+  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;     \n"
   "    vertex_color = color;                                \n"
   "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
   "    gl_Position = projection * vec4(p,1.0);              \n"
@@ -40,7 +40,7 @@ static const char *FRAGMENT_SHADER_120[1] = {
   "void main()                                              \n"
   "{                                                        \n"
   " vec3 color = vertex_normal * vertex_color;              \n"
-  "	gl_FragColor = vec4(vertex_color,1.0);                         \n"
+  "	gl_FragColor = vec4(vertex_color,1.0);                  \n"
   "}"
 };
 
@@ -51,9 +51,12 @@ static const char *VERTEX_SHADER_330[1] = {
   "uniform mat4 projection;                                 \n"
   "                                                         \n"
   "in vec3 position;                                        \n"
+  "in vec3 normal;                                          \n"
   "in vec3 color;                                           \n"
   "out vec3 vertex_color;                                   \n"
+  "out vec3 vertex_normal;                                  \n"
   "void main(){                                             \n"
+  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;     \n"
   "    vertex_color = color;                                \n"
   "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
   "    gl_Position = projection * vec4(p,1.0);              \n"
@@ -63,6 +66,7 @@ static const char *VERTEX_SHADER_330[1] = {
 static const char *FRAGMENT_SHADER_330[1] = {
   "#version 330 core                                        \n"
   "in vec3 vertex_color;                                    \n"
+  "in vec3 vertex_normal;                                   \n"
   "out vec4 outColor;                                       \n"
   "void main()                                              \n"
   "{                                                        \n"
