@@ -398,11 +398,11 @@ _GetPrimvarNameAttributeValue(
     return TfToken();
 }
 
-static HdSt_MaterialParamVector
+static void
 _MakeMaterialParamsForUnconnectedParam(
-    TfToken const& paramName)
+    TfToken const& paramName,
+    HdSt_MaterialParamVector *params)
 {
-    HdSt_MaterialParamVector params;
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeFallback;
     param.name = paramName;
@@ -411,15 +411,14 @@ _MakeMaterialParamsForUnconnectedParam(
     param.textureType = HdTextureType::Uv;  /*No Texture*/
     param.swizzle = std::string();          /*No swizzle*/
 
-    params.push_back(std::move(param));
-    return params;
+    params->push_back(std::move(param));
 }
 
-static HdSt_MaterialParamVector
-_MakeMaterialParamsForAdditionaPrimvar(
-    TfToken const& primvarName)
+static void
+_MakeMaterialParamsForAdditionalPrimvar(
+    TfToken const& primvarName,
+    HdSt_MaterialParamVector *params)
 {
-    HdSt_MaterialParamVector params;
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeAdditionalPrimvar;
     param.name = primvarName;
@@ -428,20 +427,19 @@ _MakeMaterialParamsForAdditionaPrimvar(
     param.textureType = HdTextureType::Uv;  /*No Texture*/
     param.swizzle = std::string();          /*No swizzle*/
 
-    params.push_back(std::move(param));
-    return params;
+    params->push_back(std::move(param));
 }
 
-static HdSt_MaterialParamVector
+static void
 _MakeMaterialParamsForPrimvarInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
     TfToken const& paramName,
-    SdfPathSet* visitedNodes)
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector *params)
 {
-    HdSt_MaterialParamVector params;
-    if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
+    if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
@@ -464,8 +462,7 @@ _MakeMaterialParamsForPrimvarInput(
         }
     }
 
-    params.push_back(std::move(param));
-    return params;
+    params->push_back(std::move(param));
 }
 
 static std::string
@@ -489,17 +486,17 @@ _ResolveAssetPath(VtValue const& value)
     return std::string();
 }
 
-static HdSt_MaterialParamVector
+static void
 _MakeMaterialParamsForTextureInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
     TfToken const& outputName,
     TfToken const& paramName,
-    SdfPathSet* visitedNodes)
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector *params)
 {
-    HdSt_MaterialParamVector params;
-    if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
+    if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
@@ -570,13 +567,15 @@ _MakeMaterialParamsForTextureInput(
             auto const& pnIt = network.nodes.find(primvarNodePath);
             HdSt_MaterialNode const& primvarNode = pnIt->second;
 
-            HdSt_MaterialParamVector primvarParams = 
-                _MakeMaterialParamsForPrimvarInput(
-                    network,
-                    primvarNode,
-                    primvarNodePath,
-                    stIt->first,
-                    visitedNodes);
+            HdSt_MaterialParamVector primvarParams;
+
+            _MakeMaterialParamsForPrimvarInput(
+                network,
+                primvarNode,
+                primvarNodePath,
+                stIt->first,
+                visitedNodes,
+                &primvarParams);
 
             if (!primvarParams.empty()) {
                 HdSt_MaterialParam const& primvarParam = primvarParams.front();
@@ -605,20 +604,19 @@ _MakeMaterialParamsForTextureInput(
         }
     }
 
-    params.push_back(std::move(texParam));
-    return params;
+    params->push_back(std::move(texParam));
 }
 
-static HdSt_MaterialParamVector
+static void
 _MakeMaterialParamsForFieldInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
     TfToken const& paramName,
-    SdfPathSet* visitedNodes)
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector *params)
 {
-    HdSt_MaterialParamVector params;
-    if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
+    if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
 
     // Volume Fields act more like a primvar then a texture.
     // There is a `Volume` prim with 'fields' that may point to a
@@ -652,16 +650,16 @@ _MakeMaterialParamsForFieldInput(
         }
     }
 
-    params.push_back(std::move(param));
-    return params;
+    params->push_back(std::move(param));
 }
 
-static HdSt_MaterialParamVector
+static void
 _MakeParamsForInputParameter(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     TfToken const& paramName,
-    SdfPathSet* visitedNodes)
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector *params)
 {
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
@@ -693,32 +691,37 @@ _MakeParamsForInputParameter(
                     TfToken sdrRole(upstreamSdr->GetRole());
                     if (sdrRole == SdrNodeRole->Texture) {
 
-                        return _MakeMaterialParamsForTextureInput(
+                        _MakeMaterialParamsForTextureInput(
                             network,
                             upstreamNode,
                             upstreamPath,
                             upstreamOutputName,
                             paramName,
-                            visitedNodes);
+                            visitedNodes,
+                            params);
+                        return;
 
                     } else if (sdrRole == SdrNodeRole->Primvar) {
 
-                        return _MakeMaterialParamsForPrimvarInput(
+                        _MakeMaterialParamsForPrimvarInput(
                             network,
                             upstreamNode,
                             upstreamPath,
                             paramName,
-                            visitedNodes);
+                            visitedNodes,
+                            params);
+                        return;
 
                     } else if (sdrRole == SdrNodeRole->Field) {
 
-                        return _MakeMaterialParamsForFieldInput(
+                        _MakeMaterialParamsForFieldInput(
                             network,
                             upstreamNode,
                             upstreamPath,
                             paramName,
-                            visitedNodes);
-
+                            visitedNodes,
+                            params);
+                        return;
                     }
                 } else {
                     TF_WARN("Unrecognized connected node: %s", 
@@ -729,14 +732,14 @@ _MakeParamsForInputParameter(
     } 
 
     // Nothing (supported) was connected, output a fallback material param    
-    return _MakeMaterialParamsForUnconnectedParam(paramName);
+    _MakeMaterialParamsForUnconnectedParam(paramName, params);
 }
 
-static HdSt_MaterialParamVector 
+static void
 _GatherMaterialParams(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
-    HioGlslfxUniquePtr const& glslfx) 
+    HdSt_MaterialParamVector *params)
 {
     HD_TRACE_FUNCTION();
 
@@ -749,8 +752,6 @@ _GatherMaterialParams(
     // The following code is made to process one of these two material configs
     // exclusively. It cannot convert arbitrary material networks to Storm by
     // generating the appropriate glsl code.
-
-    HdSt_MaterialParamVector params;
 
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
@@ -766,13 +767,12 @@ _GatherMaterialParams(
     }
 
     for (TfToken const& inputName : parameters) {
-        HdSt_MaterialParamVector inputParams = _MakeParamsForInputParameter(
-            network, node, inputName, &visitedNodes);
-        params.insert(params.end(), inputParams.begin(), inputParams.end());
+        _MakeParamsForInputParameter(
+            network, node, inputName, &visitedNodes, params);
     }
 
     // Set fallback values for the inputs on the terminal
-    for (HdSt_MaterialParam& p : params) {
+    for (HdSt_MaterialParam& p : *params) {
         p.fallbackValue= _GetParamFallbackValue(network, node, p.name);
     }
 
@@ -788,12 +788,8 @@ _GatherMaterialParams(
     pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
 
     for (TfToken const& primvarName : pv) {
-        HdSt_MaterialParamVector aPrimvars = 
-            _MakeMaterialParamsForAdditionaPrimvar(primvarName);
-        params.insert(params.end(), aPrimvars.begin(), aPrimvars.end());
+        _MakeMaterialParamsForAdditionalPrimvar(primvarName, params);
     }
-
-    return params;
 }
 
 HdStMaterialNetwork::HdStMaterialNetwork()
@@ -848,9 +844,9 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 _fragmentSource = isVolume ? _surfaceGfx->GetVolumeSource() : 
                     _surfaceGfx->GetSurfaceSource();
                 _materialMetadata = _surfaceGfx->GetMetadata();
-                _materialTag= _GetMaterialTag(_materialMetadata, *surfTerminal);
-                _materialParams = _GatherMaterialParams(
-                    surfaceNetwork, *surfTerminal, _surfaceGfx);
+                _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
+                _GatherMaterialParams(
+                    surfaceNetwork, *surfTerminal, &_materialParams);
 
                 // OSL networks have a displacement network in hdNetworkMap
                 // under terminal: HdMaterialTerminalTokens->displacement.
