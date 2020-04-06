@@ -13,15 +13,68 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define LOFI_TOKENS                             \
-    (elementBuffer)                             \
-    (glslProgram)                               \
-    (glslShader)                                \
-    (vertexArray)                               \
-    (vertexBuffer)                              \
-    (mesh)                                      \
+// registry tokens
+#define LOFI_REGISTRY_TOKENS        \
+    (elementBuffer)                 \
+    (glslProgram)                   \
+    (glslShader)                    \
+    (vertexArray)                   \
+    (vertexBuffer)                  \
+    (mesh)                          \
 
-TF_DECLARE_PUBLIC_TOKENS(LoFiTokens, LOFI_API, LOFI_TOKENS);
+// opengl types tokens
+#define LOFI_GL_TOKENS              \
+    ((_float, "float"))             \
+    ((_int, "int"))                 \
+    (ivec2)                         \
+    (ivec3)                         \
+    (ivec4)                         \
+    (vec2)                          \
+    (vec3)                          \
+    (vec4)                          \
+    (mat3)                          \
+    (mat4)                          \
+    (isamplerBuffer)                \
+    (samplerBuffer)                 \
+
+// opengl buffers tokens
+#define  LOFI_BUFFER_TOKENS         \
+    (position)                      \
+    (normal)                        \
+    (tangent)                       \
+    (color)                         \
+    (uv)                            \
+    (width)                         \
+    (id)                            \
+    (scale)                         \
+    (shape_position)                \
+    (shape_normal)                  \
+    (shape_color)                   \
+    (shape_uv)                      \
+    (inPrimvars)                    \
+    (outPrimvars)                   \
+
+// opengl uniforms tokens
+#define LOFI_UNIFORM_TOKENS         \
+    (model)                         \
+    (view)                          \
+    (invview)                       \
+    (projection)                    \
+    (tex0)                          \
+    (tex1)                          \
+    (tex2)                          \
+    (tex3)                          \
+    (tex4)                          \
+    (tex5)                          \
+    (tex6)                          \
+    (tex7)                          \
+    (nearplane)                     \
+    (farplane)                      \
+
+TF_DECLARE_PUBLIC_TOKENS(LoFiRegistryTokens, LOFI_API, LOFI_REGISTRY_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(LoFiGLTokens, LOFI_API, LOFI_GL_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(LoFiBufferTokens, LOFI_API, LOFI_BUFFER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(LoFiUniformTokens, LOFI_API, LOFI_UNIFORM_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

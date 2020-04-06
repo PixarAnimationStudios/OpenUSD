@@ -420,70 +420,65 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   bool haveAuthoredNormals = false;
   bool haveAuthoredDisplayColor = false;
 
-  if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals) ||
-        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths) ||
-        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) 
+  // get primvars
+  HdPrimvarDescriptorVector primvars;
+  for (size_t i=0; i < HdInterpolationCount; ++i) 
   {
-    // get primvars
-    HdPrimvarDescriptorVector primvars;
-    for (size_t i=0; i < HdInterpolationCount; ++i) 
+    HdInterpolation interp = static_cast<HdInterpolation>(i);
+    primvars = GetPrimvarDescriptors(sceneDelegate, interp);
+    for (HdPrimvarDescriptor const& pv: primvars) 
     {
-      HdInterpolation interp = static_cast<HdInterpolation>(i);
-      primvars = GetPrimvarDescriptors(sceneDelegate, interp);
-      for (HdPrimvarDescriptor const& pv: primvars) 
+      std::cout << "CHECK PRIMVAR : " << pv.name.GetText() << std::endl;
+      if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
       {
-        std::cout << "CHECK PRIMVAR : " << pv.name.GetText() << std::endl;
-        if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
-        {
-          VtValue value = GetPrimvar(sceneDelegate, pv.name);
+        VtValue value = GetPrimvar(sceneDelegate, pv.name);
 
-          if(pv.name == HdTokens->points)
-          {
-            LoFiVertexBufferState state =
-              _PopulatePrimvar( sceneDelegate,
-                                interp,
-                                CHANNEL_POSITION,
-                                value,
-                                needReallocate );
-            if(state != LoFiVertexBufferState::TO_RECYCLE && 
-              state != LoFiVertexBufferState::INVALID)
-                pointPositionsUpdated = true;
-          }
-          
-          else if(pv.name == HdTokens->normals)
-          {
-            std::cout << "FOUND NORMAL PRIMVAR :D" << std::endl;
-            LoFiVertexBufferState state =
-              _PopulatePrimvar(sceneDelegate,
+        if(pv.name == HdTokens->points)
+        {
+          LoFiVertexBufferState state =
+            _PopulatePrimvar( sceneDelegate,
                               interp,
-                              CHANNEL_NORMAL,
+                              CHANNEL_POSITION,
                               value,
-                              needReallocate);
-            if(state != LoFiVertexBufferState::INVALID)
-                haveAuthoredNormals = true;
-          }
-            
-          else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
-          {
+                              needReallocate );
+          if(state != LoFiVertexBufferState::TO_RECYCLE && 
+            state != LoFiVertexBufferState::INVALID)
+              pointPositionsUpdated = true;
+        }
+        
+        else if(pv.name == HdTokens->normals)
+        {
+          std::cout << "FOUND NORMAL PRIMVAR :D" << std::endl;
+          LoFiVertexBufferState state =
             _PopulatePrimvar(sceneDelegate,
                             interp,
-                            CHANNEL_UV,
+                            CHANNEL_NORMAL,
                             value,
                             needReallocate);
-          }
+          if(state != LoFiVertexBufferState::INVALID)
+              haveAuthoredNormals = true;
+        }
           
-          else if(pv.name == TfToken("displayColor") || 
-            pv.name == TfToken("primvars:displayColor"))
-          {
-            LoFiVertexBufferState state =
-              _PopulatePrimvar(sceneDelegate,
-                              interp,
-                              CHANNEL_COLOR,
-                              value,
-                              needReallocate);
-            if(state != LoFiVertexBufferState::INVALID)
-                haveAuthoredDisplayColor = true;
-          }
+        else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
+        {
+          _PopulatePrimvar(sceneDelegate,
+                          interp,
+                          CHANNEL_UV,
+                          value,
+                          needReallocate);
+        }
+        
+        else if(pv.name == TfToken("displayColor") || 
+          pv.name == TfToken("primvars:displayColor"))
+        {
+          LoFiVertexBufferState state =
+            _PopulatePrimvar(sceneDelegate,
+                            interp,
+                            CHANNEL_COLOR,
+                            value,
+                            needReallocate);
+          if(state != LoFiVertexBufferState::INVALID)
+              haveAuthoredDisplayColor = true;
         }
       }
     }

@@ -55,7 +55,7 @@ HdInstance<LoFiVertexArraySharedPtr>
 LoFiResourceRegistry::RegisterVertexArray(
   HdInstance<LoFiVertexArraySharedPtr>::ID id)
 {
-  return _Register(id, _vertexArrayRegistry, LoFiTokens->vertexArray);
+  return _Register(id, _vertexArrayRegistry, LoFiRegistryTokens->vertexArray);
 }
 
 LoFiVertexArraySharedPtr
@@ -71,7 +71,7 @@ HdInstance<LoFiGLSLShaderSharedPtr>
 LoFiResourceRegistry::RegisterGLSLShader(
   HdInstance<LoFiGLSLShaderSharedPtr>::ID id)
 {
-  return _Register(id, _glslShaderRegistry, LoFiTokens->glslShader);
+  return _Register(id, _glslShaderRegistry, LoFiRegistryTokens->glslShader);
 }
 
 LoFiGLSLShaderSharedPtr
@@ -87,7 +87,7 @@ HdInstance<LoFiGLSLProgramSharedPtr>
 LoFiResourceRegistry::RegisterGLSLProgram(
   HdInstance<LoFiGLSLProgramSharedPtr>::ID id)
 {
-  return _Register(id, _glslProgramRegistry, LoFiTokens->glslProgram);
+  return _Register(id, _glslProgramRegistry, LoFiRegistryTokens->glslProgram);
 }
 
 LoFiGLSLProgramSharedPtr
@@ -103,7 +103,7 @@ HdInstance<LoFiMesh*>
 LoFiResourceRegistry::RegisterMesh(
   HdInstance<LoFiMesh*>::ID id)
 {
-  return _Register(id, _meshesRegistry, LoFiTokens->mesh);
+  return _Register(id, _meshesRegistry, LoFiRegistryTokens->mesh);
 }
 
 LoFiMesh*

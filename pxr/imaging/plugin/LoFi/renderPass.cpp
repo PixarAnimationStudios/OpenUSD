@@ -37,16 +37,36 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     );
   TF_VERIFY(resourceRegistry);
 
-/*
-  LoFiGeometricProgramType pgmType(LOFI_PROGRAM_MESH);
+  LoFiGeometricProgramType pgmType();
   LoFiVertexBufferChannelList channelsList;
   channelsList.push_back(CHANNEL_POSITION);
   channelsList.push_back(CHANNEL_COLOR);
   channelsList.push_back(CHANNEL_NORMAL);
 
-  LoFiCodeGen codeGen(pgmType, channelsList);
+  //LoFiCodeGen codeGen(LOFI_PROGRAM_MESH, channelsList);
+  LoFiUniformBindingList uniformBindings;
+  uniformBindings.push_back(
+    LoFiUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4));
+  uniformBindings.push_back(
+    LoFiUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4));
+  uniformBindings.push_back(
+    LoFiUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4));
+
+  LoFiVertexBufferBindingList vertexBufferBindings;
+  vertexBufferBindings.push_back(
+    LoFiVertexBufferBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3));
+  vertexBufferBindings.push_back(
+    LoFiVertexBufferBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3));
+  vertexBufferBindings.push_back(
+    LoFiVertexBufferBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3));
+
+  LoFiCodeGen codeGen(
+    LOFI_PROGRAM_MESH,
+    uniformBindings, 
+    vertexBufferBindings
+  );
   codeGen.GenerateMeshCode();
-*/
+
   if(LOFI_GL_VERSION >= 330)
   {
     program->Build("Simple330", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
