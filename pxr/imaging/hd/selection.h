@@ -120,6 +120,9 @@ public:
     HD_API
     std::vector<GfVec4f> const& GetSelectedPointColors() const;
 
+    HD_API
+    bool IsEmpty() const;
+
 private:
     HD_API
     void _AddPoints(HighlightMode const& mode,

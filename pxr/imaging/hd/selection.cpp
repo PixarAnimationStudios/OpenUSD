@@ -158,6 +158,17 @@ HdSelection::GetPrimSelectionState(HdSelection::HighlightMode const& mode,
     }
 }
 
+bool
+HdSelection::IsEmpty() const
+{
+    for (auto const& mode : _selMap) {
+        if (mode.size() > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::vector<GfVec4f> const&
 HdSelection::GetSelectedPointColors() const
 {

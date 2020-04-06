@@ -113,7 +113,8 @@ HdxColorizeSelectionTask::Prepare(HdTaskContext* ctx,
     if (sel && sel->GetVersion() != _lastVersion) {
         _lastVersion = sel->GetVersion();
         _hasSelection =
-            sel->GetSelectionOffsetBuffer(renderIndex, &_selectionOffsets);
+            sel->GetSelectionOffsetBuffer(renderIndex, _params.enableSelection,
+                                          &_selectionOffsets);
     }
 }
 

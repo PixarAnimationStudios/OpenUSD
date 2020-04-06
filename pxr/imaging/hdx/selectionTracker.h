@@ -117,8 +117,11 @@ public:
     /// uploaded to the GPU and decoded in the fragment shader to provide
     /// selection highlighting behavior. See HdxSelectionTask.
     /// Returns true if offsets has anything selected.
+    /// \p enableSelection is a global on/off switch for selection; if it's
+    /// false, nothing will be encoded.
     HDX_API
     virtual bool GetSelectionOffsetBuffer(HdRenderIndex const *index,
+                                          bool enableSelection,
                                           VtIntArray *offsets) const;
 
     HDX_API

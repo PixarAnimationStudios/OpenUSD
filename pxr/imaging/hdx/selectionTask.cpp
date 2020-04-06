@@ -157,7 +157,8 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         // Offsets
         //
         VtIntArray offsets;
-        _hasSelection = sel->GetSelectionOffsetBuffer(renderIndex, &offsets);
+        _hasSelection = sel->GetSelectionOffsetBuffer(renderIndex,
+                _params.enableSelection, &offsets);
         HdBufferSourceSharedPtr offsetSource(
                 new HdVtBufferSource(HdxTokens->hdxSelectionBuffer,
                                      VtValue(offsets)));
@@ -173,15 +174,9 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         hdStResourceRegistry->AddSource(_selPointColorsBar, ptColorSource);
     }
 
-    if (_params.enableSelection && _hasSelection) {
-        (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;
-        (*ctx)[HdxTokens->selectionUniforms] = _selUniformBar;
-        (*ctx)[HdxTokens->selectionPointColors] = _selPointColorsBar;
-    } else {
-        (*ctx)[HdxTokens->selectionOffsets] = VtValue();
-        (*ctx)[HdxTokens->selectionUniforms] = VtValue();
-        (*ctx)[HdxTokens->selectionPointColors] = VtValue();
-    }
+    (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;
+    (*ctx)[HdxTokens->selectionUniforms] = _selUniformBar;
+    (*ctx)[HdxTokens->selectionPointColors] = _selPointColorsBar;
 }
 
 void

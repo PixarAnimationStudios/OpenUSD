@@ -296,10 +296,13 @@ bool IsFaceSelected(int mode, int elementId)
 {
     bool sel = false;
     #if defined(HD_HAS_hdxSelectionBuffer)
-    SelectionResult res =
-        GetSelectionResult(mode, elementId, /*edgeId*/-1, /*pointId*/-1);
-    if (res.subprimSel.elementSelected) {
-        sel = true;
+    const int numSelectionModes = GetNumSelectionHighlightModes();
+    if (mode < numSelectionModes) {
+        SelectionResult res =
+            GetSelectionResult(mode, elementId, /*edgeId*/-1, /*pointId*/-1);
+        if (res.subprimSel.elementSelected) {
+            sel = true;
+        }
     }
     #endif
     return sel;
