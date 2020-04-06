@@ -43,17 +43,22 @@ class UsdPrimDefinition;
 
 /// \class UsdSchemaRegistry
 ///
-/// Singleton registry that provides access to prim and property definition
-/// information for registered Usd "IsA" schema types.
+/// Singleton registry that provides access to schema type information and
+/// the prim definitions for registered Usd "IsA" and applied API schema 
+/// types. It also contains the data from the generated schemas that is used
+/// by prim definitions to provide properties and fallbacks.
 ///
-/// The data contained herein comes from the processed (by \em usdGenSchema)
-/// schema.usda files of each schema-defining module.  The data is returned
-/// in the form of SdfSpec's of the appropriate subtype.
+/// The data contained herein comes from the generatedSchema.usda file
+/// (generated when a schema.usda file is processed by \em usdGenSchema)
+/// of each schema-defining module. The registry expects each schema type to
+/// be represented as a single prim spec with its inheritance flattened, i.e.
+/// the prim spec contains a union of all its local and class inherited property
+/// specs and metadata fields.
 ///
-/// It is used by the Usd core to determine how to create scene description
-/// for un-instantiated "builtin" properties of schema classes, and also
-/// to enumerate all properties for a given schema class, and finally to
-/// provide fallback values for unauthored builtin properties.
+/// It is used by the Usd core, via UsdPrimDefinition, to determine how to 
+/// create scene description for unauthored "built-in" properties of schema
+/// classes, to enumerate all properties for a given schema class, and finally 
+/// to provide fallback values for unauthored built-in properties.
 ///
 class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
 public:

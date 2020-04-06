@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Class representing the builtin definition of a prim given the schemas 
 /// registered in the schema registry. It provides access to the the builtin 
-/// properties of a prim whose type is defined by this definition. 
+/// properties and metadata of a prim whose type is defined by this definition. 
 /// 
 /// Instances of this class can only be created by the UsdSchemaRegistry.
 class UsdPrimDefinition
@@ -67,6 +67,9 @@ public:
         return SdfSpecTypeUnknown;
     }
 
+    /// \deprecated Please use the API on UsdPrimDefinition itself to inquire
+    /// about metadata and properties.
+    /// 
     /// Returns the prim spec in the registered schematics that represents this 
     /// prim definition's prim type. This will be null for invalid prim types
     /// or definitions composed for a prim with applied API schemas.

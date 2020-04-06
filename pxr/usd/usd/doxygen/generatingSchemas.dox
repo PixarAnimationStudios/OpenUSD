@@ -52,24 +52,23 @@ Schema classes can be classified into the following two types:
         NodeGraphs.
         - <b>Applied API Schemas</b> - If there is a need to record and discover 
         whether an API schema has been applied to a prim, we make it an applied 
-        API schema. In general, API schemas that add one or more properties to a 
-        prim should be tagged as applied API schemas. A public Apply() (or 
-        private _Apply()) method is auto-generated for applied API schemas. Once 
-        an API schema has been applied to a prim, prim.HasAPI<APISchemaType>() 
-        will return true. An applied API schema must be applied to a prim via a 
-        call to the Apply() method, for the schema object to evaluate to true 
-        when converted to a bool using the explicit bool conversion operator. 
-        An applied API schema can only inherit from another applied API schema 
-        or from UsdAPISchemaBase directly. Examples of applied API schemas 
-        include UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI.  
-        Applied API schemas are futher classified into the following two 
-        categories:
+        API schema. An applied schema will impart its properties as additional 
+        built-in properties on the prim. A public Apply() (or private _Apply()) 
+        method is auto-generated for applied API schemas. Once an API schema 
+        has been applied to a prim, prim.HasAPI<APISchemaType>() will return 
+        true. An applied API schema must be applied to a prim via a call to the 
+        Apply() method, for the schema object to evaluate to true when 
+        converted to a bool using the explicit bool conversion operator. An 
+        applied API schema can only inherit from another applied API schema or 
+        from UsdAPISchemaBase directly. Examples of applied API schemas include 
+        UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI. Applied API 
+        schemas are further classified into the following two categories:
             - <b>Single-Apply API Schemas</b> - Applied API schemas that can 
             only be applied once to a prim. Examples include UsdGeomModelAPI and 
             UsdGeomMotionAPI. 
             - <b>Multiple-Apply API Schemas</b> - Applied API schemas that can 
             be applied multiple times on the same prim with different instance 
-            names. For example, UsdCollectionAPI, which has to be applied once 
+            names. For example, UsdCollectionAPI, which must be applied once 
             per collection owned by a prim. Properties instantiated by this 
             API schema are prefixed with the namespace prefix of the schema 
             followed by the instance name. There is specific metadata one 
@@ -95,15 +94,19 @@ scene description.  The generated classes for all schemas, be they API,
 concrete-typed or non-concrete-typed are always instantiable in C++ or python
 as interface objects through which one can interact with UsdPrim objects.
 
-The definition of an IsA schema is published, at runtime, into an
-introspectable \ref UsdSchemaRegistry "schema definition registry", which is
-consulted by core Usd when performing property value resolution
-(i.e. retrieving a property's value at a given UsdTimeCode).  This allows IsA
-schemas to provide \em fallback \em values for their properties, that is, a value
-that the property will possess, even when none has been authored. Because the
-definition registry is keyed by prim typeName, a prim can "be" (IsA) at most
-a single type, whereas a prim can host data for any number of API schemas,
-which cannot provide fallback values.
+The definitions of both IsA schemas and applied API schemas are published, at 
+runtime, into an introspectable 
+\ref Usd_OM_SchemaDefinitionRegistry "schema definition registry", which
+produces the \ref UsdPrimDefinition "prim definitions" consulted by 
+core Usd when performing property value resolution (i.e. retrieving a property's 
+value at a given UsdTimeCode). This allows IsA and applied API schemas to 
+provide \em fallback \em values for their properties, that is, a value
+that the property will possess, even when none has been authored. Because a
+prim can only have one typeName, a prim can "be" (IsA) at most a single type, 
+but can host data for any number of API schemas. This combination of IsA and 
+applied API schemas constitutes the prim's complete type signature and is used 
+to construct a single \ref UsdPrimDefinition "prim definition" that provides 
+all the built-in properties and fallback values for the prim.
 
 The author of an API schema has to decide on the type of API schema at the time 
 of its creation by setting token-valued customData entry 'apiSchemaType' in the 
@@ -383,11 +386,11 @@ class "MyBaseCustomPrim" (
         doc = "A double valued uniform attribute representing scale."
     )
 
-    Vec3f rotation = (0, 0, 0) (
+    float3 rotation = (0, 0, 0) (
         doc = "A varying 3D vector in floating-pt precision representing rotation."
     )
 
-    Vec3d translation = (0, 0, 0) (
+    double3 translation = (0, 0, 0) (
         doc = "A varying double valued 3D vector representing translation."
     )
 }
@@ -417,13 +420,13 @@ class MyCustomPrim "MyCustomPrim" (
         doc = """A token valued attribute representing an axis."""
     )
 
-    Transform transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (0,0,0,1)) (
+    matrix4d transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (0,0,0,1)) (
         doc = """Double-precision transformation matrix, which should encode
                  the entire local transformation for a prim.""")
     )
 
     # Attributes with no fallback values.
-    PointFloat[] points (
+    point3f[] points (
         doc = """An attribute representing a list of points in 3D space."""
     )
 
@@ -444,14 +447,15 @@ class MyCustomPrim "MyCustomPrim" (
 
 # Example API schema that provides an interface for manipulating a specific 
 # set of attributes on a prim.
-# Note that API schemas cannot provide fallback values for the attributes in 
-# them.  
 # 
 # API schemas can "declare" and provide access to properties defined by
 # collections of other IsA and API schemas, gathered into one API for 
 # convenience.  They can also (more commonly, in our use, thus far), define
-# their own properties.  In this capacity, the convention is to namespace
-# each property with the API's name (camelCased), for easy identification.  
+# their own properties with their own fallbacks.  In this capacity,
+# the convention is to namespace each property with the API's name (camelCased),
+# for easy identification, as well as to help prevent built-in properties from 
+# API schemas from unintentionally overriding built-in properties of the IsA 
+# schema when applied.  
 # For example...
 class "MyParamsAPI" (
     inherits = </APISchemaBase>
@@ -474,7 +478,7 @@ class "MyParamsAPI" (
         doc = "Uniform int specifying the number of samples."
     )
 
-    Vec3d myParams:offset (
+    double3 myParams:offset = (0, 0, 0) (
         customData = {
             string apiName = "offset"
         }
@@ -498,9 +502,9 @@ class "GridCrittersAPI" (
     }
 )
 {
-    # this will instantiated as "critter:<instance name>:xform"
-    matrix4d xform
-    # this will instantiated as "critter:<instance name>:color"
+    # this will be instantiated as "critter:<instance name>:xform"
+    matrix4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    # this will be instantiated as "critter:<instance name>:color"
     color4f color
 }
 \endcode
