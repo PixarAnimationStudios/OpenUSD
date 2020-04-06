@@ -148,6 +148,18 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
+def IsMayaPython():
+    """Determine whether we're running in Maya's version of Python. When 
+    building against Maya's Python, there are some additional restrictions
+    on what we're able to build."""
+    try:
+        import maya
+        return True
+    except:
+        pass
+
+    return False
+
 def GetPythonInfo():
     """Returns a tuple containing the path to the Python executable, shared
     library, and include directory corresponding to the version of Python
@@ -164,30 +176,58 @@ def GetPythonInfo():
     # First we extract the information that can be uniformly dealt with across
     # the platforms:
     pythonExecPath = sys.executable
-    pythonVersion = sysconfig.get_config_var("py_version_short") 
-    pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
+    pythonVersion = sysconfig.get_config_var("py_version_short")  # "2.7"
+    pythonVersionNoDot = sysconfig.get_config_var("py_version_nodot") # "27"
 
     # Lib path is unfortunately special for each platform and there is no
     # config_var for it. But we can deduce it for each platform, and this
     # logic works for any Python version.
-    if Windows():
+    def _GetPythonLibraryFilename():
+        if Windows():
+            return "python" + pythonVersionNoDot + ".lib"
+        elif Linux():
+            return sysconfig.get_config_var("LDLIBRARY")
+        elif MacOS():
+            return "libpython" + pythonVersion + ".dylib"
+        else:
+            raise RuntimeError("Platform not supported")
+
+    # XXX: Handle the case where this script is being called using Maya's
+    # Python since the sysconfig variables are set up differently in Maya.
+    # Ideally we would not have any special Maya knowledge in here at all.
+    if IsMayaPython():
         pythonBaseDir = sysconfig.get_config_var("base")
-        pythonVersionNoDot = sysconfig.get_config_var("py_version_nodot")
-        pythonLibPath = os.path.join(pythonBaseDir, "libs",
-                                     "python" + pythonVersionNoDot + ".lib" )
-    elif Linux():
-        pythonLibDir = sysconfig.get_config_var("LIBDIR")
-        pythonLibName = sysconfig.get_config_var("LDLIBRARY")
-        pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
-        if pythonMultiarchSubdir:
-            pythonLibDir = pythonLibDir + pythonMultiarchSubdir
-        pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
-    elif MacOS():
-        pythonBaseDir = sysconfig.get_config_var("base")
+
+        # On Windows, the "base" path points to a "Python\" subdirectory
+        # that contains the DLLs for site-package modules but not the
+        # directories for the headers and .lib file we need -- those 
+        # are one level up.
+        if Windows():
+            pythonBaseDir = os.path.dirname(pythonBaseDir)
+        
+        pythonIncludeDir = os.path.join(pythonBaseDir, "include",
+                                        "python" + pythonVersion)
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
-                                     "libpython" + pythonVersion + ".dylib")
+                                     _GetPythonLibraryFilename())
     else:
-        raise RuntimeError("Platform not supported")
+        pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
+        if Windows():
+            pythonBaseDir = sysconfig.get_config_var("base")
+            pythonLibPath = os.path.join(pythonBaseDir, "libs",
+                                         _GetPythonLibraryFilename())
+        elif Linux():
+            pythonLibDir = sysconfig.get_config_var("LIBDIR")
+            pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
+            if pythonMultiarchSubdir:
+                pythonLibDir = pythonLibDir + pythonMultiarchSubdir
+            pythonLibPath = os.path.join(pythonLibDir,
+                                         _GetPythonLibraryFilename())
+        elif MacOS():
+            pythonBaseDir = sysconfig.get_config_var("base")
+            pythonLibPath = os.path.join(pythonBaseDir, "lib",
+                                         _GetPythonLibraryFilename())
+        else:
+            raise RuntimeError("Platform not supported")
 
     return (pythonExecPath, pythonLibPath, pythonIncludeDir, pythonVersion)
 
@@ -1836,21 +1876,9 @@ if "--usdview" in sys.argv:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
 
-# Determine whether we're running in Maya's version of Python. When building
-# against Maya's Python, there are some additional restrictions on what we're
-# able to build.
-isMayaPython = False
-try:
-    import maya
-
-    # If the maya import succeeds and this function returns a tuple, then the
-    # USD build will be configured to use Maya's version of Python.
-    if GetPythonInfo() != None:
-        isMayaPython = True
-except:
-    pass
-
-if isMayaPython:
+# Error out if running Maya's version of Python and attempting to build
+# usdview.
+if IsMayaPython():
     if context.buildUsdview:
         PrintError("Cannot build usdview when building against Maya's version "
                    "of Python. Maya does not provide access to the 'OpenGL' "
