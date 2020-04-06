@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include "pxr/imaging/plugin/LoFi/binding.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,6 +34,10 @@ public:
     /// Constructor.
     LoFiCodeGen(LoFiGeometricProgramType type, 
         const LoFiVertexBufferChannelList& channels);
+
+    LoFiCodeGen(LoFiGeometricProgramType type, 
+        const LoFiUniformBindingList& uniformBindings,
+        const LoFiVertexBufferBindingList& vertexBufferBindings);
     
     /// Return the hash value of glsl shader to be generated.
     ID ComputeHash() const;
@@ -53,18 +58,43 @@ private:
     void _GenerateVersion(std::stringstream& ss);
     void _AddInputChannel(std::stringstream& ss, LoFiVertexBufferChannel channel,
         size_t index, TfToken& type);
-    void _AddInputUniform(std::stringstream& ss, const std::string& name, 
-        TfToken& type);
     void _AddInputAttribute(std::stringstream& ss,  LoFiVertexBufferChannel channel, 
         TfToken& type);
     void _AddOutputAttribute(std::stringstream& ss, LoFiVertexBufferChannel channel,
         TfToken& type);
+    void _AddUniform(std::stringstream& ss, const TfToken& name, const TfToken& type);
+
+    void _EmitDeclaration(  std::stringstream &ss,
+                            TfToken const &name,
+                            TfToken const &type,
+                            LoFiBinding const &binding,
+                            size_t arraySize = 0);
+
+    void _EmitAccessor  (std::stringstream &ss,
+                        TfToken const &name,
+                        TfToken const &type,
+                        LoFiBinding const &binding,
+                        const char *index = NULL);
+
+    void _EmitStructAccessor(std::stringstream &str,
+                            TfToken const &structName,
+                            TfToken const &name,
+                            TfToken const &type,
+                            int arraySize,
+                            const char *index = NULL);
+    
+    void _GeneratePrimvar(bool hasGeometryShader);
 
     // channels
     LoFiVertexBufferChannelList _channels;
 
+    // bindings
+    LoFiUniformBindingList            _uniformBindings;
+    LoFiVertexBufferBindingList       _vertexBufferBindings;
+
     // source buckets
-    std::stringstream _vertex, _geometry, _fragment;
+    std::stringstream _genCommon, _genVS, _genGS, _genFS;
+    std::stringstream _procVS, _procGS;
 
     // generated codes (for diagnostics)
     std::string                 _vertexCode;
