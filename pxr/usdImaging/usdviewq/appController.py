@@ -265,6 +265,22 @@ class Blocker:
 
         return self._count > 0
 
+class MainWindow(QtWidgets.QMainWindow):
+    "This class exists to simplify and streamline the shutdown process."
+    "The application may be closed via the File menu, or by closing the main"
+    "window, both of which result in the same behavior."
+    def __init__(self, closeFunc, printCloseTiming):
+        super(MainWindow, self).__init__(None) # no parent widget
+        self._closeFunc = closeFunc
+        self._printCloseTiming = printCloseTiming
+
+    def closeEvent(self, event):
+        self._closeFunc()
+        
+        with Timer() as t:
+            self.close() # Close the MainWindow widget.
+        if self._printCloseTiming:
+            t.PrintTime('tear down the UI')
 
 class AppController(QtCore.QObject):
 
@@ -405,7 +421,8 @@ class AppController(QtCore.QObject):
             # start listening for style-related changes.
             self._setStyleSheetUsingState()
 
-            self._mainWindow = QtWidgets.QMainWindow(None)
+            self._mainWindow = MainWindow(lambda: self._cleanAndClose(),
+                                          self._printTiming)
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self._mainWindow)
 
@@ -845,9 +862,9 @@ class AppController(QtCore.QObject):
                 self._toggleStop)
 
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
-            self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
-
-            QtWidgets.QApplication.instance().aboutToQuit.connect(self._cleanAndClose)
+            # Don't register a handler for the 'aboutToQuit' signal,
+            # since the mainWindow's closeEvent handler triggers _cleanAndClose.
+            self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
 
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
@@ -2476,7 +2493,8 @@ class AppController(QtCore.QObject):
     # File handling functionality =============================================
 
     def _cleanAndClose(self):
-
+        # This function is called by the main window's closeEvent handler.
+        
         self._settings2.save()
 
         # If the current path widget is focused when closing usdview, it can
@@ -2502,14 +2520,8 @@ class AppController(QtCore.QObject):
         if self._timer.isActive():
             self._timer.stop()
 
-        # Close the stage.
+        # Close stage and release renderer resources (if applicable).
         self._closeStage()
-
-        # Tear down the UI window.
-        with Timer() as t:
-            self._mainWindow.close()
-        if self._printTiming:
-            t.PrintTime('tear down the UI')
 
     def _openFile(self):
         extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
