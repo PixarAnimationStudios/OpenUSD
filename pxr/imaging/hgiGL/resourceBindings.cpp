@@ -73,7 +73,7 @@ HgiGLResourceBindings::BindResources()
     //
 
     // Note that index and vertex buffers are not bound here.
-    // They are bound via the GraphicsEncoder.
+    // They are set via GraphicsCmds.
 
     std::vector<uint32_t> ubos(_descriptor.buffers.size(), 0);
     std::vector<uint32_t> sbos(_descriptor.buffers.size(), 0);

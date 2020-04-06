@@ -9,10 +9,10 @@ pxr_library(hgi
 
     PUBLIC_CLASSES
         attachmentDesc
-        blitEncoder
+        blitCmds
         buffer
-        graphicsEncoder
-        graphicsEncoderDesc
+        graphicsCmds
+        graphicsCmdsDesc
         hgi
         pipeline
         resourceBindings
@@ -21,10 +21,11 @@ pxr_library(hgi
         texture
         tokens
         types
+        cmds
 
     PUBLIC_HEADERS
         api.h
-        blitEncoderOps.h
+        blitCmdsOps.h
         enums.h
         handle.h
 )

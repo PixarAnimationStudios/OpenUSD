@@ -26,11 +26,11 @@ pxr_library(hgiGL
         diagnostic
 
     PUBLIC_CLASSES
-        blitEncoder
+        blitCmds
         buffer
         device
         framebufferCache
-        graphicsEncoder
+        graphicsCmds
         hgi
         ops
         pipeline

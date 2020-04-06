@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_BLIT_ENCODER_OPS_H
-#define PXR_IMAGING_HGI_BLIT_ENCODER_OPS_H
+#ifndef PXR_IMAGING_HGI_BLIT_CMDS_OPS_H
+#define PXR_IMAGING_HGI_BLIT_CMDS_OPS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
@@ -132,42 +132,6 @@ struct HgiBufferCpuToGpuOp
     HgiBufferHandle gpuDestinationBuffer;
     size_t destinationByteOffset;
     size_t byteSize;
-};
-
-
-/// \struct HgiResolveImageOp
-///
-/// Properties needed to resolve a multi-sample texture into a regular texture.
-///
-/// <ul>
-/// <li>usage:
-///   Describes how the texture is intended to be used (depth or color).</li>
-/// <li>sourceRegion:
-///   Source rectangle (x,y,w,h) to copy from </li>
-/// <li>source:
-///   The multi-sample source texture</li>
-///
-/// <li>destinationRegion:
-///   Destination rectangle (x,y,w,h) to copy to </li>
-/// <li>destination:
-///   The non-multi-sample color destination texture</li>
-/// </ul>
-///
-struct HgiResolveImageOp
-{
-    HgiResolveImageOp()
-    : usage(HgiTextureUsageBitsColorTarget)
-    , sourceRegion(0)
-    , source()
-    , destinationRegion(0)
-    , destination()
-    {}
-
-    HgiTextureUsageBits usage;
-    GfVec4i sourceRegion;
-    HgiTextureHandle source;
-    GfVec4i destinationRegion;
-    HgiTextureHandle destination;
 };
 
 

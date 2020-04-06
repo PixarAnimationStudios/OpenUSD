@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 
 #include <memory>
 
@@ -111,8 +111,8 @@ public:
     HDST_API
     size_t GetShaderHash() const;
 
-    // Helper to convert AOV bindings to HgiGraphicsEncoder descriptor
-    HgiGraphicsEncoderDesc MakeGraphicsEncoderDesc() const;
+    // Helper to convert AOV bindings to HgiGraphicsCmds descriptor
+    HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc() const;
 
 private:
     bool _UseAlphaMask() const;

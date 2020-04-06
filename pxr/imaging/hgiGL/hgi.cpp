@@ -25,12 +25,12 @@
 
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgiGL/hgi.h"
-#include "pxr/imaging/hgiGL/blitEncoder.h"
+#include "pxr/imaging/hgiGL/blitCmds.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
-#include "pxr/imaging/hgiGL/graphicsEncoder.h"
+#include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
@@ -83,26 +83,45 @@ HgiGL::GetPrimaryDevice() const
     return _device;
 }
 
-HgiGraphicsEncoderUniquePtr
-HgiGL::CreateGraphicsEncoder(
-    HgiGraphicsEncoderDesc const& desc)
+void
+HgiGL::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
+{
+    if (!cmdsptr || count==0) {
+        return;
+    }
+
+    for (uint32_t i=0; i<count; i++) {
+        HgiCmds* w = cmdsptr + i;
+
+        if (HgiGLGraphicsCmds* gw = dynamic_cast<HgiGLGraphicsCmds*>(w)) {
+            gw->EndRecording();
+            _device->SubmitOps(gw->GetOps());
+        } else if (HgiGLBlitCmds* bw = dynamic_cast<HgiGLBlitCmds*>(w)) {
+            _device->SubmitOps(bw->GetOps());
+        }
+    }
+}
+
+HgiGraphicsCmdsUniquePtr
+HgiGL::CreateGraphicsCmds(
+    HgiGraphicsCmdsDesc const& desc)
 {
     // XXX We should TF_CODING_ERROR here when there are no attachments, but
     // during the Hgi transition we allow it to render to global gl framebuffer.
     if (!desc.HasAttachments()) {
-        // TF_CODING_ERROR("Graphics encoder desc has no attachments");
+        // TF_CODING_ERROR("Graphics cmds desc has no attachments");
         return nullptr;
     }
 
-    HgiGLGraphicsEncoder* encoder(new HgiGLGraphicsEncoder(_device, desc));
+    HgiGLGraphicsCmds* cmds(new HgiGLGraphicsCmds(_device, desc));
 
-    return HgiGraphicsEncoderUniquePtr(encoder);
+    return HgiGraphicsCmdsUniquePtr(cmds);
 }
 
-HgiBlitEncoderUniquePtr
-HgiGL::CreateBlitEncoder()
+HgiBlitCmdsUniquePtr
+HgiGL::CreateBlitCmds()
 {
-    return HgiBlitEncoderUniquePtr(new HgiGLBlitEncoder());
+    return HgiBlitCmdsUniquePtr(new HgiGLBlitCmds());
 }
 
 HgiTextureHandle

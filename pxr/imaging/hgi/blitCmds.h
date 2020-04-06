@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_BLIT_ENCODER_H
-#define PXR_IMAGING_HGI_BLIT_ENCODER_H
+#ifndef PXR_IMAGING_HGI_BLIT_CMDS_H
+#define PXR_IMAGING_HGI_BLIT_CMDS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/cmds.h"
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,33 +35,26 @@ struct HgiTextureGpuToCpuOp;
 struct HgiBufferCpuToGpuOp;
 struct HgiResolveImageOp;
 
-using HgiBlitEncoderUniquePtr = std::unique_ptr<class HgiBlitEncoder>;
+using HgiBlitCmdsUniquePtr = std::unique_ptr<class HgiBlitCmds>;
 
 
-/// \class HgiBlitEncoder
+/// \class HgiBlitCmds
 ///
 /// A graphics API independent abstraction of resource copy commands.
-/// HgiBlitEncoder is a lightweight object that cannot be re-used after
-/// Commit. A new encoder should be acquired from CommandBuffer each frame.
+/// HgiBlitCmds is a lightweight object that cannot be re-used after it has
+/// been submitted. A new cmds object should be acquired for each frame.
 ///
-/// The API provided by this encoder should be agnostic to whether the
-/// encoder operates via immediate or deferred command buffers.
-///
-class HgiBlitEncoder
+class HgiBlitCmds : public HgiCmds
 {
 public:
     HGI_API
-    virtual ~HgiBlitEncoder();
+    ~HgiBlitCmds() override;
 
-    /// Finish recording of commands. No further commands can be recorded.
-    HGI_API
-    virtual void Commit() = 0;
-
-    /// Push a debug marker onto the encoder.
+    /// Push a debug marker.
     HGI_API
     virtual void PushDebugGroup(const char* label) = 0;
 
-    /// Pop the lastest debug marker off encoder.
+    /// Pop the lastest debug.
     HGI_API
     virtual void PopDebugGroup() = 0;
 
@@ -74,17 +68,13 @@ public:
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
 
-    /// Resolve a multi-sample texture (MSAA) so it can be read from.
-    HGI_API
-    virtual void ResolveImage(HgiResolveImageOp const& resolveOp) = 0;
-
 protected:
     HGI_API
-    HgiBlitEncoder();
+    HgiBlitCmds();
 
 private:
-    HgiBlitEncoder & operator=(const HgiBlitEncoder&) = delete;
-    HgiBlitEncoder(const HgiBlitEncoder&) = delete;
+    HgiBlitCmds & operator=(const HgiBlitCmds&) = delete;
+    HgiBlitCmds(const HgiBlitCmds&) = delete;
 };
 
 

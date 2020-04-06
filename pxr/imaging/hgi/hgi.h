@@ -29,10 +29,10 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/imaging/hgi/api.h"
-#include "pxr/imaging/hgi/blitEncoder.h"
+#include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/buffer.h"
-#include "pxr/imaging/hgi/graphicsEncoder.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
@@ -54,16 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The lifetime of resources is not managed by Hgi, so it is up to the caller
 /// to destroy resources and ensure those resources are no longer used.
 ///
-/// Commands are recorded via an encoder that is acquired from a command buffer.
-/// Command buffers can work in immediate or deferred mode.
-/// An immediate command buffer assumes its encoders will execute commands
-/// without delay in the graphics backend.
-/// A deferred command buffer records commands to be executed at a later time
-/// in the graphics backend.
-///
-/// XXX We currently only support one immediate command buffer since most code
-/// in HdSt was written via OpenGL's immediate style API.
-///
+/// Commands are recorded in 'HgiCmds' objects and submitted via Hgi.
 ///
 class Hgi
 {
@@ -74,6 +65,13 @@ public:
     HGI_API
     virtual ~Hgi();
 
+    /// Submit one or multiple (count>1) HgiCmds objects.
+    /// Once the cmds object is submitted it cannot be re-used to record cmds.
+    /// A call to SubmitCmds would usually result in the hgi backend submitting
+    /// the cmd buffers of the cmds object(s) to the device queue.
+    HGI_API
+    virtual void SubmitCmds(HgiCmds* cmds, uint32_t count=1) = 0;
+
     /// Helper function to return a Hgi object for the current platform.
     /// For example on Linux this may return HgiGL while on macOS HgiMetal.
     /// Caller, usually the application, owns the lifetime of the returned Hgi
@@ -81,20 +79,20 @@ public:
     HGI_API
     static Hgi* GetPlatformDefaultHgi();
 
-    /// Returns a graphics encoder for temporary use that is ready to
-    /// execute draw commands. GraphicsEncoder is a lightweight object that
+    /// Returns a GraphicsCmds object (for temporary use) that is ready to
+    /// record draw commands. GraphicsCmds is a lightweight object that
     /// should be re-acquired each frame (don't hold onto it after EndEncoding).
-    /// This encoder should only be used in the thread that created it.
+    /// This cmds object should only be used in the thread that created it.
     HGI_API
-    virtual HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
-        HgiGraphicsEncoderDesc const& desc) = 0;
+    virtual HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
+        HgiGraphicsCmdsDesc const& desc) = 0;
 
-    /// Returns a blit encoder for temporary use that is ready to execute
-    /// resource copy commands. BlitEncoder is a lightweight object that
+    /// Returns a BlitCmds object (for temporary use) that is ready to execute
+    /// resource copy commands. BlitCmds is a lightweight object that
     /// should be re-acquired each frame (don't hold onto it after EndEncoding).
-    /// This blit encoder can only be used in a single thread.
+    /// This cmds object should only be used in the thread that created it.
     HGI_API
-    virtual HgiBlitEncoderUniquePtr CreateBlitEncoder() = 0;
+    virtual HgiBlitCmdsUniquePtr CreateBlitCmds() = 0;
 
     /// Create a texture in rendering backend.
     HGI_API

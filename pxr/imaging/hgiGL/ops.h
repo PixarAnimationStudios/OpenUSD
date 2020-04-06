@@ -28,8 +28,8 @@
 #include "pxr/base/gf/vec4i.h"
 
 #include "pxr/imaging/hgi/buffer.h"
-#include "pxr/imaging/hgi/blitEncoderOps.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
@@ -46,11 +46,11 @@ using HgiGLOpsFn = std::function<void(void)>;
 
 /// \class HgiGLOps
 ///
-/// A collection of functions used by encoder to do deferred command recording.
+/// A collection of functions used by cmds objects to do deferred cmd recording.
 /// Modern API's support command buffer recording of gfx commands ('deferred').
 /// OpenGL uses 'immediate' mode instead where gfx commands are immediately
 /// processed. We use 'Ops' functions to record our OpenGL function in a list
-/// and only emit them to OpenGL during Commit.
+/// and only emit them to OpenGL during the submit cmds phase.
 class HgiGLOps
 {
 public:
@@ -67,7 +67,11 @@ public:
     static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 
     HGIGL_API
-    static HgiGLOpsFn ResolveImage(HgiResolveImageOp const& resolveOp);
+    static HgiGLOpsFn ResolveImage(
+        HgiTextureHandle const& src,
+        HgiTextureHandle const& dst,
+        GfVec4i const& region,
+        bool isDepthResolve);
     
     HGIGL_API
     static HgiGLOpsFn SetViewport(GfVec4i const& vp);
@@ -99,7 +103,7 @@ public:
     HGIGL_API
     static HgiGLOpsFn BindFramebufferOp(
         HgiGLDevice* device,
-        HgiGraphicsEncoderDesc const& desc);
+        HgiGraphicsCmdsDesc const& desc);
 
 };
 

@@ -66,7 +66,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         TF_CODING_ERROR("Unknown HgiBufferUsage bit");
     }
 
-    // glBindVertexBuffer (graphics encoder) needs to know the stride of each
+    // glBindVertexBuffer (graphics cmds) needs to know the stride of each
     // vertex buffer. Make sure user provides it.
     if (_descriptor.usage & HgiBufferUsageVertex) {
         TF_VERIFY(desc.vertexStride > 0);

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,61 +21,38 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_BLIT_ENCODER_H
-#define PXR_IMAGING_HGI_GL_BLIT_ENCODER_H
+#ifndef PXR_IMAGING_HGI_CMDS_H
+#define PXR_IMAGING_HGI_CMDS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/blitEncoder.h"
-#include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/device.h"
+#include "pxr/imaging/hgi/api.h"
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HgiCmdsUniquePtr = std::unique_ptr<class HgiCmds>;
 
-/// \class HgiGLBlitEncoder
+
+/// \class HgiCmds
 ///
-/// OpenGL implementation of HgiBlitEncoder.
+/// Graphics commands are recorded in 'cmds' objects which are later submitted
+/// to hgi. HgiCmds is the base class for other cmds objects.
 ///
-class HgiGLBlitEncoder final : public HgiBlitEncoder
+class HgiCmds
 {
 public:
-    HGIGL_API
-    ~HgiGLBlitEncoder()  override;
-
-    HGIGL_API
-    void Commit() override;
-
-    HGIGL_API
-    void PushDebugGroup(const char* label) override;
-
-    HGIGL_API
-    void PopDebugGroup() override;
-
-    HGIGL_API
-    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
-
-    HGIGL_API
-    void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
-
-    HGIGL_API
-    void ResolveImage(HgiResolveImageOp const& resolveOp) override;
+    HGI_API
+    virtual ~HgiCmds();
 
 protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLBlitEncoder();
+    HGI_API
+    HgiCmds();
 
 private:
-    HgiGLBlitEncoder & operator=(const HgiGLBlitEncoder&) = delete;
-    HgiGLBlitEncoder(const HgiGLBlitEncoder&) = delete;
-
-    bool _committed;
-    HgiGLOpsVector _ops;
-
-    // Encoder is used only one frame so storing multi-frame state on encoder
-    // will not survive.
+    HgiCmds & operator=(const HgiCmds&) = delete;
+    HgiCmds(const HgiCmds&) = delete;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

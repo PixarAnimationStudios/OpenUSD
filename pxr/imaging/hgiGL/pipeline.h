@@ -25,7 +25,7 @@
 #define PXR_IMAGING_HGIGL_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 
 #include "pxr/imaging/hgiGL/api.h"

@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,45 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-
-#include "pxr/imaging/hgiGL/device.h"
-#include "pxr/imaging/hgiGL/diagnostic.h"
-
+#include "pxr/imaging/hgi/blitCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLDevice::HgiGLDevice()
+HgiBlitCmds::HgiBlitCmds()
 {
-    HgiGLSetupGL4Debug();
 }
 
-HgiGLDevice::~HgiGLDevice()
+HgiBlitCmds::~HgiBlitCmds()
 {
-    _framebufferCache.Clear();
-}
-
-uint32_t
-HgiGLDevice::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
-{
-    return _framebufferCache.AcquireFramebuffer(desc);
-}
-
-void
-HgiGLDevice::SubmitOps(HgiGLOpsVector const& ops)
-{
-    for(HgiGLOpsFn const& f : ops) {
-        f();
-    }
-}
-
-std::ofstream& operator<<(
-    std::ofstream& out,
-    const HgiGLDevice& dev)
-{
-    out << dev._framebufferCache;
-    return out;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

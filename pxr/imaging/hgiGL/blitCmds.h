@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,55 +21,58 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIGL_DEVICE_H
-#define PXR_IMAGING_HGIGL_DEVICE_H
+#ifndef PXR_IMAGING_HGI_GL_BLIT_CMDS_H
+#define PXR_IMAGING_HGI_GL_BLIT_CMDS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
+#include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/framebufferCache.h"
 #include "pxr/imaging/hgiGL/hgi.h"
-
-#include <fstream>
-#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HgiGlDevice
+/// \class HgiGLBlitCmds
 ///
-/// OpenGL implementation of GPU device.
-/// Note that there is only one global opengl context / device.
+/// OpenGL implementation of HgiBlitCmds.
 ///
-class HgiGLDevice final {
+class HgiGLBlitCmds final : public HgiBlitCmds
+{
 public:
     HGIGL_API
-    HgiGLDevice();
+    ~HgiGLBlitCmds() override;
 
     HGIGL_API
-    ~HgiGLDevice();
+    void PushDebugGroup(const char* label) override;
 
-    /// Get a framebuffer that matches the descriptor.
-    /// Do not hold onto the framebuffer Id. Instead re0acquire it every frame.
-    /// Framebuffer are internally managed in a framebuffer cache.
     HGIGL_API
-    uint32_t AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc);
+    void PopDebugGroup() override;
 
-    /// Execute the provided functions / ops. This will emit the GL calls.
     HGIGL_API
-    void SubmitOps(HgiGLOpsVector const& ops);
+    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
+
+    HGIGL_API
+    void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
+
+    /// Return the list of recorded functions (cmds / ops).
+    HGIGL_API
+    HgiGLOpsVector const& GetOps() const;
+
+protected:
+    friend class HgiGL;
+
+    HGIGL_API
+    HgiGLBlitCmds();
 
 private:
-    HgiGLDevice & operator=(const HgiGLDevice&) = delete;
-    HgiGLDevice(const HgiGLDevice&) = delete;
+    HgiGLBlitCmds & operator=(const HgiGLBlitCmds&) = delete;
+    HgiGLBlitCmds(const HgiGLBlitCmds&) = delete;
 
-    friend std::ofstream& operator<<(
-        std::ofstream& out,
-        const HgiGLDevice& dev);
+    HgiGLOpsVector _ops;
 
-    HgiGLFramebufferCache _framebufferCache;
+    // BlitCmds is used only one frame so storing multi-frame state here will
+    // not survive.
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -170,7 +170,7 @@ bool operator!=(
 /// \class HgiResourceBindings
 ///
 /// Represents a collection of buffers, texture and vertex attributes that will
-/// be used by an encoder (and pipeline).
+/// be used by an cmds object (and pipeline).
 ///
 class HgiResourceBindings
 {

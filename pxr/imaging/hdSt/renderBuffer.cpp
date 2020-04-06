@@ -24,8 +24,8 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/blitEncoder.h"
-#include "pxr/imaging/hgi/blitEncoderOps.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -139,11 +139,10 @@ HdStRenderBuffer::Map()
         copyOp.destinationByteOffset = 0;
         copyOp.destinationBufferByteSize = dataByteSize;
 
-        // Use blit encoder to record resource copy commands.
-        HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
-
-        blitEncoder->CopyTextureGpuToCpu(copyOp);
-        blitEncoder->Commit();
+        // Use blit work to record resource copy commands.
+        HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+        blitCmds->CopyTextureGpuToCpu(copyOp);
+        _hgi->SubmitCmds(blitCmds.get(), 1);
     }
 
     return _mappedBuffer.data();
@@ -163,24 +162,8 @@ HdStRenderBuffer::Unmap()
 void
 HdStRenderBuffer::Resolve()
 {
-    if (!_multiSampled) {
-        return;
-    }
-
-    GfVec4i region(0,0, _dimensions[0], _dimensions[1]);
-
-    HgiResolveImageOp resolveOp;
-    resolveOp.usage = _usage;
-    resolveOp.source = _textureMS;
-    resolveOp.destination = _texture;
-    resolveOp.sourceRegion = region;
-    resolveOp.destinationRegion = region;
-
-    // Use blit encoder to record resource copy commands.
-    HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
-
-    blitEncoder->ResolveImage(resolveOp);
-    blitEncoder->Commit();
+    // Textures are resolved at the end of a render pass via the graphicsCmds
+    // by supplying the resolve textures to the graphicsCmds descriptor.
 }
 
 VtValue

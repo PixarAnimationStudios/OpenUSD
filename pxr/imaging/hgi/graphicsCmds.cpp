@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/graphicsEncoder.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGraphicsEncoder::HgiGraphicsEncoder()
+HgiGraphicsCmds::HgiGraphicsCmds()
 {
 }
 
-HgiGraphicsEncoder::~HgiGraphicsEncoder()
+HgiGraphicsCmds::~HgiGraphicsCmds()
 {
 }
 

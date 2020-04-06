@@ -90,14 +90,10 @@ inline bool operator!=(
 ///
 /// \class HgiBuffer
 ///
-/// Represents a graphics platform independent GPU buffer resource.
+/// Represents a graphics platform independent GPU buffer resource (base class).
 /// Buffers should be created via Hgi::CreateBuffer.
 /// The fill the buffer with data you supply `initialData` in the descriptor.
-/// To update the data in a buffer later, use a blitEncoder.
-///
-/// Base class for Hgi buffers.
-/// To the client (HdSt) buffer resources are referred to via
-/// opaque, stateless handles (HgBufferHandle).
+/// To update the data inside the buffer later on, use blitCmds.
 ///
 class HgiBuffer
 {

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GRAPHICS_ENCODER_DESC_H
-#define PXR_IMAGING_HGI_GRAPHICS_ENCODER_DESC_H
+#ifndef PXR_IMAGING_HGI_GRAPHICS_CMDS_DESC_H
+#define PXR_IMAGING_HGI_GRAPHICS_CMDS_DESC_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
@@ -33,9 +33,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \struct HgiGraphicsEncoderDesc
+/// \struct HgiGraphicsCmdsDesc
 ///
-/// Describes the properties to begin a HgiGraphicsEncoder.
+/// Describes the properties to begin a HgiGraphicsCmds.
 ///
 /// <ul>
 /// <li>colorAttachmentDescs:
@@ -44,21 +44,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   Describes the depth attachment (optional)</li>
 /// <li>colorTextures:
 ///   The color attachment render targets.</li>
+/// <li>colorResolveTextures:
+///   The (optional) textures that the color textures will be resolved into
+///   at the end of the render pass.</li>
 /// <li>depthTexture:
 ///   The depth attachment render target (optional)</li>
+/// <li>depthResolveTexture:
+///   The (optional) texture that the depth texture will be resolved into
+///   at the end of the render pass.</li>
 /// <li>width:
 ///   Render target width (in pixels)</li>
 /// <li>height:
 ///   Render target height (in pixels)</li>
 /// </ul>
 ///
-struct HgiGraphicsEncoderDesc
+struct HgiGraphicsCmdsDesc
 {
-    HgiGraphicsEncoderDesc()
+    HgiGraphicsCmdsDesc()
     : colorAttachmentDescs()
     , depthAttachmentDesc()
     , colorTextures()
+    , colorResolveTextures()
     , depthTexture()
+    , depthResolveTexture()
     , width(0)
     , height(0)
     {}
@@ -71,7 +79,10 @@ struct HgiGraphicsEncoderDesc
     HgiAttachmentDesc depthAttachmentDesc;
 
     HgiTextureHandleVector colorTextures;
+    HgiTextureHandleVector colorResolveTextures;
+
     HgiTextureHandle depthTexture;
+    HgiTextureHandle depthResolveTexture;
 
     uint32_t width;
     uint32_t height;
@@ -79,18 +90,18 @@ struct HgiGraphicsEncoderDesc
 
 HGI_API
 bool operator==(
-    const HgiGraphicsEncoderDesc& lhs,
-    const HgiGraphicsEncoderDesc& rhs);
+    const HgiGraphicsCmdsDesc& lhs,
+    const HgiGraphicsCmdsDesc& rhs);
 
 HGI_API
 bool operator!=(
-    const HgiGraphicsEncoderDesc& lhs,
-    const HgiGraphicsEncoderDesc& rhs);
+    const HgiGraphicsCmdsDesc& lhs,
+    const HgiGraphicsCmdsDesc& rhs);
 
 HGI_API
 std::ostream& operator<<(
     std::ostream& out,
-    const HgiGraphicsEncoderDesc& encoder);
+    const HgiGraphicsCmdsDesc& desc);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

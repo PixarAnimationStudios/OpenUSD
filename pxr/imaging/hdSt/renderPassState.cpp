@@ -39,7 +39,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -463,17 +463,17 @@ HdStRenderPassState::GetShaderHash() const
     return hash;
 }
 
-HgiGraphicsEncoderDesc
-HdStRenderPassState::MakeGraphicsEncoderDesc() const
+HgiGraphicsCmdsDesc
+HdStRenderPassState::MakeGraphicsCmdsDesc() const
 {
-    const size_t maxColorAttachments = 8;
+    const size_t maxColorTex = 8;
     const HdRenderPassAovBindingVector& aovBindings = GetAovBindings();
     const bool useMultiSample = GetUseAovMultiSample();
 
-    HgiGraphicsEncoderDesc desc;
+    HgiGraphicsCmdsDesc desc;
 
     // If the AOV bindings have not changed that does NOT mean the
-    // graphicsEncoderDescriptor will not change. The HdRenderBuffer may be
+    // graphicsCmdsDescriptor will not change. The HdRenderBuffer may be
     // resized at any time, which will destroy and recreate the HgiTextureHandle
     // that backs the render buffer and was attached for graphics encoding.
 
@@ -490,7 +490,18 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             continue;
         }
 
+        // Get render target texture
         HgiTextureHandle hgiTexHandle = rv.UncheckedGet<HgiTextureHandle>();
+
+        // Get resolve texture target.
+        HgiTextureHandle hgiResolveHandle;
+        if (multiSampled) {
+            VtValue resolveRes = aov.renderBuffer->GetResource(/*ms*/false);
+            if (!TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
+                continue;
+            }
+            hgiResolveHandle = resolveRes.UncheckedGet<HgiTextureHandle>();
+        }
 
         // Assume AOVs have the same dimensions so pick size of any.
         desc.width = aov.renderBuffer->GetWidth();
@@ -498,12 +509,21 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
 
         HgiAttachmentDesc attachmentDesc;
 
+        // We need to use LoadOpLoad instead of DontCare because we can have
+        // multiple render passes that use the same attachments.
+        // For example, translucent renders after opaque so we must load the
+        // opaque results before rendering translucent objects.
         HgiAttachmentLoadOp loadOp = aov.clearValue.IsEmpty() ?
-            HgiAttachmentLoadOpDontCare :
+            HgiAttachmentLoadOpLoad :
             HgiAttachmentLoadOpClear;
 
         attachmentDesc.loadOp = loadOp;
-        attachmentDesc.storeOp = HgiAttachmentStoreOpStore;
+
+        // Don't store multisample images. Only store the resolved versions.
+        // This saves a bunch of bandwith (especially on tiled gpu's).
+        attachmentDesc.storeOp = multiSampled ?
+            HgiAttachmentStoreOpDontCare :
+            HgiAttachmentStoreOpStore;
 
         if (aov.clearValue.IsHolding<float>()) {
             float depth = aov.clearValue.UncheckedGet<float>();
@@ -526,12 +546,17 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
         if (aov.aovName == HdAovTokens->depth) {
             desc.depthAttachmentDesc = std::move(attachmentDesc);
             desc.depthTexture = hgiTexHandle;
-        } else if (TF_VERIFY(
-            desc.colorAttachmentDescs.size() < maxColorAttachments,
-            "Too many aov bindings for color attachments"))
+            if (hgiResolveHandle) {
+                desc.depthResolveTexture = hgiResolveHandle;
+            }
+        } else if (TF_VERIFY(desc.colorAttachmentDescs.size() < maxColorTex,
+                   "Too many aov bindings for color attachments"))
         {
-            desc.colorAttachmentDescs.emplace_back(std::move(attachmentDesc));
-            desc.colorTextures.emplace_back(hgiTexHandle);
+            desc.colorAttachmentDescs.push_back(std::move(attachmentDesc));
+            desc.colorTextures.push_back(hgiTexHandle);
+            if (hgiResolveHandle) {
+                desc.colorResolveTextures.push_back(hgiResolveHandle);
+            }
         }
     }
 

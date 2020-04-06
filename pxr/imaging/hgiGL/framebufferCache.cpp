@@ -27,7 +27,7 @@
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/framebufferCache.h"
 #include "pxr/imaging/hgiGL/texture.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/trace/trace.h"
 
@@ -35,13 +35,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGLDescriptorCacheItem {
-    HgiGraphicsEncoderDesc descriptor;
+    HgiGraphicsCmdsDesc descriptor;
     HgiTextureHandle depthTexture;
     uint32_t framebuffer = 0;
 };
 
 static HgiGLDescriptorCacheItem*
-_CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
+_CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
 {
     HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
     dci->descriptor = desc;
@@ -137,7 +137,7 @@ HgiGLFramebufferCache::~HgiGLFramebufferCache()
 }
 
 uint32_t
-HgiGLFramebufferCache::AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc)
+HgiGLFramebufferCache::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
 {
     // We keep a small cache of descriptor / framebuffer combos since it is
     // potentially an expensive state change to attach textures to GL FBs.

@@ -29,9 +29,15 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include <functional>
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiGLDevice;
+
+using HgiGLOpsFn = std::function<void(void)>;
+using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
 
 
 /// \class HgiGL
@@ -47,16 +53,19 @@ public:
     HGIGL_API
     ~HgiGL() override;
 
-    // Returns the opengl device.
+    /// Returns the opengl device.
     HGIGL_API
     HgiGLDevice* GetPrimaryDevice() const;
 
     HGIGL_API
-    HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
-        HgiGraphicsEncoderDesc const& desc) override;
+    void SubmitCmds(HgiCmds* cmds, uint32_t count=1) override;
 
     HGIGL_API
-    HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
+    HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
+        HgiGraphicsCmdsDesc const& desc) override;
+
+    HGIGL_API
+    HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;

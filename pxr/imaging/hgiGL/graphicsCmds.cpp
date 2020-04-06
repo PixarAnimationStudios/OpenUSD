@@ -22,75 +22,94 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
-#include "pxr/imaging/hgiGL/graphicsEncoder.h"
+#include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLGraphicsEncoder::HgiGLGraphicsEncoder(
+HgiGLGraphicsCmds::HgiGLGraphicsCmds(
     HgiGLDevice* device,
-    HgiGraphicsEncoderDesc const& desc)
-    : HgiGraphicsEncoder()
-    , _committed(false)
+    HgiGraphicsCmdsDesc const& desc)
+    : HgiGraphicsCmds()
+    , _recording(true)
+    , _descriptor(desc)
 {
     if (desc.HasAttachments()) {
         _ops.push_back( HgiGLOps::BindFramebufferOp(device, desc) );
     }
 }
 
-HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
+HgiGLGraphicsCmds::~HgiGLGraphicsCmds()
 {
-    TF_VERIFY(_committed, "Encoder created, but never commited.");
+    TF_VERIFY(!_recording, "EndRecording was not called.");
 }
 
 void
-HgiGLGraphicsEncoder::InsertFunctionOp(std::function<void(void)> const& fn)
+HgiGLGraphicsCmds::EndRecording()
+{
+    if (!_recording) {
+        return;
+    }
+
+    // At the end of the GraphicsCmd we resolve the multisample textures.
+    // This emulates what happens in Metal or Vulkan when the multisample
+    // resolve happens at the end of a render pass.
+    GfVec4i region(0, 0, _descriptor.width, _descriptor.height);
+
+    for (size_t i=0; i<_descriptor.colorResolveTextures.size(); i++) {
+        HgiTextureHandle src = _descriptor.colorTextures[i];
+        HgiTextureHandle dst = _descriptor.colorResolveTextures[i];
+        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/false));
+    }
+    
+    if (_descriptor.depthResolveTexture) {
+        HgiTextureHandle src = _descriptor.depthTexture;
+        HgiTextureHandle dst = _descriptor.depthResolveTexture;
+        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/true));
+    }
+    
+    _recording = false;
+}
+
+void
+HgiGLGraphicsCmds::InsertFunctionOp(std::function<void(void)> const& fn)
 {
     _ops.push_back( fn );
 }
 
 void
-HgiGLGraphicsEncoder::Commit()
-{
-    if (!_committed) {
-        _committed = true;
-        HgiGLDevice::Commit(_ops);
-    }
-}
-
-void
-HgiGLGraphicsEncoder::SetViewport(GfVec4i const& vp)
+HgiGLGraphicsCmds::SetViewport(GfVec4i const& vp)
 {
     _ops.push_back( HgiGLOps::SetViewport(vp) );
 }
 
 void
-HgiGLGraphicsEncoder::SetScissor(GfVec4i const& sc)
+HgiGLGraphicsCmds::SetScissor(GfVec4i const& sc)
 {
     _ops.push_back( HgiGLOps::SetScissor(sc) );
 }
 
 void
-HgiGLGraphicsEncoder::BindPipeline(HgiPipelineHandle pipeline)
+HgiGLGraphicsCmds::BindPipeline(HgiPipelineHandle pipeline)
 {
     _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
 
 void
-HgiGLGraphicsEncoder::BindResources(HgiResourceBindingsHandle res)
+HgiGLGraphicsCmds::BindResources(HgiResourceBindingsHandle res)
 {
     _ops.push_back( HgiGLOps::BindResources(res) );
 }
 
 void
-HgiGLGraphicsEncoder::BindVertexBuffers(
+HgiGLGraphicsCmds::BindVertexBuffers(
     uint32_t firstBinding,
     HgiBufferHandleVector const& vertexBuffers,
     std::vector<uint32_t> const& byteOffsets)
@@ -100,7 +119,7 @@ HgiGLGraphicsEncoder::BindVertexBuffers(
 }
 
 void
-HgiGLGraphicsEncoder::DrawIndexed(
+HgiGLGraphicsCmds::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
@@ -120,15 +139,21 @@ HgiGLGraphicsEncoder::DrawIndexed(
 }
 
 void
-HgiGLGraphicsEncoder::PushDebugGroup(const char* label)
+HgiGLGraphicsCmds::PushDebugGroup(const char* label)
 {
     _ops.push_back( HgiGLOps::PushDebugGroup(label) );
 }
 
 void
-HgiGLGraphicsEncoder::PopDebugGroup()
+HgiGLGraphicsCmds::PopDebugGroup()
 {
     _ops.push_back( HgiGLOps::PopDebugGroup() );
+}
+
+HgiGLOpsVector const&
+HgiGLGraphicsCmds::GetOps() const
+{
+    return _ops;
 }
 
 

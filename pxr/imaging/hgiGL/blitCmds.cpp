@@ -22,68 +22,55 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
-#include "pxr/imaging/hgiGL/blitEncoder.h"
+#include "pxr/imaging/hgiGL/blitCmds.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/texture.h"
-#include "pxr/imaging/hgi/blitEncoderOps.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLBlitEncoder::HgiGLBlitEncoder()
-    : HgiBlitEncoder()
-    , _committed(false)
+HgiGLBlitCmds::HgiGLBlitCmds()
+    : HgiBlitCmds()
 {
-
 }
 
-HgiGLBlitEncoder::~HgiGLBlitEncoder()
+HgiGLBlitCmds::~HgiGLBlitCmds()
 {
-    TF_VERIFY(_committed, "Encoder created, but never commited.");
 }
 
 void
-HgiGLBlitEncoder::Commit()
-{
-    if (!_committed) {
-        _committed = true;
-        HgiGLDevice::Commit(_ops);
-    }
-}
-
-void
-HgiGLBlitEncoder::PushDebugGroup(const char* label)
+HgiGLBlitCmds::PushDebugGroup(const char* label)
 {
     _ops.push_back( HgiGLOps::PushDebugGroup(label) );
 }
 
 void
-HgiGLBlitEncoder::PopDebugGroup()
+HgiGLBlitCmds::PopDebugGroup()
 {
     _ops.push_back( HgiGLOps::PopDebugGroup() );
 }
 
 void
-HgiGLBlitEncoder::CopyTextureGpuToCpu(
+HgiGLBlitCmds::CopyTextureGpuToCpu(
     HgiTextureGpuToCpuOp const& copyOp)
 {
     _ops.push_back( HgiGLOps::CopyTextureGpuToCpu(copyOp) );
 }
 
-void HgiGLBlitEncoder::CopyBufferCpuToGpu(
+void HgiGLBlitCmds::CopyBufferCpuToGpu(
     HgiBufferCpuToGpuOp const& copyOp)
 {
     _ops.push_back( HgiGLOps::CopyBufferCpuToGpu(copyOp) );
 }
 
-void
-HgiGLBlitEncoder::ResolveImage(
-    HgiResolveImageOp const& resolveOp)
+HgiGLOpsVector const&
+HgiGLBlitCmds::GetOps() const
 {
-    _ops.push_back( HgiGLOps::ResolveImage(resolveOp) );
+    return _ops;
 }
 
 

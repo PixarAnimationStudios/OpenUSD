@@ -21,30 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_GRAPHICS_ENCODER_H
-#define PXR_IMAGING_HGI_GL_GRAPHICS_ENCODER_H
+#ifndef PXR_IMAGING_HGI_GL_GRAPHICS_CMDS_H
+#define PXR_IMAGING_HGI_GL_GRAPHICS_CMDS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
-#include "pxr/imaging/hgi/graphicsEncoder.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/device.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 #include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiGraphicsEncoderDesc;
+struct HgiGraphicsCmdsDesc;
 
 
-/// \class HgiGLGraphicsEncoder
+/// \class HgiGLGraphicsCmds
 ///
-/// OpenGL implementation of HgiGraphicsEncoder.
+/// OpenGL implementation of HgiGraphicsCmds.
 ///
-class HgiGLGraphicsEncoder final : public HgiGraphicsEncoder
+class HgiGLGraphicsCmds final : public HgiGraphicsCmds
 {
 public:
     HGIGL_API
-    ~HgiGLGraphicsEncoder() override;
+    ~HgiGLGraphicsCmds() override;
+
+    /// End recording of commands.
+    /// This performs multisample resolve when needed.
+    HGIGL_API
+    void EndRecording();
 
     /// XXX This function is exposed temporarily for Hgi transition.
     /// It allows code that is not yet converted to Hgi (e.g. HdSt) to insert
@@ -55,7 +60,10 @@ public:
     void InsertFunctionOp(std::function<void(void)> const& fn);
 
     HGIGL_API
-    void Commit() override;
+    void PushDebugGroup(const char* label) override;
+
+    HGIGL_API
+    void PopDebugGroup() override;
 
     HGIGL_API
     void SetViewport(GfVec4i const& vp) override;
@@ -84,30 +92,29 @@ public:
         uint32_t vertexOffset,
         uint32_t instanceCount) override;
 
+    /// Return the list of recorded functions (cmds / ops).
     HGIGL_API
-    void PushDebugGroup(const char* label) override;
-
-    HGIGL_API
-    void PopDebugGroup() override;
+    HgiGLOpsVector const& GetOps() const;
 
 protected:
     friend class HgiGL;
 
     HGIGL_API
-    HgiGLGraphicsEncoder(
+    HgiGLGraphicsCmds(
         HgiGLDevice* device,
-        HgiGraphicsEncoderDesc const& desc);
+        HgiGraphicsCmdsDesc const& desc);
 
 private:
-    HgiGLGraphicsEncoder() = delete;
-    HgiGLGraphicsEncoder & operator=(const HgiGLGraphicsEncoder&) = delete;
-    HgiGLGraphicsEncoder(const HgiGLGraphicsEncoder&) = delete;
+    HgiGLGraphicsCmds() = delete;
+    HgiGLGraphicsCmds & operator=(const HgiGLGraphicsCmds&) = delete;
+    HgiGLGraphicsCmds(const HgiGLGraphicsCmds&) = delete;
 
-    bool _committed;
+    bool _recording;
+    HgiGraphicsCmdsDesc _descriptor;
     HgiGLOpsVector _ops;
 
-    // Encoder is used only one frame so storing multi-frame state on encoder
-    // will not survive.
+    // Cmds is used only one frame so storing multi-frame state on will not
+    // survive.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

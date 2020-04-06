@@ -234,7 +234,7 @@ bool operator!=(
 ///   Various settings to control rasterization.</li>
 /// <li>vertexBuffers:
 ///   Description of the vertex buffers (per-vertex attributes).
-///   The actual VBOs are bound via GraphicsEncoder.</li>
+///   The actual VBOs are bound via GraphicsCmds.</li>
 /// <li>colorAttachmentDescs:
 ///   Describes each of the color attachments.</li>
 /// <li>depthAttachmentDesc:

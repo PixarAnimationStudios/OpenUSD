@@ -29,14 +29,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 size_t HgiGetComponentCount(HgiFormat f)
 {
     switch (f) {
+    case HgiFormatUNorm8:
+    case HgiFormatSNorm8:
+    case HgiFormatFloat16:
+    case HgiFormatFloat32:
+    case HgiFormatInt32:
+        return 1;
     case HgiFormatUNorm8Vec2:
     case HgiFormatSNorm8Vec2:
     case HgiFormatFloat16Vec2:
     case HgiFormatFloat32Vec2:
     case HgiFormatInt32Vec2:
         return 2;
-    case HgiFormatUNorm8Vec3:
-    case HgiFormatSNorm8Vec3:
+    // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     case HgiFormatFloat16Vec3:
     case HgiFormatFloat32Vec3:
     case HgiFormatInt32Vec3:
@@ -48,7 +54,7 @@ size_t HgiGetComponentCount(HgiFormat f)
     case HgiFormatInt32Vec4:
         return 4;
     default:
-        return 1;
+        return 0;
     }
 }
 
@@ -61,9 +67,9 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     case HgiFormatUNorm8Vec2:
     case HgiFormatSNorm8Vec2:
         return 2;
-    case HgiFormatUNorm8Vec3:
-    case HgiFormatSNorm8Vec3:
-        return 3;
+    // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    //     return 3;
     case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8Vec4:
         return 4;

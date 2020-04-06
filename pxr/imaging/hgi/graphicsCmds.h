@@ -21,39 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GRAPHICS_ENCODER_H
-#define PXR_IMAGING_HGI_GRAPHICS_ENCODER_H
+#ifndef PXR_IMAGING_HGI_GRAPHICS_CMDS_H
+#define PXR_IMAGING_HGI_GRAPHICS_CMDS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/cmds.h"
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HgiGraphicsEncoderUniquePtr = std::unique_ptr<class HgiGraphicsEncoder>;
+using HgiGraphicsCmdsUniquePtr = std::unique_ptr<class HgiGraphicsCmds>;
 
 
-/// \class HgiGraphicsEncoder
+/// \class HgiGraphicsCmds
 ///
 /// A graphics API independent abstraction of graphics commands.
-/// HgiGraphicsEncoder is a lightweight object that cannot be re-used after
-/// Commit. A new encoder should be acquired from CommandBuffer each frame.
+/// HgiGraphicsCmds is a lightweight object that cannot be re-used after it has
+/// been submitted. A new cmds object should be acquired for each frame.
 ///
-/// The API provided by this encoder should be agnostic to whether the
-/// encoder operates via immediate or deferred command buffers.
-///
-class HgiGraphicsEncoder
+class HgiGraphicsCmds : public HgiCmds
 {
 public:
     HGI_API
-    virtual ~HgiGraphicsEncoder();
+    ~HgiGraphicsCmds() override;
 
-    /// Finish recording of commands. No further commands can be recorded.
+    /// Push a debug marker.
     HGI_API
-    virtual void Commit() = 0;
+    virtual void PushDebugGroup(const char* label) = 0;
+
+    /// Pop the last debug marker.
+    HGI_API
+    virtual void PopDebugGroup() = 0;
 
     /// Set viewport [left, BOTTOM, width, height] - OpenGL coords
     HGI_API
@@ -65,7 +68,7 @@ public:
     virtual void SetScissor(GfVec4i const& sc) = 0;
 
     /// Bind a pipeline state object. Usually you call this right after calling
-    /// CreateGraphicsEncoder to set the graphics pipeline state.
+    /// CreateGraphicsCmds to set the graphics pipeline state.
     /// The resource bindings used when creating the pipeline must be compatible
     /// with the resources bound via BindResources().
     HGI_API
@@ -104,21 +107,13 @@ public:
         uint32_t vertexOffset,
         uint32_t instanceCount) = 0;
 
-    /// Push a debug marker onto the encoder.
-    HGI_API
-    virtual void PushDebugGroup(const char* label) = 0;
-
-    /// Pop the lastest debug marker off encoder.
-    HGI_API
-    virtual void PopDebugGroup() = 0;
-
 protected:
     HGI_API
-    HgiGraphicsEncoder();
+    HgiGraphicsCmds();
 
 private:
-    HgiGraphicsEncoder & operator=(const HgiGraphicsEncoder&) = delete;
-    HgiGraphicsEncoder(const HgiGraphicsEncoder&) = delete;
+    HgiGraphicsCmds & operator=(const HgiGraphicsCmds&) = delete;
+    HgiGraphicsCmds(const HgiGraphicsCmds&) = delete;
 };
 
 

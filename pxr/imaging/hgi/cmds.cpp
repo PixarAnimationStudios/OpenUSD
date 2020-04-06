@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/blitEncoder.h"
+#include "pxr/imaging/hgi/cmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiBlitEncoder::HgiBlitEncoder()
+HgiCmds::HgiCmds()
 {
 }
 
-HgiBlitEncoder::~HgiBlitEncoder()
+HgiCmds::~HgiCmds()
 {
 }
 
