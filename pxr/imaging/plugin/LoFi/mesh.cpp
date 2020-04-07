@@ -303,7 +303,7 @@ void LoFiMesh:: InfosLog()
 LoFiVertexBufferState
 LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                             HdInterpolation interpolation,
-                            LoFiVertexBufferChannel channel,
+                            LoFiAttributeChannel channel,
                             const VtValue& value,
                             bool needReallocate)
 {
@@ -387,7 +387,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   const SdfPath& id = GetId();
 
   HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
-  std::cout << "TOPOLOGY SCHEME : " << topology.GetScheme().GetText() << std::endl;
 
   // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
@@ -428,7 +427,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     primvars = GetPrimvarDescriptors(sceneDelegate, interp);
     for (HdPrimvarDescriptor const& pv: primvars) 
     {
-      std::cout << "CHECK PRIMVAR : " << pv.name.GetText() << std::endl;
       if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
       {
         VtValue value = GetPrimvar(sceneDelegate, pv.name);
@@ -448,7 +446,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
         
         else if(pv.name == HdTokens->normals)
         {
-          std::cout << "FOUND NORMAL PRIMVAR :D" << std::endl;
           LoFiVertexBufferState state =
             _PopulatePrimvar(sceneDelegate,
                             interp,

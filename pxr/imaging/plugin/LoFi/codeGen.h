@@ -24,7 +24,7 @@ enum LoFiGeometricProgramType {
     LOFI_PROGRAM_INSTANCE
 };
 
-typedef std::vector<LoFiVertexBufferChannel> LoFiVertexBufferChannelList;
+typedef std::vector<LoFiAttributeChannel> LoFiAttributeChannelList;
 
 class LoFiCodeGen
 {
@@ -33,37 +33,28 @@ public:
 
     /// Constructor.
     LoFiCodeGen(LoFiGeometricProgramType type, 
-        const LoFiVertexBufferChannelList& channels);
+        const LoFiShaderCodeSharedPtrList& shaders);
 
     LoFiCodeGen(LoFiGeometricProgramType type, 
-        const LoFiUniformBindingList& uniformBindings,
-        const LoFiVertexBufferBindingList& vertexBufferBindings);
+        const LoFiBindingList& uniformBindings,
+        const LoFiBindingList& vertexBufferBindings,
+        const LoFiShaderCodeSharedPtrList& shaders);
     
     /// Return the hash value of glsl shader to be generated.
     ID ComputeHash() const;
     
     /// Return the generated vertex shader source
-    const std::string &GetVertexShaderCode() const { return _vertexCode; }
+    const std::string& GetVertexShaderCode() const { return _vertexCode; }
 
     /// Return the generated geometry shader source
-    const std::string &GetGeometryShaderCode() const { return _geometryCode; }
+    const std::string& GetGeometryShaderCode() const { return _geometryCode; }
 
     /// Return the generated fragment shader source
-    const std::string &GetFragmentShadeCode() const { return _fragmentCode; }
+    const std::string& GetFragmentShaderCode() const { return _fragmentCode; }
 
-    void GenerateMeshCode();
+    void GenerateProgramCode();
 
 private:
-    
-    void _GenerateVersion(std::stringstream& ss);
-    void _AddInputChannel(std::stringstream& ss, LoFiVertexBufferChannel channel,
-        size_t index, TfToken& type);
-    void _AddInputAttribute(std::stringstream& ss,  LoFiVertexBufferChannel channel, 
-        TfToken& type);
-    void _AddOutputAttribute(std::stringstream& ss, LoFiVertexBufferChannel channel,
-        TfToken& type);
-    void _AddUniform(std::stringstream& ss, const TfToken& name, const TfToken& type);
-
     void _EmitDeclaration(  std::stringstream &ss,
                             TfToken const &name,
                             TfToken const &type,
@@ -83,14 +74,19 @@ private:
                             int arraySize,
                             const char *index = NULL);
     
-    void _GeneratePrimvar(bool hasGeometryShader);
+    void _GenerateVersion();
+    void _GenerateCommon();
+    void _GenerateConstants();
+    void _GeneratePrimvars(bool hasGeometryShader);
+    void _GenerateUniforms();
 
-    // channels
-    LoFiVertexBufferChannelList _channels;
+    // shader code
+    LoFiShaderCodeSharedPtrList _shaders;
 
     // bindings
-    LoFiUniformBindingList            _uniformBindings;
-    LoFiVertexBufferBindingList       _vertexBufferBindings;
+    LoFiBindingList             _uniformBindings;
+    LoFiBindingList             _textureBindings;
+    LoFiBindingList             _attributeBindings;
 
     // source buckets
     std::stringstream _genCommon, _genVS, _genGS, _genFS;

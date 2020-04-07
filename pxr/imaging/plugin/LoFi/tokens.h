@@ -34,6 +34,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vec4)                          \
     (mat3)                          \
     (mat4)                          \
+    (texture1D)                     \
+    (texture2D)                     \
+    (texture3D)                     \
     (isamplerBuffer)                \
     (samplerBuffer)                 \
 
@@ -71,10 +74,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nearplane)                     \
     (farplane)                      \
 
+// shader tokens
+#define LOFI_SHADER_TOKENS          \
+    (common)                        \
+    (vertex)                        \
+    (geometry)                      \
+    (fragment)                      \
+
 TF_DECLARE_PUBLIC_TOKENS(LoFiRegistryTokens, LOFI_API, LOFI_REGISTRY_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiGLTokens, LOFI_API, LOFI_GL_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiBufferTokens, LOFI_API, LOFI_BUFFER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiUniformTokens, LOFI_API, LOFI_UNIFORM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(LoFiShaderTokens, LOFI_API, LOFI_SHADER_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

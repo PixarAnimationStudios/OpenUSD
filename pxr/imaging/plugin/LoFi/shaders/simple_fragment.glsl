@@ -1,7 +1,8 @@
-#version 330
-uniform vec3 color;
-out vec4 outColor;
 void main()
 {
-	outColor = vec4(1.0,1.0,1.0,1.0);
+#ifdef LOFI_HAS_color
+  LOFI_SET_color(LOFI_GET_color(0), 1.0);
+#else
+  LOFI_SET_color(1.0, 0.0, 0.0, 1.0);
+#endif
 }

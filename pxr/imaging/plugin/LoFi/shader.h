@@ -12,7 +12,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 enum LoFiGLSLShaderType
 {
   SHADER_VERTEX,
@@ -30,10 +29,11 @@ public:
   {
     if(_id)glDeleteShader(_id);
   }
-  void Load(const char* filename, GLenum t);
+  void Load(const char* filename, GLenum t=0);
   void Compile();
   void OutputInfoLog();
   GLuint Get(){return _id;};
+  std::string& GetCode(){return _code;};
   void Set(const char* code, GLenum type);
   void _ComputeHash();
   size_t Hash(){return _hash;};
@@ -64,11 +64,11 @@ public:
   void _Build();
 
   /// build glsl program from vertex and fragment code
-  void Build(const char* name, const char** s_vert, const char** s_frag);
+  void Build(const char* name, const char* s_vert, const char* s_frag);
 
   /// build glsl program from vertex, geometry and fragment code
-  void Build(const char* name, const char** s_vert, const char** s_geom, 
-    const char** s_frag);
+  void Build(const char* name, const char* s_vert, const char* s_geom, 
+    const char* s_frag);
 
   /// build glsl program from vertex and fragment LoFiGLSLShader objects
   void Build(const char* name, LoFiGLSLShader* vertex, 

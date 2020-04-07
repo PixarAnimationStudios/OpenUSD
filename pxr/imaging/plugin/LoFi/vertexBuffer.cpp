@@ -10,7 +10,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
-LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannel channel,
+LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
   uint32_t numInputElements, uint32_t numOutputElements)
   : _channel(channel)
   , _datasHash(0)

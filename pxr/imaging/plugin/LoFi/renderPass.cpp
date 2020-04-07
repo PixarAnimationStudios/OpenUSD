@@ -3,6 +3,8 @@
 //
 // Unlicensed
 //
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
@@ -16,12 +18,27 @@ LoFiRenderPass::LoFiRenderPass(
     HdRprimCollection const &collection)
     : HdRenderPass(index, collection)
 {
+
   _SetupSimpleGLSLProgram();
   _SetupSimpleVertexArray();
 }
 
 LoFiRenderPass::~LoFiRenderPass()
 {
+}
+
+TfToken LoFiRenderPass::_GetShaderPath(char const * shader)
+{
+  static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+  const std::string path =
+      PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
+  TF_VERIFY(!path.empty(), "Could not find shader: %s\n", shader);
+  return TfToken(path);
+}
+
+void _GetShaderCode(const TfToken& path, const TfToken& name)
+{
+
 }
 
 void 
@@ -37,44 +54,42 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     );
   TF_VERIFY(resourceRegistry);
 
-  LoFiGeometricProgramType pgmType();
-  LoFiVertexBufferChannelList channelsList;
-  channelsList.push_back(CHANNEL_POSITION);
-  channelsList.push_back(CHANNEL_COLOR);
-  channelsList.push_back(CHANNEL_NORMAL);
+  TfToken commonPath = _GetShaderPath("camera.glsl");
+  TfToken simplePath = _GetShaderPath("simple.glsl");
 
-  //LoFiCodeGen codeGen(LOFI_PROGRAM_MESH, channelsList);
-  LoFiUniformBindingList uniformBindings;
-  uniformBindings.push_back(
-    LoFiUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4));
-  uniformBindings.push_back(
-    LoFiUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4));
-  uniformBindings.push_back(
-    LoFiUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4));
+  LoFiShaderCodeSharedPtr commonCode(new LoFiShaderCode(commonPath.GetText()));
+  commonCode->Parse();
 
-  LoFiVertexBufferBindingList vertexBufferBindings;
-  vertexBufferBindings.push_back(
-    LoFiVertexBufferBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3));
-  vertexBufferBindings.push_back(
-    LoFiVertexBufferBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3));
-  vertexBufferBindings.push_back(
-    LoFiVertexBufferBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3));
+  LoFiShaderCodeSharedPtr simpleCode(new LoFiShaderCode(simplePath.GetText()));
+  simpleCode->Parse();
+
+  LoFiShaderCodeSharedPtrList shaders;
+  shaders.resize(2);
+  shaders[0] = commonCode;
+  shaders[1] = simpleCode;
+
+  LoFiBinder binder;
+  binder.CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
+  binder.CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
+  binder.CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
+
+  binder.CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
+  binder.CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
+  binder.CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
 
   LoFiCodeGen codeGen(
     LOFI_PROGRAM_MESH,
-    uniformBindings, 
-    vertexBufferBindings
+    binder.GetUniformBindings(), 
+    binder.GetAttributeBindings(),
+    shaders
   );
-  codeGen.GenerateMeshCode();
+  codeGen.GenerateProgramCode();
 
-  if(LOFI_GL_VERSION >= 330)
-  {
-    program->Build("Simple330", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
-  }
-  else
-  {
-    program->Build("Simple120", VERTEX_SHADER_120, FRAGMENT_SHADER_120);
-  }
+  const char* vertexCode = codeGen.GetVertexShaderCode().c_str();
+  const char* fragmentCode = codeGen.GetFragmentShaderCode().c_str();
+
+  program->Build("Simple", vertexCode, fragmentCode);
+
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());
 
@@ -129,13 +144,12 @@ LoFiRenderPass::_SetupSimpleVertexArray()
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
   glEnableVertexAttribArray(0);
 
-  // specify color attribute
+  // specify normal attribute
   glGenBuffers(1, &_cbo);
   glBindBuffer(GL_ARRAY_BUFFER, _cbo);
   glBufferData(GL_ARRAY_BUFFER, szp, &TEST_COLORS[0], GL_STATIC_DRAW);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
   glEnableVertexAttribArray(1);
-
 
   /*
 
@@ -158,9 +172,9 @@ LoFiRenderPass::_SetupSimpleVertexArray()
 
   // bind shader program
   glUseProgram(_program->Get());
-  glBindAttribLocation(_program->Get(), 0, "position");
-  glBindAttribLocation(_program->Get(), 1, "normal");
-  glBindAttribLocation(_program->Get(), 2, "color");
+  glBindAttribLocation(_program->Get(), CHANNEL_POSITION, "position");
+  glBindAttribLocation(_program->Get(), CHANNEL_NORMAL, "normal");
+  glBindAttribLocation(_program->Get(), CHANNEL_COLOR, "color");
   glLinkProgram(_program->Get());
 
   // unbind vertex array object
