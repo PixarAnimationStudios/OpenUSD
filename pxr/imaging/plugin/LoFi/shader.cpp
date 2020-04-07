@@ -67,7 +67,7 @@ void LoFiGLSLShader::Compile()
   
   GLint status;
   glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
-  if(TfDebug::IsEnabled(LOFI_SHADER) && status != GL_TRUE)
+  if(/*TfDebug::IsEnabled(LOFI_SHADER) && */status != GL_TRUE)
   {
     std::cerr << "[LoFi][Compile Shader] Fail compiling code: \n" << 
       _code << std::endl;
@@ -113,9 +113,12 @@ void LoFiGLSLProgram::_Build()
   
   GLint status = 0;
   glGetProgramiv(_pgm, GL_LINK_STATUS, (int *)&status);
-  if(status == GL_TRUE) {
+  if(status == GL_TRUE) 
+  {
     std::cerr << "[LoFi][Build GLSL program] Success : " << _name <<std::endl;
-  } else {
+  } 
+  else 
+  {
     glDeleteProgram(_pgm);
     std::cerr << "[LoFi][Build GLSL program] Fail : " << _name << std::endl;
     OutputInfoLog();
@@ -124,37 +127,41 @@ void LoFiGLSLProgram::_Build()
   _ComputeHash();
 }
 
-void LoFiGLSLProgram::Build(const char* name, const char** vertex, 
-  const char** fragment)
+void LoFiGLSLProgram::Build(const char* name, const char* vertex, 
+  const char* fragment)
 {
+  std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl;
+  std::cout << name << std::endl;
+  std::cout << vertex << std::endl;
+  std::cout << fragment << std::endl;
   _name = name;
   LoFiGLSLShader vertShader;
-  vertShader.Set(vertex[0], GL_VERTEX_SHADER);
+  vertShader.Set(vertex, GL_VERTEX_SHADER);
   _vert = &vertShader;
 
   _geom = NULL;
 
   LoFiGLSLShader fragShader;
-  fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
+  fragShader.Set(fragment, GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();
 }
 
-void LoFiGLSLProgram::Build(const char* name, const char** vertex, 
-  const char** geom, const char** fragment)
+void LoFiGLSLProgram::Build(const char* name, const char* vertex, 
+  const char* geom, const char* fragment)
 {
   _name = name;
   LoFiGLSLShader vertShader;
-  vertShader.Set(vertex[0], GL_VERTEX_SHADER);
+  vertShader.Set(vertex, GL_VERTEX_SHADER);
   _vert = &vertShader;
 
   LoFiGLSLShader geomShader;
-  geomShader.Set(geom[0], GL_GEOMETRY_SHADER);
+  geomShader.Set(geom, GL_GEOMETRY_SHADER);
   _geom = &geomShader;
 
   LoFiGLSLShader fragShader;
-  fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
+  fragShader.Set(fragment, GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();

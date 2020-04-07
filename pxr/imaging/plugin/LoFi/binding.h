@@ -13,81 +13,49 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef std::vector<class LoFiBinding> LoFiBindingVector;
-
 class LoFiDrawItem;
 
-/// \class LoFiBinding
+enum LoFiBindingType { 
+  UNKNOWN,
+  VERTEX,
+  INDEX,
+  UNIFORM,
+  UNIFORM_ARRAY,
+  TBO,
+  TEXTURE
+};
+
+/// \struct LoFiBinding
 ///
-class LoFiBinding {
-public:
-    enum Type { 
-      UNKNOWN,
-      VERTEX_ATTR,
-      INDEX_ATTR,
-      UNIFORM,
-      UNIFORM_ARRAY,
-      TBO,
-      TEXTURE_2D,
-      TEXTURE_3D
-    };
-    enum Location {
-      NOT_EXIST = 0xffff
-    };
-    LoFiBinding() : _typeAndLocation(-1) { }
-    LoFiBinding(Type type, int location, int textureUnit=0) 
-    {
-        Set(type, location, textureUnit);
-    }
-    void Set(Type type, int location, int textureUnit) 
-    {
-        _typeAndLocation = (textureUnit << 24)|(location << 8)|(int)(type);
-    }
-    bool IsValid() const { return _typeAndLocation >= 0; }
-    Type GetType() const { return (Type)(_typeAndLocation & 0xff); }
-    int GetLocation() const { return (_typeAndLocation >> 8) & 0xffff; }
-    int GetTextureUnit() const { return (_typeAndLocation >> 24) & 0xff; }
-    int GetValue() const { return _typeAndLocation; }
-    bool operator < (LoFiBinding const &b) const {
-        return (_typeAndLocation < b._typeAndLocation);
-    }
-private:
-    int _typeAndLocation;
+struct LoFiBinding {
+  LoFiBindingType     type;
+  size_t              location;
+  TfToken             name;
+  TfToken             dataType;
+  size_t              arraySize;
 };
+typedef std::vector<LoFiBinding> LoFiBindingList;
 
-class LoFiUniformBinding : public LoFiBinding {
+
+class LoFiBinder {
 public:
-  LoFiUniformBinding(const TfToken& name, const TfToken& type, size_t arraySize=0)
-    : _name(name), _type(type), _arraySize(arraySize){};
-  ~LoFiUniformBinding(){};
-  TfToken& GetName(){return _name;};
-  TfToken& GetType(){return _type;};
-  size_t GetArraySize(){return _arraySize;};
+  void CreateUniformBinding(const TfToken& name, const TfToken& dataType, size_t location);
+  void CreateTextureBinding(const TfToken& name, const TfToken& dataType, size_t location);
+  void CreateAttributeBinding(const TfToken& name, const TfToken& dataType, size_t location);
+
+  const LoFiBindingList& GetUniformBindings(){return _uniformBindings;};
+  const LoFiBindingList& GetTextureBindings(){return _textureBindings;};
+  const LoFiBindingList& GetAttributeBindings(){return _attributeBindings;};
+
 private:
-  TfToken _name;
-  TfToken _type;
-  size_t _arraySize;
+  LoFiBindingList _uniformBindings;
+  LoFiBindingList _textureBindings;
+  LoFiBindingList _attributeBindings;
 
+  int _uniformLocation;
+  int _textureLocation;
+  int _attributeLocation;
 };
-
-typedef std::vector<LoFiUniformBinding> LoFiUniformBindingList;
-
-class LoFiVertexBufferBinding : public LoFiBinding {
-public:
-  LoFiVertexBufferBinding(const TfToken& name, const TfToken& type)
-    : _name(name), _type(type){};
-  ~LoFiVertexBufferBinding(){};
-  TfToken& GetName(){return _name;};
-  TfToken& GetType(){return _type;};
-private:
-  TfToken _name;
-  TfToken _type;
-};
-
-typedef std::vector<LoFiVertexBufferBinding> LoFiVertexBufferBindingList;
-
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -27,6 +27,7 @@ pxr_plugin(LoFi
     PUBLIC_CLASSES
         debugCodes
         tokens
+        shaderCode
         binding
         codeGen
         shader
@@ -50,6 +51,8 @@ pxr_plugin(LoFi
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/camera.glsl
+        shaders/simple.glsl
 )
 
 if (X11_FOUND OR APPLE)

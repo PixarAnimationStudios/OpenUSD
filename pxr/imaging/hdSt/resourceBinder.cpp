@@ -74,7 +74,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 namespace {
-    struct BindingLocator {
+    struct  BindingLocator {
         BindingLocator() :
             uniformLocation(0), uboLocation(0),
             ssboLocation(0), attribLocation(0),

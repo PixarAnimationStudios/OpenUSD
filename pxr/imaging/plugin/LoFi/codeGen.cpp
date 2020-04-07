@@ -7,6 +7,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/plugin/LoFi/tokens.h"
+#include "pxr/imaging/plugin/LoFi/shaderCode.h"
 #include "pxr/imaging/plugin/LoFi/codeGen.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,7 +55,7 @@ static const char *FRAGMENT_SHADER_330[1] = {
 };
 */
 
-static TfToken LoFiGetVertexBufferChannelName(LoFiVertexBufferChannel channel)
+static TfToken LoFiGetAttributeChannelName(LoFiAttributeChannel channel)
 {
    switch(channel)
    {
@@ -87,7 +88,7 @@ static TfToken LoFiGetVertexBufferChannelName(LoFiVertexBufferChannel channel)
    }
 }
 
-static TfToken LoFiGetVertexBufferChannelType(LoFiVertexBufferChannel channel)
+static TfToken LoFiGetAttributeChannelType(LoFiAttributeChannel channel)
 {
    switch(channel)
    {
@@ -154,69 +155,25 @@ static int _GetNumComponents(TfToken const& type)
 
 /// Constructor.
 LoFiCodeGen::LoFiCodeGen(LoFiGeometricProgramType type, 
-  const LoFiVertexBufferChannelList& channels)
+  const LoFiShaderCodeSharedPtrList& shaders)
   : _type(type)
-  , _channels(channels)
+  , _shaders(shaders)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   _glslVersion = caps.glslVersion;
 }
 
 LoFiCodeGen::LoFiCodeGen(LoFiGeometricProgramType type, 
-            const LoFiUniformBindingList& uniformBindings,
-            const LoFiVertexBufferBindingList& vertexBufferBindings)
+            const LoFiBindingList& uniformBindings,
+            const LoFiBindingList& vertexBufferBindings,
+            const LoFiShaderCodeSharedPtrList& shaders)
   : _type(type)
   , _uniformBindings(uniformBindings)
-  , _vertexBufferBindings(vertexBufferBindings)
+  , _attributeBindings(vertexBufferBindings)
+  , _shaders(shaders)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   _glslVersion = caps.glslVersion;
-}
-
-void LoFiCodeGen::_GenerateVersion(std::stringstream& ss)
-{
-  if(_glslVersion >= 330)
-    ss << "#version 330 core \n";
-  else
-    ss << "#version 120 \n";
-}
-
-void LoFiCodeGen::_AddInputChannel(std::stringstream& ss, 
-  LoFiVertexBufferChannel channel, size_t index, TfToken& type)
-{
-  TfToken channelName = LoFiGetVertexBufferChannelName(channel);
-  ss << "#define LOFI_HAS_" << channelName << " 1\n";
-  if(_glslVersion >= 330)
-    ss << "layout(location=" << index <<") in " << type << " " << channelName << ";\n";
-  else
-    ss << "attribute " << type << " " << channelName << ";\n";;
-}
-
-void LoFiCodeGen::_AddOutputAttribute(std::stringstream& ss, 
-  LoFiVertexBufferChannel channel, TfToken& type)
-{
-  TfToken name = LoFiGetVertexBufferChannelName(channel);
-  if(_glslVersion >= 330)
-    ss << "out " << type <<" vertex_" << name << ";\n";
-  else
-    ss << "varying " << type <<" vertex_" << name<< ";\n";
-}
-
-void LoFiCodeGen::_AddInputAttribute(std::stringstream& ss, 
-  LoFiVertexBufferChannel channel, TfToken& type)
-{
-  TfToken name = LoFiGetVertexBufferChannelName(channel);
-  if(_glslVersion >= 330)
-    ss << "in " << type <<" vertex_" << name << ";\n";
-  else
-    ss << "varying " << type <<" vertex_" << name << ";\n";
-}
-
-void LoFiCodeGen::_AddUniform(std::stringstream& ss, const TfToken& name, 
-  const TfToken& type)
-{
-  ss << "#define LOFI_HAS_" << name << " 1\n";
-  ss << "uniform " << type << " " << name << ";\n";
 }
 
 void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
@@ -225,52 +182,46 @@ void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
                                     LoFiBinding const &binding,
                                     size_t arraySize)
 {
-    /*
-    /// GLSL 120
-      [vertex attribute]
-         attribute <type> <name>;
-      [uniform]
-         uniform <type> <name>;
-    
-    /// GLSL 330
-       [vertex attribute]
-         layout (location = <location>) in <type> <name>;
-      [uniform]
-         uniform <type> <name>;
-     */
-    LoFiBinding::Type bindingType = binding.GetType();
+  LoFiBindingType bindingType = binding.type;
 
-    if (!TF_VERIFY(!name.IsEmpty())) return;
-    if (!TF_VERIFY(!type.IsEmpty(),
-                      "Unknown dataType for %s",
-                      name.GetText())) return;
+  if (!TF_VERIFY(!name.IsEmpty())) return;
+  if (!TF_VERIFY(!type.IsEmpty(),
+                    "Unknown dataType for %s",
+                    name.GetText())) return;
 
-    if (arraySize > 0) 
+  if (arraySize > 0) 
+  {
+    if (!TF_VERIFY(bindingType == LoFiBindingType::UNIFORM_ARRAY))
+        return;
+  }
+
+  switch (bindingType) 
+  {
+  case LoFiBindingType::VERTEX:
+    if(_glslVersion >= 330)
     {
-        if (!TF_VERIFY(bindingType == LoFiBinding::UNIFORM_ARRAY))
-            return;
-    }
+      //ss << "layout (location = " << binding.location << ") in ";
 
-    switch (bindingType) 
-    {
-    case LoFiBinding::VERTEX_ATTR:
-      if(_glslVersion >= 330)
-      {ss << "in " << type << " " << name << ";\n";
-        break;}
-      else
-      {ss << "attribute " << type << " " << name << ";\n";}
-    case LoFiBinding::UNIFORM:
-        ss << "uniform " << type << " " << name << ";\n";
-        break;
-    case LoFiBinding::UNIFORM_ARRAY:
-        ss << "uniform " << type << " " << name
-            << "[" << arraySize << "];\n";
-        break;
-    default:
-        TF_CODING_ERROR("Unknown binding type %d, for %s\n",
-                        binding.GetType(), name.GetText());
-        break;
+      ss <<"in "<< type << " " << name << ";\n";
+      break;
     }
+    else
+    {
+      ss << "attribute " << type << " " << name << ";\n";
+      break;
+    }
+  case LoFiBindingType::UNIFORM:
+      ss << "uniform " << type << " " << name << ";\n";
+      break;
+  case LoFiBindingType::UNIFORM_ARRAY:
+      ss << "uniform " << type << " " << name
+          << "[" << arraySize << "];\n";
+      break;
+  default:
+      TF_CODING_ERROR("Unknown binding type %d, for %s\n",
+                      binding.type, name.GetText());
+      break;
+  }
 }
 
 void LoFiCodeGen::_EmitAccessor(std::stringstream &ss,
@@ -279,33 +230,37 @@ void LoFiCodeGen::_EmitAccessor(std::stringstream &ss,
                                 LoFiBinding const &binding,
                                 const char *index)
 {
-    if (index) 
+  if (index) 
+  {
+    ss << type << " LOFI_GET_" << name << "(int localIndex) {\n"
+        << "  int index = " << index << ";\n";
+    if (binding.type == LoFiBindingType::TBO)
     {
-        ss << type << " LoFiGet_" << name << "(int localIndex) {\n"
-            << "  int index = " << index << ";\n";
-        if (binding.GetType() == LoFiBinding::TBO) {
-            ss << "  return "
-                << type
-                << "(texelFetch(" << name << ", index)"
-                << _GetSwizzleString(type) << ");\n}\n";
-        } else {
-            ss << "  return " << name << "[index];\n}\n";
-        }
+      ss << "  return "
+          << type
+          << "(texelFetch(" << name << ", index)"
+          << _GetSwizzleString(type) << ");\n}\n";
     } 
     else 
     {
-        // non-indexed, only makes sense for uniform or vertex.
-        if (binding.GetType() == LoFiBinding::UNIFORM || 
-            binding.GetType() == LoFiBinding::VERTEX_ATTR) 
-        {
-            ss << type
-                << " LoFiGet_" << name << "(int localIndex) { ";
-            ss << "return " << name << ";}\n";
-        }
+      ss << "  return " << name << "[index];\n}\n";
     }
+  } 
+  else 
+  {
+    /*
+    if (binding.type == LoFiBindingType::UNIFORM || 
+        binding.type == LoFiBindingType::VERTEX) 
+    {
+      ss << type
+          << " LOFI_GET_" << name << "(int localIndex) { ";
+      ss << "return " << name << ";}\n";
+    }
+    */
+  }
 
-    ss << type << " LoFiGet_" << name << "()"
-        << " { return LoFiGet_" << name << "(0); }\n";
+  ss << type << " LOFI_GET_" << name << "()"
+      << " { return " << name << "; }\n";
 }
 
 void LoFiCodeGen::_EmitStructAccessor(std::stringstream &ss,
@@ -315,304 +270,258 @@ void LoFiCodeGen::_EmitStructAccessor(std::stringstream &ss,
                                       int arraySize,
                                       const char *index)
 { 
-    if (index) 
-    {
-        if (arraySize > 1) 
-        {
-            ss << type << " LoFiGet_" << name
-                << "(int arrayIndex, int localIndex) {\n"
-                << "  int index = " << index << ";\n"
-                << "  return "
-                << structName << "[index]." << name << "[arrayIndex];\n}\n";
-        } 
-        else 
-        {
-            ss << type << " LoFiGet_" << name
-                << "(int localIndex) {\n"
-                << "  int index = " << index << ";\n"
-                << "  return "
-                << structName << "[index]." << name << ";\n}\n";
-        }
-    }
-    else 
-    {
-        if (arraySize > 1) 
-        {
-            ss << type << " LoFiGet_" << name
-                << "(int arrayIndex, int localIndex) { return "
-                << structName << "." << name << "[arrayIndex];}\n";
-        } 
-        else 
-        {
-            ss << type << " LoFiGet_" << name
-                << "(int localIndex) { return "
-                << structName << "." << name << ";}\n";
-        }
-    }
-
+  if (index) 
+  {
     if (arraySize > 1) 
     {
-        ss << type << " LoFiGet_" << name
-            << "(int arrayIndex)"
-            << " { return LoFiGet_" << name << "(arrayIndex, 0); }\n";
+      ss << type << " LOFI_GET_" << name
+          << "(int arrayIndex, int localIndex) {\n"
+          << "  int index = " << index << ";\n"
+          << "  return "
+          << structName << "[index]." << name << "[arrayIndex];\n}\n";
     } 
     else 
     {
-        ss << type << " LoFiGet_" << name << "()"
-            << " { return LoFiGet_" << name << "(0); }\n";
+      ss << type << " LOFI_GET_" << name
+          << "(int localIndex) {\n"
+          << "  int index = " << index << ";\n"
+          << "  return "
+          << structName << "[index]." << name << ";\n}\n";
     }
+  }
+  else 
+  {
+    if (arraySize > 1) 
+    {
+      ss << type << " LOFI_GET_" << name
+          << "(int arrayIndex, int localIndex) { return "
+          << structName << "." << name << "[arrayIndex];}\n";
+    } 
+    else 
+    {
+      ss << type << " LOFI_GET_" << name
+          << "(int localIndex) { return "
+          << structName << "." << name << ";}\n";
+    }
+  }
+
+  if (arraySize > 1) 
+  {
+    ss << type << " LOFI_GET_" << name
+        << "(int arrayIndex)"
+        << " { return LOFI_GET_" << name << "(arrayIndex, 0); }\n";
+  } 
+  else 
+  {
+    ss << type << " LOFI_GET_" << name << "()"
+        << " { return LOFI_GET_" << name << "(0); }\n";
+  }
+}
+
+void 
+LoFiCodeGen::_GenerateVersion()
+{
+  if(_glslVersion >= 330)
+  {
+    _genCommon << "#version 330 core \n";
+    _genCommon << "#define LOFI_GLSL_330 1\n";
+  }
+  else
+  {
+    _genCommon << "#version 120 \n";
+  }
+}
+
+void 
+LoFiCodeGen::_GenerateCommon()
+{
+  _genVS << _genCommon.str();
+  _genGS << _genCommon.str();
+  _genFS << _genCommon.str();
+}
+
+void 
+LoFiCodeGen::_GenerateConstants()
+{
+  LoFiShaderCodeSharedPtr shaderCode = _shaders[0];
+
+  std::string constantCode = shaderCode->GetSource(LoFiShaderTokens->common);
+  std::cout << ":D \n" << constantCode << std::endl;
+
+  _genVS << constantCode;
+  _genGS << constantCode;
+  _genFS << constantCode;
 }
 
 void
-LoFiCodeGen::_GeneratePrimvar(bool hasGeometryShader)
+LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 {
-  
-    // Vertex and FVar primvar flow into the fragment shader as per-fragment
-    // attribute data that has been interpolated by the rasterizer, and hence
-    // have similarities for code gen.
-    // While vertex primvar are authored per vertex and require plumbing
-    // through all shader stages, fVar is emitted only in the GS stage.
-    
-    //  // --------- vertex data declaration (VS) ----------
-    //  layout (location = 0) in vec3 normals;
-    //  layout (location = 1) in vec3 points;
-//
-    //  out Primvars {
-    //      vec3 normals;
-    //      vec3 points;
-    //  } outPrimvars;
-//
-    //  void ProcessPrimvars() {
-    //      outPrimvars.normals = normals;
-    //      outPrimvars.points = points;
-    //  }
-//
-    //  // --------- geometry stage plumbing -------
-    //  in Primvars {
-    //      vec3 normals;
-    //      vec3 points;
-    //  } inPrimvars[];
-    //  out Primvars {
-    //      vec3 normals;
-    //      vec3 points;
-    //  } outPrimvars;
-//
-    //  void ProcessPrimvars(int index) {
-    //      outPrimvars = inPrimvars[index];
-    //  }
-//
-    //  // --------- vertex data accessors (used in geometry/fragment shader) ---
-    //  in Primvars {
-    //      vec3 normals;
-    //      vec3 points;
-    //  } inPrimvars;
-    //  vec3 HdGet_normals(int localIndex=0) {
-    //      return inPrimvars.normals;
-    //  }
-    //
+  std::stringstream vertexInputs;
+  std::stringstream interstageVertexData;
+  std::stringstream accessorsVS, accessorsGS, accessorsFS;
 
-    std::stringstream vertexInputs;
-    std::stringstream interstageVertexData;
-    std::stringstream accessorsVS, accessorsGS, accessorsFS;
+  // vertex varying
+  TF_FOR_ALL (it, _attributeBindings) 
+  {
+    TfToken const &name = it->name;
+    TfToken const &dataType = it->dataType;
 
-    // vertex varying
-    TF_FOR_ALL (it, _vertexBufferBindings) {
-        TfToken const &name = it->GetName();
-        TfToken const &dataType = it->GetType();
+    _EmitDeclaration(vertexInputs, name, dataType, *it);
 
-        _EmitDeclaration(vertexInputs, name, dataType, *it);
+    interstageVertexData << "  " << dataType
+                          << " " << name << ";\n";
 
-        interstageVertexData << "  " << dataType
-                             << " " << name << ";\n";
+    // primvar accessors
+    _EmitAccessor(accessorsVS, name, dataType, *it);
 
-        // primvar accessors
-        _EmitAccessor(accessorsVS, name, dataType, *it);
+    _EmitStructAccessor(accessorsGS,  LoFiBufferTokens->inPrimvars,
+                        name, dataType, 1, "localIndex");
 
-        _EmitStructAccessor(accessorsGS,  LoFiBufferTokens->inPrimvars,
-                            name, dataType, 1, "localIndex");
+    _EmitStructAccessor(accessorsFS,  LoFiBufferTokens->inPrimvars,
+                        name, dataType, 1);
 
-        _EmitStructAccessor(accessorsFS,  LoFiBufferTokens->inPrimvars,
-                            name, dataType, 1);
+    // interstage plumbing
+    _procVS << "  " << LoFiBufferTokens->outPrimvars << "." << name
+            << " = " << name << ";\n";
 
-        // interstage plumbing
-        _procVS << "  " << LoFiBufferTokens->outPrimvars << "." << name
-                << " = " << name << ";\n";
+    _procGS  << "  " << LoFiBufferTokens->outPrimvars << "." << name
+              << " = " << LoFiBufferTokens->inPrimvars << "[index]." << name << ";\n";
+  }
 
-        _procGS  << "  " << LoFiBufferTokens->outPrimvars << "." << name
-                 << " = " << LoFiBufferTokens->inPrimvars << "[index]." << name << ";\n";
-    }
-
-    std::cout << "PROC VERTEX SHADER : " <<std::endl;
-    std::cout << _procVS.str() <<std::endl;
-    std::cout << "PROC GEOMETRY SHADER : " <<std::endl;
-    std::cout << _procVS.str() <<std::endl;
-
-      //// --------- facevarying data declaration ----------------
-      //layout (std430, binding=?) buffer buffer0 {
-      //    vec2 map1[];
-      //};
-      //layout (std430, binding=?) buffer buffer1 {
-      //    float map2_u[];
-      //};
-//
-      //// --------- geometry stage plumbing -------
-      //out Primvars {
-      //    ...
-      //    vec2 map1;
-      //    float map2_u;
-      //} outPrimvars;
-//
-      //void ProcessPrimvars(int index) {
-      //    outPrimvars.map1 = HdGet_map1(index);
-      //    outPrimvars.map2_u = HdGet_map2_u(index);
-      //}
-//
-      //// --------- fragment stage plumbing -------
-      //in Primvars {
-      //    ...
-      //    vec2 map1;
-      //    float map2_u;
-      //} inPrimvars;
-//
-      //// --------- facevarying data accessors ----------
-      //// in geometry shader (internal accessor)
-      //vec2 HdGet_map1_Coarse(int localIndex) {
-      //    int fvarIndex = GetFVarIndex(localIndex);
-      //    return vec2(map1[fvarIndex]);
-      //}
-      //// in geometry shader (public accessor)
-      //vec2 HdGet_map1(int localIndex) {
-      //    int fvarIndex = GetFVarIndex(localIndex);
-      //    return (HdGet_map1_Coarse(0) * ...);
-      //}
-      //// in fragment shader
-      //vec2 HdGet_map1() {
-      //    return inPrimvars.map1;
-      //}
-
-
-    // face varying
-    std::stringstream fvarDeclarations;
-    std::stringstream interstageFVarData;
+  // face varying
+  std::stringstream fvarDeclarations;
+  std::stringstream interstageFVarData;
 
 /*
-     if (hasGS) {
-        // FVar primvars are emitted only by the GS.
-        // If the GS isn't active, we can skip processing them.
-        TF_FOR_ALL (it, _metaData.fvarData) {
-            HdBinding binding = it->first;
-            TfToken const &name = it->second.name;
-            TfToken const &dataType = it->second.dataType;
+  if (hasGS) {
+    // FVar primvars are emitted only by the GS.
+    // If the GS isn't active, we can skip processing them.
+    TF_FOR_ALL (it, _metaData.fvarData) {
+      HdBinding binding = it->first;
+      TfToken const &name = it->second.name;
+      TfToken const &dataType = it->second.dataType;
 
-            _EmitDeclaration(fvarDeclarations, name, dataType, binding);
+      _EmitDeclaration(fvarDeclarations, name, dataType, binding);
 
-            interstageFVarData << "  " << _GetPackedType(dataType, false)
-                               << " " << name << ";\n";
+      interstageFVarData << "  " << _GetPackedType(dataType, false)
+                          << " " << name << ";\n";
 
-            // primvar accessors (only in GS and FS)
-            _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
-                                _geometricShader->GetPrimitiveType());
-            _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
-                                1, NULL);
+      // primvar accessors (only in GS and FS)
+      _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
+                          _geometricShader->GetPrimitiveType());
+      _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
+                          1, NULL);
 
-            _procGS << "  outPrimvars." << name 
-                                        <<" = HdGet_" << name << "(index);\n";
-        }
+      _procGS << "  outPrimvars." << name 
+                                  <<" = HdGet_" << name << "(index);\n";
     }
-    */
-    if (!interstageVertexData.str().empty()) 
-    {
-        _genVS  << vertexInputs.str()
-                << "out Primvars {\n"
-                << interstageVertexData.str()
-                << "} outPrimvars;\n"
-                << accessorsVS.str();
+  }
+  */
+  if (!interstageVertexData.str().empty()) 
+  {
+    _genVS  << vertexInputs.str()
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << "} outPrimvars;\n"
+            << accessorsVS.str();
 
-        _genGS  << fvarDeclarations.str()
-                << "in Primvars {\n"
-                << interstageVertexData.str()
-                << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
-                << "out Primvars {\n"
-                << interstageVertexData.str()
-                << interstageFVarData.str()
-                << "} outPrimvars;\n"
-                << accessorsGS.str();
+    _genGS  << fvarDeclarations.str()
+            << "in Primvars {\n"  
+            << interstageVertexData.str()
+            << "} inPrimvars[LOFI_NUM_PRIMITIVE_VERTS];\n"
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << interstageFVarData.str()
+            << "} outPrimvars;\n"
+            << accessorsGS.str();
 
-        _genFS  << "in Primvars {\n"
-                << interstageVertexData.str()
-                << interstageFVarData.str()
-                << "} inPrimvars;\n"
-                << accessorsFS.str();
-    }
-
-    std::cout << "GENERATE VERTEX SHADER CODE: " <<std::endl;
-    std::cout << _genVS.str() <<std::endl;
-    std::cout << "GENERATE GEOMETRY SHADER CODE: " <<std::endl;
-    std::cout << _genGS.str() <<std::endl;
-    std::cout << "GENERATE FRAGMENT SHADER CODE: " <<std::endl;
-    std::cout << _genFS.str() <<std::endl;
-    /*
-    // ---------
-    _genFS << "vec4 GetPatchCoord(int index);\n";
-    _genFS << "vec4 GetPatchCoord() { return GetPatchCoord(0); }\n";
-
-    _genGS << "vec4 GetPatchCoord(int localIndex);\n";
-
-    // VS specific accessor for the "vertex drawing coordinate"
-    // Even though we currently always plumb vertexCoord as part of the drawing
-    // coordinate, we expect clients to use this accessor when querying the base
-    // vertex offset for a draw call.
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    _genVS << "int GetBaseVertexOffset() {\n";
-    if (caps.shaderDrawParametersEnabled) {
-        if (caps.glslVersion < 460) { // use ARB extension
-            _genVS << "  return gl_BaseVertexARB;\n";
-        } else {
-            _genVS << "  return gl_BaseVertex;\n";
-        }
-    } else {
-        _genVS << "  return GetDrawingCoord().vertexCoord;\n";
-    }
-    _genVS << "}\n";
-    */
+    _genFS  << "in Primvars {\n"
+            << interstageVertexData.str()
+            << interstageFVarData.str()
+            << "} inPrimvars;\n"
+            << accessorsFS.str();
+  }
 }
 
-void LoFiCodeGen::GenerateMeshCode()
+void
+LoFiCodeGen::_GenerateUniforms()
 {
-  _GeneratePrimvar(true);
-  // vertex shader code
-  _GenerateVersion(_genVS);
-  _GenerateVersion(_genFS);
+  std::stringstream uniformInputs;
+  std::stringstream accessorsCommon;
 
-  // add input channels
-  for(int i=0;i<_channels.size();++i)
-  {
-    TfToken channelType = LoFiGetVertexBufferChannelType(_channels[i]);
-    _AddInputChannel(_genVS, _channels[i], i, channelType);
-    _AddInputAttribute(_genFS, _channels[i], channelType);
+  // vertex varying
+  TF_FOR_ALL (it, _uniformBindings) {
+    TfToken const &name = it->name;
+    TfToken const &dataType = it->dataType;
+
+    _EmitDeclaration(uniformInputs, name, dataType, *it);
+    // uniform accessors
+    _EmitAccessor(accessorsCommon, name, dataType, *it);
   }
+
+  _genVS  << uniformInputs.str()
+          << accessorsCommon.str();
+
+  _genGS  << uniformInputs.str()
+          << accessorsCommon.str();
+
+  _genFS  << uniformInputs.str()
+          << accessorsCommon.str();
+}
+
+
+void LoFiCodeGen::GenerateProgramCode()
+{
+  LoFiShaderCodeSharedPtr shaderCode = _shaders[1];
+
+  // shader sources which own main()
+  std::string vertexCode = shaderCode->GetSource(LoFiShaderTokens->vertex);
+  std::cout << ":D \n" << vertexCode << std::endl;
+  std::string fragmentCode = shaderCode->GetSource(LoFiShaderTokens->fragment);
+  std::cout << ":D \n" << fragmentCode << std::endl;
+
+  // initialize autogen source buckets
+  _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
+  _procVS.str(""), _procGS.str("");
+
+  _GenerateVersion();
   
-  // uniforms
-  _AddUniform(_genVS, LoFiUniformTokens->model, LoFiGLTokens->mat4);
-  _AddUniform(_genVS, LoFiUniformTokens->view, LoFiGLTokens->mat4);
-  _AddUniform(_genVS, LoFiUniformTokens->projection, LoFiGLTokens->mat4);
-
-  _AddUniform(_genFS, LoFiUniformTokens->model, LoFiGLTokens->mat4);
-  _AddUniform(_genFS, LoFiUniformTokens->view, LoFiGLTokens->mat4);
-  _AddUniform(_genFS, LoFiUniformTokens->projection, LoFiGLTokens->mat4);
-
-  // add output attributes
-  for(int i=0;i<_channels.size();++i)
-  {
-    TfToken channelType = LoFiGetVertexBufferChannelType(_channels[i]);
-    _AddOutputAttribute(_genVS, _channels[i], channelType);
+  
+  TF_FOR_ALL (it, _attributeBindings) {
+    _genCommon << "#define LOFI_HAS_" << it->name << " 1\n";
   }
 
-  std::cout << "VERTEX SHADER : " << std::endl;
-  std::cout << _genGS.str() << std::endl;
+  TF_FOR_ALL (it, _uniformBindings) {
+    _genCommon << "#define LOFI_HAS_" << it->name << " 1\n";
+  }
 
-   std::cout << "FRAGMENT SHADER : " << std::endl;
+  _GenerateCommon();
+  _GenerateUniforms();
+  _GenerateConstants();
+  _GeneratePrimvars(true);
+
+  _genVS << vertexCode;
+  _genFS << fragmentCode;
+  
+  
+  std::cout << "-------------------------------------------" << std::endl;
+  std::cout << "COMMON CODE : " << std::endl;
+  std::cout << _genCommon.str() << std::endl;
+  std::cout << "-------------------------------------------" << std::endl;
+  std::cout << "VERTEX SHADER : " << std::endl;
+  std::cout << _genVS.str() << std::endl;
+  /*
+  std::cout << "-------------------------------------------" << std::endl;
+  std::cout << "GEOMETRY SHADER : " << std::endl;
+  std::cout << _genGS.str() << std::endl;
+  */
+  std::cout << "-------------------------------------------" << std::endl;
+  std::cout << "FRAGMENT SHADER : " << std::endl;
   std::cout << _genFS.str() << std::endl;
+
+  _vertexCode = _genVS.str();
+  _geometryCode = _genGS.str();
+  _fragmentCode = _genFS.str();
 }
 
 /*

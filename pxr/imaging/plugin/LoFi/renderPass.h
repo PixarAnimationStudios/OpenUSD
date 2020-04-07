@@ -9,13 +9,14 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/plugin/LoFi/shaderCode.h"
 #include "pxr/imaging/plugin/LoFi/codeGen.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const char *VERTEX_SHADER_120[1] = {
+static const char *VERTEX_SHADER_120 =
   "#version 120                                             \n" 
   "uniform mat4 model;                                      \n"
   "uniform mat4 view;                                       \n"
@@ -31,10 +32,9 @@ static const char *VERTEX_SHADER_120[1] = {
   "    vertex_color = color;                                \n"
   "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
   "    gl_Position = projection * vec4(p,1.0);              \n"
-  "}"
-};
+  "}";
 
-static const char *FRAGMENT_SHADER_120[1] = {
+static const char *FRAGMENT_SHADER_120 =
   "#version 120                                             \n"
   "varying vec3 vertex_normal;                              \n"
   "varying vec3 vertex_color;                               \n"
@@ -42,10 +42,9 @@ static const char *FRAGMENT_SHADER_120[1] = {
   "{                                                        \n"
   " vec3 color = vertex_normal * 0.5 + vertex_color * 0.5;  \n"
   "	gl_FragColor = vec4(color,1.0);                         \n"
-  "}"
-};
+  "}";
 
-static const char *VERTEX_SHADER_330[1] = {
+static const char *VERTEX_SHADER_330 =
   "#version 330 core                                        \n" 
   "uniform mat4 model;                                      \n"
   "uniform mat4 view;                                       \n"
@@ -61,10 +60,9 @@ static const char *VERTEX_SHADER_330[1] = {
   "    vertex_color = color;                                \n"
   "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
   "    gl_Position = projection * vec4(p,1.0);              \n"
-  "}"
-};
+  "}";
 
-static const char *FRAGMENT_SHADER_330[1] = {
+static const char *FRAGMENT_SHADER_330 =
   "#version 330 core                                        \n"
   "in vec3 vertex_color;                                    \n"
   "in vec3 vertex_normal;                                   \n"
@@ -72,8 +70,7 @@ static const char *FRAGMENT_SHADER_330[1] = {
   "void main()                                              \n"
   "{                                                        \n"
   "	outColor = vec4(vertex_normal,1.0);                     \n"
-  "}"
-};
+  "}";
 
 static const int NUM_TEST_POINTS = 4;
 
@@ -115,6 +112,9 @@ public:
 protected:
 
     /// Setup simple GLSL program
+    TfToken _GetShaderPath(char const * shader);
+    void _GetShaderCode(const TfToken& path, const TfToken& name);
+    
     void _SetupSimpleGLSLProgram();
     void _SetupSimpleVertexArray();
 
@@ -136,6 +136,7 @@ private:
 
   // Our simple glsl program;
   LoFiGLSLProgramSharedPtr       _program;
+  std::map<TfToken, std::string>       _shaderCode;
 
   // Test buffers
   GLuint               _vao;

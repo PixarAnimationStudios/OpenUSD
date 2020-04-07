@@ -62,7 +62,7 @@ protected:
 
     LoFiVertexBufferState _PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                                             HdInterpolation interpolation,
-                                            LoFiVertexBufferChannel channel,
+                                            LoFiAttributeChannel channel,
                                             const VtValue& value,
                                             bool needReallocate);
 

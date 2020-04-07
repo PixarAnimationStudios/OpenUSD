@@ -121,27 +121,27 @@ LoFiVertexArray::Unbind() const
 }
 
 bool 
-LoFiVertexArray::HaveBuffer(LoFiVertexBufferChannel channel)
+LoFiVertexArray::HaveBuffer(LoFiAttributeChannel channel)
 {
   if(_buffers.find(channel) != _buffers.end())return true;
   else return false;
 }
 
 LoFiVertexBufferSharedPtr 
-LoFiVertexArray::GetBuffer(LoFiVertexBufferChannel channel)
+LoFiVertexArray::GetBuffer(LoFiAttributeChannel channel)
 {
   return _buffers[channel];
 }
 
 void 
-LoFiVertexArray::SetBuffer(LoFiVertexBufferChannel channel,
+LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel,
   LoFiVertexBufferSharedPtr buffer)
 {
   _buffers[channel] = buffer;
 }
 
 LoFiVertexBufferSharedPtr 
-LoFiVertexArray::CreateBuffer(LoFiVertexBufferChannel channel, 
+LoFiVertexArray::CreateBuffer(LoFiAttributeChannel channel, 
   uint32_t numInputElements, uint32_t numOutputElements)
 {
   return LoFiVertexBufferSharedPtr(

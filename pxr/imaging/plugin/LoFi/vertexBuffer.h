@@ -22,7 +22,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum LoFiVertexBufferChannel : short {
+enum LoFiAttributeChannel : short {
   CHANNEL_POSITION,
   CHANNEL_NORMAL,
   CHANNEL_TANGENT,
@@ -47,7 +47,7 @@ enum LoFiVertexBufferState : short {
 
 typedef std::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
 typedef std::vector<LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrList;
-typedef std::map<LoFiVertexBufferChannel, LoFiVertexBufferSharedPtr> 
+typedef std::map<LoFiAttributeChannel, LoFiVertexBufferSharedPtr> 
   LoFiVertexBufferSharedPtrMap;
 
 /// \class LoFiVertexBuffer
@@ -57,7 +57,7 @@ class LoFiVertexBuffer
 {
 public:
   // constructor
-  LoFiVertexBuffer( LoFiVertexBufferChannel channel, 
+  LoFiVertexBuffer( LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements);
 
