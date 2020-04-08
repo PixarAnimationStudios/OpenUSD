@@ -317,6 +317,12 @@ TraceReporter::_RebuildEventAndAggregateTrees()
 }
 
 void
+TraceReporter::UpdateTraceTrees()
+{
+    _RebuildEventAndAggregateTrees();
+}
+
+void
 TraceReporter::UpdateAggregateTree()
 {
     _RebuildEventAndAggregateTrees();

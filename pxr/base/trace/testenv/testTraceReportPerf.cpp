@@ -108,30 +108,18 @@ int main(int argc, char* argv[])
                 << watch.GetSeconds() << " scopes/msec: " 
                 << float(size)/watch.GetMilliseconds()
                 << std::endl;
-
             auto reporter = TraceReporter::New(
                 "Test", TraceReporterDataSourceCollection::New(collection));
 
             watch.Reset();
             watch.Start();
-            reporter->UpdateAggregateTree();
-            watch.Stop();
-            WriteStats( statsFile,
-                        TfStringPrintf("aggregate tree R %d N %d", R, size),
-                        watch);
-            std::cout << "Aggregate Tree N: " << size << " time: " 
-                << watch.GetSeconds()
-                << " scopes/msec: " << float(size)/watch.GetMilliseconds()
-                << std::endl;
 
-            watch.Reset();
-            watch.Start();
-            auto tree = TraceEventTree::New(*collection);
+            reporter->UpdateTraceTrees();
             watch.Stop();
             WriteStats( statsFile,
-                        TfStringPrintf("event tree R %d N %d", R, size),
+                        TfStringPrintf("trace trees R %d N %d", R, size),
                         watch);
-            std::cout << "Event Tree     N: " << size << " time: " 
+            std::cout << "Trace Trees N: " << size << " time: " 
                 << watch.GetSeconds()
                 << " scopes/msec: " << float(size)/watch.GetMilliseconds()
                 << std::endl;
