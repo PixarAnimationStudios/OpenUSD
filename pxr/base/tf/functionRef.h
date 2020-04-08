@@ -24,6 +24,8 @@
 #ifndef PXR_BASE_TF_FUNCTION_REF_H
 #define PXR_BASE_TF_FUNCTION_REF_H
 
+#include "pxr/pxr.h"
+
 #include <memory>
 #include <type_traits>
 #include <utility>
