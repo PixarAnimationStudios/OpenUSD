@@ -228,94 +228,64 @@ void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
 void LoFiCodeGen::_EmitAccessor(std::stringstream &ss,
                                 TfToken const &name,
                                 TfToken const &type,
-                                LoFiBinding const &binding,
-                                const char *index)
+                                LoFiBinding const &binding)
 {
-  if (index) 
-  {
-    ss << type << " LOFI_GET_" << name << "(int localIndex) {\n"
-        << "  int index = " << index << ";\n";
-    if (binding.type == LoFiBindingType::TBO)
-    {
-      ss << "  return "
-          << type
-          << "(texelFetch(" << name << ", index)"
-          << _GetSwizzleString(type) << ");\n}\n";
-    } 
-    else 
-    {
-      ss << "  return " << name << "[index];\n}\n";
-    }
-  } 
-  else 
-  {
-    /*
-    if (binding.type == LoFiBindingType::UNIFORM || 
-        binding.type == LoFiBindingType::VERTEX) 
-    {
-      ss << type
-          << " LOFI_GET_" << name << "(int localIndex) { ";
-      ss << "return " << name << ";}\n";
-    }
-    */
-  }
-
   ss << type << " LOFI_GET_" << name << "()"
       << " { return " << name << "; }\n";
 }
 
-void LoFiCodeGen::_EmitStructAccessor(std::stringstream &ss,
-                                      TfToken const &structName,
+void LoFiCodeGen::_EmitStageAccessor(std::stringstream &ss,
+                                      TfToken const &stage,
                                       TfToken const &name,
                                       TfToken const &type,
                                       int arraySize,
-                                      const char *index)
+                                      bool indexed)
 { 
-  if (index) 
+  if(indexed)
   {
     if (arraySize > 1) 
     {
-      ss << type << " LOFI_GET_" << name
-          << "(int arrayIndex, int localIndex) {\n"
-          << "  int index = " << index << ";\n"
-          << "  return "
-          << structName << "[index]." << name << "[arrayIndex];\n}\n";
+      ss << type << " LOFI_GET_" << name << "(int localIndex, int arrayIndex)"
+          << " { return " << stage << "_" << name << "[localIndex][arrayndex]; }\n";
     } 
     else 
     {
-      ss << type << " LOFI_GET_" << name
-          << "(int localIndex) {\n"
-          << "  int index = " << index << ";\n"
-          << "  return "
-          << structName << "[index]." << name << ";\n}\n";
+      ss << type << " LOFI_GET_" << name << "(int localIndex)"
+          << " { return " << stage << "_" << name << "[localIndex]; }\n";
     }
   }
-  else 
+  else
   {
     if (arraySize > 1) 
     {
-      ss << type << " LOFI_GET_" << name
-          << "(int arrayIndex, int localIndex) { return "
-          << structName << "." << name << "[arrayIndex];}\n";
+      ss << type << " LOFI_GET_" << name << "(int arrayIndex)"
+          << " { return " << stage << "_" << name << "[arrayIndex]; }\n";
     } 
     else 
     {
-      ss << type << " LOFI_GET_" << name
-          << "(int localIndex) { return "
-          << structName << "." << name << ";}\n";
+      ss << type << " LOFI_GET_" << name << "()"
+          << " { return " << stage << "_" << name << "; }\n";
     }
   }
+  
+  
+}
 
+void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
+                                    TfToken const &stage,
+                                    TfToken const &name,
+                                    TfToken const &type,
+                                    int arraySize)
+{ 
   if (arraySize > 1) 
   {
-    ss << type << " LOFI_GET_" << name
-        << "(int arrayIndex)"
-        << " { return LOFI_GET_" << name << "(arrayIndex, 0); }\n";
+    ss << "void LOFI_SET_" << name << "(int index, " << type << " value)"
+        << " { " << stage << "_" << name << "[index] = value; }\n";
   } 
   else 
   {
-    ss << type << " LOFI_GET_" << name << "()"
-        << " { return LOFI_GET_" << name << "(0); }\n";
+    ss << "void  LOFI_SET_" << name << "(" << type << " value)"
+        << " { " << stage << "_" << name << " = value; }\n";
   }
 }
 
@@ -358,7 +328,7 @@ void
 LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 {
   std::stringstream vertexInputs;
-  std::stringstream interstageVertexData;
+  std::vector<std::string> vertexDatas, geometryDatas;
   std::stringstream accessorsVS, accessorsGS, accessorsFS;
 
   // vertex varying
@@ -369,24 +339,46 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 
     _EmitDeclaration(vertexInputs, name, dataType, *it);
 
-    interstageVertexData << "  " << dataType
-                          << " " << name << ";\n";
+    std::stringstream vertexData;
+    vertexData  << "  " << dataType << " " 
+                << LoFiStageTokens->vertex <<"_" << name << ";\n";
+    vertexDatas.push_back(vertexData.str());
+    
+    std::stringstream geometryData;
+    geometryData  << "  " << dataType << " " 
+                  << LoFiStageTokens->geometry <<"_" << name << ";\n";
+    geometryDatas.push_back(geometryData.str());
 
     // primvar accessors
     _EmitAccessor(accessorsVS, name, dataType, *it);
+    _EmitStageEmittor(accessorsVS,
+                    LoFiStageTokens->vertex,
+                    name,
+                    dataType,
+                    1);
 
-    _EmitStructAccessor(accessorsGS,  LoFiBufferTokens->inPrimvars,
-                        name, dataType, 1, "localIndex");
-
-    _EmitStructAccessor(accessorsFS,  LoFiBufferTokens->inPrimvars,
+    if(hasGeometryShader)
+    {
+      _EmitStageAccessor(accessorsGS,  LoFiStageTokens->vertex,
                         name, dataType, 1);
-
+      _EmitStageEmittor(accessorsGS, LoFiStageTokens->geometry, name, dataType, 1);
+      _EmitStageAccessor(accessorsFS,  LoFiStageTokens->geometry,
+                        name, dataType, 1);
+    }
+    else
+    {
+      _EmitStageAccessor(accessorsFS,  LoFiStageTokens->vertex,
+                        name, dataType, 1);
+    }
+    
+    /*
     // interstage plumbing
     _procVS << "  " << LoFiBufferTokens->outPrimvars << "." << name
             << " = " << name << ";\n";
 
     _procGS  << "  " << LoFiBufferTokens->outPrimvars << "." << name
               << " = " << LoFiBufferTokens->inPrimvars << "[index]." << name << ";\n";
+    */
   }
 
   // face varying
@@ -418,29 +410,50 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
     }
   }
   */
-  if (!interstageVertexData.str().empty()) 
+
+  _genVS  << vertexInputs.str();
+  TF_FOR_ALL(it, vertexDatas)
   {
-    _genVS  << vertexInputs.str()
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << "} outPrimvars;\n"
-            << accessorsVS.str();
+    if(_glslVersion>=330)
+      _genVS << "out " << it->c_str();
+    else
+      _genVS << "varying " << it->c_str();
+  }
+  _genVS << accessorsVS.str();
 
-    _genGS  << fvarDeclarations.str()
-            << "in Primvars {\n"  
-            << interstageVertexData.str()
-            << "} inPrimvars[LOFI_NUM_PRIMITIVE_VERTS];\n"
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << interstageFVarData.str()
-            << "} outPrimvars;\n"
-            << accessorsGS.str();
+  if(hasGeometryShader)
+  {
+    _genGS  << fvarDeclarations.str();
+    TF_FOR_ALL(it, vertexDatas)
+    {
+      if(_glslVersion>=330)
+        _genGS << "in " << it->c_str() << "[LOFI_NUM_PRIMITIVE_VERTS];\n";
+      else
+        _genGS << "varying " << it->c_str() << "[LOFI_NUM_PRIMITIVE_VERTS];\n";
+    }
+    TF_FOR_ALL(it, geometryDatas)
+    {
+      if(_glslVersion>=330)
+        _genGS << "out " << it->c_str();
+      else
+        _genGS << "varying " << it->c_str();
+    }
+    _genGS<< accessorsGS.str();
 
-    _genFS  << "in Primvars {\n"
-            << interstageVertexData.str()
-            << interstageFVarData.str()
-            << "} inPrimvars;\n"
-            << accessorsFS.str();
+    // fragment shader here...
+  }
+  else
+  {
+    std::cout << "ACCESSORS FRAGMENT SHADER :" << std::endl;
+    std::cout << accessorsFS.str() << std::endl;
+    TF_FOR_ALL(it, vertexDatas)
+    {
+      if(_glslVersion>=330)
+        _genFS << "in " << it->c_str();
+      else
+        _genFS << "varying " << it->c_str();
+    }
+    _genFS << accessorsFS.str();
   }
 }
 
@@ -470,7 +483,6 @@ LoFiCodeGen::_GenerateUniforms()
           << accessorsCommon.str();
 }
 
-
 void LoFiCodeGen::GenerateProgramCode()
 {
   LoFiShaderCodeSharedPtr shaderCode = _shaders[1];
@@ -499,26 +511,10 @@ void LoFiCodeGen::GenerateProgramCode()
   _GenerateCommon();
   _GenerateUniforms();
   _GenerateConstants();
-  _GeneratePrimvars(true);
+  _GeneratePrimvars(false);
 
   _genVS << vertexCode;
   _genFS << fragmentCode;
-  
-  
-  std::cout << "-------------------------------------------" << std::endl;
-  std::cout << "COMMON CODE : " << std::endl;
-  std::cout << _genCommon.str() << std::endl;
-  std::cout << "-------------------------------------------" << std::endl;
-  std::cout << "VERTEX SHADER : " << std::endl;
-  std::cout << _genVS.str() << std::endl;
-  /*
-  std::cout << "-------------------------------------------" << std::endl;
-  std::cout << "GEOMETRY SHADER : " << std::endl;
-  std::cout << _genGS.str() << std::endl;
-  */
-  std::cout << "-------------------------------------------" << std::endl;
-  std::cout << "FRAGMENT SHADER : " << std::endl;
-  std::cout << _genFS.str() << std::endl;
 
   _vertexCode = _genVS.str();
   _geometryCode = _genGS.str();

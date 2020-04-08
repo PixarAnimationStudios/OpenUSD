@@ -4,7 +4,7 @@ void main()
 {
   
   gl_Position = GetMVPMatrix() * vec4(LOFI_GET_position(), 1.0);
-  outPrimvars.color = LOFI_GET_color();
+  LOFI_SET_color(LOFI_GET_color());
 }
 
 === =================================================
