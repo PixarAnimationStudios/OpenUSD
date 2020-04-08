@@ -33,7 +33,6 @@
 #include <set>
 #include <vector>
 #include <unordered_map>
-#include <boost/range/iterator.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
