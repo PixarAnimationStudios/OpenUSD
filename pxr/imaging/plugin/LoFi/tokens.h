@@ -53,8 +53,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shape_normal)                  \
     (shape_color)                   \
     (shape_uv)                      \
-    (inPrimvars)                    \
-    (outPrimvars)                   \
+
+#define LOFI_STAGE_TOKENS           \
+    (vertex)                        \
+    (geometry)                      \
 
 // opengl uniforms tokens
 #define LOFI_UNIFORM_TOKENS         \
@@ -83,6 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(LoFiRegistryTokens, LOFI_API, LOFI_REGISTRY_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiGLTokens, LOFI_API, LOFI_GL_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiBufferTokens, LOFI_API, LOFI_BUFFER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(LoFiStageTokens, LOFI_API, LOFI_STAGE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiUniformTokens, LOFI_API, LOFI_UNIFORM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiShaderTokens, LOFI_API, LOFI_SHADER_TOKENS);
 

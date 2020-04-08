@@ -64,15 +64,21 @@ private:
     void _EmitAccessor  (std::stringstream &ss,
                         TfToken const &name,
                         TfToken const &type,
-                        LoFiBinding const &binding,
-                        const char *index = NULL);
+                        LoFiBinding const &binding);
 
-    void _EmitStructAccessor(std::stringstream &str,
-                            TfToken const &structName,
+    void _EmitStageAccessor(std::stringstream &str,
+                            TfToken const &stage,
                             TfToken const &name,
                             TfToken const &type,
                             int arraySize,
-                            const char *index = NULL);
+                            bool indexed=false);
+    
+    void _EmitStageEmittor(std::stringstream &ss,
+                          TfToken const &stage,
+                          TfToken const &name,
+                          TfToken const &type,
+                          int arraySize);
+
     
     void _GenerateVersion();
     void _GenerateCommon();
