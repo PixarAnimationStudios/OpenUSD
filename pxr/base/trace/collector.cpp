@@ -234,7 +234,7 @@ _MakePythonScopeKey(const TfPyTraceInfo& info)
     return TraceCollector::Key(keyString);
 }
 
-void
+inline void
 TraceCollector::_PyTracingCallback(const TfPyTraceInfo& info)
 {
     if (info.what == PyTrace_CALL) {
@@ -255,7 +255,6 @@ TraceCollector::_PyTracingCallback(const TfPyTraceInfo& info)
 void
 TraceCollector::SetPythonTracingEnabled(bool enabled)
 {
-    using namespace std::placeholders;
     static tbb::spin_mutex enableMutex;
     tbb::spin_mutex::scoped_lock lock(enableMutex);
     
@@ -263,9 +262,9 @@ TraceCollector::SetPythonTracingEnabled(bool enabled)
         _isPythonTracingEnabled.store(enabled, std::memory_order_release);
         // Install the python tracing function.
         _pyTraceFnId =
-            TfPyRegisterTraceFn(std::bind(
-                &TraceCollector::_PyTracingCallback, 
-                this, std::placeholders::_1));
+            TfPyRegisterTraceFn([this](const TfPyTraceInfo &info) {
+                    _PyTracingCallback(info);
+                });
     } else if (!enabled && IsPythonTracingEnabled()) {
         _isPythonTracingEnabled.store(enabled, std::memory_order_release);
         // Remove the python tracing function.
