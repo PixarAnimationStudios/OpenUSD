@@ -6,12 +6,10 @@
 #include <iostream>
 #include "pxr/imaging/plugin/Lofi/debugCodes.h"
 #include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
-#include "pxr/imaging/plugin/Lofi/mesh.h"
 #include "pxr/imaging/plugin/Lofi/timer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class LoFiMesh;
 
 LoFiResourceRegistry::LoFiResourceRegistry()
 {
@@ -99,38 +97,10 @@ LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id
   else return LoFiGLSLProgramSharedPtr(nullptr);
 }
 
-HdInstance<LoFiMesh*>
-LoFiResourceRegistry::RegisterMesh(
-  HdInstance<LoFiMesh*>::ID id)
-{
-  return _Register(id, _meshesRegistry, LoFiRegistryTokens->mesh);
-}
-
-LoFiMesh*
-LoFiResourceRegistry::GetMesh(HdInstance<LoFiMesh*>::ID id)
-{
-  bool found;
-  auto instance = _meshesRegistry.FindInstance(id, &found);
-  if(found) return instance.GetValue();
-  else return NULL;
-}
-
 
 void
 LoFiResourceRegistry::_Commit()
 {
-  /// infos about the mesh in the scene
-  {
-    if(TfDebug::IsEnabled(LOFI_GEOMETRY))
-    {
-      for(const auto instance: _meshesRegistry)
-      {
-        LoFiMesh* mesh = instance.second.value;
-        if(mesh)mesh->InfosLog();
-      }
-    }
-  }
-  
   {
     for(auto& instance: _vertexArrayRegistry)
     {

@@ -7,6 +7,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+LoFiShaderCode::LoFiShaderCode(const std::string& glslfxFilename, bool glslfx)
+{
+  std::stringstream ss(glslfxFilename);
+  _glslfx.reset(new HioGlslfx(ss));
+  boost::hash_combine(_hash, _glslfx->GetHash());
+  //boost::hash_combine(_hash, cullingPass);
+  //boost::hash_combine(_hash, primType);
+}
+
 void 
 LoFiShaderCode::_AddSourceBlock(const TfToken& key, const std::string& source)
 {
@@ -41,7 +50,7 @@ LoFiShaderCode::GetSource(const TfToken& key)
   {
     TF_CODING_ERROR("[LoFiShaderCode] Can't find source for key %s", 
             key.GetText());
-    return "";
+    return std::string();
   }
 }
 
@@ -99,11 +108,11 @@ LoFiShaderCode::Parse()
           std::cout << "#######################################################" << std::endl;
         }
       }
-      else TF_CODING_ERROR("[LoFiShaderCode] File is empty : %s\n", _filename);
+      else TF_CODING_ERROR("[LoFiShaderCode] File is empty : %s\n", _filename.c_str());
     }
-    else TF_CODING_ERROR("[LoFiShaderCode] File is invalid : %s\n", _filename);
+    else TF_CODING_ERROR("[LoFiShaderCode] File is invalid : %s\n", _filename.c_str());
   }
-  else TF_CODING_ERROR("[LoFiShaderCode] Failure open file : %s\n", _filename);
+  else TF_CODING_ERROR("[LoFiShaderCode] Failure open file : %s\n", _filename.c_str());
 
   return valid;
 }

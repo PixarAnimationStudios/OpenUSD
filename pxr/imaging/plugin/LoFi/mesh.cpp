@@ -9,6 +9,7 @@
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
+#include "pxr/imaging/plugin/LoFi/shaderCode.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/smoothNormals.h"
@@ -564,13 +565,6 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
       renderIndex.GetResourceRegistry());
 
   uint64_t meshId = (uint64_t)this;
-
-  // register mesh
-  if(resourceRegistry->GetMesh(meshId) == NULL)
-  {
-    HdInstance<LoFiMesh*> instance = resourceRegistry->RegisterMesh(meshId);
-    if(instance.IsFirstInstance())instance.SetValue(this);
-  }
   
   // check initialized
   bool initialized = false;
