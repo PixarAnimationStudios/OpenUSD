@@ -43,6 +43,7 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/usd/sdf/path.h"
 
+#include <boost/shared_ptr.hpp>
 #include <vector>
 #include <memory>
 

@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 
+#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -33,9 +33,6 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <atomic>
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/weak_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,7 +46,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// with the change is required, at which point the resource is updated and the
 /// flag is cleared.
 ///
-class HdChangeTracker : public boost::noncopyable {
+class HdChangeTracker 
+{
 public:
 
     // Common dirty bits for Rprims
@@ -601,6 +599,11 @@ public:
     /// @}
 
 private:
+
+    // Don't allow copies
+    HdChangeTracker(const HdChangeTracker &) = delete;
+    HdChangeTracker &operator=(const HdChangeTracker &) = delete;
+
 
     static void _LogCacheAccess(TfToken const& cacheName,
                                 SdfPath const& id, bool hit);

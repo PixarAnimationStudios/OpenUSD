@@ -57,6 +57,8 @@
 
 #include "pxr/base/tf/type.h"
 
+#include <boost/unordered_map.hpp>
+
 #include <limits>
 #include <queue>
 

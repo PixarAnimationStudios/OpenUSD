@@ -36,6 +36,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
 
+#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE

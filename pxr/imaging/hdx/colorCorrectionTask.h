@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/garch/gl.h"
+
+#include <boost/shared_ptr.hpp>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
