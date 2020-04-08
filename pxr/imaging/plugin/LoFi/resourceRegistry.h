@@ -15,7 +15,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class LoFiMesh;
 
 typedef std::shared_ptr<class LoFiGLSLShader>
     LoFiGLSLShaderSharedPtr;
@@ -79,15 +78,6 @@ public:
     LoFiGLSLProgramSharedPtr
     GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id);
 
-    /// Register a mesh into the program registry.
-    HdInstance<LoFiMesh*>
-    RegisterMesh(HdInstance<LoFiMesh*>::ID id);
-
-    /// Query a mesh into the program registry.
-    LoFiMesh*
-    GetMesh(HdInstance<LoFiMesh*>::ID id);
-
-
 
 protected:
     virtual void _Commit();
@@ -114,8 +104,6 @@ private:
     // glsl program registry
     HdInstanceRegistry<LoFiGLSLProgramSharedPtr> _glslProgramRegistry;
 
-    // tmp mesh registry
-    HdInstanceRegistry<LoFiMesh*>                _meshesRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

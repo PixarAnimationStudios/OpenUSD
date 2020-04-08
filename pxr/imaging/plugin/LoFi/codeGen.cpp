@@ -9,6 +9,7 @@
 #include "pxr/imaging/plugin/LoFi/tokens.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
 #include "pxr/imaging/plugin/LoFi/codeGen.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

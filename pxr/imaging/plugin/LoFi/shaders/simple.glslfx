@@ -1,0 +1,84 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2020 benmalartre
+//
+// Unlicensed
+//
+
+#import $TOOLS/LoFi/shaders/camera.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Vertex
+
+out VertexData
+{
+  vec4 Peye;
+  vec3 Neye;
+} outData;
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+float GetPointRasterSize(int);
+void ProcessPointId(int);
+
+void main(void)
+{
+  ProcessPrimvars();
+
+  mat4 transform    = LOFI_GET_model();
+  vec4 point        = vec4(LOFI_GET_position(), 1);
+  outData.Peye = vec4(GetViewMatrix() * transform * point);
+
+  outData.Neye = LOFI_GET_normal();
+
+  gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+  ApplyClipPlanes(outData.Peye);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment
+void main()
+{
+ bool isFlipped = IsFlipped();
+
+  if (ShouldCullFaceAccordingToShading(gl_FrontFacing, isFlipped)) {
+    discard;
+  }
+
+  DiscardBasedOnTopologicalVisibility();
+
+  vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_color
+  color.rgb = LOFI_GET_color().rgb;
+#endif
+#ifdef HD_HAS_opacity
+  color.a = HdGet_opacity().r;
+#endif
+
+  vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+  vec3 Neye = inData.Neye;
+  // Normalize Neye after rasterizer interpolation.
+  if (length(Neye) > 0.0) {
+      Neye = normalize(Neye);
+  }
+
+  /*
+  // Give the shader key a chance to override the normal.
+  Neye = GetNormal(Neye, 0);
+  // Orient the normal for shading.
+  Neye = GetShadingNormal(Neye, isFlipped);
+
+  vec4 patchCoord = GetPatchCoord();
+  color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+
+  color = ApplyEdgeColor(color, patchCoord);
+
+  if (ShouldDiscardByAlpha(color)) {
+      discard;
+  }
+  */
+
+  RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+}

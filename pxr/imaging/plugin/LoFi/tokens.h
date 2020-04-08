@@ -20,7 +20,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (glslShader)                    \
     (vertexArray)                   \
     (vertexBuffer)                  \
-    (mesh)                          \
 
 // opengl types tokens
 #define LOFI_GL_TOKENS              \
