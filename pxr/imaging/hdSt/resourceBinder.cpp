@@ -1526,6 +1526,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
         ShaderParameterAccessor const &entry = it->second;
         boost::hash_combine(hash, entry.name.Hash());
         boost::hash_combine(hash, entry.dataType);
+        boost::hash_combine(hash, entry.swizzle);
     }
 
     return hash;
