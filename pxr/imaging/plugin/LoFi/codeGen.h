@@ -77,7 +77,8 @@ private:
                           TfToken const &stage,
                           TfToken const &name,
                           TfToken const &type,
-                          int arraySize);
+                          int arraySize,
+                          int index = -1);
 
     
     void _GenerateVersion();
@@ -85,6 +86,7 @@ private:
     void _GenerateConstants();
     void _GeneratePrimvars(bool hasGeometryShader);
     void _GenerateUniforms();
+    void _GenerateResults();
 
     // shader code
     LoFiShaderCodeSharedPtrList _shaders;
@@ -96,9 +98,8 @@ private:
 
     // source buckets
     std::stringstream _genCommon, _genVS, _genGS, _genFS;
-    std::stringstream _procVS, _procGS;
 
-    // generated codes (for diagnostics)
+    // generated codes
     std::string                 _vertexCode;
     std::string                 _geometryCode;
     std::string                 _fragmentCode;

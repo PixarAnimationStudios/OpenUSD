@@ -57,6 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define LOFI_STAGE_TOKENS           \
     (vertex)                        \
     (geometry)                      \
+    (fragment)                      \
 
 // opengl uniforms tokens
 #define LOFI_UNIFORM_TOKENS         \

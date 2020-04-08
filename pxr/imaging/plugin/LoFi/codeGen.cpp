@@ -275,18 +275,44 @@ void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
                                     TfToken const &stage,
                                     TfToken const &name,
                                     TfToken const &type,
-                                    int arraySize)
+                                    int arraySize, 
+                                    int index)
 { 
-  if (arraySize > 1) 
+  if(stage == LoFiStageTokens->fragment)
   {
-    ss << "void LOFI_SET_" << name << "(int index, " << type << " value)"
-        << " { " << stage << "_" << name << "[index] = value; }\n";
-  } 
-  else 
-  {
-    ss << "void  LOFI_SET_" << name << "(" << type << " value)"
-        << " { " << stage << "_" << name << " = value; }\n";
+    if(_glslVersion>=330)
+    {
+      ss << "out " << type << " " << name << ";\n";
+      ss << "void  LOFI_SET_" << name << "(" << type << " value)"
+          << " { " << name << " = value; }\n";
+    }
+    else
+    {
+      std::string substName = "gl_FragColor";
+      if(index >= 0)
+      {
+        substName = "gl_FragData["+TfStringify(index)+"]";
+      }
+      ss << "void  LOFI_SET_" << name << "(" << type << " value)"
+          << " { " << substName << " = value; }\n";
+    }
+    
   }
+  else
+  {
+    if (arraySize > 1) 
+    {
+      ss << "void LOFI_SET_" << name << "(int index, " << type << " value)"
+          << " { " << stage << "_" << name << "[index] = value; }\n";
+    } 
+    else 
+    {
+      ss << "void  LOFI_SET_" << name << "(" << type << " value)"
+          << " { " << stage << "_" << name << " = value; }\n";
+    }
+  }
+  
+  
 }
 
 void 
@@ -329,9 +355,9 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 {
   std::stringstream vertexInputs;
   std::vector<std::string> vertexDatas, geometryDatas;
-  std::stringstream accessorsVS, accessorsGS, accessorsFS;
+  std::stringstream streamVS, streamGS, streamFS;
 
-  // vertex varying
+  // parse attributes
   TF_FOR_ALL (it, _attributeBindings) 
   {
     TfToken const &name = it->name;
@@ -349,9 +375,9 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
                   << LoFiStageTokens->geometry <<"_" << name << ";\n";
     geometryDatas.push_back(geometryData.str());
 
-    // primvar accessors
-    _EmitAccessor(accessorsVS, name, dataType, *it);
-    _EmitStageEmittor(accessorsVS,
+    // primvars
+    _EmitAccessor(streamVS, name, dataType, *it);
+    _EmitStageEmittor(streamVS,
                     LoFiStageTokens->vertex,
                     name,
                     dataType,
@@ -359,58 +385,20 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 
     if(hasGeometryShader)
     {
-      _EmitStageAccessor(accessorsGS,  LoFiStageTokens->vertex,
+      _EmitStageAccessor(streamGS,  LoFiStageTokens->vertex,
                         name, dataType, 1);
-      _EmitStageEmittor(accessorsGS, LoFiStageTokens->geometry, name, dataType, 1);
-      _EmitStageAccessor(accessorsFS,  LoFiStageTokens->geometry,
+      _EmitStageEmittor(streamGS, LoFiStageTokens->geometry, name, dataType, 1);
+      _EmitStageAccessor(streamFS,  LoFiStageTokens->geometry,
                         name, dataType, 1);
     }
     else
     {
-      _EmitStageAccessor(accessorsFS,  LoFiStageTokens->vertex,
+      _EmitStageAccessor(streamFS,  LoFiStageTokens->vertex,
                         name, dataType, 1);
     }
-    
-    /*
-    // interstage plumbing
-    _procVS << "  " << LoFiBufferTokens->outPrimvars << "." << name
-            << " = " << name << ";\n";
-
-    _procGS  << "  " << LoFiBufferTokens->outPrimvars << "." << name
-              << " = " << LoFiBufferTokens->inPrimvars << "[index]." << name << ";\n";
-    */
   }
 
-  // face varying
-  std::stringstream fvarDeclarations;
-  std::stringstream interstageFVarData;
-
-/*
-  if (hasGS) {
-    // FVar primvars are emitted only by the GS.
-    // If the GS isn't active, we can skip processing them.
-    TF_FOR_ALL (it, _metaData.fvarData) {
-      HdBinding binding = it->first;
-      TfToken const &name = it->second.name;
-      TfToken const &dataType = it->second.dataType;
-
-      _EmitDeclaration(fvarDeclarations, name, dataType, binding);
-
-      interstageFVarData << "  " << _GetPackedType(dataType, false)
-                          << " " << name << ";\n";
-
-      // primvar accessors (only in GS and FS)
-      _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
-                          _geometricShader->GetPrimitiveType());
-      _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
-                          1, NULL);
-
-      _procGS << "  outPrimvars." << name 
-                                  <<" = HdGet_" << name << "(index);\n";
-    }
-  }
-  */
-
+  // vertex shader code
   _genVS  << vertexInputs.str();
   TF_FOR_ALL(it, vertexDatas)
   {
@@ -419,11 +407,12 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
     else
       _genVS << "varying " << it->c_str();
   }
-  _genVS << accessorsVS.str();
+  _genVS << streamVS.str();
 
+  
   if(hasGeometryShader)
   {
-    _genGS  << fvarDeclarations.str();
+    // geometry shader code
     TF_FOR_ALL(it, vertexDatas)
     {
       if(_glslVersion>=330)
@@ -438,14 +427,21 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
       else
         _genGS << "varying " << it->c_str();
     }
-    _genGS<< accessorsGS.str();
+    _genGS<< streamGS.str();
 
-    // fragment shader here...
+    // fragment shader code
+    TF_FOR_ALL(it, geometryDatas)
+    {
+      if(_glslVersion>=330)
+        _genFS << "in " << it->c_str();
+      else
+        _genFS << "varying " << it->c_str();
+    }
+    _genFS << streamFS.str();
   }
+  // fragment shader code
   else
   {
-    std::cout << "ACCESSORS FRAGMENT SHADER :" << std::endl;
-    std::cout << accessorsFS.str() << std::endl;
     TF_FOR_ALL(it, vertexDatas)
     {
       if(_glslVersion>=330)
@@ -453,7 +449,7 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
       else
         _genFS << "varying " << it->c_str();
     }
-    _genFS << accessorsFS.str();
+    _genFS << streamFS.str();
   }
 }
 
@@ -483,6 +479,12 @@ LoFiCodeGen::_GenerateUniforms()
           << accessorsCommon.str();
 }
 
+void LoFiCodeGen::_GenerateResults()
+{
+  _EmitStageEmittor(_genFS,  LoFiStageTokens->fragment,
+                    TfToken("result"), LoFiGLTokens->vec4, 1);
+}
+
 void LoFiCodeGen::GenerateProgramCode()
 {
   LoFiShaderCodeSharedPtr shaderCode = _shaders[1];
@@ -495,7 +497,6 @@ void LoFiCodeGen::GenerateProgramCode()
 
   // initialize autogen source buckets
   _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
-  _procVS.str(""), _procGS.str("");
 
   _GenerateVersion();
   
@@ -512,6 +513,7 @@ void LoFiCodeGen::GenerateProgramCode()
   _GenerateUniforms();
   _GenerateConstants();
   _GeneratePrimvars(false);
+  _GenerateResults();
 
   _genVS << vertexCode;
   _genFS << fragmentCode;
