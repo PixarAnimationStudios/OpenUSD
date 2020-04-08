@@ -47,6 +47,8 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
+#include <boost/make_shared.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;

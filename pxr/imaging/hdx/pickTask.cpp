@@ -48,6 +48,9 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/info.h"
 
+#include <boost/functional/hash.hpp>
+#include <boost/make_shared.hpp>
+
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -41,6 +41,8 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
+#include <boost/make_shared.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(

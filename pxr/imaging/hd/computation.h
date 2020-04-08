@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include <boost/shared_ptr.hpp>
 
 #include <memory>
 #include <vector>
