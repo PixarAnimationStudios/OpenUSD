@@ -47,6 +47,7 @@ pxr_library(usd
         primFlags
         primRange
         primTypeInfo
+        primTypeInfoCache
         property
         references
         relationship

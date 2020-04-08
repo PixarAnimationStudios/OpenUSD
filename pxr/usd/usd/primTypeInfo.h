@@ -63,6 +63,9 @@ public:
         return *_FindOrCreatePrimDefinition();
     }
 
+    // Returns the empty prim type info
+    static const Usd_PrimTypeInfo &GetEmptyPrimType();
+
 private:
     // Only the PrimTypeInfoCache can create the PrimTypeInfo prims.
     friend class Usd_PrimTypeInfoCache;

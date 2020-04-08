@@ -69,5 +69,13 @@ Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
     return primDef;
 }
 
+/*static*/ 
+const Usd_PrimTypeInfo &
+Usd_PrimTypeInfo::GetEmptyPrimType()
+{
+    static const Usd_PrimTypeInfo empty;
+    return empty;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

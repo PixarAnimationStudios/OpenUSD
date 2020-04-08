@@ -36,6 +36,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usd/primTypeInfoCache.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/resolveInfo.h"
@@ -2816,6 +2817,57 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
     }
 }
 
+// Static prim type info cache
+static Usd_PrimTypeInfoCache &
+_GetPrimTypeInfoCache()
+{
+    static Usd_PrimTypeInfoCache cache;
+    return cache;
+}
+
+// Iterate over a prim's specs until we get a non-empty, non-any-type typeName.
+static TfToken
+_ComposeTypeName(const PcpPrimIndex *primIndex)
+{
+    for (Usd_Resolver res(primIndex); res.IsValid(); res.NextLayer()) {
+        TfToken tok;
+        if (res.GetLayer()->HasField(
+                res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
+            if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken)
+                return tok;
+        }
+    }
+    return TfToken();
+}
+
+static void
+_ComposeAuthoredAppliedSchemas(
+    const PcpPrimIndex *primIndex, TfTokenVector *schemas)
+{
+    // Collect all list op opinions for the API schemas field from strongest to
+    // weakest. Then we apply them from weakest to strongest.
+    std::vector<SdfTokenListOp> listOps;
+
+    SdfTokenListOp listOp;
+    for (Usd_Resolver res(primIndex); res.IsValid(); res.NextLayer()) {
+        if (res.GetLayer()->HasField(
+                res.GetLocalPath(), UsdTokens->apiSchemas, &listOp)) {
+            // Add the populated list op to the end of the list.
+            listOps.emplace_back();
+            listOps.back().Swap(listOp);
+            // An explicit list op overwrites anything weaker so we can just
+            // stop here if it's explicit.
+            if (listOps.back().IsExplicit()) {
+                break;
+            }
+        }
+    }
+
+    // Apply the listops to our output in reverse order (weakest to strongest).
+    std::for_each(listOps.crbegin(), listOps.crend(),
+        [&schemas](const SdfTokenListOp& op) { op.ApplyOperations(schemas); });
+}
+
 void
 UsdStage::_ComposeSubtreeInParallel(Usd_PrimDataPtr prim)
 {
@@ -2915,8 +2967,22 @@ UsdStage::_ComposeSubtreeImpl(
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
+    if (parent && !isMasterPrim) {
+        // Compose the type info full type ID for the prim which includes
+        // the type name and applied schemas.
+        const TfToken primTypeName = _ComposeTypeName(prim->_primIndex);
+        TfTokenVector appliedSchemas;
+        _ComposeAuthoredAppliedSchemas(prim->_primIndex, &appliedSchemas);
+
+        // Ask the type info cache for the type info for our type.
+        prim->_primTypeInfo = _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(
+            primTypeName, std::move(appliedSchemas));
+    } else {
+        prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
+    }
+
     // Compose type info and flags for prim.
-    prim->_ComposeAndCacheTypeAndFlags(parent, isMasterPrim);
+    prim->_ComposeAndCacheFlags(parent, isMasterPrim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.

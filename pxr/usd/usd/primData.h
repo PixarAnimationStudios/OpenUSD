@@ -255,7 +255,7 @@ private:
     ~Usd_PrimData();
 
     // Compute and store type info and cached flags.
-    void _ComposeAndCacheTypeAndFlags(
+    void _ComposeAndCacheFlags(
         Usd_PrimDataConstPtr parent, bool isMasterPrim);
 
     // Flags direct access for Usd_PrimFlagsPredicate.
