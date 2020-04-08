@@ -60,7 +60,7 @@ HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
             boost::hash_combine(hash, coord.Hash());
         }
         boost::hash_combine(hash, param.textureType);
-        boost::hash_combine(hash, std::hash<std::string>()(param.swizzle));
+        boost::hash_combine(hash, param.swizzle);
     }
     return hash;
 }
