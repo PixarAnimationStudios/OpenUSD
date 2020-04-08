@@ -37,8 +37,6 @@
 
 #include <boost/operators.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <iosfwd>
 #include <string>
@@ -149,7 +147,7 @@ public:
     /// Initializes value to enum variable \c value of enum type \c T.
     template <class T>
     TfEnum(T value,
-           typename boost::enable_if<boost::is_enum<T> >::type * = 0)
+           std::enable_if_t<std::is_enum<T>::value> * = 0)
         : _typeInfo(&typeid(T)), _value(int(value))
     {
     }
@@ -181,28 +179,28 @@ public:
 
     /// True if \c *this has been assigned with \c value.
     template <class T>
-    typename boost::enable_if<boost::is_enum<T>, bool>::type
+    std::enable_if_t<std::is_enum<T>::value, bool>
     operator==(T value) const {
         return int(value) == _value && IsA<T>();
     }
 
     /// False if \c *this has been assigned with \c value.
     template <class T>
-    typename boost::enable_if<boost::is_enum<T>, bool>::type
+    std::enable_if_t<std::is_enum<T>::value, bool>
     operator!=(T value) const {
         return int(value) != _value || !IsA<T>();
     }
 
     /// Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
     template <class T>
-    friend typename boost::enable_if<boost::is_enum<T>, bool>::type
+    friend std::enable_if_t<std::is_enum<T>::value, bool>
     operator==(T val, TfEnum const &e) {
         return e == val;
     }
 
     /// Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
     template <class T>
-    friend typename boost::enable_if<boost::is_enum<T>, bool>::type
+    friend std::enable_if_t<std::is_enum<T>::value, bool>
     operator!=(T val, TfEnum const &e) {
         return e != val;
     }
