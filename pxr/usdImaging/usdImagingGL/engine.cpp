@@ -44,13 +44,19 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stl.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
+                      "Default usdImaging scene delegate id");
 
 namespace {
 
@@ -63,6 +69,16 @@ _GetHydraEnabledEnvVar()
     // be cleaned up, and the new class hierarchy around UsdImagingGLEngine
     // makes it much easier to do so.
     return TfGetenv("HD_ENABLED", "1") == "1";
+}
+
+static
+SdfPath const&
+_GetUsdImagingDelegateId()
+{
+    static SdfPath const delegateId =
+        SdfPath(TfGetEnvSetting(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID));
+
+    return delegateId;
 }
 
 static
@@ -130,7 +146,7 @@ UsdImagingGLEngine::UsdImagingGLEngine()
     , _hgi(Hgi::GetPlatformDefaultHgi())
     , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
     , _selTracker(new HdxSelectionTracker)
-    , _delegateID(SdfPath::AbsoluteRootPath())
+    , _delegateID(_GetUsdImagingDelegateId())
     , _delegate(nullptr)
     , _rendererPlugin(nullptr)
     , _taskController(nullptr)
