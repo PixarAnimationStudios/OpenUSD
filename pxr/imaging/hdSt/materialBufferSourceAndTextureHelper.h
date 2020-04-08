@@ -41,6 +41,12 @@ class HdSceneDelegate;
 ///
 struct HdSt_MaterialBufferSourceAndTextureHelper
 {
+    /// Add a buffer spec and a buffer source based on the given name
+    /// and value.
+    void AddSourceFromValue(const TfToken &name, const VtValue &value);
+    /// Add a buffer source and its respective spec.
+    void AddSource(HdBufferSourceSharedPtr const &source);
+
     /// Process material param of type HdSt_MaterialParam::ParamTypePrimvar
     /// or HdSt_MaterialParam::ParamTypeFallback
     void ProcessPrimvarOrFallbackMaterialParam(
@@ -54,6 +60,9 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
 
     /// The buffer sources created by the above methods.
     HdBufferSourceSharedPtrVector sources;
+
+    /// The buffer specs
+    HdBufferSpecVector specs;
 
     /// The texture descriptors created by the above methods.
     HdStShaderCode::TextureDescriptorVector textures;

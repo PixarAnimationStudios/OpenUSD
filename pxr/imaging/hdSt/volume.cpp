@@ -536,7 +536,10 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
         volumeShader->GetSource(HdShaderTokens->fragmentShader));
     result->SetParams(materialParams);
     result->SetTextureDescriptors(sourcesAndTextures.textures);
-    result->SetBufferSources(sourcesAndTextures.sources, resourceRegistry);
+    result->SetBufferSources(
+        sourcesAndTextures.specs,
+        sourcesAndTextures.sources,
+        resourceRegistry);
 
     return result;
 }

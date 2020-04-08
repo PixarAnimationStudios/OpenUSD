@@ -36,13 +36,28 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
+HdSt_MaterialBufferSourceAndTextureHelper::AddSourceFromValue(
+    const TfToken &name, const VtValue &value)
+{
+    AddSource(
+        std::make_shared<HdVtBufferSource>(
+            name, value));
+}
+
+void
+HdSt_MaterialBufferSourceAndTextureHelper::AddSource(
+    HdBufferSourceSharedPtr const &source)
+{
+    sources.push_back(source);
+    source->GetBufferSpecs(&specs);
+}
+
+void
 HdSt_MaterialBufferSourceAndTextureHelper::
                                     ProcessPrimvarOrFallbackMaterialParam(
     HdSt_MaterialParam const &param)
 {
-    sources.push_back(
-        std::make_shared<HdVtBufferSource>(
-            param.name, param.fallbackValue));
+    AddSourceFromValue(param.name, param.fallbackValue);
 }
 
 namespace {
@@ -129,7 +144,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
 
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetTexelsTextureHandle()));
@@ -142,7 +157,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
         
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetLayoutTextureHandle()));
@@ -152,7 +167,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
         
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetTexelsTextureHandle()));
@@ -165,7 +180,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
         
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetLayoutTextureHandle()));
@@ -175,7 +190,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
         
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetTexelsTextureHandle()));
@@ -185,7 +200,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         textures.push_back(tex);
         
         if (bindless) {
-            sources.push_back(
+            AddSource(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     tex.name,
                     texResource->GetTexelsTextureHandle()));

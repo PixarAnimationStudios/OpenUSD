@@ -309,16 +309,14 @@ HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 
 void
 HdStSurfaceShader::SetBufferSources(
+    HdBufferSpecVector const &bufferSpecs,
     HdBufferSourceSharedPtrVector &bufferSources,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
-    if (bufferSources.empty()) {
+    if (bufferSpecs.empty()) {
+        _paramSpec.clear();
         _paramArray.reset();
     } else {
-        // Build the buffer Spec to see if its changed.
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(bufferSources, &bufferSpecs);
-
         if (!_paramArray || _paramSpec != bufferSpecs) {
             _paramSpec = bufferSpecs;
 

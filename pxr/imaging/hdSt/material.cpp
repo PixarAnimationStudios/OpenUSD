@@ -214,7 +214,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _surfaceShader->SetTextureDescriptors(
         sourcesAndTextures.textures);
     _surfaceShader->SetBufferSources(
-        sourcesAndTextures.sources, resourceRegistry);
+        sourcesAndTextures.specs,
+        sourcesAndTextures.sources,
+        resourceRegistry);
 
     if (_hasPtex != hasPtex) {
         _hasPtex = hasPtex;
