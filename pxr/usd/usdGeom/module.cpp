@@ -60,6 +60,7 @@ TF_WRAP_MODULE
                         TF_WRAP(UsdGeomPoints);
                         TF_WRAP(UsdGeomCurves);
                             TF_WRAP(UsdGeomBasisCurves);
+                            TF_WRAP(UsdGeomHermiteCurves);
                             TF_WRAP(UsdGeomNurbsCurves);
                 TF_WRAP(UsdGeomPointInstancer);
     TF_WRAP(UsdGeomSubset);
