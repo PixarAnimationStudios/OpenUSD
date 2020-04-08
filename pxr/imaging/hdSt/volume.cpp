@@ -351,25 +351,6 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
 
             {
                 // Add HdSt_MaterialParam such that codegen will give us an
-                // accessor
-                //     vec3 HdGet_NAMEFallback()
-                // to get the fallback value.
-                const TfToken fallbackName(
-                    param.name.GetString() + "Fallback");
-
-                const HdSt_MaterialParam fallbackParam(
-                    HdSt_MaterialParam::ParamTypeFallback,
-                    fallbackName,
-                    param.fallbackValue);
-
-                sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
-                    fallbackParam);
-
-                materialParams.push_back(fallbackParam);
-            }
-
-            {
-                // Add HdSt_MaterialParam such that codegen will give us an
                 // acccesor
                 //    vec3 HdGet_NAME(vec3 p)
                 // which will apply the field transform and sample the
@@ -381,8 +362,9 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                     param.fallbackValue,
                     SdfPath(),
                     { fieldName });
-                
+
                 materialParams.push_back(fieldRedirectParam);
+                sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
             }
         } else {
             // Push non-field params so that codegen will do generate
@@ -392,7 +374,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             // Process non-field params similar to how they are handled in
             // HdStMaterial::Sync.
             if (param.IsPrimvar() || param.IsFallback()) {
-                sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(param);
+                sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
             }
         }
     }
@@ -460,21 +442,14 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             hasField = true;
 
             const TfToken samplingTransformName(
-                fieldName.GetString() + "SamplingTransform");
+                fieldName.GetString() + "TextureSamplingTransform");
 
             // Transform to map the bounding box to [0,1]^3.
             const VtValue samplingTransform(
                 _ComputeSamplingTransform(fieldBoundingBox));
 
-            const HdSt_MaterialParam samplingTransformParam(
-                HdSt_MaterialParam::ParamTypeFallback,
-                samplingTransformName,
-                samplingTransform);
-
-            sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
-                samplingTransformParam);
-
-            materialParams.push_back(samplingTransformParam);
+            sourcesAndTextures.AddSourceFromValue(
+                samplingTransformName, samplingTransform);
         }
     }
 
@@ -498,7 +473,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxInverseTransform,
             VtValue(localVolumeBBox->GetMatrix().GetInverse()));
         
-        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+        sourcesAndTextures.ProcessMaterialParamFallbackValue(
             transformParam);
         
         materialParams.push_back(transformParam);
@@ -512,7 +487,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxLocalMin,
             VtValue(localVolumeBBox->GetRange().GetMin()));
         
-        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+        sourcesAndTextures.ProcessMaterialParamFallbackValue(
             minParam);
         
         materialParams.push_back(minParam);
@@ -526,7 +501,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxLocalMax,
             VtValue(localVolumeBBox->GetRange().GetMax()));
         
-        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+        sourcesAndTextures.ProcessMaterialParamFallbackValue(
             maxParam);
         
         materialParams.push_back(maxParam);

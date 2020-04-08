@@ -53,8 +53,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::AddSource(
 }
 
 void
-HdSt_MaterialBufferSourceAndTextureHelper::
-                                    ProcessPrimvarOrFallbackMaterialParam(
+HdSt_MaterialBufferSourceAndTextureHelper::ProcessMaterialParamFallbackValue(
     HdSt_MaterialParam const &param)
 {
     AddSourceFromValue(param.name, param.fallbackValue);

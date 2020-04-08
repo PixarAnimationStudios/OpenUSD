@@ -47,9 +47,8 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
     /// Add a buffer source and its respective spec.
     void AddSource(HdBufferSourceSharedPtr const &source);
 
-    /// Process material param of type HdSt_MaterialParam::ParamTypePrimvar
-    /// or HdSt_MaterialParam::ParamTypeFallback
-    void ProcessPrimvarOrFallbackMaterialParam(
+    /// Add buffer spec and source for material param's fallback value.
+    void ProcessMaterialParamFallbackValue(
         HdSt_MaterialParam const &param);
 
     /// Process material param of type HdSt_MaterialParam::ParamTypeTexture

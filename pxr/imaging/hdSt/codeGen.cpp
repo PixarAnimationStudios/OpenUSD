@@ -2804,27 +2804,29 @@ HdSt_CodeGen::_GenerateShaderParameters()
             }
 
             // vec4 HdGet_name(vec3 coord)
+            //
+            // Applying nameSamplingTransform before sampling.
             accessors
                 << _GetUnpackedType(it->second.dataType, false)
                 << " HdGet_" << it->second.name << "(vec3 coord) { \n"
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                << "   vec4 c = vec4(\n"
+                << "     shaderData[shaderCoord]."
+                << it->second.name << "SamplingTransform * vec4(coord, 1));\n"
+                << "   vec3 sampleCoord = c.xyz / c.w;\n"
                 << "  return "
                 << _GetPackedTypeAccessor(it->second.dataType, false) << "("
                 << "texture(sampler3D(shaderData[shaderCoord]."
-                << it->second.name << "), coord)"
+                << it->second.name << "), sampleCoord)"
                 << swizzle << ");\n}\n";
 
             // vec4 HdGet_name(int localIndex)
             accessors
                 << _GetUnpackedType(it->second.dataType, false)
                 << " HdGet_" << it->second.name << "(int localIndex) {\n"
-                << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
-                << "  return "
-                << _GetPackedTypeAccessor(it->second.dataType, false) << "("
-                << "texture(sampler3D(shaderData[shaderCoord]." << it->second.name << "), ";
-
+                << "  return HdGet_" << it->second.name << "(";
             if (!it->second.inPrimvars.empty()) {
-                accessors 
+                accessors
                     << "\n"
                     << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
                     << " HdGet_" << it->second.inPrimvars[0]
@@ -2833,7 +2835,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "vec3(0.0, 0.0, 0.0)\n"
                     << "#endif\n";
             } else {
-            // allow to fetch uv texture without sampler coordinate for convenience.
+                // allow to fetch field texture without sampler coordinate for
+                // convenience.
                 accessors
                     << " vec3(0.0, 0.0, 0.0)";
             }
@@ -2865,11 +2868,19 @@ HdSt_CodeGen::_GenerateShaderParameters()
             }
 
             // vec4 HdGet_name(vec3 coord)
+            //
+            // Applying nameSamplingTransform before sampling.
             accessors
                 << _GetUnpackedType(it->second.dataType, false)
-                << " HdGet_" << it->second.name << "(vec3 coord) { return "
+                << " HdGet_" << it->second.name << "(vec3 coord) {\n"
+                << "   int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                << "   vec4 c = vec4(\n"
+                << "     shaderData[shaderCoord]."
+                << it->second.name << "SamplingTransform * vec4(coord, 1));\n"
+                << "   vec3 sampleCoord = c.xyz / c.w;\n"
+                << "   return "
                 << _GetPackedTypeAccessor(it->second.dataType, false)
-                << "(texture(sampler3d_" << it->second.name << ", coord)"
+                << "(texture(sampler3d_" << it->second.name << ", sampleCoord)"
                 << swizzle << ");}\n";
 
             // vec4 HdGet_name(int localIndex)
@@ -3097,21 +3108,13 @@ HdSt_CodeGen::_GenerateShaderParameters()
             accessors
                 << "vec3 HdGet_" << it->second.name << "(vec3 p) {\n"
                 << "#if defined(HD_HAS_" << it->second.fieldName << "Texture)\n"
-                << "\n"
-                << "#if defined(HD_HAS_" << it->second.fieldName << "SamplingTransform)\n"
-                << "    vec4 q = vec4(HdGet_" << it->second.fieldName << "SamplingTransform() * vec4(p.xyz, 1));\n"
-                << "    vec3 s = q.xyz/q.w;\n"
+                << "    return vec3(\n"
+                << "        HdGet_" << it->second.fieldName << "Texture(p)"
+                << ".xyz);\n"
                 << "#else\n"
-                << "    vec3 s = p;\n"
-                << "#endif\n"
-                << "\n"
-                << "    return vec3(HdGet_" << it->second.fieldName << "Texture(s).xyz);\n"
-                << "#else\n"
-                << "#if defined(HD_HAS_" << it->second.name << "Fallback)\n"
-                << "    return vec3(HdGet_" << it->second.name << "Fallback().xyz);\n"
-                << "#else\n"
-                << "    return vec3(0.0);\n"
-                << "#endif\n"
+                << "    int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                << "    return vec3(shaderData[shaderCoord]."
+                << it->second.name << ".xyz);\n"
                 << "#endif\n"
                 << "};\n"
                 ;
