@@ -35,8 +35,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
-
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
@@ -95,7 +93,8 @@ using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 ///
 /// Performance counter monitoring.
 ///
-class HdPerfLog : public boost::noncopyable {
+class HdPerfLog
+{
 public:
     HD_API
     static HdPerfLog& GetInstance() {
@@ -190,6 +189,11 @@ public:
     std::vector<HdResourceRegistrySharedPtr> const& GetResourceRegistryVector();
 
 private:
+     
+    // Don't allow copies
+    HdPerfLog(const HdPerfLog &) = delete;
+    HdPerfLog &operator=(const HdPerfLog &) = delete;
+
     friend class TfSingleton<HdPerfLog>;
     HD_API HdPerfLog();
     HD_API ~HdPerfLog();
