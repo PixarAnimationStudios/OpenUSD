@@ -911,9 +911,10 @@ class StageView(QtOpenGL.QGLWidget):
         # before attempts to use the renderer (e.g. pick()), so we must
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
-            if self.isValid():
-                self._renderer = UsdImagingGL.Engine()
-                self._handleRendererChanged(self.GetCurrentRendererId())
+            if self.context().isValid():
+                if self.context().initialized():
+                    self._renderer = UsdImagingGL.Engine()
+                    self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
