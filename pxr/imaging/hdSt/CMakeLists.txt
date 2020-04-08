@@ -85,8 +85,12 @@ pxr_library(hdSt
         shaderCode
         simpleLightingShader
         smoothNormals
+        subtextureIdentifier
         surfaceShader
         texture
+        textureIdentifier
+        textureObject
+        textureObjectRegistry
         textureResource
         textureResourceHandle
         tokens
