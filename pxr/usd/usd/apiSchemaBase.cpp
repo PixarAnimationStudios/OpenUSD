@@ -142,8 +142,8 @@ UsdAPISchemaBase::_ApplyAPISchemaImpl(const UsdPrim &prim,
         }
     }
 
-    SdfTokenListOp listOp = 
-        primSpec->GetInfo(UsdTokens->apiSchemas).UncheckedGet<SdfTokenListOp>();
+    SdfTokenListOp listOp =
+        primSpec->GetInfo(UsdTokens->apiSchemas).Get<SdfTokenListOp>();
 
     // Append our name to the prepend list, if it doesnt exist locally.
     TfTokenVector existingApiSchemas = listOp.IsExplicit() ? 
