@@ -76,9 +76,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nearplane)                     \
     (farplane)                      \
 
-// shader tokens
 #define LOFI_SHADER_TOKENS          \
-    (common)                        \
     (vertex)                        \
     (geometry)                      \
     (fragment)                      \

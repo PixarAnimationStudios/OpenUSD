@@ -71,19 +71,17 @@ private:
                             TfToken const &name,
                             TfToken const &type,
                             int arraySize,
-                            bool indexed=false);
+                            int* index=NULL);
     
     void _EmitStageEmittor(std::stringstream &ss,
                           TfToken const &stage,
                           TfToken const &name,
                           TfToken const &type,
                           int arraySize,
-                          int index = -1);
+                          int* index=NULL);
 
     
     void _GenerateVersion();
-    void _GenerateCommon();
-    void _GenerateConstants();
     void _GeneratePrimvars(bool hasGeometryShader);
     void _GenerateUniforms();
     void _GenerateResults();

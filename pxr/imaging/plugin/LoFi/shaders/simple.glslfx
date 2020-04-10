@@ -3,10 +3,27 @@
 //
 // Copyright 2020 benmalartre
 //
-// Unlicensed
+// Unlicensed 
 //
 
-#import $TOOLS/LoFi/shaders/camera.glslfx
+#import $TOOLS/LoFi/shaders/common.glslfx
+
+--- --------------------------------------------------------------------------
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "vertex": {
+                "source": [ "Common.Camera",
+                            "Mesh.Vertex" ]
+            },
+            "fragment": {
+                "source": [ "Common.Camera",
+                            "Mesh.Fragment" ]
+            }
+        }
+    }
+}
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -24,47 +41,28 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
+vec3 GetViewPoint()
+{
+  mat4 m = GetViewMatrix();
+  return vec3(-m[3][0], -m[3][1], -m[3][2]);
+}
+
 void main()
 {
- bool isFlipped = IsFlipped();
+  vec3 viewPoint = GetViewPoint();
+  vec3 delta = normalize(viewPoint - LOFI_GET_position());
 
-  if (ShouldCullFaceAccordingToShading(gl_FrontFacing, isFlipped)) {
-    discard;
-  }
-
-  DiscardBasedOnTopologicalVisibility();
-
-  vec4 color = vec4(0.5, 0.5, 0.5, 1);
-#ifdef HD_HAS_color
-  color.rgb = LOFI_GET_color().rgb;
+  vec3 lightDir = normalize((GetViewMatrix() * vec4(1.0,1.0,1.0,0.0)).xyz);
+  vec3 color = LOFI_GET_color();
+  float dc = dot(delta, LOFI_GET_normal())  ;
+  if(dc< 0.5) color *= 0.0;
+  float dl = dot(lightDir, LOFI_GET_normal())  ;
+  if(dl<0.5)color *=0.2;  
+  
+#ifdef LOFI_HAS_color
+  LOFI_SET_result(vec4(color,1.0));
+#else
+  LOFI_SET_result(vec4(1.0,0.0,0.0,1.0));
 #endif
-#ifdef HD_HAS_opacity
-  color.a = HdGet_opacity().r;
-#endif
 
-  vec3 Peye = inData.Peye.xyz / inData.Peye.w;
-
-  vec3 Neye = inData.Neye;
-  // Normalize Neye after rasterizer interpolation.
-  if (length(Neye) > 0.0) {
-      Neye = normalize(Neye);
-  }
-
-  /*
-  // Give the shader key a chance to override the normal.
-  Neye = GetNormal(Neye, 0);
-  // Orient the normal for shading.
-  Neye = GetShadingNormal(Neye, isFlipped);
-
-  vec4 patchCoord = GetPatchCoord();
-  color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
-
-  color = ApplyEdgeColor(color, patchCoord);
-
-  if (ShouldDiscardByAlpha(color)) {
-      discard;
-  }
-  */
-
-  RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }

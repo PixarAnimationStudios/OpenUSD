@@ -77,6 +77,7 @@ public:
   // topology
   inline void SetTopologyPtr(const GfVec3i* topology) {
     _topology = topology;
+    _needReallocate = true;
   }
   const GfVec3i* GetTopologyPtr() const {return _topology;};
 

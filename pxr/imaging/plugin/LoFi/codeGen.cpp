@@ -6,55 +6,13 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/plugin/LoFi/tokens.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
 #include "pxr/imaging/plugin/LoFi/codeGen.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-/*
-static const char *VERTEX_SHADER_330[1] = {
-  "#version 330 core                                        \n" 
-  "uniform mat4 model;                                      \n"
-  "uniform mat4 view;                                       \n"
-  "uniform mat4 projection;                                 \n"
-  "                                                         \n"
-  "in vec3 position;                                        \n"
-  "in vec3 normal;                                          \n"
-  "in vec3 color;                                           \n"
-  "out vec3 vertex_color;                                   \n"
-  "out vec3 vertex_normal;                                  \n"
-  "void main(){                                             \n"
-  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;     \n"
-  "    vertex_color = color;                                \n"
-  "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
-  "    gl_Position = projection * vec4(p,1.0);              \n"
-  "}"
-};
-
-static const char *FRAGMENT_SHADER_120[1] = {
-  "#version 120                                             \n"
-  "varying vec3 vertex_normal;                              \n"
-  "varying vec3 vertex_color;                               \n"
-  "void main()                                              \n"
-  "{                                                        \n"
-  " vec3 color = vertex_normal * 0.5 + vertex_color * 0.5;  \n"
-  "	gl_FragColor = vec4(color,1.0);                         \n"
-  "}"
-};
-
-static const char *FRAGMENT_SHADER_330[1] = {
-  "#version 330 core                                        \n"
-  "in vec3 vertex_color;                                    \n"
-  "in vec3 vertex_normal;                                   \n"
-  "out vec4 outColor;                                       \n"
-  "void main()                                              \n"
-  "{                                                        \n"
-  "	outColor = vec4(vertex_normal,1.0);                     \n"
-  "}"
-};
-*/
 
 static TfToken LoFiGetAttributeChannelName(LoFiAttributeChannel channel)
 {
@@ -175,6 +133,7 @@ LoFiCodeGen::LoFiCodeGen(LoFiGeometricProgramType type,
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   _glslVersion = caps.glslVersion;
+  std::cout << "NUM SHADERS : "<< _shaders.size() << std::endl;
 }
 
 void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
@@ -201,9 +160,8 @@ void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
   case LoFiBindingType::VERTEX:
     if(_glslVersion >= 330)
     {
-      //ss << "layout (location = " << binding.location << ") in ";
-
-      ss <<"in "<< type << " " << name << ";\n";
+      ss  << "layout (location = " << binding.location << ") in "
+          << type << " " << name << ";\n";
       break;
     }
     else
@@ -239,19 +197,19 @@ void LoFiCodeGen::_EmitStageAccessor(std::stringstream &ss,
                                       TfToken const &name,
                                       TfToken const &type,
                                       int arraySize,
-                                      bool indexed)
+                                      int* index)
 { 
-  if(indexed)
+  if(index!=NULL)
   {
     if (arraySize > 1) 
     {
       ss << type << " LOFI_GET_" << name << "(int localIndex, int arrayIndex)"
-          << " { return " << stage << "_" << name << "[localIndex][arrayndex]; }\n";
+          << " { return " << stage << "_" << name << "[" << *index << "][arrayIndex]; }\n";
     } 
     else 
     {
       ss << type << " LOFI_GET_" << name << "(int localIndex)"
-          << " { return " << stage << "_" << name << "[localIndex]; }\n";
+          << " { return " << stage << "_" << name << "[" << *index << "]; }\n";
     }
   }
   else
@@ -276,7 +234,7 @@ void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
                                     TfToken const &name,
                                     TfToken const &type,
                                     int arraySize, 
-                                    int index)
+                                    int* index)
 { 
   if(stage == LoFiStageTokens->fragment)
   {
@@ -289,14 +247,13 @@ void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
     else
     {
       std::string substName = "gl_FragColor";
-      if(index >= 0)
+      if(index!=NULL)
       {
-        substName = "gl_FragData["+TfStringify(index)+"]";
+        substName = "gl_FragData["+TfStringify(*index)+"]";
       }
       ss << "void  LOFI_SET_" << name << "(" << type << " value)"
           << " { " << substName << " = value; }\n";
     }
-    
   }
   else
   {
@@ -311,8 +268,6 @@ void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
           << " { " << stage << "_" << name << " = value; }\n";
     }
   }
-  
-  
 }
 
 void 
@@ -329,26 +284,6 @@ LoFiCodeGen::_GenerateVersion()
   }
 }
 
-void 
-LoFiCodeGen::_GenerateCommon()
-{
-  _genVS << _genCommon.str();
-  _genGS << _genCommon.str();
-  _genFS << _genCommon.str();
-}
-
-void 
-LoFiCodeGen::_GenerateConstants()
-{
-  LoFiShaderCodeSharedPtr shaderCode = _shaders[0];
-
-  std::string constantCode = shaderCode->GetSource(LoFiShaderTokens->common);
-  std::cout << ":D \n" << constantCode << std::endl;
-
-  _genVS << constantCode;
-  _genGS << constantCode;
-  _genFS << constantCode;
-}
 
 void
 LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
@@ -377,11 +312,8 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 
     // primvars
     _EmitAccessor(streamVS, name, dataType, *it);
-    _EmitStageEmittor(streamVS,
-                    LoFiStageTokens->vertex,
-                    name,
-                    dataType,
-                    1);
+    _EmitStageEmittor(streamVS, LoFiStageTokens->vertex,
+                    name, dataType, 1);
 
     if(hasGeometryShader)
     {
@@ -460,7 +392,8 @@ LoFiCodeGen::_GenerateUniforms()
   std::stringstream accessorsCommon;
 
   // vertex varying
-  TF_FOR_ALL (it, _uniformBindings) {
+  TF_FOR_ALL (it, _uniformBindings) 
+  {
     TfToken const &name = it->name;
     TfToken const &dataType = it->dataType;
 
@@ -487,19 +420,12 @@ void LoFiCodeGen::_GenerateResults()
 
 void LoFiCodeGen::GenerateProgramCode()
 {
-  LoFiShaderCodeSharedPtr shaderCode = _shaders[1];
+  LoFiShaderCodeSharedPtr shaderCode = _shaders[0];
 
-  // shader sources which own main()
-  std::string vertexCode = shaderCode->GetSource(LoFiShaderTokens->vertex);
-  std::cout << ":D \n" << vertexCode << std::endl;
-  std::string fragmentCode = shaderCode->GetSource(LoFiShaderTokens->fragment);
-  std::cout << ":D \n" << fragmentCode << std::endl;
-
-  // initialize autogen source buckets
+  // initialize source buckets
   _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
 
   _GenerateVersion();
-  
   
   TF_FOR_ALL (it, _attributeBindings) {
     _genCommon << "#define LOFI_HAS_" << it->name << " 1\n";
@@ -509,29 +435,24 @@ void LoFiCodeGen::GenerateProgramCode()
     _genCommon << "#define LOFI_HAS_" << it->name << " 1\n";
   }
 
-  _GenerateCommon();
+  _genVS << _genCommon.str();
+  //_genGS << _genCommon.str();
+  _genFS << _genCommon.str();
+
   _GenerateUniforms();
-  _GenerateConstants();
   _GeneratePrimvars(false);
   _GenerateResults();
 
-  _genVS << vertexCode;
-  _genFS << fragmentCode;
+  // shader sources which own main()
+  _genVS << shaderCode->GetSource(LoFiShaderTokens->vertex);
+  _genGS << shaderCode->GetSource(LoFiShaderTokens->geometry);
+  _genFS << shaderCode->GetSource(LoFiShaderTokens->fragment);
 
+  // cache strings
   _vertexCode = _genVS.str();
   _geometryCode = _genGS.str();
   _fragmentCode = _genFS.str();
-}
 
-/*
-  "varying vec3 vertex_color;                               \n"
-  "void main(){                                             \n"
-  "    vertex_normal = (model * vec4(normal, 0.0)).xyz;     \n"
-  "    vertex_color = color;                                \n"
-  "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
-  "    gl_Position = projection * vec4(p,1.0);              \n"
-  "}"
-};
-*/
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

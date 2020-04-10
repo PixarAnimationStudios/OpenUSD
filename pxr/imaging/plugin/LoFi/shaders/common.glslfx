@@ -1,5 +1,14 @@
-=== =================================================
-== common
+-- glslfx version 0.1
+
+//
+// Copyright 2020 benmalartre
+//
+// Unlicensed 
+//
+
+--- --------------------------------------------------------------------------
+-- glsl Common.Camera
+
 mat4  GetViewMatrix() {
 #ifdef LOFI_HAS_view
     return mat4(LOFI_GET_view());

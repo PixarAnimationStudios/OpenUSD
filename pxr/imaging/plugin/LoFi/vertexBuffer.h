@@ -96,9 +96,15 @@ public:
   inline void SetRawInputDatas(const char* datas){_rawInputDatas = datas;};
 
   // compute output datas
-  uint64_t ComputeOutputSize() {return _numOutputElements * _elementSize;};
+  uint32_t GetNumOutputElements() {return _numOutputElements;};
+  void SetNumOutputElements(uint32_t numOutputElements) {
+    _numOutputElements = numOutputElements;
+  };
+  uint32_t ComputeOutputSize() {return _numOutputElements * _elementSize;};
   void ComputeOutputDatas(const GfVec3i* samples,
                           char* outputDatas);
+
+  
 
   // opengl
   void Reallocate();

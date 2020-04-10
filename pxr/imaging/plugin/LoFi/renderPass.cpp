@@ -18,7 +18,6 @@ LoFiRenderPass::LoFiRenderPass(
     HdRprimCollection const &collection)
     : HdRenderPass(index, collection)
 {
-
   _SetupSimpleGLSLProgram();
   _SetupSimpleVertexArray();
 }
@@ -36,11 +35,6 @@ TfToken LoFiRenderPass::_GetShaderPath(char const * shader)
   return TfToken(path);
 }
 
-void _GetShaderCode(const TfToken& path, const TfToken& name)
-{
-
-}
-
 void 
 LoFiRenderPass::_SetupSimpleGLSLProgram()
 {
@@ -54,19 +48,12 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     );
   TF_VERIFY(resourceRegistry);
 
-  TfToken commonPath = _GetShaderPath("camera.glsl");
-  TfToken simplePath = _GetShaderPath("simple.glsl");
+  TfToken simplePath = _GetShaderPath("simple.glslfx");
 
-  LoFiShaderCodeSharedPtr commonCode(new LoFiShaderCode(commonPath.GetText()));
-  commonCode->Parse();
-
-  LoFiShaderCodeSharedPtr simpleCode(new LoFiShaderCode(simplePath.GetText()));
-  simpleCode->Parse();
-
+  LoFiShaderCodeSharedPtr simpleCode(new LoFiShaderCode(simplePath));
   LoFiShaderCodeSharedPtrList shaders;
-  shaders.resize(2);
-  shaders[0] = commonCode;
-  shaders[1] = simpleCode;
+  shaders.resize(1);
+  shaders[0] = simpleCode;
 
   LoFiBinder binder;
   binder.CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
