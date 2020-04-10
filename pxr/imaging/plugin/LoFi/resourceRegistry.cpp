@@ -8,6 +8,9 @@
 #include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
 #include "pxr/imaging/plugin/Lofi/timer.h"
 
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -101,21 +104,24 @@ LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id
 void
 LoFiResourceRegistry::_Commit()
 {
+  TF_STATUS("RESSOURCE REGISTRY COMMIT BEGIN...");
+  for(auto& instance: _vertexArrayRegistry)
   {
-    for(auto& instance: _vertexArrayRegistry)
+    LoFiVertexArraySharedPtr vertexArray = instance.second.value;
+    if(vertexArray->GetNeedReallocate())
     {
-      LoFiVertexArraySharedPtr vertexArray = instance.second.value;
-      if(vertexArray->GetNeedReallocate())
-      {
-        vertexArray->Reallocate();
-        vertexArray->Populate();
-      }
-      else if(vertexArray->GetNeedUpdate())
-      {
-        vertexArray->Populate();
-      }
+      TF_STATUS("REALLOCATE VERTEX ARRAY...");
+      vertexArray->Reallocate();
+      TF_STATUS("POPULATE VERTEX ARRAY...");
+      vertexArray->Populate();
+      TF_STATUS("ALL DONE...");
+    }
+    else if(vertexArray->GetNeedUpdate())
+    {
+      vertexArray->Populate();
     }
   }
+  TF_STATUS("RESSOURCE REGISTRY COMMIT DONE...");
 }
 
 void

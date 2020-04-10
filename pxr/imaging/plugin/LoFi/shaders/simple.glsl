@@ -2,10 +2,6 @@
 == vertex 
 void main()
 {
-  /*
-  gl_Position = GetMVPMatrix() * vec4(LOFI_GET_position(), 1.0);
-  LOFI_SET_color(LOFI_GET_color());
-  */
   mat4 viewModel = GetViewMatrix() * GetModelMatrix();
   vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
   vec4 n = viewModel * vec4(LOFI_GET_normal(), 0.0);

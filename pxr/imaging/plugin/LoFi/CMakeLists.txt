@@ -53,6 +53,9 @@ pxr_plugin(LoFi
         plugInfo.json
         shaders/camera.glsl
         shaders/simple.glsl
+        shaders/common.glslfx
+        shaders/simple.glslfx
+        shaders/visibility.glslfx
 )
 
 if (X11_FOUND OR APPLE)

@@ -23,7 +23,7 @@
 #       define LOFI_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
 #       define LOFI_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #   endif
-#   define HD_LOCAL ARCH_HIDDEN
+#   define LOFI_LOCAL ARCH_HIDDEN
 #endif
 
 #endif // PXR_IMAGING_PLUGIN_LOFI_API_H

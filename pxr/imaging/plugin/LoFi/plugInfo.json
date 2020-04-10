@@ -10,7 +10,8 @@
                         "displayName": "LoFi",
                         "priority": 99
                     }
-                }
+                },
+                "ShaderResources": "shaders"
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "LoFi",

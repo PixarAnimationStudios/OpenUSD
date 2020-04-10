@@ -19,6 +19,9 @@
 #include <iostream>
 #include <memory>
 
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -305,10 +308,8 @@ LoFiVertexBufferState
 LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                             HdInterpolation interpolation,
                             LoFiAttributeChannel channel,
-                            const VtValue& value,
-                            bool needReallocate)
+                            const VtValue& value)
 {
-  _vertexArray->SetHaveChannel(channel);
   uint32_t numInputElements = 0;
   uint32_t numOutputElements = _samples.size();
   const char* datasPtr = NULL;
@@ -343,15 +344,24 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       return LoFiVertexBufferState::INVALID;
   }
 
-  if(!_vertexArray->HaveBuffer(channel) || needReallocate)
+  bool needReallocate = false;
+  if(!_vertexArray->HaveBuffer(channel))
   {
     LoFiVertexBufferSharedPtr buffer = 
       LoFiVertexArray::CreateBuffer(channel, numInputElements,
         numOutputElements);
     _vertexArray->SetBuffer(channel, buffer);
+    _vertexArray->SetHaveChannel(channel);
+    needReallocate = true;
   }
-
+  
   LoFiVertexBufferSharedPtr buffer = _vertexArray->GetBuffer(channel);
+  if(buffer->GetNumOutputElements() != _samples.size())
+  {
+    needReallocate = true;
+  }
+    
+  buffer->SetNumOutputElements(_samples.size());
   buffer->SetNeedReallocate(needReallocate);
   buffer->SetValid(valid);
   buffer->SetInterpolation(interpolation);
@@ -393,7 +403,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
   {
     //HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
-
+    TF_STATUS("TOPOLOGY IS DIRTY!!!");
     LoFiTriangulateMesh(
       topology.GetFaceVertexCounts(), 
       topology.GetFaceVertexIndices(),
@@ -406,7 +416,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) 
   {
     GfMatrix4d transform = sceneDelegate->GetTransform(id);
-    _sharedData.bounds.SetMatrix(transform); // for CPU frustum culling
+    _sharedData.bounds.SetMatrix(transform);
   }
 
   if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) 
@@ -415,6 +425,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   }
 
   bool needReallocate = (_samples.size() != _vertexArray->GetNumElements());
+  TF_STATUS(TfStringPrintf("NEED REALLOCATE : %d", needReallocate));
   _vertexArray->SetNumElements(_samples.size());
   bool pointPositionsUpdated = false;
   bool haveAuthoredNormals = false;
@@ -438,8 +449,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
             _PopulatePrimvar( sceneDelegate,
                               interp,
                               CHANNEL_POSITION,
-                              value,
-                              needReallocate );
+                              value);
           if(state != LoFiVertexBufferState::TO_RECYCLE && 
             state != LoFiVertexBufferState::INVALID)
               pointPositionsUpdated = true;
@@ -451,8 +461,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
             _PopulatePrimvar(sceneDelegate,
                             interp,
                             CHANNEL_NORMAL,
-                            value,
-                            needReallocate);
+                            value);
           if(state != LoFiVertexBufferState::INVALID)
               haveAuthoredNormals = true;
         }
@@ -462,8 +471,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
           _PopulatePrimvar(sceneDelegate,
                           interp,
                           CHANNEL_UV,
-                          value,
-                          needReallocate);
+                          value);
         }
         
         else if(pv.name == TfToken("displayColor") || 
@@ -473,8 +481,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
             _PopulatePrimvar(sceneDelegate,
                             interp,
                             CHANNEL_COLOR,
-                            value,
-                            needReallocate);
+                            value);
           if(state != LoFiVertexBufferState::INVALID)
               haveAuthoredDisplayColor = true;
         }
@@ -485,12 +492,22 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   // if no authored normals compute smooth vertex normals
   if(!haveAuthoredNormals && (needReallocate || pointPositionsUpdated))
   {
-    if(!_vertexArray->HaveBuffer(CHANNEL_NORMAL) || needReallocate)
+    if(!_vertexArray->HaveBuffer(CHANNEL_NORMAL))
     {
       LoFiVertexBufferSharedPtr buffer = 
         LoFiVertexArray::CreateBuffer(CHANNEL_NORMAL, _positions.size(),
           _samples.size());
       _vertexArray->SetBuffer(CHANNEL_NORMAL, buffer);
+      _vertexArray->SetHaveChannel(CHANNEL_NORMAL);
+    }
+    else
+    {
+      LoFiVertexBufferSharedPtr buffer = _vertexArray->GetBuffer(CHANNEL_NORMAL);
+      if(needReallocate || buffer->GetNumOutputElements() != _samples.size())
+      {
+        buffer->SetNeedReallocate(true);
+        buffer->SetNumOutputElements(_samples.size());
+      }
     }
 
     LoFiComputeVertexNormals( _positions,
@@ -500,7 +517,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
                               _normals);
     
     LoFiVertexBufferSharedPtr buffer = _vertexArray->GetBuffer(CHANNEL_NORMAL);
-    buffer->SetNeedReallocate(false);
     buffer->SetNeedUpdate(true);
     buffer->SetValid(true);
     buffer->SetInterpolation(HdInterpolationVertex);
@@ -508,11 +524,9 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     size_t dataHash = buffer->ComputeDatasHash((const char*)_normals.cdata());
       
     buffer->SetDatasHash(dataHash);
-    buffer->SetNeedUpdate(true);
-    
-    _vertexArray->SetHaveChannel(CHANNEL_NORMAL);
-  }
 
+  }
+/*
   // if no authored colors compute random vertex colors
   if(!haveAuthoredDisplayColor && needReallocate)
   {
@@ -538,7 +552,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     
     _vertexArray->SetHaveChannel(CHANNEL_COLOR);
   }
-
+*/
   // update state
   _vertexArray->UpdateState();
   
@@ -585,9 +599,9 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
     drawItem->SetVertexArray(_vertexArray.get());
   }
   _UpdateVisibility(sceneDelegate, dirtyBits);
-
+  TF_STATUS("POPULATE MESH BEGIN...");
   _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
-  
+  TF_STATUS("POPULATE MESH DONE!!!");
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
