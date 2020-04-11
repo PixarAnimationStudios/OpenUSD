@@ -9,12 +9,14 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/tokens.h"
-#include "pxr/imaging/plugin/LoFi/shader.h"
-#include "pxr/imaging/plugin/LoFi/vertexArray.h"
-#include "pxr/imaging/plugin/LoFi/shader.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class LoFiVertexArray;
+class LoFiVertexBuffer;
+class LoFiGLSLShader;
+class LoFiGLSLProgram;
 
 typedef std::shared_ptr<class LoFiGLSLShader>
     LoFiGLSLShaderSharedPtr;
@@ -22,6 +24,8 @@ typedef std::shared_ptr<class LoFiGLSLProgram>
     LoFiGLSLProgramSharedPtr;
 typedef std::shared_ptr<class LoFiVertexArray>
     LoFiVertexArraySharedPtr;
+typedef std::shared_ptr<class LoFiVertexBuffer>
+    LoFiVertexBufferSharedPtr;
 typedef std::shared_ptr<class LoFiResourceRegistry>
     LoFiResourceRegistrySharedPtr;
 
@@ -62,6 +66,18 @@ public:
     LoFiVertexArraySharedPtr
     GetVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id);
 
+    /// Register a vertex buffer object
+    HdInstance<LoFiVertexBufferSharedPtr>
+    RegisterVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id);
+
+    /// Check a vertex buffer object
+    bool
+    HasVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id);
+
+    /// Query a vertex buffer object
+    LoFiVertexBufferSharedPtr
+    GetVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id);
+
     /// Register a GLSL shader into the program registry.
     HdInstance<LoFiGLSLShaderSharedPtr>
     RegisterGLSLShader(HdInstance<LoFiGLSLShaderSharedPtr>::ID id);
@@ -93,10 +109,7 @@ private:
     HdInstanceRegistry<LoFiVertexArraySharedPtr> _vertexArrayRegistry;
 
     // vbos
-    //HdInstanceRegistry<LoFiVertexBuffer*> _vertexBufferRegistry;
-
-    // ebos
-    //HdInstanceRegistry<LoFiElementBuffer*> _elementBufferRegistry;
+    HdInstanceRegistry<LoFiVertexBufferSharedPtr> _vertexBufferRegistry;
 
     // glsl shader registry
     HdInstanceRegistry<LoFiGLSLShaderSharedPtr> _glslShaderRegistry;

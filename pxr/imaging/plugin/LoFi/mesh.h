@@ -63,7 +63,8 @@ protected:
     LoFiVertexBufferState _PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                                             HdInterpolation interpolation,
                                             LoFiAttributeChannel channel,
-                                            const VtValue& value);
+                                            const VtValue& value,
+                                            LoFiResourceRegistrySharedPtr registry);
 
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;

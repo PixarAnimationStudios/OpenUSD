@@ -7,19 +7,22 @@
 #include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
 LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
-  uint32_t numInputElements, uint32_t numOutputElements)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
   : _channel(channel)
-  , _datasHash(0)
-  , _registryKey(0)
+  , _hash(0)
+  , _key(0)
   , _numInputElements(numInputElements)
   , _numOutputElements(numOutputElements) 
   , _needReallocate(true)
   , _needUpdate(true)
-  , _interpolation(HdInterpolationConstant)
+  , _interpolation(interpolation)
   , _vbo(0)
 {
   switch(channel)
@@ -40,31 +43,34 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
 // destructor
 LoFiVertexBuffer::~LoFiVertexBuffer()
 {
+  TF_STATUS(TfStringPrintf("DELETE LOFI VERTEX BUFFER %d", _vbo));
   if(_vbo)glDeleteBuffers(1, &_vbo);
 }
 
-size_t LoFiVertexBuffer::ComputeDatasHash(const char* datas)
+size_t LoFiVertexBuffer::ComputeKey(const SdfPath& id)
 {
-  size_t hash = 0;
-  hash = ArchHash(datas, _numInputElements * _elementSize);
-  boost::hash_combine(hash, _channel);
-  boost::hash_combine(hash, _numInputElements);
-  boost::hash_combine(hash, _elementSize);
-  return hash;
+  _key = id.GetHash();
+  boost::hash_combine(_key, _channel);
+  boost::hash_combine(_key, _numInputElements);
+  boost::hash_combine(_key, _elementSize);
+  return _key;
 }
 
-size_t LoFiVertexBuffer::ComputeRegistryKey()
+size_t LoFiVertexBuffer::ComputeHash(const char* datas)
 {
-  size_t key = 0;
-  boost::hash_combine(key, _datasHash);
-  boost::hash_combine(key, _numOutputElements);
-  return key;
+  _hash = ArchHash(datas, _numInputElements * _elementSize);
+  boost::hash_combine(_hash, _key);
+  return _hash;
 }
 
 // allocate
 void LoFiVertexBuffer::Reallocate()
 {
-  if(!_vbo) glGenBuffers(1, &_vbo);
+  if(!_vbo)
+  {
+    glGenBuffers(1, &_vbo);
+    TF_STATUS(TfStringPrintf("CREATE NEW VERTEX BUFFER OBJECT %d", _vbo));
+  } 
 
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
   glBufferData(
@@ -75,10 +81,12 @@ void LoFiVertexBuffer::Reallocate()
   );
   glVertexAttribPointer(_channel, 3, GL_FLOAT, GL_FALSE, 0, NULL);
   glEnableVertexAttribArray(_channel);
+  _needReallocate = false;
 }
 
 void LoFiVertexBuffer::Populate(const void* datas)
 {
+  
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
   glBufferSubData(
     GL_ARRAY_BUFFER, 
@@ -86,6 +94,7 @@ void LoFiVertexBuffer::Populate(const void* datas)
     _numOutputElements * _elementSize,
     datas
   );
+  _needUpdate = false;
 }
 
 void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
