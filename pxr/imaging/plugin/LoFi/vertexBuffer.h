@@ -47,8 +47,7 @@ enum LoFiVertexBufferState : short {
 
 typedef std::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
 typedef std::vector<LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrList;
-typedef std::map<LoFiAttributeChannel, LoFiVertexBufferSharedPtr> 
-  LoFiVertexBufferSharedPtrMap;
+typedef std::map<LoFiAttributeChannel, LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrMap;
 
 /// \class LoFiVertexBuffer
 ///
@@ -59,20 +58,21 @@ public:
   // constructor
   LoFiVertexBuffer( LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
-                    uint32_t numOutputElements);
+                    uint32_t numOutputElements,
+                    HdInterpolation interpolation);
 
   // destructor
   ~LoFiVertexBuffer();
 
   // hash
-  size_t ComputeDatasHash(const char* datas);
-  inline size_t GetDatasHash(){return _datasHash;};
-  inline void SetDatasHash(size_t hash){ _datasHash = hash;};
+  size_t ComputeHash(const char* datas);
+  inline size_t GetHash(){return _hash;};
+  inline void SetHash(size_t hash){ _hash = hash;};
 
   // registry key
-  size_t ComputeRegistryKey();
-  inline size_t GetRegistryKey(){return _registryKey;};
-  inline void SetRegistryKey(size_t key){_registryKey = key;};
+  size_t ComputeKey(const SdfPath& id);
+  inline size_t GetKey(){return _key;};
+  inline void SetKey(size_t key){_key = key;};
 
   // state
   inline bool GetNeedReallocate(){return _needReallocate;};
@@ -104,8 +104,6 @@ public:
   void ComputeOutputDatas(const GfVec3i* samples,
                           char* outputDatas);
 
-  
-
   // opengl
   void Reallocate();
   void Populate(const void* triangulatedDatas);
@@ -115,8 +113,8 @@ private:
   // description
   std::string                       _name;
   short                             _channel;
-  size_t                            _datasHash;
-  size_t                            _registryKey;
+  size_t                            _hash;
+  size_t                            _key;
   uint32_t                          _numInputElements;
   uint32_t                          _numOutputElements;
   uint32_t                          _elementSize;

@@ -40,22 +40,21 @@ public:
   GLuint Get() const {return _vao;};
 
   // buffers
-  bool HaveBuffer(LoFiAttributeChannel channel);
+  bool HasBuffer(LoFiAttributeChannel channel);
   LoFiVertexBufferSharedPtr GetBuffer(LoFiAttributeChannel channel);
-
-  void SetBuffer(LoFiAttributeChannel channel,
-    LoFiVertexBufferSharedPtr buffer);
+  void SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedPtr buffer);
 
   static LoFiVertexBufferSharedPtr 
   CreateBuffer( LoFiAttributeChannel channel, 
                 uint32_t numInputElements, 
-                uint32_t numOutputElements);
+                uint32_t numOutputElements,
+                HdInterpolation interpolation);
 
   // channels
   inline void SetHaveChannel(LoFiAttributeChannel channel) { 
     _channels |= channel;
   };
-  inline bool HaveChannel(LoFiAttributeChannel channel) { 
+  inline bool GetHaveChannel(LoFiAttributeChannel channel) { 
     return ((_channels & channel) == channel);
   };
 

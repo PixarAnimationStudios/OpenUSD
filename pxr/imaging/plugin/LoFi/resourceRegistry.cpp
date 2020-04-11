@@ -8,6 +8,10 @@
 #include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
 #include "pxr/imaging/plugin/Lofi/timer.h"
 
+#include "pxr/imaging/plugin/LoFi/shader.h"
+#include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
+#include "pxr/imaging/plugin/LoFi/vertexArray.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -68,6 +72,28 @@ LoFiResourceRegistry::GetVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id
   else return LoFiVertexArraySharedPtr(nullptr);
 }
 
+HdInstance<LoFiVertexBufferSharedPtr>
+LoFiResourceRegistry::RegisterVertexBuffer(
+  HdInstance<LoFiVertexBufferSharedPtr>::ID id)
+{
+  return _Register(id, _vertexBufferRegistry, LoFiRegistryTokens->vertexBuffer);
+}
+
+bool
+LoFiResourceRegistry::HasVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id)
+{
+  bool found = false;
+  auto instance = _vertexBufferRegistry.FindInstance(id, &found);
+  return found;
+}
+
+LoFiVertexBufferSharedPtr
+LoFiResourceRegistry::GetVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id)
+{
+  auto instance = _vertexBufferRegistry.GetInstance(id);
+  return instance.GetValue();
+}
+
 HdInstance<LoFiGLSLShaderSharedPtr>
 LoFiResourceRegistry::RegisterGLSLShader(
   HdInstance<LoFiGLSLShaderSharedPtr>::ID id)
@@ -78,7 +104,7 @@ LoFiResourceRegistry::RegisterGLSLShader(
 LoFiGLSLShaderSharedPtr
 LoFiResourceRegistry::GetGLSLShader(HdInstance<LoFiVertexArraySharedPtr>::ID id)
 {
-  bool found;
+  bool found = false;
   auto instance = _glslShaderRegistry.FindInstance(id, &found);
   if(found) return instance.GetValue();
   else return LoFiGLSLShaderSharedPtr(nullptr);
@@ -94,39 +120,37 @@ LoFiResourceRegistry::RegisterGLSLProgram(
 LoFiGLSLProgramSharedPtr
 LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id)
 {
-  bool found;
+  bool found = false;
   auto instance = _glslProgramRegistry.FindInstance(id, &found);
   if(found) return instance.GetValue();
   else return LoFiGLSLProgramSharedPtr(nullptr);
 }
 
-
 void
 LoFiResourceRegistry::_Commit()
 {
-  TF_STATUS("RESSOURCE REGISTRY COMMIT BEGIN...");
   for(auto& instance: _vertexArrayRegistry)
   {
     LoFiVertexArraySharedPtr vertexArray = instance.second.value;
     if(vertexArray->GetNeedReallocate())
     {
-      TF_STATUS("REALLOCATE VERTEX ARRAY...");
       vertexArray->Reallocate();
-      TF_STATUS("POPULATE VERTEX ARRAY...");
       vertexArray->Populate();
-      TF_STATUS("ALL DONE...");
     }
     else if(vertexArray->GetNeedUpdate())
     {
       vertexArray->Populate();
     }
   }
-  TF_STATUS("RESSOURCE REGISTRY COMMIT DONE...");
 }
 
 void
 LoFiResourceRegistry::_GarbageCollect()
 {
+  _vertexArrayRegistry.GarbageCollect();
+  _vertexBufferRegistry.GarbageCollect();
+  _glslShaderRegistry.GarbageCollect();
+  _glslProgramRegistry.GarbageCollect();
 }
 
 void

@@ -7,6 +7,7 @@
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,7 +57,7 @@ LoFiVertexArray::Reallocate()
   }
   Bind();
 
-  for(auto elem: _buffers)
+  for(auto& elem: _buffers)
   {
     LoFiVertexBufferSharedPtr buffer = elem.second;
     buffer->Reallocate();
@@ -72,11 +73,13 @@ LoFiVertexArray::Populate()
 
   Bind();
   
-  for(auto elem: _buffers)
+  for(auto& elem: _buffers)
   {
     LoFiVertexBufferSharedPtr buffer = elem.second;
+    if(buffer->GetNeedReallocate())buffer->Reallocate();
     if(buffer->GetNeedUpdate())
     {
+
       VtArray<char> datas(buffer->ComputeOutputSize());
       buffer->ComputeOutputDatas(_topology, datas.data());
       buffer->Populate(datas.cdata());
@@ -121,31 +124,30 @@ LoFiVertexArray::Unbind() const
 }
 
 bool 
-LoFiVertexArray::HaveBuffer(LoFiAttributeChannel channel)
+LoFiVertexArray::HasBuffer(LoFiAttributeChannel channel)
 {
   if(_buffers.find(channel) != _buffers.end())return true;
   else return false;
 }
 
-LoFiVertexBufferSharedPtr 
+LoFiVertexBufferSharedPtr
 LoFiVertexArray::GetBuffer(LoFiAttributeChannel channel)
 {
   return _buffers[channel];
 }
 
 void 
-LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel,
-  LoFiVertexBufferSharedPtr buffer)
+LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedPtr buffer)
 {
   _buffers[channel] = buffer;
 }
 
 LoFiVertexBufferSharedPtr 
 LoFiVertexArray::CreateBuffer(LoFiAttributeChannel channel, 
-  uint32_t numInputElements, uint32_t numOutputElements)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(channel, numInputElements, numOutputElements)
+    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, interpolation)
   );
 }
 
