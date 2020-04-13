@@ -30,12 +30,11 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+using UsdImagingPrimAdapterSharedPtr = 
+    std::shared_ptr<class UsdImagingPrimAdapter>;
 
 /// \class UsdImagingInstancerContext
 ///
@@ -57,6 +56,11 @@ public:
 
     /// The draw mode bound to the instance prim being processed.
     TfToken instanceDrawMode;
+
+    // The inheritable purpose bound to the instance prim being processed. If 
+    // the instance prim can provide this, prototypes without an explicit or 
+    // inherited purpose will inherit this purpose from the instance.
+    TfToken instanceInheritablePurpose;
 
     /// The instancer's prim Adapter. Useful when an adapter is needed, but the
     /// default adapter may be overridden for the sake of instancing.

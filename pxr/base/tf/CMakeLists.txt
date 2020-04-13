@@ -8,6 +8,11 @@ if(WIN32)
     set(WINLIBS Shlwapi.lib)
 endif()
 
+# Workaround for issue where the version of lz4 embedded in tf 
+# fails to build on clang with C++14 enabled. For more details
+# see: https://github.com/lz4/lz4/issues/409.
+add_definitions(-DLZ4_DISABLE_DEPRECATE_WARNINGS)
+
 pxr_library(tf
     LIBRARIES
         arch
@@ -75,7 +80,6 @@ pxr_library(tf
         templateString
         tf
         token
-        traits
         type
         typeFunctions
         typeNotice
@@ -111,7 +115,6 @@ pxr_library(tf
         pySingleton
         pyTracing
         pyUtils
-        pyWeakObject
         pyWrapContext
         scriptModuleLoader
         wrapTypeHelpers
@@ -122,6 +125,7 @@ pxr_library(tf
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h
+        functionRef.h
         hashmap.h
         hashset.h
         instantiateSingleton.h
@@ -137,6 +141,8 @@ pxr_library(tf
         type_Impl.h
 
     PYTHON_PUBLIC_HEADERS
+        py3Compat.h
+        pySafePython.h
         pyStaticTokens.h
 
     PRIVATE_CLASSES
@@ -160,6 +166,7 @@ pxr_library(tf
         pxrDoubleConversion/fixed-dtoa.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
+        pyWeakObject.h
 
     CPPFILES
         initConfig.cpp
@@ -179,6 +186,7 @@ pxr_library(tf
 
     PYMODULE_CPPFILES
         module.cpp
+        pyWeakObject.cpp
         wrapAnyWeakPtr.cpp
         wrapCallContext.cpp
         wrapDebug.cpp
@@ -317,6 +325,7 @@ pxr_build_test(testTf
         testenv/envSetting.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
+        testenv/functionRef.cpp
         testenv/getenv.cpp
         testenv/hash.cpp
         testenv/iterator.cpp
@@ -374,10 +383,6 @@ pxr_install_test_dir(
     SRC testenv/baseline/TfDebugTestEnv
     DEST TfDebugTestEnv/baseline
 )
-pxr_install_test_dir(
-    SRC testenv/baseline/TfDebugTestEnvList
-    DEST TfDebugTestEnvList/baseline
-)
 endif()
 pxr_install_test_dir(
     SRC testenv/baseline/TfDelegate
@@ -427,10 +432,6 @@ pxr_register_test(TfDebugFatal_3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_3"
     EXPECTED_RETURN_CODE 134
 )
-pxr_register_test(TfDebugFatal_4
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_4"
-    EXPECTED_RETURN_CODE 134
-)
 # These tests will depend on downstream libraries when built monolithic.
 # We don't want changes to those libraries to affect test results so we
 # simply disable these tests in that case.
@@ -440,12 +441,6 @@ pxr_register_test(TfDebugTestEnv
     ENV TF_DEBUG="FOO* FLAM_* FLAM -FOOFLIMFLAM TF_DISCOVERY_D*"
     STDOUT_REDIRECT debugTestEnv.out
     DIFF_COMPARE debugTestEnv.out
-)
-pxr_register_test(TfDebugTestEnvList
-    ENV TF_DEBUG=list
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugTestEnvList"
-    STDOUT_REDIRECT debugTestEnvList.out
-    DIFF_COMPARE debugTestEnvList.out
 )
 endif()
 pxr_register_test(TfDebugTestEnvHelp
@@ -483,6 +478,9 @@ pxr_register_test(TfFileUtils
 pxr_register_test(TfFileUtils_Python
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfFileUtils"
+)
+pxr_register_test(TfFunctionRef
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFunctionRef"
 )
 pxr_register_test(TfStringUtils_Python
     PYTHON

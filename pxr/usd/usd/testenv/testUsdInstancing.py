@@ -28,6 +28,8 @@
 # output from run to run. However, the assertions made
 # by this test should always be valid.
 
+from __future__ import print_function
+
 from pxr import Usd, Sdf, Tf
 import unittest
 
@@ -108,10 +110,10 @@ def ValidateAndDumpUsdStage(stage):
         elif prim.IsInMaster() and prim.GetPath().IsRootPrimPath():
             desc += ' [prim index: <%s>]' % \
                 prim._GetSourcePrimIndex().rootNode.path
-        print desc
+        print(desc)
         for prop in prim.GetAuthoredProperties():
             propDesc = ' ' * (2 * (level + 1)) + "." + prop.GetName()
-            print propDesc
+            print(propDesc)
         for child in prim.GetAllChildren():
             _Recurse(child, level + 1)
     _Recurse(stage.GetPseudoRoot(), 0)
@@ -142,7 +144,7 @@ def ValidateAndDumpUsdStage(stage):
 
         assert master._GetSourcePrimIndex().IsInstanceable()
 
-    print ""
+    print("")
 
 def OpenStage(filePath, loadState = Usd.Stage.LoadAll):
     s = Usd.Stage.Open(filePath, loadState)
@@ -161,8 +163,8 @@ class NoticeListener:
                               for p in notice.GetResyncedPaths()])
         infoChanges = dict([(str(p), notice.GetChangedFields(p))
                             for p in notice.GetChangedInfoOnlyPaths()])
-        print "Resynced:\n  ", resyncChanges.items()
-        print "Changed Info:\n  ", infoChanges.items()
+        print("Resynced:\n  ", list(resyncChanges.items()))
+        print("Changed Info:\n  ", list(infoChanges.items()))
 
         self.resyncedPrimPaths = notice.GetResyncedPaths()
         self.changedInfoPaths = notice.GetChangedInfoOnlyPaths()
@@ -173,7 +175,7 @@ class TestUsdInstancing(unittest.TestCase):
         # Print a newline before each test so that the output for
         # each test case starts on a newline instead of the last
         # line of the unittest output.
-        print "\n"
+        print()
 
     def test_Basic(self):
         """Test instancing and change processing with basic asset structure
@@ -185,8 +187,8 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
                               '/World/sets/Set_1/Prop_2'] })
 
-        print "-" * 60
-        print "Adding prim /Prop/Scope to referenced prop"
+        print("-" * 60)
+        print("Adding prim /Prop/Scope to referenced prop")
         propLayer = Sdf.Layer.Find('basic/prop.usda')
         scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
                              'Scope', Sdf.SpecifierDef)
@@ -197,8 +199,8 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_3/Scope', '/__Master_1/Scope'])
 
-        print "-" * 60
-        print "Adding prim /Prop/Scope/Scope2 to referenced prop"
+        print("-" * 60)
+        print("Adding prim /Prop/Scope/Scope2 to referenced prop")
         scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
         ValidateExpectedInstances(s,
@@ -212,8 +214,8 @@ class TestUsdInstancing(unittest.TestCase):
         master = s.GetPrimAtPath('/__Master_1')
         primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Uninstancing prim %s" % primPathToUninstance
+        print("-" * 60)
+        print("Uninstancing prim %s" % primPathToUninstance)
         p2 = s.GetPrimAtPath(primPathToUninstance)
         p2.SetInstanceable(False)
 
@@ -235,8 +237,8 @@ class TestUsdInstancing(unittest.TestCase):
         # available.
         primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Uninstancing prim %s" % primPathToUninstance
+        print("-" * 60)
+        print("Uninstancing prim %s" % primPathToUninstance)
         p1 = s.GetPrimAtPath(primPathToUninstance)
         p1.SetInstanceable(False)
 
@@ -253,8 +255,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that making a prim index instanceable causes a new master to
         # be created if it's the first one.
-        print "-" * 60
-        print "Instancing prim /World/sets/Set_1/Prop_3"
+        print("-" * 60)
+        print("Instancing prim /World/sets/Set_1/Prop_3")
         p3 = s.GetPrimAtPath('/World/sets/Set_1/Prop_3')
         p3.SetInstanceable(True)
 
@@ -265,8 +267,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that modifying the composition structure of an instanceable
         # prim index causes new masters to be created.
-        print "-" * 60
-        print "Removing inherit arc from referenced prop"
+        print("-" * 60)
+        print("Removing inherit arc from referenced prop")
         propSpec = propLayer.GetPrimAtPath('/Prop')
         propSpec.inheritPathList.ClearEdits()
 
@@ -277,8 +279,8 @@ class TestUsdInstancing(unittest.TestCase):
              '/World/sets/Set_1/Prop_3', 
              '/__Master_2', '/__Master_3'])
 
-        print "-" * 60
-        print "Re-add inherit arc from referenced prop"
+        print("-" * 60)
+        print("Re-add inherit arc from referenced prop")
         propSpec.inheritPathList.Add('/_class_Prop')
 
         ValidateExpectedInstances(s, 
@@ -290,8 +292,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that removing prims from beneath instanceable prim indexes
         # only affects the master.
-        print "-" * 60
-        print "Remove /Prop/Scope/Scope2 from referenced prop"
+        print("-" * 60)
+        print("Remove /Prop/Scope/Scope2 from referenced prop")
         del scope2.nameParent.nameChildren[scope2.name]
 
         ValidateExpectedInstances(s, 
@@ -301,8 +303,8 @@ class TestUsdInstancing(unittest.TestCase):
              '/World/sets/Set_1/Prop_2/Scope/Scope2', 
              '/__Master_4/Scope/Scope2'])
 
-        print "-" * 60
-        print "Remove /Prop/Scope from referenced prop"
+        print("-" * 60)
+        print("Remove /Prop/Scope from referenced prop")
         del scope.nameParent.nameChildren[scope.name]
 
         ValidateExpectedInstances(s, 
@@ -322,8 +324,8 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_1': ['/World/sets/Set_1'],
               '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
 
-        print "-" * 60
-        print "Adding prim /Prop/Scope to referenced prop"
+        print("-" * 60)
+        print("Adding prim /Prop/Scope to referenced prop")
         propLayer = Sdf.Layer.Find('nested/prop.usda')
         scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
                              'Scope', Sdf.SpecifierDef)    
@@ -334,8 +336,8 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl, 
             ['/__Master_1/Prop_3/Scope', '/__Master_2/Scope'])
 
-        print "-" * 60
-        print "Adding prim /Prop/Scope/Scope2 to referenced prop"
+        print("-" * 60)
+        print("Adding prim /Prop/Scope/Scope2 to referenced prop")
         scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
         ValidateExpectedInstances(s,
@@ -351,8 +353,8 @@ class TestUsdInstancing(unittest.TestCase):
         master = s.GetPrimAtPath('/__Master_2')
         primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Uninstancing prim %s" % primPathToUninstance
+        print("-" * 60)
+        print("Uninstancing prim %s" % primPathToUninstance)
 
         if primPathToUninstance == "/World/sets/Set_1/Prop_1":
             p2 = setLayer.GetPrimAtPath("/Set/Prop_1")
@@ -380,8 +382,8 @@ class TestUsdInstancing(unittest.TestCase):
         # available.
         primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Uninstancing prim %s" % primPathToUninstance
+        print("-" * 60)
+        print("Uninstancing prim %s" % primPathToUninstance)
 
         if primPathToUninstance == "/World/sets/Set_1/Prop_1":
             p1 = setLayer.GetPrimAtPath('/Set/Prop_1')
@@ -401,8 +403,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that making a prim index instanceable causes a new master to
         # be created if it's the first one.
-        print "-" * 60
-        print "Instancing prim /World/sets/Set_1/Prop_3"
+        print("-" * 60)
+        print("Instancing prim /World/sets/Set_1/Prop_3")
         p3 = setLayer.GetPrimAtPath('/Set/Prop_3')
         p3.SetInfo('instanceable', True)
 
@@ -414,8 +416,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that modifying the composition structure of an instanceable
         # prim index causes new masters to be created.
-        print "-" * 60
-        print "Removing inherit arc from referenced prop"
+        print("-" * 60)
+        print("Removing inherit arc from referenced prop")
         propSpec = propLayer.GetPrimAtPath('/Prop')
         propSpec.inheritPathList.ClearEdits()
 
@@ -426,8 +428,8 @@ class TestUsdInstancing(unittest.TestCase):
             ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
              '/__Master_3', '/__Master_4',])
 
-        print "-" * 60
-        print "Re-add inherit arc from referenced prop"
+        print("-" * 60)
+        print("Re-add inherit arc from referenced prop")
         propSpec.inheritPathList.Add('/_class_Prop')
 
         ValidateExpectedInstances(s, 
@@ -439,8 +441,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Test that removing prims from beneath instanceable prim indexes
         # only affects the master.
-        print "-" * 60
-        print "Remove /Prop/Scope/Scope2 from referenced prop"
+        print("-" * 60)
+        print("Remove /Prop/Scope/Scope2 from referenced prop")
         del scope2.nameParent.nameChildren[scope2.name]
 
         ValidateExpectedInstances(s, 
@@ -450,8 +452,8 @@ class TestUsdInstancing(unittest.TestCase):
             ['/__Master_1/Prop_1/Scope/Scope2', '/__Master_1/Prop_2/Scope/Scope2', 
              '/__Master_5/Scope/Scope2',])
 
-        print "-" * 60
-        print "Remove /Prop/Scope from referenced prop"
+        print("-" * 60)
+        print("Remove /Prop/Scope from referenced prop")
         del scope.nameParent.nameChildren[scope.name]
 
         ValidateExpectedInstances(s, 
@@ -465,15 +467,15 @@ class TestUsdInstancing(unittest.TestCase):
         """Test loading and unloading instances with nested instances."""
         nl = NoticeListener()
 
-        print "Opening stage with nothing loaded initially"
+        print("Opening stage with nothing loaded initially")
         s = OpenStage('nested_2/root.usda', Usd.Stage.LoadNone)
 
         instances = ['/A_1', '/A_2', '/A_3']
         ValidateExpectedInstances(s,
             { '/__Master_1': instances })
 
-        print "-" * 60
-        print "Loading instances"
+        print("-" * 60)
+        print("Loading instances")
 
         s.LoadAndUnload(instances, [])
         ValidateExpectedInstances(s,
@@ -482,8 +484,8 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl,
             ['/A_1', '/A_2', '/A_3'])
 
-        print "-" * 60
-        print "Unloading instances"
+        print("-" * 60)
+        print("Unloading instances")
 
         s.LoadAndUnload([], instances)
         ValidateExpectedInstances(s,
@@ -495,10 +497,10 @@ class TestUsdInstancing(unittest.TestCase):
         # Don't want too much output, so we delete the notice listener.
         del nl
 
-        print "-" * 60
-        print "Stress-test loading and unloading instances"
+        print("-" * 60)
+        print("Stress-test loading and unloading instances")
 
-        for _ in xrange(100):
+        for _ in range(100):
             s.LoadAndUnload(instances, [])
             s.LoadAndUnload([], instances)
 
@@ -507,29 +509,29 @@ class TestUsdInstancing(unittest.TestCase):
         payloads, including payloads nested inside instances and masters."""
         nl = NoticeListener()
 
-        print "Opening stage with everything loaded initially"
+        print("Opening stage with everything loaded initially")
         s = OpenStage('payloads/root.usda')
 
         ValidateExpectedInstances(s, 
             { '/__Master_1': ['/ModelGroup_1', '/ModelGroup_2'],
               '/__Master_2': ['/Model_1', '/Model_2', '/__Master_1/Model'] })
 
-        print "-" * 60
-        print "Opening stage with nothing loaded initially"
+        print("-" * 60)
+        print("Opening stage with nothing loaded initially")
         s = OpenStage('payloads/root.usda', Usd.Stage.LoadNone)
 
         ValidateExpectedInstances(s, {})
 
-        print "-" * 60
-        print "Loading instance /Model_1"
+        print("-" * 60)
+        print("Loading instance /Model_1")
         model_1 = s.GetPrimAtPath('/Model_1')
         model_1.Load()
 
         ValidateExpectedInstances(s, { '/__Master_1': ['/Model_1'] })
         ValidateExpectedChanges(nl, ['/Model_1'])
 
-        print "-" * 60
-        print "Loading instance /Model_2"
+        print("-" * 60)
+        print("Loading instance /Model_2")
         model_2 = s.GetPrimAtPath('/Model_2')
         model_2.Load()
 
@@ -537,15 +539,15 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_1': ['/Model_1', '/Model_2'] })
         ValidateExpectedChanges(nl, ['/Model_2'])
 
-        print "-" * 60
-        print "Unloading instance /Model_1"
+        print("-" * 60)
+        print("Unloading instance /Model_1")
         model_1.Unload()
 
         ValidateExpectedInstances(s, { '/__Master_1': ['/Model_2'] })
         ValidateExpectedChanges(nl, ['/Model_1'])
 
-        print "-" * 60
-        print "Loading instance /ModelGroup_1"
+        print("-" * 60)
+        print("Loading instance /ModelGroup_1")
         group_1 = s.GetPrimAtPath('/ModelGroup_1')
         group_1.Load()
 
@@ -554,8 +556,8 @@ class TestUsdInstancing(unittest.TestCase):
               '/__Master_2': ['/ModelGroup_1'] })
         ValidateExpectedChanges(nl, ['/ModelGroup_1'])
 
-        print "-" * 60
-        print "Loading instance /ModelGroup_2"
+        print("-" * 60)
+        print("Loading instance /ModelGroup_2")
         group_2 = s.GetPrimAtPath('/ModelGroup_2')
         group_2.Load()
 
@@ -564,8 +566,8 @@ class TestUsdInstancing(unittest.TestCase):
               '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
         ValidateExpectedChanges(nl, ['/ModelGroup_2'])
 
-        print "-" * 60
-        print "Unloading instance /ModelGroup_1"
+        print("-" * 60)
+        print("Unloading instance /ModelGroup_1")
         group_1.Unload()
 
         ValidateExpectedInstances(s, 
@@ -579,7 +581,7 @@ class TestUsdInstancing(unittest.TestCase):
         same time."""
         nl = NoticeListener()
 
-        print "Opening stage with nothing loaded initially"
+        print("Opening stage with nothing loaded initially")
         s = OpenStage('payloads_2/root.usda', Usd.Stage.LoadNone)
 
         ValidateExpectedInstances(s,
@@ -587,8 +589,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Loading Model_1 should result in two different masters, one for
         # Model_1 and one shared by all the unloaded instances.
-        print "-" * 60
-        print "Loading instance /Model_1"
+        print("-" * 60)
+        print("Loading instance /Model_1")
         s.Load('/Model_1')
 
         ValidateExpectedInstances(s,
@@ -600,8 +602,8 @@ class TestUsdInstancing(unittest.TestCase):
         # should now be attached to the master previously used by Model_1,
         # and Model_1 should reattach to the master being used for the
         # unloaded instances.
-        print "-" * 60
-        print "Unload instance /Model_1, load instance /Model_2"
+        print("-" * 60)
+        print("Unload instance /Model_1, load instance /Model_2")
         s.LoadAndUnload(['/Model_2'], ['/Model_1'])
 
         ValidateExpectedInstances(s,
@@ -610,8 +612,8 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl, ['/Model_1', '/Model_2'])
 
         # Continue loading and unloading instances in the same way.
-        print "-" * 60
-        print "Unload instance /Model_2, load instance /Model_3"
+        print("-" * 60)
+        print("Unload instance /Model_2, load instance /Model_3")
         s.LoadAndUnload(['/Model_3'], ['/Model_2'])
 
         ValidateExpectedInstances(s,
@@ -619,8 +621,8 @@ class TestUsdInstancing(unittest.TestCase):
               '/__Master_2': ['/Model_3'] })
         ValidateExpectedChanges(nl, ['/Model_2', '/Model_3'])
 
-        print "-" * 60
-        print "Unload instance /Model_3, load instance /Model_4"
+        print("-" * 60)
+        print("Unload instance /Model_3, load instance /Model_4")
         s.LoadAndUnload(['/Model_4'], ['/Model_3'])
 
         ValidateExpectedInstances(s,
@@ -644,8 +646,8 @@ class TestUsdInstancing(unittest.TestCase):
         primPathToDeactivate = \
             s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Deactivating instance %s" % primPathToDeactivate
+        print("-" * 60)
+        print("Deactivating instance %s" % primPathToDeactivate)
         s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
         if primPathToDeactivate == '/Instance_1':
@@ -662,24 +664,24 @@ class TestUsdInstancing(unittest.TestCase):
         primPathToDeactivate = \
             s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Deactivating instance %s" % primPathToDeactivate
+        print("-" * 60)
+        print("Deactivating instance %s" % primPathToDeactivate)
         s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
         ValidateExpectedInstances(s, {})
         ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
 
         # Reactivate /Instance_1, which should cause a new master to be created
-        print "-" * 60
-        print "Activating instance /Instance_1"
+        print("-" * 60)
+        print("Activating instance /Instance_1")
         s.GetPrimAtPath('/Instance_1').SetActive(True)
 
         ValidateExpectedInstances(s, { '/__Master_2': ['/Instance_1'] })
         ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_2'])
 
         # Reactivate /Instance_2, which should attach to the existing master
-        print "-" * 60
-        print "Activating instance /Instance_2"
+        print("-" * 60)
+        print("Activating instance /Instance_2")
         s.GetPrimAtPath('/Instance_2').SetActive(True)
 
         ValidateExpectedInstances(s, 
@@ -741,8 +743,8 @@ class TestUsdInstancing(unittest.TestCase):
         master = s.GetPrimAtPath('/__Master_2')
         primPathToSwitch = master._GetSourcePrimIndex().rootNode.path
 
-        print "-" * 60
-        print "Changing variant selection on %s" % (primPathToSwitch)
+        print("-" * 60)
+        print("Changing variant selection on %s" % (primPathToSwitch))
         primToSwitch = s.GetPrimAtPath(primPathToSwitch)
         primToSwitch.GetVariantSet('type').SetVariantSelection('a')
 
@@ -763,8 +765,8 @@ class TestUsdInstancing(unittest.TestCase):
         else:
             primPathToSwitch = '/Model_B_1'
 
-        print "-" * 60
-        print "Changing variant selection on %s" % (primPathToSwitch)
+        print("-" * 60)
+        print("Changing variant selection on %s" % (primPathToSwitch))
         primToSwitch = s.GetPrimAtPath(primPathToSwitch)
         primToSwitch.GetVariantSet('type').SetVariantSelection('a')
 
@@ -775,8 +777,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         # Changing a variant selection back to "type=b" should cause a new
         # master to be generated.
-        print "-" * 60
-        print "Changing variant selection on /Model_B_1"
+        print("-" * 60)
+        print("Changing variant selection on /Model_B_1")
         s.GetPrimAtPath('/Model_B_1').GetVariantSet('type').SetVariantSelection('b')
 
         ValidateExpectedInstances(s,
@@ -813,8 +815,8 @@ class TestUsdInstancing(unittest.TestCase):
         # generated. However, this override would affect both Model
         # prims on the stage in the same way, so /Set/SetA/Model and
         # /Set/SetB/Model still share the same master prim.
-        print "-" * 60
-        print "Overriding class in local layer stack"
+        print("-" * 60)
+        print("Overriding class in local layer stack")
         s.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
@@ -824,8 +826,8 @@ class TestUsdInstancing(unittest.TestCase):
         # have name children or other opinions that SetB/Model would
         # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
         # share the same master prim.
-        print "-" * 60
-        print "Overriding class in SetA only"
+        print("-" * 60)
+        print("Overriding class in SetA only")
         s2 = OpenStage('inherits/setA.usda')
         s2.OverridePrim('/_class_Model')
 
@@ -851,8 +853,8 @@ class TestUsdInstancing(unittest.TestCase):
         # generated. However, this override would affect both Model
         # prims on the stage in the same way, so /Set/SetA/Model and
         # /Set/SetB/Model still share the same master prim.
-        print "-" * 60
-        print "Overriding class in local layer stack"
+        print("-" * 60)
+        print("Overriding class in local layer stack")
         s.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
@@ -862,8 +864,8 @@ class TestUsdInstancing(unittest.TestCase):
         # have name children or other opinions that SetB/Model would
         # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
         # share the same master prim.
-        print "-" * 60
-        print "Overriding class in SetA only"
+        print("-" * 60)
+        print("Overriding class in SetA only")
         s2 = OpenStage('specializes/setA.usda')
         s2.OverridePrim('/_class_Model')
 
@@ -905,8 +907,8 @@ class TestUsdInstancing(unittest.TestCase):
         # This should cause change notices for the corresponding attribute
         # on the master prim as well as any other un-instanced prim that
         # references that prop.
-        print "-" * 60
-        print "Adding new attribute spec to child of referenced prop"
+        print("-" * 60)
+        print("Adding new attribute spec to child of referenced prop")
         primSpec = instancedPropLayer.GetPrimAtPath('/Prop/geom/Scope')
         attrSpec = Sdf.AttributeSpec(primSpec, "attr", Sdf.ValueTypeNames.Int)
 
@@ -914,8 +916,8 @@ class TestUsdInstancing(unittest.TestCase):
             ['/World/sets/Set_1/Prop_3/geom/Scope.attr', 
              '/__Master_1/geom/Scope.attr'])
 
-        print "-" * 60
-        print "Changing value for attribute spec on child of referenced prop"
+        print("-" * 60)
+        print("Changing value for attribute spec on child of referenced prop")
         attrSpec.default = 1
 
         ValidateExpectedChanges(nl,
@@ -927,8 +929,8 @@ class TestUsdInstancing(unittest.TestCase):
         # *not* cause change notices on the master prim, since master prims
         # don't have any properties. Instead, these should cause change
         # notices on all of the affected instances.
-        print "-" * 60
-        print "Adding new attribute spec to referenced prop"
+        print("-" * 60)
+        print("Adding new attribute spec to referenced prop")
         primSpec = instancedPropLayer.GetPrimAtPath('/Prop')
         attrSpec = Sdf.AttributeSpec(primSpec, "attr", Sdf.ValueTypeNames.Int)
 
@@ -937,8 +939,8 @@ class TestUsdInstancing(unittest.TestCase):
              '/World/sets/Set_1/Prop_2.attr', 
              '/World/sets/Set_1/Prop_3.attr'])
 
-        print "-" * 60
-        print "Changing value for attribute spec on referenced prop"
+        print("-" * 60)
+        print("Changing value for attribute spec on referenced prop")
         attrSpec.default = 1
 
         ValidateExpectedChanges(nl,
@@ -959,8 +961,8 @@ class TestUsdInstancing(unittest.TestCase):
         # This should cause change notices for the corresponding child prim
         # of the master prim as well as any other un-instanced prim that
         # references that prop.
-        print "-" * 60
-        print "Changing metadata on child of referenced prop"
+        print("-" * 60)
+        print("Changing metadata on child of referenced prop")
         primSpec = instancedPropLayer.GetPrimAtPath('/Prop/geom/Scope')
         primSpec.documentation = "Test metadata change"
 
@@ -973,8 +975,8 @@ class TestUsdInstancing(unittest.TestCase):
         # *not* cause change notices on the master prim, since master prims
         # don't have any metadata. Instead, these should cause change
         # notices on all of the affected instances.
-        print "-" * 60
-        print "Changing metadata on prop"
+        print("-" * 60)
+        print("Changing metadata on prop")
         primSpec = instancedPropLayer.GetPrimAtPath('/Prop')
         primSpec.documentation = "Test metadata change"
 
@@ -983,6 +985,34 @@ class TestUsdInstancing(unittest.TestCase):
                 '/World/sets/Set_1/Prop_1',
                 '/World/sets/Set_1/Prop_2', 
                 '/World/sets/Set_1/Prop_3'])
+
+    def test_GetInstances(self):
+        """Test retrieving instances from prims"""
+        s = Usd.Stage.Open('nested/root.usda')
+
+        worldPrim = s.GetPrimAtPath('/World')
+        expectedInstances = []
+        instancesForWorldPrim = [p.GetPath().pathString for p
+                                                    in worldPrim.GetInstances()]
+        self.assertEqual(expectedInstances, instancesForWorldPrim)
+
+        master1 = s.GetMasters()[0]
+        expectedInstancePathsForMaster1 = ['/World/sets/Set_1']
+        instancePathsForMaster1 = [p.GetPath().pathString for p
+                                                    in master1.GetInstances()]
+
+        self.assertEqual(expectedInstancePathsForMaster1, 
+                                                    instancePathsForMaster1)
+
+        master2 = s.GetMasters()[1]
+        expectedInstancePathsForMaster2 = \
+                                        ['/__Master_1/Prop_1',
+                                        '/__Master_1/Prop_2']
+        instancePathsForMaster2 = \
+                [p.GetPath().pathString for p in master2.GetInstances()]
+        
+        self.assertEqual(expectedInstancePathsForMaster2,
+                                                    instancePathsForMaster2)
 
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""

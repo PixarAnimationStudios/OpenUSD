@@ -36,9 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStExtCompGpuComputationBufferSource>
-    HdStExtCompGpuComputationBufferSourceSharedPtr;
-
 /// \class HdStExtCompGpuComputationBufferSource
 ///
 /// A Buffer Source that represents input processing for a GPU implementation
@@ -74,7 +71,7 @@ public:
     /// in the inputs after Resolve is called.
     /// \see HdExtComputation
     HdStExtCompGpuComputationBufferSource(
-            HdBufferSourceVector const &inputs,
+            HdBufferSourceSharedPtrVector const &inputs,
             HdStExtCompGpuComputationResourceSharedPtr const &resource);
 
     HDST_API
@@ -90,7 +87,7 @@ public:
     
     /// Returns the vector of HdBufferSource inputs that this source intends
     /// to commit to GPU.
-    virtual HdBufferSourceVector const &GetInputs() const {
+    virtual HdBufferSourceSharedPtrVector const &GetInputs() const {
         return _inputs;
     }
 
@@ -99,7 +96,7 @@ protected:
     
 private:
     
-    HdBufferSourceVector                       _inputs;
+    HdBufferSourceSharedPtrVector              _inputs;
     HdStExtCompGpuComputationResourceSharedPtr _resource;
     
     HdStExtCompGpuComputationBufferSource()                = delete;

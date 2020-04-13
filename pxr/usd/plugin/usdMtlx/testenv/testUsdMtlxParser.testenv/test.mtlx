@@ -29,11 +29,15 @@
     <input name="in" type="string"/>
     <parameter name="note" type="string" value=""/>
   </nodedef>
-  <implementation name="im_integer" nodedef="nd_integer" file="mx_integer.osl" function="mx_integer"/>
-  <implementation name="im_float" nodedef="nd_float" file="mx_float.osl" function="mx_float"/>
-  <implementation name="im_string" nodedef="nd_string" file="mx_string.osl" function="mx_string"/>
-  <implementation name="im_vector" nodedef="nd_vector" file="mx_vector.osl" function="mx_vector"/>
-  <implementation name="im_boolean" nodedef="nd_boolean" file="mx_boolean.osl" function="mx_boolean"/>
-  <implementation name="im_customtype" nodedef="nd_customtype" file="mx_customtype.osl" function="mx_customtype"/>
-  <implementation name="im_surface" nodedef="nd_surface" file="mx_surface.osl" function="mx_surface"/>
+  <!--
+     These implementations don't conform to the definitions above.
+     They don't need to for the test; only the file needs to exist.
+  -->
+  <implementation name="im_integer" nodedef="nd_integer" file="mx_constant_int.osl" function="mx_constant_int"/>
+  <implementation name="im_float" nodedef="nd_float" file="mx_constant_float.osl" function="mx_constant_float"/>
+  <implementation name="im_string" nodedef="nd_string" file="mx_constant_string.osl" function="mx_constant_string"/>
+  <implementation name="im_vector" nodedef="nd_vector" file="mx_constant_vector.osl" function="mx_constant_vector"/>
+  <implementation name="im_boolean" nodedef="nd_boolean" file="mx_constant_bool.osl" function="mx_constant_bool"/>
+  <implementation name="im_surface" nodedef="nd_surface" file="mx_add_surfaceshader.osl" function="mx_add_surfaceshader"/>
+  <implementation name="im_customtype" nodedef="nd_customtype" file="mx_constant_filename.osl" function="FUNC"/>
 </materialx>

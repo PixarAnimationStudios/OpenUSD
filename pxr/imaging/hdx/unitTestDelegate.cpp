@@ -93,9 +93,9 @@ public:
             frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix();
     }
 
-    virtual GfMatrix4d Compute(const GfVec4f &viewport,
-                               CameraUtilConformWindowPolicy policy) {
-        return _shadowMatrix;
+    virtual std::vector<GfMatrix4d> Compute(
+        const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) {
+        return std::vector<GfMatrix4d>(1, _shadowMatrix);
     }
 private:
     GfMatrix4d _shadowMatrix;

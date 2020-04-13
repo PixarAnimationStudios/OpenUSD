@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Usd, UsdGeom, Vt, Sdf
 import unittest
 
@@ -65,8 +67,8 @@ class testUsdGeomSubset(unittest.TestCase):
         for familyName in invalidFamilies:
             (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName=familyName)
-            print "Face-subset family '%s' should be invalid because: %s" % \
-                (familyName, reason)
+            print("Face-subset family '%s' should be invalid because: %s" % \
+                (familyName, reason))
             self.assertFalse(valid)
             self.assertTrue(len(reason) > 0)
 

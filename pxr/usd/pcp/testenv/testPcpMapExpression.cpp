@@ -104,7 +104,7 @@ main(int argc, char** argv)
     // Variable
     {
         // Variable will initial empty function
-        PcpMapExpression::VariableRefPtr var =
+        PcpMapExpression::VariableUniquePtr var =
             PcpMapExpression::NewVariable( PcpMapFunction() );
         const PcpMapExpression varExpr = var->GetExpression();
         testExprs.push_back(varExpr);
@@ -115,7 +115,7 @@ main(int argc, char** argv)
         // Test changing value
         const PcpMapFunction testValue =
             _GetArcFunction("/A", "/B");
-        var->SetValue(testValue);
+        var->SetValue(PcpMapFunction(testValue));
         TF_AXIOM(varExpr.Evaluate() == var->GetValue());
         TF_AXIOM(varExpr.Evaluate() == testValue);
 
@@ -126,7 +126,7 @@ main(int argc, char** argv)
         // Test invalidation on changing a variable
         const PcpMapFunction testValue2 =
             _GetArcFunction("/A2", "/B2");
-        var->SetValue(testValue2);
+        var->SetValue(PcpMapFunction(testValue2));
         TF_AXIOM(varExpr.Evaluate() == testValue2);
         TF_AXIOM(invVarExpr.Evaluate() == testValue2.GetInverse());
 
@@ -135,7 +135,7 @@ main(int argc, char** argv)
         // re-evaluate derived expressions.
         const PcpMapFunction testValue3 =
             _GetArcFunction("/A3", "/B3");
-        var->SetValue(testValue3);
+        var->SetValue(PcpMapFunction(testValue3));
         var.reset();
         TF_AXIOM(varExpr.Evaluate() == testValue3);
         TF_AXIOM(invVarExpr.Evaluate() == testValue3.GetInverse());

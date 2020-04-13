@@ -98,10 +98,6 @@ TestIsA()
         UsdGeomScope::Define(stage, SdfPath("/Fail_Scope"));
     TF_VERIFY(failScope, "Failed to create '/Fail_Scope'");
 
-    std::string mytmp;
-    UsdSchemaRegistry::GetSchematics()->ExportToString(&mytmp);
-    std::cout << mytmp << std::endl;
-
     // Change type.
     failScope.GetPrim().SetTypeName(TfToken("Mesh"));
     TF_VERIFY(!failScope, "Unexpected valid scope for mesh");

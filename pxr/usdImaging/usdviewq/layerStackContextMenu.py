@@ -21,9 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
-from usdviewContextMenuItem import UsdviewContextMenuItem
-import os, subprocess
+from .qt import QtCore, QtGui, QtWidgets
+from .usdviewContextMenuItem import UsdviewContextMenuItem
+import os, subprocess, sys
 from pxr import Ar
 
 #
@@ -92,7 +92,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         return usdedit
 
     def GetText(self):
-        from common import PrettyFormatSize
+        from .common import PrettyFormatSize
         fileSize = 0
         if (hasattr(self._item, "layerPath")
            and os.path.isfile(getattr(self._item, "layerPath"))):
@@ -112,7 +112,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         # Get layer path from item
         layerPath = getattr(self._item, "layerPath")
         if not layerPath:
-            print "Error: Could not find layer file."
+            print("Error: Could not find layer file.")
             return
 
         if Ar.IsPackageRelativePath(layerPath):
@@ -125,10 +125,10 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
 
         usdeditExe = self._FindUsdEdit()
         if not usdeditExe:
-            print "Warning: Could not find 'usdedit', expected it to be in PATH."
+            print("Warning: Could not find 'usdedit', expected it to be in PATH.")
             return
 
-        print "Opening file: %s" % layerPath
+        print("Opening file: %s" % layerPath)
 
         command =  [usdeditExe,'-n',layerPath,'-p',layerName]
 
@@ -154,7 +154,7 @@ class UsdviewLayerMenuItem(LayerStackContextMenuItem):
         if not layerPath:
             return
 
-        print "Spawning usdview %s" % layerPath
+        print("Spawning usdview %s" % layerPath)
         os.system("usdview %s &" % layerPath)
 
 #

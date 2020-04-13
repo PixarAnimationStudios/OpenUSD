@@ -48,6 +48,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     /* property metadata */
     (primvarProperty)
     (defaultInput)
+    (implementationName)
 );
 
 UsdStageCache UsdShadeShaderDefParserPlugin::_cache;
@@ -278,6 +279,13 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
         metadata[SdrPropertyMetadata->Connectable] =
             shaderInput.GetConnectability() == UsdShadeTokens->interfaceOnly ?
             "0" : "1";
+
+        auto implementationName = metadata.find(_tokens->implementationName);
+        if (implementationName != metadata.end()){
+            metadata[SdrPropertyMetadata->ImplementationName] = 
+                implementationName->second;
+            metadata.erase(implementationName);
+        }
 
         result.emplace_back(
             _CreateSdrShaderProperty(

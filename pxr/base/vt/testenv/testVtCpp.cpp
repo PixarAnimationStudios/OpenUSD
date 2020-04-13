@@ -26,6 +26,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/functions.h"
 
@@ -1373,6 +1374,149 @@ testValueHash()
     }
 }
 
+template <class T>
+struct _TypedProxy : VtTypedValueProxyBase
+{
+    explicit _TypedProxy(T const &val) : val(val) {}
+    T val;
+};
+
+template <class T>
+T const &
+VtGetProxiedObject(_TypedProxy<T> const &tp) {
+    return tp.val;
+}
+
+static void
+testTypedVtValueProxy()
+{
+    // Make a value holding double, and a proxy also holding a double.
+    VtValue vdouble(1.234), vproxy(_TypedProxy<double>(1.234));
+
+    TF_AXIOM(vdouble.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<_TypedProxy<double>>());
+
+    TF_AXIOM(vdouble == vproxy);
+    TF_AXIOM(TfStringify(vdouble) == TfStringify(vproxy));
+    TF_AXIOM(vproxy.Get<double>() == 1.234);
+
+    // Change the proxy double value to be not equal.
+    vproxy = _TypedProxy<double>(2.345);
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<_TypedProxy<double>>());
+
+    TF_AXIOM(vdouble != vproxy);
+    TF_AXIOM(TfStringify(vdouble) != TfStringify(vproxy));
+    TF_AXIOM(vproxy.Get<double>() == 2.345);
+
+    // Swap the value in the proxy, this should collapse out the proxy.
+    double d = 3.456;
+    vproxy.UncheckedSwap(d);
+    TF_AXIOM(d == 2.345);
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(!vproxy.IsHolding<_TypedProxy<double>>());
+    TF_AXIOM(vproxy.Get<double>() == 3.456);
+
+
+    // Check that array API stuff works.
+    VtFloatArray fa { 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f };
+    VtValue varray(fa), varrayProxy((_TypedProxy<VtFloatArray>(fa)));
+
+    TF_AXIOM(varrayProxy.IsHolding<VtFloatArray>());
+    TF_AXIOM(varrayProxy.IsHolding<_TypedProxy<VtFloatArray>>());
+    
+    TF_AXIOM(varrayProxy.IsArrayValued());
+    TF_AXIOM(varrayProxy.GetArraySize() == 7);
+    TF_AXIOM(varrayProxy.GetElementTypeid() == typeid(float));
+    TF_AXIOM(varrayProxy.Get<VtFloatArray>() == fa);
+
+}
+
+struct _ErasedDoubleProxy : VtErasedValueProxyBase
+{
+    explicit _ErasedDoubleProxy(double val) : val(val) {}
+    mutable std::shared_ptr<VtValue> vtValue;
+    double val;
+};
+
+bool VtErasedProxyHoldsType(_ErasedDoubleProxy const &,
+                            std::type_info const &queryType) {
+    return TfSafeTypeCompare(queryType, typeid(double));
+}
+
+TfType VtGetErasedProxiedTfType(_ErasedDoubleProxy const &) {
+    return TfType::Find<double>();
+}
+
+VtValue const *VtGetErasedProxiedVtValue(_ErasedDoubleProxy const &p) {
+    // This would need synchronization for thread safety in general, leaving it
+    // out of the test for clarity's sake.
+    if (!p.vtValue) {
+        p.vtValue.reset(new VtValue(p.val));
+    }
+    return p.vtValue.get();
+}
+
+std::ostream &operator<<(std::ostream &o, _ErasedDoubleProxy const &p) {
+    return VtStreamOut(p.val, o);
+}
+
+static void
+testErasedVtValueProxy()
+{
+    // Make a value holding double, and a proxy also holding a double.
+    VtValue vdouble(1.234), vproxy(_ErasedDoubleProxy(1.234));
+
+    TF_AXIOM(vdouble.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<_ErasedDoubleProxy>());
+
+    TF_AXIOM(vdouble == vproxy);
+    TF_AXIOM(TfStringify(vdouble) == TfStringify(vproxy));
+    TF_AXIOM(vproxy.Get<double>() == 1.234);
+
+    // Change the proxy double value to be not equal.
+    vproxy = _ErasedDoubleProxy(2.345);
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(vproxy.IsHolding<_ErasedDoubleProxy>());
+
+    TF_AXIOM(vdouble != vproxy);
+    TF_AXIOM(TfStringify(vdouble) != TfStringify(vproxy));
+    TF_AXIOM(vproxy.Get<double>() == 2.345);
+
+    // Swap the value in the proxy, this should collapse out the proxy.
+    double d = 3.456;
+    vproxy.UncheckedSwap(d);
+    TF_AXIOM(d == 2.345);
+    TF_AXIOM(vproxy.IsHolding<double>());
+    TF_AXIOM(!vproxy.IsHolding<_ErasedDoubleProxy>());
+    TF_AXIOM(vproxy.Get<double>() == 3.456);
+}
+
+static void
+testCombinedVtValueProxies()
+{
+    VtValue tproxy(_TypedProxy<double>(1.234));
+    VtValue eproxy(_ErasedDoubleProxy(1.234));
+
+    TF_AXIOM(tproxy.IsHolding<double>());
+    TF_AXIOM(eproxy.IsHolding<double>());
+
+    TF_AXIOM(tproxy == eproxy);
+    TF_AXIOM(TfStringify(eproxy) == TfStringify(tproxy));
+    TF_AXIOM(tproxy.Get<double>() == eproxy.Get<double>());
+
+    tproxy.Swap(eproxy);
+    
+    TF_AXIOM(tproxy == eproxy);
+    TF_AXIOM(TfStringify(eproxy) == TfStringify(tproxy));
+    TF_AXIOM(tproxy.Get<double>() == eproxy.Get<double>());
+
+    TF_AXIOM(tproxy.IsHolding<_ErasedDoubleProxy>());
+    TF_AXIOM(eproxy.IsHolding<_TypedProxy<double>>());
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1386,6 +1530,9 @@ int main(int argc, char *argv[])
 
     testValue();
     testValueHash();
+    testTypedVtValueProxy();
+    testErasedVtValueProxy();
+    testCombinedVtValueProxies();
 
     printf("Test SUCCEEDED\n");
 

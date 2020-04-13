@@ -124,16 +124,22 @@ private:
             .def("__getitem__", &This::_GetItemByKey)
             .def("__getitem__", &This::_GetItemByIndex)
             .def("get", &This::_PyGet)
-            .def("has_key", &This::_HasKey)
             .def("__contains__", &This::_HasKey)
             .def("__contains__", &This::_HasValue)
             .def("__iter__",   &This::_GetValueIterator)
+#if PY_MAJOR_VERSION < 3
+            .def("has_key", &This::_HasKey)
             .def("itervalues", &This::_GetValueIterator)
             .def("iterkeys",   &This::_GetKeyIterator)
             .def("iteritems",  &This::_GetItemIterator)
             .def("items", &This::_GetItems)
             .def("keys", &This::_GetKeys)
             .def("values", &This::_GetValues)
+#else
+            .def("items", &This::_GetItemIterator)
+            .def("keys", &This::_GetKeyIterator)
+            .def("values", &This::_GetValueIterator)
+#endif
             .def("index", &This::_FindIndexByKey)
             .def("index", &This::_FindIndexByValue)
             .def(self == self)
@@ -143,19 +149,19 @@ private:
         class_<_Iterator<_ExtractItem> >
             ((name + "_Iterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractItem>::GetNext)
+            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
         class_<_Iterator<_ExtractKey> >
             ((name + "_KeyIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractKey>::GetNext)
+            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
         class_<_Iterator<_ExtractValue> >
             ((name + "_ValueIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
-            .def("next", &This::template _Iterator<_ExtractValue>::GetNext)
+            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
             ;
     }
 
@@ -251,6 +257,7 @@ private:
         return result;
     }
 
+#if PY_MAJOR_VERSION < 3
     static boost::python::list _GetItems(const View& x)
     {
         return _Get<_ExtractItem>(x);
@@ -265,6 +272,7 @@ private:
     {
         return _Get<_ExtractValue>(x);
     }
+#endif
 
     static int _FindIndexByKey(const View& x, const key_type& key)
     {

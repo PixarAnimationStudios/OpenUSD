@@ -24,7 +24,14 @@
 """A module for persisting usdview settings
 """
 
-from cPickle import dump, load
+from __future__ import print_function
+
+import sys
+
+if sys.version_info.major >= 3:
+    from pickle import dumps, loads
+else:
+    from cPickle import dumps, loads
 
 def EmitWarning(filePath):
     """Send a warning because the settings file should never fail to load
@@ -32,17 +39,17 @@ def EmitWarning(filePath):
     import traceback
     import sys
     msg = sys.stderr
-    print >> msg, "------------------------------------------------------------"
-    print >> msg, "WARNING: Unknown problem while trying to access settings:"
-    print >> msg, "------------------------------------------------------------"
-    print >> msg, "This message is being sent because the settings file (%s) " \
-                  "could not be read" % filePath
-    print >> msg, "--"
+    print("------------------------------------------------------------", file=msg)
+    print("WARNING: Unknown problem while trying to access settings:", file=msg)
+    print("------------------------------------------------------------", file=msg)
+    print("This message is being sent because the settings file (%s) " \
+                  "could not be read" % filePath, file=msg)
+    print("--", file=msg)
     traceback.print_exc(file=msg)
-    print >> msg, "--"
-    print >> msg, "Please file a bug if this warning persists"
-    print >> msg, "Attempting to continue... "
-    print >> msg, "------------------------------------------------------------"
+    print("--", file=msg)
+    print("Please file a bug if this warning persists", file=msg)
+    print("Attempting to continue... ", file=msg)
+    print("------------------------------------------------------------", file=msg)
 
 class Settings(dict):
     """A small wrapper around the standard Python dictionary.
@@ -73,9 +80,16 @@ class Settings(dict):
         if self._ephemeral:
             return
         try:
-            f = open(self._filename, "w")
-            dump(self, f)
-            f.close()
+            # Explicly specify protocol 0 for cPickle/pickle.dumps to maintain
+            # backwards compatibility. In Python 2 protocol 0 was the default
+            # for cPickle.dump, but this changed in Python 3. In pickle.dumps
+            # the return value is unicode, but we know it contains lower ascii
+            # because we specify protocol 0, so we need to decode/encode as
+            # utf-8 to convert to a writable string but that should not change
+            # the data.
+            contents = dumps(self, protocol = 0)
+            with open(self._filename, "w") as f:
+                f.write(contents.decode('utf-8'))
         except:
             if ignoreErrors:
                 return False
@@ -88,10 +102,14 @@ class Settings(dict):
         if self._ephemeral:
             return
         try:
-            f = open(self._filename, "r")
-            self.update(load(f))
-            f.close()
-
+            # In Python 3, pickle.load will not accept an input file that is
+            # opened in text mode. Opening in binary won't work on windows
+            # because of \r\n line endings.  Reading in the settings file as
+            # text and converting to utf-8 should work on all
+            # platforms/versions.
+            with open(self._filename, "r") as f:
+                contents = f.read().encode('utf-8')
+                self.update(loads(contents))
         except:
             if ignoreErrors:
                 return False

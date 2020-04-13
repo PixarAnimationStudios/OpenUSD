@@ -134,7 +134,7 @@ public:
     /// overrides
     virtual bool HasChainedBuffer() const override;
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual HdBufferSourceVector GetChainedBuffers() const override;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
     virtual bool Resolve() = 0;
 
 protected:
@@ -158,7 +158,7 @@ protected:
 /// so that reducing data copy between osd buffer and HdBufferSource.
 ///
 template <typename VERTEX_BUFFER>
-class HdSt_OsdRefineComputation : public HdBufferSource {
+class HdSt_OsdRefineComputation final : public HdBufferSource {
 public:
     HdSt_OsdRefineComputation(HdSt_MeshTopology *topology,
                             HdBufferSourceSharedPtr const &source,
@@ -209,7 +209,7 @@ public:
     public:
         VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
             _resource =
-                boost::static_pointer_cast<HdStBufferResourceGL> (resource);
+                std::static_pointer_cast<HdStBufferResourceGL> (resource);
         }
 
         // bit confusing, osd expects 'GetNumElements()' returns the num 

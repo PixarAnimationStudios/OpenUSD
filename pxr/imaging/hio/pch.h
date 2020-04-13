@@ -56,6 +56,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -67,7 +68,6 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
-#include <inttypes.h>
 #include <iosfwd>
 #include <iostream>
 #include <istream>
@@ -97,7 +97,6 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/call_traits.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -107,7 +106,6 @@
 #include <boost/mpl/or.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
-#include <boost/preprocessor.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -142,7 +140,6 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
 #include <boost/type_traits/decay.hpp>
-#include <boost/type_traits/has_left_shift.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/type_traits/has_trivial_copy.hpp>
@@ -154,8 +151,6 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/value_init.hpp>
-#include <tbb/atomic.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

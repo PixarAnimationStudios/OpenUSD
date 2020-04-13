@@ -117,6 +117,10 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     }
 
     extendedState->SetOverrideShader(HdStShaderCodeSharedPtr());
+    renderPassState->SetDepthFunc(HdCmpFuncAlways);
+    // Setting cull style for consistency even though it is hard-coded in
+    // shaders/volume.glslfx.
+    renderPassState->SetCullStyle(HdCullStyleBack);
 
     if(!oitBufferAccessor.AddOitBufferBindings(_oitVolumeRenderPassShader)) {
         TF_CODING_ERROR(
@@ -135,6 +139,11 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     // XXX Switch points rendering to emit quad with FS that draws circle.
     bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
     glEnable(GL_POINT_SMOOTH);
+
+    // XXX
+    //
+    // To show volumes that intersect the far clipping plane, we might consider
+    // calling glEnable(GL_DEPTH_CLAMP) here.
 
     // XXX HdxRenderTask::Prepare calls HdStRenderPassState::Prepare.
     // This sets the cullStyle for the render pass shader.

@@ -79,11 +79,11 @@ void wrapSimpleLight()
                           &This::GetAttenuation,
                           return_value_policy<return_by_value>()),
                       &This::SetAttenuation)
-        .add_property("shadowMatrix",
+        .add_property("shadowMatrices",
                       make_function(
-                          &This::GetShadowMatrix,
+                          &This::GetShadowMatrices,
                           return_value_policy<return_by_value>()),
-                      &This::SetShadowMatrix)
+                      &This::SetShadowMatrices)
         .add_property("shadowResolution",
                       make_function(
                           &This::GetShadowResolution,
@@ -99,11 +99,16 @@ void wrapSimpleLight()
                           &This::GetShadowBlur,
                           return_value_policy<return_by_value>()),
                       &This::SetShadowBlur)
-        .add_property("shadowIndex",
+        .add_property("shadowIndexStart",
                       make_function(
-                          &This::GetShadowIndex,
+                          &This::GetShadowIndexStart,
                           return_value_policy<return_by_value>()),
-                      &This::SetShadowIndex)
+                      &This::SetShadowIndexStart)
+        .add_property("shadowIndexEnd",
+                      make_function(
+                          &This::GetShadowIndexEnd,
+                          return_value_policy<return_by_value>()),
+                      &This::SetShadowIndexEnd)
         .add_property("hasShadow",
                       make_function(
                           &This::HasShadow,

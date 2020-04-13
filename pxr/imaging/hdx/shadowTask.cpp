@@ -93,30 +93,34 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     GlfSimpleLightVector const glfLights = lightingContext->GetLights();
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
 
+    // Extract the new shadow task params from scene delegate
     const bool dirtyParams = (*dirtyBits) & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
-        // Extract the new shadow task params from scene delegate
         if (!_GetTaskParams(delegate, &_params)) {
             return;
         }
     }
 
+    // Update render tags from scene delegate
     if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
-        // Update render tags from scene delegate
         _renderTags = _GetTaskRenderTags(delegate);
     }
 
-    // Iterate through all lights and for those that have shadows enabled
-    // and ensure we have enough passes to render the shadows.
-    size_t passCount = 0;
-    for (size_t lightId = 0; lightId < glfLights.size(); lightId++) {
-        const HdStLight* light = static_cast<const HdStLight*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->simpleLight,
-                                 glfLights[lightId].GetID()));
+    // Make sure we have the right number of shadow passes.
+    _passes.resize(shadows->GetNumShadowMapPasses());
+
+    // Mostly we can populate the renderpasses from shadow info, but the lights
+    // contain the shadow collection; so we need to loop through the lights
+    // assigning collections to their shadows.
+    for (size_t lightId = 0; lightId < glfLights.size(); ++lightId) {
 
         if (!glfLights[lightId].HasShadow()) {
             continue;
         }
+
+        const HdStLight* light = static_cast<const HdStLight*>(
+            renderIndex.GetSprim(HdPrimTypeTokens->simpleLight,
+                                 glfLights[lightId].GetID()));
 
         // It is possible the light is nullptr for area lights converted to 
         // simple lights, however they should not have shadows enabled.
@@ -129,30 +133,23 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             vtShadowCollection.IsHolding<HdRprimCollection>() ?
             vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();
 
-        // Creates or reuses a pass with the right geometry that will be
-        // used during Execute phase to draw the shadow maps.
-        if (passCount < _passes.size()) {
-            // Note here that we may want to sort the passes by collection
-            // to invalidate fewer passes if the collections match already.
-            // SetRprimCollection checks for identity changes on the collection
-            // and no-ops in that case.
-            _passes[passCount]->SetRprimCollection(col);
-        } else {
-            // Create a new pass if we didn't have enough already,
-            HdRenderPassSharedPtr p = boost::make_shared<HdSt_RenderPass>
-                (&renderIndex, col);
-            _passes.push_back(p);
+        int shadowStart = glfLights[lightId].GetShadowIndexStart();
+        int shadowEnd = glfLights[lightId].GetShadowIndexEnd();
+
+        // Note here that we may want to sort the passes by collection
+        // to invalidate fewer passes if the collections match already.
+        // SetRprimCollection checks for identity changes on the collection
+        // and no-ops in that case.
+        for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
+            if (_passes[shadowId]) {
+                _passes[shadowId]->SetRprimCollection(col);
+            } else {
+                _passes[shadowId] = std::make_shared<HdSt_RenderPass>
+                    (&renderIndex, col);
+            }
         }
-        passCount++;
     }
-    
-    // Shrink down to fit to conserve resources
-    // We may want hysteresis here if we find the count goes up and down
-    // frequently.
-    if (_passes.size() > passCount) {
-        _passes.resize(passCount);
-    }
-    
+
     // Shrink down to fit to conserve resources
     if (_renderPassStates.size() > _passes.size()) {
         _renderPassStates.resize(_passes.size());
@@ -192,15 +189,13 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
-    
-    // This should always be true.
-    TF_VERIFY(_passes.size() == shadows->GetNumShadowMapPasses());
+    for(size_t passId = 0; passId < _passes.size(); passId++) {
 
-    // But if it is not then we still have to make sure we don't
-    // buffer overrun here.
-    const size_t shadowCount = 
-        std::min(shadows->GetNumShadowMapPasses(), _passes.size());
-    for(size_t passId = 0; passId < shadowCount; passId++) {
+        // Make sure each pass got created. Light shadow indices are supposed
+        // to be compact (see simpleLightTask.cpp).
+        if (!TF_VERIFY(_passes[passId])) {
+            continue;
+        }
 
         GfVec2i shadowMapRes = shadows->GetShadowMapSize(passId);
 
@@ -257,12 +252,13 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
 
     // Generate the actual shadow maps
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
-    // This ensures we don't segfault if the shadows and passes are out of sync.
-    // The TF_VERIFY is in Sync for making sure they match but we handle
-    // failure gracefully here.
-    const size_t shadowCount =
-        std::min(shadows->GetNumShadowMapPasses(), _passes.size());
-    for(size_t shadowId = 0; shadowId < shadowCount; shadowId++) {
+    for(size_t shadowId = 0; shadowId < _passes.size(); shadowId++) {
+
+        // Make sure each pass got created. Light shadow indices are supposed
+        // to be compact (see simpleLightTask.cpp).
+        if (!TF_VERIFY(_passes[shadowId])) {
+            continue;
+        }
 
         // Bind the framebuffer that will store shadowId shadow map
         shadows->BeginCapture(shadowId, true);

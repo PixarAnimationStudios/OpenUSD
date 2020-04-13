@@ -57,13 +57,14 @@ UsdSchemaBase::~UsdSchemaBase()
     // define new members.
 }
 
-// Forward decl helper in SchemaRegistry.cpp
-SdfPrimSpecHandle
-Usd_SchemaRegistryGetPrimDefinitionAtPath(SdfPath const &path);
-SdfPrimSpecHandle
+const UsdPrimDefinition *
 UsdSchemaBase::GetSchemaClassPrimDefinition() const
 {
-    return UsdSchemaRegistry::GetPrimDefinition(_GetType());
+    const UsdSchemaRegistry &reg = UsdSchemaRegistry::GetInstance();
+    const TfToken usdTypeName = reg.GetSchemaTypeName(_GetType());
+    return IsAppliedAPISchema() ?
+        reg.FindAppliedAPIPrimDefinition(usdTypeName) :
+        reg.FindConcretePrimDefinition(usdTypeName);
 }
 
 bool

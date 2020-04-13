@@ -194,10 +194,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxShadowAPI
     const TfToken shadowEnable;
-    /// \brief "shadow:exclude"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowExclude;
     /// \brief "shadow:falloff"
     /// 
     /// UsdLuxShadowAPI
@@ -206,10 +202,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxShadowAPI
     const TfToken shadowFalloffGamma;
-    /// \brief "shadow:include"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowInclude;
     /// \brief "shadowLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a UsdLuxLight prim. 

@@ -139,7 +139,7 @@ public:
     /// To get the held prim instance's definition, use
     /// UsdPrim::GetPrimDefinition().  \sa UsdPrim::GetPrimDefinition()
     USD_API
-    SdfPrimSpecHandle GetSchemaClassPrimDefinition() const;
+    const UsdPrimDefinition *GetSchemaClassPrimDefinition() const;
 
     //@}
 

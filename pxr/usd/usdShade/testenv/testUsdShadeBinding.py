@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Sdf, Usd, UsdShade
 import unittest
 
@@ -69,7 +71,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         # the weaker binding to shine through
         UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().ClearTargets(True)
 
-        print rl.ExportToString()
+        print(rl.ExportToString())
 
         self.assertEqual(lb.GetTargets(), [Sdf.Path("/composed/look1")])
 

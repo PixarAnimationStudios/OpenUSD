@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import argparse
 from pxr import Sdf, Usd
 
@@ -42,4 +44,4 @@ if args.session:
     sessionLayer = Sdf.Layer.FindOrOpen(sessionLayerPath)
 
 usd = Usd.Stage.Open(rootLayer, sessionLayer)
-print usd.ExportToString(addSourceFileComment=False)
+print(usd.ExportToString(addSourceFileComment=False))

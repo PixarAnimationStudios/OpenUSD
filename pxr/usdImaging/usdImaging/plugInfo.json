@@ -78,6 +78,13 @@
                         "isInternal": true,
                         "primTypeName": "Cylinder"
                     },
+                    "UsdImagingHermiteCurvesAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "HermiteCurves"
+                    },
                     "UsdImagingMaterialAdapter" : {
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,

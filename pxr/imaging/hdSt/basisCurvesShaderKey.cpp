@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -68,6 +67,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointIdFallbackFS,               "PointId.Fragment.Fallback"))
     ((pointIdFS,                       "PointId.Fragment.PointParam"))
 
+    // visibility mixin (for curve and point visibility)
+    ((topVisFallbackFS,                "Visibility.Fragment.Fallback"))
+    ((topVisFS,                        "Visibility.Fragment.Topology"))
+
     // helper mixins
     ((curveCubicWidthsBasis,           "Curves.Cubic.Widths.Basis"))
     ((curveCubicWidthsLinear,          "Curves.Cubic.Widths.Linear"))
@@ -107,6 +110,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // terminals
     ((surfaceFS,                       "Fragment.Surface"))
     ((hullColorFS,                     "Fragment.HullColor"))
+    ((pointColorFS,                    "Fragment.PointColor"))
     ((commonFS,                        "Fragment.CommonTerminals"))
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
@@ -127,7 +131,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     DrawStyle drawStyle, NormalStyle normalStyle,
     bool basisWidthInterpolation,
     bool basisNormalInterpolation,
-    TfToken shadingTerminal)
+    TfToken shadingTerminal,
+    bool hasAuthoredTopologicalVisibility)
     : glslfx(_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
@@ -292,16 +297,19 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     FS[fsIndex++] = _tokens->commonFS;
     if (shadingTerminal == HdBasisCurvesReprDescTokens->hullColor) {
         FS[fsIndex++] = _tokens->hullColorFS;
-    } else {
+    } else if (shadingTerminal == HdBasisCurvesReprDescTokens->pointColor) {
+        FS[fsIndex++] = _tokens->pointColorFS;
+    }else {
         FS[fsIndex++] = _tokens->surfaceFS;
     }
     FS[fsIndex++] = _tokens->scalarOverrideFS;
 
-    // we don't currently ever set primType to PRIM_POINTS for curves, but
-    // if we ever want to view them as just points, this allows point picking to
-    // work.
     FS[fsIndex++] = isPrimTypePoints?
                         _tokens->pointIdFS : _tokens->pointIdFallbackFS;
+    
+    FS[fsIndex++] = hasAuthoredTopologicalVisibility? _tokens->topVisFS :
+                                                      _tokens->topVisFallbackFS;
+
 
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
         drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {

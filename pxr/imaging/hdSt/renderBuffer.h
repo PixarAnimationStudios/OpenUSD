@@ -96,7 +96,7 @@ public:
 
     /// Returns the texture handle.
     HDST_API
-    HgiTextureHandle GetHgiTextureHandle(bool multiSampled) const override;
+    VtValue GetResource(bool multiSampled) const override;
 
 private:
     // Release any allocated resources.

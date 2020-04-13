@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import _usdRender
+from . import _usdRender
 from pxr import Tf
 Tf.PrepareModule(_usdRender, locals())
 del Tf

@@ -346,8 +346,7 @@ struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
         static std::string Repr(const bp::object& self)
         {
             const HeldType& held = bp::extract<const HeldType&>(self);
-            return _SpecRepr(self,
-                             held ? boost::get_pointer(held) : NULL);
+            return _SpecRepr(self, get_pointer(held));
         }
 
         static bool IsExpired(const HeldType& self)
@@ -412,7 +411,7 @@ public:
 
         // Add methods.
         c.add_property("expired", &_Helper<CLS>::IsExpired);
-        c.def("__nonzero__", &_Helper<CLS>::NonZero);
+        c.def(TfPyBoolBuiltinFuncName, &_Helper<CLS>::NonZero);
         c.def("__hash__", &_Helper<CLS>::__hash__);
         c.def("__eq__", &_Helper<CLS>::__eq__);
         c.def("__ne__", &_Helper<CLS>::__ne__);

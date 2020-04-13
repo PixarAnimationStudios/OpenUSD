@@ -66,6 +66,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (translucent)                               \
     (volume)
 
+#define HDST_SDR_METADATA_TOKENS                \
+    (swizzle)
+
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
                          HDST_GLSL_PROGRAM_TOKENS);
 
@@ -78,6 +81,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdStRenderSettingsTokens, HDST_API,
 
 TF_DECLARE_PUBLIC_TOKENS(HdStMaterialTagTokens, HDST_API,
                          HDST_MATERIAL_TAG_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(HdStSdrMetadataTokens, HDST_API, 
+                         HDST_SDR_METADATA_TOKENS);   
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

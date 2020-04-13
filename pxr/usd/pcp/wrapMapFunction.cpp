@@ -127,6 +127,7 @@ void wrapMapFunction()
         .def("MapTargetToSource", &This::MapTargetToSource,
             (arg("path")))
         .def("Compose", &This::Compose)
+        .def("ComposeOffset", &This::ComposeOffset, arg("offset"))
         .def("GetInverse", &This::GetInverse)
 
         .add_property("sourceToTargetMap",

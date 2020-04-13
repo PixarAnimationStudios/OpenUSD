@@ -68,6 +68,7 @@ pxr_library(hdSt
         light      
         lightingShader
         material
+        materialNetwork
         mesh
         mixinShader
         package
@@ -78,12 +79,11 @@ pxr_library(hdSt
         renderPass
         renderPassShader
         renderPassState
-        resourceBinder
         resourceGL
         resourceRegistry
         rprimUtils
         shaderCode
-        shaderKey
+        simpleLightingShader
         smoothNormals
         surfaceShader
         texture
@@ -110,11 +110,13 @@ pxr_library(hdSt
         immediateDrawBatch
         indirectDrawBatch
         materialBufferSourceAndTextureHelper
-        materialNetwork
+        materialParam
         meshShaderKey
         meshTopology 
         pointsShaderKey
         quadrangulate
+        resourceBinder
+        shaderKey
         subdivision
         subdivision3
         triangulate
@@ -146,6 +148,7 @@ pxr_library(hdSt
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/simpleLightingShader.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx

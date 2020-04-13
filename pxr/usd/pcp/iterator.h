@@ -58,8 +58,7 @@ class PcpNodeIterator
 {
 public:
     /// Constructs an invalid iterator.
-    PCP_API
-    PcpNodeIterator();
+    PcpNodeIterator() : _graph(0), _nodeIdx(PCP_INVALID_INDEX) {}
 
     // Returns a compressed Sd site.  For internal use only.
     Pcp_CompressedSdSite GetCompressedSdSite(size_t layerIndex) const
@@ -69,22 +68,23 @@ public:
 
 private:
     friend class PcpPrimIndex;
-    PCP_API
-    PcpNodeIterator(PcpPrimIndex_Graph* graph, size_t nodeIdx);
+    PcpNodeIterator(PcpPrimIndex_Graph* graph, size_t nodeIdx) :
+        _graph(graph), _nodeIdx(nodeIdx) {}
 
     friend class boost::iterator_core_access;
-    PCP_API
-    void increment();
-    PCP_API
-    void decrement();
-    PCP_API
-    void advance(difference_type n);
-    PCP_API
-    difference_type distance_to(const PcpNodeIterator& other) const;
-    PCP_API
-    bool equal(const PcpNodeIterator& other) const;
-    PCP_API
-    reference dereference() const;
+
+    void increment() { ++_nodeIdx; }
+    void decrement() { --_nodeIdx; }
+    void advance(difference_type n) { _nodeIdx += n; }
+    difference_type distance_to(const PcpNodeIterator& other) const {
+        return (difference_type)(other._nodeIdx) - _nodeIdx;
+    }
+    bool equal(const PcpNodeIterator& other) const {
+        return (_graph == other._graph) & (_nodeIdx == other._nodeIdx);
+    }
+    reference dereference() const {
+        return PcpNodeRef(_graph, _nodeIdx);
+    }
 
 private:
     PcpPrimIndex_Graph* _graph;

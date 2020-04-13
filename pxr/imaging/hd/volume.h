@@ -29,14 +29,11 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprim.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdVolume> HdVolumeSharedPtr;
 typedef std::vector<class HdVolume const *> HdVolumePtrConstVector;
 
 /// \class HdVolume

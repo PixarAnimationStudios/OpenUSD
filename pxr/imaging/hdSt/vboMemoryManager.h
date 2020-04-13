@@ -36,8 +36,8 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <list>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -87,7 +87,7 @@ protected:
         /// Constructor.
         _StripedBufferArrayRange()
          : _stripedBufferArray(nullptr),
-           _offset(0),
+           _elementOffset(0),
            _numElements(0),
            _capacity(0)
         {
@@ -122,19 +122,14 @@ protected:
         HDST_API
         virtual VtValue ReadData(TfToken const &name) const;
 
-        /// Returns the relative offset in aggregated buffer
-        virtual int GetOffset() const {
-            return _offset;
+        /// Returns the relative element offset in aggregated buffer
+        virtual int GetElementOffset() const {
+            return _elementOffset;
         }
 
-        /// Returns the index for this range
-        virtual int GetIndex() const {
-            // note: range doesn't store index, so we need to sweep rangeLists
-            // to find the index of this range.
-            TF_CODING_ERROR("vboMemoryManager doesn't support GetIndex() for "
-                            "memory and performance reasons\n");
-            return 0;
-        }
+        /// Returns the byte offset at which this range begins in the underlying
+        /// buffer array for the given resource.
+        virtual int GetByteOffset(TfToken const& resourceName) const;
 
         /// Returns the number of elements
         virtual size_t GetNumElements() const {
@@ -181,8 +176,8 @@ protected:
         virtual void DebugDump(std::ostream &out) const;
 
         /// Set the relative offset for this range.
-        void SetOffset(int offset) {
-            _offset = offset;
+        void SetElementOffset(int offset) {
+            _elementOffset = offset;
         }
 
         /// Set the number of elements for this range.
@@ -211,21 +206,25 @@ protected:
         virtual const void *_GetAggregation() const;
 
     private:
+        // Returns the byte offset at which the BAR begins for the resource.
+        size_t _GetByteOffset(HdStBufferResourceGLSharedPtr const& resource)
+            const;
+
         // holding a weak reference to container.
         // this pointer becomes null when the StripedBufferArray gets destructed,
         // in case if any drawItem still holds this bufferRange.
         _StripedBufferArray *_stripedBufferArray;
-        int _offset;
+        int _elementOffset;
         size_t _numElements;
         int _capacity;
     };
 
-    typedef boost::shared_ptr<_StripedBufferArray>
-        _StripedBufferArraySharedPtr;
-    typedef boost::shared_ptr<_StripedBufferArrayRange>
-        _StripedBufferArrayRangeSharedPtr;
-    typedef boost::weak_ptr<_StripedBufferArrayRange>
-        _StripedBufferArrayRangePtr;
+    using _StripedBufferArraySharedPtr =
+        std::shared_ptr<_StripedBufferArray>;
+    using _StripedBufferArrayRangeSharedPtr =
+        std::shared_ptr<_StripedBufferArrayRange>;
+    using _StripedBufferArrayRangePtr = 
+        std::weak_ptr<_StripedBufferArrayRange>;
 
     /// striped buffer array
     class _StripedBufferArray : public HdBufferArray {
@@ -316,7 +315,7 @@ protected:
 
         // Helper routine to cast the range shared pointer.
         _StripedBufferArrayRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
-            return boost::static_pointer_cast<_StripedBufferArrayRange>(GetRange(idx).lock());
+            return std::static_pointer_cast<_StripedBufferArrayRange>(GetRange(idx).lock());
         }
     };
 };

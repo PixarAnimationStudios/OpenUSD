@@ -62,7 +62,7 @@ public:
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
-    virtual HdBufferSourceVector GetChainedBuffers() const override;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
 
 protected:
     virtual bool _CheckValid() const override;

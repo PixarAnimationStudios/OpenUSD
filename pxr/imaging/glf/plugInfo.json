@@ -6,7 +6,7 @@
                 "Types": {                                                                  
                     "Glf_OIIOImage" : {
                         "bases": ["GlfImage"],
-                        "imageTypes": ["bmp", "exr", "jpg", "png", "tif", "zfile", "tx"],
+                        "imageTypes": ["exr", "tif", "zfile", "tx"],
                         "precedence": 0 
                     },
                     "Glf_StbImage" : {
@@ -24,8 +24,8 @@
                         "textureTypes": ["*"],
                         "precedence": 0
                     },
-                    "GlfVdbTexture" : {
-                        "bases": ["GlfBaseTexture"],
+                    "GlfVdbTextureContainer" : {
+                        "bases": ["GlfTexture"],
                         "textureTypes": ["vdb"],
                         "precedence": 0
                     },

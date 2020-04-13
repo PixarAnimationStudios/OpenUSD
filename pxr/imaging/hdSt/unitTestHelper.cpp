@@ -23,10 +23,14 @@
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 
@@ -34,8 +38,6 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <string>
 #include <sstream>
@@ -121,13 +123,15 @@ _BuildArray(T values[], int numValues)
 }
 
 HdSt_TestDriver::HdSt_TestDriver()
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
  , _collection(_tokens->testCollection, HdReprSelector())
 {
@@ -140,13 +144,15 @@ HdSt_TestDriver::HdSt_TestDriver()
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
  , _collection(_tokens->testCollection, HdReprSelector())
 {
@@ -154,13 +160,15 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
 }
 
 HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _renderPass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 , _collection(_tokens->testCollection, HdReprSelector())
 {
@@ -176,7 +184,7 @@ HdSt_TestDriver::~HdSt_TestDriver()
 void
 HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_hgiDriver});
     TF_VERIFY(_renderIndex != nullptr);
 
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
@@ -214,7 +222,8 @@ void
 HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 {
     HdTaskSharedPtrVector tasks = {
-        boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState, withGuides)
+        std::make_shared<HdSt_DrawTask>(renderPass, _renderPassState,
+            withGuides)
     };
     _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 

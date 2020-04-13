@@ -35,15 +35,13 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
+typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 /// \class GlfImage
 ///
@@ -51,8 +49,8 @@ typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 ///
 /// The class allows basic access to texture image file data.
 ///
-class GlfImage : public boost::noncopyable {
-
+class GlfImage
+{
 public:
 
     /// Specifies whether to treat the image origin as the upper-left corner
@@ -83,8 +81,14 @@ public:
     };
 
 public:
+    GlfImage() = default;
+
     GLF_API
     virtual ~GlfImage();
+
+    // Disallow copies
+    GlfImage(const GlfImage&) = delete;
+    GlfImage& operator=(const GlfImage&) = delete;
 
     /// Returns whether \a filename opened as a texture image.
     GLF_API

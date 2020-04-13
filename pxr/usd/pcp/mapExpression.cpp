@@ -147,35 +147,36 @@ PcpMapExpression::Variable::~Variable()
 }
 
 // Private implementation for Variable.
-struct Pcp_VariableImpl : PcpMapExpression::Variable
+struct Pcp_VariableImpl final : PcpMapExpression::Variable
 {
-    virtual ~Pcp_VariableImpl() {}
+    ~Pcp_VariableImpl() override {}
 
-    Pcp_VariableImpl(const PcpMapExpression::_NodeRefPtr &node) : _node(node) {}
+    explicit Pcp_VariableImpl(PcpMapExpression::_NodeRefPtr &&node)
+        : _node(std::move(node)) {}
 
-    virtual const PcpMapExpression::Value & GetValue() const {
+    const PcpMapExpression::Value & GetValue() const override {
         return _node->GetValueForVariable();
     }
 
-    virtual void SetValue(const PcpMapExpression::Value & value) {
-        _node->SetValueForVariable(value);
+    void SetValue(PcpMapExpression::Value && value) override {
+        _node->SetValueForVariable(std::move(value));
     }
 
-    virtual PcpMapExpression GetExpression() const {
+    PcpMapExpression GetExpression() const override {
         return PcpMapExpression(_node);
     }
 
     const PcpMapExpression::_NodeRefPtr _node;
 };
 
-PcpMapExpression::VariableRefPtr
-PcpMapExpression::NewVariable( const Value & initialValue )
+PcpMapExpression::VariableUniquePtr
+PcpMapExpression::NewVariable(Value && initialValue)
 {
     Pcp_VariableImpl *var = new Pcp_VariableImpl( _Node::New(_OpVariable) );
 
-    var->SetValue(initialValue);
+    var->SetValue(std::move(initialValue));
 
-    return VariableRefPtr(var);
+    return VariableUniquePtr(var);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -361,7 +362,7 @@ PcpMapExpression::_Node::_Invalidate()
 }
 
 void
-PcpMapExpression::_Node::SetValueForVariable(const Value & value)
+PcpMapExpression::_Node::SetValueForVariable(Value && value)
 {
     if (key.op != _OpVariable) {
         TF_CODING_ERROR("Cannot set value for non-variable");
@@ -369,7 +370,7 @@ PcpMapExpression::_Node::SetValueForVariable(const Value & value)
     }
     tbb::spin_mutex::scoped_lock lock(_mutex);
     if (_valueForVariable != value) {
-        _valueForVariable = value;
+        _valueForVariable = std::move(value);
         _Invalidate();
     }
 }

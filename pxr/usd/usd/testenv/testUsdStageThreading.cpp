@@ -23,7 +23,7 @@
 //
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/pxr.h"
@@ -211,7 +211,7 @@ int main(int argc, char const **argv)
 
     // Pull on the schema registry to create any schema layers so we can get a
     // baseline of # of loaded layers.
-    UsdSchemaRegistry::GetSchematics();
+    UsdSchemaRegistry::GetInstance();
     size_t baselineNumLayers = SdfLayer::GetLoadedLayers().size();
 
     printf("==================================================\n");

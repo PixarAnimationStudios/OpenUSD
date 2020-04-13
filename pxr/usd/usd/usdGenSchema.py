@@ -36,6 +36,7 @@ generated that will compile and work with USD Core successfully:
         directly subLayer.
 """
 
+from __future__ import print_function
 import sys, os, re, inspect
 import keyword
 from argparse import ArgumentParser
@@ -54,11 +55,9 @@ class _Printer():
 
     def __PrintImpl(self, stream, *args):
         if len(args):
-            for arg in args[:-1]:
-                print >>stream, arg,
-            print >>stream, args[-1]
+            print(*args, file=stream)
         else:
-             print >>stream, '\n'
+            print(file=stream)
 
     def __call__(self, *args):
         if not self._quiet:
@@ -525,14 +524,12 @@ class ClassInfo(object):
 #------------------------------------------------------------------------------#
 
 def _ValidateFields(spec):
-    disallowedFields = Usd.SchemaRegistry.GetDisallowedFields()
-
     # The schema registry will ignore these fields if they are discovered 
     # in a generatedSchema.usda file, but we want to allow them in schema.usda.
-    whitelist = ["inheritPaths", "customData"]
+    whitelist = ["inheritPaths", "customData", "specifier"]
 
     invalidFields = [key for key in spec.ListInfoKeys()
-                     if key in disallowedFields and key not in whitelist]
+        if Usd.SchemaRegistry.IsDisallowedField(key) and key not in whitelist]
     if not invalidFields:
         return True
 
@@ -670,14 +667,14 @@ def ParseUsd(usdFilePath):
                         classInfo.parentCppClassName)
                 if parentClassTfType and parentClassTfType != Tf.Type.Unknown:
                     if classInfo.isAppliedAPISchema != \
-                        Usd.SchemaRegistry.IsAppliedAPISchema(parentClassTfType):
+                        Usd.SchemaRegistry().IsAppliedAPISchema(parentClassTfType):
                         raise Exception("API schema '%s' inherits from "
                             "incompatible base API schema '%s'. Both must be "
                             "either applied API schemas or non-applied API "
                             " schemas." % (classInfo.cppClassName,
                             parentClassInfo.cppClassName))
                     if classInfo.isMultipleApply != \
-                        Usd.SchemaRegistry.IsMultipleApplyAPISchema(
+                        Usd.SchemaRegistry().IsMultipleApplyAPISchema(
                                 parentClassTfType):
                         raise Exception("API schema '%s' inherits from "
                         "incompatible base API schema '%s'. Both must be either" 
@@ -818,7 +815,13 @@ def GatherTokens(classes, libName, libTokens):
     # Add tokens from all classes to the token set
     for cls in classes:
         # Add tokens from attributes to the token set
-        for attr in cls.attrs.values():
+        #
+        # We sort by name here to get a stable ordering when building up the
+        # desc string below. The sort is reversed because items are prepended
+        # to the description. Reversing this sort results in a forward sort in
+        # the doc strings.
+        for attr in sorted(cls.attrs.values(),
+                           key=lambda a: a.name.lower(), reverse=True):
 
             # Add Attribute Names to token set
             cls.tokens.add(attr.name)
@@ -852,7 +855,7 @@ def GatherTokens(classes, libName, libTokens):
             
         # Add schema tokens to token set
         schemaTokens = cls.customData.get("schemaTokens", {})
-        for token, tokenInfo in schemaTokens.iteritems():
+        for token, tokenInfo in schemaTokens.items():
             cls.tokens.add(token)
             _AddToken(tokenDict, token, tokenInfo.get("value", token),
                       _SanitizeDoc(tokenInfo.get("doc", 
@@ -867,17 +870,20 @@ def GatherTokens(classes, libName, libTokens):
                       "Property namespace prefix for the %s schema." % cls.cppClassName)
 
     # Add library-wide tokens to token set
-    for token, tokenInfo in libTokens.iteritems():
+    for token, tokenInfo in libTokens.items():
         _AddToken(tokenDict, token, tokenInfo.get("value", token), 
                   _SanitizeDoc(tokenInfo.get("doc",
                       "Special token for the %s library." % libName), ' '))
 
-    return sorted(tokenDict.values(), key=lambda token: token.id.lower())
+    # Sort the list of tokens lexicographically. This pair of keys will provide
+    # a case insensitive primary key and a case sensitive secondary key. That
+    # way we keep a stable sort for tokens that differ only in case.
+    return sorted(tokenDict.values(), key=lambda token: (token.id.lower(), token.id))
 
 
 def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                  namespaceOpen, namespaceClose, namespaceUsing,
-                 useExportAPI, env):
+                 useExportAPI, env, headerTerminatorString):
     #
     # Load Templates
     #
@@ -928,8 +934,15 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
+
+        # Wrap headerTerminatorString with new lines if it is non-empty.
+        headerTerminatorString = headerTerminatorString.strip()
+        if headerTerminatorString:
+            headerTerminatorString = '\n%s\n' % headerTerminatorString
+
         customCode = _ExtractCustomCode(clsHFilePath,
-                default='};\n\n%s\n\n#endif\n' % namespaceClose)
+                default='};\n\n%s\n%s' % (
+                    namespaceClose, headerTerminatorString))
         _WriteFile(clsHFilePath,
                    headerTemplate.render(
                        cls=cls, hasTokenAttrs=hasTokenAttrs) + customCode,
@@ -992,8 +1005,9 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                           env.globals['libraryName'])
         else:
             types = info.setdefault('Types', {})
-        # remove auto-generated types.
-        for tname in types.keys():
+        # remove auto-generated types. Use a list to make a copy of keys before
+        # we mutate it.
+        for tname in list(types.keys()):
             if types[tname].get('autoGenerated', False):
                 del types[tname]
         # generate types entries.
@@ -1017,7 +1031,8 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
             "# Edits will survive regeneration except for comments and\n"
             "# changes to types with autoGenerated=true.\n"
             % os.path.basename(os.path.splitext(sys.argv[0])[0])) + 
-                   json.dumps(info, indent=4, sort_keys=True))
+                   json.dumps(info, indent=4, sort_keys=True,
+                              separators=(', ', ': ')))
         _WriteFile(plugInfoFile, content, validate)
 
 
@@ -1083,17 +1098,40 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
-    allMultipleApplyAPISchemas = []
+    allMultipleApplyAPISchemaNamespaces = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
             apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
             if apiSchemaType == MULTIPLE_APPLY:
-                allMultipleApplyAPISchemas.append(p.GetName())
+                namespacePrefix = p.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
+                if namespacePrefix:
+                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = \
+                        namespacePrefix
+                elif not p.GetPropertyNames():
+                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = ""
+                else:
+                    raise _GetSchemaDefException("propertyNamespacePrefix "
+                        "must exist as a metadata field on multiple-apply "
+                        "API schemas with properties", p.GetPath())
                 allAppliedAPISchemas.append(p.GetName())
             elif apiSchemaType in [None, SINGLE_APPLY]:
                 allAppliedAPISchemas.append(p.GetName())
+            # API schema classes must not have authored metadata except for 
+            # these exceptions:
+            #   'documentation' - This is allowed
+            #   'customData' - This will be deleted below
+            #   'specifier' - This is a required field and will always exist.
+            # Any other metadata is an error.
+            allowedAPIMetadata = ['specifier', 'customData', 'documentation']
+            invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
+                               if key not in allowedAPIMetadata]
+            if invalidMetadata:
+                raise _GetSchemaDefException("Found invalid metadata fields "
+                    "%s in API schema definition. API schemas cannot provide "
+                    "prim metadata fallbacks" % str(invalidMetadata) , 
+                    p.GetPath())
 
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
@@ -1107,11 +1145,10 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.'
 
     # Add the list of all applied and multiple-apply API schemas.
-    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemas) > 0:
+    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemaNamespaces) > 0:
         flatLayer.customLayerData = {
-                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas), 
-                'multipleApplyAPISchemas' : Vt.StringArray(
-                                        allMultipleApplyAPISchemas)
+                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
+                'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
 
     #
@@ -1201,6 +1238,14 @@ if __name__ == '__main__':
               '[Default: first directory that exists from this list: {0}]'
               .format(os.pathsep.join([defaultTemplateDir, instTemplateDir]))))
 
+    parser.add_argument('-hts', '--headerTerminatorString',
+        dest='headerTerminatorString',
+        type=str,
+        default='#endif',
+        help=('The string used to terminate generated C++ header files, '
+              'after the custom code section. '
+              '[Default: %(default)s]'))
+
     args = parser.parse_args()
     codeGenPath = os.path.abspath(args.codeGenPath)
     schemaPath = os.path.abspath(args.schemaPath)
@@ -1230,10 +1275,6 @@ if __name__ == '__main__':
     #
     if not os.path.isfile(schemaPath):
         Print.Err('Usage Error: First positional argument must be a USD schema file.')
-        parser.print_help()
-        sys.exit(1)
-    if not os.path.isdir(codeGenPath):
-        Print.Err('Usage Error: Second positional argument must be a directory to contain generated code.')
         parser.print_help()
         sys.exit(1)
     if args.templatePath and not os.path.isdir(templatePath):
@@ -1268,6 +1309,9 @@ if __name__ == '__main__':
         #
         # Generate Code from Templates
         #
+        if not os.path.isdir(codeGenPath):
+            os.makedirs(codeGenPath)
+
         j2_env = Environment(loader=FileSystemLoader(templatePath),
                              trim_blocks=True)
         j2_env.globals.update(Camel=_CamelCase,
@@ -1285,7 +1329,7 @@ if __name__ == '__main__':
         GenerateCode(templatePath, codeGenPath, tokenData, classes, 
                      args.validate,
                      namespaceOpen, namespaceClose, namespaceUsing,
-                     useExportAPI, j2_env)
+                     useExportAPI, j2_env, args.headerTerminatorString)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     

@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrman_RenderParam : public HdRenderParam {
 public:
-    HdPrman_RenderParam(std::shared_ptr<HdPrman_Context> context)
+    HdPrman_RenderParam(std::shared_ptr<HdPrman_Context> const& context)
         : _context(context)
         {}
     virtual ~HdPrman_RenderParam() = default;

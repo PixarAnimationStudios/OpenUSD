@@ -25,7 +25,7 @@
 import types
 
 from pxr import Gf
-from qt import QtCore
+from .qt import QtCore
 
 
 class UsdviewApi(object):

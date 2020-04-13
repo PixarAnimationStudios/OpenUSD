@@ -70,7 +70,7 @@ public:
 
     /// Set the location at which the shape is applied.
     USDSKEL_API
-    bool SetWeight(float weight);
+    bool SetWeight(float weight) const;
 
     /// Has a weight value been explicitly authored on this shape?
     ///

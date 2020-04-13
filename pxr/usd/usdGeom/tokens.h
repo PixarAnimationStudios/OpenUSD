@@ -128,7 +128,7 @@ struct UsdGeomTokensType {
     const TfToken clippingRange;
     /// \brief "closed"
     /// 
-    /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr()
     const TfToken closed;
     /// \brief "constant"
     /// 
@@ -380,7 +380,7 @@ struct UsdGeomTokensType {
     const TfToken motionVelocityScale;
     /// \brief "none"
     /// 
-    /// Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
+    /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
     const TfToken none;
     /// \brief "nonOverlapping"
     /// 
@@ -396,7 +396,7 @@ struct UsdGeomTokensType {
     const TfToken normals;
     /// \brief "open"
     /// 
-    /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Default value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Default value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Default value for UsdGeomNurbsPatch::GetUFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Default value for UsdGeomNurbsPatch::GetVFormAttr()
     const TfToken open;
     /// \brief "order"
     /// 
@@ -424,7 +424,7 @@ struct UsdGeomTokensType {
     const TfToken partition;
     /// \brief "periodic"
     /// 
-    /// Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr()
     const TfToken periodic;
     /// \brief "perspective"
     /// 
@@ -534,6 +534,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMesh
     const TfToken subdivisionScheme;
+    /// \brief "tangents"
+    /// 
+    /// UsdGeomHermiteCurves
+    const TfToken tangents;
     /// \brief "triangleSubdivisionRule"
     /// 
     /// UsdGeomMesh

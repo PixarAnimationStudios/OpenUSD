@@ -126,6 +126,7 @@ bool HasCustomizedPointColor(SubprimSelectionResult s)
 #define SUBPRIM_TYPE_ELEMENT 0
 #define SUBPRIM_TYPE_EDGE    1
 #define SUBPRIM_TYPE_POINT   2
+#define SUBPRIM_TYPE_INSTANCE 3
 
 SubprimSelectionResult GetSubprimSel(int offset,
                                      int elementId, int edgeId, int pointId)
@@ -175,41 +176,19 @@ SubprimSelectionResult GetSubprimSel(int offset,
 // --------- instance decoding ----------
 bool IsInstanceSelected(int offset, out int nextOffset)
 {
-    // if the prim doesn't have instances, we still want to check if any
-    // subprim is highlighted.
-    // so, initialize the nextOffset to offset (and not 0).
+    // If we don't find an instance subprim block, pass the same offset to
+    // GetSubprimSel.
     nextOffset = offset;
     bool sel = false;
 
-    #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
-    const int INSTANCE_SELOFFSETS_HEADER_SIZE = 3;
-    hd_drawingCoord dc = GetDrawingCoord();
+    int instanceId = GetDrawingCoord().instanceIndex[0];
 
-    for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-        int min = HdGet_hdxSelectionBuffer(offset+1);
-        int max = HdGet_hdxSelectionBuffer(offset+2);
-        // allow to highlight in a top-down manner, by flipping level
-        // during iteration.
-        // note: instanceIndex[0] is instanceID.
-        //       instanceIndex for level n is stored at instanceIndex[n+1]
-        int instanceId = dc.instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
-
-        if (instanceId >= min && instanceId < max) {
-            int netIndex = offset + INSTANCE_SELOFFSETS_HEADER_SIZE +
-                           instanceId - min;
-            DecodeSelOffset(HdGet_hdxSelectionBuffer(netIndex),
-                            /*out*/sel, /*out*/nextOffset);
-            if (sel) break;
-            if (!sel && nextOffset == 0) break;
-
-            // at this point, we need to traverse other levels to figure out
-            // if this instance is selected.
-            offset = nextOffset;
-        } else { // instanceId not in range
-            break;
-        }
+    SubprimHeader header = DecodeSubprimHeader(offset);
+    if (header.type == SUBPRIM_TYPE_INSTANCE) {
+        sel =
+            IsSubprimSelected(instanceId, header.min, header.max,
+                              offset, /*out*/nextOffset);
     }
-    #endif
 
     return sel;
 }

@@ -38,8 +38,6 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <boost/unordered_map.hpp>
-
 #include <tbb/spin_rw_mutex.h>
 
 #include <functional>

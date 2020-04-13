@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 def main():
     shotFilePath = 'shots/s00_01/s00_01.usd'
     animLayerFilePath = 'shots/s00_01/s00_01_anim.usd'
@@ -48,9 +50,9 @@ def main():
 
     stage.GetEditTarget().GetLayer().Save()
 
-    print '==='
-    print 'usdview %s' % shotFilePath
-    print 'usdcat %s' % animLayerFilePath
+    print('===')
+    print('usdview %s' % shotFilePath)
+    print('usdcat %s' % animLayerFilePath)
 
 def _AnimateBilliards(stage):
     _MoveBall(stage.GetPrimAtPath('/World/anim/CueBall'), (1, 0), 40)

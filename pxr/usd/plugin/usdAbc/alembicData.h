@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include <boost/shared_ptr.hpp>
 
@@ -43,7 +44,8 @@ public:
     /// Returns a new \c UsdAbc_AlembicData object.  Outside a successful
     /// \c Open() and \c Close() pairing, the data acts as if it contains
     /// a pseudo-root prim spec at the absolute root path.
-    static UsdAbc_AlembicDataRefPtr New();
+    static UsdAbc_AlembicDataRefPtr New(
+                    SdfFileFormat::FileFormatArguments = {});
 
     /// Opens the Alembic file at \p filePath read-only (closing any open
     /// file).  Alembic is not meant to be used as an in-memory store for
@@ -103,7 +105,7 @@ public:
     EraseTimeSample(const SdfPath&, double);
 
 protected:
-    UsdAbc_AlembicData();
+    UsdAbc_AlembicData(SdfFileFormat::FileFormatArguments);
     virtual ~UsdAbc_AlembicData();
 
     // SdfAbstractData overrides
@@ -111,6 +113,7 @@ protected:
 
 private:
     boost::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
+    const SdfFileFormat::FileFormatArguments _arguments;
 };
 
 

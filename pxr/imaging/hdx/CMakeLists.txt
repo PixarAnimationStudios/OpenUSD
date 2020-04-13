@@ -41,10 +41,10 @@ pxr_library(hdx
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
-        compositor
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
+        fullscreenShader
         oitBufferAccessor
         oitRenderTask
         oitResolveTask
@@ -59,7 +59,6 @@ pxr_library(hdx
         selectionTask
         selectionTracker
         shadowTask
-        simpleLightingShader
         simpleLightTask
         taskController
         tokens
@@ -89,11 +88,11 @@ pxr_library(hdx
         shaders/renderPassPickingShader.glslfx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
-        shaders/simpleLightingShader.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
         shaders/renderPassOitVolumeShader.glslfx
         shaders/oitResolveImageShader.glslfx
+        shaders/outline.glslfx
         textures/StinsonBeach.exr
 )
 
@@ -161,6 +160,18 @@ pxr_build_test(testHdxCameraAndLight
     CPPFILES
         testenv/testHdxCameraAndLight.cpp
 )
+pxr_build_test(testHdxDrawTarget
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxDrawTarget.cpp
+)
 pxr_build_test(testHdxPickingWithReprAndRefineChanges
     LIBRARIES
         hdx
@@ -188,5 +199,19 @@ pxr_build_test(testHdxUnpickablesAsOccluders
         unitTestGLDrawing.cpp
         unitTestUtils.cpp
         testenv/testHdxUnpickablesAsOccluders.cpp
+)
+pxr_build_test(testHdxPickSubprims
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        unitTestUtils.cpp
+        testenv/testHdxPickSubprims.cpp
 )
 endif()

@@ -25,7 +25,7 @@
 Trace -- Utilities for counting and recording events.
 """
 
-import _trace
+from . import _trace
 from pxr import Tf
 Tf.PrepareModule(_trace, locals())
 del _trace, Tf
@@ -57,7 +57,7 @@ def TraceFunction(obj):
 
         if inspect.ismethod(func):
             callableTypeLabel = 'method'
-            classLabel = func.im_class.__name__+'.'
+            classLabel = func.__self__.__class__.__name__+'.'
         else:
             callableTypeLabel = 'func'
             classLabel = ''
@@ -72,12 +72,12 @@ def TraceFunction(obj):
             callableTypeLabel,
             moduleLabel,
             classLabel,
-            func.func_name)
+            func.__name__)
         def invoke(*args, **kwargs):
             with TraceScope(label):
                 return func(*args, **kwargs)
 
-        invoke.func_name = func.func_name
+        invoke.__name__ = func.__name__
         # Make sure wrapper function gets attributes of wrapped function.
         import functools
         return functools.update_wrapper(invoke, func)

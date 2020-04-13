@@ -21,11 +21,13 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
+from __future__ import print_function
+
+from .qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform, math
 from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
-from customAttributes import CustomAttribute
-from constantGroup import ConstantGroup
+from .customAttributes import CustomAttribute
+from .constantGroup import ConstantGroup
 
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
 
@@ -207,10 +209,10 @@ def ColorizeLabelText(text, substring, r, g, b):
 
 def PrintWarning(title, description):
     msg = sys.stderr
-    print >> msg, "------------------------------------------------------------"
-    print >> msg, "WARNING: %s" % title
-    print >> msg, description
-    print >> msg, "------------------------------------------------------------"
+    print("------------------------------------------------------------", file=msg)
+    print("WARNING: %s" % title, file=msg)
+    print(description, file=msg)
+    print("------------------------------------------------------------", file=msg)
 
 def GetValueAtFrame(prop, frame):
     if isinstance(prop, Usd.Relationship):
@@ -248,7 +250,7 @@ def GetShortStringForValue(prop, val):
     if val is None:
         return ''
     
-    from scalarTypes import GetScalarTypeFromAttr
+    from .scalarTypes import GetScalarTypeFromAttr
     scalarType, isArray = GetScalarTypeFromAttr(prop)
     result = ''
     if isArray and not isinstance(val, Sdf.ValueBlock):
@@ -362,7 +364,7 @@ def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
             addedPrefix = "     "
             _AddSubLayers(subLayer, offset, addedPrefix + prefix, layer, layers)
         else:
-            print "Could not find layer " + l
+            print("Could not find layer " + l)
 
 def GetRootLayerStackInfo(layer):
     layers = []
@@ -404,7 +406,7 @@ class Timer(object):
         self.interval = self._end - self._start
 
     def PrintTime(self, action):
-        print "Time to %s: %2.3fs" % (action, self.interval)
+        print("Time to %s: %2.3fs" % (action, self.interval))
 
 
 class BusyContext(object):
@@ -531,8 +533,8 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         definingFile = definingLayer.realPath
     else:
         definingFile = primStack[-1].layer.realPath
-        print "Warning: Could not find expected asset-defining layer for %s" %\
-            assetIdentifier
+        print("Warning: Could not find expected asset-defining layer for %s" %
+            assetIdentifier)
 
     if Ar.IsPackageRelativePath(definingFile):
         definingFile = Ar.SplitPackageRelativePathOuter(definingFile)[0]
@@ -573,12 +575,12 @@ def DumpMallocTags(stage, contextStr):
         statsFile.close()
         reportName = statsFile.name
         callTree.Report(reportName)
-        print "Memory consumption of %s for %s is %d Mb" % (contextStr,
+        print("Memory consumption of %s for %s is %d Mb" % (contextStr,
                                                             layerName,
-                                                            memInMb)
-        print "For detailed analysis, see " + reportName
+                                                            memInMb))
+        print("For detailed analysis, see " + reportName)
     else:
-        print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
+        print("Unable to accumulate memory usage since the Pxr MallocTag system was not initialized")
 
 def GetInstanceIdForIndex(prim, instanceIndex, time):
     '''Attempt to find an authored Id value for the instance at index
@@ -630,3 +632,34 @@ class PropertyNotFoundException(Exception):
     def __init__(self, path):
         super(PropertyNotFoundException, self).__init__(
             "Property not found at path in stage: %s" % str(path))
+
+class FixableDoubleValidator(QtGui.QDoubleValidator):
+    """This class implements a fixup() method for QDoubleValidator
+    (see method for specific behavior).  To work around the brokenness
+    of Pyside's fixup() wrapping, we allow the validator to directly
+    update its parent if it is a QLineEdit, from within fixup().  Thus
+    every QLineEdit must possess its own unique FixableDoubleValidator.
+    
+    The fixup method we supply (which can be usefully called directly)
+    applies clamping and rounding to enforce the QDoubleValidator's
+    range and decimals settings."""
+
+    def __init__(self, parent):
+        super(FixableDoubleValidator, self).__init__(parent)
+        
+        self._lineEdit = parent if isinstance(parent, QtWidgets.QLineEdit) else None
+
+    def fixup(self, valStr):
+        # We implement this to fulfill the virtual for internal QLineEdit
+        # behavior, hoping that PySide will do the right thing, but it is
+        # useless to call from Python directly due to string immutability
+        try:
+            val = float(valStr)
+            val = max(val, self.bottom())
+            val = min(val, self.top())
+            val = round(val)
+            valStr = str(val)
+            if self._lineEdit:
+                self._lineEdit.setText(valStr)
+        except ValueError:
+            pass

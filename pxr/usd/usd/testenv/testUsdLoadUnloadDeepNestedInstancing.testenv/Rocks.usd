@@ -1,0 +1,597 @@
+#usda 1.0
+
+def Xform "Rocks" (
+    kind = "group"
+)
+{
+    def Xform "Pebble1" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb1"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble2" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb2"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble3" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb3"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble4" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb4"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble5" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb5"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble6" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb6"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble7" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb7"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble8" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb8"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble9" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb9"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble10" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb10"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble11" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb11"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble12" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb12"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble13" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb13"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble14" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb14"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble15" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb15"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble16" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb16"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble17" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb17"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble18" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb18"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble19" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb19"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble20" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb20"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble21" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb21"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble22" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb22"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble23" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb23"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble24" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb24"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble25" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb25"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble26" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb26"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble27" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb27"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble28" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb28"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble29" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb29"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble30" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb30"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble31" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb31"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble32" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb32"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble33" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb33"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble34" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb34"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble35" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb35"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble36" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb36"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble37" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb37"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble38" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb38"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble39" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb39"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble40" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb40"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble41" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb41"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble42" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb42"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble43" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb43"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble44" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb44"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble45" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb45"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble46" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb46"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble47" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb47"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble48" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb48"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble49" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb49"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble50" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb50"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble51" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb51"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble52" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb52"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble53" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb53"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble54" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb54"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble55" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb55"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble56" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb56"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble57" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb57"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble58" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb58"
+        }
+    )
+    {
+    }
+
+    def Xform "Pebble59" (
+        instanceable = true
+        prepend payload = @./Pebble.usd@</Pebble>
+        variants = {
+            string pebbleVariants = "peb59"
+        }
+    )
+    {
+    }
+}
+

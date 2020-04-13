@@ -1,6 +1,2 @@
-Katana Plugins
-==============
-
-This section contains libraries and plugins for Katana. 
-
-See the [online documentation](http://openusd.org/docs/Katana-USD-Plugins.html) for more details.
+The USD Katana plugins can be found the Foundry-supported repo available
+[here](https://github.com/TheFoundryVisionmongers/KatanaUsdPlugins).

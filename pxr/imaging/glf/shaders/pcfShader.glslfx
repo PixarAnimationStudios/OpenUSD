@@ -37,7 +37,7 @@
 //  PCF shadow filtering in fragment shader
 // ---------------------------------------------------------------------------
 
-#if NUM_LIGHTS > 0
+#if NUM_SHADOWS > 0
 
 #define SHADOW_FILTER
 
@@ -67,22 +67,24 @@ vec2 jitter[JITTER_NUM_SAMPLES] =
         vec2( 0.14383161, -0.14100790)
     );
 
-in vec2 FshadowFilterWidth[NUM_LIGHTS];
+in vec2 FshadowFilterWidth[NUM_SHADOWS];
 
 float
-shadowFilter(int index, vec4 coord, vec4 Peye)
+shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 {
     vec2 filterWidth = FshadowFilterWidth[index];
 
     float sum = 0.0;
-    for (int i=0; i<PCF_NUM_SAMPLES; ++i) { 
+    for (int i=0; i<PCF_NUM_SAMPLES; ++i) {
+        // Note that the perspective division has not been applied to
+        // either Pshadow or filterWidth.
         vec2 offset = jitter[i] * filterWidth;
-        sum += shadowCompare(index, vec4(coord.xy + offset, coord.z, coord.w));
+        sum += shadowCompare(index, Pshadow + vec4(offset, 0, 0));
     } 
     return sum / float(PCF_NUM_SAMPLES);
 } 
 
-#endif // NUM_LIGHTS > 0
+#endif // NUM_SHADOWS > 0
 
 -- glsl PCF.ShadowFilterFragmentOnly
 // ---------------------------------------------------------------------------
@@ -90,7 +92,7 @@ shadowFilter(int index, vec4 coord, vec4 Peye)
 //  no vertex shader needed.
 // ---------------------------------------------------------------------------
 
-#if NUM_LIGHTS > 0
+#if NUM_SHADOWS > 0
 
 #define SHADOW_FILTER
 #define JITTER_NUM_SAMPLES 16
@@ -122,17 +124,19 @@ vec2 jitter[JITTER_NUM_SAMPLES] =
 vec2 computeShadowFilterWidth(int index, vec4 Peye); // defined in simpleLighting.glslfx
 
 float
-shadowFilter(int index, vec4 coord, vec4 Peye)
+shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 {
     vec2 filterWidth = computeShadowFilterWidth(index, Peye);
 
     float sum = 0.0;
     for (int i=0; i<PCF_NUM_SAMPLES; ++i) { 
+        // Note that the perspective division has not been applied to
+        // either Pshadow or filterWidth.
         vec2 offset = jitter[i] * filterWidth;
-        sum += shadowCompare(index, vec4(coord.xy + offset, coord.z, coord.w));
+        sum += shadowCompare(index, Pshadow + vec4(offset, 0, 0));
     } 
     return sum / float(PCF_NUM_SAMPLES);
 }
 
 
-#endif // NUM_LIGHTS > 0
+#endif // NUM_SHADOWS > 0

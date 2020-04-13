@@ -26,58 +26,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
-#include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/attachmentDesc.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/base/gf/vec4f.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-/// \struct HgiAttachmentDesc
-///
-/// Describes the properties of a framebuffer attachment.
-///
-/// <ul>
-/// <li>texture:
-///   The texture used as render target attachment.</li>
-/// <li>loadOp:
-///   The operation to perform on the attachment pixel data prior to rendering.</li>
-/// <li>storeOp:
-///   The operation to perform on the attachment pixel data after rendering.</li>
-/// <li>clearValue:
-///   The value to clear the attachment with (r,g,b,a) or (depth,stencil,x,x)</li>
-///
-struct HgiAttachmentDesc {
-    HgiAttachmentDesc() 
-    : texture(nullptr)
-    , loadOp(HgiAttachmentLoadOpLoad)
-    , storeOp(HgiAttachmentStoreOpStore)
-    , clearValue(0)
-    {}
-
-    HgiTextureHandle texture;
-    HgiAttachmentLoadOp loadOp;
-    HgiAttachmentStoreOp storeOp;
-    GfVec4f clearValue;
-};
-
-typedef std::vector<HgiAttachmentDesc> HgiAttachmentDescVector;
-
-HGI_API
-bool operator==(
-    const HgiAttachmentDesc& lhs,
-    const HgiAttachmentDesc& rhs);
-
-HGI_API
-bool operator!=(
-    const HgiAttachmentDesc& lhs,
-    const HgiAttachmentDesc& rhs);
-
-HGI_API
-std::ostream& operator<<(
-    std::ostream& out,
-    const HgiAttachmentDesc& attachment);
 
 
 /// \struct HgiGraphicsEncoderDesc
@@ -85,30 +38,41 @@ std::ostream& operator<<(
 /// Describes the properties to begin a HgiGraphicsEncoder.
 ///
 /// <ul>
-/// <li>colorAttachments:
+/// <li>colorAttachmentDescs:
 ///   Describes each of the color attachments.</li>
-/// <li>depthAttachment:
+/// <li>depthAttachmentDesc:
 ///   Describes the depth attachment (optional)</li>
+/// <li>colorTextures:
+///   The color attachment render targets.</li>
+/// <li>depthTexture:
+///   The depth attachment render target (optional)</li>
 /// <li>width:
 ///   Render target width (in pixels)</li>
 /// <li>height:
 ///   Render target height (in pixels)</li>
 /// </ul>
 ///
-struct HgiGraphicsEncoderDesc {
+struct HgiGraphicsEncoderDesc
+{
     HgiGraphicsEncoderDesc()
-    : colorAttachments()
-    , depthAttachment()
+    : colorAttachmentDescs()
+    , depthAttachmentDesc()
+    , colorTextures()
+    , depthTexture()
     , width(0)
     , height(0)
     {}
 
     inline bool HasAttachments() const {
-        return !colorAttachments.empty() || depthAttachment.texture;
+        return !colorAttachmentDescs.empty() || depthTexture;
     }
 
-    HgiAttachmentDescVector colorAttachments;
-    HgiAttachmentDesc depthAttachment;
+    HgiAttachmentDescVector colorAttachmentDescs;
+    HgiAttachmentDesc depthAttachmentDesc;
+
+    HgiTextureHandleVector colorTextures;
+    HgiTextureHandle depthTexture;
+
     uint32_t width;
     uint32_t height;
 };

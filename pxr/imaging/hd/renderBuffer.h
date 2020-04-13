@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef class HgiTexture* HgiTextureHandle;
+
 
 
 /// \class HdRenderBuffer
@@ -124,14 +124,11 @@ public:
     /// still adding samples or not).
     virtual bool IsConverged() const = 0;
 
-    /// This optional API returns the hgi gpu texture handle that backs this
-    /// render buffer. It allows later compositing steps to make use of the
-    /// already-on-gpu texture and skip the Map() cpu to gpu copy.
-    /// If `multiSampled` is true, and the render buffer is ms, the
-    /// ms texture is returned, otherwise the non-ms texture is returned.
-    /// CPU-based render buffer can ignore this api.
-    virtual HgiTextureHandle GetHgiTextureHandle(bool multiSampled) const {
-        return nullptr;}
+    /// This optional API returns a (type-erased) resource that backs this
+    /// render buffer. For example, a render buffer implementation may allocate
+    /// a gpu texture that holds the data of the buffer. This function allows
+    /// other parts of Hydra, such as a HdTask to get access to this resource.
+    virtual VtValue GetResource(bool multiSampled) const {return VtValue();}
 
 protected:
     /// Deallocate the buffer, freeing any owned resources.

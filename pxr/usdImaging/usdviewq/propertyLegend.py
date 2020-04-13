@@ -26,11 +26,11 @@
     in the property browser.
 """
 
-from qt import QtWidgets
+from .qt import QtWidgets
 
-from propertyLegendUI import Ui_PropertyLegend
+from .propertyLegendUI import Ui_PropertyLegend
 
-from common import UIBaseColors, UIPropertyValueSourceColors, ItalicizeLabelText, PropertyViewIcons
+from .common import UIBaseColors, UIPropertyValueSourceColors, ItalicizeLabelText, PropertyViewIcons
 
 class PropertyLegend(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -126,6 +126,4 @@ class PropertyLegend(QtWidgets.QWidget):
         return self.height()
 
     def GetResetHeight(self):
-        # This predefined height is determined by the elements that exist in
-        # the propertyLegend. For more information see propertyLegendUI.ui
-        return 134
+        return self.sizeHint().height()

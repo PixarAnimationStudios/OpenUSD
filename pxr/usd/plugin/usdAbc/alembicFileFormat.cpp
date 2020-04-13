@@ -71,7 +71,7 @@ UsdAbcAlembicFileFormat::~UsdAbcAlembicFileFormat()
 SdfAbstractDataRefPtr
 UsdAbcAlembicFileFormat::InitData(const FileFormatArguments& args) const
 {
-    return UsdAbc_AlembicData::New();
+    return UsdAbc_AlembicData::New(args);
 }
 
 bool

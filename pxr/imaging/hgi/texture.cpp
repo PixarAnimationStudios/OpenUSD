@@ -25,7 +25,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiTexture::HgiTexture(HgiTextureDesc const&)
+HgiTexture::HgiTexture(HgiTextureDesc const& desc)
+    : _descriptor(desc)
 {
 }
 
@@ -33,13 +34,25 @@ HgiTexture::~HgiTexture()
 {
 }
 
-bool operator==(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs) 
+HgiTextureDesc const&
+HgiTexture::GetDescriptor() const
 {
-    return  lhs.usage == rhs.usage &&
+    return _descriptor;
+}
+
+bool operator==(const HgiTextureDesc& lhs,
+    const HgiTextureDesc& rhs)
+{
+    return  lhs.debugName == rhs.debugName &&
+            lhs.usage == rhs.usage &&
             lhs.format == rhs.format &&
+            lhs.type == rhs.type &&
             lhs.dimensions == rhs.dimensions &&
-            lhs.sampleCount == rhs.sampleCount;
+            lhs.sampleCount == rhs.sampleCount &&
+            lhs.pixelsByteSize == rhs.pixelsByteSize
+            // Omitted because data ptr is set to nullptr after CreateTexture
+            // lhs.initialData == rhs.initialData
+    ;
 }
 
 bool operator!=(const HgiTextureDesc& lhs,

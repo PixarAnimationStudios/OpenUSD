@@ -102,14 +102,14 @@ public:
         virtual const Value & GetValue() const = 0;
         /// Mutate the variable to have the new value.
         /// This will also invalidate dependant expressions.
-        virtual void SetValue(const Value & value) = 0;
+        virtual void SetValue(Value && value) = 0;
         /// Return an expression representing the value of this variable.
         /// This lets you use the variable as a sub-term in other expressions.
         virtual PcpMapExpression GetExpression() const = 0;
     };
 
     /// Variables are held by reference.
-    typedef std::shared_ptr<Variable> VariableRefPtr;
+    typedef std::unique_ptr<Variable> VariableUniquePtr;
 
     /// Create a new variable.
     /// The client is expected to retain the reference for as long as
@@ -118,7 +118,7 @@ public:
     /// will continue to be valid, but there will be no way to further
     /// change the value of the variable.
     PCP_API
-    static VariableRefPtr NewVariable( const Value & initialValue );
+    static VariableUniquePtr NewVariable(Value && initialValue);
 
     /// Create a new PcpMapExpression representing the application of
     /// f's value, followed by the application of this expression's value.
@@ -238,7 +238,7 @@ private: // data
         const Value & EvaluateAndCache() const;
 
         // For _OpVariable nodes, sets the variable's value.
-        void SetValueForVariable(const Value &newValue);
+        void SetValueForVariable(Value &&newValue);
 
         // For _OpVariable nodes, returns the variable's value.
         const Value & GetValueForVariable() const {

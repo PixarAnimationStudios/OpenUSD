@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/interpolators.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/resolver.h"
@@ -114,10 +115,6 @@ using std::make_pair;
 using std::map;
 using std::string;
 using std::vector;
-
-// Definition below under "value resolution".
-// Composes a prim's typeName, with special consideration for __AnyType__.
-static TfToken _ComposeTypeName(const PcpPrimIndex &primIndex);
 
 // ------------------------------------------------------------------------- //
 // UsdStage Helpers
@@ -645,12 +642,37 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     stage->_loadRules = (load == LoadAll) ?
         UsdStageLoadRules::LoadAll() : UsdStageLoadRules::LoadNone();
 
+    Usd_InstanceChanges instanceChanges;
+    const SdfPath& absoluteRootPath = SdfPath::AbsoluteRootPath();
+
     // Populate the stage, request payloads according to InitialLoadSet load.
     stage->_ComposePrimIndexesInParallel(
-        SdfPathVector(1, SdfPath::AbsoluteRootPath()),
-        "instantiating stage");
-    stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
-    stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
+            {absoluteRootPath}, "instantiating stage", &instanceChanges);
+    stage->_pseudoRoot = stage->_InstantiatePrim(absoluteRootPath);
+
+    const size_t subtreeCount = instanceChanges.newMasterPrims.size() + 1;
+    std::vector<Usd_PrimDataPtr> subtreesToCompose;
+    SdfPathVector primIndexPathsForSubtrees;
+    subtreesToCompose.reserve(subtreeCount);
+    primIndexPathsForSubtrees.reserve(subtreeCount);
+    subtreesToCompose.push_back(stage->_pseudoRoot);
+    primIndexPathsForSubtrees.push_back(absoluteRootPath);
+
+    // We only need to add new masters since, during stage initialization there
+    // should not be any changed masters
+    for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
+        const SdfPath& masterPath = instanceChanges.newMasterPrims[i];
+        const SdfPath& masterPrimIndexPath = 
+            instanceChanges.newMasterPrimIndexes[i];
+
+        Usd_PrimDataPtr masterPrim = stage->_InstantiateMasterPrim(masterPath);
+        subtreesToCompose.push_back(masterPrim);
+        primIndexPathsForSubtrees.push_back(masterPrimIndexPath);
+    }
+
+    stage->_ComposeSubtreesInParallel(
+        subtreesToCompose, &primIndexPathsForSubtrees);
+
     stage->_RegisterPerLayerNotices();
 
     // Publish this stage into all current writable caches.
@@ -1178,59 +1200,58 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
 }
 
 static inline SdfAttributeSpecHandle
-_GetPropDef(SdfAttributeSpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfAttributeSpec *,
+                   const UsdPrimDefinition &primDef, 
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetAttributeDefinition(typeName, attrName);
+    return primDef.GetSchemaAttributeSpec(attrName);
 }
 
 static inline SdfRelationshipSpecHandle
-_GetPropDef(SdfRelationshipSpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfRelationshipSpec *,
+                   const UsdPrimDefinition &primDef,  
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetRelationshipDefinition(typeName, attrName);
+    return primDef.GetSchemaRelationshipSpec(attrName);
 }
 
 static inline SdfPropertySpecHandle
-_GetPropDef(SdfPropertySpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfPropertySpec *,
+                   const UsdPrimDefinition &primDef, 
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetPropertyDefinition(typeName, attrName);
+    return primDef.GetSchemaPropertySpec(attrName);
 }
 
 template <class PropType>
 SdfHandle<PropType>
-UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
 {
     Usd_PrimDataHandle const &primData = prop._Prim();
     if (!primData)
         return TfNullPtr;
 
-    const TfToken &typeName = primData->GetTypeName();
-    if (typeName.IsEmpty())
-        return TfNullPtr;
-
     // Consult the registry.
-    return _GetPropDef(static_cast<PropType *>(nullptr),
-                       typeName, prop.GetName());
+    return _GetSchemaPropSpec(static_cast<PropType *>(nullptr),
+                              primData->GetPrimDefinition(), prop.GetName());
 }
 
 SdfPropertySpecHandle
-UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
 {
-    return _GetPropertyDefinition<SdfPropertySpec>(prop);
+    return _GetSchemaPropertySpec<SdfPropertySpec>(prop);
 }
 
 SdfAttributeSpecHandle
-UsdStage::_GetAttributeDefinition(const UsdAttribute &attr) const
+UsdStage::_GetSchemaAttributeSpec(const UsdAttribute &attr) const
 {
-    return _GetPropertyDefinition<SdfAttributeSpec>(attr);
+    return _GetSchemaPropertySpec<SdfAttributeSpec>(attr);
 }
 
 SdfRelationshipSpecHandle
-UsdStage::_GetRelationshipDefinition(const UsdRelationship &rel) const
+UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 {
-    return _GetPropertyDefinition<SdfRelationshipSpec>(rel);
+    return _GetSchemaPropertySpec<SdfRelationshipSpec>(rel);
 }
 
 bool
@@ -1299,33 +1320,36 @@ UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
 
 static SdfAttributeSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfAttributeSpecHandle &toCopy)
 {
     return SdfAttributeSpec::New(
-        primSpec, toCopy->GetNameToken(), toCopy->GetTypeName(),
+        primSpec, propName, toCopy->GetTypeName(),
         toCopy->GetVariability(), toCopy->IsCustom());
 }
 
 static SdfRelationshipSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfRelationshipSpecHandle &toCopy)
 {
     return SdfRelationshipSpec::New(
-        primSpec, toCopy->GetNameToken(), toCopy->IsCustom(),
+        primSpec, propName, toCopy->IsCustom(),
         toCopy->GetVariability());
 }
 
 static SdfPropertySpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfPropertySpecHandle &toCopy)
 {
     // Type dispatch to correct property type.
     if (SdfAttributeSpecHandle attrSpec =
         TfDynamic_cast<SdfAttributeSpecHandle>(toCopy)) {
-        return _StampNewPropertySpec(primSpec, attrSpec);
+        return _StampNewPropertySpec(primSpec, propName, attrSpec);
     } else {
         return _StampNewPropertySpec(
-            primSpec, TfStatic_cast<SdfRelationshipSpecHandle>(toCopy));
+            primSpec, propName, TfStatic_cast<SdfRelationshipSpecHandle>(toCopy));
     }
 }
 
@@ -1371,7 +1395,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     TypedSpecHandle specToCopy;
 
     // Get definition, if any.
-    specToCopy = _GetPropertyDefinition<PropType>(prop);
+    specToCopy = _GetSchemaPropertySpec<PropType>(prop);
 
     if (!specToCopy) {
         // There is no definition available, either because the prim has no
@@ -1405,7 +1429,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
         SdfChangeBlock block;
         SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
         if (TF_VERIFY(primSpec))
-            return _StampNewPropertySpec(primSpec, specToCopy);
+            return _StampNewPropertySpec(primSpec, propName, specToCopy);
     }
 
     // Otherwise, we fail to create a spec.
@@ -1833,6 +1857,24 @@ UsdStage::GetObjectAtPath(const SdfPath &path) const
     return UsdObject();
 }
 
+UsdProperty
+UsdStage::GetPropertyAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdProperty>();
+}
+
+UsdAttribute
+UsdStage::GetAttributeAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdAttribute>();
+}
+
+UsdRelationship
+UsdStage::GetRelationshipAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdRelationship>();
+}
+
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
@@ -2069,8 +2111,8 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 
     _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-    // Go through the finalLoadSet, and check ancestors -- if any are unloaded,
-    // include the most ancestral in the finalLoadSet.
+    // Go through the finalLoadSet, and check ancestors -- if any are loaded,
+    // include the most ancestral which was loaded last in the finalLoadSet.
     for (SdfPath const &p: finalLoadSet) {
         SdfPath curPath = p;
         while (true) {
@@ -2206,6 +2248,13 @@ UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
     PcpChanges changes;
     changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
     _Recompose(changes);
+
+    // Notify.
+    UsdStageWeakPtr self(this);
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    resyncChanges[SdfPath::AbsoluteRootPath()];
+    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -2217,6 +2266,13 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
     PcpChanges changes;
     changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
     _Recompose(changes);
+
+    // Notify.
+    UsdStageWeakPtr self(this);
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    resyncChanges[SdfPath::AbsoluteRootPath()];
+    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 void
@@ -2282,6 +2338,25 @@ UsdStage::GetMasters() const
         }                   
     }
     return masterPrims;
+}
+
+vector<UsdPrim>
+UsdStage::_GetInstancesForMaster(const UsdPrim& masterPrim) const
+{
+    if (!masterPrim.IsMaster()) {
+        return {};
+    }
+
+    vector<UsdPrim> instances;
+    SdfPathVector instancePaths = 
+        _instanceCache->GetInstancePrimIndexesForMaster(masterPrim.GetPath());
+    instances.reserve(instancePaths.size());
+    for (const SdfPath& instancePath : instancePaths) {
+        Usd_PrimDataConstPtr primData = 
+            _GetPrimDataAtPathOrInMaster(instancePath);
+        instances.push_back(UsdPrim(primData, SdfPath::EmptyPath()));
+    }
+    return instances;
 }
 
 Usd_PrimDataConstPtr 
@@ -2368,6 +2443,19 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
     return p;
 }
 
+Usd_PrimDataPtr
+UsdStage::_InstantiateMasterPrim(const SdfPath &primPath) 
+{
+    // Master prims are parented beneath the pseudo-root,
+    // but are *not* children of the pseudo-root. This ensures
+    // that consumers never see master prims unless they are
+    // explicitly asked for. So, we don't need to set the child
+    // link here.
+    Usd_PrimDataPtr masterPrim = _InstantiatePrim(primPath);
+    masterPrim->_SetParentLink(_pseudoRoot);
+    return masterPrim;
+}
+
 namespace {
 // Less-than comparison for iterators that compares what they point to.
 struct _DerefIterLess {
@@ -2415,26 +2503,6 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         TF_DEBUG(USD_COMPOSITION).Msg("Instance prim <%s>\n",
                                       prim->GetPath().GetText());
         _DestroyDescendents(prim);
-
-        const SdfPath& sourceIndexPath = 
-            prim->GetSourcePrimIndex().GetPath();
-        const SdfPath masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexPath(sourceIndexPath);
-
-        if (!masterPath.IsEmpty()) {
-            Usd_PrimDataPtr masterPrim = _GetPrimDataAtPath(masterPath);
-            if (!masterPrim) {
-                masterPrim = _InstantiatePrim(masterPath);
-
-                // Master prims are parented beneath the pseudo-root,
-                // but are *not* children of the pseudo-root. This ensures
-                // that consumers never see master prims unless they are
-                // explicitly asked for. So, we don't need to set the child
-                // link here.
-                masterPrim->_SetParentLink(_pseudoRoot);
-            }
-            _ComposeSubtree(masterPrim, _pseudoRoot, mask, sourceIndexPath);
-        }
         return;
     }
 
@@ -2826,16 +2894,17 @@ UsdStage::_ComposeSubtreeImpl(
     const SdfPath primIndexPath = 
         (inPrimIndexPath.IsEmpty() ? prim->GetPath() : inPrimIndexPath);
 
-    // Compute the prim's PcpPrimIndex.
-    PcpErrorVector errors;
-    prim->_primIndex =
-        &_GetPcpCache()->ComputePrimIndex(primIndexPath, &errors);
-
-    // Report any errors.
-    if (!errors.empty()) {
-        _ReportPcpErrors(
-            errors, TfStringPrintf("computing prim index <%s>",
-                                   primIndexPath.GetText()));
+    // Find the prim's PcpPrimIndex. This should have already been
+    // computed in a prior call to _ComposePrimIndexesInParallel.
+    // Note that it's unsafe to call PcpCache::ComputePrimIndex here,
+    // that method is not thread-safe unless the prim index happens
+    // to have been computed already.
+    prim->_primIndex = _GetPcpCache()->FindPrimIndex(primIndexPath);
+    if (!TF_VERIFY(
+            prim->_primIndex, 
+            "Prim index at <%s> not found in PcpCache for UsdStage %s", 
+            primIndexPath.GetText(), UsdDescribe(this).c_str())) {
+        return;
     }
 
     parent = parent ? parent : prim->GetParent();
@@ -2846,19 +2915,8 @@ UsdStage::_ComposeSubtreeImpl(
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
-    // Compose the typename for this prim unless it's a master prim, since
-    // master prims don't expose any data except name children.
-    // Note this needs to come before _ComposeAndCacheFlags, since that
-    // function may need typename to be populated.
-    if (isMasterPrim) {
-        prim->_typeName = TfToken();
-    }
-    else {
-        prim->_typeName = _ComposeTypeName(prim->GetPrimIndex());
-    }
-
-    // Compose flags for prim.
-    prim->_ComposeAndCacheFlags(parent, isMasterPrim);
+    // Compose type info and flags for prim.
+    prim->_ComposeAndCacheTypeAndFlags(parent, isMasterPrim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.
@@ -3695,6 +3753,7 @@ UsdStage::_HandleLayersDidChange(
                         if (infoKey == SdfFieldKeys->Kind ||
                             infoKey == SdfFieldKeys->TypeName ||
                             infoKey == SdfFieldKeys->Specifier ||
+                            infoKey == UsdTokens->apiSchemas ||
                             
                             // XXX: Could be more specific when recomposing due
                             //      to clip changes. E.g., only update the clip
@@ -3750,8 +3809,9 @@ UsdStage::_HandleLayersDidChange(
     // selections, etc).
 
     PcpChanges changes;
-    PcpCache *cache = _cache.get();
-    changes.DidChange(TfSpan<PcpCache*>(&cache, 1), n.GetChangeListVec());
+    const PcpCache *cache = _cache.get();
+    changes.DidChange(
+        TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
@@ -3876,6 +3936,10 @@ void
 UsdStage::_RecomposePrims(const PcpChanges &changes,
                           T *pathsToRecompose)
 {
+    // Note: Calling changes.Apply() will result in recomputation of  
+    // pcpPrimIndexes for changed prims, these get updated on the respective  
+    // prims during _ComposeSubtreeImpl call. Using these outdated primIndexes
+    // can result in undefined behavior
     changes.Apply();
 
     // Process layer stack changes.
@@ -3976,29 +4040,54 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
     _MasterToPrimIndexMap masterToPrimIndexMap;
 
+    const bool pathsContainsAbsRoot = 
+        pathsToRecompose->begin()->first == SdfPath::AbsoluteRootPath();
+
+    //If AbsoluteRootPath is present then that should be the only entry!
+    TF_VERIFY(!pathsContainsAbsRoot || pathsToRecompose->size() == 1);
+
     const size_t origNumPathsToRecompose = pathsToRecompose->size();
     for (const auto& entry : *pathsToRecompose) {
         const SdfPath& path = entry.first;
-        for (const SdfPath& masterPath :
+        // Add Corresponding inMasterPaths for any instance or proxy paths in
+        // pathsToRecompose
+        for (const SdfPath& inMasterPath :
                  _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
-            masterToPrimIndexMap[masterPath] = path;
+            masterToPrimIndexMap[inMasterPath] = path;
+            (*pathsToRecompose)[inMasterPath];
+        }
+        // Add any unchanged masters whose instances are descendents of paths in
+        // pathsToRecompose
+        for (const std::pair<SdfPath, SdfPath>& masterSourceIndexPair:
+                _instanceCache->GetMastersUsingPrimIndexPathOrDescendents(path)) 
+        {
+            const SdfPath& masterPath = masterSourceIndexPair.first;
+            const SdfPath& sourceIndexPath = masterSourceIndexPair.second;
+            masterToPrimIndexMap[masterPath] = sourceIndexPath;
             (*pathsToRecompose)[masterPath];
         }
     }
 
+    // Add new masters paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
             instanceChanges.newMasterPrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.newMasterPrims[i]];
     }
 
+    // Add changed masters paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
             instanceChanges.changedMasterPrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.changedMasterPrims[i]];
     }
 
-    if (pathsToRecompose->size() != origNumPathsToRecompose) {
+    // If pseudoRoot is present in pathsToRecompose, then the only other prims
+    // in pathsToRecompose can be master prims (added above), in which case we 
+    // do not want to remove these masters. If not we need to make sure any
+    // descendents of masters are removed if corresponding master is present
+    if (!pathsContainsAbsRoot && 
+            pathsToRecompose->size() != origNumPathsToRecompose) {
         _RemoveDescendentEntries(pathsToRecompose);
     }
 
@@ -4016,12 +4105,6 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         _ComposeSubtreesInParallel(subtreesToRecompose);
     }
     else {
-        // Make sure we remove any subtrees for master prims that would
-        // be composed when an instance subtree is composed. Otherwise,
-        // the same master subtree could be composed concurrently, which
-        // is unsafe.
-        _RemoveMasterSubtreesSubsumedByInstances(
-            &subtreesToRecompose, masterToPrimIndexMap);
 
         SdfPathVector primIndexPathsForSubtrees;
         primIndexPathsForSubtrees.reserve(subtreesToRecompose.size());
@@ -4041,63 +4124,6 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     _DestroyPrimsInParallel(instanceChanges.deadMasterPrims);
 }
 
-template <class PrimIndexPathMap>
-void
-UsdStage::_RemoveMasterSubtreesSubsumedByInstances(
-    std::vector<Usd_PrimDataPtr>* subtreesToRecompose,
-    const PrimIndexPathMap& primPathToSourceIndexPathMap) const
-{
-    TRACE_FUNCTION();
-
-    // Partition so [masterIt, subtreesToRecompose->end()) contains all 
-    // subtrees for master prims.
-    auto masterIt = std::partition(
-        subtreesToRecompose->begin(), subtreesToRecompose->end(),
-        [](const Usd_PrimDataPtr& p) { return !p->IsMaster(); });
-
-    if (masterIt == subtreesToRecompose->end()) {
-        return;
-    }
-
-    // Collect the paths for all master subtrees that will be composed when
-    // the instance subtrees in subtreesToRecompose are composed. 
-    // See the instancing handling in _ComposeChildren.
-    using _PathSet = TfHashSet<SdfPath, SdfPath::Hash>;
-    std::unique_ptr<_PathSet> mastersForSubtrees;
-    for (const Usd_PrimDataPtr& p : 
-         boost::make_iterator_range(subtreesToRecompose->begin(), masterIt)) {
-
-        const SdfPath* sourceIndexPath = 
-            TfMapLookupPtr(primPathToSourceIndexPathMap, p->GetPath());
-        const SdfPath& masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexPath(
-                sourceIndexPath ? *sourceIndexPath : p->GetPath());
-        if (!masterPath.IsEmpty()) {
-            if (!mastersForSubtrees) {
-                mastersForSubtrees.reset(new _PathSet);
-            }
-            mastersForSubtrees->insert(masterPath);
-        }
-    }
-
-    if (!mastersForSubtrees) {
-        return;
-    }
-
-    // Remove all master prim subtrees that will get composed when an 
-    // instance subtree in subtreesToRecompose is composed.
-    auto masterIsSubsumedByInstanceSubtree = 
-        [&mastersForSubtrees](const Usd_PrimDataPtr& master) {
-        return mastersForSubtrees->find(master->GetPath()) != 
-               mastersForSubtrees->end();
-    };
-
-    subtreesToRecompose->erase(
-        std::remove_if(
-            masterIt, subtreesToRecompose->end(),
-            masterIsSubsumedByInstanceSubtree),
-        subtreesToRecompose->end());
-}
 
 template <class Iter>
 void 
@@ -4125,6 +4151,26 @@ UsdStage::_ComputeSubtreesToRecompose(
             continue;
         }
 
+        // Add masters to list of subtrees to recompose and instantiate any 
+        // new master not present in the primMap from before
+        if (_instanceCache->IsMasterPath(*i)) {
+            PathToNodeMap::const_iterator itr = _primMap.find(*i);
+            Usd_PrimDataPtr masterPrim;
+            if (itr != _primMap.end()) {
+                // should be a changed master if already in the primMap
+                masterPrim = itr->second.get();
+            } else {
+                // newMaster should be absent from the primMap, instantiate
+                // these now to be added to subtreesToRecompose
+                masterPrim = _InstantiateMasterPrim(*i);
+            }
+            subtreesToRecompose->push_back(masterPrim);
+            ++i;
+            continue;
+        }
+
+        // Collect all non-master prims (including descendants of masters) to be
+        // added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
         PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
         if (parentIt != _primMap.end()) {
@@ -4144,8 +4190,15 @@ UsdStage::_ComputeSubtreesToRecompose(
             // Recompose the subtree for each affected sibling.
             do {
                 PathToNodeMap::const_iterator primIt = _primMap.find(*i);
-                if (primIt != _primMap.end())
+                if (primIt != _primMap.end()) {
                     subtreesToRecompose->push_back(primIt->second.get());
+                } else if (_instanceCache->IsMasterPath(*i)) {
+                    // If this path is a master path and is not present in the
+                    // primMap, then this must be a newMaster added during this
+                    // processing, instantiate and add it.
+                    Usd_PrimDataPtr masterPrim = _InstantiateMasterPrim(*i);
+                    subtreesToRecompose->push_back(masterPrim);
+                }
                 ++i;
             } while (i != end && i->GetParentPath() == parentPath);
         } else if (parentPath.IsEmpty()) {
@@ -4315,9 +4368,8 @@ UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
 
     // Check for a spec type in the definition registry, in case this is a
     // builtin property.
-    SdfSpecType specType =
-        UsdSchemaRegistry::GetSpecType(primData->GetTypeName(), propName);
-
+    const UsdPrimDefinition &primDef = primData->GetPrimDefinition();
+    SdfSpecType specType = primDef.GetSpecType(propName);
     if (specType != SdfSpecTypeUnknown)
         return specType;
 
@@ -4890,8 +4942,8 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Copy fallback property values and metadata if needed.
         _CopyFallbacks(
-            _GetPropertyDefinition(srcProp),
-            _GetPropertyDefinition(dstProp),
+            _GetSchemaPropertySpec(srcProp),
+            _GetSchemaPropertySpec(dstProp),
             dstPropSpec, dstPropStack);
     }
 
@@ -5176,17 +5228,14 @@ protected:
     }
 
     // Gets the fallback value for the property
-    bool _GetFallbackValue(const TfToken &primTypeName,
+    bool _GetFallbackValue(const UsdPrimDefinition &primDef,
                            const TfToken &propName,
                            const TfToken &fieldName,
                            const TfToken &keyPath)
     {
         // Try to read fallback value.
-        return keyPath.IsEmpty() ?
-            UsdSchemaRegistry::HasField(
-                primTypeName, propName, fieldName, _value) :
-            UsdSchemaRegistry::HasFieldDictKey(
-                primTypeName, propName, fieldName, keyPath, _value);
+        return Usd_GetFallbackValue(
+            primDef, propName, fieldName, keyPath, _value);
     }
 
     // Consumes an authored dictionary value and merges it into the current 
@@ -5225,17 +5274,18 @@ protected:
 
     // Consumes the fallback dictionary value and merges it into the current
     // dictionary value.
-    void _ConsumeAndMergeFallbackDictionary(const TfToken &primTypeName,
-                                            const TfToken &propName,
-                                            const TfToken &fieldName,
-                                            const TfToken &keyPath) 
+    void _ConsumeAndMergeFallbackDictionary(
+        const UsdPrimDefinition &primDef,
+        const TfToken &propName,
+        const TfToken &fieldName,
+        const TfToken &keyPath) 
     {
         // Copy to the side since we'll have to merge if the next opinion is
         // also a dictionary.
         VtDictionary tmpDict = _UncheckedGet<VtDictionary>(_value);
 
         // Try to read fallback value.
-        if(_GetFallbackValue(primTypeName, propName, fieldName, keyPath)) {
+        if(_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
             if (_IsHolding<VtDictionary>(_value)) {
@@ -5289,7 +5339,7 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
         }
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
@@ -5298,11 +5348,11 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
             // Handle special value-type composition: fallback dictionaries 
             // are merged into the current dictionary value..
             this->_ConsumeAndMergeFallbackDictionary(
-                primTypeName, propName, fieldName, keyPath);
+                primDef, propName, fieldName, keyPath);
         } else {
             // Try to read fallback value. Fallbacks are not resolved.
             this->_done = this->_GetFallbackValue(
-                primTypeName, propName, fieldName, keyPath);
+                primDef, propName, fieldName, keyPath);
         }
     }
 
@@ -5371,13 +5421,13 @@ struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
         return false;
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
     {
         this->_done = this->_GetFallbackValue(
-            primTypeName, propName, fieldName, keyPath);
+            primDef, propName, fieldName, keyPath);
     }
 };
 
@@ -5414,13 +5464,13 @@ struct TypeSpecificValueComposer :
         return false;
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
     {
         this->_done = this->_GetFallbackValue(
-            primTypeName, propName, fieldName, keyPath);
+            primDef, propName, fieldName, keyPath);
     }
 
 protected:
@@ -5517,7 +5567,7 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeAuthored(
 template <>
 void 
 TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
-    const TfToken &primTypeName,
+    const UsdPrimDefinition &primDef,
     const TfToken &propName,
     const TfToken &fieldName,
     const TfToken &keyPath) 
@@ -5525,7 +5575,7 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
     // Handle special value-type composition: fallback dictionaries 
     // are merged into the current dictionary value..
     _ConsumeAndMergeFallbackDictionary(
-        primTypeName, propName, fieldName, keyPath);
+        primDef, propName, fieldName, keyPath);
 }
 
 template <>
@@ -5559,17 +5609,12 @@ struct ExistenceComposer
             *_strongestLayer = layer;
         return _done;
     }
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) {
-        _done = keyPath.IsEmpty() ?
-            UsdSchemaRegistry::HasField(
-                primTypeName, propName, fieldName,
-                static_cast<VtValue *>(nullptr)) :
-            UsdSchemaRegistry::HasFieldDictKey(
-                primTypeName, propName, fieldName, keyPath,
-                static_cast<VtValue*>(nullptr));
+        _done = Usd_GetFallbackValue(primDef, propName, fieldName, keyPath, 
+                                     static_cast<VtValue *>(nullptr));
         if (_strongestLayer)
             *_strongestLayer = TfNullPtr;
     }
@@ -5672,38 +5717,123 @@ UsdStage::_SetValueImpl(
 }
 
 // --------------------------------------------------------------------- //
-// Specialized Value Resolution
+// Helpers for Metadata Resolution
 // --------------------------------------------------------------------- //
 
-// Iterate over a prim's specs until we get a non-empty, non-any-type typeName.
-static TfToken
-_ComposeTypeName(const PcpPrimIndex &primIndex)
+template <class Composer>
+static bool
+_GetFallbackMetadataImpl(Usd_PrimDataConstPtr primData,
+                         const TfToken& propName,
+                         const TfToken &fieldName,
+                         const TfToken &keyPath,
+                         Composer *composer)
 {
-    for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextLayer()) {
-        TfToken tok;
-        if (res.GetLayer()->HasField(
-                res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
-            if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken)
-                return tok;
-        }
-    }
-    return TfToken();
+    // Look for a fallback value in the definition.
+    // NOTE: This code is performance critical.
+    composer->ConsumeUsdFallback(
+        primData->GetPrimDefinition(), propName, fieldName, keyPath);
+    return composer->IsDone();
 }
 
+template <class Composer>
+static bool
+_ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
+                            const TfToken& propName,
+                            const TfToken& fieldName,
+                            const TfToken& keyPath,
+                            bool useFallbacks,
+                            Usd_Resolver* res,
+                            Composer *composer)
+{
+    // Main resolution loop.
+    SdfPath specPath = res->GetLocalPath(propName);
+    bool gotOpinion = false;
+
+    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
+        if (isNewNode) {
+            specPath = res->GetLocalPath(propName);
+        }
+
+        // Consume an authored opinion here, if one exists.
+        gotOpinion |= composer->ConsumeAuthored(
+            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
+        
+        if (composer->IsDone()) {
+            return true;
+        }
+    }
+
+    if (useFallbacks) {
+        _GetFallbackMetadataImpl(
+            primData, propName, fieldName, keyPath, composer);
+    }
+
+    return gotOpinion || composer->IsDone();
+}
+
+// --------------------------------------------------------------------- //
+// Specialized Metadata Resolution
+// --------------------------------------------------------------------- //
+
+template <class Composer>
+static bool
+_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
+                      bool useFallbacks, Composer *composer);
+
 SdfSpecifier
-UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData) const
+UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData)
 {
     SdfSpecifier result = SdfSpecifierOver;
     SdfAbstractDataTypedValue<SdfSpecifier> resultVal(&result);
     TypeSpecificValueComposer<SdfSpecifier> composer(&resultVal);
-    _GetPrimSpecifierImpl(primData, /*useFallbacks=*/true, &composer);
+    _GetPrimSpecifierImpl(primData, /* useFallbacks = */ true, &composer);
     return result;
 }
 
-SdfSpecifier
-UsdStage::_GetSpecifier(const UsdPrim &prim) const
+template <class Composer>
+static bool 
+_GetPrimKindImpl(Usd_PrimDataConstPtr primData,
+                 bool useFallbacks, Composer *composer)
 {
-    return _GetSpecifier(get_pointer(prim._Prim()));
+    Usd_Resolver resolver(&primData->GetPrimIndex());
+    return _ComposeGeneralMetadataImpl(
+        primData, TfToken(), SdfFieldKeys->Kind, TfToken(), useFallbacks, 
+        &resolver, composer);
+}
+
+TfToken
+UsdStage::_GetKind(Usd_PrimDataConstPtr primData)
+{
+    TfToken kind;
+    SdfAbstractDataTypedValue<TfToken> resultValue(&kind);
+    TypeSpecificValueComposer<TfToken> composer(&resultValue);
+
+    // We don't allow fallbacks for kind.
+    _GetPrimKindImpl(primData, /* useFallbacks = */ false, &composer);
+    return kind;
+}
+
+template <class Composer>
+static bool 
+_GetPrimActiveImpl(Usd_PrimDataConstPtr primData,
+                   bool useFallbacks, Composer *composer)
+{
+    Usd_Resolver resolver(&primData->GetPrimIndex());
+    return _ComposeGeneralMetadataImpl(
+        primData, TfToken(), SdfFieldKeys->Active, TfToken(), useFallbacks, 
+        &resolver, composer);
+}
+
+bool
+UsdStage::_IsActive(Usd_PrimDataConstPtr primData)
+{
+    bool active = true;
+    SdfAbstractDataTypedValue<bool> resultValue(&active);
+    TypeSpecificValueComposer<bool> composer(&resultValue);
+
+    // We don't allow fallbacks for active.
+    _GetPrimActiveImpl(primData, /* useFallbacks = */ false, &composer);
+    return active;
 }
 
 bool
@@ -5712,7 +5842,7 @@ UsdStage::_IsCustom(const UsdProperty &prop) const
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
 
-    if (_GetPropertyDefinition(prop))
+    if (_GetSchemaPropertySpec(prop))
         return false;
 
     const TfToken &propName = prop.GetName();
@@ -5748,7 +5878,7 @@ UsdStage
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
         // Check definition.
-        if (SdfAttributeSpecHandle attrDef = _GetAttributeDefinition(attr)) {
+        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
             return attrDef->GetVariability();
         }
 
@@ -5882,26 +6012,6 @@ UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
 }
 
 template <class Composer>
-bool
-UsdStage::_GetFallbackMetadataImpl(const UsdObject &obj,
-                                   const TfToken &fieldName,
-                                   const TfToken &keyPath,
-                                   Composer *composer) const
-{
-    // Look for a fallback value in the definition.  XXX: This currently only
-    // handles property definitions -- needs to be extended to prim definitions
-    // as well.
-    if (obj.Is<UsdProperty>()) {
-        // NOTE: This code is performance critical.
-        const TfToken &typeName = obj._Prim()->GetTypeName();
-        composer->ConsumeUsdFallback(
-            typeName, obj.GetName(), fieldName, keyPath);
-        return composer->IsDone();
-    }
-    return false;
-}
-
-template <class Composer>
 void
 UsdStage::_GetAttrTypeImpl(const UsdAttribute &attr,
                            const TfToken &fieldName,
@@ -5909,13 +6019,13 @@ UsdStage::_GetAttrTypeImpl(const UsdAttribute &attr,
                            Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetAttributeDefinition(attr)) {
-        // Builtin attribute typename comes from definition.
-        composer->ConsumeUsdFallback(
-            attr.GetPrim().GetTypeName(),
-            attr.GetName(), fieldName, TfToken());
+    composer->ConsumeUsdFallback(
+        attr._Prim()->GetPrimDefinition(),
+        attr.GetName(), fieldName, TfToken());
+    if (composer->IsDone()) {
         return;
     }
+
     // Fall back to general metadata composition.
     _GetGeneralMetadataImpl(attr, fieldName, TfToken(), useFallbacks, composer);
 }
@@ -5926,13 +6036,13 @@ UsdStage::_GetAttrVariabilityImpl(const UsdAttribute &attr, bool useFallbacks,
                                   Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetAttributeDefinition(attr)) {
-        // Builtin attribute typename comes from definition.
-        composer->ConsumeUsdFallback(
-            attr.GetPrim().GetTypeName(),
-            attr.GetName(), SdfFieldKeys->Variability, TfToken());
+    composer->ConsumeUsdFallback(
+        attr._Prim()->GetPrimDefinition(),
+        attr.GetName(), SdfFieldKeys->Variability, TfToken());
+    if (composer->IsDone()) {
         return;
     }
+
     // Otherwise variability is determined by the *weakest* authored opinion.
     // Walk authored scene description in reverse order.
     const TfToken &attrName = attr.GetName();
@@ -5957,9 +6067,10 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
     TRACE_FUNCTION();
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
-    if (_GetPropertyDefinition(prop)) {
+    if (_GetSchemaPropertySpec(prop)) {
         composer->ConsumeUsdFallback(
-            prop.GetPrim().GetTypeName(), prop.GetName(),
+            prop._Prim()->GetPrimDefinition(), 
+            prop.GetName(),
             SdfFieldKeys->Custom, TfToken());
         return;
     }
@@ -6003,13 +6114,14 @@ UsdStage::_GetPrimTypeNameImpl(const UsdPrim &prim, bool useFallbacks,
 }
 
 template <class Composer>
-bool
-UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
-                                bool useFallbacks, Composer *composer) const
+static bool
+_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
+                      bool useFallbacks, Composer *composer)
 {
     // Handle the pseudo root as a special case.
-    if (primData == _pseudoRoot)
+    if (primData->GetPath().IsAbsoluteRootPath()) {
         return false;
+    }
 
     // Instance master prims are always defined -- see Usd_PrimData for
     // details. Since the fallback for specifier is 'over', we have to
@@ -6129,18 +6241,17 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
 }
 
 template <class ListOpType, class Composer>
-bool 
-UsdStage::_GetListOpMetadataImpl(const UsdObject &obj,
-                                 const TfToken &fieldName,
-                                 bool useFallbacks,
-                                 Usd_Resolver *res,
-                                 Composer *composer) const
+static bool 
+_GetListOpMetadataImpl(Usd_PrimDataConstPtr primData,
+                       const TfToken &propName,
+                       const TfToken &fieldName,
+                       bool useFallbacks,
+                       Usd_Resolver *res,
+                       Composer *composer)
 {
     // Collect all list op opinions for this field.
     std::vector<ListOpType> listOps;
 
-    static TfToken empty;
-    const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
     SdfPath specPath = res->GetLocalPath(propName);
 
     for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
@@ -6158,7 +6269,8 @@ UsdStage::_GetListOpMetadataImpl(const UsdObject &obj,
         ListOpType fallbackListOp;
         SdfAbstractDataTypedValue<ListOpType> out(&fallbackListOp);
         TypeSpecificValueComposer<ListOpType> composer(&out);
-        if (_GetFallbackMetadataImpl(obj, fieldName, empty, &composer)) {
+        if (_GetFallbackMetadataImpl(
+                primData, propName, fieldName, TfToken(), &composer)) {
             listOps.emplace_back(fallbackListOp);
         }
     }
@@ -6189,6 +6301,7 @@ UsdStage::_GetSpecialMetadataImpl(const UsdObject &obj,
                                   Composer *composer) const
 {
     // Dispatch to special-case composition rules based on type and field.
+    // Return true if the given field was handled, false otherwise.
     if (obj.Is<UsdProperty>()) {
         if (obj.Is<UsdAttribute>()) {
             if (fieldName == SdfFieldKeys->TypeName) {
@@ -6213,6 +6326,20 @@ UsdStage::_GetSpecialMetadataImpl(const UsdObject &obj,
             _GetPrimSpecifierImpl(
                 get_pointer(obj._Prim()), useFallbacks, composer);
             return true;
+        } else if (fieldName == SdfFieldKeys->Kind) {
+            // XXX: We do not not respect fallback kind values during
+            // Usd_PrimData composition (see _GetKind), but we do allow
+            // fallback values here to maintain existing behavior. However,
+            // we may want to force the useFallbacks flag to false here for
+            // consistency.
+            _GetPrimKindImpl(
+                get_pointer(obj._Prim()), useFallbacks, composer);
+            return true;
+        } else if (fieldName == SdfFieldKeys->Active) {
+            // XXX: See comment in the handling of 'kind' re: fallback values.
+            _GetPrimActiveImpl(
+                get_pointer(obj._Prim()), useFallbacks, composer);
+            return true;
         }
     }
 
@@ -6234,13 +6361,7 @@ UsdStage::_GetMetadataImpl(
     // Handle special cases.
     if (_GetSpecialMetadataImpl(
             obj, fieldName, keyPath, useFallbacks, composer)) {
-
-        return true;
-    }
-
-    if (!m.IsClean()) {
-        // An error occurred during _GetSpecialMetadataImpl.
-        return false;
+        return composer->IsDone() && m.IsClean();
     }
 
     return _GetGeneralMetadataImpl(
@@ -6255,9 +6376,15 @@ UsdStage::_GetGeneralMetadataImpl(const UsdObject &obj,
                                   bool useFallbacks,
                                   Composer *composer) const
 {
-    Usd_Resolver resolver(&obj._Prim()->GetPrimIndex());
+    const Usd_PrimDataConstPtr primData = get_pointer(obj._Prim());
+
+    static TfToken empty;
+    const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
+
+    Usd_Resolver resolver(&primData->GetPrimIndex());
     if (!_ComposeGeneralMetadataImpl(
-            obj, fieldName, keyPath, useFallbacks, &resolver, composer)) {
+            primData, propName, fieldName, keyPath, useFallbacks, &resolver, 
+            composer)) {
         return false;
     }
 
@@ -6270,64 +6397,37 @@ UsdStage::_GetGeneralMetadataImpl(const UsdObject &obj,
         const std::type_info& valueTypeId(composer->GetHeldTypeid());
         if (valueTypeId == typeid(SdfIntListOp)) {
             return _GetListOpMetadataImpl<SdfIntListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver, 
+                composer);
         }
         else if (valueTypeId == typeid(SdfInt64ListOp)) {
             return _GetListOpMetadataImpl<SdfInt64ListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver, 
+                composer);
         }
         else if (valueTypeId == typeid(SdfUIntListOp)) {
             return _GetListOpMetadataImpl<SdfUIntListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver, 
+                composer);
         }
         else if (valueTypeId == typeid(SdfUInt64ListOp)) {
             return _GetListOpMetadataImpl<SdfUInt64ListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver,
+                composer);
         }
         else if (valueTypeId == typeid(SdfStringListOp)) {
             return _GetListOpMetadataImpl<SdfStringListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver, 
+                composer);
         }
         else if (valueTypeId == typeid(SdfTokenListOp)) {
             return _GetListOpMetadataImpl<SdfTokenListOp>(
-                obj, fieldName, useFallbacks, &resolver, composer);
+                primData, propName, fieldName, useFallbacks, &resolver, 
+                composer);
         }
     }
     
     return true;
-}
-
-template <class Composer>
-bool
-UsdStage::_ComposeGeneralMetadataImpl(const UsdObject &obj,
-                                      const TfToken& fieldName,
-                                      const TfToken& keyPath,
-                                      bool useFallbacks,
-                                      Usd_Resolver* res,
-                                      Composer *composer) const
-{
-    // Main resolution loop.
-    static TfToken empty;
-    const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
-    SdfPath specPath = res->GetLocalPath(propName);
-    bool gotOpinion = false;
-
-    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
-        if (isNewNode) 
-            specPath = res->GetLocalPath(propName);
-
-        // Consume an authored opinion here, if one exists.
-        gotOpinion |= composer->ConsumeAuthored(
-            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
-        
-        if (composer->IsDone()) 
-            return true;
-    }
-
-    if (useFallbacks)
-        _GetFallbackMetadataImpl(obj, fieldName, keyPath, composer);
-
-    return gotOpinion || composer->IsDone();
 }
 
 bool
@@ -6354,13 +6454,11 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     PcpNodeRef lastNode = res.GetNode();
     SdfSpecType specType = SdfSpecTypeUnknown;
 
-    SdfPropertySpecHandle propDef;
+    const UsdPrimDefinition &primDef = obj.GetPrim().GetPrimDefinition();
 
     // If this is a builtin property, determine specType from the definition.
     if (obj.Is<UsdProperty>()) {
-        propDef = _GetPropertyDefinition(obj.As<UsdProperty>());
-        if (propDef)
-            specType = propDef->GetSpecType();
+        specType = primDef.GetSpecType(propName);
     }
 
     // Insert authored fields, discovering spec type along the way.
@@ -6389,13 +6487,13 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
         }
     }
 
-    // If this is a builtin property, add any defined metadata fields.
-    // XXX: this should handle prim definitions too.
-    if (useFallbacks && propDef) {
-        for (const auto& fieldName : propDef->ListFields()) {
-            if (!_IsPrivateFieldKey(fieldName))
-                result.push_back(fieldName);
-        }
+    // If including fallbacks, add any defined metadata fields from the prim
+    // definition for the property (or the prim if the prop name is empty). 
+    if (useFallbacks) {
+        const TfTokenVector fallbackFields = propName.IsEmpty() ?
+            primDef.ListMetadataFields() : 
+            primDef.ListPropertyMetadataFields(propName);
+        result.insert(result.end(), fallbackFields.begin(), fallbackFields.end());
     }
 
     // Sort & remove duplicate fields.
@@ -6961,9 +7059,9 @@ struct UsdStage::_ResolveInfoResolver
     bool
     ProcessFallback()
     {
-        if (const bool hasFallback = UsdSchemaRegistry::HasField(
-                _attr.GetPrim().GetTypeName(), _attr.GetName(), 
-                SdfFieldKeys->Default, _extraInfo->defaultOrFallbackValue)) {
+        if (const bool hasFallback = 
+                _attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                    _attr.GetName(), _extraInfo->defaultOrFallbackValue)) {
             _resolveInfo->_source = UsdResolveInfoSourceFallback;
             return true;
         }
@@ -7269,9 +7367,8 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     }
     else if (info._source == UsdResolveInfoSourceFallback) {
         // Get the fallback value.
-        return UsdSchemaRegistry::HasField(
-            attr._Prim()->GetTypeName(), attr.GetName(), 
-            SdfFieldKeys->Default, result);
+        return attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                attr.GetName(), result);
     }
 
     return false;
@@ -7695,7 +7792,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
             return false;
 
         // Check for a registered fallback.
-        if (SdfAttributeSpecHandle attrDef = _GetAttributeDefinition(attr)) {
+        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
             if (attrDef->HasDefaultValue()) {
                 *hasSamples = false;
                 return true;
@@ -8199,10 +8296,17 @@ UsdStage::HasAuthoredTimeCodeRange() const
 double 
 UsdStage::GetTimeCodesPerSecond() const
 {
-    // We expect the SdfSchema to provide a fallback, so simply:
-    double result = 0;
-    GetMetadata(SdfFieldKeys->TimeCodesPerSecond, &result);
-    return result;
+    // Imitate what SdfLayer does: prefer TCPS, but if it isn't set, fall back
+    // dynamically to FPS.  Adapt that rule to include the session layer.  In
+    // order of priority, use: session TCPS, root layer TCPS, session FPS, root
+    // layer FPS.
+    if (HasAuthoredMetadata(SdfFieldKeys->TimeCodesPerSecond)) {
+        double result = 0;
+        GetMetadata(SdfFieldKeys->TimeCodesPerSecond, &result);
+        return result;
+    }
+
+    return GetFramesPerSecond();
 }
 
 void 
@@ -8326,9 +8430,11 @@ UsdStage::SetInterpolationType(UsdInterpolationType interpolationType)
     if (_interpolationType != interpolationType) {
         _interpolationType = interpolationType;
 
-        // Emit StageContentsChanged, as interpolated attributes values
-        // have likely changed.
+        // Notify, as interpolated attributes values have likely changed.
         UsdStageWeakPtr self(this);
+        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+        resyncChanges[SdfPath::AbsoluteRootPath()];
+        UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
         UsdNotice::StageContentsChanged(self).Send(self);
     }
 }

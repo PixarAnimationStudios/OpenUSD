@@ -22,11 +22,13 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 from math import atan, radians as rad
 from pxr import Gf, Tf
 
-from qt import QtCore
-from common import DEBUG_CLIPPING
+from .qt import QtCore
+from .common import DEBUG_CLIPPING
 
 # FreeCamera inherits from QObject only so that it can send signals...
 # which is really a pretty nice, easy to use notification system.
@@ -47,13 +49,13 @@ class FreeCamera(QtCore.QObject):
     # is close to camera, when rendering for picking
     maxGoodZResolution = 5e4
 
-    def __init__(self, isZUp):
+    def __init__(self, isZUp, fov=60.0):
         """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
         super(FreeCamera, self).__init__()
 
         self._camera = Gf.Camera()
         self._camera.SetPerspectiveFromAspectRatioAndFieldOfView(
-            1.0, 60, Gf.Camera.FOVVertical)
+            1.0, fov, Gf.Camera.FOVVertical)
         self._overrideNear = None
         self._overrideFar = None
         self.resetClippingPlanes()
@@ -190,7 +192,7 @@ class FreeCamera(QtCore.QObject):
                 minDist = pointDist
 
         if debugClipping:
-            print "Projected bounds near/far: %f, %f" % (minDist, maxDist)
+            print("Projected bounds near/far: %f, %f" % (minDist, maxDist))
 
         # if part of the bbox is behind the ray origin (i.e. camera),
         # we clamp minDist to be positive.  Otherwise, reduce minDist by a bit
@@ -203,7 +205,7 @@ class FreeCamera(QtCore.QObject):
         maxDist *= 1.01
 
         if debugClipping:
-            print "Contracted bounds near/far: %f, %f" % (minDist, maxDist)
+            print("Contracted bounds near/far: %f, %f" % (minDist, maxDist))
 
         return minDist, maxDist
 
@@ -260,8 +262,8 @@ class FreeCamera(QtCore.QObject):
             precisionNear = computedFar / FreeCamera.maxGoodZResolution
 
             if debugClipping:
-                print "Proposed near for precision: {}, closestDist: {}"\
-                    .format(precisionNear, self._closestVisibleDist)
+                print("Proposed near for precision: {}, closestDist: {}"\
+                    .format(precisionNear, self._closestVisibleDist))
             if self._closestVisibleDist:
                 # Because of our concern about orbit/truck causing
                 # clipping, make sure we don't go closer than half the
@@ -276,19 +278,19 @@ class FreeCamera(QtCore.QObject):
                     # See AdjustDistance() for comment about better solution.
                     halfClose = max(precisionNear, halfClose, computedNear)
                     if debugClipping:
-                        print "ADJUSTING: Accounting for zoom-in"
+                        print("ADJUSTING: Accounting for zoom-in")
 
                 if halfClose < computedNear:
                     # If there's stuff very very close to the camera, it
                     # may have been clipped by computedNear.  Get it back!
                     computedNear = halfClose
                     if debugClipping:
-                        print "ADJUSTING: closestDist was closer than bboxNear"
+                        print("ADJUSTING: closestDist was closer than bboxNear")
                 elif precisionNear > computedNear:
                     computedNear = min((precisionNear + halfClose) / 2.0,
                                        halfClose)
                     if debugClipping:
-                        print "ADJUSTING: gaining precision by pushing out"
+                        print("ADJUSTING: gaining precision by pushing out")
 
         near = self._overrideNear or computedNear
         far  = self._overrideFar  or computedFar
@@ -296,7 +298,7 @@ class FreeCamera(QtCore.QObject):
         far = max(near+1, far)
 
         if debugClipping:
-            print "***Final Near/Far: {}, {}".format(near, far)
+            print("***Final Near/Far: {}, {}".format(near, far))
 
         self._camera.clippingRange = Gf.Range1f(near, far)
 
@@ -348,7 +350,7 @@ class FreeCamera(QtCore.QObject):
         self._lastFramedClosestDist = self._closestVisibleDist
 
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
-            print "Resetting closest distance to {}; CameraPos: {}, closestPoint: {}".format(self._closestVisibleDist, camPos, point)
+            print("Resetting closest distance to {}; CameraPos: {}, closestPoint: {}".format(self._closestVisibleDist, camPos, point))
 
     def ComputePixelsToWorldFactor(self, viewportHeight):
         '''Computes the ratio that converts pixel distance into world units.

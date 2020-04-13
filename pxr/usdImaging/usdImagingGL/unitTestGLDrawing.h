@@ -57,6 +57,10 @@ public:
     bool IsEnabledCameraLight() const { return _cameraLight; }
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
+    
+    bool IsShowGuides() const { return _showGuides; }
+    bool IsShowRender() const { return _showRender; }
+    bool IsShowProxy() const { return _showProxy; }
 
     UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
@@ -70,6 +74,7 @@ public:
     GfVec3f const & GetTranslate() const { return _translate; }
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
     TfToken const & GetRendererAov() const { return _rendererAov; }
+    std::string const &GetPerfStatsFile() const { return _perfStatsFile; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -128,6 +133,12 @@ private:
     GfVec3f _translate;
     VtDictionary _renderSettings;
     TfToken _rendererAov;
+    std::string _perfStatsFile;
+    std::string _traceFile;
+
+    bool _showGuides;
+    bool _showRender;
+    bool _showProxy;
 };
 
 

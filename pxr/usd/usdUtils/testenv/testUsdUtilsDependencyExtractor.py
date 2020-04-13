@@ -21,6 +21,7 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
+from __future__ import print_function
 from pxr import UsdUtils
 import argparse, contextlib, sys, os
 
@@ -35,9 +36,9 @@ def stream(path, *args, **kwargs):
 def presult(ostr, fileName, refType, refs):
     if refs:
         for i,r in enumerate(refs):
-            print >>ostr, '{} {}[{:03d}]: {}'.format(fileName, refType, i+1, r)
+            print('{} {}[{:03d}]: {}'.format(fileName, refType, i+1, r), file=ostr)
     else:
-        print >>ostr, '{} no {}'.format(fileName, refType)
+        print('{} no {}'.format(fileName, refType), file=ostr)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not os.path.exists(args.infile):
-        print >>sys.stderr, 'Error: cannot access file {}'.format(args.infile)
+        print('Error: cannot access file {}'.format(args.infile), file=sys.stderr)
         sys.exit(1)
 
     sublayers, references, payloads = \

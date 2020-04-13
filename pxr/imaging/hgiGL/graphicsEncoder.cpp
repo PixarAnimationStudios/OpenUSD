@@ -23,56 +23,112 @@
 //
 #include <GL/glew.h>
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgiGL/buffer.h"
+#include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsEncoder.h"
+#include "pxr/imaging/hgiGL/ops.h"
+#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/resourceBindings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLGraphicsEncoder::HgiGLGraphicsEncoder(
+    HgiGLDevice* device,
     HgiGraphicsEncoderDesc const& desc)
     : HgiGraphicsEncoder()
+    , _committed(false)
 {
-    TF_VERIFY(desc.width>0 && desc.height>0);
+    if (desc.HasAttachments()) {
+        _ops.push_back( HgiGLOps::BindFramebufferOp(device, desc) );
+    }
 }
 
 HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
 {
+    TF_VERIFY(_committed, "Encoder created, but never commited.");
 }
 
 void
-HgiGLGraphicsEncoder::EndEncoding()
+HgiGLGraphicsEncoder::InsertFunctionOp(std::function<void(void)> const& fn)
 {
+    _ops.push_back( fn );
+}
+
+void
+HgiGLGraphicsEncoder::Commit()
+{
+    if (!_committed) {
+        _committed = true;
+        HgiGLDevice::Commit(_ops);
+    }
 }
 
 void
 HgiGLGraphicsEncoder::SetViewport(GfVec4i const& vp)
 {
-    int x = vp[0];
-    int y = vp[1];
-    int w = vp[2];
-    int h = vp[3];
-    glViewport(x, y, w, h);
+    _ops.push_back( HgiGLOps::SetViewport(vp) );
+}
+
+void
+HgiGLGraphicsEncoder::SetScissor(GfVec4i const& sc)
+{
+    _ops.push_back( HgiGLOps::SetScissor(sc) );
+}
+
+void
+HgiGLGraphicsEncoder::BindPipeline(HgiPipelineHandle pipeline)
+{
+    _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
+}
+
+void
+HgiGLGraphicsEncoder::BindResources(HgiResourceBindingsHandle res)
+{
+    _ops.push_back( HgiGLOps::BindResources(res) );
+}
+
+void
+HgiGLGraphicsEncoder::BindVertexBuffers(
+    uint32_t firstBinding,
+    HgiBufferHandleVector const& vertexBuffers,
+    std::vector<uint32_t> const& byteOffsets)
+{
+    _ops.push_back( 
+        HgiGLOps::BindVertexBuffers(firstBinding, vertexBuffers, byteOffsets) );
+}
+
+void
+HgiGLGraphicsEncoder::DrawIndexed(
+    HgiBufferHandle const& indexBuffer,
+    uint32_t indexCount,
+    uint32_t indexBufferByteOffset,
+    uint32_t vertexOffset,
+    uint32_t instanceCount,
+    uint32_t firstInstance)
+{
+    _ops.push_back(
+        HgiGLOps::DrawIndexed(
+            indexBuffer,
+            indexCount,
+            indexBufferByteOffset,
+            vertexOffset,
+            instanceCount,
+            firstInstance)
+        );
 }
 
 void
 HgiGLGraphicsEncoder::PushDebugGroup(const char* label)
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, label);
-        }
-
-    #endif
+    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
 }
 
 void
 HgiGLGraphicsEncoder::PopDebugGroup()
 {
-    #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
-            glPopDebugGroup();
-        }
-    #endif
+    _ops.push_back( HgiGLOps::PopDebugGroup() );
 }
 
 

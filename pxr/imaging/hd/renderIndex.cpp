@@ -26,6 +26,7 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
@@ -59,7 +60,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
+HdRenderIndex::HdRenderIndex(
+    HdRenderDelegate *renderDelegate,
+    HdDriverVector const& drivers)
     :  _rprimMap()
     , _rprimIds()
     , _taskMap()
@@ -69,6 +72,7 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
+    , _drivers(drivers)
     , _activeRenderTags()
     , _renderTagVersion(_tracker.GetRenderTagVersion() - 1)
 {
@@ -85,6 +89,9 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     //      leave geometry collection for a while.
     _tracker.AddCollection(HdTokens->geometry);
 
+    // Let render delegate choose drivers its interested in
+    renderDelegate->SetDrivers(drivers);
+
     // Register the prim types our render delegate supports.
     _InitPrimTypes();
     // Create fallback prims.
@@ -99,14 +106,16 @@ HdRenderIndex::~HdRenderIndex()
 }
 
 HdRenderIndex*
-HdRenderIndex::New(HdRenderDelegate *renderDelegate)
+HdRenderIndex::New(
+    HdRenderDelegate *renderDelegate,
+    HdDriverVector const& drivers)
 {
     if (renderDelegate == nullptr) {
         TF_CODING_ERROR(
             "Null Render Delegate provided to create render index");
         return nullptr;
     }
-    return new HdRenderIndex(renderDelegate);
+    return new HdRenderIndex(renderDelegate, drivers);
 }
 
 void
@@ -290,8 +299,18 @@ HdRenderIndex::Clear()
 {
     HD_TRACE_FUNCTION();
     TF_FOR_ALL(it, _rprimMap) {
-        _tracker.RprimRemoved(it->first);
+        SdfPath const &id = it->first;
         _RprimInfo &rprimInfo = it->second;
+
+        SdfPath const &instancerId = rprimInfo.rprim->GetInstancerId();
+        if (!instancerId.IsEmpty()) {
+            _tracker.RemoveInstancerRprimDependency(instancerId, id);
+        }
+
+        _tracker.RprimRemoved(id);
+
+        // Ask delegate to actually delete the rprim
+        rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
         _renderDelegate->DestroyRprim(rprimInfo.rprim);
         rprimInfo.rprim = nullptr;
     }
@@ -306,7 +325,16 @@ HdRenderIndex::Clear()
 
     // Clear instancers.
     TF_FOR_ALL(it, _instancerMap) {
-        _tracker.InstancerRemoved(it->first);
+        SdfPath const &id = it->first;
+        HdInstancer *instancer = it->second;
+
+        SdfPath const &instancerId = instancer->GetParentId();
+        if (!instancerId.IsEmpty()) {
+            _tracker.RemoveInstancerInstancerDependency(instancerId, id);
+        }
+
+        _renderDelegate->DestroyInstancer(instancer);
+        _tracker.InstancerRemoved(id);
     }
     _instancerMap.clear();
 
@@ -1429,6 +1457,11 @@ void HdRenderIndex::_GatherRenderTags(const HdTaskSharedPtrVector *tasks)
     _renderTagVersion = currentRenderTagVersion;
 }
 
+HdDriverVector const&
+HdRenderIndex::GetDrivers() const
+{
+    return _drivers;
+}
 
 void
 HdRenderIndex::_CompactPrimIds()

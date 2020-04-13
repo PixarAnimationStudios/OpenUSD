@@ -55,6 +55,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((arraySize, "arraySize"))
     ((vstructMember, "vstructmember"))
+    (sdrDefinitionName)
 
     // Discovery and source type
     ((discoveryType, "oso"))
@@ -163,7 +164,7 @@ SdrOslParserPlugin::_getNodeProperties(
 
     for (size_t i = 0; i < nParams; ++i) {
         const OslParameter* param = query.getparam(i);
-        const std::string propName = param->name.string();
+        std::string propName = param->name.string();
 
         // Struct members are not supported
         if (propName.find('.') != std::string::npos) {
@@ -182,24 +183,41 @@ SdrOslParserPlugin::_getNodeProperties(
 
         // Non-standard properties in the metadata are considered hints
         NdrTokenMap hints;
-        for (const auto& meta : metadata) {
+        std::string  definitionName;
+        for (auto metaIt = metadata.cbegin(); metaIt != metadata.cend(); ) {
             if (std::find(SdrPropertyMetadata->allTokens.begin(),
                           SdrPropertyMetadata->allTokens.end(),
-                          meta.first) != SdrPropertyMetadata->allTokens.end()){
+                          metaIt->first) != SdrPropertyMetadata->allTokens.end()){
+                metaIt++;
                 continue;
             }
 
+            if (metaIt->first == _tokens->sdrDefinitionName){
+                definitionName = metaIt->second;
+                metaIt = metadata.erase(metaIt);
+                continue;
+            }
+            
             // The metadata sometimes incorrectly specifies array size; this
             // value is not respected
-            if (meta.first == _tokens->arraySize) {
+            if (metaIt->first == _tokens->arraySize) {
                 TF_DEBUG(NDR_PARSING).Msg(
                     "Ignoring bad 'arraySize' attribute on property [%s] "
                     "on OSL shader [%s]",
                     propName.c_str(), discoveryResult.name.c_str());
+                metaIt = metadata.erase(metaIt);
                 continue;
             }
 
-            hints.insert(meta);
+            hints.insert(*metaIt++);
+        }
+
+        // If we found 'definitionName' metadata, we actually need to 
+        // change the name of the property to match, using the OSL
+        // parameter name as the ImplementationName
+        if (!definitionName.empty()){
+            metadata[SdrPropertyMetadata->ImplementationName] = TfToken(propName);
+            propName = definitionName;
         }
 
         // Extract options

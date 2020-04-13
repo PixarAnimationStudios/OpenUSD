@@ -25,6 +25,9 @@
 #include "pxr/imaging/hio/glslfxConfig.h"
 #include "pxr/imaging/hio/debugCodes.h"
 
+#include "pxr/usd/ar/resolver.h"
+
+#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -36,10 +39,11 @@
 #include "pxr/base/tf/pathUtils.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/unordered_map.hpp>
+
 #include <iostream>
 #include <istream>
 #include <fstream>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,8 +88,7 @@ public:
         std::string const & shaderAssetPath) const;
 
 private:
-    typedef boost::unordered_map< std::string, std::string > ResourceMap;
-    ResourceMap _resourceMap;
+    std::unordered_map< std::string, std::string > _resourceMap;
 };
 
 ShaderResourceRegistry::ShaderResourceRegistry()
@@ -127,57 +130,76 @@ static TfStaticData<const ShaderResourceRegistry> _shaderResourceRegistry;
 };
 
 static string
-_ComputeResolvedPath(
-    const std::string &basePath,
-    const std::string &filename,
-    string *errorStr )
+_ResolveResourcePath(const string& importFile, string *errorStr)
 {
-    string importFile = filename;
-    
-    // if not an absolute path, make relative to the path of the current context
-    if (!TfStringStartsWith(importFile, "/")) {
-
-        // look for the special tools token, in which case we will try to
-        // resolve the path in the tools tree
-        vector<string> pathTokens = TfStringTokenize(importFile, "/");
-        if (pathTokens[0] == "$TOOLS") {
-            // try to do our tool paths substitution
-            if (pathTokens.size() < 3) {
-		if( errorStr )
-		{
-		    *errorStr = TfStringPrintf( "Expected line of the form "
-	    	    	    	 "%s/<packageName>/path",
-			    	 "$TOOLS");
-		}
-                return "";
-            }
-
-            string packageName = pathTokens[1];
-
-            string assetPath = TfStringJoin(
-                vector<string>(pathTokens.begin() + 3, pathTokens.end()), "/");
-
-            string importFile =
-                _shaderResourceRegistry->GetShaderResourcePath(packageName,
-                                                               assetPath);
-            if (importFile.empty() && errorStr) {
-                *errorStr = TfStringPrintf( "Can't find "
-                             "resource dir to resolve tools path "
-                             "substitution on %s",
-                             packageName.c_str());
-            }
-
-            return importFile;
-
-        } else {
-            // simply get the normalized relative path
-            importFile = TfNormPath(basePath + importFile);
+    const vector<string> pathTokens = TfStringTokenize(importFile, "/");
+    if (pathTokens.size() < 3) {
+        if( errorStr )
+        {
+            *errorStr = TfStringPrintf( "Expected line of the form "
+                            "%s/<packageName>/path",
+                            _tokens->toolSubst.GetText() );
         }
+        return "";
     }
-    
-    return importFile;
+
+    const string packageName = pathTokens[1];
+
+    const string assetPath = TfStringJoin(
+        vector<string>(pathTokens.begin() + 3, pathTokens.end()), "/");
+
+    const string resourcePath =
+        _shaderResourceRegistry->GetShaderResourcePath(packageName,
+                                                        assetPath);
+    if (resourcePath.empty() && errorStr) {
+        *errorStr = TfStringPrintf( "Can't find "
+                        "resource dir to resolve tools path "
+                        "substitution on %s",
+                        packageName.c_str());
+    }
+
+    return TfPathExists(resourcePath) ? resourcePath : ""; 
 }
 
+static string
+_ComputeResolvedPath(
+    const string &containingFile,
+    const string &filename,
+    string *errorStr )
+{
+    // Resolve $TOOLS-prefixed paths.
+    if (TfStringStartsWith(filename, _tokens->toolSubst.GetString() + "/")) {
+        return _ResolveResourcePath(filename, errorStr);
+    }
+
+    // Pass absolute and repository paths to the resolver.
+    ArResolver& resolver = ArGetResolver();
+    if (filename[0] == '/') {
+        return resolver.Resolve(filename);
+    }
+
+    // Try to resolve as file-relative. Resolve using the repository form of
+    // the anchored file path otherwise the relative file must be local to the
+    // containing file. If the anchored path cannot be represented as a
+    // repository path, perform a simple existence check.
+    const string anchoredPath =
+        resolver.AnchorRelativePath(containingFile, filename);
+    const string repositoryPath =
+        resolver.ComputeRepositoryPath(anchoredPath);
+    const string resolvedPath = repositoryPath.empty()
+        ? (TfPathExists(anchoredPath) ? anchoredPath : "")
+        : resolver.Resolve(repositoryPath);
+    if (!resolvedPath.empty() || filename[0] == '.') {
+        // If we found the path via file-relative search, return it.
+        // Otherwise, if we didn't find the file, and it actually has a
+        // file-relative prefix (./, ../), return empty to avoid a fruitless
+        // search.
+        return resolvedPath;
+    }
+
+    // Search for the file along the resolver search path.
+    return resolver.Resolve(filename);
+}
 
 HioGlslfx::HioGlslfx() :
     _valid(false), _hash(0)
@@ -186,13 +208,30 @@ HioGlslfx::HioGlslfx() :
 }
 
 HioGlslfx::HioGlslfx(string const & filePath) :
-    _globalContext(filePath),
     _valid(true), _hash(0)
 {
+    // Resolve with the containingFile set to the current working directory
+    // with a trailing slash. This ensures that relative paths supplied to the
+    // constructor are properly anchored to the containing file's directory.
+    string errorStr;
+    const string resolvedPath =
+        _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
+    if (resolvedPath.empty()) {
+        if (!errorStr.empty()) {
+            TF_RUNTIME_ERROR(errorStr);
+        } else {
+            TF_WARN("File doesn't exist: \"%s\"\n", filePath.c_str());
+        }
+        _valid = false;
+        return;
+    }
+
+    _globalContext = _ParseContext(resolvedPath);
+
     TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("Creating GLSLFX data from %s\n",
                                     filePath.c_str());
 
-    _valid = _ProcessFile(filePath, _globalContext);
+    _valid = _ProcessFile(_globalContext.filename, _globalContext);
 
     if (_valid) {
         _valid = _ComposeConfiguration(&_invalidReason);
@@ -224,12 +263,6 @@ HioGlslfx::IsValid(std::string *reason) const
 bool
 HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
 {
-    if (!TfPathExists(filePath)) {
-        // XXX:validation
-        TF_WARN("File doesn't exist: \"%s\"\n", filePath.c_str());
-        return false;
-    }
-
     if (_seenFiles.count(filePath)) {
         // for now, just ignore files that have already been included
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("Multiple import of %s\n",
@@ -240,6 +273,27 @@ HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
     _seenFiles.insert(filePath);
     ifstream input(filePath.c_str());
     return _ProcessInput(&input, context);
+}
+
+// static
+vector<string>
+HioGlslfx::ExtractImports(const string& filename)
+{
+    ifstream input(filename);
+    if (!input) {
+        return {};
+    }
+
+    vector<string> imports;
+
+    string line;
+    while (getline(input, line)) {
+        if (line.find(_tokens->import) == 0) {
+            imports.push_back(TfStringTrim(line.substr(_tokens->import.size())));
+        }
+    }
+
+    return imports;
 }
 
 bool
@@ -319,7 +373,7 @@ HioGlslfx::_ProcessInput(std::istream * input,
 bool
 HioGlslfx::_ProcessImport(_ParseContext & context)
 {
-    vector<string> tokens = TfStringTokenize(context.currentLine);
+    const vector<string> tokens = TfStringTokenize(context.currentLine);
 
     if (tokens.size() != 2) {
         TF_RUNTIME_ERROR("Syntax Error on line %d of %s. #import declaration "
@@ -329,13 +383,18 @@ HioGlslfx::_ProcessImport(_ParseContext & context)
     }
 
     string errorStr;
-    string importFile = _ComputeResolvedPath(TfGetPathName(context.filename),
-					       tokens[1], &errorStr );
-    
-    if( importFile.empty() ) {
-    	TF_RUNTIME_ERROR( "Syntax Error on line %d of %s. %s",
-    	    context.lineNo, context.filename.c_str(), errorStr.c_str() );
-	return false;
+    const string importFile = _ComputeResolvedPath(context.filename, tokens[1],
+                                                   &errorStr );
+
+    if (importFile.empty()) {
+        if (!errorStr.empty()) {
+            TF_RUNTIME_ERROR( "Syntax Error on line %d of %s. %s",
+                context.lineNo, context.filename.c_str(), errorStr.c_str() );
+            return false;
+        }
+
+        TF_WARN("File doesn't exist: \"%s\"\n", tokens[1].c_str());
+        return false;
     }
 
     // stash away imports for later. top down is weakest to strongest

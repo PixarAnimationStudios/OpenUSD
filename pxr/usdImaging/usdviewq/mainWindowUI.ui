@@ -229,7 +229,7 @@
              <string>Vis</string>
             </property>
             <property name="textAlignment">
-             <set>AlignLeft|AlignVCenter</set>
+             <set>AlignLeading|AlignVCenter</set>
             </property>
            </column>
            <column>
@@ -248,27 +248,17 @@
             <number>0</number>
            </property>
            <item>
-            <spacer name="horizontalSpacer_10">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Fixed</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>5</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
             <widget class="QPushButton" name="primLegendQButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>32</width>
-               <height>24</height>
+               <width>3200</width>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -298,10 +288,16 @@
            </item>
            <item>
             <widget class="QLineEdit" name="primViewLineEdit">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>24</height>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -320,10 +316,16 @@
            </item>
            <item>
             <widget class="QPushButton" name="primViewFindNext">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>24</height>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -345,22 +347,6 @@
               <string>Find Prim</string>
              </property>
             </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_8">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Fixed</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>9</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </item>
@@ -458,7 +444,7 @@
           <widget class="PropertyLegend" name="propertyLegendContainer" native="true"/>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="propertyFindContainer">
+          <layout class="QHBoxLayout" name="propertyFindContainer" stretch="1,20,2">
            <property name="leftMargin">
             <number>5</number>
            </property>
@@ -467,10 +453,16 @@
            </property>
            <item>
             <widget class="QPushButton" name="propertyLegendQButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>32</width>
-               <height>24</height>
+               <width>3200</width>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -501,10 +493,16 @@
            </item>
            <item>
             <widget class="QLineEdit" name="attrViewLineEdit">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>24</height>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -523,10 +521,16 @@
            </item>
            <item>
             <widget class="QPushButton" name="attrViewFindNext">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>24</height>
+               <height>3200</height>
               </size>
              </property>
              <property name="font">
@@ -591,7 +595,16 @@
             <enum>QFrame::Plain</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="margin">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
@@ -604,7 +617,16 @@
                 <string>Value</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout">
-                <property name="margin">
+                <property name="leftMargin">
+                 <number>6</number>
+                </property>
+                <property name="topMargin">
+                 <number>6</number>
+                </property>
+                <property name="rightMargin">
+                 <number>6</number>
+                </property>
+                <property name="bottomMargin">
                  <number>6</number>
                 </property>
                 <item>
@@ -896,17 +918,23 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="frameChangeContainer">
+     <layout class="QHBoxLayout" name="frameChangeContainer" stretch="3,0,0">
       <item>
-       <layout class="QVBoxLayout" name="sliderContainer">
+       <layout class="QVBoxLayout" name="sliderContainer" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="sliderTopContainer">
+         <layout class="QHBoxLayout" name="sliderTopContainer" stretch="0,0,200,0,0">
           <item>
            <widget class="QLabel" name="stageBegin">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>60</width>
-              <height>18</height>
+              <width>9000</width>
+              <height>9000</height>
              </size>
             </property>
             <property name="toolTip">
@@ -918,17 +946,65 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="rangeBegin">
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
+           <layout class="QVBoxLayout" name="rangeBeginLayout" stretch="0,0,0">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetFixedSize</enum>
             </property>
-            <property name="toolTip">
-             <string>Playback Start Frame</string>
-            </property>
-           </widget>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>7</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="rangeBegin">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>90</width>
+                <height>9000</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Playback Start Frame</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>7</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="FrameSlider" name="frameSlider">
@@ -953,24 +1029,78 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="rangeEnd">
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
+           <layout class="QVBoxLayout" name="rangeEndLayout">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetFixedSize</enum>
             </property>
-            <property name="toolTip">
-             <string>Playback End Frame</string>
-            </property>
-           </widget>
+            <item>
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>10</width>
+                <height>7</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="rangeEnd">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>90</width>
+                <height>9000</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Playback End Frame</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>7</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QLabel" name="stageEnd">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>60</width>
-              <height>18</height>
+              <width>9000</width>
+              <height>9000</height>
              </size>
             </property>
             <property name="toolTip">
@@ -1003,9 +1133,15 @@
           </item>
           <item>
            <widget class="QCheckBox" name="redrawOnScrub">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>200</width>
+              <width>3500</width>
               <height>16777215</height>
              </size>
             </property>
@@ -1051,9 +1187,15 @@
             <property name="enabled">
              <bool>true</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>50</width>
+              <width>60</width>
               <height>16777215</height>
              </size>
             </property>
@@ -1093,30 +1235,94 @@
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="playContainer">
+       <layout class="QVBoxLayout" name="playContainer" stretch="0,0">
         <item>
-         <widget class="QPushButton" name="playButton">
-          <property name="maximumSize">
-           <size>
-            <width>115</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
-          </property>
-          <property name="text">
-           <string>Play</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="playButtonContainer">
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>15</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item alignment="Qt::AlignHCenter">
+           <widget class="QPushButton" name="playButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>1115</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="text">
+             <string>Play</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>15</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="frameContainer">
           <item>
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>5</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
            <widget class="QLabel" name="frameLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>50</width>
+              <width>9000</width>
               <height>16777215</height>
              </size>
             </property>
@@ -1127,10 +1333,22 @@
           </item>
           <item>
            <widget class="QLineEdit" name="frameField">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>70</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>80</width>
-              <height>20</height>
+              <width>90</width>
+              <height>1000</height>
              </size>
             </property>
             <property name="font">
@@ -1147,6 +1365,9 @@
             </property>
             <property name="text">
              <string>1.0</string>
+            </property>
+            <property name="maxLength">
+             <number>7</number>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1167,7 +1388,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>30</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1216,7 +1437,7 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <property name="toolTipsVisible" stdset="0">
+    <property name="toolTipsVisible">
      <bool>true</bool>
     </property>
     <widget class="QMenu" name="menuHUD">
@@ -1386,6 +1607,7 @@
     <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
     <addaction name="actionPause"/>
+    <addaction name="actionStop"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -1429,6 +1651,7 @@
      <string>Window</string>
     </property>
     <addaction name="showInterpreter"/>
+    <addaction name="actionPreferences"/>
     <addaction name="showDebugFlags"/>
    </widget>
    <addaction name="menuFile"/>
@@ -1464,14 +1687,28 @@
    </property>
   </action>
   <action name="actionPause">
-   <property name="text">
-    <string>Pause Render</string>
-   </property>
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="text">
+    <string>Pause Render</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Stop Render</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+\</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -2611,6 +2848,14 @@
     <string>Select Full Binding Relationship</string>
    </property>
   </action>
+  <action name="actionPreferences">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
   <actiongroup name="actionGroupCameraMask">
    <action name="actionCameraMask_Full">
     <property name="checkable">
@@ -2659,30 +2904,30 @@
   <customwidget>
    <class>AttributeValueEditor</class>
    <extends>QWidget</extends>
-   <header>attributeValueEditor</header>
+   <header>.attributeValueEditor</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PrimLegend</class>
    <extends>QWidget</extends>
-   <header>primLegend</header>
+   <header>.primLegend</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PropertyLegend</class>
    <extends>QWidget</extends>
-   <header>propertyLegend</header>
+   <header>.propertyLegend</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PrimTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>primTreeWidget</header>
+   <header>.primTreeWidget</header>
   </customwidget>
   <customwidget>
    <class>FrameSlider</class>
    <extends>QSlider</extends>
-   <header>frameSlider</header>
+   <header>.frameSlider</header>
   </customwidget>
  </customwidgets>
  <resources/>

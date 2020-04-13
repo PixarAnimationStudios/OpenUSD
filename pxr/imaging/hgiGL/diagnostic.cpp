@@ -130,5 +130,29 @@ HgiGLSetupGL4Debug()
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
+bool
+HgiGLMeetsMinimumRequirements()
+{
+    const char *glVersionStr = (const char*)glGetString(GL_VERSION);
+
+    // GL hasn't been initialized
+    if (glVersionStr == nullptr) return false;
+
+    int glVersion = 0;
+
+    const char *dot = strchr(glVersionStr, '.');
+    if (TF_VERIFY((dot && dot != glVersionStr),
+                  "Can't parse GL_VERSION %s", glVersionStr)) {
+        // GL_VERSION = "4.5.0 <vendor> <version>"
+        //              "4.1 <vendor-os-ver> <version>"
+        //              "4.1 <vendor-os-ver>"
+        int major = std::max(0, std::min(9, *(dot-1) - '0'));
+        int minor = std::max(0, std::min(9, *(dot+1) - '0'));
+        glVersion = major * 100 + minor * 10;
+    }
+
+    return (glVersion >= 450);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

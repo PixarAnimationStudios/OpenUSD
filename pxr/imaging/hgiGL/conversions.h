@@ -27,7 +27,10 @@
 #include <GL/glew.h>
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/types.h"
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,10 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiGLConversions final
 {
 public:
-    //
-    // Hgi to GL conversions
-    //
-
     HGIGL_API
     static void GetFormat(
         HgiFormat inFormat,
@@ -50,6 +49,32 @@ public:
         GLenum *outType,
         GLenum *outInternalFormat);
 
+    HGIGL_API
+    static GLenum GetFormatType(HgiFormat inFormat);
+
+    HGIGL_API
+    static int8_t GetElementCount(HgiFormat inFormat);
+
+    HGIGL_API
+    static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
+
+    HGIGL_API
+    static GLenum GetCullMode(HgiCullMode cm);
+
+    HGIGL_API
+    static GLenum GetPolygonMode(HgiPolygonMode pm);
+
+    HGIGL_API
+    static GLenum GetBlendFactor(HgiBlendFactor bf);
+
+    HGIGL_API
+    static GLenum GetBlendEquation(HgiBlendOp bo);
+
+    HGIGL_API
+    static GLenum GetDepthCompareFunction(HgiCompareFunction cf);
+
+    HGIGL_API
+    static GLenum GetTextureType(HgiTextureType tt);
 };
 
 

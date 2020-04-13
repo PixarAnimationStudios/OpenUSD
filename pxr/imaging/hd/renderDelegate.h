@@ -31,10 +31,9 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class SdfPath;
 class HdRprim;
@@ -44,17 +43,20 @@ class HdSceneDelegate;
 class HdRenderIndex;
 class HdRenderPass;
 class HdInstancer;
+class HdDriver;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+using HdDriverVector = std::vector<HdDriver*>;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object
 /// that is obtained from the render delegate and passed to each prim
 /// during Sync processing.
 ///
-class HdRenderParam {
+class HdRenderParam 
+{
 public:
     HdRenderParam() {}
     HD_API
@@ -72,7 +74,8 @@ typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> HdRenderSettingsMap;
 /// HdRenderSettingDescriptor represents a render setting that a render delegate
 /// wants to export (e.g. to UI).
 ///
-struct HdRenderSettingDescriptor {
+struct HdRenderSettingDescriptor 
+{
     // A human readable name.
     std::string name;
     // The key for HdRenderDelegate::SetRenderSetting/GetRenderSetting.
@@ -90,6 +93,14 @@ class HdRenderDelegate
 public:
     HD_API
     virtual ~HdRenderDelegate();
+
+    ///
+    /// Set list of driver objects, such as a rendering context / devices.
+    /// This is automatically called from HdRenderIndex when a HdDriver is
+    /// provided during its construction. Default implementation does nothing.
+    ///
+    HD_API
+    virtual void SetDrivers(HdDriverVector const& drivers);
 
     ///
     /// Returns a list of typeId's of all supported Rprims by this render
@@ -122,7 +133,8 @@ public:
     ///
     /// A render delegate may return null for the param.
     ///
-    virtual HdRenderParam *GetRenderParam() const = 0;
+    HD_API
+    virtual HdRenderParam *GetRenderParam() const;
 
     ///
     /// Returns a shared ptr to the resource registry of the current render
@@ -199,6 +211,31 @@ public:
     ///
     HD_API
     virtual bool Resume();
+
+    ///
+    /// Advertise whether this delegate supports stopping and restarting of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsStopSupported() const;
+
+    ///
+    /// Stop all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Stop();
+
+    ///
+    /// Restart all of this delegate's background rendering threads previously
+    /// stopped by a call to Stop. Default implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Restart();
 
     ////////////////////////////////////////////////////////////////////////////
     ///

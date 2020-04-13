@@ -49,7 +49,47 @@ def Shader "HwPtexTexture_1" (
         default, this parameter will be bound to the ptexFaceOffset primvar."""
     )
 
-    float3 outputs:color
+    float outputs:r ( 
+        doc = "Outputs the red channel."
+        sdrMetadata = {
+            token swizzle = "x"
+        }
+    )
+
+    float outputs:g (
+        doc = "Outputs the green channel."
+        sdrMetadata = {
+            token swizzle = "y"
+        }
+    )
+
+    float outputs:b (
+        doc = "Outputs the blue channnel."
+        sdrMetadata = {
+            token swizzle = "z"
+        }
+    )
+
+    float outputs:a (
+        doc = "Outputs the alpha channnel."
+        sdrMetadata = {
+            token swizzle = "w"
+        }
+    )
+
+    float3 outputs:rgb (
+        doc = "Outputs the red, green and blue channels."
+        sdrMetadata = {
+            token swizzle = "xyz"
+        }
+    )
+
+    float4 outputs:rgba (
+        doc = "Outputs all 4 channels (red, green, blue and alpha)."
+        sdrMetadata = {
+            token swizzle = "xyzw"
+        }
+    )
 }
 
 def Shader "HwUvTexture_1" (

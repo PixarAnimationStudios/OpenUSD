@@ -28,14 +28,14 @@
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include <boost/unordered_map.hpp>
-#include <boost/weak_ptr.hpp>
 #include <map>
+#include <memory>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
+typedef std::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
 
 static GlfGLContextSharedPtr _nullContext;
 
@@ -46,8 +46,8 @@ TF_INSTANTIATE_SINGLETON(GlfGLContextRegistry);
 //
 
 struct GlfGLContextRegistry_Data {
-    typedef boost::unordered_map<GarchGLPlatformContextState,
-                                 GlfGLContextWeakPtr> ContextsByState;
+    typedef std::unordered_map<GarchGLPlatformContextState,
+                               GlfGLContextWeakPtr> ContextsByState;
     typedef std::map<const GlfGLContext*,
                      GarchGLPlatformContextState> StatesByContext;
 
@@ -60,6 +60,7 @@ struct GlfGLContextRegistry_Data {
 //
 
 GlfGLContextRegistry::GlfGLContextRegistry() :
+    _sharedContextInitialized(false),
     _data(new GlfGLContextRegistry_Data)
 {
     // Make a context for when no context is bound.  This is to avoid
@@ -85,28 +86,32 @@ void
 GlfGLContextRegistry::Add(GlfGLContextRegistrationInterface* iface)
 {
     if (TF_VERIFY(iface, "NULL GlfGLContextRegistrationInterface")) {
-        _interfaces.push_back(iface);
+        _interfaces.emplace_back(iface);
     }
 }
 
 GlfGLContextSharedPtr
 GlfGLContextRegistry::GetShared()
 {
-    if (!_shared) {
+    if (!_sharedContextInitialized) {
+
         // Don't do this again.
+        _sharedContextInitialized = true;
+
         _shared = GlfGLContextSharedPtr();
 
         // Find the first interface with a shared context.
-        for (auto& iface : _interfaces) {
-            if (GlfGLContextSharedPtr shared = iface.GetShared()) {
+        for (std::unique_ptr<GlfGLContextRegistrationInterface> &iface : 
+                _interfaces) {
+            if (GlfGLContextSharedPtr shared = iface->GetShared()) {
                 _shared = shared;
-                return _shared.get();
+                return _shared;
             }
         }
 
         TF_CODING_ERROR("No shared context registered.");
     }
-    return _shared.get();
+    return _shared;
 }
 
 GlfGLContextSharedPtr
@@ -125,8 +130,9 @@ GlfGLContextRegistry::GetCurrent()
 
     // We don't know this raw state.  Try syncing each interface to see
     // if any system thinks this state is current.
-    for (auto& iface : _interfaces) {
-        if (GlfGLContextSharedPtr currentContext = iface.GetCurrent()) {
+    for (std::unique_ptr<GlfGLContextRegistrationInterface> &iface 
+            : _interfaces) {
+        if (GlfGLContextSharedPtr currentContext = iface->GetCurrent()) {
             if (currentContext->IsValid()) {
                 GlfGLContext::MakeCurrent(currentContext);
                 GarchGLPlatformContextState currentRawState;

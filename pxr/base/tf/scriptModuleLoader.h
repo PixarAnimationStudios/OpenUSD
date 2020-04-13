@@ -32,6 +32,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"
 
+// XXX: This include is a hack to avoid build errors due to
+// incompatible macro definitions in pyport.h on macOS.
+#include <locale>
 #include <boost/python/dict.hpp>
 
 #include <deque>

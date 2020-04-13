@@ -265,6 +265,12 @@ public:
         _attrValueWriterMap.clear();
     }
 
+    /// Returns a new vector of UsdUtilsSparseAttrValueWriter populated 
+    /// from the attrValueWriter map.
+    USDUTILS_API
+    std::vector<UsdUtilsSparseAttrValueWriter> 
+    GetSparseAttrValueWriters() const;
+
 private:
     // Templated helper method used by the two public SetAttribute() methods.
     template <typename T>

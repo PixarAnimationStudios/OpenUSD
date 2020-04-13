@@ -67,7 +67,7 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual HdMaterialParamVector const& GetParams() const;
+    virtual HdSt_MaterialParamVector const& GetParams() const;
     HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
     HDST_API
@@ -101,7 +101,7 @@ private:
     std::string _computeSource;
 
     // Shader Parameters
-    HdMaterialParamVector _params;
+    HdSt_MaterialParamVector _params;
     HdBufferSpecVector _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
 

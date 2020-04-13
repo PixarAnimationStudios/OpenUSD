@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 from pxr import Tf
 import unittest
 
@@ -33,7 +35,7 @@ def Replace(tmpl, safe=False, **kw):
         result = ts.SafeSubstitute(kw)
     else:
         result = ts.Substitute(kw)
-    print repr(tmpl), ' -> ', repr(result)
+    print(repr(tmpl), ' -> ', repr(result))
     return result
 
 class TestTfTemplateString(unittest.TestCase):
@@ -91,9 +93,9 @@ class TestTfTemplateString(unittest.TestCase):
     def test_EmptyMapping(self):
         t = Tf.TemplateString("//$unit/$prod/shot/$shot/$shot.menva")
         m = t.GetEmptyMapping()
-        self.assertTrue(m.has_key('unit'))
-        self.assertTrue(m.has_key('prod'))
-        self.assertTrue(m.has_key('shot'))
+        self.assertTrue('unit' in m)
+        self.assertTrue('prod' in m)
+        self.assertTrue('shot' in m)
 
 
         t = Tf.TemplateString("${ }")

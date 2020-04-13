@@ -72,9 +72,9 @@ _InitIdRenderPassState(HdRenderIndex *index)
 }
 
 static bool
-_IsStreamRenderingBackend(HdRenderIndex *index)
+_IsStormRenderer(HdRenderDelegate *renderDelegate)
 {
-    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
+    if(!dynamic_cast<HdStRenderDelegate*>(renderDelegate)) {
         return false;
     }
 
@@ -247,7 +247,9 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                   HdTaskContext* ctx,
                   HdDirtyBits* dirtyBits)
 {
-    if (!_IsStreamRenderingBackend(&(delegate->GetRenderIndex()))) {
+    GLF_GROUP_FUNCTION();
+
+    if (!_IsStormRenderer( delegate->GetRenderIndex().GetRenderDelegate() )) {
         return;
     }
 
@@ -374,6 +376,8 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
 void
 HdxPickTask::Execute(HdTaskContext* ctx)
 {
+    GLF_GROUP_FUNCTION();
+
     if (!_drawTarget) {
         return;
     }
@@ -567,13 +571,13 @@ HdxPickResult::HdxPickResult(
         GfVec2f const& depthRange,
         GfVec2i const& bufferSize,
         GfVec4i const& subRect)
-    : _primIds(std::move(primIds))
-    , _instanceIds(std::move(instanceIds))
-    , _elementIds(std::move(elementIds))
-    , _edgeIds(std::move(edgeIds))
-    , _pointIds(std::move(pointIds))
-    , _neyes(std::move(neyes))
-    , _depths(std::move(depths))
+    : _primIds(primIds)
+    , _instanceIds(instanceIds)
+    , _elementIds(elementIds)
+    , _edgeIds(edgeIds)
+    , _pointIds(pointIds)
+    , _neyes(neyes)
+    , _depths(depths)
     , _index(index)
     , _pickTarget(pickTarget)
     , _depthRange(depthRange)

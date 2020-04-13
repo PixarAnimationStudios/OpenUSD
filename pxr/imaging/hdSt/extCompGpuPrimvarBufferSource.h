@@ -35,9 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStExtCompGpuPrimvarBufferSource>
-    HdStExtCompGpuPrimvarBufferSourceSharedPtr;
-
 /// \class HdStExtCompGpuPrimvarBufferSource
 /// A buffer source mapped to an output of an ExtComp CPU computation.
 ///

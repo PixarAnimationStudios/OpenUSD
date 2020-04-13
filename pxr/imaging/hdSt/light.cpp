@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/domeLightComputations.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -101,8 +102,9 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
 }
 
 GlfSimpleLight
-HdStLight::_PrepareDomeLight(SdfPath const &id, 
-                                 HdSceneDelegate *sceneDelegate)
+HdStLight::_PrepareDomeLight(
+    SdfPath const &id, 
+    HdSceneDelegate *sceneDelegate)
 {
     // get/load the environment map texture resource
     uint32_t textureId = 0;
@@ -112,7 +114,7 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
     TF_VERIFY(textureResourceValue.IsHolding<HdTextureResourceSharedPtr>());
     if (textureResourceValue.IsHolding<HdTextureResourceSharedPtr>()) {
         
-        _textureResource = boost::dynamic_pointer_cast<HdStTextureResource>(
+        _textureResource = std::dynamic_pointer_cast<HdStTextureResource>(
                     textureResourceValue.Get<HdTextureResourceSharedPtr>());
 
         // texture resource would be empty if the path could not be resolved
@@ -122,9 +124,13 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
             // the necessary maps (irradiance, pre-filtered, BRDF LUT)
             textureId = uint32_t(_textureResource->GetTexelsTextureId());
 
+            HdRenderIndex& index = sceneDelegate->GetRenderIndex();
+            HdStResourceRegistry* hdStResourceRegistry =
+                static_cast<HdStResourceRegistry*>(
+                    index.GetResourceRegistry().get());
+
             // Schedule texture computations
-            _SetupComputations(textureId, 
-                sceneDelegate->GetRenderIndex().GetResourceRegistry().get());
+            _SetupComputations(textureId, hdStResourceRegistry);
         }
     } 
 
@@ -146,8 +152,9 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
 }
 
 void 
-HdStLight::_SetupComputations(GLuint sourceTexture, 
-                                HdResourceRegistry *resourceRegistry)
+HdStLight::_SetupComputations(
+    GLuint sourceTexture, 
+    HdStResourceRegistry *resourceRegistry)
 {
     // verify that the GL version supports compute shaders
     if (GlfContextCaps::GetInstance().glVersion < 430) {

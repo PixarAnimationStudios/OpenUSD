@@ -26,7 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/preprocessorUtils.h"
-#include <boost/preprocessor/stringize.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include <string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -34,45 +34,105 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static bool
 TestTF_NUM_ARGS()
 {
-    TF_AXIOM(TF_NUM_ARGS() == 0);
-    TF_AXIOM(TF_NUM_ARGS( ) == 0);
-    TF_AXIOM(TF_NUM_ARGS(/**/) == 0);
-    TF_AXIOM(TF_NUM_ARGS(/*Test*/) == 0);
-    TF_AXIOM(TF_NUM_ARGS(()) == 1);
-    TF_AXIOM(TF_NUM_ARGS(f()) == 1);
-    TF_AXIOM(TF_NUM_ARGS(f()()) == 1);
-    TF_AXIOM(TF_NUM_ARGS((a)) == 1);
-    TF_AXIOM(TF_NUM_ARGS(((a))) == 1);
-    TF_AXIOM(TF_NUM_ARGS((()())) == 1);
+    static_assert(TF_NUM_ARGS() == 0, "");
+    static_assert(TF_NUM_ARGS( ) == 0, "");
+    static_assert(TF_NUM_ARGS(/**/) == 0, "");
+    static_assert(TF_NUM_ARGS(/*Test*/) == 0, "");
+    static_assert(TF_NUM_ARGS(()) == 1, "");
+    static_assert(TF_NUM_ARGS(f()) == 1, "");
+    static_assert(TF_NUM_ARGS(f()()) == 1, "");
+    static_assert(TF_NUM_ARGS((a)) == 1, "");
+    static_assert(TF_NUM_ARGS(((a))) == 1, "");
+    static_assert(TF_NUM_ARGS((()())) == 1, "");
 
-    TF_AXIOM(TF_NUM_ARGS(a) == 1);
-    TF_AXIOM(TF_NUM_ARGS(a, b) == 2);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c) == 3);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d) == 4);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e) == 5);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f) == 6);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g) == 7);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h) == 8);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i) == 9);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j) == 10);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k) == 11);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l) == 12);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m) == 13);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n) == 14);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) == 15);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) == 16);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) == 17);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) == 18);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) == 19);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) == 20);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) == 21);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) == 22);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) == 23);
-    TF_AXIOM(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) == 24);
+    static_assert(TF_NUM_ARGS(a) == 1, "");
+    static_assert(TF_NUM_ARGS(a, b) == 2, "");
+    static_assert(TF_NUM_ARGS(a, b, c) == 3, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d) == 4, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e) == 5, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f) == 6, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g) == 7, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h) == 8, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i) == 9, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j) == 10, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k) == 11, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l) == 12, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m) == 13, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n) == 14, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) == 15, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) == 16, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) == 17, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) == 18, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) == 19, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) == 20, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) == 21, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) == 22, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) == 23, "");
+    static_assert(TF_NUM_ARGS(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) == 24, "");
 
     return true;
 }
 
+static bool
+TestTF_PP_VARIADIC_SIZE()
+{
+    static_assert(TF_PP_VARIADIC_SIZE(()) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE(f()) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE(f()()) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE((a)) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE(((a))) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE((()())) == 1, "");
+
+    static_assert(TF_PP_VARIADIC_SIZE(a) == 1, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b) == 2, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c) == 3, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d) == 4, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e) == 5, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f) == 6, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g) == 7, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h) == 8, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i) == 9, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j) == 10, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k) == 11, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l) == 12, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m) == 13, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n) == 14, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) == 15, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) == 16, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) == 17, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) == 18, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) == 19, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) == 20, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) == 21, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) == 22, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) == 23, "");
+    static_assert(TF_PP_VARIADIC_SIZE(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) == 24, "");
+
+    return true;
+}
+
+static bool
+TestTF_PP_VARIADIC_ELEM()
+{
+    static_assert(TF_PP_VARIADIC_ELEM(0, 1) == 1, "");
+    static_assert(TF_PP_VARIADIC_ELEM(0, 1, 2) == 1, "");
+    static_assert(TF_PP_VARIADIC_ELEM(0, 1, 2, 3) == 1, "");
+    static_assert(TF_PP_VARIADIC_ELEM(1, 1, 2) == 2, "");
+    static_assert(TF_PP_VARIADIC_ELEM(1, 1, 2, 3) == 2, "");
+    static_assert(TF_PP_VARIADIC_ELEM(2, 1, 2, 3) == 3, "");
+    return true;
+}
+
+static bool
+TestTF_PP_FOR_EACH()
+{
+#define ADD(x) x +
+    static_assert(TF_PP_FOR_EACH(ADD, 1) 1 == 2, "");
+    static_assert(TF_PP_FOR_EACH(ADD, 1, 2) 1 == 4, "");
+    static_assert(TF_PP_FOR_EACH(ADD, 1, 2, 3) 1 == 7, "");
+#undef ADD
+    return true;
+}
 
 static bool
 TestTF_PP_EAT_PARENS()
@@ -115,7 +175,7 @@ TestTF_PP_EAT_PARENS()
 static bool
 TestTF_PP_IS_TUPLE()
 {
-    #define _STR BOOST_PP_STRINGIZE
+    #define _STR TF_PP_STRINGIZE
 
     TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(())), "1"));
     TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE((a))), "1"));
@@ -136,10 +196,14 @@ TestTF_PP_IS_TUPLE()
 static bool
 Test_TfPreprocessorUtils()
 {
-    return TestTF_NUM_ARGS() &&
-           TestTF_PP_EAT_PARENS() &&
-           TestTF_PP_IS_TUPLE()
-           ;
+    return
+        TestTF_NUM_ARGS() &&
+        TestTF_PP_EAT_PARENS() &&
+        TestTF_PP_IS_TUPLE() &&
+        TestTF_PP_VARIADIC_SIZE() &&
+        TestTF_PP_VARIADIC_ELEM() &&
+        TestTF_PP_FOR_EACH()
+        ;
 }
 
 TF_ADD_REGTEST(TfPreprocessorUtils);

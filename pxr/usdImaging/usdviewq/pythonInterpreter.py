@@ -21,10 +21,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
+
 from pxr import Tf
 
-from qt import QtCore, QtGui, QtWidgets
-from usdviewApi import UsdviewApi
+from .qt import QtCore, QtGui, QtWidgets
+from .usdviewApi import UsdviewApi
 
 from code import InteractiveInterpreter
 import os, sys, keyword
@@ -33,7 +35,7 @@ import os, sys, keyword
 def _PrintToErr(line):
     old = sys.stdout
     sys.stdout = sys.__stderr__
-    print line
+    print(line)
     sys.stdout = old
 
 def _Redirected(method):
@@ -75,10 +77,20 @@ class _Completer(object):
         Return a list of all keywords, built-in functions and names
         currently defines in __main__ that match.
         """
-        import __builtin__, __main__
+        builtin_mod = None
+
+        if sys.version_info.major >= 3:
+            import builtins
+            builtin_mod = builtins
+        else:
+            import __builtin__
+            builtin_mod = __builtin__
+
+        import __main__
+
         matches = set()
         n = len(text)
-        for l in [keyword.kwlist,__builtin__.__dict__.keys(),
+        for l in [keyword.kwlist,builtin_mod.__dict__.keys(),
                   __main__.__dict__.keys(), self.locals.keys()]:
             for word in l:
                 if word[:n] == text and word != "__builtins__":
@@ -462,9 +474,9 @@ class Controller(QtCore.QObject):
             maxLength = maxLength + self._GetStringLengthInPixels(cf, '  ')
 
             # how many columns can we fit on screen?
-            numCols = max(1,width / maxLength)
+            numCols = max(1,width // maxLength)
             # how many rows do we need to fit our data
-            numRows = (len(completions) / numCols) + 1
+            numRows = (len(completions) // numCols) + 1
 
             columnWidth = QtGui.QTextLength(QtGui.QTextLength.FixedLength,
                                             maxLength)
@@ -486,8 +498,8 @@ class Controller(QtCore.QObject):
             index = 0
             completionsLength = len(completions)
 
-            for col in xrange(0,numCols):
-                for row in xrange(0,numRows):
+            for col in range(0,numCols):
+                for row in range(0,numRows):
                     cellNum = (row * numCols) + col
                     if (cellNum >= completionsLength):
                         continue
@@ -760,7 +772,21 @@ class View(QtWidgets.QTextEdit):
     def insertFromMimeData(self, source):
         if not self._CursorIsInInputArea():
             self._MoveCursorToEndOfInput()
-        super(View, self).insertFromMimeData(source)
+
+        if source.hasText():
+            text = source.text().replace('\r', '')
+            textLines = text.split('\n')
+            if (textLines[-1] == ''):
+                textLines = textLines[:-1]
+            for i in range(len(textLines)):
+                line = textLines[i]
+                cursor = self.textCursor()
+                cursor.movePosition(QtGui.QTextCursor.End)        
+                cursor.insertText(line)
+                cursor.movePosition(QtGui.QTextCursor.End)        
+                self.setTextCursor(cursor)
+                if i < len(textLines) - 1:
+                    self.returnPressed.emit()
 
     def keyPressEvent(self, e):
         """

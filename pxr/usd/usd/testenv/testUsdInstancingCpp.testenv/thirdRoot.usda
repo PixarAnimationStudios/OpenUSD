@@ -1,0 +1,51 @@
+#usda 1.0
+
+def "payLoadGeo" (
+    append payload = @./geo.usda@
+)
+{
+}
+
+def Xform "Ref1" (
+    kind = "set"
+)
+{
+    def Xform "instance1" (
+        instanceable = true
+        append references = </payLoadGeo>
+    )
+    {
+    }
+
+    def Xform "nestInstance1" (
+        kind = "component"
+        append references = </payLoadGeo>
+    )
+    {
+        def Xform "instanceObj1" (
+            instanceable = true
+            append references = @./geo.usda@</Geometry/Prototypes/obj_0>
+        ) 
+        {
+
+        }
+    }
+}
+
+def Xform "Ref2" (
+    kind = "set"
+)
+{
+    def Xform "Ref2instance2" (
+            instanceable = true
+            append references = </payLoadGeo>
+    )
+    {
+    }
+    def Xform "Ref2instanceObj1" (
+        instanceable = true
+        prepend references = @./geo.usda@</Geometry/Prototypes/obj_0>
+    )
+    {
+    }
+}

@@ -345,6 +345,20 @@ public:
         return IsDefined();
     }
 
+    /// Equality comparison.  Return true if \a lhs and \a rhs represent the
+    /// same underlying UsdAttribute, false otherwise.
+    friend bool operator==(const UsdGeomXformOp &lhs,
+                           const UsdGeomXformOp &rhs) {
+        return lhs.GetAttr() == rhs.GetAttr();
+    }
+
+    /// Inequality comparison. Return false if \a lhs and \a rhs represent the
+    /// same underlying UsdAttribute, true otherwise.
+    friend bool operator!=(const UsdGeomXformOp &lhs,
+                           const UsdGeomXformOp &rhs) {
+        return !(lhs == rhs);
+    }
+
     /// \sa UsdAttribute::GetName()
     TfToken const &GetName() const {  return GetAttr().GetName(); }
 

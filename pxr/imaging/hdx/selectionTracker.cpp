@@ -401,9 +401,9 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     //
     // All data is aggregated into a single  buffer with the following layout:
     //
-    // [ prims | points | edges | elements | instance level-N | ... | level 0 ]
-    //          <-------- subprims ------->  <----------- instances --------->
-    //          <---------------------- per prim ---------------------------->
+    // [ prims | points | edges | elements | instances ]
+    //          <-------- subprims ------->
+    //          <------------- per prim --------------->
     //  
     //  Each section above is prefixed with [start,end) ranges and the values of
     //  each range follow the three cases outlined.
@@ -414,7 +414,6 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
 
     // Start with individual arrays. Splice arrays once finished.
     int const PRIM_SELOFFSETS_HEADER_SIZE = 2;
-    bool const SELECT_ALL = 1;
     bool const SELECT_NONE = 0;
 
     enum SubPrimType {
@@ -447,7 +446,6 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
             _selection->GetPrimSelectionState(mode, objPath);
         if (!primSelState) continue;
 
-        bool hasSelectedSubprimitives = false;
         // netSubprimOffset tracks the "net" offset to the start of each
         // subprim's range-offsets encoding; it allows us to handle selection of
         // multiple subprims per prim (XXX: not per instance of a prim) by
@@ -459,12 +457,10 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         // Subprimitives: Points
         // ------------------------------------------------------------------ //
         size_t curOffset = output->size();
-
         if (_FillPointSelOffsets(POINT,
                                  primSelState->pointIndices,
                                  primSelState->pointColorIndices,
                                  output)) {
-            hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("points", *output);
         }
@@ -475,7 +471,6 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         curOffset = output->size();
         if (_FillSubprimSelOffsets(EDGE,  primSelState->edgeIndices,
                                 netSubprimOffset, output)) {
-            hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("edges", *output);
         }
@@ -487,7 +482,6 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         curOffset = output->size();
         if (_FillSubprimSelOffsets(ELEMENT,  primSelState->elementIndices,
                                 netSubprimOffset, output)) {
-            hasSelectedSubprimitives = true;
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("elements", *output);
         }
@@ -495,92 +489,16 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         // ------------------------------------------------------------------ //
         // Instances
         // ------------------------------------------------------------------ //
-        if (!hasSelectedSubprimitives) {
-            netSubprimOffset = 0;
-        } 
-        // By initializing the prevLevelOffset to netSubprimOffset, we remove
-        // a special case (i.e., checking for level 0) in the code below.
-        int prevLevelOffset = (int)netSubprimOffset;
-
-        std::vector<VtIntArray> const& instanceIndices =
-            primSelState->instanceIndices;
-        if (instanceIndices.size()) {
-            // Different instances can have different number of levels.
-            int numLevels = std::numeric_limits<int>::max();
-            size_t numInst= instanceIndices.size();
-            if (numInst == 0) {
-                numLevels = 0;
-            } else {
-                for (size_t instNum = 0; instNum < numInst; ++instNum) {
-                    size_t levelsForInst = instanceIndices.at(instNum).size();
-                    numLevels = std::min(numLevels,
-                                         static_cast<int>(levelsForInst));
-                }
-            }
-
-            TF_DEBUG(HDX_SELECTION_SETUP).Msg("NumLevels: %d\n", numLevels);
-            if (numLevels == 0) {
-                // Encode the subprim offset and whether the prim is
-                // fully selected.
-                (*output)[id-min+2] = _EncodeSelOffset(netSubprimOffset,
-                                                primSelState->fullySelected);
-            }
-            for (int level = 0; level < numLevels; ++level) {
-                // Find the required size of the instance vectors.
-                int levelMin = std::numeric_limits<int>::max();
-                int levelMax = std::numeric_limits<int>::lowest();
-                for (VtIntArray const &instVec : instanceIndices) {
-                    _DebugPrintArray("\tinstVec", instVec, false);
-                    int instId = instVec[level];
-                    levelMin = std::min(levelMin, instId);
-                    levelMax = std::max(levelMax, instId);
-                }
-
-                TF_DEBUG(HDX_SELECTION_SETUP).Msg(
-                    "level-%d: min(%d) max(%d)\n",
-                    level, levelMin, levelMax);
-
-                int const INSTANCE_SELOFFSETS_HEADER_SIZE = 3;
-                int objLevelSize = levelMax - levelMin + 1 +
-                    INSTANCE_SELOFFSETS_HEADER_SIZE;
-                int levelOffset = output->size();
-                output->insert(output->end(), objLevelSize,
-                               _EncodeSelOffset(prevLevelOffset, SELECT_NONE));
-                (*output)[levelOffset    ] = INSTANCE;
-                (*output)[levelOffset + 1] = levelMin;
-                (*output)[levelOffset + 2] = levelMax + 1;
-                for (VtIntArray const& instVec : instanceIndices) {
-                    int instId = instVec[level] - levelMin +
-                        INSTANCE_SELOFFSETS_HEADER_SIZE;
-                    (*output)[levelOffset+instId] =
-                        _EncodeSelOffset(prevLevelOffset, SELECT_ALL);
-                }
-
-                if (level == numLevels-1) {
-                    // Encode the instance offset and whether the prim is
-                    // fully selected. If at all any subprims of the prim
-                    // (XXX: it should be instance, ideally) are selected, the
-                    // instance's selOffset would encode that.
-                    (*output)[id-min+2] =
-                        _EncodeSelOffset(levelOffset + modeOffset,
-                                         primSelState->fullySelected);
-                }
-
-                if (ARCH_UNLIKELY(TfDebug::IsEnabled(HDX_SELECTION_SETUP))){
-                    std::stringstream name;
-                    name << "level[" << level << "]";
-                    _DebugPrintArray(name.str(), *output);
-                }
-                // The offset is the net index within the selection buffer, and
-                // thus, needs to include the mode offset.
-                prevLevelOffset = levelOffset + modeOffset;
-            }
-        } else {
-            // No instances. Encode the subprim offset and whether the prim is
-            // fully selected.
-            (*output)[id-min+2] = _EncodeSelOffset(netSubprimOffset,
-                                                   primSelState->fullySelected);
+        curOffset = output->size();
+        if (_FillSubprimSelOffsets(INSTANCE, primSelState->instanceIndices,
+                                netSubprimOffset, output)) {
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("instances", *output);
         }
+
+        // Finally, put the prim selection state in.
+        (*output)[id-min+2] = _EncodeSelOffset(netSubprimOffset,
+            primSelState->fullySelected);
     }
 
     _DebugPrintArray("final output", *output);

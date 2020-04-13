@@ -31,10 +31,12 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class GlfGLRawContext> GlfGLRawContextSharedPtr;
+typedef std::shared_ptr<class GlfGLRawContext> GlfGLRawContextSharedPtr;
 
 class GlfGLRawContext : public GlfGLContext {
 public:

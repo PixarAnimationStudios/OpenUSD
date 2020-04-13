@@ -54,11 +54,11 @@ class TestUsdSkelTopology(unittest.TestCase):
             # empty paths should be treated as roots.
             None, # 9,
             # Test invalid paths.
-            "/", "..", "../.."
+            "/", ".."
         )
 
         expectedParentIndices = Vt.IntArray(
-            [-1, 2, 0, -1, -1, 4, 7, 8, -1, -1, -1, -1, -1]) 
+            [-1, 2, 0, -1, -1, 4, 7, 8, -1, -1, -1, -1]) 
 
         topology = UsdSkel.Topology(targets)
 

@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/triangulate.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
@@ -96,7 +95,7 @@ HdSt_TriangleIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceVector
+HdBufferSourceSharedPtrVector
 HdSt_TriangleIndexBuilderComputation::GetChainedBuffers() const
 {
     return { _primitiveParam, _trianglesEdgeIndices };

@@ -30,16 +30,19 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResourceHandle> HdStTextureResourceHandleSharedPtr;
-typedef std::vector<HdStTextureResourceHandleSharedPtr>
-                                HdStTextureResourceHandleSharedPtrVector;
+
+using HdStTextureResourceSharedPtr = 
+    std::shared_ptr<class HdStTextureResource>;
+using HdStTextureResourceHandleSharedPtr =
+    std::shared_ptr<class HdStTextureResourceHandle>;
+using HdStTextureResourceHandleSharedPtrVector =
+    std::vector<HdStTextureResourceHandleSharedPtr>;
 
 class HioGlslfx;
 
@@ -102,7 +105,7 @@ public:
 private:
     HdStTextureResourceHandleSharedPtr
     _GetTextureResourceHandle(HdSceneDelegate *sceneDelegate,
-                              HdMaterialParam const &param);
+                              HdSt_MaterialParam const &param);
 
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;

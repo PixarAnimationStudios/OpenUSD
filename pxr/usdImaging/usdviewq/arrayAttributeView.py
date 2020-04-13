@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
+from .qt import QtCore, QtGui, QtWidgets
 
 
 def _GetLengthOfRange(start, stop, step):
@@ -29,7 +29,7 @@ def _GetLengthOfRange(start, stop, step):
         return 0
 
     k = 1 if step > 0 else -1
-    num = 1 + (stop - k - start) / step
+    num = 1 + (stop - k - start) // step
 
     # note, sign(stop - start) != sign(step) when we have an empty range.  In those
     # cases, "num" ends up non-positive, so we can just take the max(num, 0)
@@ -99,7 +99,7 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
         dataVal = self._arrayData[idx]
 
         if role == QtCore.Qt.DisplayRole:
-            from scalarTypes import ToString
+            from .scalarTypes import ToString
             return str(idx) + ": " + ToString(
                 dataVal, self._scalarTypeName)
 
@@ -153,7 +153,7 @@ class ArrayAttributeView(QtWidgets.QWidget):
         self._SetupContextMenu()
 
     def SetAttribute(self, attr, frame):
-        from scalarTypes import GetScalarTypeFromAttr
+        from .scalarTypes import GetScalarTypeFromAttr
 
         arrayData = attr.Get(frame)
         scalarTypeName, _ = GetScalarTypeFromAttr(attr)
@@ -194,7 +194,7 @@ class ArrayAttributeView(QtWidgets.QWidget):
             for idx in selectedIndexes])
 
     def _CopyValsToClipboard(self, vals):
-        from scalarTypes import ToClipboard
+        from .scalarTypes import ToClipboard
         scalarTypeName = self._arrayAttrModel.GetScalarTypeName()
         copyText = "[ %s ]" % (", ".join(
             ToClipboard(val, scalarTypeName)

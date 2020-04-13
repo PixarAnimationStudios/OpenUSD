@@ -281,7 +281,7 @@ public:
     // -------------------------------------------------------------------------
     /// \name Outputs API
     ///
-    /// Outputs represent a typed property on a shader or node-graph whose value 
+    /// Outputs represent a typed attribute on a shader or node-graph whose value 
     /// is computed externally. 
     /// 
     /// When they exist on a node-graph, they are connectable and are typically 
@@ -314,7 +314,7 @@ public:
 
     /// \name Inputs API
     ///
-    /// Inputs are connectable properties with a typed value. 
+    /// Inputs are connectable attribute with a typed value. 
     /// 
     /// On shaders, the shader parameters are encoded as inputs. On node-graphs,
     /// interface attributes are represented as inputs.

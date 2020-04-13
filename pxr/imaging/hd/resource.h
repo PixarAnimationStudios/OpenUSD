@@ -29,21 +29,19 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <cstddef>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResource> HdResourceSharedPtr;
+using HdResourceSharedPtr = std::shared_ptr<class HdResource>;
 
 /// \class HdResource
 ///
 /// Base class for all GPU resource objects.
 ///
-class HdResource : boost::noncopyable 
+class HdResource
 {
 public:
     HD_API
@@ -64,6 +62,12 @@ protected:
     void SetSize(size_t size);
 
 private:
+
+    // Don't allow copies.
+    HdResource(const HdResource &) = delete;
+    HdResource &operator=(const HdResource &) = delete;
+
+
     const TfToken _role;
     size_t _size;
 };

@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class VtValue;
@@ -64,9 +66,10 @@ private:
     Hd_ExtCompInputSource &operator = (const Hd_ExtCompInputSource &)  = delete;
 };
 
-typedef boost::shared_ptr<Hd_ExtCompInputSource> Hd_ExtCompInputSourceSharedPtr;
-typedef std::vector<Hd_ExtCompInputSourceSharedPtr>
-                                           Hd_ExtCompInputSourceSharedPtrVector;
+using Hd_ExtCompInputSourceSharedPtr = 
+   std::shared_ptr<Hd_ExtCompInputSource>;
+using Hd_ExtCompInputSourceSharedPtrVector =
+    std::vector<Hd_ExtCompInputSourceSharedPtr>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

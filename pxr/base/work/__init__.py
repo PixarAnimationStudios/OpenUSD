@@ -28,7 +28,7 @@ Allows for configuration of the system's multithreading subsystem.
 
 """
 
-import _work
+from . import _work
 from pxr import Tf
 Tf.PrepareModule(_work, locals())
 del _work, Tf

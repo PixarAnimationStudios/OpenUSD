@@ -28,7 +28,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/make_shared.hpp>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -71,10 +70,15 @@ HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
     }
 }
 
+void
+HdRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+{
+}
+
 HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {
-    return boost::make_shared<HdRenderPassState>();
+    return std::make_shared<HdRenderPassState>();
 }
 
 TfToken
@@ -163,6 +167,12 @@ HdRenderDelegate::_PopulateDefaultSettings(
     }
 }
 
+HdRenderParam *
+HdRenderDelegate::GetRenderParam() const 
+{
+    return nullptr;
+}
+
 bool
 HdRenderDelegate::IsPauseSupported() const
 {
@@ -177,6 +187,24 @@ HdRenderDelegate::Pause()
 
 bool
 HdRenderDelegate::Resume()
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::IsStopSupported() const
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Stop()
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Restart()
 {
     return false;
 }

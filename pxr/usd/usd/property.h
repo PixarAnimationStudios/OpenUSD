@@ -55,10 +55,7 @@ class UsdProperty;
 class UsdProperty : public UsdObject {
 public:
     /// Construct an invalid property.
-    UsdProperty()
-        : UsdObject(UsdTypeProperty, Usd_PrimDataHandle(), SdfPath(), TfToken())
-    {
-    }
+    UsdProperty() : UsdObject(_Null<UsdProperty>()) {}
 
     // --------------------------------------------------------------------- //
     /// \name Object and Namespace Accessors
@@ -272,8 +269,11 @@ public:
     UsdProperty FlattenTo(const UsdProperty &property) const;
 
 protected:
-    bool _GetTargets(SdfSpecType specType, SdfPathVector *out) const;
+    template <class Derived>
+    UsdProperty(_Null<Derived>) : UsdObject(_Null<Derived>()) {}
 
+    bool _GetTargets(SdfSpecType specType, SdfPathVector *out) const;
+    
 private:
     friend class UsdAttribute;
     friend class UsdObject;

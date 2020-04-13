@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
     // Merge fallback settings specific to testHdPrman.
     VtDictionary defaultSettings;
     defaultSettings["ri:hider:jitter"] = 1;
-    defaultSettings["ri:hider:minsamples"] = 1;
+    defaultSettings["ri:hider:minsamples"] = 32;
     defaultSettings["ri:hider:maxsamples"] = 64;
     defaultSettings["ri:trace:maxdepth"] = 10;
     defaultSettings["ri:Ri:PixelVariance"] = 0.01f;
@@ -808,7 +808,7 @@ int main(int argc, char *argv[])
             HdPrmanRenderDelegate hdPrmanBackend(hdPrmanContext,
                                                  settingsMap);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
-                HdRenderIndex::New(&hdPrmanBackend));
+                HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
                                              SdfPath::AbsoluteRootPath());
             hdUsdFrontend.Populate(stage->GetPseudoRoot());
@@ -835,9 +835,9 @@ int main(int argc, char *argv[])
 
             // The task execution graph and engine configuration is also simple.
             HdTaskSharedPtrVector tasks = {
-                boost::make_shared<Hd_DrawTask>(hdRenderPass,
-                                                hdRenderPassState,
-                                                renderTags)
+                std::make_shared<Hd_DrawTask>(hdRenderPass,
+                                              hdRenderPassState,
+                                              renderTags)
             };
             HdEngine hdEngine;
             timer_hydraSync.Start();

@@ -31,7 +31,9 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -53,30 +55,22 @@ _GetReadbackName(const TfToken &aovName)
 }
 
 HdStRenderPassShader::HdStRenderPassShader()
-    : HdStShaderCode()
-    , _glslfxFile(HdStPackageRenderPassShader())
-    , _hash(0)
-    , _hashValid(false)
-    , _cullStyle(HdCullStyleNothing)
+    : HdStRenderPassShader(HdStPackageRenderPassShader())
 {
-    _glslfx.reset(new HioGlslfx(_glslfxFile));
 }
 
 HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     : HdStShaderCode()
     , _glslfxFile(glslfxFile)   // user-defined
+    , _glslfx(new HioGlslfx(glslfxFile))
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
 {
-    _glslfx.reset(new HioGlslfx(_glslfxFile));
 }
 
 /*virtual*/
-HdStRenderPassShader::~HdStRenderPassShader()
-{
-    // nothing
-}
+HdStRenderPassShader::~HdStRenderPassShader() = default;
 
 /*virtual*/
 HdStRenderPassShader::ID
@@ -113,8 +107,7 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 // by \p program.
 static
 void
-_BindTexture(const int program,
-             const HdRenderPassAovBinding &aov,
+_BindTexture(const HdRenderPassAovBinding &aov,
              const HdBinding &binding)
 {
     if (binding.GetType() != HdBinding::TEXTURE_2D) {
@@ -133,8 +126,12 @@ _BindTexture(const int program,
 
     // Get texture from AOV's render buffer.
     const bool multiSampled = false;
-    HgiGLTexture * const texture = dynamic_cast<HgiGLTexture*>(
-        buffer->GetHgiTextureHandle(multiSampled));
+    VtValue rv = buffer->GetResource(multiSampled);
+    
+    HgiGLTexture * const texture = rv.IsHolding<HgiTextureHandle>() ? 
+        dynamic_cast<HgiGLTexture*>(rv.Get<HgiTextureHandle>().Get()) :
+        nullptr;
+
     if (!texture) {
         TF_CODING_ERROR("When binding readback for aov '%s', AOV is not backed "
                         "by HgiGLTexture.", aov.aovName.GetString().c_str());
@@ -153,10 +150,6 @@ _BindTexture(const int program,
     glActiveTexture(GL_TEXTURE0 + samplerUnit);
     glBindTexture(GL_TEXTURE_2D, (GLuint) textureId);
     glBindSampler(samplerUnit, 0);
-
-    // Set uniform sampler2D to sampler unit.
-    glProgramUniform1i(program, binding.GetLocation(),
-                       samplerUnit);
 }
 
 /*virtual*/
@@ -181,8 +174,7 @@ HdStRenderPassShader::BindResources(const int program,
         const TfToken &aovName = aovBinding.aovName;
         if (_aovReadbackRequests.count(aovName) > 0) {
             // Bind the texture.
-            _BindTexture(program,
-                         aovBinding,
+            _BindTexture(aovBinding,
                          binder.GetBinding(_GetReadbackName(aovName)));
 
             numFulfilled++;
@@ -308,7 +300,7 @@ HdStRenderPassShader::AddAovReadback(TfToken const &name)
     // allocated a sampler unit and codegen generates an accessor
     // HdGet_NAMEReadback().
     _params.emplace_back(
-        HdMaterialParam::ParamTypeTexture,
+        HdSt_MaterialParam::ParamTypeTexture,
         _GetReadbackName(name),
         VtValue(GfVec4f(0.0)),
         SdfPath(),
@@ -326,11 +318,11 @@ HdStRenderPassShader::RemoveAovReadback(TfToken const &name)
     const TfToken accessorName = _GetReadbackName(name);
     std::remove_if(
         _params.begin(), _params.end(),
-        [&accessorName](const HdMaterialParam &p) {
+        [&accessorName](const HdSt_MaterialParam &p) {
             return p.name == accessorName; });
 }
 
-HdMaterialParamVector const &
+HdSt_MaterialParamVector const &
 HdStRenderPassShader::GetParams() const
 {
     return _params;

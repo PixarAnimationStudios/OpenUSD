@@ -93,13 +93,23 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 
     const bool mulSmp = false;
 
-    HgiGLTexture* colorTex = _aovBuffer ? 
-        static_cast<HgiGLTexture*>(_aovBuffer->GetHgiTextureHandle(mulSmp)) :
-        nullptr;
+    HgiGLTexture* colorTex = nullptr;
+    if (_aovBuffer) {
+        VtValue rv = _aovBuffer->GetResource(mulSmp);
+        if (rv.IsHolding<HgiTextureHandle>()) {
+            HgiTextureHandle colorHandle = rv.UncheckedGet<HgiTextureHandle>();
+            colorTex = dynamic_cast<HgiGLTexture*>(colorHandle.Get());
+        }
+    }
 
-    HgiGLTexture* depthTex = _depthBuffer ? 
-        static_cast<HgiGLTexture*>(_depthBuffer->GetHgiTextureHandle(mulSmp)):
-        nullptr;
+    HgiGLTexture* depthTex = nullptr;
+    if (_depthBuffer) {
+        VtValue rv = _depthBuffer->GetResource(mulSmp);
+        if (rv.IsHolding<HgiTextureHandle>()) {
+            HgiTextureHandle depthHandle = rv.UncheckedGet<HgiTextureHandle>();
+            depthTex = dynamic_cast<HgiGLTexture*>(depthHandle.Get());
+        }
+    }
 
     uint32_t colorId = colorTex ? colorTex->GetTextureId() : 0;
     uint32_t depthId = depthTex ? depthTex->GetTextureId() : 0;
@@ -123,7 +133,11 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     glGetBooleanv(GL_BLEND, &blendEnabled);
     glDisable(GL_BLEND);
 
-    _compositor.Draw(colorId, depthId);
+    HdxFullscreenShader::TextureMap textures;
+    textures[TfToken("color")] = colorId;
+    textures[TfToken("depth")] = depthId;
+    _compositor.SetProgramToCompositor(/*depthAware = */true);
+    _compositor.Draw(textures);
 
     if (blendEnabled) {
         glEnable(GL_BLEND);

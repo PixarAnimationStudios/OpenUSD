@@ -218,24 +218,29 @@ UsdImagingPointsAdapter::ProcessPropertyChange(UsdPrim const& prim,
     if (propertyName == UsdGeomTokens->points)
         return HdChangeTracker::DirtyPoints;
 
-    if (propertyName == UsdGeomTokens->widths ||
-        propertyName == UsdImagingTokens->primvarsWidths) {
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, HdTokens->widths)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyWidths;
-        }
+    // Handle attributes that are treated as "built-in" primvars.
+    if (propertyName == UsdGeomTokens->widths) {
+        UsdGeomPoints points(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->widths,
+            _UsdToHdInterpolation(points.GetWidthsInterpolation()),
+            HdChangeTracker::DirtyWidths);
+    
+    } else if (propertyName == UsdGeomTokens->normals) {
+        UsdGeomPoints points(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->normals,
+            _UsdToHdInterpolation(points.GetNormalsInterpolation()),
+            HdChangeTracker::DirtyNormals);
     }
-
-    if (propertyName == UsdGeomTokens->normals ||
-        propertyName == UsdImagingTokens->primvarsNormals) {
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, HdTokens->normals)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyNormals;
-        }
+    // Handle prefixed primvars that use special dirty bits.
+    else if (propertyName == UsdImagingTokens->primvarsWidths) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdChangeTracker::DirtyWidths);
+    
+    } else if (propertyName == UsdImagingTokens->primvarsNormals) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName, HdChangeTracker::DirtyNormals);
     }
 
     // Allow base class to handle change processing.

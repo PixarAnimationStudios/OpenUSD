@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/token.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -54,7 +55,8 @@ public:
 
     /// Open a file.  Returns \c true on success;  errors are reported by
     /// \c GetErrors().
-    bool Open(const std::string& filePath);
+    bool Open(const std::string& filePath, 
+              const SdfFileFormat::FileFormatArguments&);
 
     /// Close the file.
     void Close();

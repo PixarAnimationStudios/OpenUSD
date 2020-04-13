@@ -33,13 +33,13 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArraySharedPtr = std::shared_ptr<class HdBufferArray>;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 /// \class HdAggregationStrategy
 ///

@@ -27,9 +27,6 @@
 # to remain minimal, marking the points where divergence is required.
 include(Options)
 
-# Turn on C++11; pxr won't build without it. 
-set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -std=c++11")
-
 # Enable all warnings.
 set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wall")
 

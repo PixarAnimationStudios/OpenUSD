@@ -55,7 +55,6 @@ pxr_library(hd
         instanceRegistry
         light
         material
-        materialParam
         mesh
         meshTopology
         meshUtil
@@ -101,6 +100,7 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
+        driver.h
         version.h
 
     PRIVATE_CLASSES

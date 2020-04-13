@@ -33,15 +33,16 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 class HdExtComputation;
 class HdExtCompCpuComputation;
 
-typedef std::vector<VtValue> VtValueVector;
-typedef boost::shared_ptr<HdExtCompCpuComputation>
-                                HdExtCompCpuComputationSharedPtr;
+using HdExtCompCpuComputationSharedPtr = 
+    std::shared_ptr<HdExtCompCpuComputation>;
 
 ///
 /// A Buffer Source that represents a CPU implementation of a ExtComputation.
@@ -82,7 +83,7 @@ public:
     static HdExtCompCpuComputationSharedPtr
     CreateComputation(HdSceneDelegate *sceneDelegate,
                       const HdExtComputation &computation,
-                      HdBufferSourceVector *computationSources);
+                      HdBufferSourceSharedPtrVector *computationSources);
 
     HD_API
     virtual ~HdExtCompCpuComputation() = default;
@@ -121,7 +122,7 @@ private:
     size_t                                _numElements;
     HdSceneDelegate                      *_sceneDelegate;
 
-    VtValueVector                         _outputValues;
+    std::vector<VtValue>                  _outputValues;
 
     HdExtCompCpuComputation()                                          = delete;
     HdExtCompCpuComputation(const HdExtCompCpuComputation &)           = delete;

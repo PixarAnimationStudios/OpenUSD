@@ -388,41 +388,119 @@ _ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
     return UsdGeomTokens->default_;
 }
 
-TfToken
-UsdGeomImageable::ComputePurpose() const
+// Helper for computing only the authored purpose token from a valid imageable
+// prim. Returns an empty purpose token otherwise.
+static TfToken
+_ComputeAuthoredPurpose(const UsdGeomImageable &ip)
 {
-    return _ComputePurpose(GetPrim());
+    if (ip) {
+        UsdAttribute purposeAttr = ip.GetPurposeAttr();
+        if (purposeAttr.HasAuthoredValue()) {
+            TfToken purpose;
+            purposeAttr.Get(&purpose);
+            return purpose;
+        }
+    }
+    return TfToken();
+}
+
+// Helper for computing the fallback purpose from a valid imageable prim 
+// assuming we didn't find an authored purpose. Returns the "default" purpose
+// as the fallback for non-imageable prims.
+static TfToken
+_ComputeFallbackPurpose(const UsdGeomImageable &ip)
+{
+    TfToken purpose = UsdGeomTokens->default_;
+    if (ip) {
+        UsdAttribute purposeAttr = ip.GetPurposeAttr();
+        purposeAttr.Get(&purpose);
+    }
+    return purpose;
+}
+
+// Helper for computing the purpose that can be inherited from an ancestor 
+// imageable when there is no authored purpose on the prim. Walks up the prim
+// hierarchy and returns the first authored purpose opinion found on an 
+// imageable prim. Returns an empty token if there's purpose opinion to inherit
+// from.
+static
+TfToken _ComputeInheritableAncestorPurpose(const UsdPrim &prim)
+{
+    UsdPrim parent = prim.GetParent();
+    while (parent) {
+        const TfToken purpose = _ComputeAuthoredPurpose(UsdGeomImageable(parent));
+        if (!purpose.IsEmpty()) {
+            return purpose;
+        }
+        parent = parent.GetParent();
+    }
+    return TfToken();
 }
 
 TfToken
-UsdGeomImageable::ComputePurpose(const TfToken &parentPurpose) const
+UsdGeomImageable::ComputePurpose() const
 {
-    if (parentPurpose != UsdGeomTokens->default_) {
-        return parentPurpose;
-    }
+    return ComputePurposeInfo().purpose;
+}
 
-    TfToken myPurpose;
-    if (UsdGeomImageable ip = UsdGeomImageable(GetPrim())){
-        if (ip.GetPurposeAttr().Get(&myPurpose)) {
-            return myPurpose;
+UsdGeomImageable::PurposeInfo 
+UsdGeomImageable::ComputePurposeInfo() const
+{
+    // Check for an authored purpose opinion (if we're imageable) first. If 
+    // none, check for an inheritable ancestor opinion. If still none return 
+    // the fallback purpose.
+    TfToken authoredPurpose = _ComputeAuthoredPurpose(*this);
+    if (authoredPurpose.IsEmpty()) {
+        TfToken inheritableParentPurpose = 
+            _ComputeInheritableAncestorPurpose(GetPrim());
+        if (inheritableParentPurpose.IsEmpty()) {
+            return PurposeInfo (_ComputeFallbackPurpose(*this), false);
+        } else {
+            return PurposeInfo (inheritableParentPurpose, true);
         }
     }
+    return PurposeInfo (authoredPurpose, true);
+}
 
-    return parentPurpose;
+UsdGeomImageable::PurposeInfo 
+UsdGeomImageable::ComputePurposeInfo(const PurposeInfo &parentPurposeInfo) const
+{
+    // Check for an authored purpose opinion (if we're imageable) first. If 
+    // none, return the passed in parent purpose if its inheritable
+    // otherwise return the fallback purpose.
+    TfToken authoredPurpose = _ComputeAuthoredPurpose(*this);
+    if (authoredPurpose.IsEmpty()) {
+        if (parentPurposeInfo.isInheritable) {
+            return parentPurposeInfo;
+        } else {
+            return PurposeInfo (_ComputeFallbackPurpose(*this), false);
+        }
+    }
+    return PurposeInfo (authoredPurpose, true);
 }
 
 UsdPrim
 UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
 {
-    UsdPrim  purposeRoot, self=GetPrim();
-    
-    TfToken purpose = _ComputePurpose(self, &purposeRoot);
+    UsdPrim  renderRoot, self=GetPrim();
 
-    if (purpose == UsdGeomTokens->render){
-        TF_VERIFY(purposeRoot);
+    // XXX: This may not make sense anymore now that computed purpose is no 
+    // longer "pruning", i.e. you can't guarantee that all descendant prims will
+    // have same purpose as the root of a subtree. Instead we now verify that 
+    // this prim has the render purpose and walk up the parent chain until we
+    // the last prim that still has the render purpose and treat that as the
+    // render root for this prim's proxy.
+    TfToken purpose = ComputePurpose();
+    UsdPrim prim = GetPrim();
+    while (UsdGeomImageable(prim).ComputePurpose() == UsdGeomTokens->render) {
+        renderRoot = prim;
+        prim = prim.GetParent();
+    }
+
+    if (renderRoot){
         SdfPathVector target;
         UsdRelationship  proxyPrimRel = 
-            UsdGeomImageable(purposeRoot).GetProxyPrimRel();
+            UsdGeomImageable(renderRoot).GetProxyPrimRel();
         if (proxyPrimRel.GetForwardedTargets(&target)){
             if (target.size() == 1){
                 if (UsdPrim proxy = self.GetStage()->GetPrimAtPath(target[0])){
@@ -430,18 +508,18 @@ UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
                         TF_WARN("Prim <%s>, targeted as proxyPrim of prim "
                                 "<%s> does not have purpose 'proxy'",
                                 proxy.GetPath().GetText(),
-                                purposeRoot.GetPath().GetText());
+                                renderRoot.GetPath().GetText());
                         return UsdPrim();
                     }
                     if (renderPrim){
-                        *renderPrim = purposeRoot;
+                        *renderPrim = renderRoot;
                     }
                     return proxy;
                 }
             }
             else if (target.size() > 1){
                 TF_WARN("Found multiple targets for proxyPrim rel on "
-                        "prim <%s>", purposeRoot.GetPath().GetText());
+                        "prim <%s>", renderRoot.GetPath().GetText());
             }
         }
     }

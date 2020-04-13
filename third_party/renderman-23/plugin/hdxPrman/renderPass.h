@@ -64,6 +64,9 @@ private:
     std::string _quickIntegrator;
     float _quickIntegrateTime;
     bool _quickIntegrate;
+    bool _isPrimaryIntegrator;
+    riley::IntegratorId _mainIntegratorId;
+    riley::IntegratorId _quickIntegratorId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

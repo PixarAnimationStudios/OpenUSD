@@ -30,7 +30,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/vt/array.h"
-#include <boost/smart_ptr.hpp>
+
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
@@ -38,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
 
-typedef boost::shared_ptr<class HdSelection> HdSelectionSharedPtr;
+using HdSelectionSharedPtr = std::shared_ptr<class HdSelection>;
 
 /// \class HdSelection
 ///

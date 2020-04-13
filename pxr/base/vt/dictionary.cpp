@@ -25,23 +25,17 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include "pxr/base/tf/atomicOfstreamWrapper.h"
-#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/type.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/type.h"
 
-#include "pxr/base/trace/trace.h"
-
-#include <fstream>
-#include <sstream>
-
+#include <ostream>
 #include <utility>
 #include <vector>
 
 using std::make_pair;
-using std::pair;
 using std::string;
 using std::vector;
 
@@ -80,6 +74,10 @@ VtValue& VtDictionary::operator[](const string& key) {
 VtDictionary::size_type VtDictionary::count(const string& key) const {
     return _dictMap ? _dictMap->count(key) : 0;
 }
+
+VtDictionary::size_type VtDictionary::count(const char* key) const {
+    return _dictMap ? _dictMap->count(key) : 0;
+}
     
 VtDictionary::size_type VtDictionary::erase(const string& key) {
     return _dictMap ? _dictMap->erase(key) : 0;
@@ -106,7 +104,17 @@ VtDictionary::iterator VtDictionary::find(const string& key) {
         : iterator(); 
 }
 
+VtDictionary::iterator VtDictionary::find(const char* key) {
+    return _dictMap ? iterator(_dictMap.get(), _dictMap->find(key))
+        : iterator(); 
+}
+
 VtDictionary::const_iterator VtDictionary::find(const string& key) const {
+    return _dictMap ? const_iterator(_dictMap.get(), _dictMap->find(key))
+        : const_iterator(); 
+}
+
+VtDictionary::const_iterator VtDictionary::find(const char* key) const {
     return _dictMap ? const_iterator(_dictMap.get(), _dictMap->find(key))
         : const_iterator(); 
 }

@@ -27,12 +27,21 @@ pxr_library(hgiGL
 
     PUBLIC_CLASSES
         blitEncoder
+        buffer
+        device
+        framebufferCache
         graphicsEncoder
         hgi
-        immediateCommandBuffer
+        ops
+        pipeline
+        resourceBindings
+        shaderFunction
+        shaderProgram
         texture
 
     PUBLIC_HEADERS
         api.h
 
+    RESOURCE_FILES
+        plugInfo.json
 )

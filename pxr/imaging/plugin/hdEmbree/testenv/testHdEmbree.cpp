@@ -150,7 +150,7 @@ void HdEmbree_TestGLDrawing::InitTest()
     _renderDelegate = _rendererPlugin->CreateRenderDelegate();
     TF_VERIFY(_renderDelegate != nullptr);
 
-    _renderIndex = HdRenderIndex::New(_renderDelegate);
+    _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
     TF_VERIFY(_renderIndex != nullptr);
 
     // Construct a new scene delegate to populate the render index.
@@ -362,8 +362,8 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
     glViewport(0, 0, GetWidth(), GetHeight());
 
     // Ask hydra to execute our render task (producing an image).
-    boost::shared_ptr<HdxRenderTask> renderTask =
-        boost::static_pointer_cast<HdxRenderTask>(
+    std::shared_ptr<HdxRenderTask> renderTask =
+        std::static_pointer_cast<HdxRenderTask>(
             _renderIndex->GetTask(SdfPath("/renderTask")));
 
     // For offline rendering, make sure we render to convergence.

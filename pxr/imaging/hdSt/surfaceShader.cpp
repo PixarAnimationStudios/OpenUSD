@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -53,7 +54,7 @@ _IsEnabledMaterialPrimvarFiltering() {
 }
 
 static TfTokenVector
-_CollectPrimvarNames(const HdMaterialParamVector &params);
+_CollectPrimvarNames(const HdSt_MaterialParamVector &params);
 
 HdStSurfaceShader::HdStSurfaceShader()
  : HdStShaderCode()
@@ -71,9 +72,7 @@ HdStSurfaceShader::HdStSurfaceShader()
 {
 }
 
-HdStSurfaceShader::~HdStSurfaceShader()
-{
-}
+HdStSurfaceShader::~HdStSurfaceShader() = default;
 
 void
 HdStSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
@@ -104,7 +103,7 @@ HdStSurfaceShader::GetSource(TfToken const &shaderStageKey) const
     return std::string();
 }
 /*virtual*/
-HdMaterialParamVector const&
+HdSt_MaterialParamVector const&
 HdStSurfaceShader::GetParams() const
 {
     return _params;
@@ -159,40 +158,28 @@ HdStSurfaceShader::BindResources(const int program,
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D, resource->GetTexelsTextureId());
             glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
-            
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_3D) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_3D, resource->GetTexelsTextureId());
             glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
-            
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
             glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
-
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_1D, resource->GetLayoutTextureId());
-
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
-
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_LAYOUT) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_BUFFER, resource->GetLayoutTextureId());
-
-            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         }
     }
     glActiveTexture(GL_TEXTURE0);
@@ -264,7 +251,7 @@ HdStSurfaceShader::_ComputeHash() const
 {
     size_t hash = 0;
     
-    for (HdMaterialParam const& param : _params) {
+    for (HdSt_MaterialParam const& param : _params) {
         if (param.IsFallback())
             boost::hash_combine(hash, param.name.Hash());
     }
@@ -306,7 +293,7 @@ HdStSurfaceShader::SetGeometrySource(const std::string &source)
 }
 
 void
-HdStSurfaceShader::SetParams(const HdMaterialParamVector &params)
+HdStSurfaceShader::SetParams(const HdSt_MaterialParamVector &params)
 {
     _params = params;
     _primvarNames = _CollectPrimvarNames(_params);
@@ -321,8 +308,9 @@ HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 }
 
 void
-HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
-                                  HdResourceRegistrySharedPtr const &resourceRegistry)
+HdStSurfaceShader::SetBufferSources(
+    HdBufferSourceSharedPtrVector &bufferSources,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSources.empty()) {
         _paramArray.reset();
@@ -336,10 +324,10 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
 
             // establish a buffer range
             HdBufferArrayRangeSharedPtr range =
-                    resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                                  HdTokens->materialParams,
-                                                  bufferSpecs,
-                                                  HdBufferArrayUsageHint());
+                resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                    HdTokens->materialParams,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint());
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
@@ -476,11 +464,11 @@ _GetExtraWhitelistedShaderPrimvarNames()
 }
 
 static TfTokenVector
-_CollectPrimvarNames(const HdMaterialParamVector &params)
+_CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 {
     TfTokenVector primvarNames = _GetExtraWhitelistedShaderPrimvarNames();
 
-    for (HdMaterialParam const &param: params) {
+    for (HdSt_MaterialParam const &param: params) {
         if (param.IsFallback()) {
             primvarNames.push_back(param.name);
         } else if (param.IsPrimvar()) {

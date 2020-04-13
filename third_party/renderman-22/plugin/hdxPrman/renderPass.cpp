@@ -248,7 +248,6 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         flipZ[2][2] = -1.0;
         viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        riley::Transform xform;
         if (hdCam) {
             // Use time sampled transforms authored on the scene camera.
             HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
@@ -262,24 +261,32 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                     viewToWorldCorrectionMatrix * xforms.values[i]);
             }
 
-            xform = { unsigned(xforms.count), xf_rt_values.data(),
-                      xforms.times.data() };
+            riley::Transform xform = { unsigned(xforms.count),
+                                       xf_rt_values.data(),
+                                       xforms.times.data() };
+
+            // Commit camera.
+            riley->ModifyCamera(
+                _interactiveContext->cameraId, 
+                &cameraNode,
+                &xform, 
+                camParams);
         } else {
             // Use the framing state as a single time sample.
             float const zerotime = 0.0f;
             RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
                 viewToWorldCorrectionMatrix * viewToWorldMatrix);
 
-            xform = {1, &matrix, &zerotime};
+            riley::Transform xform = {1, &matrix, &zerotime};
+
+            // Commit camera.
+            riley->ModifyCamera(
+                _interactiveContext->cameraId, 
+                &cameraNode,
+                &xform, 
+                camParams);
         }
 
-        // Commit new camera.
-
-        riley->ModifyCamera(
-            _interactiveContext->cameraId, 
-            &cameraNode,
-            &xform, 
-            camParams);
         mgr->DestroyRixParamList(camParams);
         mgr->DestroyRixParamList(projParams);
 

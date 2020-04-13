@@ -24,12 +24,13 @@
 '''
 Module that provides the StageView class.
 '''
+from __future__ import print_function
 
 from math import tan, floor, ceil, radians as rad, isinf
 import os, sys
 from time import time
 
-from qt import QtCore, QtGui, QtWidgets, QtOpenGL
+from .qt import QtCore, QtGui, QtWidgets, QtOpenGL
 
 from pxr import Tf
 from pxr import Gf
@@ -38,13 +39,13 @@ from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-from common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
-                    ReportMetricSize, GetInstanceIndicesForIds,
-                    SelectionHighlightModes, DEBUG_CLIPPING)
-from rootDataModel import RootDataModel
-from selectionDataModel import ALL_INSTANCES, SelectionDataModel
-from viewSettingsDataModel import ViewSettingsDataModel
-from freeCamera import FreeCamera
+from .common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
+                     ReportMetricSize, GetInstanceIndicesForIds,
+                     SelectionHighlightModes, DEBUG_CLIPPING)
+from .rootDataModel import RootDataModel
+from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
+from .viewSettingsDataModel import ViewSettingsDataModel
+from .freeCamera import FreeCamera
 
 # A viewport rectangle to be used for GL must be integer values.
 # In order to loose the least amount of precision the viewport
@@ -105,9 +106,9 @@ class GLSLProgram():
         GL.glLinkProgram(self.program)
 
         if GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS) == GL.GL_FALSE:
-            print GL.glGetShaderInfoLog(vertexShader)
-            print GL.glGetShaderInfoLog(fragmentShader)
-            print GL.glGetProgramInfoLog(self.program)
+            print(GL.glGetShaderInfoLog(vertexShader))
+            print(GL.glGetShaderInfoLog(fragmentShader))
+            print(GL.glGetProgramInfoLog(self.program))
             GL.glDeleteShader(vertexShader)
             GL.glDeleteShader(fragmentShader)
             GL.glDeleteProgram(self.program)
@@ -131,7 +132,7 @@ class Rect():
     @classmethod
     def fromXYWH(cls, xywh):
         self = cls()
-        self.xywh[:] = map(float, xywh[:4])
+        self.xywh[:] = list(map(float, xywh[:4]))
         return self
 
     @classmethod
@@ -418,7 +419,7 @@ class Reticles(Prim2DDrawTask):
         for i in range(5):
             w = 2.6
             h = ascenders[i & 1] + descenders[i & 1]
-            x = croppedViewport[0] - (w / 2) + ((i + 1) * croppedViewport[2]) / 6
+            x = croppedViewport[0] - (w // 2) + ((i + 1) * croppedViewport[2]) // 6
             bottomY = croppedViewport[1] - ascenders[i & 1]
             topY = croppedViewport[1] + croppedViewport[3] - descenders[i & 1]
             prims.append(FilledRect.fromXYWH((x, bottomY, w, h)))
@@ -429,7 +430,7 @@ class Reticles(Prim2DDrawTask):
             h = 2.6
             leftX = croppedViewport[0] - ascenders[i & 1]
             rightX = croppedViewport[0] + croppedViewport[2] - descenders[i & 1]
-            y = croppedViewport[1] - (h / 2) + ((i + 1) * croppedViewport[3]) / 6
+            y = croppedViewport[1] - (h // 2) + ((i + 1) * croppedViewport[3]) // 6
             prims.append(FilledRect.fromXYWH((leftX, y, w, h)))
             prims.append(FilledRect.fromXYWH((rightX, y, w, h)))
 
@@ -532,13 +533,13 @@ class HUD():
         painter = group.painter
         painter.begin(group.qimage)
 
-        from prettyPrint import prettyPrint
+        from .prettyPrint import prettyPrint
         if keys is None:
             keys = sorted(dic.keys())
 
         # find the longest key so we know how far from the edge to print
         # add [0] at the end so that max() never gets an empty sequence
-        longestKeyLen = max([len(k) for k in dic.iterkeys()]+[0])
+        longestKeyLen = max([len(k) for k in dic.keys()]+[0])
         margin = int(longestKeyLen*1.4)
 
         painter.setFont(self._HUDFont)
@@ -546,7 +547,7 @@ class HUD():
         yy = 10 * self._pixelRatio
         lineSpacing = self._HUDLineSpacing * self._pixelRatio
         for key in keys:
-            if not dic.has_key(key):
+            if key not in dic:
                 continue
             line = key.rjust(margin) + ": " + str(prettyPrint(dic[key]))
             # Shadow of text
@@ -829,7 +830,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
 
-        self._dataModel.viewSettings.freeCamera = FreeCamera(True)
+        self._dataModel.viewSettings.freeCamera = FreeCamera(True,
+                                    self._dataModel.viewSettings.freeCameraFOV)
         self._lastComputedGfCamera = None
 
         # prep Mask regions
@@ -854,6 +856,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._renderer = None
         self._renderPauseState = False
+        self._renderStopState = False
         self._reportedContextError = False
         self._renderModeDict = {
             RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
@@ -908,9 +911,10 @@ class StageView(QtOpenGL.QGLWidget):
         # before attempts to use the renderer (e.g. pick()), so we must
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
-            if self.isValid():
-                self._renderer = UsdImagingGL.Engine()
-                self._handleRendererChanged(self.GetCurrentRendererId())
+            if self.context().isValid():
+                if self.context().initialized():
+                    self._renderer = UsdImagingGL.Engine()
+                    self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
@@ -920,6 +924,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
         self._rendererAovName = "color"
         self._renderPauseState = False
+        self._renderStopState = False
         # XXX For HdSt we explicitely enable AOV via SetRendererAov
         # This is because ImagingGL / TaskController are spawned via prims in
         # Presto, so we default AOVs OFF until everything is AOV ready.
@@ -1008,6 +1013,24 @@ class StageView(QtOpenGL.QGLWidget):
 
         return False
 
+    def IsRendererConverged(self):
+        return self._renderer and self._renderer.IsConverged()
+
+    def SetRendererStopped(self, stopped):
+        if self._renderer:
+            if stopped:
+                self._renderStopState = self._renderer.StopRenderer()
+            else:
+                self._renderStopState = not self._renderer.RestartRenderer()
+            self.updateGL()
+
+    def IsStopRendererSupported(self):
+        if self._renderer:
+            if self._renderer.IsStopRendererSupported():
+                return True
+
+        return False
+
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
         (even temporarily) this widget, supply None as 'stage'.'''
@@ -1017,7 +1040,9 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.stage:
             self._stageIsZup = (
                 UsdGeom.GetStageUpAxis(self._dataModel.stage) == UsdGeom.Tokens.z)
-            self._dataModel.viewSettings.freeCamera = FreeCamera(self._stageIsZup)
+            self._dataModel.viewSettings.freeCamera = \
+                    FreeCamera(self._stageIsZup,
+                               self._dataModel.viewSettings.freeCameraFOV)
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
@@ -1182,7 +1207,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glUniform4f(glslProgram.uniformLocations["color"],
                        0.82745, 0.39608, 0.1647, 1)
 
-        GL.glDrawArrays(GL.GL_LINES, 0, len(data)/3)
+        GL.glDrawArrays(GL.GL_LINES, 0, len(data)//3)
 
         GL.glDisableVertexAttribArray(0)
         GL.glUseProgram(0)
@@ -1767,6 +1792,10 @@ class StageView(QtOpenGL.QGLWidget):
             for task in uiTasks:
                 task.Execute(None)
 
+            # check current state of renderer -- (not IsConverged()) means renderer is running
+            if self._renderStopState and (not renderer.IsConverged()):
+                self._renderStopState = False
+
             # ### DRAW HUD ### #
             if self._dataModel.viewSettings.showHUD:
                 self.drawHUD(renderer)
@@ -1836,6 +1865,8 @@ class StageView(QtOpenGL.QGLWidget):
 
         if self._renderPauseState:
             toPrint = {"Hydra": "(paused)"}
+        elif self._renderStopState:
+            toPrint = {"Hydra": "(stopped)"}
         else:
             toPrint = {"Hydra": hydraMode}
             
@@ -1858,7 +1889,7 @@ class StageView(QtOpenGL.QGLWidget):
             rStats = renderer.GetRenderStats()
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
-            if not self._renderPauseState:
+            if not (self._renderPauseState or self._renderStopState):
                 toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
             _addSizeMetric(toPrint, rStats, "GPU mem  ", "gpuMemoryUsed")
             _addSizeMetric(toPrint, rStats, " primvar ", "primvar")
@@ -1870,7 +1901,8 @@ class StageView(QtOpenGL.QGLWidget):
                 toPrint["Samples done "] = rStats["numCompletedSamples"]
 
         # Playback Rate
-        if (not self._renderPauseState) and self._dataModel.viewSettings.showHUD_Performance:
+        if (not (self._renderPauseState or self._renderStopState)) and \
+                            self._dataModel.viewSettings.showHUD_Performance:
             for key in self.fpsHUDKeys:
                 toPrint[key] = self.fpsHUDInfo[key]
         self._hud.updateGroup("BottomLeft",
@@ -1896,7 +1928,9 @@ class StageView(QtOpenGL.QGLWidget):
                     self._lastComputedGfCamera, self._stageIsZup)
             else:
                 self._dataModel.viewSettings.freeCamera = FreeCamera(
-                    self._stageIsZup)
+                    self._stageIsZup,
+                    self._dataModel.viewSettings.freeCameraFOV)
+
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
             # now
@@ -2031,7 +2065,7 @@ class StageView(QtOpenGL.QGLWidget):
                 Gf.Range1d(trueFar/FreeCamera.maxSafeZResolution, trueFar)
             pickResults = self.pick(cameraFrustum)
             if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
-                print "computeAndSetClosestDistance: Needed to call pick() a second time"
+                print("computeAndSetClosestDistance: Needed to call pick() a second time")
 
         if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
             self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
@@ -2040,9 +2074,9 @@ class StageView(QtOpenGL.QGLWidget):
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quintuple:
+        Returns a quartuple:
           selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex, selectedElementIndex
+          selectedInstanceIndex
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
@@ -2076,10 +2110,9 @@ class StageView(QtOpenGL.QGLWidget):
         results = renderer.TestIntersection(
                 pickFrustum.ComputeViewMatrix(),
                 pickFrustum.ComputeProjectionMatrix(),
-                Gf.Matrix4d(1.0),
                 self._dataModel.stage.GetPseudoRoot(), self._renderParams)
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
-            print "Pick results = {}".format(results)
+            print("Pick results = {}".format(results))
 
         return results
 
@@ -2127,29 +2160,13 @@ class StageView(QtOpenGL.QGLWidget):
 
             if inImageBounds:
                 selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex, selectedElementIndex = self.pick(
-                                                                pickFrustum)
+                selectedInstanceIndex = self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
                 selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex, selectedElementIndex = \
-                    None, Sdf.Path.emptyPath, None, None, None
-
-            # The call to TestIntersection will return the path to a master prim
-            # (selectedPrimPath) and its instancer (selectedInstancerPath) if 
-            # the prim is instanced.
-            # Figure out which instance was actually picked and use that as our 
-            # selection in this case.
-            if selectedInstancerPath:
-                instancePrimPath, absInstanceIndex = \
-                    renderer.GetPrimPathFromInstanceIndex(
-                        selectedPrimPath, selectedInstanceIndex)
-                if instancePrimPath:
-                    selectedPrimPath = instancePrimPath
-                    selectedInstanceIndex = absInstanceIndex
-            else:
-                selectedInstanceIndex = ALL_INSTANCES
+                selectedInstanceIndex = \
+                    None, Sdf.Path.emptyPath, None, None
 
             if button:
                 self.signalPrimSelected.emit(

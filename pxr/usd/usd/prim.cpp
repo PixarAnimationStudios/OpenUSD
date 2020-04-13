@@ -67,25 +67,6 @@ UsdPrim::GetChild(const TfToken &name) const
     return GetStage()->GetPrimAtPath(GetPath().AppendChild(name));
 }
 
-SdfPrimSpecHandle
-UsdPrim::GetPrimDefinition() const
-{
-    const TfToken &typeName = GetTypeName();
-    SdfPrimSpecHandle definition;
-
-    if (!typeName.IsEmpty()) {
-        // Look up definition from prim type name.
-        definition = UsdSchemaRegistry::GetPrimDefinition(typeName);
-
-        if (!definition) {
-            // Issue a diagnostic for unknown prim types.
-            TF_WARN("No definition for prim type '%s', <%s>",
-                    typeName.GetText(), GetPath().GetText());
-        }
-    }
-    return definition;
-}
-
 bool
 UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 {
@@ -395,20 +376,17 @@ UsdPrim::_GetPropertyNames(
 
     // If we're including unauthored properties, take names from definition, if
     // present.
+    const UsdPrimDefinition &primDef = _Prim()->GetPrimDefinition();
     if (!onlyAuthored) {   
         if (predicate) {
-            TfTokenVector builtInNames;
-            UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
-                    SdfChildrenKeys->PropertyChildren, &builtInNames);
-
+            const TfTokenVector &builtInNames = primDef.GetPropertyNames();
             for (const auto &builtInName : builtInNames) {
                 if (predicate(builtInName)) {
                     names.push_back(builtInName);
                 }
             }
         } else {
-            UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
-                SdfChildrenKeys->PropertyChildren, &names);
+            names = primDef.GetPropertyNames();
         }
     }
 
@@ -430,11 +408,7 @@ UsdPrim::_GetPropertyNames(
 TfTokenVector
 UsdPrim::GetAppliedSchemas() const
 {
-    SdfTokenListOp appliedSchemas;
-    GetMetadata(UsdTokens->apiSchemas, &appliedSchemas);
-    TfTokenVector result;
-    appliedSchemas.ApplyOperations(&result);
-    return result;
+    return GetPrimDefinition().GetAppliedAPISchemas();
 }
 
 TfTokenVector
@@ -810,7 +784,9 @@ UsdPrim::FindAllRelationshipTargetPaths(
 bool
 UsdPrim::HasVariantSets() const
 {
-    return HasMetadata(SdfFieldKeys->VariantSetNames);
+    // Variant sets can't be defined in schema fallbacks as of yet so we only
+    // need to check for authored variant sets.
+    return HasAuthoredMetadata(SdfFieldKeys->VariantSetNames);
 }
 
 UsdVariantSets
@@ -835,7 +811,7 @@ UsdPrim::GetInherits() const
 bool
 UsdPrim::HasAuthoredInherits() const
 {
-    return HasMetadata(SdfFieldKeys->InheritPaths);
+    return HasAuthoredMetadata(SdfFieldKeys->InheritPaths);
 }
 
 UsdSpecializes
@@ -847,7 +823,7 @@ UsdPrim::GetSpecializes() const
 bool
 UsdPrim::HasAuthoredSpecializes() const
 {
-    return HasMetadata(SdfFieldKeys->Specializes);
+    return HasAuthoredMetadata(SdfFieldKeys->Specializes);
 }
 
 UsdReferences
@@ -859,7 +835,7 @@ UsdPrim::GetReferences() const
 bool
 UsdPrim::HasAuthoredReferences() const
 {
-    return HasMetadata(SdfFieldKeys->References);
+    return HasAuthoredMetadata(SdfFieldKeys->References);
 }
 
 // --------------------------------------------------------------------- //
@@ -971,6 +947,12 @@ UsdPrim::GetMaster() const
     return UsdPrim(masterPrimData, SdfPath());
 }
 
+std::vector<UsdPrim>
+UsdPrim::GetInstances() const
+{
+    return _GetStage()->_GetInstancesForMaster(*this);
+}
+
 bool 
 UsdPrim::_PrimPathIsInMaster() const
 {
@@ -1022,6 +1004,34 @@ UsdPrim::ComputeExpandedPrimIndex() const
             "computing expanded prim index for <%s>", GetPath().GetText()));
     
     return outputs.primIndex;
+}
+
+UsdPrim
+UsdPrim::GetPrimAtPath(const SdfPath& path) const{
+    const SdfPath absolutePath = path.MakeAbsolutePath(GetPath());
+    return GetStage()->GetPrimAtPath(absolutePath);
+}
+
+UsdObject
+UsdPrim::GetObjectAtPath(const SdfPath& path) const{
+    const SdfPath absolutePath = path.MakeAbsolutePath(GetPath());
+    return GetStage()->GetObjectAtPath(absolutePath);
+}
+
+UsdProperty
+UsdPrim::GetPropertyAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdProperty>();
+}
+
+UsdAttribute
+UsdPrim::GetAttributeAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdAttribute>();
+}
+
+
+UsdRelationship
+UsdPrim::GetRelationshipAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdRelationship>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

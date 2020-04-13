@@ -24,6 +24,7 @@
 
 #include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -147,8 +148,9 @@ _ConvertLegacyHdMaterialNetwork(
         if (iter == result->nodes.end()) {
             continue;
         }
-        iter->second.inputConnections[rel.outputName]
-            .emplace_back( HdSt_MaterialConnection{rel.inputId, rel.inputName});
+        std::vector<HdSt_MaterialConnection> &materialConnections =
+            iter->second.inputConnections[rel.outputName];
+        materialConnections.push_back( {rel.inputId, rel.inputName} );
     }
 
     // Transfer primvars:
@@ -396,39 +398,41 @@ _GetPrimvarNameAttributeValue(
     return TfToken();
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeMaterialParamsForUnconnectedParam(
     TfToken const& paramName)
 {
-    HdMaterialParamVector params;
-    HdMaterialParam param;
-    param.paramType = HdMaterialParam::ParamTypeFallback;
+    HdSt_MaterialParamVector params;
+    HdSt_MaterialParam param;
+    param.paramType = HdSt_MaterialParam::ParamTypeFallback;
     param.name = paramName;
-    param.connection = SdfPath();          /*No connection*/
-    param.samplerCoords = TfTokenVector(); /*No UV*/
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.connection = SdfPath();           /*No connection*/
+    param.samplerCoords = TfTokenVector();  /*No UV*/
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeMaterialParamsForAdditionaPrimvar(
     TfToken const& primvarName)
 {
-    HdMaterialParamVector params;
-    HdMaterialParam param;
-    param.paramType = HdMaterialParam::ParamTypeAdditionalPrimvar;
+    HdSt_MaterialParamVector params;
+    HdSt_MaterialParam param;
+    param.paramType = HdSt_MaterialParam::ParamTypeAdditionalPrimvar;
     param.name = primvarName;
-    param.connection = SdfPath();          /*No connection*/
-    param.samplerCoords = TfTokenVector(); /*No UV*/
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.connection = SdfPath();           /*No connection*/
+    param.samplerCoords = TfTokenVector();  /*No UV*/
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeMaterialParamsForPrimvarInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
@@ -436,18 +440,19 @@ _MakeMaterialParamsForPrimvarInput(
     TfToken const& paramName,
     SdfPathSet* visitedNodes)
 {
-    HdMaterialParamVector params;
+    HdSt_MaterialParamVector params;
     if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         node.nodeTypeId, HioGlslfxTokens->glslfx);
 
-    HdMaterialParam param;
-    param.paramType = HdMaterialParam::ParamTypePrimvar;
+    HdSt_MaterialParam param;
+    param.paramType = HdSt_MaterialParam::ParamTypePrimvar;
     param.name = paramName;
     param.connection = SdfPath("primvar." + nodePath.GetName());
-    param.textureType = HdTextureType::Uv  /*No Texture*/;
+    param.textureType = HdTextureType::Uv;  /*No Texture*/
+    param.swizzle = std::string();          /*No swizzle*/
 
     // A node may require 'additional primvars' to function correctly.
     for (auto const& propName: sdrNode->GetAdditionalPrimvarProperties()) {
@@ -459,7 +464,7 @@ _MakeMaterialParamsForPrimvarInput(
         }
     }
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
@@ -484,24 +489,35 @@ _ResolveAssetPath(VtValue const& value)
     return std::string();
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeMaterialParamsForTextureInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
+    TfToken const& outputName,
     TfToken const& paramName,
     SdfPathSet* visitedNodes)
 {
-    HdMaterialParamVector params;
+    HdSt_MaterialParamVector params;
     if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         node.nodeTypeId, HioGlslfxTokens->glslfx);
 
-    HdMaterialParam texParam;
-    texParam.paramType = HdMaterialParam::ParamTypeTexture;
+    HdSt_MaterialParam texParam;
+    texParam.paramType = HdSt_MaterialParam::ParamTypeTexture;
     texParam.name = paramName;
+
+    // Get swizzle metadata if possible
+    if (SdrShaderPropertyConstPtr sdrProperty = sdrNode->GetShaderOutput(
+        outputName)) {
+        NdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
+        auto const& it = propMetadata.find(HdStSdrMetadataTokens->swizzle);
+        if (it != propMetadata.end()) {
+            texParam.swizzle = it->second;
+        }
+    }
 
     // Extract texture file path
     std::string filePath;
@@ -554,7 +570,7 @@ _MakeMaterialParamsForTextureInput(
             auto const& pnIt = network.nodes.find(primvarNodePath);
             HdSt_MaterialNode const& primvarNode = pnIt->second;
 
-            HdMaterialParamVector primvarParams = 
+            HdSt_MaterialParamVector primvarParams = 
                 _MakeMaterialParamsForPrimvarInput(
                     network,
                     primvarNode,
@@ -563,11 +579,11 @@ _MakeMaterialParamsForTextureInput(
                     visitedNodes);
 
             if (!primvarParams.empty()) {
-                HdMaterialParam const& primvarParam = primvarParams.front();
+                HdSt_MaterialParam const& primvarParam = primvarParams.front();
                 // We do not put the primvar connected to the texture into the
                 // material params. We only wanted to extract the primvar name
                 // and put it into the texture's samplerCoords.
-                //    params.emplace_back(std::move(primvarParam));
+                //    params.push_back(std::move(primvarParam));
                 texParam.samplerCoords = primvarParam.samplerCoords;
             }
         }
@@ -589,11 +605,11 @@ _MakeMaterialParamsForTextureInput(
         }
     }
 
-    params.emplace_back(std::move(texParam));
+    params.push_back(std::move(texParam));
     return params;
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeMaterialParamsForFieldInput(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
@@ -601,7 +617,7 @@ _MakeMaterialParamsForFieldInput(
     TfToken const& paramName,
     SdfPathSet* visitedNodes)
 {
-    HdMaterialParamVector params;
+    HdSt_MaterialParamVector params;
     if (visitedNodes->find(nodePath) != visitedNodes->end()) return params;
 
     // Volume Fields act more like a primvar then a texture.
@@ -611,8 +627,8 @@ _MakeMaterialParamsForFieldInput(
     // See also HdStVolume and HdStField for how volume textures are
     // inserted into Storm.
 
-    HdMaterialParam param;
-    param.paramType = HdMaterialParam::ParamTypeField;
+    HdSt_MaterialParam param;
+    param.paramType = HdSt_MaterialParam::ParamTypeField;
     param.name = paramName;
     param.connection = nodePath;
     param.textureType = HdTextureType::Uvw;
@@ -636,11 +652,11 @@ _MakeMaterialParamsForFieldInput(
         }
     }
 
-    params.emplace_back(std::move(param));
+    params.push_back(std::move(param));
     return params;
 }
 
-static HdMaterialParamVector
+static HdSt_MaterialParamVector
 _MakeParamsForInputParameter(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
@@ -650,7 +666,7 @@ _MakeParamsForInputParameter(
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
     // Resolve what is connected to this param (eg. primvar, texture, nothing)
-    // and then make the correct HdMaterialParam for it.
+    // and then make the correct HdSt_MaterialParam for it.
     auto const& conIt = node.inputConnections.find(paramName);
 
     if (conIt != node.inputConnections.end()) {
@@ -665,6 +681,7 @@ _MakeParamsForInputParameter(
             if (upIt != network.nodes.end()) {
 
                 SdfPath const& upstreamPath = upIt->first;
+                TfToken const& upstreamOutputName = con.upstreamOutputName;
                 HdSt_MaterialNode const& upstreamNode = upIt->second;
 
                 SdrShaderNodeConstPtr upstreamSdr = 
@@ -680,6 +697,7 @@ _MakeParamsForInputParameter(
                             network,
                             upstreamNode,
                             upstreamPath,
+                            upstreamOutputName,
                             paramName,
                             visitedNodes);
 
@@ -714,7 +732,7 @@ _MakeParamsForInputParameter(
     return _MakeMaterialParamsForUnconnectedParam(paramName);
 }
 
-static HdMaterialParamVector 
+static HdSt_MaterialParamVector 
 _GatherMaterialParams(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
@@ -732,7 +750,7 @@ _GatherMaterialParams(
     // exclusively. It cannot convert arbitrary material networks to Storm by
     // generating the appropriate glsl code.
 
-    HdMaterialParamVector params;
+    HdSt_MaterialParamVector params;
 
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
@@ -748,17 +766,17 @@ _GatherMaterialParams(
     }
 
     for (TfToken const& inputName : parameters) {
-        HdMaterialParamVector inputParams = _MakeParamsForInputParameter(
+        HdSt_MaterialParamVector inputParams = _MakeParamsForInputParameter(
             network, node, inputName, &visitedNodes);
         params.insert(params.end(), inputParams.begin(), inputParams.end());
     }
 
     // Set fallback values for the inputs on the terminal
-    for (HdMaterialParam& p : params) {
+    for (HdSt_MaterialParam& p : params) {
         p.fallbackValue= _GetParamFallbackValue(network, node, p.name);
     }
 
-    // Create HdMaterialParams for each primvar the terminal says it needs.
+    // Create HdSt_MaterialParams for each primvar the terminal says it needs.
     // Primvars come from 'attributes' in the glslfx and are seperate from
     // the input 'parameters'. We need to create a material param for them so
     // that these primvars survive 'primvar filtering' that discards any unused
@@ -770,7 +788,7 @@ _GatherMaterialParams(
     pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
 
     for (TfToken const& primvarName : pv) {
-        HdMaterialParamVector aPrimvars = 
+        HdSt_MaterialParamVector aPrimvars = 
             _MakeMaterialParamsForAdditionaPrimvar(primvarName);
         params.insert(params.end(), aPrimvars.begin(), aPrimvars.end());
     }
@@ -779,13 +797,11 @@ _GatherMaterialParams(
 }
 
 HdStMaterialNetwork::HdStMaterialNetwork()
+    : _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
 {
 }
 
-HdStMaterialNetwork::~HdStMaterialNetwork()
-{
-
-}
+HdStMaterialNetwork::~HdStMaterialNetwork() = default;
 
 void
 HdStMaterialNetwork::ProcessMaterialNetwork(
@@ -798,6 +814,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     _geometrySource.clear();
     _materialMetadata.clear();
     _materialParams.clear();
+    _materialTag = HdStMaterialTagTokens->defaultMaterialTag;
 
     HdSt_MaterialNetwork surfaceNetwork;
 
@@ -869,7 +886,7 @@ HdStMaterialNetwork::GetMetadata() const
     return _materialMetadata;
 }
 
-HdMaterialParamVector const&
+HdSt_MaterialParamVector const&
 HdStMaterialNetwork::GetMaterialParams() const
 {
     return _materialParams;

@@ -27,7 +27,7 @@ import unittest
 
 class TestUsdRiUtilities(unittest.TestCase):
   def test_RmanConversions(self):
-      from pxr.UsdRi import *
+      from pxr import UsdRi
 
       # Note that we have the old names as the first elements in
       # the list, our conversion test relies on this fact. This is only
@@ -46,12 +46,14 @@ class TestUsdRiUtilities(unittest.TestCase):
         for token in tokens:
           # Convert to renderman values
           self.assertEqual(
-            ConvertToRManFaceVaryingLinearInterpolation(token), rmanValue)
+            UsdRi.ConvertToRManFaceVaryingLinearInterpolation(token), 
+            rmanValue)
 
         # Convert from renderman values
         # Note that we only map to the new tokens.
         self.assertEqual(
-          ConvertFromRManFaceVaryingLinearInterpolation(rmanValue), tokens[0])
+          UsdRi.ConvertFromRManFaceVaryingLinearInterpolation(rmanValue),
+          tokens[0])
 
 if __name__ == "__main__":
   unittest.main()

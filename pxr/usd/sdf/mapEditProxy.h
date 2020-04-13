@@ -190,7 +190,7 @@ private:
         inner_iterator _pos;
     };
 
-    class _PairProxy : boost::totally_ordered<_PairProxy> {
+    class _PairProxy {
     public:
         explicit _PairProxy(This* owner, const Type* data, inner_iterator i) :
                         first(i->first), second(_ValueProxy(owner, data, i)) { }

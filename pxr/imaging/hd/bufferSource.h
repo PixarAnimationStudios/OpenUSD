@@ -31,20 +31,20 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/token.h"
 
-#include <atomic>
-#include <vector>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
+
+#include <atomic>
+#include <memory>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class HdBufferSource;
-typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<HdBufferSource const> HdBufferSourceConstSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
-typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
+using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
+using HdBufferSourceConstSharedPtr = std::shared_ptr<HdBufferSource const>;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
+using HdBufferSourceWeakPtr = std::weak_ptr<HdBufferSource>;
 
 /// \class HdBufferSource
 ///
@@ -133,7 +133,7 @@ public:
 
     /// Returns the vector of chained buffers.
     HD_API
-    virtual HdBufferSourceVector GetChainedBuffers() const;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const;
 
     /// @}
 

@@ -58,7 +58,7 @@ public:
     static std::string GetPrefixForAttributeType(
         UsdShadeAttributeType sourceType);
 
-    /// Given the full name of a shading property, returns it's base name and type.
+    /// Given the full name of a shading attribute, returns it's base name and type.
     USDSHADE_API
     static std::pair<TfToken, UsdShadeAttributeType> 
         GetBaseNameAndType(const TfToken &fullName);

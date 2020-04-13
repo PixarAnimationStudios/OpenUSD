@@ -442,7 +442,7 @@ HdSt_BasisCurvesIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceVector
+HdBufferSourceSharedPtrVector
 HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffers() const
 {
     return { _primitiveParam };

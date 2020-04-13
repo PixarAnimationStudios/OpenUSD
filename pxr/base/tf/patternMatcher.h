@@ -53,7 +53,7 @@ class TfPatternMatcher
     /// Construct an empty (invalid) TfPatternMatcher.
     TF_API TfPatternMatcher();
 
-    TF_API TfPatternMatcher(TfPatternMatcher &&) = default;
+    TF_API TfPatternMatcher(TfPatternMatcher &&) noexcept = default;
     TF_API TfPatternMatcher& operator=(TfPatternMatcher &&) = default;
 
     /// Construct a TfPatternMatcher with a default configuration.  Note that

@@ -641,6 +641,17 @@ Test_TfType()
         TF_AXIOM(m.Clear());
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // Test that types that are declared but not defined are still found by
+    // template type and by typeid.
+    {
+        struct DeclaredButNotDefined {};
+        TfType::Declare<DeclaredButNotDefined>();
+
+        TF_AXIOM(TfType::Find<DeclaredButNotDefined>());
+        TF_AXIOM(TfType::FindByTypeid(typeid(DeclaredButNotDefined)));
+    }
+
     return true;
 }
 

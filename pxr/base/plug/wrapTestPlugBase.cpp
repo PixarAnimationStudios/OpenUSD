@@ -28,6 +28,7 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
+#include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
 using namespace boost::python;

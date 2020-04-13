@@ -157,6 +157,13 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
     if (rhs.IsEmpty()) {
         return lhs;
     }
+    if (lhs.IsHolding<SdfValueBlock>() || rhs.IsHolding<SdfValueBlock>()) {
+        // If the stronger value is a block, return it;
+        // if the weaker value is a block, return the stronger value.
+        return lhs;
+    }
+    // The remaining cases handle type-specific behavior and require
+    // that the types match.
     if (lhs.GetType() != rhs.GetType()) {
         // As long as the caller observes the SdfLayer schema, this
         // should never happen.

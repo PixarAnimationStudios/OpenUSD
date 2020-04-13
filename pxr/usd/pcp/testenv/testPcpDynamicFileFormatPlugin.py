@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Sdf, Pcp, Plug, Vt
 import os, unittest
 
@@ -51,7 +53,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
     def test_FileFormat(self):
 
-        print "\ntest_FileFormat Start\n"
+        print("\ntest_FileFormat Start\n")
 
         # Open the cone.testpcpdynamic file with no arguments. This will
         # read the contents in as a normal sdf file
@@ -115,7 +117,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         Sdf.Layer.Reload(procSphereLayer, True)
         assert procSphereLayer.ExportToString() == baselineProcLayer.ExportToString()
 
-        print "test_FileFormat Success!\n"
+        print("test_FileFormat Success!\n")
             
     def _GeneratePrimIndexPaths(self, rootPrimPath, depth, num, expectedNumPaths, payloadId = None):
         # Helper to generate all the payload paths that need to included to 
@@ -229,7 +231,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                 "Got prim changes %s" % cp.GetPrimChanges()
 
     def test_BasicRead(self):
-        print "\ntest_Read Start\n"
+        print("\ntest_Read Start\n")
 
         # Create a PcpCache for root.sdf. Has a dynamic root prim /RootCone
         rootLayerFile = 'root.sdf'
@@ -263,10 +265,10 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                 {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", 
                  "TestPcp_radius":"6.25"}))
 
-        print "test_BasicRead Success!\n"
+        print("test_BasicRead Success!\n")
 
     def test_Changes(self):
-        print "\ntest_Changes Start\n"
+        print("\ntest_Changes Start\n")
 
         # Create a PcpCache for root.sdf. Has a dynamic root prim /RootSphere
         # and /RootMulti as well.
@@ -436,10 +438,10 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                              ["/RootMulti"])
         self._VerifyNotFoundDynamicPayloads(cache, rootMultiPayloads)
 
-        print "test_Changes Success!\n"
+        print("test_Changes Success!\n")
 
     def test_SubrootRefChange(self):
-        print "\ntest_SubrootRefChange Start\n"
+        print("\ntest_SubrootRefChange Start\n")
 
         # Create a PcpCache for subrootref.sdf. This file contains a single 
         # /Root prim with a subroot reference to a child of /RootMulti in 
@@ -526,7 +528,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                              'TestPcp_argDict', {"1": {"TestPcp_num":3}}, 
                              ['/Root', '/SubrootGeomRef'])
 
-        print "test_SubrootRefChange Success\n"
+        print("test_SubrootRefChange Success\n")
 
 if __name__ == "__main__":
     unittest.main()

@@ -73,6 +73,18 @@ struct Tf_AddBases<TfType::Bases<Bases...>>
     }
 };
 
+template <class T, class BaseTypes>
+TfType const &
+TfType::Declare()
+{
+    // Declare each of the base types.
+    std::vector<TfType> baseTfTypes = Tf_AddBases<BaseTypes>::Declare();
+    // Declare our type T.
+    const std::type_info &typeInfo = typeid(T);
+    const std::string typeName = TfType::GetCanonicalTypeName(typeInfo);
+    return TfType::Declare(typeName, baseTfTypes);
+}
+
 template <typename T, typename BaseTypes>
 TfType const&
 TfType::Define()

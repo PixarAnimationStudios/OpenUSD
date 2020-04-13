@@ -569,11 +569,17 @@ typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy>
     UsdImaging_PurposeCache;
 
 struct UsdImaging_PurposeStrategy {
-    typedef TfToken value_type; // purpose, inherited
+    // For proper inheritance, we need to return the PurposeInfo struct which 
+    // stores whether child prims can inherit the parent's computed purpose 
+    // when they don't have an authored purpose of their own.
+    typedef UsdGeomImageable::PurposeInfo value_type; // purpose, inherited
     typedef UsdAttributeQuery query_type;
 
     static
-    value_type MakeDefault() { return UsdGeomTokens->default_; }
+    value_type MakeDefault() { 
+        // Return the fallback default instead of an empty purpose info.
+        return value_type(UsdGeomTokens->default_, false); 
+    }
 
     static
     query_type MakeQuery(UsdPrim prim, bool *) {
@@ -586,23 +592,42 @@ struct UsdImaging_PurposeStrategy {
     Inherit(UsdImaging_PurposeCache const* owner, 
             UsdPrim prim,
             query_type const* query)
-    { 
+    {
+        // Fallback to parent if the prim isn't imageable or doesn't have a 
+        // purpose attribute. Note that this returns the default purpose if
+        // there's no parent prim.
+        if (!*query) {
+            return *(owner->_GetValue(prim.GetParent()));
+        }
 
-        value_type v = *owner->_GetValue(prim.GetParent());
+        // If the prim has an authored purpose value, we get and use that.
+        if (query->HasAuthoredValue()) {
+            value_type info;
+            query->Get(&info.purpose);
+            info.isInheritable = true;
+            return info;
+        }
 
-        if (v != UsdGeomTokens->default_)
-            return v;
+        // Otherwise we inherit parent's purpose value, but only if the parent's
+        // purpose is inheritable. An inherited purpose is itself inheritable
+        // by child prims..
+        const value_type *v = owner->_GetValue(prim.GetParent());
+        if (v->isInheritable) {
+            return *v;
+        }
 
-        if (*query)
-            query->Get(&v);
-        return v;
+        // Otherwise, get the fallback value. The fallback purpose will not 
+        // be inherited by descendants. 
+        value_type info;
+        query->Get(&info.purpose);
+        return info;
     }
 
     static
     value_type
-    ComputePurpose(UsdPrim const& prim)
+    ComputePurposeInfo(UsdPrim const& prim)
     {
-        return UsdGeomImageable(prim).ComputePurpose();
+        return UsdGeomImageable(prim).ComputePurposeInfo();
     }
 };
 

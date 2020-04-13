@@ -29,7 +29,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,7 +68,7 @@ public:
     void *chooseMacVisual();
 
 public:
-    boost::scoped_ptr<GarchGLPlatformDebugContextPrivate> _private;
+    std::unique_ptr<GarchGLPlatformDebugContextPrivate> _private;
     bool _coreProfile;
 
 protected:

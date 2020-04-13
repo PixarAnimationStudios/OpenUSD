@@ -137,7 +137,7 @@ HdPrman_Volume::_ConvertGeometry(HdPrman_Context *context,
     // here without reading directly from the grid which would require 
     // opening the file (linking with openvdb) or getting the vdb ptr from
     // houdini (linking with the hdk)
-    for (int i = 0; i < fields.size(); ++i)
+    for (size_t i = 0; i < fields.size(); ++i)
     {
         HdVolumeFieldDescriptor const& field = fields[i]; 
         RtUString fieldName = RtUString(field.fieldName.GetText());
@@ -145,7 +145,7 @@ HdPrman_Volume::_ConvertGeometry(HdPrman_Context *context,
     }
 
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, dim, dim, dim);
-    return std::move(primvars);
+    return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

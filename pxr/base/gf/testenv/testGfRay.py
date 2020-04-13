@@ -223,6 +223,16 @@ class TestGfRay(unittest.TestCase):
         (hit, enterDistance, exitDistance) = r.Intersect(box)
         self.assertTrue(hit)
 
+    def test_IntersectOrientedBox(self):
+        # Rotate (1,0,0) to (1,1,1), and translate by (3,3,3)
+        xform = Gf.Matrix4d(Gf.Rotation(Gf.Vec3d(1,0,0), Gf.Vec3d(1,1,1,)), \
+                            Gf.Vec3d(3,3,3))
+        box = Gf.BBox3d(Gf.Range3d(Gf.Vec3d(-1,-1,-1), Gf.Vec3d(1,1,1)), xform)
+        r = Gf.Ray(Gf.Vec3d(0,0,0), Gf.Vec3d(1,1,1))
+        (hit, enterDist, exitDist) = r.Intersect(box)
+        self.assertTrue(hit and Gf.IsClose(enterDist, 2.42264973081, 0.00001) \
+            and Gf.IsClose(exitDist, 3.57735026919, 0.00001))
+
     def test_IntersectSphere(self):
         center = Gf.Vec3d(0,1,0)
         radius = 0.5

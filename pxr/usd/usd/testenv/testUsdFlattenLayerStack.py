@@ -21,8 +21,12 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
+
+from __future__ import print_function
+
 from pxr import Sdf, Usd, Gf, Vt, Plug
 import os, unittest
+
 
 class TestUsdFlattenLayerStack(unittest.TestCase):
     def test_Basic(self):
@@ -35,10 +39,10 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         # Confirm that the tag makde it into the display name.
         self.assertTrue('test.usda' in layer.GetDisplayName())
 
-        print '#'*72
-        print 'Flattened layer:'
-        print layer.ExportToString()
-        print '#'*72
+        print('#'*72)
+        print('Flattened layer:')
+        print(layer.ExportToString())
+        print('#'*72)
 
         # Run the same set of queries against the src and dest stages.
         # They should yield the same results.
@@ -234,6 +238,34 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         assetArrayAttr = prim.GetAttribute('b')
         self.assertEqual(list(assetArrayAttr.Get()), 
                          [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
+
+    def test_ValueBlocks(self):
+        src_stage = Usd.Stage.Open('valueBlocks_root.usda')
+        def replaceWithFoo(layer, s):
+            return 'foo'
+
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='valueBlocks')
+        print(layer.ExportToString())
+        result_stage = Usd.Stage.Open(layer)
+
+        # verify that value blocks worked
+        prim = result_stage.GetPrimAtPath('/Human')
+        a = prim.GetAttribute('a')
+        self.assertEqual(a.Get(), Vt.IntArray(1, (1,)))
+
+        # a strong value block flattens to a value block
+        b = prim.GetAttribute('b')
+        self.assertEqual(b.Get(), None)
+
+        # a value block will block both defaults and time samples
+        c = prim.GetAttribute('c')
+        self.assertEqual(c.Get(), None)
+        self.assertEqual(c.Get(1), None)
+
+        # strong time samples will override a weaker value block
+        d = prim.GetAttribute('d')
+        self.assertEqual(d.Get(1), 789)
 
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.

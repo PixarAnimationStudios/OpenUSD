@@ -41,9 +41,9 @@ public:
     ARCH_API ArchRegex();
     ARCH_API ArchRegex(const std::string& pattern, unsigned int flags = 0);
     ArchRegex(const ArchRegex&) = delete;
-    ARCH_API ArchRegex(ArchRegex&&);
+    ARCH_API ArchRegex(ArchRegex&&) noexcept;
     ArchRegex& operator=(const ArchRegex&) = delete;
-    ARCH_API ArchRegex& operator=(ArchRegex&&);
+    ARCH_API ArchRegex& operator=(ArchRegex&&) noexcept;
     ARCH_API ~ArchRegex();
 
     /// Returns \c true if the regex is valid.

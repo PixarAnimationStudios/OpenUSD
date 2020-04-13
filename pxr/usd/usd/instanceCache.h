@@ -155,6 +155,14 @@ public:
     /// \p path must be either an absolute path or empty.
     static bool IsPathInMaster(const SdfPath& path);
 
+    /// Return true if \p path identifies a master.  
+    static bool IsMasterPath(const SdfPath& path);
+
+    /// Return instance prim indexes registered for \p masterPath, an empty
+    /// vector otherwise
+    std::vector<SdfPath> GetInstancePrimIndexesForMaster(
+            const SdfPath& master) const;
+
     /// Returns the paths of all master prims for instance prim 
     /// indexes registered with this cache.
     std::vector<SdfPath> GetAllMasters() const;
@@ -186,6 +194,13 @@ public:
     /// instance.
     std::vector<SdfPath> 
     GetPrimsInMastersUsingPrimIndexPath(const SdfPath& primIndexPath) const;
+
+    /// Return a vector of pair of master and respective source prim index path 
+    /// for all masters using the prim index at \p primIndexPath or as 
+    /// descendent of \p primIndexPath.
+    std::vector<std::pair<SdfPath, SdfPath>> 
+    GetMastersUsingPrimIndexPathOrDescendents(
+            const SdfPath& primIndexPath) const;
 
     /// Return true if a prim in a master uses the prim index at
     /// \p primIndexPath.

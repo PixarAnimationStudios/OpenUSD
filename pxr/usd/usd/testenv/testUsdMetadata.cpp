@@ -105,6 +105,7 @@ int main() {
         _VerifyMetadata(prim, string("hello"), SdfFieldKeys->Comment);
         _VerifyMetadata(prim, true, SdfFieldKeys->Active);
         _VerifyMetadata(prim, true, SdfFieldKeys->Hidden);
+        _VerifyMetadata(prim, TfToken("DummyType"), SdfFieldKeys->TypeName);
 
         // attribute metadata
         _VerifyMetadata(attr, string("hello"), SdfFieldKeys->Comment);

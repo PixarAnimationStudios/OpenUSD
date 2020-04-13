@@ -128,23 +128,6 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
-bool IsFlipped(MAT4 m)
-{
-    // The sign of the determinant indicates whether m flips handedness
-#if 0
-    return determinant(m) < 0.0;
-#else
-    // XXX: workaround for the possible shader compiler bug on 319 and 340.
-    // swizzle operation on SSBO doesn't work correctly.
-    return (m[0][0] * m[1][1] * m[2][2] +
-            m[0][1] * m[1][2] * m[2][0] +
-            m[0][2] * m[1][0] * m[2][1] -
-            m[0][0] * m[1][2] * m[2][1] -
-            m[0][1] * m[1][0] * m[2][2] -
-            m[0][2] * m[1][1] * m[2][0]) < 0.0;
-#endif
-}
-
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)

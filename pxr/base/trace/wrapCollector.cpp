@@ -26,18 +26,11 @@
 
 #include "pxr/base/trace/collector.h"
 
-#include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/makePyConstructor.h"
-#include "pxr/base/tf/pyLock.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pySingleton.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/object.hpp>
+#include <boost/python/return_value_policy.hpp>
 
 #include <string>
 
@@ -46,6 +39,7 @@ using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using PythonKey = std::string;
+
 static double
 GetElapsedSeconds(TraceEvent::TimeStamp begin, TraceEvent::TimeStamp end)
 {

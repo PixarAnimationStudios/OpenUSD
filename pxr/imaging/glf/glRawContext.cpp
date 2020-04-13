@@ -24,7 +24,6 @@
 /// \file glRawContext.cpp
 
 #include "pxr/imaging/glf/glRawContext.h"
-#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

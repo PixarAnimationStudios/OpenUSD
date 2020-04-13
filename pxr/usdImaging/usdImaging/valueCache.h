@@ -30,7 +30,6 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
 

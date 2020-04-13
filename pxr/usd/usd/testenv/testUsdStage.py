@@ -373,6 +373,8 @@ class TestUsdStage(unittest.TestCase):
             assert(stage.GetMetadata("framesPerSecond") == 48.0)
             assert(stage.HasAuthoredMetadata("framesPerSecond"))
             assert(schemaSpec.GetInfo("framesPerSecond") == fallbackFps)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("framesPerSecond")
 
             assert(stage.GetTimeCodesPerSecond() == fallbackTps)
             assert(stage.HasMetadata("timeCodesPerSecond") and 
@@ -382,6 +384,25 @@ class TestUsdStage(unittest.TestCase):
             assert(stage.GetMetadata("timeCodesPerSecond") == 48.0)
             assert(stage.HasAuthoredMetadata("timeCodesPerSecond"))
             assert(schemaSpec.GetInfo("timeCodesPerSecond") == fallbackTps)
+
+            # Test the interaction between TCPS and FPS.  See the implementation
+            # of UsdStage::GetTimeCodesPerSecond for details.
+            with Usd.EditContext(stage, sessionLayer):
+                stage.SetTimeCodesPerSecond(4)
+                stage.SetFramesPerSecond(2)
+            stage.SetTimeCodesPerSecond(3)
+            stage.SetFramesPerSecond(1)
+            assert(stage.GetTimeCodesPerSecond() == 4)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("timeCodesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 3)
+            stage.ClearMetadata("timeCodesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 2)
+            with Usd.EditContext(stage, sessionLayer):
+                stage.ClearMetadata("framesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == 1)
+            stage.ClearMetadata("framesPerSecond")
+            assert(stage.GetTimeCodesPerSecond() == fallbackTps)
 
     def test_BadGetPrimAtPath(self):
         for fmt in allFormats:
@@ -398,6 +419,33 @@ class TestUsdStage(unittest.TestCase):
 
             # Should get an invalid prim if passed an empty path
             assert(not s.GetPrimAtPath(Sdf.Path.emptyPath))
+
+    def test_GetAtPath(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('GetAtPath.'+fmt)
+            foo = s.DefinePrim('/Foo')
+            y = foo.CreateRelationship('y')
+            x = foo.CreateAttribute('x', Sdf.ValueTypeNames.Int)
+
+            self.assertTrue(foo)
+            self.assertTrue(y)
+            self.assertTrue(x)
+
+            self.assertEqual(foo, s.GetPrimAtPath('/Foo'))
+            self.assertEqual(y, s.GetPropertyAtPath('/Foo.y'))
+            self.assertEqual(x, s.GetPropertyAtPath('/Foo.x'))
+            self.assertEqual(y, s.GetRelationshipAtPath('/Foo.y'))
+            self.assertEqual(x, s.GetAttributeAtPath('/Foo.x'))
+    
+            self.assertFalse(s.GetPropertyAtPath('/Foo'))
+            self.assertFalse(s.GetAttributeAtPath('/Foo.y'))
+            self.assertFalse(s.GetRelationshipAtPath('/Foo.x'))
+
+            self.assertFalse(s.GetAttributeAtPath(Sdf.Path.emptyPath))
+            self.assertFalse(s.GetRelationshipAtPath(Sdf.Path.emptyPath))
+            self.assertFalse(s.GetPropertyAtPath(Sdf.Path.emptyPath))
+            self.assertFalse(s.GetPrimAtPath(Sdf.Path.emptyPath))
+            self.assertFalse(s.GetObjectAtPath(Sdf.Path.emptyPath))
 
     def test_Save(self):
         for fmt in allFormats:

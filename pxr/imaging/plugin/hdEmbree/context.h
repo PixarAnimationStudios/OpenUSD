@@ -40,7 +40,7 @@ class HdRprim;
 /// \class HdEmbreePrototypeContext
 ///
 /// A small bit of state attached to each bit of prototype geometry in embree,
-/// for the benefit of HdEmbreeRenderPass::_TraceRay.
+/// for the benefit of HdEmbreeRenderer::_TraceRay.
 ///
 struct HdEmbreePrototypeContext
 {
@@ -57,7 +57,7 @@ struct HdEmbreePrototypeContext
 /// \class HdEmbreeInstanceContext
 ///
 /// A small bit of state attached to each bit of instanced geometry in embree,
-/// for the benefit of HdEmbreeRenderPass::_TraceRay.
+/// for the benefit of HdEmbreeRenderer::_TraceRay.
 ///
 struct HdEmbreeInstanceContext
 {

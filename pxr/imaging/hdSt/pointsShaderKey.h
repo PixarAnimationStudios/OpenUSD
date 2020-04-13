@@ -28,27 +28,22 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdSt_PointsShaderKey
+struct HdSt_PointsShaderKey : public HdSt_ShaderKey
 {
     HdSt_PointsShaderKey();
     ~HdSt_PointsShaderKey();
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
+    TfToken const &GetGlslfxFilename() const override { return glslfx; }
+    TfToken const *GetVS() const override { return VS; }
+    // Skip TCS, TES and GS stages
     TfToken const *GetFS() const  { return FS; }
 
-    bool IsCullingPass() const { return false; }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    float GetLineWidth() const { return 0; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
     }
 

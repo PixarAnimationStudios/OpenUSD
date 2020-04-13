@@ -224,8 +224,8 @@ public:
     static SdfFileFormatConstPtr FindById(
         const TfToken& formatId);
 
-    /// Returns the file format instance that supports the specified file \p
-    /// extension. If a format with a matching extension is not found, this
+    /// Returns the file format instance that supports the extension for
+    /// \p path.  If a format with a matching extension is not found, this
     /// returns a null file format pointer.
     ///
     /// An extension may be handled by multiple file formats, but each
@@ -235,7 +235,7 @@ public:
     /// will be returned.
     SDF_API
     static SdfFileFormatConstPtr FindByExtension(
-        const std::string& extension,
+        const std::string& path,
         const std::string& target = std::string());
 
 protected:
@@ -256,7 +256,7 @@ protected:
         const SdfSchemaBase& schema);
 
     /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
-    SDF_API SdfFileFormat(
+    SdfFileFormat(
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,
@@ -280,7 +280,7 @@ protected:
         const SdfSchemaBase& schema);
 
     /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
-    SDF_API SdfFileFormat(
+    SdfFileFormat(
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,

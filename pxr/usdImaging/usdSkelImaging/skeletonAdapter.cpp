@@ -1244,7 +1244,7 @@ UsdSkelImagingSkeletonAdapter::_GetSkinnedPrimPoints(
     // we expect the skinned prim adapter to derive from GprimAdapter.
     UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skinnedPrim);
     auto gprimAdapter =
-        boost::dynamic_pointer_cast<UsdImagingGprimAdapter> (adapter);
+        std::dynamic_pointer_cast<UsdImagingGprimAdapter> (adapter);
     if (!TF_VERIFY(gprimAdapter)) {
         return VtVec3fArray();
     }

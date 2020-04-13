@@ -37,18 +37,22 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdStDrawItem;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
-typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class HdStResourceRegistry>
-    HdStResourceRegistrySharedPtr;
+using Hd_VertexAdjacencySharedPtr = std::shared_ptr<class Hd_VertexAdjacency>;
+using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
+using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
+
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+
+using HdStResourceRegistrySharedPtr =
+    std::shared_ptr<class HdStResourceRegistry>;
 
 /// A subdivision surface or poly-mesh object.
 ///
@@ -96,8 +100,9 @@ protected:
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
-                HdBufferSpecVector const &bufferSpecs,
-                HdBufferArrayRangeSharedPtr const &existing,
+                HdBufferSpecVector const &updatedOrAddedSpecs,
+                HdBufferSpecVector const &removedSpecs,
+                HdBufferArrayRangeSharedPtr const &curRange,
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
 
@@ -132,12 +137,6 @@ protected:
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdMeshReprDesc &desc);
-
-    void _PopulateTopologyVisibility(
-            HdStDrawItem *drawItem,
-            HdStResourceRegistrySharedPtr const &resourceRegistry,
-            HdChangeTracker *changeTracker,
-            HdMeshTopology const& meshTopology);
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
@@ -190,11 +189,8 @@ private:
     bool _doubleSided : 1;
     bool _flatShadingEnabled : 1;
     bool _displacementEnabled : 1;
-    bool _smoothNormals : 1;
-    bool _packedSmoothNormals : 1;
     bool _limitNormals : 1;
     bool _sceneNormals : 1;
-    bool _flatNormals : 1;
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
 };

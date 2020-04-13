@@ -33,14 +33,17 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/scoped_ptr.hpp>
-
 #include <string>
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Version 1 - Added HioGlslfx::ExtractImports
+//
+#define HIO_GLSLFX_API_VERSION 1
 
 #define HIO_GLSLFX_TOKENS       \
     (glslfx)                    \
@@ -204,6 +207,13 @@ public:
     /// Return the computed hash value based on the string
     size_t GetHash() const { return _hash; }
 
+    /// Extract imported files from the specified glslfx file. The returned
+    /// paths are as-authored, in the order of declaration, with possible
+    /// duplicates. This function is not recursive -- it only extracts imports
+    /// from the specified \p filename.
+    HIO_API
+    static std::vector<std::string> ExtractImports(const std::string& filename);
+
 private:
     class _ParseContext {
     public:
@@ -239,8 +249,6 @@ private:
 private:
     _ParseContext _globalContext;
 
-    std::set<std::string> _importedFiles;
-
     typedef std::map<std::string, std::string> _SourceMap;
 
     _SourceMap _sourceMap;
@@ -248,7 +256,7 @@ private:
     std::vector<std::string> _configOrder;
     std::set<std::string> _seenFiles;
 
-    boost::scoped_ptr<HioGlslfxConfig> _config;
+    std::unique_ptr<HioGlslfxConfig> _config;
 
     bool _valid;
     std::string _invalidReason; // if _valid is false, reason why

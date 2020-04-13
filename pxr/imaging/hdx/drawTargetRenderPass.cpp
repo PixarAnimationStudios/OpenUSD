@@ -66,6 +66,7 @@ HdxDrawTargetRenderPass::HdxDrawTargetRenderPass(HdRenderIndex *index)
  , _drawTarget()
  , _drawTargetContext()
  , _collectionObjectVersion(0)
+ , _hasDependentDrawTargets(false)
 {
 }
 
@@ -94,6 +95,18 @@ void
 HdxDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
 {
     _renderPass.SetRprimCollection(col);
+}
+
+bool
+HdxDrawTargetRenderPass::HasDependentDrawTargets() const
+{
+    return _hasDependentDrawTargets;
+}
+
+void
+HdxDrawTargetRenderPass::SetHasDependentDrawTargets(bool value)
+{
+    _hasDependentDrawTargets = value;
 }
 
 void

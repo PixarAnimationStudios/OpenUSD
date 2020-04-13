@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
@@ -54,38 +55,38 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
     }
 
     HdStBufferArrayRangeGLSharedPtr srcRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
-    HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
+    HdStBufferArrayRangeGLSharedPtr dstRange =
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
 
-    HdStBufferResourceGLSharedPtr src = srcRange->GetResource(_name);
-    HdStBufferResourceGLSharedPtr dst = range->GetResource(_name);
+    HdStBufferResourceGLSharedPtr srcRes = srcRange->GetResource(_name);
+    HdStBufferResourceGLSharedPtr dstRes = dstRange->GetResource(_name);
 
-    if (!TF_VERIFY(src)) {
+    if (!TF_VERIFY(srcRes)) {
         return;
     }
-    if (!TF_VERIFY(dst)) {
-        return;
-    }
-
-    // XXX:Arrays: Should this support array-valued types?
-    // Commented-out version that would support arrays:
-    // int srcBytesPerElement = HdDataSizeOfTupleType(src->GetTupleType());
-    // int dstBytesPerElement = HdDataSizeOfTupleType(dst->GetTupleType());
-    int srcBytesPerElement = HdDataSizeOfType(src->GetTupleType().type);
-    int dstBytesPerElement = HdDataSizeOfType(dst->GetTupleType().type);
-
-    if (!TF_VERIFY(srcBytesPerElement == dstBytesPerElement)) {
+    if (!TF_VERIFY(dstRes)) {
         return;
     }
 
-    GLintptr readOffset = _src->GetOffset() *  srcBytesPerElement;
-    GLintptr writeOffset = range->GetOffset() * dstBytesPerElement;
-    GLsizeiptr copySize = _src->GetNumElements() * srcBytesPerElement;
+    int srcResSize = HdDataSizeOfTupleType(srcRes->GetTupleType()) *
+                     srcRange->GetNumElements();
+    int dstResSize = HdDataSizeOfTupleType(dstRes->GetTupleType()) *
+                     dstRange->GetNumElements();
 
-    if (!TF_VERIFY(_src->GetNumElements() <= range->GetNumElements())) {
-         return;
+    if (!TF_VERIFY(srcResSize <= dstResSize)) {
+        // The number of elements in the BAR *can* differ during migration.
+        // One example is during mesh refinement when migration is necessary,
+        // and we copy only the unrefined data over.
+        TF_CODING_ERROR("Migration error for %s: Source resource (%d) size is "
+            "larger than destination resource size (%d)\n",
+            _name.GetText(), srcResSize, dstResSize);
+        return;
     }
+
+    GLintptr readOffset = srcRange->GetByteOffset(_name) + srcRes->GetOffset();
+    GLintptr writeOffset = dstRange->GetByteOffset(_name) + dstRes->GetOffset();
+    GLsizeiptr copySize = srcResSize;
 
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
@@ -98,8 +99,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         // be allocated, so the check for resource allocation has been moved
         // until after the copy size check.
 
-        GLint srcId = src->GetId();
-        GLint dstId = dst->GetId();
+        GLint srcId = srcRes->GetId();
+        GLint dstId = dstRes->GetId();
 
         if (!TF_VERIFY(srcId)) {
             return;
@@ -123,6 +124,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
             glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
         }
     }
+
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 int
@@ -135,7 +138,7 @@ void
 HdStCopyComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     HdStBufferArrayRangeGLSharedPtr srcRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
 
     specs->emplace_back(_name, srcRange->GetResource(_name)->GetTupleType());
 }

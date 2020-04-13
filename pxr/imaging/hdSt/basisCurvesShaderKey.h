@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -52,7 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// example ORIENTED only makes sense with RIBBON. In the future, we hope to 
 /// eliminate NormalStyle, perhaps by merging the (RIBBON, ROUND) mode into a 
 /// more automatic HALFTUBE and by relying more on materials for HAIR.
-struct HdSt_BasisCurvesShaderKey
+struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
 {
     enum DrawStyle{
         POINTS,       // Draws only the control vertices.
@@ -67,27 +68,21 @@ struct HdSt_BasisCurvesShaderKey
         ROUND         // Generated camera oriented normal as a tube
     };
 
-
-
     HdSt_BasisCurvesShaderKey(TfToken const &type, TfToken const &basis,                              
                               DrawStyle drawStyle, NormalStyle normalStyle,
                               bool basisWidthInterpolation,
                               bool basisNormalInterpolation,
-                              TfToken shadingTerminal);
+                              TfToken shadingTerminal,
+                              bool hasAuthoredTopologicalVisibility);
     ~HdSt_BasisCurvesShaderKey();
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return TCS; }
-    TfToken const *GetTES() const { return TES; }
-    TfToken const *GetGS() const  { return NULL; }
-    TfToken const *GetFS() const  { return FS; }
+    TfToken const &GetGlslfxFilename() const override { return glslfx; }
+    TfToken const *GetVS() const override  { return VS; }
+    TfToken const *GetTCS() const override { return TCS; }
+    TfToken const *GetTES() const override { return TES; }
+    TfToken const *GetFS() const override { return FS; }
 
-    bool IsCullingPass() const { return false; }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    float GetLineWidth() const { return 0; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override { 
         return primType; 
     }
 
@@ -96,7 +91,7 @@ struct HdSt_BasisCurvesShaderKey
     TfToken VS[7];
     TfToken TCS[4];
     TfToken TES[8];
-    TfToken FS[7];
+    TfToken FS[8];
 };
 
 

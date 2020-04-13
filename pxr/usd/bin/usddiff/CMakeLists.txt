@@ -126,8 +126,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect \
-                CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.drc"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.drc"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -142,8 +141,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithUsdaAndDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect \
-        CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.usda"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.usda"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -159,9 +157,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithReferredDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten \
-        CubeWithGenericPrimvarsCompressed.usda \
-        CubeWithGenericPrimvarsCompressed.usda"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten CubeWithGenericPrimvarsCompressed.usda CubeWithGenericPrimvarsCompressed.usda"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -177,8 +173,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithDracoUsdz
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten \
-	ComplexSetCompressed.usdz ComplexSetCompressed.usdz"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten ComplexSetCompressed.usdz ComplexSetCompressed.usdz"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin

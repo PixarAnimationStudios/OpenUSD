@@ -176,6 +176,16 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewInfGeom
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewShaderEdits
+        DEST testusdviewShaderEdits
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewPrimvarEdits
+        DEST testusdviewPrimvarEdits
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -382,6 +392,18 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewInfGeom
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInfGeom.py infGeom.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewShaderEdits
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewShaderEdits.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewPrimvarEdits
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimvarEdits.py primvars.usda"
         EXPECTED_RETURN_CODE 0
     )
 

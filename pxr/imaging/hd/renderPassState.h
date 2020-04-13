@@ -39,13 +39,14 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+
 class HdCamera;
 
 /// \class HdRenderPassState

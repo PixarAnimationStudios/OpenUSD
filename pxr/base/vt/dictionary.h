@@ -30,6 +30,7 @@
 #include "pxr/base/vt/api.h"
 #include "pxr/base/vt/value.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 
@@ -38,6 +39,7 @@
 
 #include <initializer_list>
 #include <iosfwd>
+#include <map>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,7 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
 ///
 class VtDictionary {
-    typedef std::map<std::string, VtValue> _Map;
+    typedef std::map<std::string, VtValue, std::less<>> _Map;
     std::unique_ptr<_Map> _dictMap;
 
 public:
@@ -197,6 +199,10 @@ public:
     VT_API
     size_type count(const std::string& key) const;
 
+    /// Counts the number of elements whose key is \p key. 
+    VT_API
+    size_type count(const char* key) const;
+
     /// Erases the element whose key is \p key. 
     VT_API
     size_type erase(const std::string& key);
@@ -219,7 +225,15 @@ public:
 
     /// Finds an element whose key is \p key. 
     VT_API
+    iterator find(const char* key);
+
+    /// Finds an element whose key is \p key. 
+    VT_API
     const_iterator find(const std::string& key) const;
+
+    /// Finds an element whose key is \p key. 
+    VT_API
+    const_iterator find(const char* key) const;
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
     VT_API
@@ -370,6 +384,20 @@ VtDictionaryIsHolding( const VtDictionary &dictionary,
     return i->second.IsHolding<T>();
 }
 
+/// \overload
+template <typename T>
+bool
+VtDictionaryIsHolding( const VtDictionary &dictionary,
+                       const char *key )
+{
+    VtDictionary::const_iterator i = dictionary.find(key);
+    if ( i == dictionary.end() ) {
+        return false;
+    }
+
+    return i->second.IsHolding<T>();
+}
+
 
 /// Return a value held in a VtDictionary by reference.
 ///
@@ -390,6 +418,21 @@ VtDictionaryGet( const VtDictionary &dictionary,
     if (ARCH_UNLIKELY(i == dictionary.end())) {
         TF_FATAL_ERROR("Attempted to get value for key '" + key +
                        "', which is not in the dictionary.");
+    }
+
+    return i->second.Get<T>();
+}
+
+/// \overload
+template <typename T>
+const T &
+VtDictionaryGet( const VtDictionary &dictionary,
+                 const char *key )
+{
+    VtDictionary::const_iterator i = dictionary.find(key);
+    if (ARCH_UNLIKELY(i == dictionary.end())) {
+        TF_FATAL_ERROR("Attempted to get value for key '%s', "
+                       "which is not in the dictionary.", key);
     }
 
     return i->second.Get<T>();
@@ -438,7 +481,19 @@ T VtDictionaryGet( const VtDictionary &dictionary,
     VtDictionary::const_iterator i = dictionary.find(key);
     if (i == dictionary.end() || !i->second.IsHolding<T>())
         return def.val;
-    return i->second.Get<T>();
+    return i->second.UncheckedGet<T>();
+}
+
+/// \overload
+template <class T, class U>
+T VtDictionaryGet( const VtDictionary &dictionary,
+                   const char *key,
+                   Vt_DefaultHolder<U> const &def )
+{
+    VtDictionary::const_iterator i = dictionary.find(key);
+    if (i == dictionary.end() || !i->second.IsHolding<T>())
+        return def.val;
+    return i->second.UncheckedGet<T>();
 }
 
 

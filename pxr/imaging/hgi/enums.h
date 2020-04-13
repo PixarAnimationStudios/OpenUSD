@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef uint32_t HgiBits;
+using HgiBits = uint32_t;
 
 
 /// \enum HgiDeviceCapabilitiesBits
@@ -42,12 +42,34 @@ typedef uint32_t HgiBits;
 ///   The device must be capable of presenting graphics to screen</li>
 /// </ul>
 ///
-enum HgiDeviceCapabilitiesBits : HgiBits {
+enum HgiDeviceCapabilitiesBits : HgiBits
+{
     HgiDeviceCapabilitiesBitsPresentation = 1 << 0,
 };
 
-typedef HgiBits HgiDeviceCapabilities;
+using HgiDeviceCapabilities = HgiBits;
 
+/// \enum HgiTextureType
+///
+/// Describes the kind of texture.
+///
+/// <ul>
+/// <li>HgiTextureType1D:
+///   A one-dimensional texture.</li>
+/// <li>HgiTextureType2D:
+///   A two-dimensional texture.</li>
+/// <li>HgiTextureType3D:
+///   A three-dimensional texture.</li>
+/// </ul>
+///
+enum HgiTextureType
+{
+    HgiTextureType1D = 0,
+    HgiTextureType2D,
+    HgiTextureType3D,
+
+    HgiTextureTypeCount
+};
 
 /// \enum HgiTextureUsageBits
 ///
@@ -63,28 +85,34 @@ typedef HgiBits HgiDeviceCapabilities;
 ///   The texture is sampled from in a shader (image load / sampling)</li>
 /// <li>HgiTextureUsageBitsShaderWrite:
 ///   The texture is written into from in a shader (image store)</li>
+///
+/// <li>HgiTextureUsageCustomBitsBegin:
+///   This bit (and any bit after) can be used to attached custom, backend
+///   specific  bits to the usage bit. </li>
 /// </ul>
 ///
-enum HgiTextureUsageBits : HgiBits {
-    HgiTextureUsageBitsColorTarget  = 1 << 0,
-    HgiTextureUsageBitsDepthTarget  = 1 << 1,
-    HgiTextureUsageBitsShaderRead   = 1 << 2,
-    HgiTextureUsageBitsShaderWrite  = 1 << 3,
+enum HgiTextureUsageBits : HgiBits
+{
+    HgiTextureUsageBitsColorTarget = 1 << 0,
+    HgiTextureUsageBitsDepthTarget = 1 << 1,
+    HgiTextureUsageBitsShaderRead  = 1 << 2,
+    HgiTextureUsageBitsShaderWrite = 1 << 3,
+
+    HgiTextureUsageCustomBitsBegin = 1 << 4,
 };
 
-typedef HgiBits HgiTextureUsage;
-
+using HgiTextureUsage = HgiBits;
 
 /// \enum HgiSampleCount
 ///
 /// Sample count for multi-sampling
 ///
-enum HgiSampleCount {
+enum HgiSampleCount
+{
     HgiSampleCount1  = 1,
     HgiSampleCount4  = 4,
     HgiSampleCount16 = 16,
 };
-
 
 /// \enum HgiAttachmentLoadOp
 ///
@@ -99,12 +127,14 @@ enum HgiSampleCount {
 ///   Previous pixel data is loaded into attachment prior to rendering.</li>
 /// </ul>
 ///
-enum HgiAttachmentLoadOp {
+enum HgiAttachmentLoadOp
+{
     HgiAttachmentLoadOpDontCare = 0,
     HgiAttachmentLoadOpClear,
     HgiAttachmentLoadOpLoad,
+    
+    HgiAttachmentLoadOpCount
 };
-
 
 /// \enum HgiAttachmentStoreOp
 ///
@@ -117,11 +147,244 @@ enum HgiAttachmentLoadOp {
 ///   The attachment pixel data is stored in memory.</li>
 /// </ul>
 ///
-enum HgiAttachmentStoreOp {
+enum HgiAttachmentStoreOp
+{
     HgiAttachmentStoreOpDontCare = 0,
     HgiAttachmentStoreOpStore,
+    
+    HgiAttachmentStoreOpCount
 };
 
+/// \enum HgiBufferUsageBits
+///
+/// Describes the properties and usage of the buffer.
+///
+/// <ul>
+/// <li>HgiBufferUsageUniform:
+///   Shader uniform buffer </li>
+/// <li>HgiBufferUsageIndex32:
+///   Topology 32 bit indices.</li>
+/// <li>HgiBufferUsageVertex:
+///   Vertex attributes.</li>
+/// <li>HgiBufferUsageStorage:
+///   Shader storage buffer / Argument buffer.</li>
+///
+/// <li>HgiBufferUsageCustomBitsBegin:
+///   This bit (and any bit after) can be used to attached custom, backend
+///   specific  bits to the usage bit. </li>
+/// </ul>
+///
+enum HgiBufferUsageBits : HgiBits
+{
+    HgiBufferUsageUniform = 1 << 0,
+    HgiBufferUsageIndex32 = 1 << 1,
+    HgiBufferUsageVertex  = 1 << 2,
+    HgiBufferUsageStorage = 1 << 3,
+
+    HgiBufferUsageCustomBitsBegin = 1 << 4,
+};
+using HgiBufferUsage = HgiBits;
+
+/// \enum HgiShaderStage
+///
+/// Describes the stage a shader function operates in.
+///
+/// <ul>
+/// <li>HgiShaderStageVertex:
+///   Vertex Shader.</li>
+/// <li>HgiShaderStageFragment:
+///   Fragment Shader.</li>
+/// <li>HgiShaderStageCompute:
+///   Compute Shader.</li>
+/// </ul>
+///
+enum HgiShaderStageBits : HgiBits
+{
+    HgiShaderStageVertex   = 1 << 0,
+    HgiShaderStageFragment = 1 << 1,
+    HgiShaderStageCompute  = 1 << 2
+};
+using HgiShaderStage = HgiBits;
+
+/// \enum HgiPipelineType
+///
+/// Describes the intended bind point for this pipeline.
+///
+/// <ul>
+/// <li>HgiPipelineTypeGraphics:
+///   The pipeline is meant to be bound to the graphics pipeline.</li>
+/// <li>HgiPipelineTypeCompute:
+///   The pipeline is meant to be bound to the compute pipeline.</li>
+/// </ul>
+///
+enum HgiPipelineType
+{
+    HgiPipelineTypeGraphics = 0,
+    HgiPipelineTypeCompute,
+
+    HgiPipelineTypeCount
+};
+
+/// \enum HgiBindResourceType
+///
+/// Describes the type of the resource to be bound.
+///
+/// <ul>
+/// <li>HgiBindResourceTypeSampler:
+///   Sampler</li>
+/// <li>HgiBindResourceTypeCombinedImageSampler:
+///   Image and sampler combined in one.</li>
+/// <li>HgiBindResourceTypeSamplerImage:
+///   Image for use with sampling ops.</li>
+/// <li>HgiBindResourceTypeStorageImage:
+///   Storage image used for image store/load ops (Unordered Access View).</li>
+/// <li>HgiBindResourceTypeUniformBuffer:
+///   Uniform buffer (UBO).</li>
+/// <li>HgiBindResourceTypeStorageBuffer:
+///   Shader storage buffer (SSBO).</li>
+/// </ul>
+///
+enum HgiBindResourceType
+{
+    HgiBindResourceTypeSampler = 0,
+    HgiBindResourceTypeCombinedImageSampler,
+    HgiBindResourceTypeSamplerImage,
+    HgiBindResourceTypeStorageImage,
+    HgiBindResourceTypeUniformBuffer,
+    HgiBindResourceTypeStorageBuffer,
+
+    HgiBindResourceTypeCount
+};
+
+/// \enum HgiPolygonMode
+///
+/// Controls polygon mode during rasterization
+///
+/// <ul>
+/// <li>HgiPolygonModeFill:
+///   Polygons are filled.</li>
+/// <li>HgiPolygonModeLine:
+///   Polygon edges are drawn as line segments.</li>
+/// <li>HgiPolygonModePoint:
+///   Polygon vertices are drawn as points.</li>
+/// </ul>
+///
+enum HgiPolygonMode
+{
+    HgiPolygonModeFill = 0,
+    HgiPolygonModeLine,
+    HgiPolygonModePoint,
+
+    HgiPolygonModeCount
+};
+
+/// \enum HgiCullMode
+///
+/// Controls primitive (faces) culling.
+///
+/// <ul>
+/// <li>HgiPolygonModeNone:
+///   No primitive are discarded.</li>
+/// <li>HgiPolygonModeFront:
+///   Front-facing primitive are discarded.</li>
+/// <li>HgiPolygonModeBack:
+///   Back-facing primitive are discarded.</li>
+/// <li>HgiPolygonModeFrontAndBack:
+///   All primitive are discarded.</li>
+/// </ul>
+///
+enum HgiCullMode
+{
+    HgiCullModeNone = 0,
+    HgiCullModeFront,
+    HgiCullModeBack,
+    HgiCullModeFrontAndBack,
+
+    HgiCullModeCount
+};
+
+/// \enum HgiWinding
+///
+/// Determines the front-facing orientation of a primitive (face).
+///
+/// <ul>
+/// <li>HgiWindingClockwise:
+///   Primitives with clockwise vertex-order are front facing.</li>
+/// <li>HgiWindingCounterClockwise:
+///   Primitives with counter-clockwise vertex-order are front facing.</li>
+/// </ul>
+///
+enum HgiWinding
+{
+    HgiWindingClockwise = 0,
+    HgiWindingCounterClockwise,
+
+    HgiWindingCount
+};
+
+
+/// \enum HgiBlendOp
+///
+/// Blend operations
+///
+enum HgiBlendOp
+{
+    HgiBlendOpAdd = 0,
+    HgiBlendOpSubtract,
+    HgiBlendOpReverseSubtract,
+    HgiBlendOpMin,
+    HgiBlendOpMax,
+
+    HgiBlendOpCount
+};
+
+/// \enum HgiBlendFactor
+///
+/// Blend factors
+///
+enum HgiBlendFactor
+{
+    HgiBlendFactorZero = 0,
+    HgiBlendFactorOne,
+    HgiBlendFactorSrcColor,
+    HgiBlendFactorOneMinusSrcColor,
+    HgiBlendFactorDstColor,
+    HgiBlendFactorOneMinusDstColor,
+    HgiBlendFactorSrcAlpha,
+    HgiBlendFactorOneMinusSrcAlpha,
+    HgiBlendFactorDstAlpha,
+    HgiBlendFactorOneMinusDstAlpha,
+    HgiBlendFactorConstantColor,
+    HgiBlendFactorOneMinusConstantColor,
+    HgiBlendFactorConstantAlpha,
+    HgiBlendFactorOneMinusConstantAlpha,
+    HgiBlendFactorSrcAlphaSaturate,
+    HgiBlendFactorSrc1Color,
+    HgiBlendFactorOneMinusSrc1Color,
+    HgiBlendFactorSrc1Alpha,
+    HgiBlendFactorOneMinusSrc1Alpha,
+
+    HgiBlendFactorCount
+};
+
+
+/// \enum HgiCompareFunction
+///
+/// Compare functions.
+///
+enum HgiCompareFunction
+{
+    HgiCompareFunctionNever = 0,
+    HgiCompareFunctionLess,
+    HgiCompareFunctionEqual,
+    HgiCompareFunctionLEqual,
+    HgiCompareFunctionGreater,
+    HgiCompareFunctionNotEqual,
+    HgiCompareFunctionGEqual,
+    HgiCompareFunctionAlways,
+
+    HgiCompareFunctionCount
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

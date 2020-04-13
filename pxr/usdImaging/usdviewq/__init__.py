@@ -21,11 +21,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+
 import sys, argparse, os
 
-from qt import QtWidgets
-from common import Timer
-from appController import AppController
+from .qt import QtWidgets
+from .common import Timer
+from .appController import AppController
 
 from pxr import UsdAppUtils
 
@@ -242,10 +245,9 @@ class Launcher(object):
                     # perhaps we should error here? For now just pre-pending
                     # root, and printing warning...
                     from pxr import Sdf
-                    print >> sys.stderr, (
-                        "WARNING: camera path %r was not absolute, prepending "
-                        "%r to make it absolute" % (str(camPath),
-                            str(Sdf.Path.absoluteRootPath)))
+                    print("WARNING: camera path %r was not absolute, prepending "
+                          "%r to make it absolute" % (str(camPath),
+                              str(Sdf.Path.absoluteRootPath)), file=sys.stderr)
                     arg_parse_result.camera = camPath.MakeAbsolutePath(
                         Sdf.Path.absoluteRootPath)
 
@@ -284,19 +286,8 @@ class Launcher(object):
         if arg_parse_result.clearSettings:
             AppController.clearSettings()
 
-        # Find the resource directory
-        resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
-
         # Create the Qt application
         app = QtWidgets.QApplication(sys.argv)
-
-        # Apply the style sheet to it
-        sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-
-        # Qt style sheet accepts only forward slashes as path separators
-        sheetString = sheet.read().replace('RESOURCE_DIR',
-                                           resourceDir.replace("\\", "/"))
-        app.setStyleSheet(sheetString)
 
         contextCreator = lambda usdFile: self.GetResolverContext(usdFile)
         appController = AppController(arg_parse_result, contextCreator)

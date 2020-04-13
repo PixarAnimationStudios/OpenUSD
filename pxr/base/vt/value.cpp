@@ -338,47 +338,48 @@ ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
 
 bool
 VtValue::IsArrayValued() const {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() && v->_info.Get()->isArray;
+    if (IsEmpty()) {
+        return false;
+    }
+    if (ARCH_UNLIKELY(_IsProxy())) {
+        return _info->IsArrayValued(_storage);
+    }
+    return _info->isArray;
 }
 
 const Vt_ShapeData*
 VtValue::_GetShapeData() const
 {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() ?
-        v->_info.Get()->GetShapeData(v->_storage) : nullptr;
+    return _info.GetLiteral() ? _info.Get()->GetShapeData(_storage) : nullptr;
 }
 
 size_t
 VtValue::_GetNumElements() const
 {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() ?
-        v->_info.Get()->GetNumElements(v->_storage) : 0;
+    return _info.GetLiteral() ? _info.Get()->GetNumElements(_storage) : 0;
 }
 
 std::type_info const &
 VtValue::GetTypeid() const {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() ?
-        v->_info.Get()->typeInfo : typeid(void);
+    return _info.GetLiteral() ?
+        _info.Get()->GetProxiedTypeid(_storage) : typeid(void);
 }
 
 std::type_info const &
 VtValue::GetElementTypeid() const {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() ?
-        v->_info.Get()->elementTypeInfo : typeid(void);
+    return _info.GetLiteral() ?
+        _info.Get()->GetElementTypeid(_storage) : typeid(void);
 }
 
 TfType
 VtValue::GetType() const
 {
-    if (ARCH_UNLIKELY(_IsProxy()))
-        return _info.Get()->GetProxiedType(_storage);
-
-    TfType t = TfType::Find(GetTypeid());
+    if (IsEmpty()) {
+        return TfType::Find<void>();
+    }
+    TfType t = ARCH_UNLIKELY(_IsProxy()) ?
+        _info->GetProxiedType(_storage) :
+        TfType::FindByTypeid(_info->typeInfo);
     if (t.IsUnknown()) {
         TF_WARN("Returning unknown type for VtValue with unregistered "
                 "C++ type %s", ArchGetDemangled(GetTypeid()).c_str());
@@ -389,6 +390,8 @@ VtValue::GetType() const
 std::string
 VtValue::GetTypeName() const
 {
+    // XXX Why do we do this differently?  In the proxy case we don't want to
+    // require a type_info, but why not just always go thru TfType?
     if (ARCH_UNLIKELY(_IsProxy()))
         return GetType().GetTypeName();
     else
@@ -398,16 +401,21 @@ VtValue::GetTypeName() const
 bool
 VtValue::CanHash() const
 {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() && v->_info.Get()->isHashable;
+    if (IsEmpty()) {
+        return true;
+    }
+    if (ARCH_UNLIKELY(_IsProxy())) {
+        return _info->CanHash(_storage);
+    }
+    return _info->isHashable;
 }
 
 size_t
 VtValue::GetHash() const {
-    if (IsEmpty())
+    if (IsEmpty()) {
         return 0;
+    }
     size_t h = _info->Hash(_storage);
-    boost::hash_combine(h, GetTypeid().hash_code());
     return h;
 }
 
@@ -459,12 +467,23 @@ VtValue::_EqualityImpl(VtValue const &rhs) const
 
         VtValue const *proxy = _IsProxy() ? this : &rhs;
         VtValue const *nonProxy = _IsProxy() ? &rhs : this;
-        VtValue const *resolvedProxy = proxy->_ResolveProxy();
-        return !resolvedProxy->IsEmpty() &&
-            nonProxy->_info->Equal(nonProxy->_storage, resolvedProxy->_storage);
+
+        void const *proxiedObj =
+            proxy->_info->GetProxiedObjPtr(proxy->_storage);
+        return proxiedObj &&
+            nonProxy->_info->EqualPtr(nonProxy->_storage, proxiedObj);
     }
 
-    // Otherwise compare typeids and if they match dispatch to the held type.
+    if (ARCH_UNLIKELY(_IsProxy() && rhs._IsProxy())) {
+        // We have two different proxy types.  In this case we just unbox them
+        // both into VtValues and compare.
+        return GetType() == rhs.GetType() &&
+            _info->GetProxiedAsVtValue(_storage) == 
+            rhs._info->GetProxiedAsVtValue(rhs._storage);
+    }
+
+    // Otherwise there are not proxies involved -- compare typeids and if they
+    // match dispatch to the held type.
     return TfSafeTypeCompare(GetTypeid(), rhs.GetTypeid()) &&
         _info->Equal(_storage, rhs._storage);
 }
@@ -478,9 +497,8 @@ operator<<(std::ostream &out, const VtValue &self) {
 TfPyObjWrapper
 VtValue::_GetPythonObject() const
 {
-    VtValue const *v = _ResolveProxy();
-    return v->_info.GetLiteral() ?
-        v->_info.Get()->GetPyObj(v->_storage) : TfPyObjWrapper();
+    return _info.GetLiteral() ?
+        _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 

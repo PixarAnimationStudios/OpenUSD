@@ -132,6 +132,9 @@ UsdImagingIndexProxy::_RemovePrimInfoDependency(SdfPath const& cachePath)
         primInfo->usdPrim.GetPath());
     for (auto it = range.first; it != range.second; ++it) {
         if (it->second == cachePath) {
+            TF_DEBUG(USDIMAGING_CHANGES).
+                Msg("[Revert dependency] <%s> -> <%s>\n",
+                    it->first.GetText(), it->second.GetText());
             _delegate->_dependencyInfo.erase(it);
             break;
         }
@@ -242,6 +245,28 @@ UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 { 
     // Repopulation is deferred to enable batch processing in parallel.
     _usdPathsToRepopulate.push_back(usdPath); 
+}
+
+void
+UsdImagingIndexProxy::Refresh(SdfPath const& cachePath)
+{
+    _AddTask(cachePath);
+}
+
+void
+UsdImagingIndexProxy::_UniqueifyPathsToRepopulate()
+{
+    if (_usdPathsToRepopulate.empty()) {
+        return;
+    }
+
+    std::sort(_usdPathsToRepopulate.begin(), _usdPathsToRepopulate.end());
+    auto last = std::unique(_usdPathsToRepopulate.begin(),
+                            _usdPathsToRepopulate.end(),
+                            [](SdfPath const &l, SdfPath const &r) {
+                                return r.HasPrefix(l);
+                            });
+    _usdPathsToRepopulate.erase(last, _usdPathsToRepopulate.end());
 }
 
 void

@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 # section 1
 from pxr import Usd, UsdGeom, Vt
 
@@ -49,12 +51,12 @@ assert extentAttr.Get() == expected
 radiusAttr = sphere.GetAttribute('radius')
 radiusAttr.Set(2)
 extentAttr.Set(extentAttr.Get() * 2)
-print stage.GetRootLayer().ExportToString()
+print(stage.GetRootLayer().ExportToString())
 
 # section 5
 from pxr import UsdGeom
 sphereSchema = UsdGeom.Sphere(sphere)
 color = sphereSchema.GetDisplayColorAttr()
 color.Set([(0,0,1)])
-print stage.GetRootLayer().ExportToString()
+print(stage.GetRootLayer().ExportToString())
 stage.GetRootLayer().Save()

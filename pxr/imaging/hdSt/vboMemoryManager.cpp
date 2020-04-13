@@ -25,7 +25,6 @@
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include <boost/make_shared.hpp>
 #include <vector>
 
 #include "pxr/base/arch/hash.h"
@@ -57,7 +56,7 @@ HdStVBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return boost::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
+    return std::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
         role, bufferSpecs, usageHint);
 }
 
@@ -65,7 +64,7 @@ HdStVBOMemoryManager::CreateBufferArray(
 HdBufferArrayRangeSharedPtr
 HdStVBOMemoryManager::CreateBufferArrayRange()
 {
-    return boost::make_shared<_StripedBufferArrayRange>();
+    return std::make_shared<_StripedBufferArrayRange>();
 }
 
 
@@ -99,7 +98,7 @@ HdStVBOMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _StripedBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedBufferArray> (bufferArray);
+        std::static_pointer_cast<_StripedBufferArray> (bufferArray);
     return bufferArray_->GetBufferSpecs();
 }
 
@@ -114,7 +113,7 @@ HdStVBOMemoryManager::GetResourceAllocation(
     size_t gpuMemoryUsed = 0;
 
     _StripedBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedBufferArray> (bufferArray);
+        std::static_pointer_cast<_StripedBufferArray> (bufferArray);
 
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceGLSharedPtr const & resource = resIt->second;
@@ -284,7 +283,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
     _StripedBufferArraySharedPtr curRangeOwner_ =
-        boost::static_pointer_cast<_StripedBufferArray> (curRangeOwner);
+        std::static_pointer_cast<_StripedBufferArray> (curRangeOwner);
 
     if (!TF_VERIFY(GetResources().size() ==
                       curRangeOwner_->GetResources().size())) {
@@ -376,7 +375,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                 HdStGLBufferRelocator relocator(curId, newId);
                 TF_FOR_ALL (it, ranges) {
                     _StripedBufferArrayRangeSharedPtr range =
-                        boost::static_pointer_cast<_StripedBufferArrayRange>(*it);
+                        std::static_pointer_cast<_StripedBufferArrayRange>(*it);
                     if (!range) {
                         TF_CODING_ERROR("_StripedBufferArrayRange "
                                         "expired unexpectedly.");
@@ -401,7 +400,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                     int newSize = range->GetNumElements();
                     GLsizeiptr copySize =
                         std::min(oldSize, newSize) * bytesPerElement;
-                    int oldOffset = range->GetOffset();
+                    int oldOffset = range->GetElementOffset();
                     if (copySize > 0) {
                         GLintptr readOffset = oldOffset * bytesPerElement;
                         GLintptr writeOffset = *newOffsetIt * bytesPerElement;
@@ -431,12 +430,12 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     // update ranges
     for (size_t idx = 0; idx < ranges.size(); ++idx) {
         _StripedBufferArrayRangeSharedPtr range =
-            boost::static_pointer_cast<_StripedBufferArrayRange>(ranges[idx]);
+            std::static_pointer_cast<_StripedBufferArrayRange>(ranges[idx]);
         if (!range) {
             TF_CODING_ERROR("_StripedBufferArrayRange expired unexpectedly.");
             continue;
         }
-        range->SetOffset(newOffsets[idx]);
+        range->SetElementOffset(newOffsets[idx]);
         range->SetCapacity(range->GetNumElements());
     }
     _needsReallocation = false;
@@ -679,7 +678,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
                     bufferSource->GetName().GetText(), srcSize, dstSize);
             srcSize = dstSize;
         }
-        GLintptr vboOffset = bytesPerElement * _offset;
+        GLintptr vboOffset = bytesPerElement * _elementOffset;
 
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
@@ -699,6 +698,22 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     }
 }
 
+int
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetByteOffset(
+    TfToken const& resourceName) const
+{
+    if (!TF_VERIFY(_stripedBufferArray)) return 0;
+    HdStBufferResourceGLSharedPtr VBO =
+        _stripedBufferArray->GetResource(resourceName);
+
+    if (!VBO || (VBO->GetId() == 0 && _numElements > 0)) {
+        TF_CODING_ERROR("VBO doesn't exist for %s", resourceName.GetText());
+        return 0;
+    }
+
+    return (int) _GetByteOffset(VBO);
+}
+
 VtValue
 HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) const
 {
@@ -715,7 +730,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) co
         return result;
     }
 
-    GLintptr vboOffset = HdDataSizeOfTupleType(VBO->GetTupleType()) * _offset;
+    GLintptr vboOffset = _GetByteOffset(VBO);
 
     result = HdStGLUtils::ReadBuffer(VBO->GetId(),
                                    VBO->GetTupleType(),
@@ -778,7 +793,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::SetBufferArray(HdBufferArray *bu
 void
 HdStVBOMemoryManager::_StripedBufferArrayRange::DebugDump(std::ostream &out) const
 {
-    out << "[StripedBAR] offset = " << _offset
+    out << "[StripedBAR] offset = " << _elementOffset
         << ", numElements = " << _numElements
         << ", capacity = " << _capacity
         << "\n";
@@ -788,6 +803,13 @@ const void *
 HdStVBOMemoryManager::_StripedBufferArrayRange::_GetAggregation() const
 {
     return _stripedBufferArray;
+}
+
+size_t
+HdStVBOMemoryManager::_StripedBufferArrayRange::_GetByteOffset(
+    HdStBufferResourceGLSharedPtr const& resource) const
+{
+    return HdDataSizeOfTupleType(resource->GetTupleType()) * _elementOffset;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

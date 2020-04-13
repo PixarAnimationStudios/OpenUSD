@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>650</width>
-    <height>134</height>
+    <width>654</width>
+    <height>151</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,18 +18,6 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>650</width>
-    <height>0</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>650</width>
-    <height>134</height>
-   </size>
   </property>
   <property name="comment" stdset="0">
    <string>
@@ -78,8 +66,6 @@
         <widget class="QLabel" name="propertyLegendLabelNoValue">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -121,8 +107,6 @@
         <widget class="QLabel" name="propertyLegendLabelDefault">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -164,8 +148,6 @@
         <widget class="QLabel" name="propertyLegendLabelTimeSample">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -207,8 +189,6 @@
         <widget class="QLabel" name="propertyLegendLabelFallback">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -284,8 +264,6 @@
         <widget class="QLabel" name="propertyLegendLabelValueClips">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -330,8 +308,6 @@
         <widget class="QLabel" name="propertyLegendAttrPlainDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -369,8 +345,6 @@
         <widget class="QLabel" name="propertyLegendRelPlainDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -408,8 +382,6 @@
         <widget class="QLabel" name="propertyLegendCompDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -451,8 +423,6 @@
         <widget class="QLabel" name="propertyLegendConnDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -496,8 +466,6 @@
          </property>
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -539,8 +507,6 @@
         <widget class="QLabel" name="inheritedPropertyText">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <italic>false</italic>
           </font>
          </property>
@@ -592,8 +558,6 @@
         <widget class="QLabel" name="propertyLegendAttrWithConnDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -631,8 +595,6 @@
         <widget class="QLabel" name="propertyLegendRelWithTargetDesc">
          <property name="font">
           <font>
-           <family>Gotham Rounded</family>
-           <pointsize>9</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>

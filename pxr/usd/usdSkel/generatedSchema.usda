@@ -3,7 +3,8 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
     customLayerData = {
         string[] appliedAPISchemas = ["SkelBindingAPI"]
-        string[] multipleApplyAPISchemas = []
+        dictionary multipleApplyAPISchemas = {
+        }
     }
 )
 
@@ -55,41 +56,12 @@ class SkelRoot "SkelRoot" (
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = '''Purpose is a concept we have found useful in our pipeline for 
-        classifying geometry into categories that can each be independently
-        included or excluded from traversals of prims on a stage, such as
-        rendering or bounding-box computation traversals.  The fallback
-        purpose, default indicates that a prim has "no special purpose"
-        and should generally be included in all traversals.  Subtrees rooted
-        at a prim with purpose render should generally only be included
-        when performing a "final quality" render.  Subtrees rooted at a prim
-        with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
-        subtrees rooted at a prim with purpose guide should generally
-        only be included when an interactive application has been explicitly
-        asked to "show guides". 
-        
-        In the previous paragraph, when we say "subtrees rooted at a prim",
-        we mean the most ancestral or tallest subtree that has an authored,
-        non-default opinion.  If the purpose of </RootPrim> is set to 
-        "render", then the effective purpose of </RootPrim/ChildPrim> will
-        be "render" even if that prim has a different authored value for
-        purpose.  <b>See ComputePurpose() for details of how purpose 
-        inherits down namespace</b>.
-        
-        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
-        accept combinations of included purposes as an input.
-        
-        Purpose render can be useful in creating "light blocker"
-        geometry for raytracing interior scenes.  Purposes render and
-        proxy can be used together to partition a complicated model
-        into a lightweight proxy representation for interactive use, and a
-        fully realized, potentially quite heavy, representation for rendering.
-        One can use UsdVariantSets to create proxy representations, but doing
-        so requires that we recompose parts of the UsdStage in order to change
-        to a different runtime level of detail, and that does not interact
-        well with the needs of multithreaded rendering. Purpose provides us with
-        a better tool for dynamic, interactive complexity management.'''
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -175,41 +147,12 @@ class Skeleton "Skeleton" (
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = '''Purpose is a concept we have found useful in our pipeline for 
-        classifying geometry into categories that can each be independently
-        included or excluded from traversals of prims on a stage, such as
-        rendering or bounding-box computation traversals.  The fallback
-        purpose, default indicates that a prim has "no special purpose"
-        and should generally be included in all traversals.  Subtrees rooted
-        at a prim with purpose render should generally only be included
-        when performing a "final quality" render.  Subtrees rooted at a prim
-        with purpose proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
-        subtrees rooted at a prim with purpose guide should generally
-        only be included when an interactive application has been explicitly
-        asked to "show guides". 
-        
-        In the previous paragraph, when we say "subtrees rooted at a prim",
-        we mean the most ancestral or tallest subtree that has an authored,
-        non-default opinion.  If the purpose of </RootPrim> is set to 
-        "render", then the effective purpose of </RootPrim/ChildPrim> will
-        be "render" even if that prim has a different authored value for
-        purpose.  <b>See ComputePurpose() for details of how purpose 
-        inherits down namespace</b>.
-        
-        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
-        accept combinations of included purposes as an input.
-        
-        Purpose render can be useful in creating "light blocker"
-        geometry for raytracing interior scenes.  Purposes render and
-        proxy can be used together to partition a complicated model
-        into a lightweight proxy representation for interactive use, and a
-        fully realized, potentially quite heavy, representation for rendering.
-        One can use UsdVariantSets to create proxy representations, but doing
-        so requires that we recompose parts of the UsdStage in order to change
-        to a different runtime level of detail, and that does not interact
-        well with the needs of multithreaded rendering. Purpose provides us with
-        a better tool for dynamic, interactive complexity management.'''
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
     )
     uniform matrix4d[] restTransforms (
         doc = """Specifies the rest-pose transforms of each joint in

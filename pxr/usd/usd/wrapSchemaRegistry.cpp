@@ -23,12 +23,14 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/primDefinition.h"
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pySingleton.h"
 
 #include <boost/python.hpp>
 
@@ -38,74 +40,83 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static bool
-_WrapIsAppliedAPISchema(const TfType &schemaType)
+static UsdPrimDefinition *
+_WrapBuildComposedPrimDefinition(const UsdSchemaRegistry &self,
+    const TfToken &primType, const TfTokenVector &appliedAPISchemas) 
 {
-    return UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType);
-}
-
-static bool
-_WrapIsMultipleApplyAPISchema(const TfType &schemaType)
-{
-    return UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(
-            schemaType);
+    return self.BuildComposedPrimDefinition(primType, appliedAPISchemas).release();
 }
 
 void wrapUsdSchemaRegistry()
 {
-    class_<UsdSchemaRegistry>("SchemaRegistry", no_init)
+    typedef UsdSchemaRegistry This;
+    typedef TfWeakPtr<UsdSchemaRegistry> ThisPtr;
 
-        .def("GetSchematics", UsdSchemaRegistry::GetSchematics,
-             return_value_policy<return_by_value>())
-        .staticmethod("GetSchematics")
+    class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
+        .def(TfPySingleton())
 
-        .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfToken &))
-             &UsdSchemaRegistry::GetPrimDefinition,
-             arg("primType"))
-        .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfType &))
-             &UsdSchemaRegistry::GetPrimDefinition,
-             arg("primType"))
-        .staticmethod("GetPrimDefinition")
+        .def("GetSchemaTypeName",
+             (TfToken (This::*)(const TfType &) const)
+                &This::GetSchemaTypeName,
+             arg("schemaType"))
 
-        .def("GetPropertyDefinition", &UsdSchemaRegistry::GetPropertyDefinition,
-             (arg("primType"), arg("propName")))
-        .staticmethod("GetPropertyDefinition")
-
-        .def("GetAttributeDefinition",
-             &UsdSchemaRegistry::GetAttributeDefinition,
-             (arg("primType"), arg("attrName")))
-        .staticmethod("GetAttributeDefinition")
-
-        .def("GetRelationshipDefinition",
-             &UsdSchemaRegistry::GetRelationshipDefinition,
-             (arg("primType"), arg("relName")))
-        .staticmethod("GetRelationshipDefinition")
-
-        .def("GetDisallowedFields",
-             &UsdSchemaRegistry::GetDisallowedFields,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetDisallowedFields")
+        .def("IsDisallowedField",
+             &This::IsDisallowedField,
+             (arg("fieldName")))
+        .staticmethod("IsDisallowedField")
 
         .def("IsTyped",
-             &UsdSchemaRegistry::IsTyped,
+             &This::IsTyped,
              (arg("primType")))
         .staticmethod("IsTyped")
 
         .def("IsConcrete",
-             &UsdSchemaRegistry::IsConcrete,
+             (bool (This::*)(const TfType &) const)
+             &This::IsConcrete,
              (arg("primType")))
-        .staticmethod("IsConcrete")
+        .def("IsConcrete",
+             (bool (This::*)(const TfToken &) const)
+             &This::IsConcrete,
+             (arg("primType")))
 
-        .def("IsAppliedAPISchema", &_WrapIsAppliedAPISchema,
+        .def("IsAppliedAPISchema", 
+             (bool (This::*)(const TfType &) const)
+             &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
-        .staticmethod("IsAppliedAPISchema")
-
-        .def("IsMultipleApplyAPISchema", &_WrapIsMultipleApplyAPISchema,
+        .def("IsAppliedAPISchema", 
+             (bool (This::*)(const TfToken &) const)
+             &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
-        .staticmethod("IsMultipleApplyAPISchema")
 
-        .def("GetTypeFromName", &UsdSchemaRegistry::GetTypeFromName, 
+        .def("IsMultipleApplyAPISchema", 
+             (bool (This::*)(const TfType &) const)
+             &This::IsMultipleApplyAPISchema,
+             (arg("apiSchemaType")))
+        .def("IsMultipleApplyAPISchema", 
+             (bool (This::*)(const TfToken &) const)
+             &This::IsMultipleApplyAPISchema,
+             (arg("apiSchemaType")))
+
+        .def("GetTypeFromName", &This::GetTypeFromName, 
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
+
+        .def("FindConcretePrimDefinition", 
+             &This::FindConcretePrimDefinition,
+             (arg("typeName")),
+             return_internal_reference<>())
+
+        .def("FindAppliedAPIPrimDefinition", 
+             &This::FindAppliedAPIPrimDefinition,
+             (arg("typeName")),
+             return_internal_reference<>())
+
+        .def("GetEmptyPrimDefinition", 
+             &This::GetEmptyPrimDefinition,
+             return_internal_reference<>())
+
+        .def("BuildComposedPrimDefinition", 
+             &_WrapBuildComposedPrimDefinition,
+             return_value_policy<manage_new_object>())
         ;
 }

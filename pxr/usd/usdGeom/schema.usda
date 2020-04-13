@@ -116,41 +116,12 @@ class "Imageable" (
     
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a concept we have found useful in our pipeline for 
-        classifying geometry into categories that can each be independently
-        included or excluded from traversals of prims on a stage, such as
-        rendering or bounding-box computation traversals.  The fallback
-        purpose, \\em default indicates that a prim has "no special purpose"
-        and should generally be included in all traversals.  Subtrees rooted
-        at a prim with purpose \\em render should generally only be included
-        when performing a "final quality" render.  Subtrees rooted at a prim
-        with purpose \\em proxy should generally only be included when 
-        performing a lightweight proxy render (such as openGL).  Finally,
-        subtrees rooted at a prim with purpose \\em guide should generally
-        only be included when an interactive application has been explicitly
-        asked to "show guides". 
-        
-        In the previous paragraph, when we say "subtrees rooted at a prim",
-        we mean the most ancestral or tallest subtree that has an authored,
-        non-default opinion.  If the purpose of </RootPrim> is set to 
-        "render", then the effective purpose of </RootPrim/ChildPrim> will
-        be "render" even if that prim has a different authored value for
-        purpose.  <b>See ComputePurpose() for details of how purpose 
-        inherits down namespace</b>.
-        
-        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
-        accept combinations of included purposes as an input.
-        
-        Purpose \\em render can be useful in creating "light blocker"
-        geometry for raytracing interior scenes.  Purposes \\em render and
-        \\em proxy can be used together to partition a complicated model
-        into a lightweight proxy representation for interactive use, and a
-        fully realized, potentially quite heavy, representation for rendering.
-        One can use UsdVariantSets to create proxy representations, but doing
-        so requires that we recompose parts of the UsdStage in order to change
-        to a different runtime level of detail, and that does not interact
-        well with the needs of multithreaded rendering. Purpose provides us with
-        a better tool for dynamic, interactive complexity management."""
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See \\ref UsdGeom_ImageablePurpose for more detail about how 
+        \\em purpose is computed and used.""" 
     )
     rel proxyPrim (
         doc = """The \\em proxyPrim relationship allows us to link a
@@ -1124,13 +1095,16 @@ class "Curves" (
         }
     }
     inherits = </PointBased>
-    doc = """Base class for BasisCurves and NurbsCurves.  The BasisCurves
-             schema is designed to be analagous to offline renderers' notion
-             of batched curves (such as the classical RIB definition via
-             Basis and Curves statements), while the NurbsCurve schema
-             is designed to be analgous to the NURBS curves found in packages
-             like Maya and Houdini while retaining their consistency with the 
-             RenderMan specification for NURBS Patches."""
+    doc = """Base class for UsdGeomBasisCurves, UsdGeomNurbsCurves, and
+             UsdGeomHermiteCurves.  The BasisCurves schema is designed to be
+             analagous to offline renderers' notion of batched curves (such as
+             the classical RIB definition via Basis and Curves statements),
+             while the NurbsCurve schema is designed to be analgous to the
+             NURBS curves found in packages like Maya and Houdini while
+             retaining their consistency with the RenderMan specification for
+             NURBS Patches. HermiteCurves are useful for the
+             interchange of animation guides and paths.
+             """
 ) {
     # topology attributes
     int[] curveVertexCounts (
@@ -1365,7 +1339,11 @@ class BasisCurves "BasisCurves" (
 
     uniform token basis = "bezier" (
         allowedTokens = ["bezier", "bspline", "catmullRom", "hermite", "power"]
-        doc = """The basis specifies the vstep and matrix used for cubic interpolation.""")
+        doc = """The basis specifies the vstep and matrix used for cubic 
+        interpolation.  \\note The 'hermite' and 'power' tokens have been
+        marked as deprecated for the 20.05 release of USD and are targeted
+        for removal in the 20.08 release. We've provided UsdGeomHermiteCurves
+        as an alternative for the 'hermite' basis.""")
 
     uniform token wrap = "nonperiodic" (
         allowedTokens = ["nonperiodic", "periodic", "pinned"]
@@ -2113,4 +2091,42 @@ class "XformCommonAPI"
     }
 )
 {
+}
+
+class HermiteCurves "HermiteCurves" (
+    inherits = </Curves>
+    doc = """This schema specifies a cubically hermite interpolated curve as
+    sometimes used for defining guides for animation. While hermite curves can
+    be useful because they interpolate their points, they are not well supported
+    by high-end renderers for imaging. Therefore, while we include this schema
+    for interchange, we strongly recommend the use of UsdGeomBasisCurves as
+    the representation of curves intended to be rendered (ie. hair or grass).
+    Hermite curves can be converted to a Bezier representation (though not
+    losslessly).
+
+    \\section UsdGeomHermiteCurves_Interpolation Point Interpolation
+    
+    The initial cubic curve segment is defined by the first two points and
+    first two tangents. Additional segments are defined by additional 
+    point / tangent pairs.  The number of segments for non-batched hermite
+    curve would be len(hermite.points) - 1.  The total number of segments
+    for the batched UsdGeomHermiteCurves representation is
+    len(points) - len(curveVertexCounts).
+
+    \\section UsdGeomHermiteCurves_Primvars Primvar, Width, and Normal Interpolation
+
+    Primvar interpolation is not well specified for this type as it is not
+    intended as a rendering representation. We suggest that per point
+    primvars would be linearly interpolated across the point and should 
+    be tagged as 'varying'.
+
+    It is not immediately clear how to specify cubic or 'vertex' interpolation
+    for this type, as we lack a specification for primvar tangents. This
+    also means that width and normal interpolation should be restricted to
+    varying (linear), uniform (per curve element), or constant (per prim).
+    """
+) {
+    vector3f[] tangents = [] (
+        doc = """Defines the outgoing trajectory tangent for each point. 
+                 Tangents should be the same size as the points attribute.""")
 }

@@ -98,8 +98,10 @@ Plug_ReadPlugInfo(
     const std::function<void (const Plug_RegistrationMetadata&)>& addPlugin,
     Plug_TaskArena* taskArena);
 
-/// Sets the paths to the bootstrap plug-path JSON files.
-void Plug_SetPaths(const std::vector<std::string>&);
+/// Sets the paths to the bootstrap plugInfo JSON files, also any diagnostic
+/// messages that should be reported when plugins are registered (if any).
+void Plug_SetPaths(const std::vector<std::string>&,
+                   const std::vector<std::string>&);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

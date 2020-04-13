@@ -187,7 +187,7 @@ UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
     return result;
 }
 
-NdrStringVec
+const NdrStringVec&
 UsdMtlxStandardLibraryPaths()
 {
     static const auto materialxLibraryPaths =

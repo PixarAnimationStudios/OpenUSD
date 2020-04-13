@@ -30,6 +30,7 @@
 #include "pxr/imaging/glf/testGLContext.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -40,6 +41,9 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hdx/unitTestDelegate.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -92,8 +96,12 @@ private:
 
 static void CameraAndLightTest()
 {
+    std::unique_ptr<Hgi> hgi(Hgi::GetPlatformDefaultHgi());
+    HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
+
     HdStRenderDelegate renderDelegate;
-    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    std::unique_ptr<HdRenderIndex> index(
+        HdRenderIndex::New(&renderDelegate, {&driver}));
     TF_VERIFY(index);
     std::unique_ptr<Hdx_UnitTestDelegate> delegate(
                                          new Hdx_UnitTestDelegate(index.get()));
@@ -108,8 +116,8 @@ static void CameraAndLightTest()
         new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;
 
-    HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
-                                                               renderPassState);
+    HdTaskSharedPtr drawTask = std::make_shared<Hd_TestTask>(renderPass,
+                                                             renderPassState);
     HdTaskSharedPtrVector tasks = { drawTask };
 
     GfMatrix4d tx(1.0f);

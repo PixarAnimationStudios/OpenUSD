@@ -95,6 +95,8 @@ struct HdxPrman_InteractiveContext : public HdPrman_Context
 
     // Active render viewports
     std::vector<riley::RenderView> renderViews;
+    riley::IntegratorId GetIntegrator();
+    void SetIntegrator(riley::IntegratorId integratorId);
 
     // Full option description
     RtParamList _options;

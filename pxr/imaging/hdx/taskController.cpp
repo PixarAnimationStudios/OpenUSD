@@ -216,7 +216,10 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
 
 HdxTaskController::~HdxTaskController()
 {
-    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _freeCamId);
+    if (_freeCamId != SdfPath::EmptyPath()) {
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _freeCamId);
+    }
+
     SdfPath const tasks[] = {
         _oitResolveTaskId,
         _selectionTaskId,
@@ -232,18 +235,22 @@ HdxTaskController::~HdxTaskController()
         _aovDepthResolveTaskId,
         _presentTaskId
     };
+
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         if (!tasks[i].IsEmpty()) {
             GetRenderIndex()->RemoveTask(tasks[i]);
         }
     }
+
     for (auto const& id : _renderTaskIds) {
         GetRenderIndex()->RemoveTask(id);
     }
+
     for (auto const& id : _lightIds) {
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, id);
     }
+
     for (auto const& id : _aovBufferIds) {
         GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
     }
@@ -255,7 +262,9 @@ HdxTaskController::_CreateRenderGraph()
     // We create camera and tasks here, but lights are created lazily by
     // SetLightingState. Camera needs to be created first, since it's a
     // parameter of most tasks.
-    _CreateCamera();
+    if (_CamerasSupported()) {
+        _CreateCamera();
+    } 
 
     // XXX: The general assumption is that we have "stream" backends which are
     // rasterization based and have their own rules, like multipass for
@@ -698,6 +707,13 @@ HdxTaskController::_AovsSupported() const
 {
     return GetRenderIndex()->IsBprimTypeSupported(
         HdPrimTypeTokens->renderBuffer);
+}
+
+bool
+HdxTaskController::_CamerasSupported() const
+{
+    return GetRenderIndex()->IsSprimTypeSupported(
+        HdPrimTypeTokens->camera);
 }
 
 HdTaskSharedPtrVector const
@@ -1563,6 +1579,43 @@ HdxTaskController::SetSelectionColor(GfVec4f const& color)
 }
 
 void
+HdxTaskController::SetSelectionEnableOutline(bool enableOutline)
+{
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.enableOutline != enableOutline) {
+            params.enableOutline = enableOutline;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
+HdxTaskController::SetSelectionOutlineRadius(unsigned int radius)
+{
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.outlineRadius != radius) {
+            params.outlineRadius = radius;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+
+void
 HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 {
     // If simpleLightTask doesn't exist, no need to process the lighting
@@ -1750,6 +1803,10 @@ void
 HdxTaskController::SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
                                          GfMatrix4d const& projMatrix)
 {
+    if (_freeCamId == SdfPath::EmptyPath()) {
+        return;
+    }
+
     _SetCameraParamForTasks(_freeCamId);
 
     GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
@@ -1781,6 +1838,10 @@ void
 HdxTaskController::
 SetFreeCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
 {
+    if (_freeCamId == SdfPath::EmptyPath()) {
+        return;
+    }
+
     // Cache the clip planes
     std::vector<GfVec4d> oldClipPlanes =
         _delegate.GetParameter<std::vector<GfVec4d>>(_freeCamId,
@@ -1801,8 +1862,8 @@ HdxTaskController::IsConverged() const
 
     HdTaskSharedPtrVector tasks = GetRenderingTasks();
     for (auto const& task : tasks) {
-        boost::shared_ptr<HdxProgressiveTask> progressiveTask =
-            boost::dynamic_pointer_cast<HdxProgressiveTask>(task);
+        std::shared_ptr<HdxProgressiveTask> progressiveTask =
+            std::dynamic_pointer_cast<HdxProgressiveTask>(task);
         if (progressiveTask) {
             converged = converged && progressiveTask->IsConverged();
             if (!converged) {

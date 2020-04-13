@@ -49,7 +49,6 @@ _TestIntersection(
     UsdImagingGLEngine & self, 
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
     const UsdPrim& root, 
     UsdImagingGLRenderParams params)
 {
@@ -57,34 +56,18 @@ _TestIntersection(
     SdfPath hitPrimPath;
     SdfPath hitInstancerPath;
     int hitInstanceIndex;
-    int hitElementIndex;
 
     self.TestIntersection(
         viewMatrix,
         projectionMatrix,
-        worldToLocalSpace,
         root,
         params,
         &hitPoint,
         &hitPrimPath,
         &hitInstancerPath,
-        &hitInstanceIndex,
-        &hitElementIndex);
+        &hitInstanceIndex);
 
-    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex, hitElementIndex);
-}
-
-static boost::python::tuple
-_GetPrimPathFromInstanceIndex(
-    UsdImagingGLEngine & self,
-    const SdfPath& protoPrimPath,
-    int instanceIndex)
-{
-    int absoluteInstanceIndex = 0;
-    SdfPath path = self.GetPrimPathFromInstanceIndex(protoPrimPath,
-                                                     instanceIndex,
-                                                     &absoluteInstanceIndex);
-    return boost::python::make_tuple(path, absoluteInstanceIndex);
+    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex);
 }
 
 static void
@@ -118,9 +101,6 @@ void wrapEngine()
             .def("ClearSelected", &UsdImagingGLEngine::ClearSelected)
             .def("AddSelected", &UsdImagingGLEngine::AddSelected)
             .def("SetSelectionColor", &UsdImagingGLEngine::SetSelectionColor)
-            .def("GetRprimPathFromPrimId", 
-                    &UsdImagingGLEngine::GetRprimPathFromPrimId)
-            .def("GetPrimPathFromInstanceIndex", &_GetPrimPathFromInstanceIndex)
             .def("TestIntersection", &_TestIntersection)
             .def("IsHydraEnabled", &UsdImagingGLEngine::IsHydraEnabled)
                 .staticmethod("IsHydraEnabled")
@@ -156,6 +136,10 @@ void wrapEngine()
                 &UsdImagingGLEngine::IsPauseRendererSupported)
             .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
             .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
+            .def("IsStopRendererSupported", 
+                &UsdImagingGLEngine::IsStopRendererSupported)
+            .def("StopRenderer", &UsdImagingGLEngine::StopRenderer)
+            .def("RestartRenderer", &UsdImagingGLEngine::RestartRenderer)
         ;
 
     }

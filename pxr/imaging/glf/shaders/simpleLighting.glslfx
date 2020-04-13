@@ -29,51 +29,66 @@
 --- #import /user/anim/global/shaders/simpleLighting.glslfx
 
 -- glsl SimpleLighting.GeometryInjection
-#ifndef NUM_LIGHTS
-#define NUM_LIGHTS 0
+#ifndef NUM_SHADOWS
+#define NUM_SHADOWS 0
 #endif
 
-#if NUM_LIGHTS == 0
+#if NUM_SHADOWS == 0
 
-#else  // NUM_LIGHTS == 0
+#else  // NUM_SHADOWS == 0
 
 struct ShadowMatrix {
     mat4 eyeToShadowMatrix;
-    vec4 basis0;
-    vec4 basis1;
-    vec4 basis2;
+    mat4 shadowToEyeMatrix;
+    float blur;
     float bias;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 layout(std140) uniform Shadow {
-    ShadowMatrix shadow[NUM_LIGHTS];
+    ShadowMatrix shadow[NUM_SHADOWS];
 };
 
-out vec2 FshadowFilterWidth[NUM_LIGHTS];
+out vec2 FshadowFilterWidth[NUM_SHADOWS];
 
+// Transforms a unit tangent vector parallel to a coordinate axis in
+// shadow space to eye space and returns the length of the result
+// (without doing the perspective division).
+//
+// The first argument is assumed to be a column of the shadow to eye
+// matrix (using first column corresponds to unit tangent vector
+// pointing in x-direction, ...). The second argument is supposed to
+// be the (homogeneous) coordinates of the point in eye space.
+//
+float
+shadowTangentLength(vec4 dir, vec4 Peye)
+{
+    // Computation similar to computeRayDirectionEye in volume.glslfx.
+    const vec3 shadowTangent = dir.xyz * Peye.w - dir.w * Peye.xyz;
+    return length(shadowTangent);
+}
+
+// Computes the lengths that tangent vectors parallel to the x-,
+// respectively, y-direction in shadow space at the current location
+// need to have such that their image in eye space have length blur
+// (without perspective division).
+//
 void
 computeShadowFilterWidth(vec4 Peye)
 {
     // interpolate filter width
-    for (int i = 0; i < NUM_LIGHTS; ++i) {
-        vec4 cx = shadow[i].basis0;
-        vec4 cy = shadow[i].basis1;
-        vec4 cz = shadow[i].basis2;
-        
-        // compare homogeneous vector length
-        vec3 x = cx.xyz - cx.w * Peye.xyz;
-        vec3 y = cy.xyz - cy.w * Peye.xyz;
-        vec3 z = cz.xyz - cz.w * Peye.xyz;
-        FshadowFilterWidth[i] = vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+    for (int i = 0; i < NUM_SHADOWS; ++i) {
+        FShadowFilterWidth[i] =
+            vec2(shadow[i].blur) /
+            vec2(shadowTangentLength(shadow[i].shadowToEyeMatrix[0], Peye),
+                 shadowTangentLength(shadow[i].shadowToEyeMatrix[1], Peye));
     }
 }
 
 #define COMPUTE_SHADOW_FILTER_WIDTH 1
 
-#endif  // NUM_LIGHTS == 0
+#endif  // NUM_SHADOWS == 0
 
 -- glsl SimpleLighting.LightIntegrator
 
@@ -82,6 +97,9 @@ computeShadowFilterWidth(vec4 Peye)
 // ---------------------------------------------------------------------------
 #ifndef NUM_LIGHTS
 #define NUM_LIGHTS 0
+#endif
+#ifndef NUM_SHADOWS
+#define NUM_SHADOWS 0
 #endif
 
 #ifndef HD_HAS_integrateLights
@@ -97,21 +115,19 @@ struct LightSource {
     vec4 spotCutoffAndFalloff;
     vec4 attenuation;
     mat4 worldToLightTransform;
+    int shadowIndexStart;
+    int shadowIndexEnd;
     bool hasShadow;
-    int shadowIndex;
     bool isIndirectLight;
-    float padding0;
 };
 
 struct ShadowMatrix {
     mat4 eyeToShadowMatrix;
-    vec4 basis0;
-    vec4 basis1;
-    vec4 basis2;
+    mat4 shadowToEyeMatrix;
+    float blur;
     float bias;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 struct LightingContribution {
@@ -129,7 +145,7 @@ struct LightingInterfaceProperties {
 // ---------------------------------------------------------------------------
 #if NUM_LIGHTS == 0
 
-#else  // NUM_LIGHTS == 0
+#else // NUM_LIGHTS == 0
 
 layout(std140) uniform Lighting {
     bool useLighting;
@@ -137,37 +153,45 @@ layout(std140) uniform Lighting {
     LightSource lightSource[NUM_LIGHTS];
 };
 
+#endif // NUM_LIGHTS == 0
+
+#if NUM_SHADOWS == 0
+
+#else // NUM_SHADOWS == 0
+
 layout(std140) uniform Shadow {
-    ShadowMatrix shadow[NUM_LIGHTS];
+    ShadowMatrix shadow[NUM_SHADOWS];
 };
+
+float
+shadowTangentLength(vec4 dir, vec4 Peye)
+{
+    const vec3 shadowTangent = dir.xyz * Peye.w - dir.w * Peye.xyz;
+    return length(shadowTangent);
+}
 
 vec2
 computeShadowFilterWidth(int index, vec4 Peye)
 {
-    vec4 cx = shadow[index].basis0;
-    vec4 cy = shadow[index].basis1;
-    vec4 cz = shadow[index].basis2;
-
-    // compare homogeneous vector length
-    vec3 x = cx.xyz - cx.w * Peye.xyz;
-    vec3 y = cy.xyz - cy.w * Peye.xyz;
-    vec3 z = cz.xyz - cz.w * Peye.xyz;
-    return vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+    return
+        vec2(shadow[index].blur) /
+        vec2(shadowTangentLength(shadow[index].shadowToEyeMatrix[0], Peye),
+             shadowTangentLength(shadow[index].shadowToEyeMatrix[1], Peye));
 }
 
-#endif  // NUM_LIGHTS == 0
+#endif  // NUM_SHADOWS == 0
 
 // ---------------------------------------------------------------------------
 // textures
 // ---------------------------------------------------------------------------
 
 #if USE_BINDLESS_SHADOW_TEXTURES
-#if NUM_LIGHTS > 0
+#if NUM_SHADOWS > 0
 
 uniform BindlessShadowSamplers {
-    uvec2 shadowCompareTextures[NUM_LIGHTS];
+    uvec2 shadowCompareTextures[NUM_SHADOWS];
 };
-#endif // NUM_LIGHTS > 0
+#endif // NUM_SHADOWS > 0
 #else // USE_BINDLESS_SHADOW_TEXTURES
 
 uniform sampler2DArray shadowTexture;
@@ -200,39 +224,57 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 #else // NUM_LIGHTS == 0
 
+#if NUM_SHADOWS > 0
 float
-shadowCompare(int index, vec4 coord)
+shadowCompare(int shadowIndex, vec4 coord)
 {
+    coord /= coord.w;
+    coord.z = min(1, coord.z + shadow[shadowIndex].bias);
+
+    // Cascade selection (in shadowing()) ensures Pshadow.xy is in [0,1],
+    // but shadowFilter() can throw that off so we need to clamp.
+    // XXX: sample the next cascade over?
+    coord.xy = clamp(coord.xy, vec2(0), vec2(1));
+
 #if USE_BINDLESS_SHADOW_TEXTURES
-    return texture(sampler2DShadow(shadowCompareTextures[index]),
-                vec3(coord.x/coord.w, coord.y/coord.w, coord.z));
+    return texture(sampler2DShadow(shadowCompareTextures[shadowIndex]), coord.xyz);
 #else
     return texture(shadowCompareTexture,
-                vec4(coord.x/coord.w, coord.y/coord.w, index, coord.z));
+                   vec4(coord.x, coord.y, shadowIndex, coord.z));
 #endif
 }
 
 #ifndef SHADOW_FILTER
 float
-shadowFilter(int index, vec4 coord, vec4 Peye)
+shadowFilter(int shadowIndex, vec4 coord, vec4 Peye)
 {
     return shadowCompare(index, coord);
 }
-#endif
+#endif // SHADOW_FILTER
+#endif // NUM_SHADOWS > 0
 
 float
-shadowing(int index, vec4 Peye)
+shadowing(int lightIndex, vec4 Peye)
 {
-    float result = 1.0;
-    vec4 coord = shadow[index].eyeToShadowMatrix * Peye;
+#if NUM_SHADOWS > 0
+    for (int shadowIndex = lightSource[lightIndex].shadowIndexStart;
+         shadowIndex <= lightSource[lightIndex].shadowIndexEnd;
+         ++shadowIndex) {
 
-    // coord.xy : homogenous shadow uv coordinate
-    // coord.z : cartesian receiver depth
-    // coord.w : shadow projection w
+        vec4 coord = shadow[shadowIndex].eyeToShadowMatrix * Peye;
 
-    float dReceiver = coord.z/coord.w;
-    coord.z = min(1, dReceiver + shadow[index].bias);
-    return shadowFilter(index, coord, Peye);
+        // If the point-to-be-lit isn't covered by this cascade, skip to
+        // the next one...
+        if (any(lessThan(coord.xyz, vec3(0))) ||
+            any(greaterThan(coord.xyz, coord.www))) {
+            continue;
+        }
+
+        return shadowFilter(shadowIndex, coord, Peye);
+    }
+#endif // NUM_SHADOWS > 0
+    // ... either no shadows, or no coverage.
+    return 1.0;
 }
 
 float
@@ -305,7 +347,7 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 #if USE_SHADOWS
         float shadow = (lightSource[i].hasShadow) ?
-            shadowing(lightSource[i].shadowIndex, Peye) : 1.0;
+            shadowing(/*lightIndex=*/i, Peye) : 1.0;
 #else
         float shadow = 1.0;
 #endif

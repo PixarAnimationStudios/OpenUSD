@@ -81,7 +81,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     TF_VERIFY(adjacencyRange_);
 
     HdStBufferArrayRangeGLSharedPtr adjacencyRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
 
     // select shader by datatype
     TfToken shaderToken;
@@ -108,7 +108,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     GLuint program = computeProgram->GetProgram().GetId();
 
     HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
 
     // buffer resources for GPU computation
     HdStBufferResourceGLSharedPtr points = range->GetResource(_srcName);
@@ -126,9 +126,9 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     } uniform;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = range->GetOffset();
+    uniform.vertexOffset = range->GetElementOffset();
     // adjacency offset/stride in aggregated adjacency table
-    uniform.adjacencyOffset = adjacencyRange->GetOffset();
+    uniform.adjacencyOffset = adjacencyRange->GetElementOffset();
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes
     // components in interleaved vertex array are always same data type.

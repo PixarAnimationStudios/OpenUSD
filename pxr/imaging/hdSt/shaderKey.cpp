@@ -30,6 +30,58 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/*virtual*/
+HdSt_ShaderKey::~HdSt_ShaderKey()
+{
+    /*NOTHING*/
+}
+
+HdSt_ShaderKey::ID
+HdSt_ShaderKey::ComputeHash() const
+{
+    ID hash = GetGlslfxFilename().Hash();
+
+    TfToken const *VS = GetVS();
+    TfToken const *TCS = GetTCS();
+    TfToken const *TES = GetTES();
+    TfToken const *GS = GetGS();
+    TfToken const *FS = GetFS();
+
+    while (VS && (!VS->IsEmpty())) {
+        boost::hash_combine(hash, VS->Hash());
+        ++VS;
+    }
+    while (TCS && (!TCS->IsEmpty())) {
+        boost::hash_combine(hash, TCS->Hash());
+        ++TCS;
+    }
+    while (TES && (!TES->IsEmpty())) {
+        boost::hash_combine(hash, TES->Hash());
+        ++TES;
+    }
+    while (GS && (!GS->IsEmpty())) {
+        boost::hash_combine(hash, GS->Hash());
+        ++GS;
+    }
+    while (FS && (!FS->IsEmpty())) {
+        boost::hash_combine(hash, FS->Hash());
+        ++FS;
+    }
+    
+    // During batching, we rely on geometric shader equality, and thus the
+    // shaderKey hash factors the following state opinions besides the mixins
+    // themselves. 
+    // Note that the GLSL programs still can be shared across GeometricShader
+    // instances, when they are identical except the GL states, as long as
+    // Hd_GeometricShader::ComputeHash() provides consistent hash values.
+    boost::hash_combine(hash, GetPrimitiveType());    
+    boost::hash_combine(hash, GetCullStyle());
+    boost::hash_combine(hash, GetPolygonMode());
+    boost::hash_combine(hash, IsFrustumCullingPass());
+    boost::hash_combine(hash, GetLineWidth());
+
+    return hash;
+}
 
 static
 std::string
@@ -57,79 +109,92 @@ _JoinTokens(const char *stage, TfToken const *tokens, bool *firstStage)
     return ss.str();
 }
 
-/*static*/
-HdStShaderKey::ID
-HdStShaderKey::ComputeHash(TfToken const &glslfxFile,
-                         TfToken const *VS,
-                         TfToken const *TCS,
-                         TfToken const *TES,
-                         TfToken const *GS,
-                         TfToken const *FS,
-                         int16_t primType,                         
-                         HdCullStyle cullStyle,
-                         HdPolygonMode polygonMode,
-                         bool cullingPass,
-                         float lineWidth)
-{
-    ID hash = glslfxFile.Hash();
-
-    while (VS && (!VS->IsEmpty())) {
-        boost::hash_combine(hash, VS->Hash());
-        ++VS;
-    }
-    while (TCS && (!TCS->IsEmpty())) {
-        boost::hash_combine(hash, TCS->Hash());
-        ++TCS;
-    }
-    while (TES && (!TES->IsEmpty())) {
-        boost::hash_combine(hash, TES->Hash());
-        ++TES;
-    }
-    while (GS && (!GS->IsEmpty())) {
-        boost::hash_combine(hash, GS->Hash());
-        ++GS;
-    }
-    while (FS && (!FS->IsEmpty())) {
-        boost::hash_combine(hash, FS->Hash());
-        ++FS;
-    }
-    boost::hash_combine(hash, primType);    
-    boost::hash_combine(hash, cullStyle);
-    boost::hash_combine(hash, polygonMode);
-    boost::hash_combine(hash, cullingPass);
-    boost::hash_combine(hash, lineWidth);
-
-    return hash;
-}
-
-/*static*/
 std::string
-HdStShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
-                             TfToken const *VS,
-                             TfToken const *TCS,
-                             TfToken const *TES,
-                             TfToken const *GS,
-                             TfToken const *FS)
+HdSt_ShaderKey::GetGlslfxString() const
 {
     std::stringstream ss;
 
     ss << "-- glslfx version 0.1\n";
 
-    if (!glslfxFile.IsEmpty())
-        ss << "#import $TOOLS/hdSt/shaders/" << glslfxFile.GetText() << "\n";
+    if (!GetGlslfxFilename().IsEmpty())
+        ss << "#import $TOOLS/hdSt/shaders/" 
+           << GetGlslfxFilename().GetText() << "\n";
 
     ss << "-- configuration\n"
        << "{\"techniques\": {\"default\": {\n";
 
     bool firstStage = true;
-    ss << _JoinTokens("vertexShader",      VS,  &firstStage);
-    ss << _JoinTokens("tessControlShader", TCS, &firstStage);
-    ss << _JoinTokens("tessEvalShader",    TES, &firstStage);
-    ss << _JoinTokens("geometryShader",    GS,  &firstStage);
-    ss << _JoinTokens("fragmentShader",    FS,  &firstStage);
+    ss << _JoinTokens("vertexShader",      GetVS(),  &firstStage);
+    ss << _JoinTokens("tessControlShader", GetTCS(), &firstStage);
+    ss << _JoinTokens("tessEvalShader",    GetTES(), &firstStage);
+    ss << _JoinTokens("geometryShader",    GetGS(),  &firstStage);
+    ss << _JoinTokens("fragmentShader",    GetFS(),  &firstStage);
     ss << "}}}\n";
 
     return ss.str();
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetVS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetTCS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetTES() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetGS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetFS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+bool
+HdSt_ShaderKey::IsFrustumCullingPass() const
+{
+    return false;
+}
+
+/*virtual*/
+HdCullStyle
+HdSt_ShaderKey::GetCullStyle() const
+{
+    return HdCullStyleDontCare;
+}
+
+/*virtual*/
+HdPolygonMode 
+HdSt_ShaderKey::GetPolygonMode() const
+{
+    return HdPolygonModeFill;
+}
+
+/*virtual*/
+float
+HdSt_ShaderKey::GetLineWidth() const
+{
+    return 0.0f;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

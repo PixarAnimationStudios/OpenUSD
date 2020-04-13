@@ -212,39 +212,9 @@ HdxColorChannelTask::_CreateFramebufferResources()
         glBindTexture(GL_TEXTURE_2D, restoreTexture);
     }
 
-    // XXX: Removed due to slowness in the IsCurrent() call when multiple
-    //      gl contexts are registered in GlfGLContextRegistry. This code is
-    //      relevant only when there is a possibility of having context
-    //      switching between the creation of the render pass and the execution
-    //      of this task on each frame.
-    // bool switchedGLContext = !_owningContext || !_owningContext->IsCurrent();
-    // 
-    // if (switchedGLContext) {
-    //     // If we're rendering with a different context than the render pass
-    //     // was created with, recreate the FBO because FB is not shared.
-    //     // XXX we need this since we use a FBO in _CopyTexture(). Ideally we
-    //     // use HdxCompositor to do the copy, but for that we need to know the
-    //     // textureId currently bound to the default framebuffer. However
-    //     // glGetFramebufferAttachmentParameteriv will return and error when
-    //     // trying to query the texture name bound to GL_BACK_LEFT.
-    //     if (_owningContext && _owningContext->IsValid()) {
-    //         GlfGLContextScopeHolder contextHolder(_owningContext);
-    //         glDeleteFramebuffers(1, &_copyFramebuffer);
-    //     }
-    // 
-    //     _owningContext = GlfGLContext::GetCurrentGLContext();
-    //     if (!TF_VERIFY(_owningContext, "No valid GL context")) {
-    //         return false;
-    //     }
-    // 
-
-        if (_copyFramebuffer == 0) {
-            glGenFramebuffers(1, &_copyFramebuffer);
-        }
-
-    // }
-    // 
-    // if (createTexture || switchedGLContext) {
+    if (_copyFramebuffer == 0) {
+        glGenFramebuffers(1, &_copyFramebuffer);
+    }
 
     if (createTexture) {
         GLint restoreReadFB, restoreDrawFB;
@@ -269,7 +239,7 @@ HdxColorChannelTask::_ApplyColorChannel()
     // A note here: colorChannel is used for all of our plugins and has to be
     // robust to poor GL support.  OSX compatibility profile provides a
     // GL 2.1 API, slightly restricting our choice of API and heavily
-    // restricting our shader syntax. See also HdxCompositor.
+    // restricting our shader syntax. See also HdxFullscreenShader.
 
     // Read from the texture-copy we made of the clients FBO and output the
     // color-corrected pixels into the clients FBO.

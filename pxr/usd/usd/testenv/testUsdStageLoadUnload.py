@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import os, sys, tempfile, unittest
 from pxr import Gf, Tf, Sdf, Usd
 
@@ -95,7 +97,7 @@ class PayloadedScene(object):
     def PrintPaths(self, msg=""):
         print("    Paths: "+msg)
         for p in self.stage.Traverse():
-            print "    ", p
+            print("    ", p)
         print("")
 
 
@@ -394,8 +396,9 @@ class TestUsdLoadUnload(unittest.TestCase):
             prim.GetPayloads().AddInternalPayload(payload.GetPath())
 
         # Add payloads to all prims except leaf 'prim's and '__payload'.
-        map(addPayload, [prim for prim in s.TraverseAll()
-                         if prim.GetName() not in ('prim', '__payload')])
+        for prim in s.TraverseAll():
+            if prim.GetName() not in ('prim', '__payload'):
+                addPayload(prim)
 
         # Create a new stage, with nothing loaded.
         testStage = Usd.Stage.Open(s.GetRootLayer(), load=Usd.Stage.LoadNone)
@@ -429,7 +432,7 @@ class TestUsdLoadUnload(unittest.TestCase):
         """Test Stage::LoadUnload thoroughly, as all other requests funnel into it.
         """
 
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
 
         for fmt in allFormats:
             p = PayloadedScene(fmt)
@@ -586,7 +589,7 @@ class TestUsdLoadUnload(unittest.TestCase):
     def test_Load(self):
         """Tests UsdStage::Load/Unload.
         """
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
         for fmt in allFormats:
             p = PayloadedScene(fmt)
             p.PrintPaths()
@@ -661,7 +664,7 @@ class TestUsdLoadUnload(unittest.TestCase):
 
     def test_Create(self):
         """Test the behavior of UsdStage::Create WRT load behavior"""
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
 
         # Exercise creating an in memory stage
         for fmt in allFormats:
@@ -714,7 +717,7 @@ class TestUsdLoadUnload(unittest.TestCase):
     def test_Open(self):
         """Test the behavior of UsdStage::Open WRT load behavior.
         """
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
         
         for fmt in allFormats:
             p = PayloadedScene(fmt)
@@ -750,7 +753,7 @@ class TestUsdLoadUnload(unittest.TestCase):
         # TODO: assert that inactive paths do not show up in loaded or
         # loadable sets.
 
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
         for fmt in allFormats:
             p = PayloadedScene(fmt)
             p.PrintPaths()
@@ -789,7 +792,7 @@ class TestUsdLoadUnload(unittest.TestCase):
     def test_RedundantLoads(self):
         """Ensure that calling load or unload redundantly is not an error
         """
-        print sys._getframe().f_code.co_name
+        print(sys._getframe().f_code.co_name)
         for fmt in allFormats:
             p = PayloadedScene(fmt)
             p.PrintPaths()

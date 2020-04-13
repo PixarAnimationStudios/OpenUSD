@@ -29,10 +29,16 @@
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/vdbTexture.h"
+#include "pxr/imaging/glf/vdbTextureContainer.h"
 
 #include "pxr/usd/sdf/types.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (fieldName)
+);
 
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
   : HdField(id)
@@ -42,6 +48,36 @@ HdStField::HdStField(SdfPath const& id, TfToken const & fieldType)
 }
 
 HdStField::~HdStField() = default;
+
+// Obtain texture handle for grid with name fieldName in OpenVDB file at
+// given path.
+static
+GlfTextureHandleRefPtr
+_GetVdbTexture(std::string const &path,
+               TfToken const &fieldName)
+{
+    // First query the texture registry for the texture container for
+    // the OpenVDB file.
+    GlfTextureHandleRefPtr const containerHandle = 
+        GlfTextureRegistry::GetInstance().GetTextureHandle(
+            TfToken(path));
+    if (!containerHandle) {
+        return TfNullPtr;
+    }
+    
+    GlfVdbTextureContainerPtr const container =
+        TfDynamic_cast<GlfVdbTextureContainerPtr>(
+            containerHandle->GetTexture());
+    if (!container) {
+        TF_CODING_ERROR("When trying to create texture for VDB grid, "
+                        "texture handle does not contain vdb texture "
+                        "container.");
+        return TfNullPtr;
+    }
+
+    // Then get the texture handle from the container.
+    return container->GetTextureHandle(fieldName);
+}
 
 void
 HdStField::Sync(HdSceneDelegate *sceneDelegate,
@@ -53,10 +89,13 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
 
         // Get asset path from scene delegate.
         //
-        // TODO: also read field name.
         const VtValue filePath = sceneDelegate->Get(GetId(),
                                                     HdFieldTokens->filePath);
         const SdfAssetPath fileAssetPath = filePath.Get<SdfAssetPath>();
+
+        const VtValue fieldNameValue = sceneDelegate->Get(GetId(),
+                                                          _tokens->fieldName);
+        const TfToken fieldName = fieldNameValue.Get<TfToken>();
 
         // Resolve asset path
         //
@@ -64,9 +103,10 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         // called.
         const std::string &resolvedPath = fileAssetPath.GetResolvedPath();
 
-        // Using resolved path for key
+        // Using resolved path and field name for key
         size_t hash = 0;
         boost::hash_combine(hash, resolvedPath);
+        boost::hash_combine(hash, fieldName);
         HdResourceRegistry::TextureKey texID = hash;
 
         // Note that unlike HdTexture::Sync, we do not use
@@ -78,7 +118,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdStResourceRegistrySharedPtr const &resourceRegistry =
-            boost::static_pointer_cast<HdStResourceRegistry>(
+            std::static_pointer_cast<HdStResourceRegistry>(
                 renderIndex.GetResourceRegistry());
 
         // Check with resource registry whether the field resource
@@ -92,7 +132,8 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         bool isNewTexture = true;
 
         if (texInstance.IsFirstInstance()) {
-            // Get texture from registry to create field resource.
+            // Get texture for respective grid in VDB file to create field
+            // resource.
             //
             // Note that creating the field resource also does the necessary
             // OpenGL calls to create the sampler and (if bindless) the OpenGL
@@ -105,13 +146,12 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
             // sampler and texture handle in Sync without lock since it is an
             // sprim and is not run multi-threadedly.
             // 
-            _fieldResource = boost::make_shared<HdStFieldResource>(
-                GlfTextureRegistry::GetInstance().GetTextureHandle(
-                    TfToken(resolvedPath)));
+            _fieldResource = std::make_shared<HdStFieldResource>(
+                _GetVdbTexture(resolvedPath, fieldName));
             texInstance.SetValue(_fieldResource);
         } else {
             HdStFieldResourceSharedPtr const fieldResource =
-                boost::dynamic_pointer_cast<HdStFieldResource>(
+                std::dynamic_pointer_cast<HdStFieldResource>(
                                                 texInstance.GetValue());
             if (_fieldResource == fieldResource) {
                 isNewTexture = false;

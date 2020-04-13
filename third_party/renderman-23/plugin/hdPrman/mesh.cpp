@@ -305,7 +305,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, nverts.size(),
         npoints, npoints, verts.size());
 
-    return std::move(primvars);
+    return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

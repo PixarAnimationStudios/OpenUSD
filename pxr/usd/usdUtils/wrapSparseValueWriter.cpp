@@ -25,6 +25,7 @@
 
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 
 #include <boost/python.hpp>
 #include <boost/python/make_constructor.hpp>
@@ -65,6 +66,13 @@ _WrapSetAttribute(
             time);
 }
 
+static std::vector<UsdUtilsSparseAttrValueWriter>
+_WrapGetSparseAttrValueWriters(
+    UsdUtilsSparseValueWriter &vc) 
+{
+    return vc.GetSparseAttrValueWriters();
+}
+
 void wrapSparseValueWriter()
 {
     class_<UsdUtilsSparseAttrValueWriter>("SparseAttrValueWriter", 
@@ -79,5 +87,11 @@ void wrapSparseValueWriter()
     class_<UsdUtilsSparseValueWriter>("SparseValueWriter", init<>())
         .def("SetAttribute", _WrapSetAttribute, 
             (arg("attr"), arg("value"), arg("time")=UsdTimeCode::Default()))
+
+        .def("GetSparseAttrValueWriters", _WrapGetSparseAttrValueWriters)
     ;
+
+    // Register to and from vector conversions.
+    boost::python::to_python_converter<std::vector<UsdUtilsSparseAttrValueWriter>,
+        TfPySequenceToPython<std::vector<UsdUtilsSparseAttrValueWriter> > >();
 }

@@ -40,15 +40,18 @@
 
 #include <boost/shared_ptr.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <memory>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixComputationSharedPtr;
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
+typedef boost::shared_ptr<class HdStSimpleLightingShader> 
+    HdStSimpleLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdxShadowMatrixComputation> 
+    HdxShadowMatrixComputationSharedPtr;
 
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 
@@ -84,7 +87,7 @@ private:
     size_t _numLights;
 
     // Should be weak ptrs
-    HdxSimpleLightingShaderSharedPtr _lightingShader;
+    HdStSimpleLightingShaderSharedPtr _lightingShader;
     bool _enableShadows;
     GfVec4f _viewport;
 
@@ -135,9 +138,13 @@ struct HdxSimpleLightTaskParams {
 HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxSimpleLightTaskParams& pv);
 HDX_API
-bool operator==(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
+bool operator==(
+    const HdxSimpleLightTaskParams& lhs, 
+    const HdxSimpleLightTaskParams& rhs);
 HDX_API
-bool operator!=(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
+bool operator!=(
+    const HdxSimpleLightTaskParams& lhs, 
+    const HdxSimpleLightTaskParams& rhs);
 
 struct HdxShadowParams {
     HdxShadowParams()

@@ -23,10 +23,11 @@
 #
 # Generate doxygen based docs for USD.
 
+from __future__ import print_function
 import sys, os, argparse, shutil, subprocess, tempfile, platform, stat
 
 # This finds all modules in the source area. For example, it will find ar,
-# usdGeom, etc. in the pxr source area, or usdKatana, etc. in the third_party
+# usdGeom, etc. in the pxr source area, or prman etc. in the third_party
 # source area.
 def _getModules(sourceRoot):
     modules = []
@@ -79,7 +80,8 @@ def _generateDocs(pxrSourceRoot, thirdSourceRoot, pxrBuildRoot, installLoc,
                     os.chmod(path, stat.S_IWRITE)
                     func(path)
                 except Exception as exc:
-                    print >>sys.stderr, "Failed to remove %s: %s" % (path, str(exc))
+                    print("Failed to remove %s: %s" % (path, str(exc)),
+                          file=sys.stderr)
             shutil.rmtree(target, onerror=_removeReadOnly)
         shutil.copytree(mod, target) 
 
@@ -110,7 +112,7 @@ def _generateDocs(pxrSourceRoot, thirdSourceRoot, pxrBuildRoot, installLoc,
                                  stderr=subprocess.STDOUT)
     output = proc.communicate()[0]
     if proc.wait() != 0:
-        print >>sys.stderr, output.replace('\r\n', '\n')
+        print(output.replace('\r\n', '\n'), file=sys.stderr)
         sys.exit('Error: doxygen failed to complete; '
                  'exit code %d.' % proc.returncode)
 

@@ -53,7 +53,7 @@ UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
 /// files (and only standard library files) should be found on these
 /// paths.
 USDMTLX_LOCAL
-NdrStringVec
+const NdrStringVec&
 UsdMtlxStandardLibraryPaths();
 
 /// Return the MaterialX standard file extensions.

@@ -30,18 +30,37 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdChangeTracker;
 class HdDrawItem;
+class HdRenderIndex;
 class HdRprim;
 struct HdRprimSharedData;
 class HdStDrawItem;
 class HdStInstancer;
+
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
+
+typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
+typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
+
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
+
+// -----------------------------------------------------------------------------
+// Primvar descriptor filtering utilities
+// -----------------------------------------------------------------------------
 // Get filtered primvar descriptors for drawItem
+HDST_API
 HdPrimvarDescriptorVector
 HdStGetPrimvarDescriptors(
     HdRprim const * prim,
@@ -50,6 +69,7 @@ HdStGetPrimvarDescriptors(
     HdInterpolation interpolation);
 
 // Get filtered instancer primvar descriptors for drawItem
+HDST_API
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
@@ -57,6 +77,9 @@ HdStGetInstancerPrimvarDescriptors(
     HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate);
 
+// -----------------------------------------------------------------------------
+// Material shader utility
+// -----------------------------------------------------------------------------
 // Resolves the material shader for the given prim (using a fallback
 // material as necessary), including optional mixin shader source code.
 HDST_API
@@ -65,6 +88,69 @@ HdStGetMaterialShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate,
     std::string const & mixinSource = std::string());
+
+// -----------------------------------------------------------------------------
+// Primvar processing and BAR allocation utilities
+// -----------------------------------------------------------------------------
+// Returns true if range is non-empty and valid.
+HDST_API
+bool HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range);
+
+// Returns true if curRange can be used as-is (even if it's empty) during
+// primvar processing.
+HDST_API
+bool HdStCanSkipBARAllocationOrUpdate(
+    HdBufferSourceSharedPtrVector const& sources,
+    HdComputationSharedPtrVector const& computations,
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdDirtyBits dirtyBits);
+
+HDST_API
+bool HdStCanSkipBARAllocationOrUpdate(
+    HdBufferSourceSharedPtrVector const& sources,
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdDirtyBits dirtyBits);
+
+// Returns the buffer specs that have been removed from curRange based on the
+// new primvar descriptors and internally generated primvar names.
+//
+// Internally generated primvar names will never be among the specs returned,
+HDST_API
+HdBufferSpecVector
+HdStGetRemovedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    HdExtComputationPrimvarDescriptorVector const& newCompPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    SdfPath const& rprimId);
+
+HDST_API
+HdBufferSpecVector
+HdStGetRemovedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    SdfPath const& rprimId);
+
+// Updates the existing range at drawCoordIndex with newRange and flags garbage
+// collection (for the existing range) and rebuild of all draw batches when
+// necessary.
+HDST_API
+void HdStUpdateDrawItemBAR(
+    HdBufferArrayRangeSharedPtr const& newRange,
+    int drawCoordIndex,
+    HdRprimSharedData *sharedData,
+    HdRenderIndex &renderIndex);
+
+// -----------------------------------------------------------------------------
+// Constant primvar processing utilities
+// -----------------------------------------------------------------------------
+// Returns whether constant primvars need to be populated/updated based on the
+// dirty bits for a given rprim.
+HDST_API
+bool HdStShouldPopulateConstantPrimvars(
+    HdDirtyBits const *dirtyBits,
+    SdfPath const& id);
 
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.
@@ -76,6 +162,24 @@ void HdStPopulateConstantPrimvars(
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
     HdPrimvarDescriptorVector const& constantPrimvars);
+
+// -----------------------------------------------------------------------------
+// Topological visibility processing utility
+// -----------------------------------------------------------------------------
+// Creates/Updates/Migrates the topology visiblity BAR with element and point
+// visibility encoded using one bit per element/point of the topology.
+HDST_API
+void HdStProcessTopologyVisibility(
+    VtIntArray invisibleElements,
+    int numTotalElements,
+    VtIntArray invisiblePoints,
+    int numTotalPoints,
+    HdRprimSharedData *sharedData,
+    HdStDrawItem *drawItem,
+    HdChangeTracker *changeTracker,
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
+    SdfPath const& rprimId);
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -25,7 +25,7 @@
 Pixar OSD implementation.
 """
 
-import _pxOsd
+from . import _pxOsd
 from pxr import Tf
 Tf.PrepareModule(_pxOsd, locals())
 del _pxOsd, Tf

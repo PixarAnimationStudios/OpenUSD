@@ -64,14 +64,18 @@ class HdRenderDelegate;
 class HdExtComputation;
 class VtValue;
 class HdInstancer;
+class HdDriver;
 
-typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
-typedef std::unordered_map<TfToken,
+using HdDirtyListSharedPtr = std::shared_ptr<class HdDirtyList>;
+
+using HdTaskSharedPtr = std::shared_ptr<class HdTask>;
+
+using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
+using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
+using HdTaskContext = std::unordered_map<TfToken,
                            VtValue,
-                           TfToken::HashFunctor> HdTaskContext;
+                           TfToken::HashFunctor>;
+using HdDriverVector = std::vector<HdDriver*>;
 
 /// \class HdRenderIndex
 ///
@@ -120,8 +124,16 @@ public:
 
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
+    /// The render delegate and render tasks may require access to a renderer's
+    /// device provided by the application. The objects can be
+    /// passed in as 'drivers'. Hgi is an example of a HdDriver.
+    //    hgi = Hgi::GetPlatformDefaultHgi()
+    //    hgiDriver = new HdDriver<Hgi*>(HgiTokens→renderDriver, hgi)
+    //    HdRenderIndex::New(_renderDelegate, {_hgiDriver})
     HD_API
-    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
+    static HdRenderIndex* New(
+        HdRenderDelegate *renderDelegate,
+        HdDriverVector const& drivers);
 
     HD_API
     ~HdRenderIndex();
@@ -364,6 +376,11 @@ public:
     HD_API
     HdRenderDelegate *GetRenderDelegate() const;
 
+    // The render delegate may require access to a render context / device 
+    // that is provided by the application.
+    HD_API
+    HdDriverVector const& GetDrivers() const;
+
     /// Returns a shared ptr to the resource registry of the current render
     /// delegate.
     HD_API
@@ -372,7 +389,9 @@ public:
 private:
     // The render index constructor is private so we can check
     // renderDelegate before construction: see HdRenderIndex::New(...).
-    HdRenderIndex(HdRenderDelegate *renderDelegate);
+    HdRenderIndex(
+        HdRenderDelegate *renderDelegate, 
+        HdDriverVector const& drivers);
 
     // ---------------------------------------------------------------------- //
     // Private Helper methods 
@@ -449,6 +468,7 @@ private:
     _SyncQueue _syncQueue;
 
     HdRenderDelegate *_renderDelegate;
+    HdDriverVector _drivers;
 
     // ---------------------------------------------------------------------- //
     // Sync State
@@ -492,7 +512,7 @@ HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdTaskSharedPtr task = boost::make_shared<T>(delegate, id);
+    HdTaskSharedPtr task = std::make_shared<T>(delegate, id);
     _TrackDelegateTask(delegate, id, task);
 }
 

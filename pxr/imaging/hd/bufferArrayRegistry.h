@@ -39,16 +39,16 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
+using HdBufferArraySharedPtr = std::shared_ptr<class HdBufferArray>;
 
 /// \class HdBufferArrayRegistry
 ///

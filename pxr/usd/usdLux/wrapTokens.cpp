@@ -97,10 +97,8 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "shadowColor", UsdLuxTokens->shadowColor);
     _AddToken(cls, "shadowDistance", UsdLuxTokens->shadowDistance);
     _AddToken(cls, "shadowEnable", UsdLuxTokens->shadowEnable);
-    _AddToken(cls, "shadowExclude", UsdLuxTokens->shadowExclude);
     _AddToken(cls, "shadowFalloff", UsdLuxTokens->shadowFalloff);
     _AddToken(cls, "shadowFalloffGamma", UsdLuxTokens->shadowFalloffGamma);
-    _AddToken(cls, "shadowInclude", UsdLuxTokens->shadowInclude);
     _AddToken(cls, "shadowLink", UsdLuxTokens->shadowLink);
     _AddToken(cls, "shapingConeAngle", UsdLuxTokens->shapingConeAngle);
     _AddToken(cls, "shapingConeSoftness", UsdLuxTokens->shapingConeSoftness);

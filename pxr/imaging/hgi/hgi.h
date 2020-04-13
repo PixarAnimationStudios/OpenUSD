@@ -25,13 +25,25 @@
 #define PXR_IMAGING_HGI_HGI_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
+
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/blitEncoder.h"
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/graphicsEncoder.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/shaderFunction.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include <atomic>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiImmediateCommandBuffer;
 
 /// \class Hgi
 ///
@@ -53,7 +65,7 @@ class HgiImmediateCommandBuffer;
 /// in HdSt was written via OpenGL's immediate style API.
 ///
 ///
-class Hgi 
+class Hgi
 {
 public:
     HGI_API
@@ -62,17 +74,27 @@ public:
     HGI_API
     virtual ~Hgi();
 
-    //
-    // Command Buffers
-    //
-
-    /// Returns the immediate command buffer.
+    /// Helper function to return a Hgi object for the current platform.
+    /// For example on Linux this may return HgiGL while on macOS HgiMetal.
+    /// Caller, usually the application, owns the lifetime of the returned Hgi
+    /// pointer and must destroy it during shutdown.
     HGI_API
-    virtual HgiImmediateCommandBuffer& GetImmediateCommandBuffer() = 0;
+    static Hgi* GetPlatformDefaultHgi();
 
-    //
-    // Resource API
-    //
+    /// Returns a graphics encoder for temporary use that is ready to
+    /// execute draw commands. GraphicsEncoder is a lightweight object that
+    /// should be re-acquired each frame (don't hold onto it after EndEncoding).
+    /// This encoder should only be used in the thread that created it.
+    HGI_API
+    virtual HgiGraphicsEncoderUniquePtr CreateGraphicsEncoder(
+        HgiGraphicsEncoderDesc const& desc) = 0;
+
+    /// Returns a blit encoder for temporary use that is ready to execute
+    /// resource copy commands. BlitEncoder is a lightweight object that
+    /// should be re-acquired each frame (don't hold onto it after EndEncoding).
+    /// This blit encoder can only be used in a single thread.
+    HGI_API
+    virtual HgiBlitEncoderUniquePtr CreateBlitEncoder() = 0;
 
     /// Create a texture in rendering backend.
     HGI_API
@@ -82,10 +104,102 @@ public:
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
 
+    /// Create a buffer in rendering backend.
+    HGI_API
+    virtual HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) = 0;
+
+    /// Destroy a buffer in rendering backend.
+    HGI_API
+    virtual void DestroyBuffer(HgiBufferHandle* bufHandle) = 0;
+
+    /// Create a new shader function.
+    HGI_API
+    virtual HgiShaderFunctionHandle CreateShaderFunction(
+        HgiShaderFunctionDesc const& desc) = 0;
+
+    /// Destroy a shader function.
+    HGI_API
+    virtual void DestroyShaderFunction(
+        HgiShaderFunctionHandle* shaderFunctionHandle) = 0;
+
+    /// Create a new shader program.
+    HGI_API
+    virtual HgiShaderProgramHandle CreateShaderProgram(
+        HgiShaderProgramDesc const& desc) = 0;
+
+    /// Destroy a shader program.
+    /// Note that this does NOT automatically destroy the shader functions in
+    /// the program since shader functions may be used by more than one program.
+    HGI_API
+    virtual void DestroyShaderProgram(
+        HgiShaderProgramHandle* shaderProgramHandle) = 0;
+
+    /// Create a new resource binding object.
+    HGI_API
+    virtual HgiResourceBindingsHandle CreateResourceBindings(
+        HgiResourceBindingsDesc const& desc) = 0;
+
+    /// Destroy a resource binding object.
+    HGI_API
+    virtual void DestroyResourceBindings(
+        HgiResourceBindingsHandle* resHandle) = 0;
+
+    /// Create a new pipeline state object
+    HGI_API
+    virtual HgiPipelineHandle CreatePipeline(
+        HgiPipelineDesc const& pipeDesc) = 0;
+
+    /// Destroy a pipeline state object
+    HGI_API
+    virtual void DestroyPipeline(HgiPipelineHandle* pipeHandle) = 0;
+
+    /// Return the name of the api (e.g. "OpenGL")
+    HGI_API
+    virtual TfToken const& GetAPIName() const = 0;
+
+    /// Called at the start of a new rendering frame.
+    HGI_API
+    virtual void StartFrame() = 0;
+
+    /// Called at the end of a rendering frame.
+    HGI_API
+    virtual void EndFrame() = 0;
+
+protected:
+    // Returns a unique id for handle creation.
+    HGI_API
+    uint64_t GetUniqueId();
+
+    // Destroys the underlying object that is represented by the handle.
+    template<class T>
+    void DestroyObject(HgiHandle<T>* handle) {
+        handle->_Destroy();
+    }
+
 private:
     Hgi & operator=(const Hgi&) = delete;
     Hgi(const Hgi&) = delete;
+
+    std::atomic<uint64_t> _uniqueIdCounter;
 };
+
+
+///
+/// Hgi factory for plugin system
+///
+class HgiFactoryBase : public TfType::FactoryBase {
+public:
+    virtual Hgi* New() const = 0;
+};
+
+template <class T>
+class HgiFactory : public HgiFactoryBase {
+public:
+    Hgi* New() const {
+        return new T;
+    }
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

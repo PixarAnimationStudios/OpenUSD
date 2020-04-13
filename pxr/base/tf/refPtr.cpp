@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/demangle.h"

@@ -27,17 +27,13 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/cxxCast.h"
-#include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/typeFunctions.h"
-
-#include <boost/operators.hpp>
 
 #include <iosfwd>
 #include <memory>
 #include <set>
+#include <string>
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
@@ -47,8 +43,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 class TfPyObjWrapper;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-
-class TfType;
 
 /// \class TfType
 ///
@@ -67,7 +61,7 @@ class TfType;
 ///   TfType, unlike \c std::type_info.
 /// - totally ordered -- can use as a \c std::map key
 ///
-class TfType : boost::totally_ordered<TfType>
+class TfType
 {
     struct _TypeInfo;
 
@@ -136,9 +130,13 @@ public:
     /// This is so all unknown types will only occupy one key when used in
     /// an associative map.
     inline bool operator ==(const TfType& t) const { return _info == t._info; }
+    inline bool operator !=(const TfType& t) const { return _info != t._info; }
 
     /// Comparison operator.
     inline bool operator <(const TfType& t) const { return _info < t._info; }
+    inline bool operator >(const TfType& t) const { return _info > t._info; }
+    inline bool operator <=(const TfType& t) const { return _info <= t._info; }
+    inline bool operator >=(const TfType& t) const { return _info >= t._info; }
 
     
     /// \name Finding types
@@ -146,8 +144,8 @@ public:
 
     /// Retrieve the \c TfType corresponding to type \c T.
     ///
-    /// The type \c T must have been defined in the type system or the
-    /// \c TfType corresponding to an unknown type is returned.
+    /// The type \c T must have been declared or defined in the type system or
+    /// the \c TfType corresponding to an unknown type is returned.
     ///
     /// \see IsUnknown()
     ///
@@ -165,19 +163,19 @@ public:
     /// This works for Python subclasses of the C++ type \c T as well,
     /// as long as \c T has been wrapped using TfPyPolymorphic.
     ///
-    /// Of course, the object's type must have been defined in the type
-    /// system or the \c TfType corresponding to an unknown type is returned.
+    /// Of course, the object's type must have been declared or defined in the
+    /// type system or the \c TfType corresponding to an unknown type is
+    /// returned.
     ///
     /// \see IsUnknown()
     ///
     template <typename T>
     static TfType const& Find(const T &obj) {
-        typedef typename TfTraits::Type<T>::UnderlyingType Type;
         // If T is polymorphic to python, we may have to bridge into python.  We
         // could also optimize for Ts that are not polymorphic at all and avoid
         // doing rtti typeid lookups, but we trust the compiler to do this for
         // us.
-        if (Type const *rawPtr = TfTypeFunctions<T>::GetRawPtr(obj))
+        if (auto const *rawPtr = TfTypeFunctions<T>::GetRawPtr(obj))
             return _FindImpl(rawPtr);
         return GetUnknownType();
     }
@@ -460,6 +458,14 @@ public:
              const std::vector<TfType> & bases,
              DefinitionCallback definitionCallback=nullptr );
 
+    /// Declares a TfType with the given C++ type T and C++ base types Bases.
+    /// Each of the base types will be declared (but not defined) as TfTypes if
+    /// they have not already been.  See the other Declare() methods for more
+    /// details.
+    ///
+    template <typename T, typename BaseTypes = TfType::Bases<>>
+    static TfType const& Declare();
+ 
     /// Define a TfType with the given C++ type T and C++ base types
     /// B.  Each of the base types will be declared (but not defined)
     /// as TfTypes if they have not already been.

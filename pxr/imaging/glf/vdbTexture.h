@@ -35,25 +35,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTextureContainer);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfVdbTexture);
 
 /// \class GlfVdbTexture
 ///
-/// Represents a 3-dimensional texture read from an OpenVDB file.
+/// Represents a 3-dimensional texture read from grid in an OpenVDB file.
 ///
-/// Current limitations: we always use the first grid in the OpenVDB file.
-/// The texture is always loaded at the full resolution of the OpenVDB grid,
-/// ignoring the memory request.
+/// This texture is supposed to be held by a GlfVdbTextureContainer which
+/// tells this texture also what OpenVDB file to read.
 ///
 class GlfVdbTexture : public GlfBaseTexture {
 public:
-    /// Creates a new texture instance for the OpenVDB file at \p filePath
+    /// Creates a new texture instance for the grid named \gridName in
+    /// the OpenVDB file opened by \p textureContainer.
     GLF_API
-    static GlfVdbTextureRefPtr New(TfToken const &filePath);
-
-    /// Creates a new texture instance for the OpenVDB file at \p filePath
-    GLF_API
-    static GlfVdbTextureRefPtr New(std::string const &filePath);
+    static GlfVdbTextureRefPtr New(
+        GlfVdbTextureContainerRefPtr const &textureContainer,
+        TfToken const &gridName);
 
     /// Returns the transform of the grid in the OpenVDB file as well as the
     /// bounding box of the samples in the corresponding OpenVDB tree.
@@ -72,7 +71,9 @@ public:
 
 protected:
     GLF_API
-    GlfVdbTexture(TfToken const &filePath);
+    GlfVdbTexture(
+        GlfVdbTextureContainerRefPtr const &textureContainer,
+        TfToken const &gridName);
 
     GLF_API
     void _ReadTexture() override;
@@ -81,7 +82,8 @@ protected:
     bool _GenerateMipmap() const;
 
 private:
-    const TfToken _filePath;
+    GlfVdbTextureContainerRefPtr const _textureContainer;
+    const TfToken _gridName;
 
     GfBBox3d _boundingBox;
 };

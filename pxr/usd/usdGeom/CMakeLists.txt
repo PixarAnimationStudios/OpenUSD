@@ -33,6 +33,7 @@ pxr_library(usdGeom
         cube
         curves
         cylinder
+        hermiteCurves
         imageable
         gprim
         mesh
@@ -76,6 +77,7 @@ pxr_library(usdGeom
         wrapCurves.cpp
         wrapCylinder.cpp
         wrapGprim.cpp
+        wrapHermiteCurves.cpp
         wrapImageable.cpp
         wrapMesh.cpp
         wrapMetrics.cpp

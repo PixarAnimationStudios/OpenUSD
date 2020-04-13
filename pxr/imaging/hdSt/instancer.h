@@ -40,7 +40,7 @@ class HdRprim;
 class HdStDrawItem;
 struct HdRprimSharedData;
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 /// \class HdStInstancer
 ///
@@ -74,10 +74,15 @@ public:
     HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id,
                   SdfPath const &parentInstancerId);
 
-    /// Populates instance primvars and returns the buffer range.
+    /// Updates _instancePrimvarRange with the instance rate primvars.
     HDST_API
-    HdBufferArrayRangeSharedPtr GetInstancePrimvars(HdRprim *prim,
-                                                    HdStDrawItem *drawItem);
+    void UpdateInstancePrimvarRange(HdRprim *prim,
+                                    HdStDrawItem *drawItem,
+                                    int drawCoordIndex);
+
+    HdBufferArrayRangeSharedPtr GetInstancePrimvarRange() const {
+        return _instancePrimvarRange;
+    }
 
     /// Populates the instance index indirection buffer for \p prototypeId and
     /// returns the buffer range.
@@ -101,6 +106,8 @@ private:
     std::mutex _instanceLock;
     size_t _numInstancePrimvars;
 
+    // Cache the BARs since multiple prototype Rprims will generally refer to
+    // the same instancer.
     HdBufferArrayRangeSharedPtr _instancePrimvarRange;
     TfHashMap<SdfPath,
               HdBufferArrayRangeSharedPtr,

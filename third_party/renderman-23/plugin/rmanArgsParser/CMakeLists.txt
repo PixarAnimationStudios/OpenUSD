@@ -21,9 +21,6 @@ pxr_plugin(rmanArgsParser
         pugixml/pugiconfig.hpp
         pugixml/pugixml.hpp
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
         module.cpp
         wrapRmanArgsParser.cpp

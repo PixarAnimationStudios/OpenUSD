@@ -45,6 +45,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -52,14 +53,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <inttypes.h>
+#include <deque>
+#include <functional>
+#include <initializer_list>
 #include <iosfwd>
-#include <iostream>
+#include <iterator>
+#include <limits>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -70,30 +76,22 @@
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
-#include <boost/container/vector.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/mpl/and.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/front.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/remove.hpp>
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/or.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
-#include <boost/optional.hpp>
-#include <boost/preprocessor.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -119,18 +117,24 @@
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include <boost/python/class.hpp>
+#include <boost/python/copy_const_reference.hpp>
+#include <boost/python/dict.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/handle.hpp>
+#include <boost/python/module.hpp>
+#include <boost/python/object.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/type_id.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
 #undef tolower
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/type_traits/decay.hpp>
-#include <boost/type_traits/has_left_shift.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/type_traits/has_trivial_copy.hpp>
@@ -141,11 +145,11 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/value_init.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opensubdiv/far/topologyRefiner.h>
 #include <opensubdiv/far/topologyRefinerFactory.h>
-#include <tbb/atomic.h>
+#include <tbb/cache_aligned_allocator.h>
+#include <tbb/spin_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

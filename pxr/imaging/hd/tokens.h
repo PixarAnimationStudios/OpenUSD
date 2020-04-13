@@ -57,6 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingCoord1)                             \
     (drawingCoord2)                             \
     (drawingCoordI)                             \
+    (drivers)                                   \
     (edgeIndices)                               \
     (elementCount)                              \
     (elementsVisibility)                        \
@@ -74,12 +75,14 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded)                                \
     (linear)                                    \
     (lightLink)                                 \
+    (lightFilterLink)                           \
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \
+    (pinned)                                    \
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \
@@ -132,7 +135,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (adjacencyBufSize)                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \
-    (bufferArrayRangeMerged)                    \
+    (bufferArrayRangeMigrated)                    \
     (bufferArrayRangeContainerResized)          \
     (collectionsRefreshed)                      \
     (computationsCommited)                      \
@@ -240,6 +243,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (diskLight)                                 \
     (distantLight)                              \
     (domeLight)                                 \
+    (lightFilter)                               \
     (rectLight)                                 \
     (sphereLight)                               \
     /* Sprims ExtComputations */                \
@@ -344,6 +348,9 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     /* thread limit settings */                       \
     (threadLimit)
 
+#define HD_RESOURCE_TYPE_TOKENS                       \
+    (texture)                        
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
@@ -358,6 +365,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

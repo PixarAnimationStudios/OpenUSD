@@ -217,6 +217,12 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
 void
 HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 {
+    // If the render delegate does not support cameras, then
+    // there is nothing to do here.
+    if (!renderIndex->IsSprimTypeSupported(HdTokens->camera)) {
+        return;
+    } 
+
     const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
     TF_VERIFY(camera);

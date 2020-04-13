@@ -36,8 +36,6 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <functional>
 #include <map>
 
@@ -52,7 +50,8 @@ class GlfTextureFactoryBase;
 
 /// \class GlfTextureRegistry
 ///
-class GlfTextureRegistry : boost::noncopyable {
+class GlfTextureRegistry
+{
 public:
     GLF_API
     static GlfTextureRegistry & GetInstance();
@@ -97,6 +96,10 @@ public:
 private:
     friend class TfSingleton< GlfTextureRegistry >;
     GlfTextureRegistry();
+
+    // Disallow copies
+    GlfTextureRegistry(const GlfTextureRegistry&) = delete;
+    GlfTextureRegistry& operator=(const GlfTextureRegistry&) = delete;
 
     GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
                                   GlfImage::ImageOriginLocation originLocation);
@@ -149,7 +152,7 @@ public:
 private:
 
     // Map of file extensions to texture types.
-    boost::scoped_ptr<GlfRankedTypeMap> _typeMap;
+    std::unique_ptr<GlfRankedTypeMap> _typeMap;
 
     // registry for shared textures
     TextureRegistryMap _textureRegistry;

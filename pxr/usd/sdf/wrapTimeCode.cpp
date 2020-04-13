@@ -83,7 +83,7 @@ void wrapTimeCode()
 
         .def("__repr__", _Repr)
         .def("__str__", _Str)
-        .def("__nonzero__", _Nonzero)
+        .def(TfPyBoolBuiltinFuncName, _Nonzero)
         .def("__hash__", &This::GetHash)
         .def("__float__", _Float)
 

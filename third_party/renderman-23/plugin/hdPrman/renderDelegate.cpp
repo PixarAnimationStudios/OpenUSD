@@ -40,7 +40,6 @@
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -51,9 +50,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
-    (pxrBarnLightFilter)
-    (pxrIntMultLightFilter)
-    (pxrRodLightFilter)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
@@ -73,15 +69,13 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->material,
     HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->domeLight,
+    HdPrimTypeTokens->lightFilter,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
-    _tokens->pxrBarnLightFilter,
-    _tokens->pxrIntMultLightFilter,
-    _tokens->pxrRodLightFilter,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -107,7 +101,10 @@ void
 HdPrmanRenderDelegate::_Initialize()
 {
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
-    _resourceRegistry.reset(new HdResourceRegistry());
+
+    // Initialize default resource registry. HdxPrman may override this with its
+    // resource registry during HdxPrmanRenderDelegate::_Initialize.
+    _resourceRegistry = std::make_shared<HdResourceRegistry>();
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     const std::string interactiveIntegrator = 
@@ -273,18 +270,13 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdPrmanMaterial(sprimId);
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new HdPrmanCoordSys(sprimId);
-    } else if (typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter) {
+    } else if (typeId == HdPrimTypeTokens->lightFilter) {
         return new HdPrmanLightFilter(sprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
-               typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter ||
                typeId == HdPrimTypeTokens->sphereLight) {
         return new HdPrmanLight(sprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
@@ -307,18 +299,13 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanMaterial(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new HdPrmanCoordSys(SdfPath::EmptyPath());
-    } else if (typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter) {
+    } else if (typeId == HdPrimTypeTokens->lightFilter) {
         return new HdPrmanLightFilter(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
-               typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter ||
                typeId == HdPrimTypeTokens->sphereLight) {
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {

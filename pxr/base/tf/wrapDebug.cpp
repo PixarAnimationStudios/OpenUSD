@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/pyUtils.h"
+
+// XXX: This include is a hack to avoid build errors due to
+// incompatible macro definitions in pyport.h on macOS.
+#include <locale>
 
 #include <boost/python/class.hpp>
 #include <boost/python/object.hpp>
@@ -36,25 +40,17 @@ namespace {
 static void
 _SetOutputFile(object const &file)
 {
-    FILE *fp = PyFile_AsFile(file.ptr());
-    if (!fp)
-        TfPyThrowTypeError("expected file object");
-
-    // On Windows the FILE* for sys.__stdout__ and __stderr__ will not
-    // match stdout and stderr if there's redirection but output will
-    // go to the same handle.  To satisfy TfDebug::SetOutputFile() we
-    // translate the FILE pointers here.
-    if (fp != stdout && fp != stderr) {
-        object sys(handle<>(PyImport_ImportModule("sys")));
-        if (PyFile_AsFile(object(sys.attr("__stdout__")).ptr()) == fp) {
-            fp = stdout;
-        }
-        else if (PyFile_AsFile(object(sys.attr("__stderr__")).ptr()) == fp) {
-            fp = stderr;
-        }
+    int filefd = PyObject_AsFileDescriptor(file.ptr());
+    if (filefd == ArchFileNo(stdout)) {
+        TfDebug::SetOutputFile(stdout);
     }
-
-    TfDebug::SetOutputFile(fp);
+    else if (filefd == ArchFileNo(stderr)) {
+        TfDebug::SetOutputFile(stderr);
+    }
+    else {
+        // reports an error indicating correct usage, either stdout or stderr
+        TfDebug::SetOutputFile(NULL);
+    }
 }
 
 } // anonymous namespace 

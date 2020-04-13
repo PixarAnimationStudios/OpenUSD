@@ -105,13 +105,6 @@ function(_plugInfo_subst libTarget pluginToLibraryPath plugInfoPath)
     )
 endfunction() # _plugInfo_subst
 
-# Generate a doxygen config file
-function(_pxrDoxyConfig_subst)
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/usd/Doxyfile.in
-                   ${CMAKE_BINARY_DIR}/Doxyfile
-    )
-endfunction()
-
 # Install compiled python files alongside the python object,
 # e.g. lib/python/pxr/Ar/__init__.pyc
 function(_install_python LIBRARY_NAME)
@@ -744,6 +737,7 @@ function(_pxr_target_link_libraries NAME)
         # Collect the definitions and include directories.
         set(finalDefs "")
         set(finalIncs "")
+        set(finalSystemIncs "")
         _pxr_transitive_internal_libraries("${internal}" internal)
         foreach(lib ${internal})
             get_property(defs TARGET ${lib} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
@@ -756,6 +750,12 @@ function(_pxr_target_link_libraries NAME)
             foreach(inc ${incs})
                 if(NOT ";${finalIncs};" MATCHES ";${inc};")
                     list(APPEND finalIncs "${inc}")
+                endif()
+            endforeach()
+            get_property(incs TARGET ${lib} PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+            foreach(inc ${incs})
+                if(NOT ";${finalSystemIncs};" MATCHES ";${inc};")
+                    list(APPEND finalSystemIncs "${inc}")
                 endif()
             endforeach()
         endforeach()
@@ -789,6 +789,7 @@ function(_pxr_target_link_libraries NAME)
         # Record the definitions, include directories and "linked" libraries.
         target_compile_definitions(${NAME} PUBLIC ${finalDefs})
         target_include_directories(${NAME} PUBLIC ${finalIncs})
+        target_include_directories(${NAME} SYSTEM PUBLIC ${finalSystemIncs})
         set_property(TARGET ${NAME} PROPERTY
             INTERFACE_LINK_LIBRARIES
                 ${finalLibs}
@@ -1018,12 +1019,28 @@ function(_pxr_python_module NAME)
             ${SUBDIR_INC_DIR}
     )
 
-    if (args_INCLUDE_DIRS)
-        target_include_directories(${LIBRARY_NAME}
-            PUBLIC
-                ${args_INCLUDE_DIRS}
-        )
-    endif()
+    # The INCLUDE_DIRS argument specifies directories containing headers
+    # for third-party libraries needed by this library. We treat these
+    # as system include directories so that compiler warnings from these
+    # headers are ignored, since we have no control over the contents
+    # of those headers.
+    target_include_directories(${LIBRARY_NAME}
+        SYSTEM
+        PUBLIC
+            ${args_INCLUDE_DIRS}
+    )
+
+    # Ensure the Python header directory is included as a system include
+    # directory. This is a workaround for an issue in which Python headers 
+    # unequivocally redefine macros defined in standard library headers.
+    # This behavior prevents users from running strict builds with
+    # PXR_STRICT_BUILD_MODE as the redefinition warnings would cause build
+    # failures.
+    target_include_directories(${LIBRARY_NAME}
+        SYSTEM
+        PUBLIC
+            ${PYTHON_INCLUDE_DIR}
+    )
 
     install(
         TARGETS ${LIBRARY_NAME}
@@ -1263,8 +1280,6 @@ function(_pxr_library NAME)
             PRIVATE
                 "${CMAKE_BINARY_DIR}/include"
                 "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-            PUBLIC
-                ${args_INCLUDE_DIRS}
             INTERFACE
                 $<INSTALL_INTERFACE:${headerInstallDir}>
         )
@@ -1273,10 +1288,19 @@ function(_pxr_library NAME)
             PRIVATE
                 "${CMAKE_BINARY_DIR}/include"
                 "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-            PUBLIC
-                ${args_INCLUDE_DIRS}
         )
     endif()
+
+    # The INCLUDE_DIRS argument specifies directories containing headers
+    # for third-party libraries needed by this library. We treat these
+    # as system include directories so that compiler warnings from these
+    # headers are ignored, since we have no control over the contents
+    # of those headers.
+    target_include_directories(${NAME}
+        SYSTEM
+        PUBLIC
+            ${args_INCLUDE_DIRS}
+    )
 
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})

@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 #include "pxr/imaging/plugin/hdEmbree/renderPass.h"
@@ -154,7 +152,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     //
     // It's possible for the passed in bindings to be empty, but that's
     // never a legal state for the renderer, so if that's the case we add
-    // a color and depth aov that we can blit to the GL framebuffer.
+    // a color and depth aov.
     //
     // If the renderer AOV bindings are empty, force a bindings update so that
     // we always get a chance to add color/depth on the first time through.
@@ -165,7 +163,6 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
 
         _renderThread->StopRender();
         if (aovBindings.size() == 0) {
-            // No attachment means we should render to the GL framebuffer
             HdRenderPassAovBinding colorAov;
             colorAov.aovName = HdAovTokens->color;
             colorAov.renderBuffer = &_colorBuffer;
@@ -185,40 +182,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         needStartRender = true;
     }
 
-    // If there are no AOVs specified, we should blit our local color buffer to
-    // the GL framebuffer.
-    if (_aovBindings.size() == 0) {
-        _converged = _colorBuffer.IsConverged() && _depthBuffer.IsConverged();
-        // To reduce flickering, don't update the compositor until every pixel
-        // has a sample (as determined by depth buffer convergence).
-        if (_depthBuffer.IsConverged()) {
-            _colorBuffer.Resolve();
-            uint8_t *cdata = reinterpret_cast<uint8_t*>(_colorBuffer.Map());
-            if (cdata) {
-                _compositor.UpdateColor(_width, _height,
-                                        _colorBuffer.GetFormat(), cdata);
-                _colorBuffer.Unmap();
-            }
-            _depthBuffer.Resolve();
-            uint8_t *ddata = reinterpret_cast<uint8_t*>(_depthBuffer.Map());
-            if (ddata) {
-                _compositor.UpdateDepth(_width, _height, ddata);
-                _depthBuffer.Unmap();
-            }
-        }
-
-        // Embree does not output opacity at this point so we disable alpha
-        // blending in the compositor so we can see the background color.
-        GLboolean restoreblendEnabled;
-        glGetBooleanv(GL_BLEND, &restoreblendEnabled);
-        glDisable(GL_BLEND);
-
-        _compositor.Draw();
-
-        if (restoreblendEnabled) {
-            glEnable(GL_BLEND);
-        }
-    }
+    TF_VERIFY(!_aovBindings.empty(), "No aov bindings to render into");
 
     // Only start a new render if something in the scene has changed.
     if (needStartRender) {

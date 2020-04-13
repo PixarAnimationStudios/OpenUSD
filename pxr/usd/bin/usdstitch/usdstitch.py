@@ -22,6 +22,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+
 import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 
 
@@ -44,7 +47,7 @@ results = parser.parse_args()
 assert results.out != None, "must specify output file"
 
 if os.path.isfile(results.out):
-    print "Warning: overwriting pre-existing file"
+    print("Warning: overwriting pre-existing file")
 
 # fold over the files, left file takes precedence on op. strength
 outLayer = Sdf.Layer.CreateNew(results.out)
@@ -68,6 +71,6 @@ try:
         outLayer.Save()
 # if something in the authoring fails, remove the output file
 except Exception as e:
-    print 'Failed to complete stitching, removing output file %s' % results.out
-    print e
+    print('Failed to complete stitching, removing output file %s' % results.out)
+    print(e)
     os.remove(results.out) 

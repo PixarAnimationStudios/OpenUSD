@@ -65,8 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Please see \ref page_tf_TfError for more information about how to use
 /// TF_ERROR().
 ///
-/// This is safe to call in secondary threads, but the error will be downgraded
-/// to a warning.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_ERROR(...)
@@ -80,8 +79,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// an application iteration will roll-back the undo stack to a last-known-good
 /// state.
 ///
-/// This is safe to call in secondary threads, but the error will be downgraded
-/// to a warning.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_CODING_ERROR(fmt, args)
@@ -96,8 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// exception, and if it remains unhandled at the end of an application iteration
 /// will roll-back the undo stack to a last-known-good state.
 ///
-/// This is safe to call in secondary threads, but the error will be downgraded
-/// to a warning.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_RUNTIME_ERROR(fmt, args)
@@ -146,8 +143,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Generally, no adjustment to program state should occur as the result of
 /// this macro. This is in contrast with errors as mentioned above.
 ///
-/// This is safe to call in secondary threads, but the warning will be printed
-/// to \c stderr rather than being handled by the diagnostic delegate.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_WARN(...)
@@ -188,8 +184,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Generally, no adjustment to program state should occur as the result of
 /// this macro. This is in contrast with errors as mentioned above.
 ///
-/// This is safe to call in secondary threads, but the message will be printed
-/// to \c stderr rather than being handled by the diagnostic delegate.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_STATUS(...)
@@ -282,8 +277,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// generate TF_FATAL_ERRORs instead and abort the program.  This is intended for
 /// testing.
 ///
-/// This is safe to call in secondary threads, but the error will be downgraded
-/// to a warning.
+/// This is safe to call in secondary threads.
 ///
 /// \hideinitializer
 #define TF_VERIFY(cond [, format, ...])

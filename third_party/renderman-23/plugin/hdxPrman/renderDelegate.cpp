@@ -25,6 +25,7 @@
 #include "renderBuffer.h"
 #include "renderParam.h"
 #include "renderPass.h"
+#include "resourceRegistry.h"
 #include "context.h"
 
 #include "hdPrman/instancer.h"
@@ -39,8 +40,6 @@ HdxPrmanRenderDelegate::HdxPrmanRenderDelegate(
     std::shared_ptr<HdPrman_Context> context)
     : HdPrmanRenderDelegate(context)
 {
-    context->SetIsInteractive(true);
-    context->SetInstantaneousShutter(false);
     _Initialize(context);
 }
 
@@ -49,10 +48,6 @@ HdxPrmanRenderDelegate::HdxPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
     : HdPrmanRenderDelegate(context, settingsMap)
 {
-    // If we get a settingsMap, assume this is non-interactive batch mode.
-    // Temporary until hydra has a formal notion of batch versus interactive
-    context->SetIsInteractive(false);
-    context->SetInstantaneousShutter(false);
     _Initialize(context);
 }
 
@@ -68,6 +63,9 @@ HdxPrmanRenderDelegate::_Initialize(std::shared_ptr<HdPrman_Context> context)
             _interactiveContext);
         _interactiveContext->Begin(this);
     }
+
+    _resourceRegistry = std::make_shared<HdxPrman_ResourceRegistry>(
+        _interactiveContext);
 }
 
 HdxPrmanRenderDelegate::~HdxPrmanRenderDelegate()
@@ -166,6 +164,26 @@ HdxPrmanRenderDelegate::GetDefaultAovDescriptor(
     }
 
     return HdAovDescriptor();
+}
+
+bool
+HdxPrmanRenderDelegate::IsStopSupported() const
+{
+    return true;
+}
+
+bool
+HdxPrmanRenderDelegate::Stop()
+{
+    _interactiveContext->StopRender();
+    return true;
+}
+bool
+HdxPrmanRenderDelegate::Restart()
+{
+    // Next call into HdxPrman_RenderPass::_Execute will do a StartRender
+    _interactiveContext->sceneVersion++;
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

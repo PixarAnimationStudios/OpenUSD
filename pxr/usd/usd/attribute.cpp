@@ -199,7 +199,7 @@ bool
 UsdAttribute::HasFallbackValue() const
 {
     SdfAttributeSpecHandle attrDef =
-        _GetStage()->_GetAttributeDefinition(*this);
+        _GetStage()->_GetSchemaAttributeSpec(*this);
     return attrDef && attrDef->HasDefaultValue();
 }
 

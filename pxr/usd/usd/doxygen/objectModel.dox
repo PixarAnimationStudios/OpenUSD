@@ -219,6 +219,28 @@ not be changed for extension metadata,* however - all extension metadata will
 be resolved based on its datatype: strongest wins for primitive datatypes,
 element-wise strongest wins for dictionaries.
 
+\section Usd_OM_SchemaDefinitionRegistry Schema and Prim Definition Registry
+
+The singleton class UsdSchemaRegistry exists to provide access to all available 
+schemas. It queries plugins to find all registered schema types and generates
+prim definitions from the processed generatedSchema.usda files
+(generated when a schema.usda file is processed by \em usdGenSchema).
+
+A prim definition, provided by the UsdPrimDefinition class, is an encapsulation 
+of the built-in data that is imparted on a prim by the schemas for the prim's 
+complete type signature. The built-in data accessible from a prim definition 
+includes the list of built-in properties, an SdfSpec defining each property, 
+the list of built-in metadata fields, and fallback values for attributes and 
+metadata fields.
+
+The schema registry creates and provides access to prim definitions for each 
+individual "IsA" and applied API schema. It also provides API to build a 
+composite prim definition for a combination of an "IsA" type with a list of 
+applied API schemas. The prim definition that a prim uses is determined by the 
+combination of its type name and the list of any applied API schemas applied to 
+the prim and is generally what we are referring to when we talk about a 
+UsdPrim's "prim definition".
+
 \section Usd_OM_OtherObjects Composition Operator Interfaces: UsdReferences, UsdInherits, UsdVariantSets
 
 \subsection Usd_OM_ListOps ListOps and List Editing

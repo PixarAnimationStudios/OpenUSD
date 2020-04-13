@@ -793,7 +793,7 @@ int main(int argc, char *argv[])
             // requested includedPurposes.
             HdPrmanRenderDelegate hdPrmanBackend(hdPrmanContext);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
-                HdRenderIndex::New(&hdPrmanBackend));
+                HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
                                              SdfPath::AbsoluteRootPath());
             hdUsdFrontend.Populate(stage->GetPseudoRoot());
@@ -820,9 +820,9 @@ int main(int argc, char *argv[])
 
             // The task execution graph and engine configuration is also simple.
             HdTaskSharedPtrVector tasks = {
-                boost::make_shared<Hd_DrawTask>(hdRenderPass,
-                                                hdRenderPassState,
-                                                renderTags)
+                std::make_shared<Hd_DrawTask>(hdRenderPass,
+                                              hdRenderPassState,
+                                              renderTags)
             };
             HdEngine hdEngine;
             timer_hydraSync.Start();

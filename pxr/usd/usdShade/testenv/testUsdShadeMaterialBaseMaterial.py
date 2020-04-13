@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific          
 # language governing permissions and limitations under the Apache License. 
 
+from __future__ import print_function
+
 from pxr import Sdf, Usd, UsdShade
 import os, unittest
 
@@ -57,8 +59,8 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
         self.assertTrue(ConnAPI.ConnectToSource(floatShaderInput, 
                                                 floatShaderOutput))
 
-        print stage.GetRootLayer().ExportToString()
-        print ConnAPI.GetConnectedSource(floatShaderInput)
+        print(stage.GetRootLayer().ExportToString())
+        print(ConnAPI.GetConnectedSource(floatShaderInput))
         self.assertTrue(ConnAPI.HasConnectedSource(floatShaderInput))
         self.assertFalse(ConnAPI.IsSourceConnectionFromBaseMaterial(
                 floatShaderInput))

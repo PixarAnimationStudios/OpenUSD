@@ -27,6 +27,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"

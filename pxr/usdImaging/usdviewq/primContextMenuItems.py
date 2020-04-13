@@ -21,8 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtGui, QtWidgets
-from usdviewContextMenuItem import UsdviewContextMenuItem
+from .qt import QtGui, QtWidgets
+from .usdviewContextMenuItem import UsdviewContextMenuItem
 import os
 import sys
 
@@ -88,7 +88,7 @@ class SeparatorMenuItem(PrimContextMenuItem):
 class JumpToEnclosingModelItem(PrimContextMenuItem):
 
     def IsEnabled(self):
-        from common import GetEnclosingModelPrim
+        from .common import GetEnclosingModelPrim
 
         for p in self._selectionDataModel.getPrims():
             if GetEnclosingModelPrim(p) is not None:
@@ -242,7 +242,7 @@ class VisOnlyMenuItem(PrimContextMenuItem):
 class RemoveVisMenuItem(PrimContextMenuItem):
 
     def IsEnabled(self):
-        from common import HasSessionVis
+        from .common import HasSessionVis
         for prim in self._selectionDataModel.getPrims():
             if HasSessionVis(prim):
                 return True
@@ -263,7 +263,7 @@ class LoadOrUnloadMenuItem(PrimContextMenuItem):
 
     def __init__(self, appController, item):
         PrimContextMenuItem.__init__(self, appController, item)
-        from common import GetPrimsLoadability
+        from .common import GetPrimsLoadability
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
         self._loadable, self._loaded = GetPrimsLoadability(
@@ -310,7 +310,7 @@ class CopyModelPathMenuItem(PrimContextMenuItem):
 
     def __init__(self, appController, item):
         PrimContextMenuItem.__init__(self, appController, item)
-        from common import GetEnclosingModelPrim
+        from .common import GetEnclosingModelPrim
 
         if len(self._selectionDataModel.getPrims()) == 1:
             self._modelPrim = GetEnclosingModelPrim(
@@ -408,7 +408,7 @@ class IsolateAssetMenuItem(PrimContextMenuItem):
         return "usdview asset%s" % name
 
     def RunCommand(self):
-        print "Spawning usdview %s" % self._filePath
+        print("Spawning usdview %s" % self._filePath)
         os.system("usdview %s &" % self._filePath)
 
 #

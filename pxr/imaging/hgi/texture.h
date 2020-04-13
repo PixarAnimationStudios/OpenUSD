@@ -28,39 +28,13 @@
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-struct HgiTextureDesc;
-
-
-///
-/// \class HgiTexture 
-///
-/// Represents a graphics platform independent GPU texture resource.
-///
-/// Base class for Hgi textures.
-/// To the client (HdSt) texture resources are referred to via
-/// opaque, stateless handles (HgTextureHandle).
-///
-class HgiTexture {
-public:
-    HGI_API
-    HgiTexture(HgiTextureDesc const& desc);
-
-    HGI_API
-    virtual ~HgiTexture();
-
-private:
-    HgiTexture() = delete;
-    HgiTexture & operator=(const HgiTexture&) = delete;
-    HgiTexture(const HgiTexture&) = delete;
-};
-
-typedef HgiTexture* HgiTextureHandle;
-
 
 
 /// \struct HgiTextureDesc
@@ -68,28 +42,56 @@ typedef HgiTexture* HgiTextureHandle;
 /// Describes the properties needed to create a GPU texture.
 ///
 /// <ul>
+/// <li>debugName:
+///   This label can be applied as debug label for GPU debugging.</li>
 /// <li>usage:
 ///   Describes how the texture is intended to be used.</li>
 /// <li>format:
 ///   The format of the texture.
 /// <li>dimensions:
-///   The resolution of the texture (width,height,layers).</li>
+///   The resolution of the texture (width, height, depth).</li>
+/// <li>type:
+///   Type of texture (2D, 3D).</li>
+/// <li>layerCount:
+///   The number of layers (texture-arrays).</li>
+/// <li>mipLevels:
+///   The number of mips in texture.</li>
 /// <li>sampleCount:
-///   samples per texel (multi-sampling)</li>
+///   samples per texel (multi-sampling).</li>
+/// <li>pixelsByteSize:
+///   Byte size (length) of pixel data.</li>
+/// <li>initialData:
+///   CPU pointer to initialization pixels of the texture.
+///   The memory is consumed immediately during the creation of the HgiTexture.
+///   The application may alter or free this memory as soon as the constructor
+///   of the HgiTexture has returned.
+///   Data may optionally include pixels for each mip-level.</li>
 /// </ul>
 ///
-struct HgiTextureDesc {
+struct HgiTextureDesc
+{
     HgiTextureDesc()
     : usage(HgiTextureUsageBitsColorTarget)
     , format(HgiFormatInvalid)
+    , type(HgiTextureType2D)
     , dimensions(0)
+    , layerCount(1)
+    , mipLevels(1)
     , sampleCount(HgiSampleCount1)
+    , pixelsByteSize(0)
+    , initialData(nullptr)
     {}
 
+    std::string debugName;
     HgiTextureUsage usage;
     HgiFormat format;
+    HgiTextureType type;
     GfVec3i dimensions;
+    uint16_t layerCount;
+    uint16_t mipLevels;
     HgiSampleCount sampleCount;
+    size_t pixelsByteSize;
+    void const* initialData;
 };
 
 HGI_API
@@ -98,9 +100,48 @@ bool operator==(
     const HgiTextureDesc& rhs);
 
 HGI_API
-inline bool operator!=(
+bool operator!=(
     const HgiTextureDesc& lhs,
     const HgiTextureDesc& rhs);
+
+
+///
+/// \class HgiTexture
+///
+/// Represents a graphics platform independent GPU texture resource.
+/// Textures should be created via Hgi::CreateTexture.
+///
+/// Base class for Hgi textures.
+/// To the client (HdSt) texture resources are referred to via
+/// opaque, stateless handles (HgTextureHandle).
+///
+class HgiTexture
+{
+public:
+    HGI_API
+    virtual ~HgiTexture();
+
+    /// The descriptor describes the object.
+    HGI_API
+    HgiTextureDesc const& GetDescriptor() const;
+
+protected:
+    HGI_API
+    HgiTexture(HgiTextureDesc const& desc);
+
+    HgiTextureDesc _descriptor;
+
+private:
+    HgiTexture() = delete;
+    HgiTexture & operator=(const HgiTexture&) = delete;
+    HgiTexture(const HgiTexture&) = delete;
+};
+
+
+/// Explicitly instantiate and define texture handle
+template class HgiHandle<class HgiTexture>;
+using HgiTextureHandle = HgiHandle<class HgiTexture>;
+using HgiTextureHandleVector = std::vector<HgiTextureHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

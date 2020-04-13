@@ -42,7 +42,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+Pcp_Dependencies::
+ConcurrentPopulationContext::ConcurrentPopulationContext(Pcp_Dependencies &deps)
+    : _deps(deps)
+{
+    TF_AXIOM(!_deps._concurrentPopulationContext);
+    _deps._concurrentPopulationContext = this;
+}
+
+Pcp_Dependencies::ConcurrentPopulationContext::~ConcurrentPopulationContext()
+{
+    _deps._concurrentPopulationContext = nullptr;
+}
+
 Pcp_Dependencies::Pcp_Dependencies()
+    : _concurrentPopulationContext(nullptr)
 {
     // Do nothing
 }
@@ -85,8 +99,16 @@ Pcp_Dependencies::Add(
         const int curNodeIndex = nodeIndex++;
         const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
         if (_ShouldStoreDependency(depFlags)) {
-            _SiteDepMap &siteDepMap = _deps[n.GetLayerStack()];
-            std::vector<SdfPath> &deps = siteDepMap[n.GetPath()];
+            ++count;
+            {
+                tbb::spin_mutex::scoped_lock lock;
+                if (_concurrentPopulationContext) {
+                    lock.acquire(_concurrentPopulationContext->_mutex);
+                }
+                _SiteDepMap &siteDepMap = _deps[n.GetLayerStack()];
+                std::vector<SdfPath> &deps = siteDepMap[n.GetPath()];
+                deps.push_back(primIndexPath);
+            }
 
             TF_DEBUG(PCP_DEPENDENCIES)
                 .Msg(" - Node %i (%s %s): <%s> %s\n",
@@ -95,9 +117,6 @@ Pcp_Dependencies::Add(
                      TfEnum::GetDisplayName(n.GetArcType()).c_str(),
                      n.GetPath().GetText(),
                      TfStringify(n.GetLayerStack()->GetIdentifier()).c_str());
-
-            deps.push_back(primIndexPath);
-            count++;
         }
     }
 
@@ -107,6 +126,10 @@ Pcp_Dependencies::Add(
         // Update the cache of field names that are are possible dynamic file
         // format argument dependencies by incrementing its reference count, 
         // adding the field to the cache if it isn't already there.
+        tbb::spin_mutex::scoped_lock lock;
+        if (_concurrentPopulationContext) {
+            lock.acquire(_concurrentPopulationContext->_mutex);
+        }
         for (const TfToken &field : 
                 fileFormatDependencyData.GetRelevantFieldNames()) {
             auto it = _possibleDynamicFileFormatArgumentFields.emplace(field, 0);

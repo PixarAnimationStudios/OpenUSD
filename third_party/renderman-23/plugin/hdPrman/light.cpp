@@ -86,9 +86,12 @@ HdPrmanLight::_ResetLight(HdPrman_Context *context)
         _lightLink = TfToken();
     }
     if (!_lightFilterPaths.empty()) {
-        for (const SdfPath &filterPath: _lightFilterPaths)
-            context->DecrementLightFilterCount(TfToken(filterPath.GetText()));
         _lightFilterPaths.clear();
+    }
+    if (!_lightFilterLinks.empty()) {
+        for (const TfToken &filterLink: _lightFilterLinks)
+            context->DecrementLightFilterCount(filterLink);
+        _lightFilterLinks.clear();
     }
 
     riley::Riley *riley = context->riley;
@@ -622,9 +625,6 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                     }
                     TfToken filterType = tval.UncheckedGet<TfToken>();
 
-                    context->IncrementLightFilterCount(
-                                                TfToken(filterPath.GetText()));
-
                     riley::ShadingNode *filter = &filterNodes[nFilterNodes];
                     filter->type = riley::ShadingNode::k_LightFilter;
                     filter->name = RtUString(filterType.GetText());
@@ -632,7 +632,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
                     if (HdPrmanLightFilterPopulateParams(filter, filterPath,
                                     filterType, &coordsysIds,
-                                    sceneDelegate, riley, lightNode.name))
+                                    &_lightFilterLinks, sceneDelegate, context,
+                                    riley, lightNode.name))
                         nFilterNodes++;
                 }
                 if (nFilterNodes > 1) {

@@ -78,7 +78,6 @@ public:
 
     /// @}
 
-public:
     /// \name Connections
     /// @{
 
@@ -166,19 +165,26 @@ public:
     TfToken GetRoleName() const;
 
     /// @}
-
-private:
-    static SdfAttributeSpecHandle
-    _New(const SdfSpecHandle &owner,
-         const SdfPath& attributePath,
-         const SdfValueTypeName& typeName,
-         SdfVariability variability,
-         bool custom);
-
-    SdfPath _CanonicalizeConnectionPath(const SdfPath& connectionPath) const;
-
-    friend class Sdf_PyAttributeAccess;
 };
+
+/// Convenience function to create an attributeSpec on a primSpec at the given
+/// path, and any necessary parent primSpecs, in the given layer.
+///
+/// If an attributeSpec already exists at the given path, just author typeName,
+/// variability, and custom according to passed arguments and return true.
+///
+/// Any newly created prim specs have SdfSpecifierOver and an empty type (as if
+/// created by SdfJustCreatePrimInLayer()).  attrPath must be a valid prim
+/// property path (see SdfPath::IsPrimPropertyPath()).  Return false and issue
+/// an error if we fail to author the required scene description.
+SDF_API
+bool
+SdfJustCreatePrimAttributeInLayer(
+    const SdfLayerHandle &layer,
+    const SdfPath &attrPath,
+    const SdfValueTypeName &typeName,
+    SdfVariability variability = SdfVariabilityVarying,
+    bool isCustom = false);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

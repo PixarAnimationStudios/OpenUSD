@@ -33,7 +33,6 @@
 #include <vector>
 
 #include <boost/compressed_pair.hpp>
-#include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility.hpp>
 
@@ -58,10 +57,7 @@ template <
     class    EqualElement  = std::equal_to<Element>,
     unsigned Threshold = 128
 >
-class TfDenseHashSet :
-    private boost::equality_comparable<
-        TfDenseHashSet<Element, HashFn, EqualElement, Threshold>
-    >
+class TfDenseHashSet
 {
 public:
 
@@ -156,6 +152,10 @@ public:
         }
 
         return true;
+    }
+
+    bool operator!=(const TfDenseHashSet &rhs) const {
+        return !(*this == rhs);
     }
 
     /// Erases all of the elements

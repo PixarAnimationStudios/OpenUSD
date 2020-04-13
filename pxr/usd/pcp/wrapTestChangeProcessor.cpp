@@ -45,7 +45,7 @@ class Pcp_PyTestChangeProcessor
     , public boost::noncopyable
 {
 public:
-    Pcp_PyTestChangeProcessor(PcpCache* cache)
+    Pcp_PyTestChangeProcessor(const PcpCache* cache)
         : _cache(cache)
     {
     }
@@ -103,12 +103,12 @@ private:
     void _HandleLayerDidChange(const SdfNotice::LayersDidChange& n)
     {
         _changes.DidChange(
-            TfSpan<PcpCache *>(&_cache, 1), n.GetChangeListVec());
+            TfSpan<const PcpCache *>(&_cache, 1), n.GetChangeListVec());
         _changes.Apply();
     }
 
 private:
-    PcpCache* _cache;
+    const PcpCache* _cache;
     TfNotice::Key _layerChangedNoticeKey;
     PcpChanges _changes;
 };

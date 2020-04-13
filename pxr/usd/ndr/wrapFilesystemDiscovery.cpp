@@ -23,11 +23,6 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/pragmas.h"
-
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
-
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -117,5 +112,3 @@ void wrapFilesystemDiscovery()
 
     wrapFilesystemDiscoveryContext();
 }
-
-ARCH_PRAGMA_POP

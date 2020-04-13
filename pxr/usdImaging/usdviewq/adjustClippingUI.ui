@@ -32,7 +32,7 @@
     <x>0</x>
     <y>0</y>
     <width>331</width>
-    <height>81</height>
+    <height>86</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -68,10 +68,24 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QLineEdit" name="nearEdit"/>
+        <widget class="QLineEdit" name="nearEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="farEdit"/>
+        <widget class="QLineEdit" name="farEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>

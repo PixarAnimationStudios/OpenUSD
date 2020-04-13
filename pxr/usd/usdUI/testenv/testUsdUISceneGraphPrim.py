@@ -41,7 +41,7 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
        
         # Test displayName
         displayNameAttr = sceneGraphPrim.GetDisplayNameAttr()
-        assert not displayNameAttr
+        assert displayNameAttr
         displayNameAttr = sceneGraphPrim.CreateDisplayNameAttr()
         assert displayNameAttr, "Failed creating display attribute"
         assert displayNameAttr.GetTypeName() == 'token', \
@@ -51,7 +51,7 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
        
         # Test Display Color
         displayGroupAttr = sceneGraphPrim.GetDisplayGroupAttr()
-        assert not displayGroupAttr
+        assert displayGroupAttr
         displayGroupAttr = sceneGraphPrim.CreateDisplayGroupAttr()
         assert displayGroupAttr, "Failed creating display color attribute"
         assert displayGroupAttr.GetTypeName() == 'token', \

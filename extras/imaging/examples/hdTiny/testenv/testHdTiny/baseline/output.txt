@@ -1,0 +1,10 @@
+Creating Tiny RenderDelegate
+Create Tiny Rprim type=mesh id=/MyCube1 instancerId=
+Create RenderPass with Collection=geometry
+* (multithreaded) Sync Tiny Mesh id=/MyCube1
+=> CommitResources RenderDelegate
+=> Execute RenderPass
+Destroy Tiny Rprim id=/MyCube1
+Destroying Tiny RenderDelegate
+Destroying renderPass
+OK

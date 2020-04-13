@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtWidgets
+from .qt import QtCore, QtWidgets
 
 # simple class to have a "clear" button on a line edit when the line edit
 # contains an override. Clicking the clear button returns to the default value.

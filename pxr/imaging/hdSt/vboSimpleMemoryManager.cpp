@@ -43,8 +43,6 @@
 #include <atomic>
 
 #include <boost/functional/hash.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,14 +59,14 @@ HdStVBOSimpleMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return boost::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
+    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
         role, bufferSpecs, usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
 {
-    return boost::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>();
+    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>();
 }
 
 HdAggregationStrategy::AggregationId
@@ -90,7 +88,7 @@ HdStVBOSimpleMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _SimpleBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_SimpleBufferArray> (bufferArray);
+        std::static_pointer_cast<_SimpleBufferArray> (bufferArray);
     return bufferArray_->GetBufferSpecs();
 }
 
@@ -104,7 +102,7 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
     size_t gpuMemoryUsed = 0;
 
     _SimpleBufferArraySharedPtr bufferArray_ =
-        boost::static_pointer_cast<_SimpleBufferArray> (bufferArray);
+        std::static_pointer_cast<_SimpleBufferArray> (bufferArray);
 
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceGLSharedPtr const & resource = resIt->second;

@@ -25,6 +25,11 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
+# Require C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -81,14 +86,3 @@ if (PXR_ENABLE_PYTHON_SUPPORT)
 else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
-
-# XXX: This is a workaround for an issue in which Python headers unequivocally
-# redefine macros defined in standard library headers. This behavior 
-# prevents users from running strict builds with PXR_STRICT_BUILD_MODE
-# as the redefinition warnings would cause build failures.
-#
-# The python official docs call this out here:
-# https://docs.python.org/2/c-api/intro.html#include-files
-#
-# The long term plan is to adhere to the required behavior.
-include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})

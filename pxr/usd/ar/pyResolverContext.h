@@ -28,7 +28,8 @@
 /// Macros for creating Python bindings for objects used with 
 /// ArResolverContext.
 
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
+
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
 

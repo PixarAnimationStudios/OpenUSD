@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/plug/registry.h"
 
+#include "pxr/base/plug/debugCodes.h"
 #include "pxr/base/plug/notice.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/plug/plugin.h"
@@ -227,19 +228,22 @@ namespace {
 
 // Return a static vector<string> that holds the bootstrap plugin paths.
 static
-std::vector<std::string>&
-Plug_GetPaths()
+std::pair<std::vector<std::string>,
+          std::vector<std::string>>&
+Plug_GetPathsAndDebugMessages()
 {
-    static std::vector<std::string> paths;
-    return paths;
+    static std::pair<std::vector<std::string>,
+                     std::vector<std::string>> pathsAndDebugMessages;
+    return pathsAndDebugMessages;
 }
 
 }
 
 void
-Plug_SetPaths(const std::vector<std::string>& paths)
+Plug_SetPaths(const std::vector<std::string>& paths,
+              const std::vector<std::string>& debugMessages)
 {
-    Plug_GetPaths() = paths;
+    Plug_GetPathsAndDebugMessages() = { paths, debugMessages };
 }
 
 // This is here so plugin.cpp doesn't have to include info.h or registry.h.
@@ -253,8 +257,14 @@ PlugPlugin::_RegisterAllPlugins()
         PlugRegistry &registry = PlugRegistry::GetInstance();
 
         if (!TfGetenvBool("PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH", false)) {
+            // Emit any debug messages first, then call _RegisterPlugins.
+            for (std::string const &msg:
+                     Plug_GetPathsAndDebugMessages().second) {
+                TF_DEBUG(PLUG_INFO_SEARCH).Msg("%s", msg.c_str());
+            }
             // Register plugins in the tree. This declares TfTypes.
-            result = registry._RegisterPlugins(Plug_GetPaths());
+            result = registry._RegisterPlugins(
+                Plug_GetPathsAndDebugMessages().first);
         }
     });
 

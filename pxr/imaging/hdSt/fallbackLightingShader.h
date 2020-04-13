@@ -34,9 +34,9 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -75,7 +75,7 @@ public:
                            GfMatrix4d const &projectionMatrix);
 
 private:
-    boost::scoped_ptr<HioGlslfx> _glslfx;
+    std::unique_ptr<HioGlslfx> _glslfx;
 };
 
 

@@ -37,6 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class GfBBox3d;
 class GfLine;
 class GfLineSeg;
 class GfPlane;
@@ -174,6 +175,15 @@ class GfRay {
     /// points in \p enterDistance and \p exitDistance.
     GF_API
     bool        Intersect(const GfRange3d &box,
+                          double *enterDistance = NULL,
+                          double *exitDistance = NULL) const;
+
+    /// Intersects the ray with an oriented box, returning \c true if the
+    /// ray intersects it at all within bounds. If there is an intersection,
+    /// this also returns the parametric distances to the two intersection
+    /// points in \p enterDistance and \p exitDistance.
+    GF_API
+    bool        Intersect(const GfBBox3d &box,
                           double *enterDistance = NULL,
                           double *exitDistance = NULL) const;
 

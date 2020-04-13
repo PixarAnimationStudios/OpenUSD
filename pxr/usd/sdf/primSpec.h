@@ -762,6 +762,19 @@ SDF_API
 SdfPrimSpecHandle SdfCreatePrimInLayer(const SdfLayerHandle& layer,
                                        const SdfPath& primPath);
 
+
+/// Convenience function to create a prim at the given path, and any 
+/// necessary parent prims, in the given layer.
+///
+/// If a prim already exists at the given path, do nothing and return true.
+///
+/// Any newly created specs have SdfSpecifierOver and an empty type.  primPath
+/// must be a valid prim path.  Return false and issue an error if we fail to
+/// author the required scene description.
+SDF_API 
+bool SdfJustCreatePrimInLayer(const SdfLayerHandle& layer,
+                              const SdfPath& primPath);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_PRIM_SPEC_H

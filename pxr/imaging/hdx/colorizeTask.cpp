@@ -541,29 +541,33 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
 
     // XXX: Right now, we colorize on the CPU, before uploading data to the
     // fullscreen pass.  It would be much better if the colorizer callbacks
-    // were pluggable fragment shaders. This is particularly important for
+    // were done in fragment shaders. This is particularly important for
     // backends that keep renderbuffers on the GPU.
 
     // Colorize!
-
+    bool depthAware = false;
     if (_depthBuffer && _depthBuffer->GetFormat() == HdFormatFloat32) {
         uint8_t* db = reinterpret_cast<uint8_t*>(_depthBuffer->Map());
-        _compositor.UpdateDepth(_depthBuffer->GetWidth(),
-                                _depthBuffer->GetHeight(),
-                                db);
+        _compositor.SetTexture(TfToken("depth"),
+                               _depthBuffer->GetWidth(),
+                               _depthBuffer->GetHeight(),
+                               HdFormatFloat32, db);
         _depthBuffer->Unmap();
+        depthAware = true;
     } else {
         // If no depth buffer is bound, don't draw with depth.
-        _compositor.UpdateDepth(0, 0, nullptr);
+        _compositor.SetTexture(TfToken("depth"),
+                               0, 0, HdFormatInvalid, nullptr);
     }
 
     if (!_applyColorQuantization && _aovName == HdAovTokens->color) {
         // Special handling for color: to avoid a copy, just read the data
         // from the render buffer if no quantization is requested.
-        _compositor.UpdateColor(_aovBuffer->GetWidth(),
-                                _aovBuffer->GetHeight(),
-                                _aovBuffer->GetFormat(),
-                                _aovBuffer->Map());
+        _compositor.SetTexture(TfToken("color"),
+                               _aovBuffer->GetWidth(),
+                               _aovBuffer->GetHeight(),
+                               _aovBuffer->GetFormat(),
+                               _aovBuffer->Map());
         _aovBuffer->Unmap();
     } else {
 
@@ -596,12 +600,14 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
 
         // Upload the scratch buffer.
         if (colorized) {
-            _compositor.UpdateColor(_aovBuffer->GetWidth(),
-                                    _aovBuffer->GetHeight(),
-                                    HdFormatUNorm8Vec4,
-                                    _outputBuffer);
+            _compositor.SetTexture(TfToken("color"),
+                                   _aovBuffer->GetWidth(),
+                                   _aovBuffer->GetHeight(),
+                                   HdFormatUNorm8Vec4,
+                                   _outputBuffer);
         } else {
-            _compositor.UpdateColor(0, 0, HdFormatInvalid, nullptr);
+            // Skip the compositor if we have no color data.
+            return;
         }
     }
 
@@ -611,6 +617,7 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+    _compositor.SetProgramToCompositor(depthAware);
     _compositor.Draw();
 
     if (!blendEnabled) {

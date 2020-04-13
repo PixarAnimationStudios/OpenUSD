@@ -37,7 +37,7 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/arch/inttypes.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,15 +49,16 @@ class HdMaterial;
 class HdRenderIndex;
 class HdRenderParam;
 
-typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
-typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
+using HdReprSharedPtr = std::shared_ptr<HdRepr>;
 
-typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
-typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef std::vector<HdComputationSharedPtr> HdComputationVector;
+using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
+
+using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
+using HdBufferArrayRangeSharedPtr = std::shared_ptr<HdBufferArrayRange>;
+
+using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 
 /// \class HdRprim
 ///
@@ -288,8 +289,8 @@ protected:
     HD_API
     uint64_t
     _ComputeSharedPrimvarId(uint64_t baseId,
-                      HdBufferSourceVector const &sources,
-                      HdComputationVector const &computations) const;
+                      HdBufferSourceSharedPtrVector const &sources,
+                      HdComputationSharedPtrVector const &computations) const;
 
 private:
     SdfPath _instancerId;

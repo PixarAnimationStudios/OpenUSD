@@ -142,7 +142,7 @@ HdSt_QuadIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceVector
+HdBufferSourceSharedPtrVector
 HdSt_QuadIndexBuilderComputation::GetChainedBuffers() const
 {
     return { _primitiveParam, _quadsEdgeIndices };
@@ -447,20 +447,20 @@ HdSt_QuadrangulateComputationGPU::Execute(
     GLuint program = computeProgram->GetProgram().GetId();
 
     HdStBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // buffer resources for GPU computation
     HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
     HdStBufferResourceGLSharedPtr primvar =
-        boost::static_pointer_cast<HdStBufferResourceGL> (primvar_);
+        std::static_pointer_cast<HdStBufferResourceGL> (primvar_);
 
     HdStBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
 
     HdBufferResourceSharedPtr quadrangulateTable_ =
         quadrangulateTableRange_->GetResource();
     HdStBufferResourceGLSharedPtr quadrangulateTable =
-        boost::static_pointer_cast<HdStBufferResourceGL> (quadrangulateTable_);
+        std::static_pointer_cast<HdStBufferResourceGL> (quadrangulateTable_);
 
     // prepare uniform buffer for GPU computation
     struct Uniform {
@@ -476,10 +476,10 @@ HdSt_QuadrangulateComputationGPU::Execute(
     int quadInfoStride = quadInfo->maxNumVert + 2;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = range->GetOffset();
+    uniform.vertexOffset = range->GetElementOffset();
     // quadinfo offset/stride in aggregated adjacency table
     uniform.quadInfoStride = quadInfoStride;
-    uniform.quadInfoOffset = quadrangulateTableRange->GetOffset();
+    uniform.quadInfoOffset = quadrangulateTableRange->GetElementOffset();
     uniform.maxNumVert = quadInfo->maxNumVert;
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes

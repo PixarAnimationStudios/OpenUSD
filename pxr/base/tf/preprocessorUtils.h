@@ -46,7 +46,7 @@
 #include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
-#if defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_COMPILER_MSVC)
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
@@ -66,7 +66,7 @@ ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 ///
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
-#if defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_COMPILER_MSVC)
 #define TF_NUM_ARGS(...) \
     BOOST_PP_IIF(BOOST_VMD_IS_EMPTY(__VA_ARGS__),\
         0, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__))
@@ -189,7 +189,7 @@ ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 /// Exapnds to 1 if the argument is a tuple, and 0 otherwise.
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
-#if defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_COMPILER_MSVC)
     #define TF_PP_IS_TUPLE(sequence) \
         BOOST_VMD_IS_TUPLE(sequence)
 #else

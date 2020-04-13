@@ -37,6 +37,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,8 +47,11 @@ class HdResourceRegistry;
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
-typedef boost::shared_ptr<class HdStTextureResource> 
-                                                HdStTextureResourceSharedPtr;
+
+using HdStTextureResourceSharedPtr = std::shared_ptr<class HdStTextureResource>;
+
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
 
 /// \class HdStLight
 ///
@@ -92,7 +96,7 @@ private:
     
     /// called by _CreateDomeLight to add the compute tasks
     void _SetupComputations(GLuint sourceTexture, 
-                            HdResourceRegistry *resourceRegistry);
+                            HdStResourceRegistry *resourceRegistry);
 
 private:
     // Stores the internal light type of this light.

@@ -65,8 +65,8 @@ class TestUsdEditTarget(unittest.TestCase):
         def CheckPath(target, scenePath, specPath):
             result = target.MapToSpecPath(scenePath)
             if result != specPath:
-                raise AssertionError, '%s -> %s, expected %s -> %s' % (
-                    scenePath, result, scenePath, specPath)
+                raise AssertionError('%s -> %s, expected %s -> %s' % (
+                    scenePath, result, scenePath, specPath))
 
         CheckPath(Sarah, '/Sarah', '/Sarah')
         CheckPath(Sarah, '/Sarah/child', '/Sarah/child')
@@ -121,7 +121,7 @@ class TestUsdEditTarget(unittest.TestCase):
                 key, defVal=None, editTarget=target,
                 excerptType=Csd.ExcerptTypeAll, composeInfo=None)
             if not Gf.IsClose(result, expected, 1e-4):
-                raise AssertionError, ("Got '%s' resolving '%s' on '%s', expected "
+                raise AssertionError("Got '%s' resolving '%s' on '%s', expected "
                                        "'%s'" % (result, key, obj.path, expected))
 
         displayColor = scene.GetObjectAtPath('/Sarah.displayColor')

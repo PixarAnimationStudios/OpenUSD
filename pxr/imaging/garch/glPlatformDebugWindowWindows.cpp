@@ -52,6 +52,7 @@ LPCTSTR Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
 
 Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     : _running(false)
+    , _callback(w)
     , _hWND(NULL)
     , _hDC(NULL)
     , _hGLRC(NULL)
@@ -64,12 +65,12 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 {
     // platform initialize
     WNDCLASS wc;
-    HINSTANCE _hInstnace = GetModuleHandle(NULL);
-    if (GetClassInfo(_hInstance, _className, &wc) == 0) {
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+    if (GetClassInfo(hInstance, _className, &wc) == 0) {
         ZeroMemory(&wc, sizeof(WNDCLASS));
 
         wc.lpfnWndProc   = &Garch_GLPlatformDebugWindow::_MsgProc;
-        wc.hInstance     = _hInstance;
+        wc.hInstance     = hInstance;
         wc.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
         wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
         wc.lpszClassName = _className;
@@ -87,7 +88,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 
     _hWND = CreateWindowEx(exFlags, _className,
                            title, flags, 100, 100, width, height,
-                           (HWND)NULL, (HMENU)NULL, _hInstance,
+                           (HWND)NULL, (HMENU)NULL, hInstance,
                            (LPVOID)NULL);
     if (_hWND == 0) {
         TF_FATAL_ERROR("CreateWindowEx failed");
@@ -166,7 +167,7 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::_GetWindowByHandle(hWnd);
     if (!TF_VERIFY(window)) {
-        return 0;
+        return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
     int x = LOWORD(lParam);

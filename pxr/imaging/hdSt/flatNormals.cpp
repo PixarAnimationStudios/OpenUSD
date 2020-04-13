@@ -84,11 +84,11 @@ HdSt_FlatNormalsComputationGPU::Execute(
         return;
 
     HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
     HdStBufferArrayRangeGLSharedPtr vertexRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
     HdStBufferArrayRangeGLSharedPtr topologyRange =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
 
     // buffer resources for GPU computation
     HdStBufferResourceGLSharedPtr points = vertexRange->GetResource(_srcName);
@@ -155,11 +155,11 @@ HdSt_FlatNormalsComputationGPU::Execute(
     } uniform;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = vertexRange->GetOffset();
+    uniform.vertexOffset = vertexRange->GetElementOffset();
     // coherent element offset in aggregated buffer array
-    uniform.elementOffset = range->GetOffset();
+    uniform.elementOffset = range->GetElementOffset();
     // coherent topology offset in aggregated buffer array
-    uniform.topologyOffset = topologyRange->GetOffset();
+    uniform.topologyOffset = topologyRange->GetElementOffset();
     // interleaved offset/stride to points
     // note: this code (and the glsl flat normal compute shader) assumes
     // components in interleaved vertex array are always same data type.

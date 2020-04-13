@@ -45,7 +45,9 @@ bool HdPrmanLightFilterPopulateParams(
     SdfPath &filterPath,
     TfToken filterType,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
+    std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
+    HdPrman_Context *context,
     riley::Riley *riley,
     RtUString lightTypeName);
 

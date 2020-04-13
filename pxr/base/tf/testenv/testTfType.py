@@ -252,7 +252,7 @@ class TestTfType(unittest.TestCase):
             # We should have a valid TfType.
             self.assertFalse(t.isUnknown)
             # Get Python's mro and convert the results to TfTypes.
-            pythonOrder = map( Tf.Type.Find, classObj.mro() )
+            pythonOrder = [Tf.Type.Find(x) for x in classObj.mro()]
             self.assertEqual(tuple(pythonOrder + [self.tRoot,]), t.GetAllAncestorTypes())
 
         # Unknown type

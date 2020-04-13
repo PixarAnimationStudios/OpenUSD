@@ -38,6 +38,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class GlfSimpleLight;
@@ -47,10 +49,12 @@ class HdStRenderPassState;
 
 typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
+
+using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
+using HdRenderPassSharedPtrVector = std::vector<HdRenderPassSharedPtr>;
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
+using HdRenderPassStateSharedPtrVector = 
+    std::vector<HdRenderPassStateSharedPtr>;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 

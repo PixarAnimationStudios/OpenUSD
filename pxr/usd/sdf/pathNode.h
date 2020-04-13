@@ -166,6 +166,7 @@ public:
 
     size_t GetElementCount() const { return size_t(_elementCount); }
     bool IsAbsolutePath() const { return _isAbsolute; }
+    bool IsAbsoluteRoot() const { return (_isAbsolute) & (!_elementCount); }
     bool ContainsTargetPath() const { return _containsTargetPath; }
     bool IsNamespaced() const {
         return (_nodeType == PrimPropertyNode ||

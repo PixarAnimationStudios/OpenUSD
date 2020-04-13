@@ -66,6 +66,10 @@ _WrapSetAllowedTokens(
 
 void wrapAttributeSpec()
 {
+    def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
+        (arg("layer"), arg("attrPath"), arg("typeName"),
+         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
+
     typedef SdfAttributeSpec This;
     typedef SdfAttributeSpecHandle ThisHandle;
 

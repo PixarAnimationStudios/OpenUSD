@@ -176,11 +176,7 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 class UsdAttribute : public UsdProperty {
 public:
     /// Construct an invalid attribute.
-    UsdAttribute()
-        : UsdProperty(UsdTypeAttribute, Usd_PrimDataHandle(), SdfPath(), 
-                      TfToken())
-    {
-    }
+    UsdAttribute() : UsdProperty(_Null<UsdAttribute>()) {}
 
     // --------------------------------------------------------------------- //
     /// \name Core Metadata

@@ -29,7 +29,6 @@
 #include "pxr/usd/usdShade/utils.h"
 
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/usd/relationship.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
@@ -48,17 +47,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 UsdShadeOutput::UsdShadeOutput(const UsdAttribute &attr)
-    : _prop(attr)
-{
-}
-
-UsdShadeOutput::UsdShadeOutput(const UsdRelationship &rel)
-    : _prop(rel)
-{
-}
-
-UsdShadeOutput::UsdShadeOutput(const UsdProperty &prop)
-    : _prop(prop)
+    : _attr(attr)
 {
 }
 
@@ -72,12 +61,7 @@ UsdShadeOutput::GetBaseName() const
 SdfValueTypeName 
 UsdShadeOutput::GetTypeName() const
 { 
-    if (UsdAttribute attr = GetAttr()) {
-        return  attr.GetTypeName();
-    }
-
-    // Fallback to token for outputs that represent terninals.
-    return SdfValueTypeNames->Token;
+    return _attr.GetTypeName();
 }
 
 static TfToken
@@ -93,9 +77,9 @@ UsdShadeOutput::UsdShadeOutput(
 {
     // XXX what do we do if the type name doesn't match and it exists already?
     TfToken attrName = _GetOutputAttrName(name);
-    _prop = prim.GetAttribute(attrName);
-    if (!_prop) {
-        _prop = prim.CreateAttribute(attrName, typeName, /* custom = */ false);
+    _attr = prim.GetAttribute(attrName);
+    if (!_attr) {
+        _attr = prim.CreateAttribute(attrName, typeName, /* custom = */ false);
     }
 }
 
@@ -113,21 +97,21 @@ bool
 UsdShadeOutput::SetRenderType(
         TfToken const& renderType) const
 {
-    return _prop.SetMetadata(_tokens->renderType, renderType);
+    return _attr.SetMetadata(_tokens->renderType, renderType);
 }
 
 TfToken 
 UsdShadeOutput::GetRenderType() const
 {
     TfToken renderType;
-    _prop.GetMetadata(_tokens->renderType, &renderType);
+    _attr.GetMetadata(_tokens->renderType, &renderType);
     return renderType;
 }
 
 bool 
 UsdShadeOutput::HasRenderType() const
 {
-    return _prop.HasMetadata(_tokens->renderType);
+    return _attr.HasMetadata(_tokens->renderType);
 }
 
 NdrTokenMap

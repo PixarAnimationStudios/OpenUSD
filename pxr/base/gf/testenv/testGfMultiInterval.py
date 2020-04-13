@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
+
 import sys
 import unittest
 import math
@@ -63,7 +65,7 @@ class TestGfMultiInterval(unittest.TestCase):
                      Gf.Interval( 5,  7),
                      Gf.Interval( 6,  8)]
 
-        testSets = map(Gf.MultiInterval, intervals)
+        testSets = list(map(Gf.MultiInterval, intervals))
 
         # Test empty multi-intervals
         self.assertEqual(Gf.MultiInterval(), Gf.MultiInterval())
@@ -136,12 +138,12 @@ class TestGfMultiInterval(unittest.TestCase):
         for r in range(num):
             # Testing only on at least two intervals
             s = r + 2
-            for p in permute(range(s)):
+            for p in permute(list(range(s))):
                 # Adding range of [i, i+1) intervals should leave one interval in the set
                 x = Gf.MultiInterval()
                 for i in p:
                     x.Add( Gf.Interval(i, i+1.0, True, False) )
-                print x
+                print(x)
                 self.assertEqual(x.bounds, Gf.Interval(0, s, True, False))
                 self.assertTrue(x.Contains(Gf.Interval(0, s, True, False)))
                 self.assertFalse(x.Contains(Gf.Interval(0, s, True, True)))
@@ -151,7 +153,7 @@ class TestGfMultiInterval(unittest.TestCase):
                 x = Gf.MultiInterval()
                 for i in p:
                     x.Add( Gf.Interval(i, i+1.0, False, True) )
-                print x
+                print(x)
                 self.assertEqual(x.bounds, Gf.Interval(0, s, False, True))
                 self.assertTrue(x.Contains(Gf.Interval(0, s, False, True)))
                 self.assertFalse(x.Contains(Gf.Interval(0, s, True, True)))
@@ -161,7 +163,7 @@ class TestGfMultiInterval(unittest.TestCase):
                 x = Gf.MultiInterval()
                 for i in p:
                     x.Add( Gf.Interval(i, i+1.0, True, True) )
-                print x
+                print(x)
                 self.assertEqual(x.bounds, Gf.Interval(0, s, True, True))
                 self.assertTrue(x.Contains(Gf.Interval(0, s, True, True)))
                 self.assertEqual(x.size, 1)
@@ -171,7 +173,7 @@ class TestGfMultiInterval(unittest.TestCase):
                 x = Gf.MultiInterval()
                 for i in p:
                     x.Add( Gf.Interval(i, i+1.0, False, False) )
-                print x
+                print(x)
                 self.assertEqual(x.bounds, Gf.Interval(0, s, False, False))
                 self.assertFalse(x.Contains(Gf.Interval(0, s, False, False)))
                 self.assertEqual(x.size, s)

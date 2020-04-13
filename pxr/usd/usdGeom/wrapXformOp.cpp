@@ -99,6 +99,8 @@ void wrapUsdGeomXformOp()
                  arg("isInverseOp")=false)))
 
         .def(!self)
+        .def(self == self)
+        .def(self != self)
 
         .def("GetAttr", &XformOp::GetAttr,
              return_value_policy<return_by_value>())
@@ -138,6 +140,8 @@ void wrapUsdGeomXformOp()
         TfPyWrapEnum<UsdGeomXformOp::Precision>();
 
     implicitly_convertible<XformOp, UsdAttribute>();
+    implicitly_convertible<XformOp, UsdProperty>();
+    implicitly_convertible<XformOp, UsdObject>();
 
     // Register to and from vector conversions.
     boost::python::to_python_converter<std::vector<XformOp >, 

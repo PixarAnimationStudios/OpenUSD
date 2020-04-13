@@ -616,6 +616,14 @@ public:
     GF_API
     GfRotation ExtractRotation() const;
 
+    /// Return the rotation corresponding to this matrix as a quaternion.
+    /// This works well only if the matrix represents a rotation.
+    ///
+    /// For good results, consider calling Orthonormalize() before calling
+    /// this method.
+    GF_API
+    GfQuatf  ExtractRotationQuat() const;
+
     /// Decompose the rotation corresponding to this matrix about 3 orthogonal
     /// axes.  If the axes are not orthogonal, warnings will be spewed.
     ///

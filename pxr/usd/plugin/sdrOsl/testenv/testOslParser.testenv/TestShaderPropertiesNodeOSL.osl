@@ -73,7 +73,13 @@ shader TestShaderPropertiesNodeOSL
     output float outputSurface = 1.0
     [[
         string renderType = "terminal surface"
+    ]],
+
+    normal aliasedNormalInput = normal(1.0, 1.0, 1.0)
+    [[
+        string sdrDefinitionName = "normal"
     ]]
+ 
 )
 {
     // Nothing here!

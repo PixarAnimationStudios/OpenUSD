@@ -128,11 +128,7 @@ typedef std::vector<UsdRelationship> UsdRelationshipVector;
 class UsdRelationship : public UsdProperty {
 public:
     /// Construct an invalid relationship.
-    UsdRelationship()
-        : UsdProperty(UsdTypeRelationship, Usd_PrimDataHandle(), SdfPath(), 
-                      TfToken())
-    {
-    }
+    UsdRelationship() : UsdProperty(_Null<UsdRelationship>()) {}
 
     /// \name Editing Relationships at Current EditTarget
     /// @{

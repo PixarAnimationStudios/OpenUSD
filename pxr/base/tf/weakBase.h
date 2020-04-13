@@ -29,10 +29,9 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/traits.h"
-#include "pxr/base/tf/api.h"
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE

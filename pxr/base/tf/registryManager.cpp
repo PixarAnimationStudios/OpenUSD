@@ -290,18 +290,10 @@ bool Tf_RegistryManagerImpl::runUnloadersAtExit = false;
 
 Tf_RegistryManagerImpl::Tf_RegistryManagerImpl()
 {
-    /*
-     * This is the one place we can't let TfDebug do all the work for us,
-     * since TfDebug would end up calling back here.  So we do it manually.
-     */
+    // Call SetInstanceConstructed since TfDebug will end up calling back here.
+    TfSingleton<Tf_RegistryManagerImpl>::SetInstanceConstructed(*this);
 
-    if (TfDebug::_CheckEnvironmentForMatch("TF_DISCOVERY_TERSE"))
-        TfDebug::Enable(TF_DISCOVERY_TERSE);            
-    if (TfDebug::_CheckEnvironmentForMatch("TF_DISCOVERY_DETAILED"))
-        TfDebug::Enable(TF_DISCOVERY_DETAILED);
-
-    TF_DEBUG(TF_DISCOVERY_TERSE).Msg("TfRegistryManager: "
-                                     "initialized\n");
+    TF_DEBUG(TF_DISCOVERY_TERSE).Msg("TfRegistryManager: initialized\n");
 }
 
 Tf_RegistryManagerImpl::~Tf_RegistryManagerImpl()

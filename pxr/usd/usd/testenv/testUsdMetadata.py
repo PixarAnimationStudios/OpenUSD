@@ -22,12 +22,25 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
 
 allFormats = ['usd' + x for x in 'ac']
 
 class TestUsdMetadata(unittest.TestCase):
+    def _ComparePaths(self, pathOne, pathTwo):
+        # Use normcase here to handle differences in path casing on
+        # Windows. This will alo reverse slashes on windows, so we get 
+        # a consistent cross platform comparison.
+        self.assertEqual(os.path.normcase(pathOne), os.path.normcase(pathTwo))
+
+    def _ComparePathLists(self, listOne, listTwo):
+        self.assertEqual(len(listOne), len(listTwo))
+        for i in range(len(listOne)):
+            self._ComparePaths(listOne[i], listTwo[i])
+
     def test_Hidden(self):
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestHidden.'+fmt)
@@ -95,6 +108,21 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(rel.IsHidden(), True)
             self.assertEqual(rel.GetMetadata("hidden"), True)
 
+    def test_PrimTypeName(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory('TestListAndHas.'+fmt)
+
+            primWithType = stage.DefinePrim("/PrimWithType", "DummyType")
+            self.assertEqual(primWithType.GetTypeName(), "DummyType")
+            self.assertTrue(primWithType.HasAuthoredTypeName())
+            self.assertTrue(primWithType.HasMetadata("typeName"))
+            self.assertEqual(primWithType.GetMetadata("typeName"), "DummyType")
+
+            primWithoutType = stage.DefinePrim("/PrimWithoutType", "")
+            self.assertEqual(primWithoutType.GetTypeName(), "")
+            self.assertFalse(primWithoutType.HasAuthoredTypeName())
+            self.assertFalse(primWithoutType.HasMetadata("typeName"))
+            self.assertEqual(primWithoutType.GetMetadata("typeName"), None)
 
     def test_ListAndHas(self):
         for fmt in allFormats:
@@ -107,7 +135,7 @@ class TestUsdMetadata(unittest.TestCase):
             rel = foo.CreateRelationship("rel")
 
             # Ensure we can read the reported values
-            print "Verify GetMetadata(key) and HasMetadata(key)..."
+            print("Verify GetMetadata(key) and HasMetadata(key)...")
             def _TestGetHas(obj):
                 for key in obj.GetAllMetadata():
                     assert obj.GetMetadata(key) is not None, \
@@ -120,7 +148,7 @@ class TestUsdMetadata(unittest.TestCase):
             _TestGetHas(rel)
 
             # Ensure we can write the reported values
-            print "Verify SetMetadata(key, GetMetadata(key))..."
+            print("Verify SetMetadata(key, GetMetadata(key))...")
             def _TestSet(obj):
                 for key in obj.GetAllMetadata():
                     value = obj.GetMetadata(key)
@@ -134,7 +162,7 @@ class TestUsdMetadata(unittest.TestCase):
 
 
     def test_HasAuthored(self):
-        print "Verify HasAuthoredMetadata() behavior..."
+        print("Verify HasAuthoredMetadata() behavior...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestHasAuthored.'+fmt)
 
@@ -184,7 +212,7 @@ class TestUsdMetadata(unittest.TestCase):
 
 
     def test_Unregistered(self):
-        print "Verify that unregistered metadata fields cannot be authored..."
+        print("Verify that unregistered metadata fields cannot be authored...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestUnregistered.'+fmt)
 
@@ -201,8 +229,8 @@ class TestUsdMetadata(unittest.TestCase):
                 rel.SetMetadata("unregistered", "x")
 
     def test_CompositionData(self):
-        print "Verify that composition-related metadata does not show up"
-        print "in 'All' metadata queries, and only gets basic composition"
+        print("Verify that composition-related metadata does not show up")
+        print("in 'All' metadata queries, and only gets basic composition")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestCompositionData'+fmt)
 
@@ -219,7 +247,7 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertFalse('references' in apex.GetAllMetadata())
 
     def test_Documentation(self):
-        print "Test documentation metadata and explicit API..."
+        print("Test documentation metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDocumentation.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -248,7 +276,7 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
     def test_DisplayName(self):
-        print "Test display name metadata and explicit API..."
+        print("Test display name metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDisplayName.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -277,7 +305,7 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
     def test_DisplayGroup(self):
-        print "Test display group metadata and explicit API..."
+        print("Test display group metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDisplayGroup.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -383,7 +411,7 @@ class TestUsdMetadata(unittest.TestCase):
            They will be recursively merged, with the typical strength
            preferences in place.'''
 
-        print "Verify composed nested dictionary behavior..."
+        print("Verify composed nested dictionary behavior...")
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestComposedNestedDictionaries.'+fmt)
             a = s.DefinePrim('/A')
@@ -853,10 +881,12 @@ class TestUsdMetadata(unittest.TestCase):
             del binLayer
 
             # Now textFile and roundTripFile should match.
-            a = open(textFile.name).read()
-            b = open(roundTripFile.name).read()
+            with open(textFile.name) as f:
+                a = f.read()
+            with open(roundTripFile.name) as f:
+                b = f.read()
             if a != b:
-                print '\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n')))
+                print('\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n'))))
             assert a == b
 
     def test_AssetPathMetadata(self):
@@ -868,61 +898,58 @@ class TestUsdMetadata(unittest.TestCase):
         attr = prim.GetAttribute("assetPath")
         
         timeSamples = attr.GetMetadata("timeSamples")
-        self.assertEqual(os.path.normpath(timeSamples[0].resolvedPath),
-                         os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(os.path.normpath(timeSamples[1].resolvedPath),
-                         os.path.abspath("assetPaths/asset.usda"))
+        self._ComparePaths(os.path.normpath(timeSamples[0].resolvedPath),
+                           os.path.abspath("assetPaths/asset.usda"))
+        self._ComparePaths(os.path.normpath(timeSamples[1].resolvedPath),
+                           os.path.abspath("assetPaths/asset.usda"))
         
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(attr.GetMetadata("default").resolvedPath), 
             os.path.abspath("assetPaths/asset.usda"))
         
         attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in attr.GetMetadata("default")]),
             [os.path.abspath("assetPaths/asset.usda")])
 
         # Test prim metadata resolution
         metadataDict = prim.GetMetadata("customData")
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
             
         metadataDict = metadataDict["subDict"]
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
 
         # Test stage metadata resolution
         metadataDict = s.GetMetadata("customLayerData")
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
             
         metadataDict = metadataDict["subDict"]
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
-        
-        
-
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''

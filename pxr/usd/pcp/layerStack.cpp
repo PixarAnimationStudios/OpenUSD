@@ -510,12 +510,6 @@ PcpLayerStack::GetLayerOffsetForLayer(size_t layerIdx) const
 }
 
 const std::set<std::string>& 
-PcpLayerStack::GetResolvedAssetPaths() const
-{
-    return _assetPaths;
-}
-
-const std::set<std::string>& 
 PcpLayerStack::GetMutedLayers() const
 {
     return _mutedAssetPaths;
@@ -524,8 +518,14 @@ PcpLayerStack::GetMutedLayers() const
 bool 
 PcpLayerStack::HasLayer(const SdfLayerHandle& layer) const
 {
-    return std::find(_layers.begin(), _layers.end(), SdfLayerRefPtr(layer)) 
-        != _layers.end();
+    // Avoid doing refcount operations here.
+    SdfLayer const *layerPtr = get_pointer(layer);
+    for (SdfLayerRefPtr const &layerRefPtr: _layers) {
+        if (get_pointer(layerRefPtr) == layerPtr) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool 
@@ -567,21 +567,30 @@ PcpLayerStack::GetPathsToPrimsWithRelocates() const
 PcpMapExpression
 PcpLayerStack::GetExpressionForRelocatesAtPath(const SdfPath &path)
 {
-    if (_isUsd) {
-        return PcpMapExpression::Identity();
+    const PcpMapExpression::Variable *var = nullptr;
+    {
+        tbb::spin_mutex::scoped_lock lock{_relocatesVariablesMutex};
+        _RelocatesVarMap::const_iterator i = _relocatesVariables.find(path);
+        if (i != _relocatesVariables.end()) {
+            var = i->second.get();
+        }
     }
 
-    _RelocatesVarMap::iterator i = _relocatesVariables.find(path);
-    if (i != _relocatesVariables.end()) {
-        return i->second->GetExpression();
+    if (var) {
+        return var->GetExpression();
     }
 
     // Create a Variable representing the relocations that affect this path.
-    PcpMapExpression::VariableRefPtr var =
+    PcpMapExpression::VariableUniquePtr newVar =
         PcpMapExpression::NewVariable(_FilterRelocationsForPath(*this, path));
 
-    // Retain the variable so that we can update it if relocations change.
-    _relocatesVariables[path] = var;
+    {
+        // Retain the variable so that we can update it if relocations change.
+        tbb::spin_mutex::scoped_lock lock{_relocatesVariablesMutex};
+        _RelocatesVarMap::const_iterator i =
+            _relocatesVariables.emplace(path, std::move(newVar)).first;
+        var = i->second.get();
+    }
 
     return var->GetExpression();
 }
@@ -596,7 +605,6 @@ PcpLayerStack::_BlowLayers()
     _mapFunctions.clear();
     _layerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
-    _assetPaths.clear();
     _mutedAssetPaths.clear();
 }
 
@@ -747,8 +755,6 @@ PcpLayerStack::_BuildLayerStack(
     const vector<string> &sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
     for(size_t i=0, numSublayers = sublayers.size(); i<numSublayers; i++) {
-        _assetPaths.insert(sublayers[i]);
-
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {

@@ -41,7 +41,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        
        # Test Position
        posAttr = nodeGraphNode.GetPosAttr()
-       assert not posAttr
+       assert posAttr
        posAttr = nodeGraphNode.CreatePosAttr()
        assert posAttr, "Failed creating pos attribute"
        assert posAttr.GetTypeName() == 'float2', \
@@ -50,7 +50,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        
        # Test Stacking Order
        stackingOrderAttr = nodeGraphNode.GetStackingOrderAttr()
-       assert not stackingOrderAttr
+       assert stackingOrderAttr
        stackingOrderAttr = nodeGraphNode.CreateStackingOrderAttr()
        assert stackingOrderAttr, "Failed creating stacking order attribute"
        assert stackingOrderAttr.GetTypeName() == 'int', \
@@ -60,7 +60,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        
        # Test Display Color
        displayColorAttr = nodeGraphNode.GetDisplayColorAttr()
-       assert not displayColorAttr
+       assert displayColorAttr
        displayColorAttr = nodeGraphNode.CreateDisplayColorAttr()
        assert displayColorAttr, "Failed creating display color attribute"
        assert displayColorAttr.GetTypeName() == 'color3f', \
@@ -70,7 +70,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
 
        # Test Size
        sizeAttr = nodeGraphNode.GetSizeAttr()
-       assert not sizeAttr
+       assert sizeAttr
        sizeAttr = nodeGraphNode.CreateSizeAttr()
        assert sizeAttr, "Failed creating size attribute"
        assert sizeAttr.GetTypeName() == 'float2', \

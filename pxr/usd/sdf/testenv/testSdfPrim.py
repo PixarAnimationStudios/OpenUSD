@@ -22,10 +22,52 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import sys, unittest
 from pxr import Sdf, Tf
 
 class TestSdfPrim(unittest.TestCase):
+    def test_CreatePrimInLayer(self):
+        layer = Sdf.Layer.CreateAnonymous()
+
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, 'foo'))
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, 'foo/bar'))
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, 'foo/bar/baz'))
+        self.assertTrue(layer.GetPrimAtPath('/foo'))
+        self.assertTrue(layer.GetPrimAtPath('/foo/bar'))
+        self.assertTrue(layer.GetPrimAtPath('/foo/bar/baz'))
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, '/boo'))
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, '/boo/bar'))
+        self.assertTrue(Sdf.CreatePrimInLayer(layer, '/boo/bar/baz'))
+        self.assertTrue(layer.GetPrimAtPath('/boo'))
+        self.assertTrue(layer.GetPrimAtPath('/boo/bar'))
+        self.assertTrue(layer.GetPrimAtPath('/boo/bar/baz'))
+        self.assertEqual(Sdf.CreatePrimInLayer(layer, '.'),
+                         layer.GetPrimAtPath('/'))
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.CreatePrimInLayer(layer, '..')
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.CreatePrimInLayer(layer, '../..')
+
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, 'goo'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, 'goo/bar'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, 'goo/bar/baz'))
+        self.assertTrue(layer.GetPrimAtPath('/goo'))
+        self.assertTrue(layer.GetPrimAtPath('/goo/bar'))
+        self.assertTrue(layer.GetPrimAtPath('/goo/bar/baz'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, '/zoo'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, '/zoo/bar'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, '/zoo/bar/baz'))
+        self.assertTrue(layer.GetPrimAtPath('/zoo'))
+        self.assertTrue(layer.GetPrimAtPath('/zoo/bar'))
+        self.assertTrue(layer.GetPrimAtPath('/zoo/bar/baz'))
+        self.assertTrue(Sdf.JustCreatePrimInLayer(layer, '.'))
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.JustCreatePrimInLayer(layer, '..')
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.JustCreatePrimInLayer(layer, '../..')
+
     def test_NameChildrenInsert(self):
         import copy, random
 

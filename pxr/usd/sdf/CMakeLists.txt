@@ -125,6 +125,7 @@ pxr_library(sdf
     PYMODULE_CPPFILES
         module.cpp
         wrapArrayAssetPath.cpp
+        wrapArrayPath.cpp
         wrapArrayTimeCode.cpp
         wrapAssetPath.cpp
         wrapAttributeSpec.cpp
@@ -182,6 +183,7 @@ else()
 endif()
 
 pxr_test_scripts(
+    testenv/testSdfAttribute.py
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
     testenv/testSdfCopyUtils.py
@@ -273,6 +275,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
+)
+
+pxr_register_test(testSdfAttribute
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAttribute"
 )
 
 pxr_register_test(testSdfAttributeBlocking

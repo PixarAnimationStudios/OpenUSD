@@ -304,9 +304,10 @@ HdRprim::_IsEnabledSharedVertexPrimvar()
 }
 
 uint64_t
-HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
-                                 HdBufferSourceVector const &sources,
-                                 HdComputationVector const &computations) const
+HdRprim::_ComputeSharedPrimvarId(
+    uint64_t baseId,
+    HdBufferSourceSharedPtrVector const &sources,
+    HdComputationSharedPtrVector const &computations) const
 {
     size_t primvarId = baseId;
     for (HdBufferSourceSharedPtr const &bufferSource : sources) {

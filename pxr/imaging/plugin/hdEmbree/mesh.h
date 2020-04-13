@@ -54,11 +54,8 @@ class HdEmbreeInstanceContext;
 ///
 /// Sync() is passed a set of dirtyBits, indicating which scene buffers are
 /// dirty. It uses these to pull all of the new scene data and constructs
-/// updated embree geometry objects.  Rebuilding the acceleration datastructures
-/// is deferred to HdEmbreeRenderDelegate::CommitResources(), which runs after
-/// all prims have been updated. After running Sync() for each prim and
-/// HdEmbreeRenderDelegate::CommitResources(), the scene should be ready for
-/// rendering via ray queries.
+/// updated embree geometry objects.  Rebuilding the top-level acceleration
+/// datastructures is deferred to the start of HdEmbreeRender::Render().
 ///
 /// An rprim's state is lazily populated in Sync(); matching this, Finalize()
 /// does the heavy work of releasing state (such as handles into the top-level

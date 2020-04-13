@@ -21,8 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
-from adjustClippingUI import Ui_AdjustClipping
+from .qt import QtCore, QtGui, QtWidgets
+from .adjustClippingUI import Ui_AdjustClipping
+from .common import FixableDoubleValidator
 
 class AdjustClipping(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
@@ -61,6 +62,16 @@ class AdjustClipping(QtWidgets.QDialog):
 
         self._ui.farEdit.textChanged.connect(self._farChanged)
 
+        def AddValidation(lineEdit):
+            dv = FixableDoubleValidator(lineEdit)
+            dv.setDecimals(3)
+            dv.setBottom(0)
+            lineEdit.setValidator(dv)
+
+        # Make sure only human-readable doubles can be typed in the text boxes
+        AddValidation(self._ui.nearEdit)
+        AddValidation(self._ui.farEdit)
+
         # Set the checkboxes to their initial state
         self._ui.overrideNear.setChecked(self._dataModel.overrideNear \
                                              is not None)
@@ -70,14 +81,10 @@ class AdjustClipping(QtWidgets.QDialog):
         # load the initial values for the text boxes, but first deactivate them
         # if their corresponding checkbox is off.
         self._ui.nearEdit.setEnabled(self._ui.overrideNear.isChecked())
-        self._ui.nearEdit.setText(str(self._nearCache))
+        self._ui.nearEdit.validator().fixup(str(self._nearCache))
 
         self._ui.farEdit.setEnabled(self._ui.overrideFar.isChecked())
-        self._ui.farEdit.setText(str(self._farCache))
-
-        # Make sure only doubles can be typed in the text boxes
-        self._ui.nearEdit.setValidator(QtGui.QDoubleValidator(self))
-        self._ui.farEdit.setValidator(QtGui.QDoubleValidator(self))
+        self._ui.farEdit.validator().fixup(str(self._farCache))
 
     def _updateEditorsFromDataModel(self):
         """Read the dataModel-computed clipping planes and put them
@@ -86,12 +93,14 @@ class AdjustClipping(QtWidgets.QDialog):
         if (not self._ui.overrideNear.isChecked()) and \
                 self._nearCache != clipRange.min :
             self._nearCache = clipRange.min
-            self._ui.nearEdit.setText(str(self._nearCache))
+            nearStr = str(self._nearCache)
+            self._ui.nearEdit.validator().fixup(nearStr)
 
         if (not self._ui.overrideFar.isChecked()) and \
                 self._farCache != clipRange.max :
             self._farCache = clipRange.max
-            self._ui.farEdit.setText(str(self._farCache))
+            farStr = str(self._farCache)
+            self._ui.farEdit.validator().fixup(farStr)
 
     def paintEvent(self, paintEvent):
         """Overridden from base class so we can perform JIT updating
@@ -129,7 +138,7 @@ class AdjustClipping(QtWidgets.QDialog):
 
     def _farChanged(self, text):
         """Called when the Far text box changed.  This can happen when we
-        are updating the value but he widget is actually inactive - don't
+        are updating the value but the widget is actually inactive - don't
         do anything in that case."""
         if len(text) == 0 or not self._ui.farEdit.isEnabled():
             return

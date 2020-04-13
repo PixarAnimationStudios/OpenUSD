@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Sdf, Tf, UsdUtils, Vt, Gf
 import unittest
 
@@ -132,7 +134,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         try:
             UsdUtils.StitchClips(rootLayer, self.layerFileNames, clipPath)
         except Tf.ErrorException as tfError:
-            print "Caught expected exception %s" %tfError
+            print("Caught expected exception %s" %tfError)
         else:
             self.assertTrue(False, "Failed to raise runtime error on unwritable file." )
         finally:

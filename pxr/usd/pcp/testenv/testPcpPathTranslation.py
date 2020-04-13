@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
 from pxr import Sdf, Tf, Pcp
 import unittest, sys
 
@@ -36,7 +37,7 @@ class TestPcpPathTranslation(unittest.TestCase):
 
     def test_PathTranslationWithVariants(self):
         """Tests path translation issues that were at the root of bug 77818"""
-        print "TestPathTranslationWithVariants..."
+        print("TestPathTranslationWithVariants...")
 
         pcpCache = self._GetPcpCacheForLayer(
             "bug77818/unit_main_cam.sdf")
@@ -59,7 +60,7 @@ class TestPcpPathTranslation(unittest.TestCase):
     ############################################################
 
     def test_LocalAbsoluteTargetPaths(self):
-        print "TestLocalAbsoluteTargetPaths..."
+        print("TestLocalAbsoluteTargetPaths...")
 
         pcpCache = self._GetPcpCacheForLayer("Root.sdf")
 
@@ -87,7 +88,7 @@ class TestPcpPathTranslation(unittest.TestCase):
                 pcpCache.ComputeRelationshipTargetPaths(path)
 
             for err in curErrors:
-                print >> sys.stderr, err
+                print(err, file=sys.stderr)
             errors += curErrors
 
             self.assertEqual(curTargetPaths, [Sdf.Path(expectedTargetPath)])
@@ -95,7 +96,7 @@ class TestPcpPathTranslation(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_LocalRelativeTargetPaths(self):
-        print "TestLocalRelativeTargetPaths..."
+        print("TestLocalRelativeTargetPaths...")
 
         pcpCache = self._GetPcpCacheForLayer("Root.sdf")
 
@@ -123,7 +124,7 @@ class TestPcpPathTranslation(unittest.TestCase):
             (curTargetPaths, curErrors) = pcpCache.ComputeRelationshipTargetPaths(relPath)
 
             for err in curErrors:
-                print >> sys.stderr, err
+                print(err, file=sys.stderr)
             errors += curErrors
 
             self.assertEqual(curTargetPaths, 
@@ -132,7 +133,7 @@ class TestPcpPathTranslation(unittest.TestCase):
         self.assertEqual(len(errors), 0)
         
     def test_ReferenceAbsoluteTargetPaths(self):
-        print "TestReferenceAbsoluteTargetPaths..."
+        print("TestReferenceAbsoluteTargetPaths...")
 
         pcpCache = self._GetPcpCacheForLayer("Root.sdf")
 
@@ -157,7 +158,7 @@ class TestPcpPathTranslation(unittest.TestCase):
                 pcpCache.ComputeRelationshipTargetPaths(path)
 
             for err in curErrors:
-                print >> sys.stderr, err
+                print(err, file=sys.stderr)
             errors += curErrors
 
             self.assertEqual(curTargetPaths, [Sdf.Path(expectedTargetPath)])
@@ -165,7 +166,7 @@ class TestPcpPathTranslation(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_ReferenceRelativeTargetPaths(self):
-        print "TestReferenceRelativeTargetPaths..."
+        print("TestReferenceRelativeTargetPaths...")
 
         pcpCache = self._GetPcpCacheForLayer("Root.sdf")
 
@@ -190,7 +191,7 @@ class TestPcpPathTranslation(unittest.TestCase):
             (curTargetPaths, curErrors) = pcpCache.ComputeRelationshipTargetPaths(relPath)
 
             for err in curErrors:
-                print >> sys.stderr, err
+                print(err, file=sys.stderr)
             errors += curErrors
 
             self.assertEqual(curTargetPaths, 
@@ -199,7 +200,7 @@ class TestPcpPathTranslation(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_ReferenceErrorCases(self):
-        print "TestReferenceErrorCases..."
+        print("TestReferenceErrorCases...")
 
         pcpCache = self._GetPcpCacheForLayer("Root.sdf")
 
@@ -225,7 +226,7 @@ class TestPcpPathTranslation(unittest.TestCase):
             errors += curErrors
 
         for err in errors:
-            print >> sys.stderr, err
+            print(err, file=sys.stderr)
             self.assertTrue(isinstance(err, Pcp.ErrorInvalidExternalTargetPath), 
                    "Unexpected Error: %s" % err)
 

@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import sys, os, unittest
 from pxr import Sdf,Usd,Vt,Tf, Gf
 
@@ -39,7 +41,7 @@ class TestUsdTimeSamples(unittest.TestCase):
         nonSpecial = Usd.TimeCode(24.0)
         self.assertNotEqual(default1, nonSpecial)
         self.assertNotEqual(earliestTime1, nonSpecial)
-        print default1, default2, nonSpecial, earliestTime1, earliestTime2
+        print(default1, default2, nonSpecial, earliestTime1, earliestTime2)
 
         # test relational operators and hash.
         time1 = Usd.TimeCode(1.0)
@@ -178,7 +180,7 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(len(roundEmpty), len(empty))
 
             # print the layer contents for debugging
-            print l.ExportToString()
+            print(l.ExportToString())
 
             self.assertEqual(sdUnvaryingAttr.HasInfo("timeSamples"), False)
             self.assertEqual(sdVaryingAttr.HasInfo("timeSamples"), True)

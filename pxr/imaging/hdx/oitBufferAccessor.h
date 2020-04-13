@@ -32,10 +32,13 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdBufferArrayRange>
-    HdBufferArrayRangeSharedPtr;
+using HdBufferArrayRangeSharedPtr = 
+    std::shared_ptr<class HdBufferArrayRange>;
+
 typedef boost::shared_ptr<class HdStRenderPassShader>
     HdStRenderPassShaderSharedPtr;
 

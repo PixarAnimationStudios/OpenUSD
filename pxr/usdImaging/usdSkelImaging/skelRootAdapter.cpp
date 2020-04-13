@@ -86,7 +86,7 @@ UsdSkelImagingSkelRootAdapter::Populate(
             _GetPrimAdapter(skel.GetPrim());
         TF_VERIFY(adapter);
 
-        auto skelAdapter = boost::dynamic_pointer_cast<
+        auto skelAdapter = std::dynamic_pointer_cast<
             UsdSkelImagingSkeletonAdapter> (adapter);
         TF_VERIFY(skelAdapter);
 

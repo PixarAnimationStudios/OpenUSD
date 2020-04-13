@@ -155,7 +155,24 @@ _ComputeProxyPrim(UsdGeomImageable const &self)
     return TfPyObjWrapper();
 }
 
+static std::string _GetPurpose(const UsdGeomImageable::PurposeInfo &purposeInfo)
+{
+    return purposeInfo.purpose;
+}
+
+static void _SetPurpose(UsdGeomImageable::PurposeInfo &purposeInfo, 
+                        const std::string &purpose)
+{
+    purposeInfo.purpose = TfToken(purpose);
+}
+
+static bool _Nonzero(const UsdGeomImageable::PurposeInfo &purposeInfo)
+{
+    return bool(purposeInfo);
+}
+
 WRAP_CUSTOM {
+
     _class
         .def("CreatePrimvar", &UsdGeomImageable::CreatePrimvar,
              (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
@@ -185,10 +202,14 @@ WRAP_CUSTOM {
         .def("ComputePurpose", 
              (TfToken (UsdGeomImageable::*)() const)
                 &UsdGeomImageable::ComputePurpose)
-        .def("ComputePurpose", 
-             (TfToken (UsdGeomImageable::*)(const TfToken &) const)
-                &UsdGeomImageable::ComputePurpose,
-             arg("parentPurpose"))
+        .def("ComputePurposeInfo",
+             (UsdGeomImageable::PurposeInfo (UsdGeomImageable::*)() const)
+                &UsdGeomImageable::ComputePurposeInfo)
+        .def("ComputePurposeInfo",
+             (UsdGeomImageable::PurposeInfo (UsdGeomImageable::*)(
+                const UsdGeomImageable::PurposeInfo &) const)
+                &UsdGeomImageable::ComputePurposeInfo,
+             arg("parentPurposeInfo"))
 
         .def("ComputeProxyPrim", &_ComputeProxyPrim,
             "Returns None if neither this prim nor any of its ancestors "
@@ -220,9 +241,25 @@ WRAP_CUSTOM {
              &UsdGeomImageable::ComputeLocalToWorldTransform, (arg("time")))
         .def("ComputeParentToWorldTransform",
              &UsdGeomImageable::ComputeParentToWorldTransform, (arg("time")))
-        
-
         ;
+
+        {
+            scope s = _class;
+            class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
+                .def(init<>())
+                .def(init<const TfToken &, bool>())
+                .def("__nonzero__", &_Nonzero)
+                .def(self == self)
+                .def(self != self)
+                .add_property("purpose", &_GetPurpose, &_SetPurpose)
+                .def_readwrite("isInheritable",
+                               &UsdGeomImageable::PurposeInfo::isInheritable)
+                .def("GetInheritablePurpose", 
+                     make_function(
+                         &UsdGeomImageable::PurposeInfo::GetInheritablePurpose,
+                         return_value_policy<return_by_value>()))
+            ;
+        }
 }
 
 } // anonymous namespace 

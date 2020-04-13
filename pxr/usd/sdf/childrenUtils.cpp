@@ -79,7 +79,7 @@ _ComputeRenamedPath(const SdfPath &path,
 
 template <class ChildPolicy>
 bool Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(
-    const SdfLayerHandle &layer,
+    SdfLayer *layer,
     const SdfPath &childPath,
     SdfSpecType specType,
     bool inert)

@@ -100,6 +100,9 @@ Python support in USD refers to:
 Support for Python can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_PYTHON_SUPPORT=FALSE```.
 
+Support for Python 3 can be enabled by specifying the cmake flag
+```PXR_USE_PYTHON_3=ON```.
+
 ##### OpenGL and GLEW
 
 Support for OpenGL can optionally be disabled by specifying the cmake flag
@@ -107,7 +110,6 @@ Support for OpenGL can optionally be disabled by specifying the cmake flag
 that depend on GL, including:
 - usdview
 - Hydra GL imaging
-- Katana app plugins
 
 ##### OSL (OpenShadingLanguage)
 
@@ -208,13 +210,16 @@ More documentation is available [here](http://openusd.org/docs/RenderMan-USD-Ima
 
 ## Third Party Plugins
 
-USD provides several plugins for integration with third-party software packages,
-including Katana, Houdini, and Alembic. There is additional documentation on each plugin
+USD provides several plugins for integration with third-party software packages. 
+There is additional documentation on each plugin
 [here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
 
 The USD Maya plugins can be found in the Autodesk-supported repo available
 [here](https://github.com/Autodesk/maya-usd).
+
+The USD Katana plugins can be found in the Foundry-supported repo available
+[here](https://github.com/TheFoundryVisionmongers/KatanaUsdPlugins).
 
 ##### Alembic Plugin
 
@@ -239,36 +244,6 @@ support requires the following dependencies:
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
-
-##### Katana Plugin
-
-Enable the Katana plugin in the build by specifying the cmake flag 
-```PXR_BUILD_KATANA_PLUGIN=TRUE``` when invoking cmake. 
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name       | Description                           |
-| --------------        | -----------------------------------   |
-| KATANA_API_LOCATION   | The root path to a Katana SDK install.|
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
-For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
-
-##### Houdini Plugin
-
-Enable the Houdini plugin in the build by specifying the cmake flag 
-```PXR_BUILD_HOUDINI_PLUGIN=TRUE``` when invoking cmake. 
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name       | Description                            |
-| --------------        | -----------------------------------    |
-| HOUDINI_ROOT          | The root path to a Houdini SDK install.|
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
-For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 
 ##### MaterialX Plugin
 

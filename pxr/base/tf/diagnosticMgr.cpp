@@ -89,18 +89,14 @@ struct _ReentrancyGuard {
 } // end anonymous namespace
 
 
-// Helper function for printing a diagnostic message. This is used in non-main
-// threads and when a delegate is not available.
+// Helper function for printing a diagnostic message when a delegate is not
+// available.
 //
 // If \p info contains a TfPyExceptionState, that will be printed too.
 //
 static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
                  const std::string& msg, const TfDiagnosticInfo &info);
-
-static std::string
-_FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
-                  const std::string &msg, const TfDiagnosticInfo &info);
 
 static std::string
 _FormatDiagnostic(const TfDiagnosticBase &d, const TfDiagnosticInfo &info);
@@ -110,7 +106,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         TF_LOG_STACK_TRACE_ON_ERROR,
-        "issue stack traces for all errors");
+        "log stack traces for all errors");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        TF_LOG_STACK_TRACE_ON_WARNING,
+        "log stack traces for all warnings");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         TF_ERROR_MARK_TRACKING,
         "capture stack traces at TfErrorMark ctor/dtor, enable "
@@ -298,6 +297,14 @@ TfDiagnosticMgr::PostWarning(
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
         ArchDebuggerTrap();
 
+    const bool logStackTraceOnWarning =
+        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_WARNING);
+
+    if (logStackTraceOnWarning) {
+        _PrintDiagnostic(stderr, warningCode, context, commentary, info);
+        TfLogStackTrace("WARNING", /* logToDb */ false);
+    }
+
     quiet |= _quiet;
 
     TfWarning warning(warningCode, warningCodeString, context, commentary, info,
@@ -314,7 +321,7 @@ TfDiagnosticMgr::PostWarning(
         dispatchedToDelegate = !_delegates.empty();
     }
     
-    if (!dispatchedToDelegate && !quiet) {
+    if (!logStackTraceOnWarning && !dispatchedToDelegate && !quiet) {
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
     }
 }
@@ -639,9 +646,10 @@ TfDiagnosticMgr::_RebuildErrorLogText()
     _logText.local().RebuildAndPublish(GetErrorBegin(), GetErrorEnd());
 }
 
-static std::string
-_FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
-                  const std::string &msg, const TfDiagnosticInfo &info)
+std::string
+TfDiagnosticMgr::FormatDiagnostic(const TfEnum &code, 
+        const TfCallContext &context, const std::string &msg, 
+        const TfDiagnosticInfo &info)
 {
     string output;
     string codeName = TfDiagnosticMgr::GetCodeName(code);
@@ -675,15 +683,16 @@ _FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
 
 static std::string
 _FormatDiagnostic(const TfDiagnosticBase &d, const TfDiagnosticInfo &info) {
-    return _FormatDiagnostic(d.GetDiagnosticCode(), d.GetContext(),
-                             d.GetCommentary(), info);
+    return TfDiagnosticMgr::FormatDiagnostic(d.GetDiagnosticCode(), 
+            d.GetContext(), d.GetCommentary(), info);
 }
 
 static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
     const std::string& msg, const TfDiagnosticInfo &info)
 {
-    fprintf(fout, "%s", _FormatDiagnostic(code, context, msg, info).c_str());
+    fprintf(fout, "%s", TfDiagnosticMgr::FormatDiagnostic(code, context, msg, 
+                info).c_str());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

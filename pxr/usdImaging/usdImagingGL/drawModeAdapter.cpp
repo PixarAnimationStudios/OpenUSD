@@ -140,9 +140,9 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     SdfPath instancer = instancerContext ?
         instancerContext->instancerCachePath : SdfPath();
 
-    // The draw mode adapter only supports models. This is enforced in
-    // UsdImagingDelegate::_IsDrawModeApplied.
-    if (!TF_VERIFY(prim.IsModel(), "<%s>",
+    // The draw mode adapter only supports models or unloaded prims.
+    // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
+    if (!TF_VERIFY(prim.IsModel() || !prim.IsLoaded(), "<%s>",
                    prim.GetPath().GetText())) {
         return SdfPath();
     }
@@ -336,11 +336,7 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
-    TfToken purpose = GetPurpose(prim);
-    // Empty purpose means there is no opinion, fall back to geom.
-    if (purpose.IsEmpty())
-        purpose = UsdGeomTokens->default_;
-    valueCache->GetPurpose(cachePath) = purpose;
+    valueCache->GetPurpose(cachePath) = GetPurpose(prim, instancerContext);
 }
 
 void
@@ -1099,8 +1095,56 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
 
     TfTokenVector purposes = { UsdGeomTokens->default_, UsdGeomTokens->proxy,
                                UsdGeomTokens->render };
-    UsdGeomBBoxCache bboxCache(UsdTimeCode::EarliestTime(), purposes, true);
-    return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
+
+    // XXX: The use of UsdTimeCode::EarliestTime() in the code below is
+    // problematic, as it may produce unexpected results for animated models.
+
+    if (prim.IsLoaded()) {
+        UsdGeomBBoxCache bboxCache(
+            UsdTimeCode::EarliestTime(), purposes, true);
+        return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
+    } else {
+        GfRange3d extent;
+        UsdAttribute attr;
+        VtVec3fArray extentsHint;
+        // Get the extent either from the authored extent attribute of a
+        // UsdGeomBoundable prim, or get the extentsHint attribute from the
+        // prim.
+        if (prim.IsA<UsdGeomBoundable>() &&
+            (attr = UsdGeomBoundable(prim).GetExtentAttr()) &&
+            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            extentsHint.size() == 2) {
+            extent = GfRange3d(extentsHint[0], extentsHint[1]);
+        }
+        else if ((attr = UsdGeomModelAPI(prim).GetExtentsHintAttr()) &&
+            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            extentsHint.size() >= 2) {
+            // XXX: This code to merge the extentsHint values over a set of
+            // purposes probably belongs in UsdGeomBBoxCache.
+            const TfTokenVector &purposeTokens =
+                UsdGeomImageable::GetOrderedPurposeTokens();
+            for (size_t i = 0; i < purposeTokens.size(); ++i) {
+                size_t idx = i*2;
+                // If extents are not available for the value of purpose,
+                // it implies that the rest of the bounds are empty.
+                if ((idx + 2) > extentsHint.size())
+                    break;
+                // If this purpose isn't one we are interested in, skip it.
+                if (std::find(purposes.begin(), purposes.end(),
+                              purposeTokens[i]) == purposes.end())
+                    continue;
+
+                GfRange3d purposeExtent =
+                    GfRange3d(extentsHint[idx], extentsHint[idx+1]);
+                // Extents for an unauthored geometry purpose may be empty,
+                // even though the extent for a later purpose may exist.
+                if (!purposeExtent.IsEmpty()) {
+                    extent.ExtendBy(purposeExtent);
+                }
+            }
+        }
+        return extent;
+    }
 }
 
 HdTextureResource::ID

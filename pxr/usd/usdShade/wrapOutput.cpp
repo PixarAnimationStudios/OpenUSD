@@ -129,9 +129,6 @@ void wrapUsdShadeOutput()
              &Output::ClearSdrMetadataByKey, (arg("key")))
 
         .def("GetAttr", &Output::GetAttr)
-        .def("GetRel", &Output::GetRel)
-        .def("GetProperty", &Output::GetProperty,
-                return_value_policy<return_by_value>())
 
         .def("CanConnect", CanConnect_1,
             (arg("source")))
@@ -161,7 +158,6 @@ void wrapUsdShadeOutput()
         ;
 
     implicitly_convertible<Output, UsdAttribute>();
-    implicitly_convertible<Output, UsdProperty>();
 
     to_python_converter<
         std::vector<Output>,

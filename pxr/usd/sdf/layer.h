@@ -834,9 +834,17 @@ public:
     /// 
     /// Scales the time ordinate for samples contained in the file to seconds.  
     /// If timeCodesPerSecond is 24, then a sample at time ordinate 24 should 
-    /// be viewed exactly one second after the sample at time ordinate 0. 
+    /// be viewed exactly one second after the sample at time ordinate 0.
+    ///
+    /// If this layer doesn't have an authored value for timeCodesPerSecond, but
+    /// it does have an authored value for framesPerSecond, this method will
+    /// return the value of framesPerSecond.  This "dynamic fallback" allows
+    /// layers to lock framesPerSecond and timeCodesPerSecond to the same value
+    /// by specifying only framesPerSecond.
     /// 
-    /// The default value of timeCodesPerSecond is 24.
+    /// The default value of timeCodesPerSecond (which is used only if there is
+    /// no authored value for either timeCodesPerSecond or framesPerSecond) is
+    /// 24.
     SDF_API
     double GetTimeCodesPerSecond() const;
 
@@ -1635,6 +1643,8 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    SdfLayerHandle _self;
+
     // File format and arguments for this layer.
     SdfFileFormatConstPtr _fileFormat;
     FileFormatArguments _fileFormatArgs;

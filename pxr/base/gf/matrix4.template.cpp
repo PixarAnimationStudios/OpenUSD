@@ -690,8 +690,8 @@ void
     return factoredRotMat * {{ MAT }}(1.0).SetTranslate(translation);
 }
 
-GfRotation
-{{ MAT }}::ExtractRotation() const
+GfQuat{{ SCL[0] }}
+{{ MAT }}::ExtractRotationQuat() const
 {
     // This was adapted from the (open source) Open Inventor
     // SbRotation::SetValue(const SbMatrix &m)
@@ -704,8 +704,8 @@ GfRotation
     else
 	i = (_mtx[1][1] > _mtx[2][2] ? 1 : 2);
 
-    GfVec3d im;
-    double  r;
+    GfVec3{{ SCL[0] }} im;
+    ScalarType  r;
 
     if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
 	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
@@ -717,7 +717,7 @@ GfRotation
     else {
 	int j = (i + 1) % 3;
 	int k = (i + 2) % 3;
-	double q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+	ScalarType q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
 			      _mtx[k][k] + _mtx[3][3]); 
 
 	im[i] = q;
@@ -726,7 +726,14 @@ GfRotation
 	r     = (_mtx[j][k] - _mtx[k][j]) / (4 * q);
     }
 
-    return GfRotation(GfQuaternion(GfClamp(r, -1.0, 1.0), im));
+    return GfQuat{{ SCL[0] }}(
+        GfClamp(r, (ScalarType)-1.0, (ScalarType)1.0), im);
+}
+
+GfRotation
+{{ MAT }}::ExtractRotation() const
+{
+    return GfRotation(ExtractRotationQuat());
 }
 
 GfVec3{{ SCL[0] }}

@@ -29,24 +29,23 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
+
+#include <memory>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 struct GlfGLContextRegistry_Data;
 
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
+typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 /// \class GlfGLContextRegistry
 ///
 /// Registry of GlfGLContexts.
 ///
-class GlfGLContextRegistry : boost::noncopyable {
+class GlfGLContextRegistry
+{
 public:
     static GlfGLContextRegistry& GetInstance()
     {
@@ -76,12 +75,17 @@ private:
     GlfGLContextRegistry();
     ~GlfGLContextRegistry();
 
+    // Non-copyable
+    GlfGLContextRegistry(const GlfGLContextRegistry &) = delete;
+    GlfGLContextRegistry &operator=(const GlfGLContextRegistry &) = delete;
+
     friend class TfSingleton<GlfGLContextRegistry>;
 
 private:
-    boost::ptr_vector<GlfGLContextRegistrationInterface> _interfaces;
-    boost::optional<GlfGLContextSharedPtr> _shared;
-    boost::scoped_ptr<GlfGLContextRegistry_Data> _data;
+    std::vector<std::unique_ptr<GlfGLContextRegistrationInterface>> _interfaces;
+    bool _sharedContextInitialized;
+    GlfGLContextSharedPtr _shared;
+    std::unique_ptr<GlfGLContextRegistry_Data> _data;
 };
 
 

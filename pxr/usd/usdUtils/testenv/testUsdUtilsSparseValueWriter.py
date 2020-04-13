@@ -271,6 +271,8 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
         valueWriter.SetAttribute(radius, 2.0, Usd.TimeCode.Default())
         valueWriter.SetAttribute(height, 2.0, Usd.TimeCode.Default())
 
+        self.assertEqual(len(valueWriter.GetSparseAttrValueWriters()), 2)
+
         # Default value isn't authored for the height attribute into scene
         # description since it matches the fallback value of height.
         self.assertFalse(height.HasAuthoredValue())

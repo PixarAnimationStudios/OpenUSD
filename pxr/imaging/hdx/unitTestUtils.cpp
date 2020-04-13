@@ -116,10 +116,6 @@ _ProcessHit(AggregatedHit const& aHit,
 
             std::cout << "Picked instance " << instanceIndex << " of "
                       <<  "rprim " << hit.objectId << std::endl;
-
-            // we should use GetPathForInstanceIndex instead of it->objectId
-            //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
-            // and also need to add some APIs to compute VtIntArray instanceIndex.
         } else {
             selection->AddRprim(highlightMode, hit.objectId);
 

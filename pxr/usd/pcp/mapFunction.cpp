@@ -208,7 +208,7 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
     PathPair *begin = vec.data(), *end = vec.data() + vec.size();
     bool hasRootIdentity = _Canonicalize(begin, end);
     return PcpMapFunction(begin, end, offset, hasRootIdentity);
-}    
+}
 
 bool
 PcpMapFunction::IsNull() const
@@ -468,6 +468,14 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     bool hasRootIdentity = _Canonicalize(scratchBegin, scratch);
     return PcpMapFunction(scratchBegin, scratch,
                           _offset * inner._offset, hasRootIdentity);
+}
+
+PcpMapFunction
+PcpMapFunction::ComposeOffset(const SdfLayerOffset &offset) const
+{
+    PcpMapFunction composed(*this);
+    composed._offset = composed._offset * offset;
+    return composed;
 }
 
 PcpMapFunction

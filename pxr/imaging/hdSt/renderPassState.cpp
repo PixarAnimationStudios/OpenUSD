@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -96,6 +97,9 @@ HdStRenderPassState::Prepare(
     GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
 
     VtVec4fArray clipPlanes;
     TF_FOR_ALL(it, GetClipPlanes()) {
@@ -175,11 +179,12 @@ HdStRenderPassState::Prepare(
         _clipPlanesBufferSize = clipPlanes.size();
 
         // allocate interleaved buffer
-        _renderPassStateBar = resourceRegistry->AllocateUniformBufferArrayRange(
-            HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
+        _renderPassStateBar = 
+            hdStResourceRegistry->AllocateUniformBufferArrayRange(
+                HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
@@ -194,7 +199,7 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
-    HdBufferSourceVector sources;
+    HdBufferSourceSharedPtrVector sources;
     sources.push_back(HdBufferSourceSharedPtr(
                          new HdVtBufferSource(HdShaderTokens->worldToViewMatrix,
                                               worldToViewMatrix)));
@@ -253,7 +258,7 @@ HdStRenderPassState::Prepare(
                                   clipPlanes.size())));
     }
 
-    resourceRegistry->AddSources(_renderPassStateBar, sources);
+    hdStResourceRegistry->AddSources(_renderPassStateBar, sources);
 
     // notify view-transform to the lighting shader to update its uniform block
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);
@@ -284,7 +289,7 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
     if (_renderPassStateBar) {
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
@@ -478,12 +483,14 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
         }
 
         bool multiSampled= useMultiSample && aov.renderBuffer->IsMultiSampled();
-        HgiTextureHandle hgiTexHandle =
-            aov.renderBuffer->GetHgiTextureHandle(multiSampled);
+        VtValue rv = aov.renderBuffer->GetResource(multiSampled);
 
-        if (!TF_VERIFY(hgiTexHandle, "Invalid render buffer texture")) {
+        if (!TF_VERIFY(rv.IsHolding<HgiTextureHandle>(), 
+            "Invalid render buffer texture")) {
             continue;
         }
+
+        HgiTextureHandle hgiTexHandle = rv.UncheckedGet<HgiTextureHandle>();
 
         // Assume AOVs have the same dimensions so pick size of any.
         desc.width = aov.renderBuffer->GetWidth();
@@ -495,7 +502,6 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             HgiAttachmentLoadOpDontCare :
             HgiAttachmentLoadOpClear;
 
-        attachmentDesc.texture = hgiTexHandle;
         attachmentDesc.loadOp = loadOp;
         attachmentDesc.storeOp = HgiAttachmentStoreOpStore;
 
@@ -507,12 +513,25 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             attachmentDesc.clearValue = col;
         }
 
+        // HdSt expresses blending per RenderPassState, where Hgi expresses
+        // blending per-attachment. Transfer pass blend state to attachments.
+        attachmentDesc.blendEnabled = _blendEnabled;
+        attachmentDesc.srcColorBlendFactor=HgiBlendFactor(_blendColorSrcFactor);
+        attachmentDesc.dstColorBlendFactor=HgiBlendFactor(_blendColorDstFactor);
+        attachmentDesc.colorBlendOp = HgiBlendOp(_blendColorOp);
+        attachmentDesc.srcAlphaBlendFactor=HgiBlendFactor(_blendAlphaSrcFactor);
+        attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
+        attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
+
         if (aov.aovName == HdAovTokens->depth) {
-            desc.depthAttachment = std::move(attachmentDesc);
-        } else if (TF_VERIFY(desc.colorAttachments.size() < maxColorAttachments, 
-                            "Too many aov bindings for color attachments")) 
+            desc.depthAttachmentDesc = std::move(attachmentDesc);
+            desc.depthTexture = hgiTexHandle;
+        } else if (TF_VERIFY(
+            desc.colorAttachmentDescs.size() < maxColorAttachments,
+            "Too many aov bindings for color attachments"))
         {
-            desc.colorAttachments.emplace_back(std::move(attachmentDesc));
+            desc.colorAttachmentDescs.emplace_back(std::move(attachmentDesc));
+            desc.colorTextures.emplace_back(hgiTexHandle);
         }
     }
 

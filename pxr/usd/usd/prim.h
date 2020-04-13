@@ -52,6 +52,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
+class UsdPrimDefinition;
 class UsdPrimRange;
 class Usd_PrimData;
 
@@ -140,12 +141,14 @@ public:
     typedef UsdPrimSubtreeRange SubtreeRange;
 
     /// Construct an invalid prim.
-    UsdPrim() : UsdObject() {}
+    UsdPrim() : UsdObject(_Null<UsdPrim>()) {}
 
-    /// Return this prim's definition from the UsdSchemaRegistry based on the
-    /// prim's type if one exists, otherwise return null.
-    USD_API
-    SdfPrimSpecHandle GetPrimDefinition() const;
+    /// Return this prim's definition based on the prim's type if the type
+    /// is a registered prim type. Returns an empty prim definition if it is 
+    /// not.
+    const UsdPrimDefinition &GetPrimDefinition() const {
+        return _Prim()->GetPrimDefinition();
+    }
 
     /// Return this prim's composed specifier.
     SdfSpecifier GetSpecifier() const { return _Prim()->GetSpecifier(); };
@@ -677,6 +680,46 @@ public:
     USD_API
     bool IsPseudoRoot() const;
 
+    /// Returns the prim at \p path on the same stage as this prim.
+    /// If path is is relative, it will be anchored to the path of this prim.
+    /// \sa UsdStage::GetPrimAtPath(const SdfPath&) const
+    USD_API UsdPrim GetPrimAtPath(const SdfPath& path) const;
+
+    /// Returns the object at \p path on the same stage as this prim.
+    /// If path is is relative, it will be anchored to the path of this prim.
+    /// \sa UsdStage::GetObjectAtPath(const SdfPath&) const
+    USD_API UsdObject GetObjectAtPath(const SdfPath& path) const;
+
+    /// Returns the property at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns a property on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetProperty(const TfToken&) const
+    /// \sa UsdStage::GetPropertyAtPath(const SdfPath&) const
+    USD_API UsdProperty GetPropertyAtPath(const SdfPath& path) const;
+    
+    /// Returns the attribute at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns an attribute on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetAttribute(const TfToken&) const
+    /// \sa UsdStage::GetAttributeAtPath(const SdfPath&) const
+    USD_API UsdAttribute GetAttributeAtPath(const SdfPath& path) const;
+
+    /// Returns the relationship at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns a relationship on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetRelationship(const TfToken&) const
+    /// \sa UsdStage::GetRelationshipAtPath(const SdfPath&) const
+    USD_API UsdRelationship GetRelationshipAtPath(const SdfPath& path) const;
+
     // --------------------------------------------------------------------- //
     /// \name Variants 
     // --------------------------------------------------------------------- //
@@ -1121,6 +1164,13 @@ public:
         return UsdPrim();
     }
 
+    /// If this prim is a master prim, returns all prims that are instances of 
+    /// this master. Otherwise, returns an empty vector.
+    ///
+    /// Note that this function will return prims in masters for instances that 
+    /// are nested beneath other instances.
+    USD_API
+    std::vector<UsdPrim> GetInstances() const;
     /// @}
 
     // --------------------------------------------------------------------- //

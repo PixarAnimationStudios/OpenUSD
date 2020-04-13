@@ -32,6 +32,8 @@
 # it differs, this script will print a diff and error out.
 #
 
+from __future__ import print_function
+
 import os, sys, itertools
 from argparse import ArgumentParser
 
@@ -50,19 +52,19 @@ def _WriteFile(filePath, content, verbose=True):
         existingContent = open(filePath, 'r').read()
         if existingContent == content:
             if verbose:
-                print '\tunchanged %s' % filePath
+                print('\tunchanged %s' % filePath)
             return
     # Otherwise attempt to write to file.
     try:
         with open(filePath, 'w') as curfile:
             curfile.write(content)
             if verbose:
-                print '\t    wrote %s' % filePath
+                print('\t    wrote %s' % filePath)
     except IOError as ioe:
-        print '\t', ioe
-        print 'Diff:'
-        print '\n'.join(difflib.unified_diff(existingContent.split('\n'),
-                                             content.split('\n')))
+        print('\t', ioe)
+        print('Diff:')
+        print('\n'.join(difflib.unified_diff(existingContent.split('\n'),
+                                             content.split('\n'))))
 
 def IsFloatingPoint(t):
     return t in ['double', 'float', 'GfHalf']
@@ -108,11 +110,11 @@ def GenerateFromTemplates(env, templates, suffix, outputPath, verbose=True):
             _WriteFile(os.path.join(outputPath, tmpl % suffix),
                 env.get_template(tmplName).render(), verbose)
         except TemplateSyntaxError as err:
-            print >>sys.stderr, \
-                'Syntax Error: {0.name}:{0.lineno}: {0.message}'.format(err)
+            print('Syntax Error: {0.name}:{0.lineno}: {0.message}'.format(err),
+                  file=sys.stderr)
         except TemplateError as err:
-            print >>sys.stderr, \
-                'Template Error: {}: {}'.format(err, tmplName)
+            print('Template Error: {}: {}'.format(err, tmplName),
+                  file=sys.stderr)
 
 def ScalarSuffix(scl):
     if scl == 'GfHalf':

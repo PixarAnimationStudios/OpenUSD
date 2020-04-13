@@ -149,6 +149,7 @@ m6 = Pcp.MapFunction({'/':'/'}, offset2)
 assert m5.timeOffset == offset1
 assert m6.timeOffset == offset2
 assert m5.Compose(m6).timeOffset == (offset1 * offset2)
+assert m5.ComposeOffset(m6.timeOffset).timeOffset == (offset1 * offset2)
 
 testMapFuncs.append(m5)
 testMapFuncs.append(m6)

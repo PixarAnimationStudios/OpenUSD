@@ -628,7 +628,7 @@ struct _PreadStream {
         _cur += ArchPRead(_file, dest, nBytes, _start + _cur);
     }
     inline int64_t Tell() const { return _cur; }
-    inline void Seek(int64_t offset) { _cur = _start + offset; }
+    inline void Seek(int64_t offset) { _cur = offset; }
     inline void Prefetch(int64_t offset, int64_t size) {
         ArchFileAdvise(_file, _start+offset, size, ArchFileAdviceWillNeed);
     }

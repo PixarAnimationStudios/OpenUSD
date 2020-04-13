@@ -35,8 +35,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

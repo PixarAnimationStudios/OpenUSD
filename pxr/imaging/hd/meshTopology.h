@@ -37,12 +37,12 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
+using HdMeshTopologySharedPtr = std::shared_ptr<class HdMeshTopology>;
 
 /// \class HdMeshTopology
 ///

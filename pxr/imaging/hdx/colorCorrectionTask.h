@@ -36,7 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStGLSLProgram;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 
 /// \class HdxColorCorrectionTask
@@ -98,10 +97,6 @@ private:
     GLint _locations[4];
     GLuint _vertexBuffer;
 
-    // XXX: Removed due to slowness in the IsCurrent() call when multiple
-    //      gl contexts are registered in GlfGLContextRegistry.
-    // GlfGLContextSharedPtr _owningContext;
-
     GLuint _copyFramebuffer;
     GfVec2i _framebufferSize;
 
@@ -110,7 +105,7 @@ private:
     std::string _viewOCIO;
     std::string _colorspaceOCIO;
     std::string _looksOCIO;
-    int _lut3dSizeOCIO;
+    int _lut3dSizeOCIO = 0;
 
     TfToken _aovName;
     SdfPath _aovBufferPath;
@@ -151,9 +146,9 @@ struct HdxColorCorrectionTaskParams
     std::string colorspaceOCIO;
     std::string looksOCIO;
 
-    // The width, height and depth used for the GPU LUT 3d texture
-    // 0-64 (65) is the current pxr default
-    int lut3dSizeOCIO = 65;
+    // The width, height and depth used for the GPU LUT 3d texture.
+    // A value of 0 indicates we should use an appropriate default size.
+    int lut3dSizeOCIO = 0;
 
     // When no AOV is provided ColorCorrection will operate on the default FB
     // color attachment.

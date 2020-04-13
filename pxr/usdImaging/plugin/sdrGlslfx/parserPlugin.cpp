@@ -79,24 +79,9 @@ ConvertToSdrCompatibleValueAndType(
     if (any.IsHolding< std::vector<VtValue> >()) {
 
         std::vector<VtValue> const & anyVec = any.Get< std::vector<VtValue> >();
-        if (anyVec.size() == 3) {
-            // support for vectors length 3
-            GfVec3f retVec;
-            for (int i = 0; i < 3; i++) {
-                if (anyVec[i].IsHolding<double>()) {
-                    retVec[i] = anyVec[i].UncheckedGet<double>();
-                } else if (anyVec[i].IsHolding<float>()) {
-                    retVec[i] = anyVec[i].UncheckedGet<float>();
-                } else {
-                    return VtValue();
-                }
-            }
-
-            *sdrType = SdrPropertyTypes->Color;
-            return VtValue(retVec);
 
         // support for matrix
-        } else if (anyVec.size() == 16) {
+        if (anyVec.size() == 16) {
             if (anyVec[0].IsHolding<double>()) {
                 GfMatrix4d retMat;
                 double * m = retMat.GetArray();
@@ -118,6 +103,18 @@ ConvertToSdrCompatibleValueAndType(
                 return VtValue();
             }
         
+        // support for vectors length 1
+        } else if (anyVec.size() == 1) {
+            if (anyVec[0].IsHolding<double>()){
+                // Sdr has no doubles, converting them to floats
+                *sdrType = SdrPropertyTypes->Float; 
+                return VtValue( (float)anyVec[0].UncheckedGet<double>());
+
+            } else if (anyVec[0].IsHolding<float>()){
+                *sdrType = SdrPropertyTypes->Float;
+                return VtValue( anyVec[0].UncheckedGet<float>());
+            }
+
         // support for vectors length 2
         } else if (anyVec.size() == 2) {
             VtFloatArray retVec(2);
@@ -135,6 +132,22 @@ ConvertToSdrCompatibleValueAndType(
             *arraySize = 2;
             return VtValue(retVec);
         
+        } else if (anyVec.size() == 3) {
+            // support for vectors length 3
+            GfVec3f retVec;
+            for (int i = 0; i < 3; i++) {
+                if (anyVec[i].IsHolding<double>()) {
+                    retVec[i] = anyVec[i].UncheckedGet<double>();
+                } else if (anyVec[i].IsHolding<float>()) {
+                    retVec[i] = anyVec[i].UncheckedGet<float>();
+                } else {
+                    return VtValue();
+                }
+            }
+
+            *sdrType = SdrPropertyTypes->Color;
+            return VtValue(retVec);
+
         // support for vectors length 4
         } else if (anyVec.size() == 4) {
             VtFloatArray retVec(4);
@@ -249,10 +262,15 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
         size_t arraySize = 0;
         TfToken sdrType = SdrPropertyTypes->Color;
+        VtValue defaultValue = ConvertToSdrCompatibleValueAndType(
+            t.defaultValue,
+            &arraySize,
+            &sdrType);
 
-        // XXX : Glslfx does not specify a default value for textures,
-        // for now we will just use black.
-        VtValue defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
+        // Check for a default value, or fallback to all black.
+        if (defaultValue.IsEmpty()) {
+            defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
+        }
 
         NdrTokenMap hints;
         NdrOptionVec options;

@@ -29,10 +29,22 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 
+#include "pxr/base/gf/vec2f.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((outlineFrag, "OutlineFragment"))
+    (colorIn)
+    (enableOutline)
+    (radius)
+    (texelSize)    
+);
 
 HdxColorizeSelectionTask::HdxColorizeSelectionTask(
         HdSceneDelegate* delegate, SdfPath const& id)
@@ -164,11 +176,29 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     _ColorizeSelection();
 
     // Blit!
-    _compositor.UpdateColor(
+    _compositor.SetProgram(HdxPackageOutlineShader(), _tokens->outlineFrag);
+
+    _compositor.SetTexture(
+        _tokens->colorIn,
         _primId->GetWidth(), 
         _primId->GetHeight(),
         HdFormatUNorm8Vec4, 
         _outputBuffer);
+
+    GfVec2f texelSize;
+    if(_primId->GetWidth() > 0 && _primId->GetHeight() > 0) {
+        texelSize[0] = 1.0f / _primId->GetWidth();
+        texelSize[1] = 1.0f / _primId->GetHeight();
+    }
+    _compositor.SetUniform(_tokens->texelSize, VtValue(texelSize));
+
+    _compositor.SetUniform(_tokens->enableOutline,
+                           VtValue(_params.enableOutline ? 1 : 0));
+
+    // Glsl version 120 does not support unsigned int, so we cast the radius to
+    // a signed int - nonetheless the value will be >=0 .
+    _compositor.SetUniform(_tokens->radius,
+                           VtValue((int)_params.outlineRadius));
 
     // Blend the selection color on top.  ApplySelectionColor uses the
     // calculation:
@@ -185,7 +215,6 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     glGetBooleanv(GL_BLEND, &blendEnabled);
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_ONE, GL_SRC_ALPHA, GL_ZERO, GL_ONE);
-
     _compositor.Draw();
 
     glEnable(GL_DEPTH_TEST);
@@ -214,14 +243,14 @@ HdxColorizeSelectionTask::_ColorizeSelection()
         // Skip the colorizing if we can't look up prim ID
         return;
     }
-    //int32_t *iiddata = reinterpret_cast<int32_t*>(_instanceId->Map());
+    int32_t *iiddata = reinterpret_cast<int32_t*>(_instanceId->Map());
     int32_t *eiddata = reinterpret_cast<int32_t*>(_elementId->Map());
 
     for (size_t i = 0; i < _outputBufferSize; ++i) {
         GfVec4f output = GfVec4f(0,0,0,1);
 
         int primId = piddata ? piddata[i] : -1;
-        //int instanceId = iiddata ? iiddata[i] : -1;
+        int instanceId = iiddata ? iiddata[i] : -1;
         int elementId = eiddata ? eiddata[i] : -1;
 
         for (int mode = 0; mode < _selectionOffsets[0]; ++mode) {
@@ -243,15 +272,19 @@ HdxColorizeSelectionTask::_ColorizeSelection()
                 bool sel = bool(selectionData & 0x1);
                 int nextOffset = selectionData >> 1;
 
-                // XXX: Instance highlighting? We currently encode it
-                // per-level, and it's too expensive to look up rprims here
-                // to find out how many levels of instancing they have.
-                // We should change the encoding to flattened index.
-
-                // See if the next block is the ELEMENT block; it should be,
-                // unless there's an instance selection.
                 if (nextOffset != 0 && !sel) {
                     int subprimType = _selectionOffsets[nextOffset];
+                    if (subprimType == 3 /* INSTANCE */) {
+                        int imin = _selectionOffsets[nextOffset+1];
+                        int imax = _selectionOffsets[nextOffset+2];
+                        if (instanceId >= imin && instanceId < imax) {
+                            offset = nextOffset + 3 + instanceId - imin;
+                            selectionData = _selectionOffsets[offset];
+                            sel = sel || bool(selectionData & 0x1);
+                            nextOffset = selectionData >> 1;
+                        }
+                    }
+                    subprimType = _selectionOffsets[nextOffset];
                     if (subprimType == 0 /* ELEMENT */) {
                         int emin = _selectionOffsets[nextOffset+1];
                         int emax = _selectionOffsets[nextOffset+2];
@@ -259,6 +292,7 @@ HdxColorizeSelectionTask::_ColorizeSelection()
                             offset = nextOffset + 3 + elementId - emin;
                             selectionData = _selectionOffsets[offset];
                             sel = sel || bool(selectionData & 0x1);
+                            nextOffset = selectionData >> 1;
                         }
                     }
                 }
@@ -284,11 +318,9 @@ HdxColorizeSelectionTask::_ColorizeSelection()
     }
 
     _primId->Unmap();
-    /*
     if (iiddata) {
         _instanceId->Unmap();
     }
-    */
     if (eiddata) {
         _elementId->Unmap();
     }

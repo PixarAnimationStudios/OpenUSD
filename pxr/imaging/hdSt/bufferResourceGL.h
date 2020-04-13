@@ -24,7 +24,7 @@
 #ifndef PXR_IMAGING_HD_ST_BUFFER_RESOURCE_GL_H
 #define PXR_IMAGING_HD_ST_BUFFER_RESOURCE_GL_H
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/gl.h"
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -33,27 +33,28 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <cstddef>
+#include <memory>
 #include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStBufferResourceGL>
-                                HdStBufferResourceGLSharedPtr;
+using HdStBufferResourceGLSharedPtr =
+    std::shared_ptr<class HdStBufferResourceGL>;
 
-typedef std::pair<TfToken, HdStBufferResourceGLSharedPtr>
-                                HdStBufferResourceGLNamedPair;
-typedef std::vector<HdStBufferResourceGLNamedPair>
-                                HdStBufferResourceGLNamedList;
+using HdStBufferResourceGLNamedPair =
+    std::pair<TfToken, HdStBufferResourceGLSharedPtr>;
+using HdStBufferResourceGLNamedList =
+    std::vector<HdStBufferResourceGLNamedPair>;
 
 /// \class HdStBufferResourceGL
 ///
 /// A specific type of HdBufferResource (GPU resource) representing an 
 /// OpenGL buffer object.
 ///
-class HdStBufferResourceGL : public HdBufferResource {
+class HdStBufferResourceGL final : public HdBufferResource
+{
 public:
     HDST_API
     HdStBufferResourceGL(TfToken const &role,

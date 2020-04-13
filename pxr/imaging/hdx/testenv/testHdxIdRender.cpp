@@ -26,6 +26,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
@@ -36,6 +37,9 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestGLDrawing.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -51,7 +55,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 class My_TestGLDrawing : public Hdx_UnitTestGLDrawing {
 public:
-    My_TestGLDrawing() {
+    My_TestGLDrawing()
+        : _hgi(Hgi::GetPlatformDefaultHgi())
+        , _driver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+    {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
         _reprName = HdReprTokens->hull;
@@ -79,6 +86,9 @@ protected:
     virtual void ParseArgs(int argc, char *argv[]);
 
 private:
+    std::unique_ptr<Hgi> _hgi;
+    HdDriver _driver;
+
     HdEngine              _engine;
     HdStRenderDelegate    _renderDelegate;
     HdRenderIndex        *_renderIndex;
@@ -103,7 +113,7 @@ _GetTranslate(float tx, float ty, float tz)
 void
 My_TestGLDrawing::InitTest()
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_driver});
     TF_VERIFY(_renderIndex != nullptr);
     _delegate = new Hdx_UnitTestDelegate(_renderIndex);
 

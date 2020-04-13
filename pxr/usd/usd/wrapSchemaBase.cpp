@@ -89,7 +89,8 @@ void wrapUsdSchemaBase()
         .def("GetPrim", &UsdSchemaBase::GetPrim)
         .def("GetPath", &UsdSchemaBase::GetPath)
         .def("GetSchemaClassPrimDefinition",
-             &UsdSchemaBase::GetSchemaClassPrimDefinition)
+             &UsdSchemaBase::GetSchemaClassPrimDefinition,
+             return_internal_reference<>())
         .def("GetSchemaAttributeNames", &UsdSchemaBase::GetSchemaAttributeNames,
              arg("includeInherited")=true,
              return_value_policy<TfPySequenceToList>())

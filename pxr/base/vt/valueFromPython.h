@@ -35,7 +35,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 
 #include <vector>
 

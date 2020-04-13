@@ -25,11 +25,9 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/templateString.h"
-#include <boost/assign/list_of.hpp>
 #include <string>
 #include <vector>
 
-using namespace boost::assign;
 using std::string;
 using std::vector;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -79,39 +77,39 @@ TestTemplateString()
 
 
     TF_AXIOM("$(var)" ==
-        _Replace("$(var)", map_list_of("var", "value")));
+        _Replace("$(var)", {{"var", "value"}}));
 
     TF_AXIOM("value" ==
-        _Replace("$var", map_list_of("var", "value")));
+        _Replace("$var", {{"var", "value"}}));
 
     TF_AXIOM("$var" ==
-        _Replace("$$var", map_list_of("var", "value")));
+        _Replace("$$var", {{"var", "value"}}));
 
     TF_AXIOM("$value" ==
-        _Replace("$$$var", map_list_of("var", "value")));
+        _Replace("$$$var", {{"var", "value"}}));
 
     TF_AXIOM("$(value)" ==
-        _Replace("$($var)", map_list_of("var", "value")));
+        _Replace("$($var)", {{"var", "value"}}));
 
     TF_AXIOM("valued" ==
-        _Replace("${var}d", map_list_of("var", "value")));
+        _Replace("${var}d", {{"var", "value"}}));
 
     TF_AXIOM("value-value" ==
-        _Replace("$var-value", map_list_of("var", "value")));
+        _Replace("$var-value", {{"var", "value"}}));
 
     TF_AXIOM("0000" ==
-        _Replace("$var$var$var$var", map_list_of("var", "0")));
+        _Replace("$var$var$var$var", {{"var", "0"}}));
 
     TF_AXIOM("0.0.0.0" ==
-        _Replace("${var}.${var}.${var}.${var}", map_list_of("var", "0")));
+        _Replace("${var}.${var}.${var}.${var}", {{"var", "0"}}));
 
     TF_AXIOM("//brave/b952/shot/b952_17/b952_17.menva" ==
-        _Replace("//$unit/$prod/shot/$shot/$shot.menva", map_list_of
-            ("unit", "brave")("prod", "b952")("shot", "b952_17")));
+        _Replace("//$unit/$prod/shot/$shot/$shot.menva", {
+            {"unit", "brave"}, {"prod", "b952"}, {"shot", "b952_17"} }));
 
     TF_AXIOM("Please remit the $sum of $19.95" ==
         _Replace("Please remit the $$sum of $$$sum",
-            map_list_of("sum", "19.95")));
+            {{"sum", "19.95"}}));
 
     {
         TfErrorMark m;

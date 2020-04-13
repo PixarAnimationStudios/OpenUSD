@@ -33,8 +33,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -76,7 +74,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(HdLightTokens, HD_API, HD_LIGHT_TOKENS);
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdLight> HdLightSharedPtr;
 typedef std::vector<class HdLight const *> HdLightPtrConstVector;
 
 /// \class HdLight

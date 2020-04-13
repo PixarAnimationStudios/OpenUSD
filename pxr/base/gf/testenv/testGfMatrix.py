@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 
 import sys, math
 import unittest
@@ -31,7 +32,7 @@ try:
     import numpy
     hasNumpy = True
 except ImportError:
-    print 'numpy not available, skipping buffer protocol tests'
+    print('numpy not available, skipping buffer protocol tests')
     hasNumpy = False
 
 def makeValue( Value, vals ):
@@ -121,7 +122,7 @@ class TestGfMatrix(unittest.TestCase):
             # Test comparison of Matrix and Matrixf
             #
             size = Matrix.dimension[0] * Matrix.dimension[1]
-            contents = range(1, size + 1)
+            contents = list(range(1, size + 1))
             md = Matrix(*contents)
             mf = Matrixf(*contents)
             self.assertEqual(md, mf)
@@ -343,7 +344,7 @@ class TestGfMatrix(unittest.TestCase):
                 
             m = Matrix(1,0,0, 1,0,0, 1,0,0)
             # should print a warning
-            print "expect a warning about failed convergence in OrthogonalizeBasis:"
+            print("expect a warning about failed convergence in OrthogonalizeBasis:")
             m.Orthonormalize()
 
             m = Matrix(1,0,0, 1,0,.0001, 0,1,0)
@@ -565,6 +566,14 @@ class TestGfMatrix(unittest.TestCase):
             self.assertTrue(Gf.IsClose(r4.axis, r5.axis, 0.0001) and \
                 Gf.IsClose(r4.angle, r5.angle, 0.0001))
 
+            # ExtractQuat() and ExtractRotation() should yield 
+            # equivalent rotations.
+            m = Matrix(mx3d, Vec3(1,2,3))
+            r1 = m.ExtractRotation()
+            r2 = Gf.Rotation(m.ExtractRotationQuat())
+            self.assertTrue(Gf.IsClose(r1.axis, r2.axis, 0.0001) and \
+                Gf.IsClose(r2.angle, r2.angle, 0.0001))
+
             m4 = Matrix(mx3d, Vec3(1,2,3)).ExtractRotationMatrix()
             self.assertEqual(m4, mx3d)
 
@@ -576,7 +585,7 @@ class TestGfMatrix(unittest.TestCase):
 
             m = Matrix(1,0,0,0,  1,0,0,0,  1,0,0,0,  0,0,0,1)
             # should print a warning
-            print "expect a warning about failed convergence in OrthogonalizeBasis:"
+            print("expect a warning about failed convergence in OrthogonalizeBasis:")
             m.Orthonormalize()
 
             m = Matrix(1,0,0,0,  1,0,.0001,0,  0,1,0,0,  0,0,0,1)

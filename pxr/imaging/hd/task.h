@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -35,6 +36,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <memory>
 #include <vector>
 #include <unordered_map>
 #include <boost/shared_ptr.hpp>
@@ -42,16 +44,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
-
-typedef boost::shared_ptr<class HdSceneTask> HdSceneTaskSharedPtr;
-typedef std::vector<HdSceneTaskSharedPtr> HdSceneTaskSharedPtrVector;
+using HdTaskSharedPtr = std::shared_ptr<class HdTask>;
+using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
 
 // We want to use token as a key not std::string, so use an unordered_map over
 // VtDictionary
-typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
-                                                                  HdTaskContext;
+using HdTaskContext = 
+    std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
 
 class HdTask {
 public:
@@ -189,6 +188,13 @@ protected:
     HD_API
     TfTokenVector _GetTaskRenderTags(HdSceneDelegate* delegate);
 
+    /// Extract an object from a HdDriver inside the task context.
+    /// Returns nullptr if driver was not found.
+    template <class T>
+    static T _GetDriver(
+        HdTaskContext const* ctx,
+        TfToken const& driverName);
+
 private:
     SdfPath _id;
 
@@ -247,6 +253,30 @@ HdTask::_GetTaskParams(HdSceneDelegate* delegate,
     *outValue = valueVt.UncheckedGet<T>();
 
     return true;
+}
+
+template <class T>
+T
+HdTask::_GetDriver(
+    HdTaskContext const* ctx,
+    TfToken const& driverName)
+{
+    auto it = ctx->find(HdTokens->drivers);
+    if (it != ctx->end()) {
+        VtValue const& value = it->second;
+        if (value.IsHolding<HdDriverVector>()) {
+            HdDriverVector const& drivers= value.UncheckedGet<HdDriverVector>();
+            for (HdDriver* hdDriver : drivers) {
+                if (hdDriver->name == driverName) {
+                    if (hdDriver->driver.IsHolding<T>()) {
+                        return hdDriver->driver.UncheckedGet<T>();
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

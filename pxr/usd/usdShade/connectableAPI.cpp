@@ -267,7 +267,7 @@ UsdShadeConnectableAPI::CanConnect(
 /* static */
 bool  
 UsdShadeConnectableAPI::ConnectToSource(
-    UsdProperty const &shadingProp,
+    UsdAttribute const &shadingAttr,
     UsdShadeConnectableAPI const &source, 
     TfToken const &sourceName,
     UsdShadeAttributeType const sourceType,
@@ -285,55 +285,31 @@ UsdShadeConnectableAPI::ConnectToSource(
         TfToken sourceAttrName(prefix + sourceName.GetString());
 
         UsdAttribute sourceAttr = sourcePrim.GetAttribute(sourceAttrName);
-        if (!sourceAttr) {
-            // If the sourcePrim contains a relationship with the source 
-            // name, then it must be a terminal output on a node-graph and 
-            // cannot be connected to.
-            if (sourcePrim.GetRelationship(sourceAttrName)) {
-                TF_CODING_ERROR("Cannot connect shading property <%s>'s source"
-                    "to existing relationship '%s' on source prim <%s>..",
-                    shadingProp.GetName().GetText(),
-                    sourceAttrName.GetText(), 
-                    sourcePrim.GetPath().GetText());
-                return false;
-            }
-        }
-
-        // If a typeName isn't specified, 
-        if (!typeName) {
-            // If shadingProp is not an attribute, it must be a terminal output 
-            // on a node-graph. Hence wrapping shadingProp in a UsdShadeOutput 
-            // and asking for its typeName should give us the desired answer.
-            typeName = UsdShadeOutput(shadingProp).GetTypeName();
-        }
 
         // First make sure there is a source attribute of the proper type
         // on the sourcePrim.
         if (!sourceAttr) {
+            // If a typeName isn't specified, 
+            if (!typeName) {
+                // If sourceAttr does not exist, get typeName from shading
+                // attribute
+                typeName = shadingAttr.GetTypeName();
+            }
             sourceAttr = sourcePrim.CreateAttribute(sourceAttrName, typeName,
                 /* custom = */ false);
         }
 
-        UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
-        if (!shadingAttr) {
-            TF_CODING_ERROR("Attempted to author a connection on an invalid"
-                "shading property <%s>.", UsdDescribe(shadingAttr).c_str());
-            return false;
-        }
         success = shadingAttr.SetConnections(
             SdfPathVector{sourceAttr.GetPath()});
 
-            
-        
     } else if (!source) {
-        TF_CODING_ERROR("Failed connecting shading property <%s>. "
+        TF_CODING_ERROR("Failed connecting shading attribute <%s>. "
                         "The given source shader prim <%s> is not defined", 
-                        shadingProp.GetPath().GetText(),
+                        shadingAttr.GetPath().GetText(),
                         source.GetPrim() ? source.GetPath().GetText() :
                         "invalid-prim");
         return false;
     }
-
 
     return success;
 }
@@ -341,14 +317,14 @@ UsdShadeConnectableAPI::ConnectToSource(
 /* static */
 bool 
 UsdShadeConnectableAPI::ConnectToSource(
-    UsdProperty const &shadingProp,
+    UsdAttribute const &shadingAttr,
     SdfPath const &sourcePath)
 {
     // sourcePath needs to be a property path for us to make a connection.
     if (!sourcePath.IsPropertyPath())
         return false;
 
-    UsdPrim sourcePrim = shadingProp.GetStage()->GetPrimAtPath(
+    UsdPrim sourcePrim = shadingAttr.GetStage()->GetPrimAtPath(
         sourcePath.GetPrimPath());
     UsdShadeConnectableAPI source(sourcePrim);
     // We don't validate UsdShadeConnectableAPI, as the type of the source prim 
@@ -359,29 +335,26 @@ UsdShadeConnectableAPI::ConnectToSource(
     std::tie(sourceName, sourceType) = UsdShadeUtils::GetBaseNameAndType(
         sourcePath.GetNameToken());
 
-    // If shadingProp is not an attribute, it must be a terminal output on a
-    // node-graph. Hence wrapping shadingProp in a UsdShadeOutput and asking for 
-    // its typeName should give us the desired answer.
-    SdfValueTypeName typeName = UsdShadeOutput(shadingProp).GetTypeName();
-    return ConnectToSource(shadingProp, source, sourceName, sourceType, 
+    // In case the sourceAttr does not exist, use typeName from shading
+    // attribute
+    SdfValueTypeName typeName = shadingAttr.GetTypeName();
+    return ConnectToSource(shadingAttr, source, sourceName, sourceType, 
         typeName);
 }
 
 /* static */
 bool 
 UsdShadeConnectableAPI::ConnectToSource(
-    UsdProperty const &shadingProp, 
+    UsdAttribute const &shadingAttr, 
     UsdShadeInput const &sourceInput)
 {
-    // An interface attribute may be wrapped in the UsdShadeInput, hence get the 
-    // 
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     std::tie(sourceName, sourceType) = UsdShadeUtils::GetBaseNameAndType(
         sourceInput.GetFullName());
 
     return ConnectToSource(
-        shadingProp, 
+        shadingAttr, 
         UsdShadeConnectableAPI(sourceInput.GetPrim()),
         sourceName,
         sourceType, 
@@ -391,17 +364,10 @@ UsdShadeConnectableAPI::ConnectToSource(
 /* static */
 bool 
 UsdShadeConnectableAPI::ConnectToSource(
-    UsdProperty const &shadingProp, 
+    UsdAttribute const &shadingAttr, 
     UsdShadeOutput const &sourceOutput)
 {
-    if (sourceOutput.IsTerminal()) {
-        TF_CODING_ERROR("Cannot connect shading property <%s>'s source to "
-            "terminal output '%s'.", shadingProp.GetName().GetText(),
-            sourceOutput.GetFullName().GetText());
-        return false;
-    }
-
-    return UsdShadeConnectableAPI::ConnectToSource(shadingProp, 
+    return UsdShadeConnectableAPI::ConnectToSource(shadingAttr, 
         UsdShadeConnectableAPI(sourceOutput.GetPrim()),
         sourceOutput.GetBaseName(), UsdShadeAttributeType::Output,
         sourceOutput.GetTypeName());
@@ -410,7 +376,7 @@ UsdShadeConnectableAPI::ConnectToSource(
 /* static */
 bool
 UsdShadeConnectableAPI::GetConnectedSource(
-    UsdProperty const &shadingProp,
+    UsdAttribute const &shadingAttr,
     UsdShadeConnectableAPI *source, 
     TfToken *sourceName,
     UsdShadeAttributeType *sourceType)
@@ -424,17 +390,14 @@ UsdShadeConnectableAPI::GetConnectedSource(
     }
     
     *source = UsdShadeConnectableAPI();
-
     SdfPathVector sources;
-    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
-        shadingAttr.GetConnections(&sources);
-    }
+    shadingAttr.GetConnections(&sources);
 
     // XXX(validation)  sources.size() <= 1, also sourceName,
     //                  target Material == source Material ?
     if (sources.size() == 1) {
         SdfPath const & path = sources[0];
-        UsdObject target = shadingProp.GetStage()->GetObjectAtPath(path);
+        UsdObject target = shadingAttr.GetStage()->GetObjectAtPath(path);
         *source = UsdShadeConnectableAPI(target.GetPrim());
 
        if (path.IsPropertyPath()){
@@ -452,15 +415,13 @@ UsdShadeConnectableAPI::GetConnectedSource(
 /* static  */
 bool 
 UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
-    UsdProperty const &shadingProp, 
+    UsdAttribute const &shadingAttr, 
     SdfPathVector *sourcePaths)
 {
-    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
-        if (!shadingAttr.GetConnections(sourcePaths)) {
-            TF_WARN("Unable to get connections for shading attribute <%s>", 
+    if (!shadingAttr.GetConnections(sourcePaths)) {
+        TF_WARN("Unable to get connections for shading attribute <%s>", 
                 shadingAttr.GetPath().GetText());
-            return false;
-        }
+        return false;
     }
     
     return true;
@@ -468,7 +429,7 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
 
 /* static */
 bool 
-UsdShadeConnectableAPI::HasConnectedSource(const UsdProperty &shadingProp)
+UsdShadeConnectableAPI::HasConnectedSource(const UsdAttribute &shadingAttr)
 {
     // This MUST have the same semantics as GetConnectedSource().
     // XXX someday we might make this more efficient through careful
@@ -476,7 +437,7 @@ UsdShadeConnectableAPI::HasConnectedSource(const UsdProperty &shadingProp)
     UsdShadeConnectableAPI source;
     TfToken        sourceName;
     UsdShadeAttributeType sourceType;
-    return UsdShadeConnectableAPI::GetConnectedSource(shadingProp, 
+    return UsdShadeConnectableAPI::GetConnectedSource(shadingAttr, 
         &source, &sourceName, &sourceType);
 }
 
@@ -517,36 +478,34 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
 /* static */
 bool 
 UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
-    const UsdProperty &shadingProp)
+    const UsdAttribute &shadingAttr)
 {
-    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
-        // USD core doesn't provide a UsdResolveInfo style API for asking where
-        // connections are authored, so we do it here ourselves.
-        // Find the strongest opinion about connections.
-        SdfAttributeSpecHandle strongestAttrSpecWithConnections;
-        SdfPropertySpecHandleVector propStack = shadingAttr.GetPropertyStack();
-        for (const SdfPropertySpecHandle &prop: propStack) {
-            if (SdfAttributeSpecHandle attrSpec =
-                TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
-                if (attrSpec->HasConnectionPaths()) {
-                    strongestAttrSpecWithConnections = attrSpec;
-                    break;
-                }
+    // USD core doesn't provide a UsdResolveInfo style API for asking where
+    // connections are authored, so we do it here ourselves.
+    // Find the strongest opinion about connections.
+    SdfAttributeSpecHandle strongestAttrSpecWithConnections;
+    SdfPropertySpecHandleVector propStack = shadingAttr.GetPropertyStack();
+    for (const SdfPropertySpecHandle &prop: propStack) {
+        if (SdfAttributeSpecHandle attrSpec =
+            TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
+            if (attrSpec->HasConnectionPaths()) {
+                strongestAttrSpecWithConnections = attrSpec;
+                break;
             }
         }
+    }
 
-        // Find which prim node introduced that opinion.
-        if (strongestAttrSpecWithConnections) {
-            for(const PcpNodeRef &node:
-                shadingProp.GetPrim().GetPrimIndex().GetNodeRange()) {
-                if (node.GetPath() == strongestAttrSpecWithConnections->
-                        GetPath().GetPrimPath() 
-                    &&
-                    node.GetLayerStack()->HasLayer(
-                        strongestAttrSpecWithConnections->GetLayer())) 
-                {
-                    return _NodeRepresentsLiveBaseMaterial(node);
-                }
+    // Find which prim node introduced that opinion.
+    if (strongestAttrSpecWithConnections) {
+        for(const PcpNodeRef &node:
+            shadingAttr.GetPrim().GetPrimIndex().GetNodeRange()) {
+            if (node.GetPath() == strongestAttrSpecWithConnections->
+                    GetPath().GetPrimPath() 
+                &&
+                node.GetLayerStack()->HasLayer(
+                    strongestAttrSpecWithConnections->GetLayer())) 
+            {
+                return _NodeRepresentsLiveBaseMaterial(node);
             }
         }
     }
@@ -556,25 +515,15 @@ UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
 
 /* static */
 bool 
-UsdShadeConnectableAPI::DisconnectSource(UsdProperty const &shadingProp)
+UsdShadeConnectableAPI::DisconnectSource(UsdAttribute const &shadingAttr)
 {
-    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
-    if (!shadingAttr) {
-         return true;
-    }
-
     return shadingAttr.BlockConnections();
 }
 
 /* static */
 bool 
-UsdShadeConnectableAPI::ClearSource(UsdProperty const &shadingProp)
+UsdShadeConnectableAPI::ClearSource(UsdAttribute const &shadingAttr)
 {
-    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
-    if (!shadingAttr) {
-        return true;
-    }
-
     return shadingAttr.ClearConnections();
 }
 

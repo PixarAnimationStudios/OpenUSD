@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/base/tf/stl.h"
 
 #include <iostream>
 
@@ -37,8 +36,8 @@ HdBufferSpec::IsSubset(HdBufferSpecVector const &subset,
 {
     HD_TRACE_FUNCTION();
 
-    TF_FOR_ALL(it, subset) {
-        if (std::find(superset.begin(), superset.end(), *it) == superset.end())
+    for(HdBufferSpec const& spec : subset) {
+        if (std::find(superset.begin(), superset.end(), spec) == superset.end())
             return false;
     }
     return true;
@@ -52,20 +51,32 @@ HdBufferSpec::ComputeUnion(HdBufferSpecVector const &specs1,
     HD_TRACE_FUNCTION();
 
     std::set<HdBufferSpec> set;
-    TF_FOR_ALL(it, specs1) {
-        set.insert(*it);
+    for(HdBufferSpec const& spec : specs1) {
+        set.insert(spec);
     }
-    TF_FOR_ALL(it, specs2) {
-        set.insert(*it);
-    }
-
-    HdBufferSpecVector result;
-    result.reserve(set.size());
-    TF_FOR_ALL(it, set) {
-        result.push_back(*it);
+    for(HdBufferSpec const& spec : specs2) {
+        set.insert(spec);
     }
 
-    return result;
+    return HdBufferSpecVector(set.begin(), set.end());
+}
+
+/*static*/
+HdBufferSpecVector
+HdBufferSpec::ComputeDifference(HdBufferSpecVector const &specs1,
+                                HdBufferSpecVector const &specs2)
+{
+    HD_TRACE_FUNCTION();
+
+    std::set<HdBufferSpec> set;
+    for(HdBufferSpec const& spec : specs1) {
+        set.insert(spec);
+    }
+    for(HdBufferSpec const& spec : specs2) {
+        set.erase(spec);
+    }
+
+    return HdBufferSpecVector(set.begin(), set.end());
 }
 
 void

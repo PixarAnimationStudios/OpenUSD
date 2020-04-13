@@ -654,6 +654,13 @@ private:
                           const TfToken &keyPath=TfToken()) const;
 
 protected:
+    template <class Derived> struct _Null {};
+
+    // Private constructor for null dervied types.
+    template <class Derived>
+    explicit UsdObject(_Null<Derived>)
+        : _type(_Detail::GetObjType<Derived>::Value) {}
+    
     // Private constructor for UsdPrim.
     UsdObject(const Usd_PrimDataHandle &prim,
               const SdfPath &proxyPrimPath)

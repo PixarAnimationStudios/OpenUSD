@@ -30,9 +30,9 @@
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/python/module.hpp>
 
 // Helper macros for module files.  If you implement your wrappers for classes
@@ -63,15 +63,16 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
     Tf_PyInitWrapModule(
         WrapModule,
-        BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE),
-        BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),
-        "Wrap " BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),
-        BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME)
+        TF_PP_STRINGIZE(MFB_PACKAGE_MODULE),
+        TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),
+        "Wrap " TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),
+        TF_PP_STRINGIZE(MFB_PACKAGE_NAME)
         );
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#if PY_MAJOR_VERSION == 2
 // When we generate boost python bindings for a library named Foo, 
 // we generate a python package that has __init__.py and _Foo.so, 
 // and we put all the python bindings in _Foo.so.  The __init__.py 
@@ -84,8 +85,8 @@ ARCH_EXPORT
 void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
     PXR_NAMESPACE_USING_DIRECTIVE
     boost::python::detail::init_module
-        (BOOST_PP_STRINGIZE(BOOST_PP_CAT(_,MFB_PACKAGE_NAME)),
-         BOOST_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
+        (TF_PP_STRINGIZE(BOOST_PP_CAT(_,MFB_PACKAGE_NAME)),
+         TF_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
 }
 
 // We also support the case where both the library contents and the 
@@ -105,9 +106,65 @@ ARCH_EXPORT
 void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
     PXR_NAMESPACE_USING_DIRECTIVE
     boost::python::detail::init_module
-        (BOOST_PP_STRINGIZE(BOOST_PP_CAT(lib,MFB_PACKAGE_NAME)),
-         BOOST_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
+        (TF_PP_STRINGIZE(BOOST_PP_CAT(lib,MFB_PACKAGE_NAME)),
+         TF_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
 }
+
+#else // Python 3:
+
+// These functions serve the same purpose as the python 2 implementations
+// above, but are updated for the overhauled approach to module initialization
+// in python 3. In python 3 init<name> is replaced by PyInit_<name>, and
+// initlib<name> becomes PyInit_lib<name>. The init_module function still
+// exists, but now takes a struct of input values instead of a list of
+// parameters. Also, these functions now return a PyObject* instead of void.
+//
+// See https://docs.python.org/3/c-api/module.html#initializing-c-modules_
+//
+extern "C"
+ARCH_EXPORT
+PyObject* BOOST_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
+
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        TF_PP_STRINGIZE(BOOST_PP_CAT(_, MFB_PACKAGE_NAME)), // m_name
+        0,                                                  // m_doc
+        -1,                                                 // m_size
+        NULL,                                               // m_methods
+        0,                                                  // m_reload
+        0,                                                  // m_traverse
+        0,                                                  // m_clear
+        0,                                                  // m_free
+    };
+
+    PXR_NAMESPACE_USING_DIRECTIVE
+    return boost::python::detail::init_module(moduledef,
+                BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
+}
+
+extern "C"
+ARCH_EXPORT
+PyObject* BOOST_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
+
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        TF_PP_STRINGIZE(BOOST_PP_CAT(lib, MFB_PACKAGE_NAME)), // m_name
+        0,                                                    // m_doc
+        -1,                                                   // m_size
+        NULL,                                                 // m_methods
+        0,                                                    // m_reload
+        0,                                                    // m_traverse
+        0,                                                    // m_clear
+        0,                                                    // m_free
+    };
+
+    PXR_NAMESPACE_USING_DIRECTIVE
+    return boost::python::detail::init_module(moduledef, 
+                BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
+}
+
+#endif
+
 
 #define TF_WRAP_MODULE static void WrapModule()
 

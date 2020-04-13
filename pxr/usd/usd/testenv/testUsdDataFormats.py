@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import unittest
 from pxr import Sdf
 
@@ -53,7 +55,7 @@ class TestUsdDataFormats(unittest.TestCase):
             a = Sdf.Layer.CreateAnonymous('test.' + fmt)
             layerName = "hello.usd"
             a.subLayerPaths.append(layerName)
-            print a.ExportToString()
+            print(a.ExportToString())
             self.assertEqual(1, len(a.subLayerPaths))
             self.assertEqual(layerName, a.subLayerPaths[0])
 

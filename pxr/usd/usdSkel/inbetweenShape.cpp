@@ -162,7 +162,7 @@ UsdSkelInbetweenShape::GetWeight(float* weight) const
 
 
 bool
-UsdSkelInbetweenShape::SetWeight(float weight)
+UsdSkelInbetweenShape::SetWeight(float weight) const
 {
     return _attr.SetMetadata(UsdSkelTokens->weight, weight);
 }

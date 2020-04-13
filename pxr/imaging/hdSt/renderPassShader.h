@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -36,6 +35,8 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,7 +72,7 @@ public:
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual HdMaterialParamVector const& GetParams() const override;
+    virtual HdSt_MaterialParamVector const& GetParams() const override;
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
@@ -104,7 +105,7 @@ public:
 
 private:
     TfToken _glslfxFile;
-    boost::scoped_ptr<HioGlslfx> _glslfx;
+    std::unique_ptr<HioGlslfx> _glslfx;
     mutable size_t  _hash;
     mutable bool    _hashValid;
 
@@ -112,7 +113,7 @@ private:
     HdCullStyle _cullStyle;
 
     TfHashSet<TfToken, TfToken::HashFunctor> _aovReadbackRequests;
-    HdMaterialParamVector _params;
+    HdSt_MaterialParamVector _params;
 
     // No copying
     HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;

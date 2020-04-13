@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 import sys
 from pxr import Tf
 
@@ -33,14 +35,14 @@ status = 0
 f1called = False
 def f1():
     global f1called
-    print 'called to python!'
+    print('called to python!')
     f1called = True
 
 def f2():
     return 'called to python, return string!'
 
 def f3(arg1, arg2):
-    print 'args', arg1, arg2
+    print('args', arg1, arg2)
 
 def f4(stringArg):
     return 'got string ' + stringArg
@@ -51,9 +53,9 @@ class MyBase(Tf._TestBase):
     def Virtual(self):
         return 'python base'
     def Virtual2(self):
-        print 'python base v2'
+        print('python base v2')
     def Virtual3(self, arg):
-        print 'python base v3', arg
+        print('python base v3', arg)
     def UnwrappedVirtual(self):
         return 'unwrapped virtual'
 
@@ -61,9 +63,9 @@ class MyDerived(Tf._TestDerived):
     def Virtual(self):
         return 'python derived'
     def Virtual2(self):
-        print 'python derived v2'
+        print('python derived v2')
     def Virtual3(self, arg):
-        print 'python derived v3', arg
+        print('python derived v3', arg)
     def Virtual4(self):
         return 'python derived v4'
 
@@ -73,9 +75,9 @@ class Raiser(Tf._TestBase):
     def Virtual(self):
         raise RuntimeError('testing exception stuff')
     def Virtual2(self):
-        print 'raiser v2'
+        print('raiser v2')
     def Virtual3(self, arg):
-        print 'py virtual 3', arg
+        print('py virtual 3', arg)
 
 class TestPython(unittest.TestCase):
 
@@ -128,7 +130,7 @@ class TestPython(unittest.TestCase):
 
         with self.assertRaises(Tf.ErrorException) as cm:
             Tf._mightRaise(True)
-        for x in cm.exception:
+        for x in cm.exception.args:
             self.assertTrue(len(repr(x)))
 
         with self.assertRaises(Tf.ErrorException):
@@ -298,6 +300,23 @@ class TestPython(unittest.TestCase):
         # The auto-generated python object should be convertible to the original type.
         Tf._takesTestEnum(value1)
 
+    def test_ByteArrayConversion(self):
+        '''Verify we can convert buffers to byte arrays.'''
+        ba = Tf._ConvertByteListToByteArray(['a', 'b', 'c'])
+        self.assertEqual(ba, bytearray([ord('a'), ord('b'), ord('c')]))
+
+        numbers = [str(x % 10) for x in range(256)]
+        ba = Tf._ConvertByteListToByteArray(numbers)
+        self.assertEqual(ba, bytearray([ord(x) for x in numbers]))
+
+        zeroes = ['\x00', '\x00', '\x00']
+        ba = Tf._ConvertByteListToByteArray(zeroes)
+        self.assertEqual(ba, bytearray([0, 0, 0]))
+
+        ba = Tf._ConvertByteListToByteArray([])
+        self.assertEqual(ba, bytearray())
+        self.assertTrue(isinstance(ba, bytearray))
+
     def test_Callbacks(self):
         global f1called
         Tf._callback(f1)
@@ -326,9 +345,9 @@ class TestPython(unittest.TestCase):
         self.assertEqual('python method', Tf._invokeTestCallback())
         del f
         del m
-        print 'expected warning...'
+        print('expected warning...')
         self.assertEqual('', Tf._invokeTestCallback())
-        print 'end of expected warning'
+        print('end of expected warning')
 
         l = lambda : 'python lambda'
 
@@ -348,9 +367,9 @@ class TestPython(unittest.TestCase):
         Tf._setTestCallback(func)
         self.assertEqual('python func', Tf._invokeTestCallback())
         del func
-        print 'expected warning...'
+        print('expected warning...')
         self.assertEqual('', Tf._invokeTestCallback())
-        print 'end of expected warning'
+        print('end of expected warning')
 
         del Foo
 
@@ -358,7 +377,7 @@ class TestPython(unittest.TestCase):
     def test_Singleton(self):
         class Foo(Tf.Singleton):
             def init(self):
-                print 'Initializing singleton'
+                print('Initializing singleton')
                 self._value = 100
             def GetValue(self):
                 return self._value
@@ -413,7 +432,8 @@ class TestPython(unittest.TestCase):
                 Tf.Debug.SetOutputFile(f.file)
 
         # argument checking.
-        with self.assertRaises(TypeError):
+        # Will raise Tf.ErrorException.
+        with self.assertRaises(Tf.ErrorException):
             Tf.Debug.SetOutputFile(1234)
 
 

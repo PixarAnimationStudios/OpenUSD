@@ -34,18 +34,25 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Base image format
+///
+/// Returns the base image format for the given number of components
+///
+/// Supported number of components: 1, 2, 3, 4
+GLenum GlfGetBaseFormat(int numComponents);
+
 /// Number of elements.
 ///
 /// Returns the number of elements (channels) in a given GL enum format.
 ///
 /// Supported formats are : GL_DEPTH_COMPONENT, GL_COLOR_INDEX, GL_ALPHA, 
-/// GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
+/// GL_RED, GL_LUMINANCE, GL_RG, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
 GLF_API 
 int GlfGetNumElements(GLenum format);
 
 /// Byte size of a GL type.
 ///
-/// Returns the size in bytes of a give GL type.
+/// Returns the size in bytes of a given GL type.
 ///
 /// Supported types are : GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, 
 /// GL_SHORT, GL_FLOAT, GL_DOUBLE

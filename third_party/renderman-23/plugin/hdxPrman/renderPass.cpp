@@ -57,20 +57,13 @@ HdxPrman_RenderPass::HdxPrman_RenderPass(HdRenderIndex *index,
     , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
     , _quickIntegrateTime(200.f/1000.f)
     , _quickIntegrate(false)
+    , _isPrimaryIntegrator(false)
 {
     // Check if this is an interactive context.
     _interactiveContext =
         std::dynamic_pointer_cast<HdxPrman_InteractiveContext>(context);
 
-    if (_enableQuickIntegrate && _interactiveContext->IsInteractive())
-    {
-         _quickIntegrateTime = 200.f/1000.f;
-    }
-    else
-    {
-        // disable quick integrate if we are in batch render mode
-        _quickIntegrateTime = 0.f;
-    }
+    _quickIntegrateTime = _enableQuickIntegrate ? 200.f/1000.f : 0.f;
 }
 
 HdxPrman_RenderPass::~HdxPrman_RenderPass()
@@ -100,6 +93,8 @@ void
 HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                             TfTokenVector const &renderTags)
 {
+    HD_TRACE_FUNCTION();
+    
     static const RtUString us_PxrPerspective("PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
@@ -229,7 +224,6 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         flipZ[2][2] = -1.0;
         viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        riley::Transform xform;
         if (hdCam) {
             // Use time sampled transforms authored on the scene camera.
             HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
@@ -243,24 +237,31 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                     viewToWorldCorrectionMatrix * xforms.values[i]);
             }
 
-            xform = { unsigned(xforms.count), xf_rt_values.data(),
-                      xforms.times.data() };
+            riley::Transform xform = { unsigned(xforms.count),
+                                       xf_rt_values.data(),
+                                       xforms.times.data() };
+
+            // Commit camera.
+            riley->ModifyCamera(
+                _interactiveContext->cameraId, 
+                &cameraNode,
+                &xform, 
+                &camParams);
         } else {
             // Use the framing state as a single time sample.
             float const zerotime = 0.0f;
             RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
                 viewToWorldCorrectionMatrix * viewToWorldMatrix);
 
-            xform = {1, &matrix, &zerotime};
+            riley::Transform xform = {1, &matrix, &zerotime};
+
+            // Commit camera.
+            riley->ModifyCamera(
+                _interactiveContext->cameraId, 
+                &cameraNode,
+                &xform, 
+                &camParams);
         }
-
-        // Commit new camera.
-
-        riley->ModifyCamera(
-            _interactiveContext->cameraId, 
-            &cameraNode,
-            &xform, 
-            &camParams);
 
         // Update the framebuffer Z scaling
         _interactiveContext->framebuffer.proj = proj;
@@ -277,7 +278,11 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         _integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integratorName,
             HdPrmanIntegratorTokens->PxrPathTracer.GetString());
-        if (_enableQuickIntegrate && _interactiveContext->IsInteractive())
+        _isPrimaryIntegrator = _integrator ==
+                HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
+            _integrator ==
+                HdPrmanIntegratorTokens->PbsPathTracer.GetString();
+        if (_enableQuickIntegrate)
         {
             _quickIntegrator = renderDelegate->GetRenderSetting<std::string>(
                 HdPrmanRenderSettingsTokens->interactiveIntegrator,
@@ -290,7 +295,6 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         else
         {
             _quickIntegrateTime = 0.0f;
-            _quickIntegrate = false;
 
             RtParamList integratorParams;
             _interactiveContext->SetIntegratorParamsFromRenderSettings(
@@ -331,6 +335,47 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         _lastSettingsVersion = currentSettingsVersion;
 
         needStartRender = true;
+
+        // Setup quick integrator and save ids of it and main
+        if (_enableQuickIntegrate)
+        {
+            riley::ShadingNode integratorNode {
+                riley::ShadingNode::k_Integrator,
+                RtUString(_quickIntegrator.c_str()),
+                us_PathTracer,
+                RtParamList()
+            };
+            integratorNode.params.SetInteger(
+                RtUString("numLightSamples"), 1);
+            integratorNode.params.SetInteger(
+                RtUString("numBxdfSamples"), 1);
+            _quickIntegratorId = riley->CreateIntegrator(integratorNode);
+        }
+	_mainIntegratorId = _interactiveContext->integratorId;
+    }
+
+    // Request a framebuffer clear if the clear value in the aov has changed
+    // from the framebuffer clear value.
+    // We do this before StartRender() to avoid race conditions where some
+    // buckets may get discarded or cleared with the wrong value.
+    for (HdRenderPassAovBinding const& aov : renderPassState->GetAovBindings()){
+        if (aov.aovName == HdAovTokens->color) {
+            GfVec4f const& clear = aov.clearValue.Get<GfVec4f>(); 
+            if (clear != _interactiveContext->framebuffer.clearColor) {
+                _interactiveContext->StopRender();
+                _interactiveContext->framebuffer.pendingClear = true; 
+                _interactiveContext->framebuffer.clearColor = clear;
+                needStartRender = true;
+            }
+        } else if (aov.aovName == HdAovTokens->depth) {
+            float clear = aov.clearValue.Get<float>(); 
+            if (clear != _interactiveContext->framebuffer.clearDepth) {
+                _interactiveContext->StopRender();
+                _interactiveContext->framebuffer.pendingClear = true; 
+                _interactiveContext->framebuffer.clearDepth = clear;
+                needStartRender = true;
+            }
+        }
     }
 
     // NOTE:
@@ -351,58 +396,25 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
 
         _interactiveContext->StopRender();
-        riley::ShadingNode integratorNode {
-            riley::ShadingNode::k_Integrator,
-            RtUString(_integrator.c_str()),
-            us_PathTracer,
-            RtParamList()
-        };
-        riley->CreateIntegrator(integratorNode);
-
+        _interactiveContext->SetIntegrator(_mainIntegratorId);
         _interactiveContext->StartRender();
+
         _quickIntegrate = false;
     }
     // Start (or restart) concurrent rendering.
     if (needStartRender) {
-        if (_quickIntegrateTime > 0 &&
-           (_integrator ==
-                HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
-            _integrator ==
-                HdPrmanIntegratorTokens->PbsPathTracer.GetString())) {
+        if (_quickIntegrateTime > 0 && _isPrimaryIntegrator) {
             if (!_quickIntegrate) {
                 // Start the frame with interactive integrator to give faster
                 // time-to-first-buckets.
-                riley::ShadingNode integratorNode {
-                    riley::ShadingNode::k_Integrator,
-                    RtUString(_quickIntegrator.c_str()),
-                    us_PathTracer,
-                    RtParamList()
-                };
-                integratorNode.params.SetInteger(
-                    RtUString("numLightSamples"), 1);
-                integratorNode.params.SetInteger(
-                    RtUString("numBxdfSamples"), 1);
-                integratorNode.params.SetInteger(
-                    RtUString("numIndirectSamples"), 0);
-                integratorNode.params.SetInteger(
-                    RtUString("maxPathLength"), 0);
-                riley->CreateIntegrator(integratorNode);
-
+                _interactiveContext->SetIntegrator(_quickIntegratorId);
                 _quickIntegrate = true;
             }
         } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
             // Disable quick integrate
-            riley::ShadingNode integratorNode {
-                riley::ShadingNode::k_Integrator,
-                RtUString(_integrator.c_str()),
-                RtUString(_integrator.c_str()),
-                RtParamList()
-            };
-            riley->CreateIntegrator(integratorNode);
-
+            _interactiveContext->SetIntegrator(_mainIntegratorId);
             _quickIntegrate = false;
         }
-
         _interactiveContext->StartRender();
         _frameStart = std::chrono::steady_clock::now();
     }

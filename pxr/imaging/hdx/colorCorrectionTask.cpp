@@ -35,7 +35,7 @@
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/base/tf/setenv.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
 #ifdef PXR_OCIO_PLUGIN_ENABLED
@@ -71,7 +71,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(HdSceneDelegate* delegate,
     , _vertexBuffer(0)
     , _copyFramebuffer(0)
     , _framebufferSize(0)
-    , _lut3dSizeOCIO(32)
+    , _lut3dSizeOCIO(0)
     , _aovBufferPath()
     , _aovBuffer(nullptr)
     , _aovTexture(nullptr)
@@ -147,6 +147,18 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
 
         OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
 
+        // If 3D lut size is 0 then use a reasonable default size.
+        // We use 65 (0-64) samples which works well with OCIO resampling.
+        if (_lut3dSizeOCIO == 0) {
+            _lut3dSizeOCIO = 65;
+        }
+
+        // Optionally override similar to KATANA_OCIO_LUT3D_EDGE_SIZE
+        int size = TfGetenvInt("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0);
+        if (size > 0) {
+            _lut3dSizeOCIO = size;
+        }
+
         // Create a GPU Shader Description
         OCIO::GpuShaderDesc shaderDesc;
         shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_0);
@@ -167,8 +179,8 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         glGetIntegerv(GL_TEXTURE_BINDING_3D, &restoreTexture);
         glGenTextures(1, &_texture3dLUT);
         glBindTexture(GL_TEXTURE_3D, _texture3dLUT);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -198,6 +210,12 @@ HdxColorCorrectionTask::_CreateShaderResources()
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
             _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+
+        // Only use if $OCIO environment variable is set.
+        // (Otherwise this option should be disabled.)
+        if (TfGetenv("OCIO") == "") {
+            useOCIO = false;
+        }
     #else
         bool useOCIO = false;
     #endif
@@ -339,57 +357,26 @@ HdxColorCorrectionTask::_CreateFramebufferResources()
 
         glBindTexture(GL_TEXTURE_2D, restoreTexture);
     }
-
       
-    // XXX: Removed due to slowness in the IsCurrent() call when multiple
-    //      gl contexts are registered in GlfGLContextRegistry. This code is
-    //      relevant only when there is a possibility of having context
-    //      switching between the creation of the render pass and the execution
-    //      of this task on each frame.
-    //
-    // bool switchedGLContext = !_owningContext || !_owningContext->IsCurrent();
-    // 
-    // if (switchedGLContext) {
-    //     // If we're rendering with a different context than the render pass
-    //     // was created with, recreate the FBO because FB is not shared.
-    //     // XXX we need this since we use a FBO in _CopyTexture(). Ideally we
-    //     // use HdxCompositor to do the copy, but for that we need to know the
-    //     // textureId currently bound to the default framebuffer. However
-    //     // glGetFramebufferAttachmentParameteriv will return and error when
-    //     // trying to query the texture name bound to GL_BACK_LEFT.
-    //     if (_owningContext && _owningContext->IsValid()) {
-    //         GlfGLContextScopeHolder contextHolder(_owningContext);
-    //         glDeleteFramebuffers(1, &_copyFramebuffer);
-    //         glDeleteFramebuffers(1, &_aovFramebuffer);
-    //     }
-    // 
-    //     _owningContext = GlfGLContext::GetCurrentGLContext();
-    //     if (!TF_VERIFY(_owningContext, "No valid GL context")) {
-    //         return false;
-    //     }
-    // 
-    
-        if (_copyFramebuffer == 0) {
-            glGenFramebuffers(1, &_copyFramebuffer);
-        }
-        if (_aovFramebuffer == 0) {
-            glGenFramebuffers(1, &_aovFramebuffer);
-        }
+    if (_copyFramebuffer == 0) {
+        glGenFramebuffers(1, &_copyFramebuffer);
+    }
+    if (_aovFramebuffer == 0) {
+        glGenFramebuffers(1, &_aovFramebuffer);
+    }
 
-    // }
-    //
-
-    HgiTextureHandle texHandle = _aovBuffer ? 
-        _aovBuffer->GetHgiTextureHandle(/*ms*/false) : nullptr;
+    HgiTextureHandle texHandle;
+    if (_aovBuffer) {
+        VtValue rv = _aovBuffer->GetResource(/*ms*/false);
+        if (rv.IsHolding<HgiTextureHandle>()) {
+            texHandle = rv.UncheckedGet<HgiTextureHandle>();
+        }
+    }
 
     // XXX Since this entire task is coded for GL we can static_cast to
     // HgiGLTexture for now. When task is re-written to use Hgi everywhere, we
     // should no longer need this cast and can just use HgiTextureHandle.
-    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle);
-
-    // XXX: see code comment above. Here we remove switchedGLContext from the
-    //      if statement.
-    // if (createTexture || switchedGLContext || aovTexture!=_aovTexture) {
+    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle.Get());
 
     if (createTexture || aovTexture!=_aovTexture) {
    
@@ -428,6 +415,12 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
             _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+
+        // Only use if $OCIO environment variable is set.
+        // (Otherwise this option should be disabled.)
+        if (TfGetenv("OCIO") == "") {
+            useOCIO = false;
+        }
     #else
         bool useOCIO = false;
     #endif
@@ -435,14 +428,13 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     // A note here: colorCorrection is used for all of our plugins and has to be
     // robust to poor GL support.  OSX compatibility profile provides a
     // GL 2.1 API, slightly restricting our choice of API and heavily
-    // restricting our shader syntax. See also HdxCompositor.
+    // restricting our shader syntax. See also HdxFullscreenShader.
 
     // Read from the texture-copy we made of the clients FBO and output the
     // color-corrected pixels into the clients FBO.
 
     GLuint programId = _shaderProgram->GetProgram().GetId();
     glUseProgram(programId);
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _texture);
     glUniform1i(_locations[COLOR_IN], 0);

@@ -47,7 +47,6 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
-#include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
@@ -66,8 +65,6 @@
 using std::make_pair;
 using std::pair;
 using std::vector;
-
-using boost::dynamic_pointer_cast;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -331,7 +328,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
 
             for (const auto& error : primIndex.GetLocalErrors()) {
                 PcpErrorMutedAssetPathPtr typedError = 
-                    dynamic_pointer_cast<PcpErrorMutedAssetPath>(error);
+                    std::dynamic_pointer_cast<PcpErrorMutedAssetPath>(error);
                 if (!typedError) {
                     continue;
                 }
@@ -499,15 +496,12 @@ PcpCache::FindSiteDependencies(
             layerStack, sitePath, depMask, recurseOnSite, recurseOnIndex,
             filterForExistingCachesOnly);
         for (PcpDependency dep: deps) {
-            SdfLayerOffset offset = dep.mapFunc.GetTimeOffset();
             // Fold in any sublayer offset.
-            if (const SdfLayerOffset *sublayer_offset =
+            if (const SdfLayerOffset *sublayerOffset =
                 layerStack->GetLayerOffsetForLayer(layer)) {
-                offset = offset * *sublayer_offset;
+                dep.mapFunc = dep.mapFunc.ComposeOffset(*sublayerOffset);
             }
-            dep.mapFunc = PcpMapFunction::Create(
-                dep.mapFunc.GetSourceToTargetMap(), offset);
-            result.push_back(dep);
+            result.push_back(std::move(dep));
         }
     }
     return result;
@@ -786,7 +780,7 @@ PcpCache::GetInvalidSublayerIdentifiers() const
         PcpErrorVector errs = (*layerStack)->GetLocalErrors();
         TF_FOR_ALL(e, errs) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(*e)){
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(*e)){
                 result.insert(typedErr->sublayerPath);
             }
         }
@@ -820,7 +814,7 @@ PcpCache::GetInvalidAssetPaths() const
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
                     result[primPath].push_back(typedErr->resolvedAssetPath);
                 }
             }
@@ -1009,7 +1003,7 @@ PcpCache::Reload(PcpChanges* changes)
         const PcpErrorVector errors = (*layerStack)->GetLocalErrors();
         for (const auto& e : errors) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
                 changes->DidMaybeFixSublayer(this,
                                              typedErr->layer,
                                              typedErr->sublayerPath);
@@ -1022,7 +1016,7 @@ PcpCache::Reload(PcpChanges* changes)
             const PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
                     changes->DidMaybeFixAsset(this,
                                               typedErr->site,
                                               typedErr->layer,
@@ -1061,7 +1055,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
-                    dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
+                    std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
                 {
                     changes->DidMaybeFixAsset(this, typedErr->site,
                                               typedErr->layer,
@@ -1080,7 +1074,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
         PcpErrorVector errs = layerStack->GetLocalErrors();
         for (const PcpErrorBasePtr &err: errs) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(err)){
+                std::dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(err)){
                 changes->DidMaybeFixSublayer(this, typedErr->layer,
                                              typedErr->sublayerPath);
             }
@@ -1189,7 +1183,6 @@ struct PcpCache::_ParallelIndexer
         : _cache(cache)
         , _layerStack(layerStack)
         , _resolver(ArGetResolver())
-        , _consumer(_dispatcher, &This::_ConsumeIndexes, this, /*flush=*/false)
         {}
 
     void Prepare(_UntypedIndexingChildrenPredicate childrenPred,
@@ -1213,36 +1206,21 @@ struct PcpCache::_ParallelIndexer
 
     // Run the added work and wait for it to complete.
     void RunAndWait() {
-        TF_FOR_ALL(i, _toCompute) {
-            _dispatcher.Run(&This::_ComputeIndex, this, i->first, i->second,
-                            /*checkCache=*/true);
+        {
+            Pcp_Dependencies::ConcurrentPopulationContext
+                populationContext(*_cache->_primDependencies);
+            TF_FOR_ALL(i, _toCompute) {
+                _dispatcher.Run(&This::_ComputeIndex, this, i->first, i->second,
+                                /*checkCache=*/true);
+            }
+            _dispatcher.Wait();
         }
-        _dispatcher.Wait();
-
-        // Flush any left-over results.
-        _ConsumeIndexes(/*flush=*/true);
 
         // Clear out results & working space.  If stuff is huge, dump it
         // asynchronously, otherwise clear in place to possibly reuse heap for
         // future calls.
         constexpr size_t MaxSize = 1024;
         _ClearMaybeAsync(_toCompute, _toCompute.size() >= MaxSize);
-        _ClearMaybeAsync(_finishedOutputs,
-                         _finishedOutputs.unsafe_size() >= MaxSize);
-        _ClearMaybeAsync(_consumerScratch, _consumerScratch.size() >= MaxSize);
-        _ClearMaybeAsync(_consumerScratchPayloadsIncluded,
-                         _consumerScratchPayloadsIncluded.size() >= MaxSize);
-        _ClearMaybeAsync(_consumerScratchPayloadsExcluded,
-                         _consumerScratchPayloadsExcluded.size() >= MaxSize);
-
-        // We need to tear down the _results synchronously because doing so may
-        // drop layers, and that's something that clients rely on, but we can
-        // tear down the elements in parallel.
-        WorkParallelForEach(_results.begin(), _results.end(),
-                            [](PcpPrimIndexOutputs &out) {
-                                PcpPrimIndexOutputs().swap(out);
-                            });
-        _ClearMaybeAsync(_results, _results.size() >= MaxSize);
     }
 
     // Add an index to compute.
@@ -1264,8 +1242,7 @@ struct PcpCache::_ParallelIndexer
     }        
 
     // This function is run in parallel by the _dispatcher.  It computes prim
-    // indexes and publishes them to _finishedOutputs, which are then consumed
-    // by _ConsumeIndex().
+    // indexes and publishes them to the cache.
     void _ComputeIndex(const PcpPrimIndex *parentIndex,
                        SdfPath path, bool checkCache) {
         TfAutoMallocTag2  tag(_mallocTag1, _mallocTag2);
@@ -1273,7 +1250,7 @@ struct PcpCache::_ParallelIndexer
 
         // Check to see if we already have an index for this guy.  If we do,
         // don't bother computing it.
-        const PcpPrimIndex *index = NULL;
+        const PcpPrimIndex *index = nullptr;
         if (checkCache) {
             tbb::spin_rw_mutex::scoped_lock
                 lock(_primIndexCacheMutex, /*write=*/false);
@@ -1295,13 +1272,10 @@ struct PcpCache::_ParallelIndexer
             }
         }
 
-        PcpPrimIndexOutputs *outputs = NULL;
         if (!index) {
             // We didn't find an index in the cache, so we must compute one.
+            PcpPrimIndexOutputs outputs;
 
-            // Make space in the results for the output.
-            outputs = &(*_results.grow_by(1));
-            
             // Establish inputs.
             PcpPrimIndexInputs inputs = _baseInputs;
             inputs.parentIndex = parentIndex;
@@ -1310,14 +1284,47 @@ struct PcpCache::_ParallelIndexer
         
             // Run indexing.
             PcpComputePrimIndex(
-                path, _layerStack, inputs, outputs, &_resolver);
+                path, _layerStack, inputs, &outputs, &_resolver);
 
-            // Now we have an index in hand.
-            index = &outputs->primIndex;
+            // Append any errors.
+            if (!outputs.allErrors.empty()) {
+                // Append errors.
+                tbb::spin_mutex::scoped_lock lock(_allErrorsMutex);
+                _allErrors->insert(_allErrors->end(),
+                                   outputs.allErrors.begin(),
+                                   outputs.allErrors.end());
+            }
+
+            // Update payload set if necessary.
+            PcpPrimIndexOutputs::PayloadState
+                payloadState = outputs.payloadState;
+            if (payloadState == PcpPrimIndexOutputs::IncludedByPredicate ||
+                payloadState == PcpPrimIndexOutputs::ExcludedByPredicate) {
+                tbb::spin_rw_mutex::scoped_lock lock(_includedPayloadsMutex);
+                if (payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {
+                    _cache->_includedPayloads.insert(path);
+                }
+                else {
+                    _cache->_includedPayloads.erase(path);
+                }
+            }
+            
+            // Publish to cache.
+            {
+                tbb::spin_rw_mutex::scoped_lock lock(_primIndexCacheMutex);
+                PcpPrimIndex *mutableIndex = &_cache->_primIndexCache[path];
+                index = mutableIndex;
+                TF_VERIFY(!index->IsValid(),
+                          "PrimIndex for %s already exists in cache",
+                          index->GetPath().GetText());
+                mutableIndex->Swap(outputs.primIndex);
+                lock.release();
+                _cache->_primDependencies->Add(
+                    *index, std::move(outputs.dynamicFileFormatDependency));
+            }
         }
 
         // Invoke the client's predicate to see if we should do children.
-        bool didChildren = false;
         TfTokenVector namesToCompose;
         if (_childrenPredicate(*index, &namesToCompose)) {
             // Compute the children paths and add new tasks for them.
@@ -1331,133 +1338,9 @@ struct PcpCache::_ParallelIndexer
                     continue;
                 }
 
-                didChildren = true;
                 _dispatcher.Run(
                     &This::_ComputeIndex, this, index,
                     path.AppendChild(name), checkCache);
-            }
-        }
-
-        if (outputs) {
-            // We're done with this index, arrange for it to be added to the
-            // cache and dependencies, then wake the consumer if we didn't have
-            // any children to process.  If we did have children to process
-            // we'll let them wake the consumer later.
-            _finishedOutputs.push(outputs);
-            if (!didChildren)
-                _consumer.Wake();
-        }
-    }
-
-    // This is the task that consumes completed indexes.  It's run as a task in
-    // the dispatcher as a WorkSingularTask to ensure that at most one is ever
-    // running at once.  This lets us avoid locking while publishing the results
-    // to cache-wide datastructures.
-    void _ConsumeIndexes(bool flush) {
-        TfAutoMallocTag2 tag(_mallocTag1, _mallocTag2);
-
-        // While running, consume results from _finishedOutputs.
-        PcpPrimIndexOutputs *outputs;
-        while (_finishedOutputs.try_pop(outputs)) {
-            // Append errors.
-            _allErrors->insert(_allErrors->end(),
-                               outputs->allErrors.begin(),
-                               outputs->allErrors.end());
-
-            SdfPath const &primIndexPath = outputs->primIndex.GetPath();
-
-            // Store index off to the side so we can publish several at once,
-            // ideally.  We have to make a copy to move into the _cache itself,
-            // since sibling caches in other tasks will still require that their
-            // parent be valid.
-            _consumerScratch.emplace_back(
-                outputs->primIndex, 
-                std::move(outputs->dynamicFileFormatDependency));
-
-            // Store included payload path to the side to publish several at
-            // once, as well.
-            switch (outputs->payloadState) {
-            default:
-                break;
-            case PcpPrimIndexOutputs::IncludedByPredicate:
-                _consumerScratchPayloadsIncluded.push_back(primIndexPath);
-                break;
-            case PcpPrimIndexOutputs::ExcludedByPredicate:
-                _consumerScratchPayloadsExcluded.push_back(primIndexPath);
-                break;
-            };
-        }
-
-        // This size threshold is arbitrary but helps ensure that even with
-        // writer starvation we'll avoid growing our working spaces too large.
-        static const size_t PendingSizeThreshold = 20000;
-
-        if (!_consumerScratchPayloadsIncluded.empty() ||
-            !_consumerScratchPayloadsExcluded.empty()) {
-            // Publish to _includedPayloads if possible.  If we're told to
-            // flush, or if we're over a threshold number of pending results,
-            // then take the write lock and publish.  Otherwise only attempt to
-            // take the write lock, and if we fail to do so then we do nothing,
-            // since we're guaranteed to run again.  This helps minimize
-            // contention and maximize throughput.
-            tbb::spin_rw_mutex::scoped_lock lock;
-
-            bool locked = flush ||
-                (_consumerScratchPayloadsIncluded.size() >=
-                 PendingSizeThreshold) ||
-                (_consumerScratchPayloadsExcluded.size() >=
-                 PendingSizeThreshold);
-                
-            if (locked) {
-                lock.acquire(_includedPayloadsMutex, /*write=*/true);
-            } else {
-                locked = lock.try_acquire(
-                    _includedPayloadsMutex, /*write=*/true);
-            }
-            if (locked) {
-                for (auto const &path: _consumerScratchPayloadsIncluded) {
-                    _cache->_includedPayloads.insert(path);
-                }
-                for (auto const &path: _consumerScratchPayloadsExcluded) {
-                    _cache->_includedPayloads.erase(path);
-                }
-                lock.release();
-                _consumerScratchPayloadsIncluded.clear();
-                _consumerScratchPayloadsExcluded.clear();
-            }
-        }
-            
-        // Ok, publish the set of indexes.
-        if (!_consumerScratch.empty()) {
-            // If we're told to flush, or if we're over a threshold number of
-            // pending results, then take the write lock and publish.  Otherwise
-            // only attempt to take the write lock, and if we fail to do so then
-            // we do nothing, since we're guaranteed to run again.  This helps
-            // minimize contention and maximize throughput.
-            tbb::spin_rw_mutex::scoped_lock lock;
-
-            bool locked = flush ||
-                _consumerScratch.size() >= PendingSizeThreshold;
-            if (locked) {
-                lock.acquire(_primIndexCacheMutex, /*write=*/true);
-            } else {
-                locked = lock.try_acquire(_primIndexCacheMutex, /*write=*/true);
-            }
-            if (locked) {
-                for (auto &index: _consumerScratch) {
-                    // Save the prim index in the cache.
-                    const SdfPath &path = index.first.GetPath();
-                    PcpPrimIndex &entry = _cache->_primIndexCache[path];
-                    if (TF_VERIFY(!entry.IsValid(),
-                                  "PrimIndex for %s already exists in cache",
-                                  entry.GetPath().GetText())) {
-                        entry.Swap(index.first);
-                        _cache->_primDependencies->Add(
-                            entry, std::move(index.second));
-                    }
-                }
-                lock.release();
-                _consumerScratch.clear();
             }
         }
     }
@@ -1471,24 +1354,16 @@ struct PcpCache::_ParallelIndexer
     tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
     WorkArenaDispatcher _dispatcher;
-    WorkSingularTask _consumer;
 
     // Varying inputs.
     _UntypedIndexingChildrenPredicate _childrenPredicate;
     PcpPrimIndexInputs _baseInputs;
     PcpErrorVector *_allErrors;
+    tbb::spin_mutex _allErrorsMutex;
     const ArResolverScopedCache* _parentCache;
     char const *_mallocTag1;
     char const *_mallocTag2;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
-
-    // Working space & outputs.
-    tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
-    tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
-    vector<std::pair<PcpPrimIndex, 
-                     PcpDynamicFileFormatDependencyData>> _consumerScratch;
-    vector<SdfPath> _consumerScratchPayloadsIncluded;
-    vector<SdfPath> _consumerScratchPayloadsExcluded;
 };
 
 void

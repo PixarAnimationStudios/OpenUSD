@@ -4,10 +4,12 @@ set(PXR_PACKAGE hio)
 pxr_library(hio
     LIBRARIES
         arch
-        hf
+        js
         tf
-        trace
         vt
+        trace
+        ar
+        hf
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

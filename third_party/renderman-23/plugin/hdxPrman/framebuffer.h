@@ -67,7 +67,7 @@ public:
     GfMatrix4d proj;
 
     // Clear functionality.
-    float clearColor[4];
+    GfVec4f clearColor;
     float clearDepth;
     int32_t clearId;
     bool pendingClear;

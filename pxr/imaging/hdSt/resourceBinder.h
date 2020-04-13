@@ -32,7 +32,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 
-#include "pxr/base/tf/hashmap.h"
+#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,8 +42,10 @@ class HdStDrawItem;
 class HdStShaderCode;
 class HdStResourceGL;
 
-typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
-typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
+using HdStBufferResourceGLSharedPtr = 
+    std::shared_ptr<class HdStBufferResourceGL>;
+using HdStBufferArrayRangeGLSharedPtr =
+    std::shared_ptr<class HdStBufferArrayRangeGL>;
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
@@ -200,10 +203,13 @@ public:
              ShaderParameterAccessor() {}
              ShaderParameterAccessor(TfToken const &name,
                                      TfToken const &dataType,
+                                     std::string const &swizzle=std::string(),
                                      TfTokenVector const &inPrimvars=TfTokenVector())
-                 : name(name), dataType(dataType), inPrimvars(inPrimvars) {}
+                 : name(name), dataType(dataType), swizzle(swizzle),
+                   inPrimvars(inPrimvars) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
+             std::string swizzle; // e.g. xyzw
              TfTokenVector inPrimvars;  // for primvar renaming and texture coordinates,
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;

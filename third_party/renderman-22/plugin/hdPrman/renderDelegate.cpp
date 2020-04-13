@@ -110,7 +110,7 @@ void
 HdPrmanRenderDelegate::_Initialize()
 {
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
-    _resourceRegistry.reset(new HdResourceRegistry());
+    _resourceRegistry = std::make_shared<HdResourceRegistry>();
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     const std::string interactiveIntegrator = 

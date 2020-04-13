@@ -42,7 +42,7 @@ def PrepareModule(module, result):
             if newModuleName and hasattr(value, '__module__'):
                 try:
                     setattr(value, '__module__', newModuleName)
-                except AttributeError, e:
+                except AttributeError as e:
                     # The __module__ attribute of Boost.Python.function
                     # objects is not writable, so we get this exception
                     # a lot.  Just ignore it.  We're really only concerned
@@ -73,8 +73,8 @@ def GetCodeLocation(framesUp):
 
     and genericDebugFacility() will get information associated with its caller, 
     i.e. the function someCode()."""
-    import inspect
-    f_back = inspect.currentframe(framesUp).f_back
+    import sys
+    f_back = sys._getframe(framesUp).f_back
     return (f_back.f_globals['__name__'], f_back.f_code.co_name,
             f_back.f_code.co_filename, f_back.f_lineno)
 
@@ -94,7 +94,7 @@ class ErrorException(RuntimeError):
         self.__TfException = True
 
     def __str__(self):
-        return '\n\t' + '\n\t'.join([str(e) for e in self])
+        return '\n\t' + '\n\t'.join([str(e) for e in self.args])
 __SetErrorExceptionClass(ErrorException)
 
 try:

@@ -31,16 +31,15 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class TfType;
 class UsdImagingPrimAdapter;
-typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
 
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \
@@ -59,7 +58,7 @@ class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry>
     friend class TfSingleton<UsdImagingAdapterRegistry>;
     UsdImagingAdapterRegistry();
 
-    typedef boost::unordered_map<TfToken,TfType,TfToken::HashFunctor> _TypeMap;
+    typedef std::unordered_map<TfToken,TfType,TfToken::HashFunctor> _TypeMap;
     _TypeMap _typeMap;
 
 public:

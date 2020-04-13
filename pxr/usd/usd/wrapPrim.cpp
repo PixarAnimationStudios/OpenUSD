@@ -22,11 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/arch/pragmas.h"
-
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/payloads.h"
@@ -163,7 +158,8 @@ void wrapUsdPrim()
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
 
-        .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition)
+        .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition,
+             return_internal_reference<>())
         .def("GetPrimStack", &UsdPrim::GetPrimStack)
 
         .def("GetSpecifier", &UsdPrim::GetSpecifier)
@@ -362,6 +358,15 @@ void wrapUsdPrim()
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
         .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
 
+        .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
+        .def("GetObjectAtPath", &UsdPrim::GetObjectAtPath, arg("path"))
+        .def("GetPropertyAtPath", &UsdPrim::GetPropertyAtPath, arg("path"))
+        .def("GetAttributeAtPath", &UsdPrim::GetAttributeAtPath, arg("path"))
+        .def("GetRelationshipAtPath",
+            &UsdPrim::GetRelationshipAtPath, arg("path"))
+        .def("GetInstances", &UsdPrim::GetInstances,
+                return_value_policy<TfPySequenceToList>())
+
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
@@ -372,5 +377,3 @@ void wrapUsdPrim()
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
 }
-
-ARCH_PRAGMA_POP

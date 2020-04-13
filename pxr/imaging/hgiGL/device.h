@@ -1,0 +1,81 @@
+//
+// Copyright 2020 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+#ifndef PXR_IMAGING_HGIGL_DEVICE_H
+#define PXR_IMAGING_HGIGL_DEVICE_H
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/hgiGL/framebufferCache.h"
+
+#include <functional>
+#include <ostream>
+#include <fstream>
+#include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+using HgiGLOpsFn = std::function<void(void)>;
+using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
+
+
+/// \class HgiGlDevice
+///
+/// OpenGL implementation of GPU device.
+/// Note that there is only one global opengl context / device.
+///
+class HgiGLDevice final {
+public:
+    HGIGL_API
+    HgiGLDevice();
+
+    HGIGL_API
+    ~HgiGLDevice();
+
+    /// Get a framebuffer that matches the descriptor.
+    /// Do not hold onto the framebuffer Id. Instead re0acquire it every frame.
+    /// Framebuffer are internally managed in a framebuffer cache.
+    HGIGL_API
+    uint32_t AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc);
+
+    /// Helper function used by encoders to execute all their deferred
+    /// command functions ('ops') during the encoder commit phase.
+    HGIGL_API
+    static void Commit(HgiGLOpsVector const& ops);
+
+private:
+    HgiGLDevice & operator=(const HgiGLDevice&) = delete;
+    HgiGLDevice(const HgiGLDevice&) = delete;
+
+    friend std::ofstream& operator<<(
+        std::ofstream& out,
+        const HgiGLDevice& dev);
+
+    HgiGLFramebufferCache _framebufferCache;
+};
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

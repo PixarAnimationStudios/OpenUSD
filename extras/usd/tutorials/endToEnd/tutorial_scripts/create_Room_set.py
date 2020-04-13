@@ -67,13 +67,13 @@ def main():
     ballNumber = 0
 
     import math
-    for row in xrange(5):
+    for row in range(5):
 
         tableX = 10 + row * 2 * BALL_RADIUS * math.cos(math.pi/6)
         tableRowZ = -row * BALL_RADIUS
         numBallsInRow = row + 1
 
-        for i in xrange(numBallsInRow):
+        for i in range(numBallsInRow):
             ballNumber += 1
 
             b = _AddModel(

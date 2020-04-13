@@ -35,13 +35,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdSt_QuadInfoBuilderComputation>
-                                       HdSt_QuadInfoBuilderComputationSharedPtr;
+using HdSt_QuadInfoBuilderComputationSharedPtr = 
+    std::shared_ptr<class HdSt_QuadInfoBuilderComputation>;
 
 class HdSt_MeshTopology;
 
@@ -153,7 +151,7 @@ public:
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
-    virtual HdBufferSourceVector GetChainedBuffers() const override;
+    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
 
 protected:
     virtual bool _CheckValid() const override;

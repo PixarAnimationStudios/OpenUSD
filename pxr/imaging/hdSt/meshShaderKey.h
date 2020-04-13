@@ -28,12 +28,13 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct HdSt_MeshShaderKey
+struct HdSt_MeshShaderKey : public HdSt_ShaderKey
 {
     enum NormalSource
     {
@@ -51,6 +52,7 @@ struct HdSt_MeshShaderKey
                        HdInterpolation normalsInterpolation,
                        bool doubleSided,
                        bool forceGeometryShader,
+                       bool hasTopologicalVisibility,
                        bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
@@ -66,11 +68,10 @@ struct HdSt_MeshShaderKey
     // avoids the issue.
     ~HdSt_MeshShaderKey();
 
-    bool IsCullingPass() const { return false; }
-    HdCullStyle GetCullStyle() const { return cullStyle; }
-    HdPolygonMode GetPolygonMode() const { return polygonMode; }
-    float GetLineWidth() const { return lineWidth; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const {
+    HdCullStyle GetCullStyle() const override { return cullStyle; }
+    HdPolygonMode GetPolygonMode() const override { return polygonMode; }
+    float GetLineWidth() const override { return lineWidth; }
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return primType; 
     }
 
@@ -79,12 +80,12 @@ struct HdSt_MeshShaderKey
     HdPolygonMode polygonMode;
     float lineWidth;
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return TCS; }
-    TfToken const *GetTES() const { return TES; }
-    TfToken const *GetGS() const  { return GS; }
-    TfToken const *GetFS() const  { return FS; }
+    TfToken const &GetGlslfxFilename() const override { return glslfx; }
+    TfToken const *GetVS()  const override { return VS; }
+    TfToken const *GetTCS() const override { return TCS; }
+    TfToken const *GetTES() const override { return TES; }
+    TfToken const *GetGS()  const override { return GS; }
+    TfToken const *GetFS()  const override { return FS; }
 
     TfToken glslfx;
     TfToken VS[7];

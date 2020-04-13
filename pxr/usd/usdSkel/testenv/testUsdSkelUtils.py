@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Usd, UsdSkel, Vt, Sdf, Gf, Tf
 import unittest, random
 
@@ -45,7 +47,7 @@ def RandomTranslations(count):
         [Gf.Vec3f(random.random()-0.5,
                   random.random()-0.5,
                   random.random()-0.5)*200
-         for _ in xrange(count)])
+         for _ in range(count)])
 
 
 def RandomRotations(count):
@@ -54,7 +56,7 @@ def RandomRotations(count):
             (random.random()-0.5)*720,
             (random.random()-0.5)*720,
             (random.random()-0.5)*720)
-         for _ in xrange(count)])
+         for _ in range(count)])
         
 
 
@@ -64,7 +66,7 @@ def RandomScales(count):
         [Gf.Vec3h(1 if random.random() > 0.5 else -1,
                   1 if random.random() > 0.5 else -1,
                   1 if random.random() > 0.5 else -1)
-         for _ in xrange(count)])
+         for _ in range(count)])
 
 
 class TestUsdSkelUtils(unittest.TestCase):
@@ -96,7 +98,7 @@ class TestUsdSkelUtils(unittest.TestCase):
 
         xformsBuiltIndividually = Vt.Matrix4dArray(
             [UsdSkel.MakeTransform(translations[i], rotations[i], scales[i])
-             for i in xrange(count)])
+             for i in range(count)])
 
         self.assertArrayIsClose(xforms, xformsBuiltIndividually)
 
@@ -133,7 +135,7 @@ class TestUsdSkelUtils(unittest.TestCase):
 
         # Decomposing singular matrices should fail!
         with self.assertRaises(Tf.ErrorException):
-            print "expect a warning about decomposing a singular matrix"
+            print("expect a warning about decomposing a singular matrix")
             UsdSkel.DecomposeTransform(Gf.Matrix4d(0))
         with self.assertRaises(Tf.ErrorException):
             UsdSkel.DecomposeTransforms(
@@ -158,9 +160,9 @@ class TestUsdSkelUtils(unittest.TestCase):
         assert UsdSkel.NormalizeWeights(Vt.FloatArray(), 4)
 
         # Failure cases.
-        print "expect a warning about an invalid array shape"
+        print("expect a warning about an invalid array shape")
         assert not UsdSkel.NormalizeWeights(Vt.FloatArray([1]), 4)
-        print "expect a warning about an invalid array shape"
+        print("expect a warning about an invalid array shape")
         assert not UsdSkel.NormalizeWeights(Vt.FloatArray([1]), 0)
 
 
@@ -228,9 +230,9 @@ class TestUsdSkelUtils(unittest.TestCase):
 
         # Failure cases
         array = Vt.FloatArray([1])
-        print "expect a warning about an invalid array shape"
+        print("expect a warning about an invalid array shape")
         assert not UsdSkel.ResizeInfluences(array, 3, 2)
-        print "expect a warning about an invalid array shape"
+        print("expect a warning about an invalid array shape")
         assert not UsdSkel.ResizeInfluences(array, 3, 0)
 
 

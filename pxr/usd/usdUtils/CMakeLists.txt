@@ -17,6 +17,7 @@ pxr_library(usdUtils
     PUBLIC_CLASSES
         authoring
         coalescingDiagnosticDelegate
+        conditionalAbortDiagnosticDelegate
         debugCodes
         dependencies
         flattenLayerStack
@@ -39,6 +40,7 @@ pxr_library(usdUtils
         module.cpp
         wrapAuthoring.cpp
         wrapCoalescingDiagnosticDelegate.cpp
+        wrapConditionalAbortDiagnosticDelegate.cpp
         wrapDependencies.cpp
         wrapFlattenLayerStack.cpp
         wrapIntrospection.cpp
@@ -58,6 +60,7 @@ pxr_library(usdUtils
 pxr_test_scripts(
     testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
+    testenv/testUsdUtilsConditionalAbortDiagnosticDelegate.py
     testenv/testUsdUtilsCreateNewUsdzPackage.py
     testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
@@ -175,6 +178,167 @@ pxr_register_test(testUsdUtilsAuthoring
 pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegate
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegate"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase1
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case1"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase2
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case2"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase3
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case3"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase4
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case4"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase5
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case5"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase5a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case5a"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase6
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case6"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase6a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case6a"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase7
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case7"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase8
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case8"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase9
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case9"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase10
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case10"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase10a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case10a"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase11
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case11"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase11a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case11a"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase12
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case12"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase12a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case12a"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase13
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case13"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase13a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case13a"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase14
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case14"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase14a
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case14a"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase15
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case15"
+    EXPECTED_RETURN_CODE 134
+)
+
+pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase16
+    PYTHON
+    COMMAND
+    "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConditionalAbortDiagnosticDelegate case16"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -34,4 +34,4 @@ except Exception:
     pass
 
 
-from complianceChecker import ComplianceChecker
+from .complianceChecker import ComplianceChecker

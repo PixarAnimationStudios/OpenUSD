@@ -385,12 +385,22 @@ registry:
     This causes '$' + inputName to be included in the 
     <i>SdrShaderNode->Primvars</i> metadata on the <b>SdrShaderNode</b>. 
     Note that it's not translated to metadata on the property itself.
-  - <b>connectability</b> metadata authored on UsdShadeInputs gets translated 
-  to SdrPropertyMetadata->Connectable. Connectability value of "interfaceOnly"
-  is converted to <i>connectable="0"</i>. Connectability value of "full" is 
-  converted to <i>connectable="1"</i>.
-  - SdfAssetPath (or asset) valued shader inputs are automatically tagged with 
-  sdr metadata <i>SdrPropertyMetadata->IsAssetIdentifier="1"</i>. 
+    - <b>connectability</b> metadata authored on UsdShadeInputs gets translated 
+    to SdrPropertyMetadata->Connectable. Connectability value of "interfaceOnly"
+    is converted to <i>connectable="0"</i>. Connectability value of "full" is 
+    converted to <i>connectable="1"</i>.
+    - SdfAssetPath (or asset) valued shader inputs are automatically tagged with 
+    sdr metadata <i>SdrPropertyMetadata->IsAssetIdentifier="1"</i>. 
+    - <b>sdrMetadata["swizzle"]</b> is metadata that can be specified for
+    properties in SdrShaderProperty <b>output</b> definitions that describes
+    the component(s) of the full color/vector output value produced by the
+    shader property, and is necessary for shading systems that rely on
+    dynamic code generation rather than self-contained
+    shader-objects/closures. <b>swizzle</b> metadata is not meant to ever
+    appear in user documents, and does not provide the ability to swizzle
+    data on input connections.
+    - <b>sdrMetadata["implementationName"]</b> specifies the name that will be
+    returned by SdrShaderProperty::GetImplementationName().
 
 Here's an example shader definition file with comments explaining the various 
 bits.

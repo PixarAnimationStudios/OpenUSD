@@ -28,7 +28,7 @@ types.  It contains facilities for creating simple copy-on-write
 implicitly shared types.
 """
 
-import _vt
+from . import _vt
 from pxr import Tf
 Tf.PrepareModule(_vt, locals())
 del _vt, Tf
@@ -43,12 +43,12 @@ except Exception:
 # For ease-of-use, put each XXXArrayFromBuffer method on its corresponding array
 # wrapper class, also alias it as 'FromNumpy' for compatibility.
 def _CopyArrayFromBufferFuncs(moduleContents):
-    funcs = dict([(key, val) for (key, val) in moduleContents.iteritems()
+    funcs = dict([(key, val) for (key, val) in moduleContents.items()
                   if key.endswith('FromBuffer')])
-    classes = dict([(key, val) for (key, val) in moduleContents.iteritems()
+    classes = dict([(key, val) for (key, val) in moduleContents.items()
                     if key.endswith('Array') and isinstance(val, type)])
 
-    for funcName, func in funcs.iteritems():
+    for funcName, func in funcs.items():
         className = funcName[:-len('FromBuffer')]
         cls = classes.get(className)
         if cls:

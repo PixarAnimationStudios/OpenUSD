@@ -89,7 +89,7 @@ HdPrman_Points::_ConvertGeometry(HdPrman_Context *context,
 
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
                             points.size(), points.size(), points.size());
-    return std::move(primvars);
+    return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

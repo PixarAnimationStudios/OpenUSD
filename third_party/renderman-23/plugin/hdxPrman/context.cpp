@@ -415,8 +415,8 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     // Clear values...
     framebuffer.Resize(resolution[0], resolution[1]);
     framebuffer.clearColor[0] = framebuffer.clearColor[1] =
-        framebuffer.clearColor[2] = (uint8_t)(0.0707f * 255);
-    framebuffer.clearColor[3] = 255;
+        framebuffer.clearColor[2] = 0.0f;
+    framebuffer.clearColor[3] = 0.0f;
     framebuffer.clearDepth = 1.0f;
     framebuffer.clearId = -1;
 
@@ -436,7 +436,7 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             us_lightA, // handle
             RtParamList()
         };
-        riley::LightShaderId _fallbackLightShader =
+        _fallbackLightShader = 
             riley->CreateLightShader(&lightNode, 1, nullptr, 0);
 
         // Constant identity transform
@@ -515,12 +515,24 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     }
 }
 
+riley::IntegratorId HdxPrman_InteractiveContext::GetIntegrator()
+{
+    return(integratorId);
+}
+
+void HdxPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
+{
+    integratorId = iid;
+    for (auto& view : renderViews)
+    {
+        view.integratorId = integratorId;
+    }
+}
 
 void HdxPrman_InteractiveContext::StartRender()
 {
     // Last chance to set Ri options before starting riley!
     // Called from HdxPrman_RenderPass::_Execute
-
 
     // Prepare Riley state for rendering.
     // Pass a valid riley callback pointer during IPR

@@ -51,8 +51,6 @@
 typedef int mode_t;
 #endif
 
-#include <boost/assign/list_of.hpp>
-
 ARCH_PRAGMA_DEPRECATED_POSIX_NAME
 
 using std::string;
@@ -60,7 +58,6 @@ using std::cerr;
 using std::cout;
 using std::endl;
 using std::vector;
-using boost::assign::list_of;
 using namespace std::placeholders;
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -98,37 +95,36 @@ struct _DirInfo {
 TF_MAKE_STATIC_DATA(vector<_DirInfo>, _SetupData) {
     // Test directory structure:
     //   (<dirpath>, [<dirnames>], [<filenames>])
-    *_SetupData = list_of<_DirInfo>
-        ("a",
-            list_of<string>("b"),
-            list_of<string>("one")("two")("aardvark"))
-        ("a/b",
-            list_of<string>("c"),
-            list_of<string>("three")("four")("banana"))
-        ("a/b/c",
-            list_of<string>("d"),
-            list_of<string>("five")("six")("cat"))
-        ("a/b/c/d",
-            list_of<string>("e"),
-            list_of<string>("seven")("eight")("dog"))
-        ("a/b/c/d/e",
-            list_of<string>("f"),
-            list_of<string>
-                ("nine")("ten")("elephant")("Eskimo")("Fortune")("Garbage"))
-        ("a/b/c/d/e/f",
-            list_of<string>("g")("h")("i"),
-            list_of<string>("eleven")("twelve")("fish"))
-        ("a/b/c/d/e/f/g",
+    *_SetupData = {
+        {"a",
+            vector<string>{"b"},
+            vector<string>{"one", "two", "aardvark"}},
+        {"a/b",
+            vector<string>{"c"},
+            vector<string>{"three", "four", "banana"}},
+        {"a/b/c",
+            vector<string>{"d"},
+            vector<string>{"five", "six", "cat"}},
+        {"a/b/c/d",
+            vector<string>{"e"},
+            vector<string>{"seven", "eight", "dog"}},
+        {"a/b/c/d/e",
+            vector<string>{"f"},
+            vector<string>
+                {"nine", "ten", "elephant", "Eskimo", "Fortune", "Garbage"}},
+        {"a/b/c/d/e/f",
+            vector<string>{"g", "h", "i"},
+            vector<string>{"eleven", "twelve", "fish"}},
+        {"a/b/c/d/e/f/g",
             vector<string>(),
-            list_of<string>("thirteen")("fourteen")("gator"))
-        ("a/b/c/d/e/f/h",
+            vector<string>{"thirteen", "fourteen", "gator"}},
+        {"a/b/c/d/e/f/h",
             vector<string>(),
-            list_of<string>("fifteen")("sixteen")("hippo"))
-        ("a/b/c/d/e/f/i",
+            vector<string>{"fifteen", "sixteen", "hippo"}},
+        {"a/b/c/d/e/f/i",
             vector<string>(),
-            list_of<string>("seventeen")("eighteen")("igloo"))
-        .convert_to_container< vector<_DirInfo> >();
-        ;
+            vector<string>{"seventeen", "eighteen", "igloo"}},
+    };
 }
 
 } // End of anonymous namespace.
@@ -392,6 +388,8 @@ TestTfMakeDirs()
     // Whole path already exists
     cout << "+ whole path already exists" << endl;
     TF_AXIOM(!TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf"));
+    TF_AXIOM(TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf",
+                        /* mode */ -1, /* existOk */ true));
 
     // Dots in path
     if (TfIsDir("testTfMakeDirs-4"))

@@ -532,6 +532,8 @@ GlfDrawTarget::WriteToFile(std::string const & name,
                             GfMatrix4d const & viewMatrix,
                             GfMatrix4d const & projectionMatrix)
 {
+    TRACE_FUNCTION();
+
     AttachmentsMap const & attachments = GetAttachments();
     AttachmentsMap::const_iterator it = attachments.find( name );
 
@@ -553,7 +555,7 @@ GlfDrawTarget::WriteToFile(std::string const & name,
         stride = _size[0] * nelems * elemsize,
         bufsize = _size[1] * stride;
 
-    void * buf = malloc( bufsize );
+    std::unique_ptr<char[]> buf(new char[bufsize]);
 
     {
         glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
@@ -570,7 +572,11 @@ GlfDrawTarget::WriteToFile(std::string const & name,
         glActiveTexture( GL_TEXTURE0 );
         glBindTexture( GL_TEXTURE_2D, a->GetGlTextureName() );
 
-        glGetTexImage(GL_TEXTURE_2D, 0, a->GetFormat(), a->GetType(), buf);
+        {
+            TRACE_FUNCTION_SCOPE("glGetTexImage");
+            glGetTexImage(GL_TEXTURE_2D, 0, a->GetFormat(), a->GetType(),
+                          buf.get());
+        }
 
         glActiveTexture( restoreActiveTexture );
         glBindTexture( GL_TEXTURE_2D, restoreBinding );
@@ -583,7 +589,7 @@ GlfDrawTarget::WriteToFile(std::string const & name,
     std::string ext = TfStringGetSuffix(filename);
     if (name == "depth" && ext == "zfile") {
         // transform depth value from normalized to camera space length
-        float *p = (float*)buf;
+        float *p = (float*)buf.get();
         for (size_t i = 0; i < bufsize/sizeof(float); ++i){
             p[i] = (float)(-2*p[i] / projectionMatrix[2][2]);
         }
@@ -605,16 +611,18 @@ GlfDrawTarget::WriteToFile(std::string const & name,
     storage.format = a->GetFormat();
     storage.type = a->GetType();
     storage.flipped = true;
-    storage.data = buf;
+    storage.data = buf.get();
 
-    GlfImageSharedPtr image = GlfImage::OpenForWriting(filename);
-    bool writeSuccess = image && image->Write(storage, metadata);
+    {
+        TRACE_FUNCTION_SCOPE("writing image");
 
-    free(buf);
-
-    if (!writeSuccess) {
-        TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
-        return false;
+        GlfImageSharedPtr const image = GlfImage::OpenForWriting(filename);
+        const bool writeSuccess = image && image->Write(storage, metadata);
+        
+        if (!writeSuccess) {
+            TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+            return false;
+        }
     }
 
     GLF_POST_PENDING_GL_ERRORS();

@@ -34,7 +34,7 @@
 #include "pxr/usd/sdf/layerTree.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/noncopyable.hpp>
+#include <tbb/spin_mutex.h>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -62,7 +62,10 @@ class PcpLifeboat;
 ///
 /// PcpLayerStacks are constructed and managed by a Pcp_LayerStackRegistry.
 ///
-class PcpLayerStack : public TfRefBase, public TfWeakBase, boost::noncopyable {
+class PcpLayerStack : public TfRefBase, public TfWeakBase {
+    PcpLayerStack(const PcpLayerStack&) = delete;
+    PcpLayerStack& operator=(const PcpLayerStack&) = delete;
+
 public:
     // See Pcp_LayerStackRegistry for creating layer stacks.
     PCP_API
@@ -102,11 +105,6 @@ public:
     /// layer stack. Returns NULL if the offset is the identity.
     PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(size_t layerIdx) const;
-
-    /// Returns the set of asset paths resolved while building the
-    /// layer stack.
-    PCP_API
-    const std::set<std::string>& GetResolvedAssetPaths() const;
 
     /// Returns the set of layers that were muted in this layer
     /// stack.
@@ -272,10 +270,6 @@ private:
     /// List of source info for sublayer asset path computations.
     std::vector<_SublayerSourceInfo> _sublayerSourceInfo;
 
-    /// Set of asset paths resolved while building the layer stack.
-    /// This is used to handle updates.
-    std::set<std::string> _assetPaths;
-
     /// Set of asset paths that were muted in this layer stack.
     std::set<std::string> _mutedAssetPaths;
 
@@ -293,9 +287,10 @@ private:
     /// the current value of relocations given out by
     /// GetExpressionForRelocatesAtPath().  This map is used to update
     /// those values when relocations change.
-    typedef std::map<SdfPath, PcpMapExpression::VariableRefPtr,
+    typedef std::map<SdfPath, PcpMapExpression::VariableUniquePtr,
             SdfPath::FastLessThan> _RelocatesVarMap;
     _RelocatesVarMap _relocatesVariables;
+    tbb::spin_mutex _relocatesVariablesMutex;
 
     /// List of all prim spec paths where relocations were found.
     SdfPathVector _relocatesPrimPaths;

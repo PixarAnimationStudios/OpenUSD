@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/task.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
-
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -175,6 +174,17 @@ public:
     HDX_API
     void SetSelectionColor(GfVec4f const& color);
 
+    /// Set if the selection highlight should be rendered as an outline around
+    /// the selected objects or as a solid color overlaid on top of them.
+    HDX_API
+    void SetSelectionEnableOutline(bool enableOutline);
+
+    /// Set the selection outline radius (thickness) in pixels. This is only
+    /// relevant if the highlight is meant to be rendered as an outline (if
+    /// SetSelectionRenderOutline(true) is called).
+    HDX_API
+    void SetSelectionOutlineRadius(unsigned int radius);
+
     /// -------------------------------------------------------
     /// Shadow API
 
@@ -259,6 +269,7 @@ private:
     bool _ColorChannelEnabled() const;
     bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
+    bool _CamerasSupported() const;
 
     // Helper function for renderbuffer management.
     SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;

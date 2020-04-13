@@ -42,10 +42,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 class HdRenderIndex;
 
-typedef boost::shared_ptr<class HdStTextureResource>
-                HdStTextureResourceSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResourceHandle>
-                HdStTextureResourceHandleSharedPtr;
+using HdStTextureResourceSharedPtr =
+    std::shared_ptr<class HdStTextureResource>;
+using HdStTextureResourceHandleSharedPtr =
+    std::shared_ptr<class HdStTextureResourceHandle>;
 
 ///
 /// Represents a Texture Buffer Prim.

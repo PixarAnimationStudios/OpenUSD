@@ -30,13 +30,15 @@
 
 #include "pxr/base/tf/token.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Dome Light texture computations GPU
 ///
 ///
-typedef boost::shared_ptr<class HdSt_DomeLightComputationGPU> 
-                            HdSt_DomeLightComputationGPUSharedPtr;
+using HdSt_DomeLightComputationGPUSharedPtr =
+    std::shared_ptr<class HdSt_DomeLightComputationGPU>;
                             
 class HdSt_DomeLightComputationGPU : public HdComputation {
 public:

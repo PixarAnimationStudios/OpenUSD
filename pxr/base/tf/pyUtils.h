@@ -32,6 +32,8 @@
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/api.h"
@@ -55,7 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \hideinitializer
 #define TF_PY_REPR_PREFIX \
-    std::string(BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
+    std::string(TF_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
 
 /// Returns true if python is initialized.
 TF_API bool TfPyIsInitialized();
@@ -270,6 +272,15 @@ template<class Seq>
 boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
     return boost::python::tuple(TfPyCopySequenceToList(seq));
 }
+
+/// Create a python bytearray from an input buffer and size.
+///
+/// If a size of zero is passed in this function will return a valid python
+/// bytearray of size zero.
+///
+/// An invalid object handle is returned on failure.
+TF_API
+boost::python::object TfPyCopyBufferToByteArray(const char* buffer, size_t size);
 
 /// Return a vector of strings containing the current python traceback.
 ///

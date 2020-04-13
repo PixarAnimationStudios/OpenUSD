@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+import sys
 import unittest
 
 from pxr.Usdviewq.constantGroup import ConstantGroup
@@ -152,15 +153,17 @@ class TestConstantGroup(unittest.TestCase):
 
         # Normally, calling functions like this fails.
 
-        class TestNoGroup:
-            def A():
-                return 1
-            B = lambda: 2
-
-        with self.assertRaises(TypeError):
-            TestNoGroup.A()
-        with self.assertRaises(TypeError):
-            TestNoGroup.B()
+        if sys.version_info.major < 3:
+            # Unbound methods have been removed from Python 3, so this will no longer
+            # raise a TypeError exception.
+            class TestNoGroup:
+                def A():
+                    return 1
+                B = lambda: 2
+            with self.assertRaises(TypeError):
+                TestNoGroup.A()
+            with self.assertRaises(TypeError):
+                TestNoGroup.B()
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -24,16 +24,14 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
-
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
-#include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
-
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -99,6 +97,168 @@ HdxDrawTargetTask::~HdxDrawTargetTask()
 {
 }
 
+namespace {
+
+//
+// Topological sorting of the draw targets based on their
+// inter-dependencies.
+//
+
+bool
+_DoesCollectionContainPath(HdRprimCollection const &collection,
+                           SdfPath const& path)
+{
+    for (SdfPath const &excludePath : collection.GetExcludePaths()) {
+        if (path.HasPrefix(excludePath)) {
+            return false;
+        }
+    }
+    for (SdfPath const &rootPath : collection.GetRootPaths()) {
+        if (path.HasPrefix(rootPath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Determines whether the collection of the first draw target contains
+// the path of the second draw target.
+//
+// This is used as a simple heuristic to determine the dependencies
+// between draw targets. In theory, one could imagine a scenaria where
+// this is not correct: a draw target collection includes a piece of
+// geometry but not the draw target that serves as texture for the
+// geometry. See HYD-1833.
+//
+// Once we have better tracking of the prim depedencies in hydra,
+// we can address this in a better way.
+bool
+_IsDependentOn(HdStDrawTarget const *drawTarget,
+               HdStDrawTarget const *otherDrawTarget)
+{
+    return
+        drawTarget &&
+        otherDrawTarget &&
+        drawTarget != otherDrawTarget &&
+        _DoesCollectionContainPath(drawTarget->GetCollection(),
+                                   otherDrawTarget->GetId());
+}
+
+// Information returned by topological sort
+struct _DrawTargetEntry
+{
+    // Index in draw target vector created by namespace traversal
+    size_t originalIndex;
+    // The draw target
+    HdStDrawTarget const * drawTarget;
+    // Do other draw targets depend on this one?
+    bool hasDependentDrawTargets;
+};
+
+using _DrawTargetEntryVector = std::vector<_DrawTargetEntry>;
+
+// Topologically sort draw targets.
+static
+void
+_SortDrawTargets(HdStDrawTargetPtrConstVector const &drawTargets,
+                 _DrawTargetEntryVector * result)
+{
+    TRACE_FUNCTION();
+
+    if (drawTargets.empty()) {
+        return;
+    }
+
+    // Number of draw targets
+    const size_t n = drawTargets.size();
+
+    // Index of draw target to indices of draw targets it depends on
+    std::vector<std::set<size_t>>    indexToDependencies(n);
+    // Index of draw target to indices of draw targets that depend on it
+    std::vector<std::vector<size_t>> indexToDependents(n);
+
+    {
+        TRACE_FUNCTION_SCOPE("Computing drawtarget dependencies");
+
+        // Determine which draw target depends on which
+        for (size_t dependent = 0; dependent < n; dependent++) {
+            for (size_t dependency = 0; dependency < n; dependency++) {
+                if (_IsDependentOn(drawTargets[dependent],
+                                   drawTargets[dependency])) {
+                    indexToDependencies[dependent].insert(dependency);
+                    indexToDependents[dependency].push_back(dependent);
+                }
+            }
+        }
+    }
+
+    {
+        TRACE_FUNCTION_SCOPE("Topological sort");
+
+        // Start by scheduling draw targets that do not depend on
+        // any other draw target.
+        result->reserve(n);
+        for (size_t dependent = 0; dependent < n; dependent++) {
+            if (indexToDependencies[dependent].empty()) {
+                result->push_back(
+                    {dependent, drawTargets[dependent], false});
+            }
+        }
+
+        // Iterate through all scheduled draw targets (while scheduling
+        // new draw targets).
+        for (size_t i = 0; i < result->size(); i++) {
+            _DrawTargetEntry &entry = (*result)[i];
+            const size_t dependency = entry.originalIndex;
+            // For each draw target that depends on this draw target.
+            for (const size_t dependent : indexToDependents[dependency]) {
+                // Since this draw target has been scheduled, remove it as
+                // dependency.
+                indexToDependencies[dependent].erase(dependency);
+                // If this was the last dependency of the other draw
+                // target, we can schedule the other draw target.
+                if (indexToDependencies[dependent].empty()) {
+                    result->push_back(
+                        {dependent, drawTargets[dependent], false});
+                }
+                entry.hasDependentDrawTargets = true;
+            }
+        }
+        
+        // Infinite mirrors and Droste cocoa pictures!
+        //
+        // If there are any cycles, the above process didn't schedule
+        // the involved draw targets.
+        if (result->size() < n) {
+            // Schedule them now in the order they were given originally.
+            for (size_t i = 0; i < n; i++) {
+                if (!indexToDependencies[i].empty()) {
+                    result->push_back(
+                        {i, drawTargets[i], false});
+                }
+            }
+        }
+
+        if (result->size() != drawTargets.size()) {
+            TF_CODING_ERROR("Mismatch");
+        }
+    }
+}
+
+// Retrieve draw targets from render index and perform topoogical sort
+void
+_GetSortedDrawTargets(
+    HdRenderIndex *renderIndex,
+    _DrawTargetEntryVector *result)
+{
+    HdStDrawTargetPtrConstVector unsortedDrawTargets;
+    HdStDrawTarget::GetDrawTargets(renderIndex, &unsortedDrawTargets);
+    
+    _SortDrawTargets(unsortedDrawTargets, result);
+}
+
+} // namespace anonymous
+
 void
 HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
                         HdTaskContext* ctx,
@@ -142,33 +302,30 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        HdStDrawTargetPtrConstVector drawTargets;
-        HdStDrawTarget::GetDrawTargets(&renderIndex, &drawTargets);
-
+        _DrawTargetEntryVector drawTargetEntries;
+        _GetSortedDrawTargets(&renderIndex, &drawTargetEntries);
+                              
         _renderPassesInfo.clear();
         _renderPasses.clear();
 
-        size_t numDrawTargets = drawTargets.size();
-        _renderPassesInfo.reserve(numDrawTargets);
-        _renderPasses.reserve(numDrawTargets);
+        _renderPassesInfo.reserve(drawTargetEntries.size());
+        _renderPasses.reserve(drawTargetEntries.size());
 
-        for (size_t drawTargetNum = 0;
-             drawTargetNum < numDrawTargets;
-             ++drawTargetNum) {
-
-            const HdStDrawTarget *drawTarget = drawTargets[drawTargetNum];
-            if (drawTarget) {
+        for (_DrawTargetEntry const &entry : drawTargetEntries) {
+            if (HdStDrawTarget const * const drawTarget = entry.drawTarget) {
                 if (drawTarget->IsEnabled()) {
                     HdxDrawTargetRenderPassUniquePtr pass(
                                     new HdxDrawTargetRenderPass(&renderIndex));
 
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
+                    pass->SetHasDependentDrawTargets(
+                        entry.hasDependentDrawTargets);
 
                     HdStRenderPassStateSharedPtr renderPassState(
                         new HdStRenderPassState());
-                    HdxSimpleLightingShaderSharedPtr simpleLightingShader(
-                        new HdxSimpleLightingShader());
+                    HdStSimpleLightingShaderSharedPtr simpleLightingShader(
+                        new HdStSimpleLightingShader());
 
                     _renderPassesInfo.emplace_back(
                             RenderPassInfo {
@@ -195,7 +352,8 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
-                _renderPasses[renderPassIdx]->SetDrawTarget(target->GetGlfDrawTarget());
+                _renderPasses[renderPassIdx]->SetDrawTarget(
+                    target->GetGlfDrawTarget());
                 renderPassInfo.version = targetVersion;
             }
         }
@@ -219,18 +377,20 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
          ++renderPassIdx) {
 
         RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
-        HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
-        HdStRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
+        HdxDrawTargetRenderPass *renderPass = 
+            _renderPasses[renderPassIdx].get();
+        HdStRenderPassStateSharedPtr &renderPassState = 
+            renderPassInfo.renderPassState;
         const HdStDrawTarget *drawTarget = renderPassInfo.target;
         const HdStDrawTargetRenderPassState *drawTargetRenderPassState =
-                                               drawTarget->GetRenderPassState();
+            drawTarget->GetRenderPassState();
         const SdfPath &cameraId = drawTargetRenderPassState->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
         const HdCamera *camera = static_cast<const HdCamera *>(
-                                  renderIndex.GetSprim(HdPrimTypeTokens->camera,
-                                                       cameraId));
+            renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                cameraId));
 
         if (camera == nullptr) {
             // Render pass should not have been added to task list.
@@ -252,7 +412,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         renderPassState->SetCullStyle(_cullStyle);
         renderPassState->SetDepthFunc(depthFunc);
 
-        HdxSimpleLightingShaderSharedPtr &simpleLightingShader
+        HdStSimpleLightingShaderSharedPtr &simpleLightingShader
             = _renderPassesInfo[renderPassIdx].simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();
@@ -375,6 +535,12 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         renderPassState->Bind();
         renderPass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
+
+        if (renderPass->HasDependentDrawTargets()) {
+            // If later draw targets depend on this one, we need to
+            // resolve before they fire (if MSAA enabled).
+            renderPass->GetDrawTarget()->Resolve();
+        }
     }
 
     // Restore to GL defaults
@@ -400,9 +566,11 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
         << "         wireframeColor          = " << pv.wireframeColor << "\n"
         << "         enableLighting          = " << pv.enableLighting << "\n"
         << "         alphaThreshold          = " << pv.alphaThreshold << "\n"
-        << "         depthBiasUseDefault     = " << pv.depthBiasUseDefault << "\n"
+        << "         depthBiasUseDefault     = " 
+            << pv.depthBiasUseDefault << "\n"
         << "         depthBiasEnable         = " << pv.depthBiasEnable << "\n"
-        << "         depthBiasConstantFactor = " << pv.depthBiasConstantFactor << "\n"
+        << "         depthBiasConstantFactor = " 
+            << pv.depthBiasConstantFactor << "\n"
         << "         depthFunc               = " << pv.depthFunc << "\n"
         << "         cullStyle               = " << pv.cullStyle << "\n"
         ;
@@ -410,7 +578,9 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
     return out;
 }
 
-bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
+bool operator==(
+    const HdxDrawTargetTaskParams& lhs, 
+    const HdxDrawTargetTaskParams& rhs)
 {
     return 
         lhs.overrideColor == rhs.overrideColor                      && 
@@ -425,7 +595,9 @@ bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParam
         lhs.cullStyle == rhs.cullStyle;
 }
 
-bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
+bool operator!=(
+    const HdxDrawTargetTaskParams& lhs, 
+    const HdxDrawTargetTaskParams& rhs)
 {
     return !(lhs == rhs);
 }

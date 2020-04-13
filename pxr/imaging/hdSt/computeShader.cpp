@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -73,7 +74,7 @@ HdStComputeShader::GetSource(TfToken const &shaderStageKey) const
     return std::string();
 }
 /*virtual*/
-HdMaterialParamVector const&
+HdSt_MaterialParamVector const&
 HdStComputeShader::GetParams() const
 {
     return _params;
@@ -118,7 +119,7 @@ HdStComputeShader::ComputeHash() const
 {
     size_t hash = 0;
     
-    for (HdMaterialParam const& param : _params) {
+    for (HdSt_MaterialParam const& param : _params) {
         if (param.IsFallback())
             boost::hash_combine(hash, param.name.Hash());
     }

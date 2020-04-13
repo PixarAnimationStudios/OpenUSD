@@ -25,6 +25,7 @@
 #include "pxr/usd/sdf/connectionListEditor.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/ostreamMethods.h"
 
 #include <set>
 
@@ -62,9 +63,29 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
 
     const SdfPath propertyPath = GetPath();
     SdfLayerHandle layer = GetLayer();
-    const std::set<value_type> oldItemSet(oldItems.begin(), oldItems.end());
-    const std::set<value_type> newItemSet(newItems.begin(), newItems.end());
 
+    // A common pattern is to append at the end, so old and new often share a
+    // common prefix.  Scan forward until we find a difference, then just
+    // operate on any remaining tail.  The caller guarantees that both oldItems
+    // and newItems are free of duplicates, so we can't ever have an item in the
+    // tail that we skipped over in the common prefix, since that would be a
+    // duplicate.
+
+    std::set<value_type> oldItemSet;
+    std::set<value_type> newItemSet;
+    {
+        std::vector<SdfPath>::const_iterator
+            oldItemTail = oldItems.begin(),
+            newItemTail = newItems.begin(); 
+        auto oldEnd = oldItems.end(), newEnd = newItems.end();
+        while (oldItemTail != oldEnd && newItemTail != newEnd &&
+               *oldItemTail == *newItemTail) {
+            ++oldItemTail, ++newItemTail;
+        }
+        oldItemSet.insert(oldItemTail, oldEnd);
+        newItemSet.insert(newItemTail, newEnd);
+    }
+    
     // Need to remove all children in oldItems that are not in newItems.
     std::vector<SdfPath> childrenToRemove;
     std::set_difference(oldItemSet.begin(), oldItemSet.end(),

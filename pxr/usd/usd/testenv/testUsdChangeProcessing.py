@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import sys
 from pxr import Sdf,Usd,Tf
 
@@ -60,5 +62,5 @@ def Main(argv):
 
 if __name__ == "__main__":
     Main(sys.argv)
-    print 'OK'
+    print('OK')
 

@@ -413,11 +413,11 @@ struct _Vec3MatchingMatrix4<GfMatrix4f>
 };
 
 
-template <typename Matrix4>
+template <class Matrix4>
 bool
 _DecomposeTransform(const Matrix4& xform,
                     GfVec3f* translate,
-                    GfRotation* rotate,
+                    Matrix4* rotate,
                     GfVec3h* scale)
 {
     // XXX: GfMatrix4x::Factor() may crash if the value isn't properly aligned.
@@ -425,16 +425,15 @@ _DecomposeTransform(const Matrix4& xform,
     
     // Decomposition must account for handedness changes due to negative scales.
     // This is similar to GfMatrix4d::RemoveScaleShear().
-    Matrix4 scaleOrient, factoredRot, perspMat;
+    Matrix4 scaleOrient, perspMat;
 
     using Vec3 = typename _Vec3MatchingMatrix4<Matrix4>::type;
     
     Vec3 factoredScale, factoredTranslate;;
     if (xform.Factor(&scaleOrient, &factoredScale,
-                    &factoredRot, &factoredTranslate, &perspMat)) {
+                     rotate, &factoredTranslate, &perspMat)) {
 
-        if (factoredRot.Orthonormalize()) {
-            *rotate = factoredRot.ExtractRotation();
+        if (rotate->Orthonormalize()) {
             *scale = GfVec3h(factoredScale);
             *translate = GfVec3f(factoredTranslate);
             return true;
@@ -451,13 +450,9 @@ _DecomposeTransform(const Matrix4& xform,
                     GfQuatf* rotate,
                     GfVec3h* scale)
 {
-    GfRotation r;
-    if (_DecomposeTransform(xform, translate, &r, scale)) {
-        *rotate = GfQuatf(r.GetQuat());
-        // XXX: Note that even if GfRotation() produces a normal
-        // quaternion, casting down to a lesser precision may
-        // require us to re-normalize.
-        rotate->Normalize();
+    Matrix4 rotateMx;
+    if (_DecomposeTransform(xform, translate, &rotateMx, scale)) {
+        *rotate = rotateMx.ExtractRotationQuat();
         return true;
     }
     return false;
@@ -488,7 +483,12 @@ UsdSkelDecomposeTransform(const Matrix4& xform,
         TF_CODING_ERROR("'scale' pointer is null.");
         return false;
     }
-    return _DecomposeTransform(xform, translate, rotate, scale);
+    Matrix4 rotateMx;
+    if (_DecomposeTransform(xform, translate, &rotateMx, scale)) {
+        *rotate = rotateMx.ExtractRotation();
+        return true;
+    }
+    return false;
 }
 
 
@@ -522,7 +522,12 @@ UsdSkelDecomposeTransform(const Matrix4& xform,
         TF_CODING_ERROR("'scale' pointer is null.");
         return false;
     }
-    return _DecomposeTransform(xform, translate, rotate, scale);
+    Matrix4 rotateMx;
+    if (_DecomposeTransform(xform, translate, &rotateMx, scale)) {
+        *rotate = GfQuatf(rotateMx.ExtractRotationQuat());
+        return true;
+    }
+    return false;
 }
 
 
@@ -570,11 +575,13 @@ UsdSkel_DecomposeTransforms(TfSpan<const Matrix4> xforms,
         xforms.size(), /*inSerial*/ false,
         [&](size_t start, size_t end)
         {
+            Matrix4 rotateMx;
             for (size_t i = start; i < end; ++i) {
-                
-                if (!_DecomposeTransform(xforms[i], &translations[i],
-                                         &rotations[i], &scales[i])) {
 
+                if (_DecomposeTransform(xforms[i], &translations[i],
+                                        &rotateMx, &scales[i])) {
+                    rotations[i] = GfQuatf(rotateMx.ExtractRotationQuat());
+                } else {
                     TF_WARN("Failed decomposing transform %zu. "
                             "The source transform may be singular.", i);
                     errors = true;

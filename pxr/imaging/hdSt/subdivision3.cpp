@@ -53,8 +53,6 @@
 #include <opensubdiv/osd/glVertexBuffer.h>
 #include <opensubdiv/osd/mesh.h>
 
-#include <boost/scoped_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef OpenSubdiv::Osd::CpuVertexBuffer HdSt_OsdCpuVertexBuffer;
@@ -323,7 +321,7 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
     // filling coarse vertices has been done at resource registry.
 
     HdStBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // vertex buffer wrapper for OpenSubdiv API
     HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(
@@ -335,11 +333,11 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
     int numCoarseVertices = _vertexStencils->GetNumControlVertices();
 
     OpenSubdiv::Osd::BufferDescriptor srcDesc(
-        /*offset=*/range->GetOffset() * stride,
+        /*offset=*/range->GetElementOffset() * stride,
         /*length=*/stride,
         /*stride=*/stride);
     OpenSubdiv::Osd::BufferDescriptor dstDesc(
-        /*offset=*/(range->GetOffset() + numCoarseVertices) * stride,
+        /*offset=*/(range->GetElementOffset() + numCoarseVertices) * stride,
         /*length=*/stride,
         /*stride=*/stride);
 

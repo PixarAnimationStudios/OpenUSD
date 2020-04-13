@@ -28,6 +28,7 @@
 // 2  -> 3 : move simpleLightingShader to Hdx.
 // 3  -> 4 : move camera and light to Hdx.
 // 4  -> 5 : move drawTarget to Hdx.
-#define HDX_API_VERSION  5
+// 5  -> 6 : change HdxShadowMatrixComputation signature.
+#define HDX_API_VERSION  6
 
 #endif // PXR_IMAGING_HDX_VERSION_H

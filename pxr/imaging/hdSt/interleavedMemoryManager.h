@@ -37,7 +37,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <list>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -89,16 +89,19 @@ protected:
         HDST_API
         virtual VtValue ReadData(TfToken const &name) const;
 
-        /// Returns the relative offset in aggregated buffer
-        virtual int GetOffset() const {
+        /// Returns the offset at which this range begins in the underlying  
+        /// buffer array in terms of elements.
+        virtual int GetElementOffset() const {
+            return _index;
+        }
+
+        /// Returns the byte offset at which this range begins in the underlying
+        /// buffer array for the given resource.
+        virtual int GetByteOffset(TfToken const& resourceName) const {
+            TF_UNUSED(resourceName);
             if (!TF_VERIFY(_stripedBuffer) ||
                 !TF_VERIFY(_index != NOT_ALLOCATED)) return 0;
             return _stripedBuffer->GetStride() * _index;
-        }
-
-        /// Returns the index for this range
-        virtual int GetIndex() const {
-            return _index;
         }
 
         /// Returns the number of elements
@@ -167,12 +170,12 @@ protected:
         size_t _numElements;
     };
 
-    typedef boost::shared_ptr<_StripedInterleavedBuffer>
-        _StripedInterleavedBufferSharedPtr;
-    typedef boost::shared_ptr<_StripedInterleavedBufferRange>
-        _StripedInterleavedBufferRangeSharedPtr;
-    typedef boost::weak_ptr<_StripedInterleavedBufferRange>
-        _StripedInterleavedBufferRangePtr;
+    using _StripedInterleavedBufferSharedPtr =
+        std::shared_ptr<_StripedInterleavedBuffer>;
+    using _StripedInterleavedBufferRangeSharedPtr =
+        std::shared_ptr<_StripedInterleavedBufferRange>;
+    using _StripedInterleavedBufferRangePtr =
+        std::weak_ptr<_StripedInterleavedBufferRange>;
 
     /// striped buffer
     class _StripedInterleavedBuffer : public HdBufferArray {
@@ -265,7 +268,7 @@ protected:
         HdStBufferResourceGLNamedList _resourceList;
 
         _StripedInterleavedBufferRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
-            return boost::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
+            return std::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
         }
 
     };

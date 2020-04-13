@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/hd/topology.h"
 
-#include <ostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
