@@ -35,8 +35,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdStPoints
