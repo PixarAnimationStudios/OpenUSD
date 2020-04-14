@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStSubtextureIdentifier::~HdStSubtextureIdentifier() = default;
