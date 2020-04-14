@@ -31,7 +31,7 @@ pxr_library(usdImagingGL
         usdImaging
         ar
         ${Boost_PYTHON_LIBRARY}
-        ${PYTHON_LIBRARY}
+        ${PYTHON_LIBRARIES}
         ${OPENGL_gl_LIBRARY}
         ${OPENGL_glu_LIBRARY}
         ${GLEW_LIBRARY}
