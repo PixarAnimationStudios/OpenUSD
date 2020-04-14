@@ -469,7 +469,7 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
     for (HdSt_MaterialParam const &param: params) {
         if (param.IsFallback()) {
             primvarNames.push_back(param.name);
-        } else if (param.IsPrimvar()) {
+        } else if (param.IsPrimvarRedirect()) {
             primvarNames.push_back(param.name);
             // primvar redirect connections are encoded as sampler coords
             primvarNames.insert(primvarNames.end(),

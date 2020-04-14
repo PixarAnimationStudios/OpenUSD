@@ -51,14 +51,17 @@ public:
         // This is a shader specified fallback value that is
         // not connected to either a primvar or texture.
         ParamTypeFallback,
-        // This is a parameter that is connected to a primvar.
-        ParamTypePrimvar,
         // This is a parameter that is connected to a texture.
         ParamTypeTexture,
-        // This is a parameter that is connected to a field reader.
-        ParamTypeField,
-        // Accesses 3d texture with potential transform and fallback under
-        // different name
+        // Creates an accessor HdGet_name() that either reads a
+        // primvar with a potentially different name (given in
+        // samplerCoords) if it exists or uses the fallback value.
+        // It corresponds to a primvar reader shading node.
+        ParamTypePrimvarRedirect,
+        // Creates an accessor HdGet_name(vec3) that either reads
+        // from a field texture with a potentially different name (given
+        // in samplerCoords) if it exists or uses the fallback value.
+        // It corresponds to a field reader shading node.
         ParamTypeFieldRedirect,
         // Additional primvar needed by material. One that is not connected to
         // a input parameter (ParamTypePrimvar).
@@ -88,20 +91,17 @@ public:
     HDST_API
     HdTupleType GetTupleType() const;
 
-    bool IsField() const {
-        return paramType == ParamTypeField;
-    }
     bool IsTexture() const {
         return paramType == ParamTypeTexture;
     }
-    bool IsPrimvar() const {
-        return paramType == ParamTypePrimvar;
-    }
-    bool IsFallback() const {
-        return paramType == ParamTypeFallback;
+    bool IsPrimvarRedirect() const {
+        return paramType == ParamTypePrimvarRedirect;
     }
     bool IsFieldRedirect() const {
         return paramType == ParamTypeFieldRedirect;
+    }
+    bool IsFallback() const {
+        return paramType == ParamTypeFallback;
     }
     bool IsAdditionalPrimvar() const {
         return paramType == ParamTypeAdditionalPrimvar;

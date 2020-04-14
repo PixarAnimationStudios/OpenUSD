@@ -693,7 +693,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 }
-            } else if (param.IsPrimvar()) {
+            } else if (param.IsPrimvarRedirect()) {
                 TfTokenVector const& samplePrimvars = param.samplerCoords;
                 TfTokenVector glNames;
                 glNames.reserve(samplePrimvars.size());

@@ -431,7 +431,7 @@ _MakeMaterialParamsForAdditionalPrimvar(
 }
 
 static void
-_MakeMaterialParamsForPrimvarInput(
+_MakeMaterialParamsForPrimvarReader(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
@@ -446,7 +446,7 @@ _MakeMaterialParamsForPrimvarInput(
         node.nodeTypeId, HioGlslfxTokens->glslfx);
 
     HdSt_MaterialParam param;
-    param.paramType = HdSt_MaterialParam::ParamTypePrimvar;
+    param.paramType = HdSt_MaterialParam::ParamTypePrimvarRedirect;
     param.name = paramName;
     param.connection = SdfPath("primvar." + nodePath.GetName());
     param.textureType = HdTextureType::Uv;  /*No Texture*/
@@ -487,7 +487,7 @@ _ResolveAssetPath(VtValue const& value)
 }
 
 static void
-_MakeMaterialParamsForTextureInput(
+_MakeMaterialParamsForTexture(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
@@ -569,7 +569,7 @@ _MakeMaterialParamsForTextureInput(
 
             HdSt_MaterialParamVector primvarParams;
 
-            _MakeMaterialParamsForPrimvarInput(
+            _MakeMaterialParamsForPrimvarReader(
                 network,
                 primvarNode,
                 primvarNodePath,
@@ -608,7 +608,7 @@ _MakeMaterialParamsForTextureInput(
 }
 
 static void
-_MakeMaterialParamsForFieldInput(
+_MakeMaterialParamsForFieldReader(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     SdfPath const& nodePath,
@@ -626,10 +626,9 @@ _MakeMaterialParamsForFieldInput(
     // inserted into Storm.
 
     HdSt_MaterialParam param;
-    param.paramType = HdSt_MaterialParam::ParamTypeField;
+    param.paramType = HdSt_MaterialParam::ParamTypeFieldRedirect;
     param.name = paramName;
     param.connection = nodePath;
-    param.textureType = HdTextureType::Uvw;
 
     // XXX Why _tokens->fieldname:
     // Hard-coding the name of the attribute of HwFieldReader identifying
@@ -691,7 +690,7 @@ _MakeParamsForInputParameter(
                     TfToken sdrRole(upstreamSdr->GetRole());
                     if (sdrRole == SdrNodeRole->Texture) {
 
-                        _MakeMaterialParamsForTextureInput(
+                        _MakeMaterialParamsForTexture(
                             network,
                             upstreamNode,
                             upstreamPath,
@@ -703,7 +702,7 @@ _MakeParamsForInputParameter(
 
                     } else if (sdrRole == SdrNodeRole->Primvar) {
 
-                        _MakeMaterialParamsForPrimvarInput(
+                        _MakeMaterialParamsForPrimvarReader(
                             network,
                             upstreamNode,
                             upstreamPath,
@@ -713,8 +712,7 @@ _MakeParamsForInputParameter(
                         return;
 
                     } else if (sdrRole == SdrNodeRole->Field) {
-
-                        _MakeMaterialParamsForFieldInput(
+                        _MakeMaterialParamsForFieldReader(
                             network,
                             upstreamNode,
                             upstreamPath,

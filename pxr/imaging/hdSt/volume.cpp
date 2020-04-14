@@ -227,13 +227,13 @@ _MakeFallbackVolumeShader()
     result->SetParams(
         {
             HdSt_MaterialParam(
-                HdSt_MaterialParam::ParamTypeField,
+                HdSt_MaterialParam::ParamTypeFieldRedirect,
                 _fallbackShaderTokens->density,
                 VtValue(GfVec3f(0.0, 0.0, 0.0)),
                 SdfPath(),
                 { _fallbackShaderTokens->density }),
             HdSt_MaterialParam(
-                HdSt_MaterialParam::ParamTypeField,
+                HdSt_MaterialParam::ParamTypeFieldRedirect,
                 _fallbackShaderTokens->emission,
                 VtValue(GfVec3f(0.0, 0.0, 0.0)),
                 SdfPath(),
@@ -325,7 +325,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             sceneDelegate->GetRenderIndex().GetRenderDelegate());
 
     // The params for the new shader
-    HdSt_MaterialParamVector materialParams;
+    HdSt_MaterialParamVector materialParams = volumeShader->GetParams();
     // The sources and texture descriptors for the new shader
     HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
 
@@ -335,46 +335,24 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
     std::set<TfToken> requestedFieldNames;
 
     // Scan old parameters...
-    for (const auto & param : volumeShader->GetParams()) {
-        if (param.IsField()) {
-            // Process field readers.
+    for (const auto & param : materialParams) {
+        if ( param.IsFallback() ||
+             param.IsPrimvarRedirect() ||
+             param.IsFieldRedirect()) {
 
-            // Determine the field name the field reader requests
-            TfTokenVector const &samplerCoordinates =
-                param.samplerCoords;
-            const TfToken fieldName =
-                samplerCoordinates.empty() ? TfToken() : samplerCoordinates[0];
+            // ... and fallback value to buffer specs and sources.
+            sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
 
-            // Collect the names of all the requested fields for now to
-            // create accessors for them later.
-            requestedFieldNames.insert(fieldName);
+            if (param.IsFieldRedirect()) {
+                // For field reader, record the field name so that we
+                // can generate the corresponding texture later.
 
-            {
-                // Add HdSt_MaterialParam such that codegen will give us an
-                // acccesor
-                //    vec3 HdGet_NAME(vec3 p)
-                // which will apply the field transform and sample the
-                // field or return the default if the requested field does
-                // not exist.
-                const HdSt_MaterialParam fieldRedirectParam(
-                    HdSt_MaterialParam::ParamTypeFieldRedirect,
-                    param.name,
-                    param.fallbackValue,
-                    SdfPath(),
-                    { fieldName });
-
-                materialParams.push_back(fieldRedirectParam);
-                sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
-            }
-        } else {
-            // Push non-field params so that codegen will do generate
-            // the respective code for them.
-            materialParams.push_back(param);
-            
-            // Process non-field params similar to how they are handled in
-            // HdStMaterial::Sync.
-            if (param.IsPrimvar() || param.IsFallback()) {
-                sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
+                // Determine the field name the field reader requests
+                TfTokenVector const &samplerCoordinates =
+                    param.samplerCoords;
+                if (!samplerCoordinates.empty()) {
+                    requestedFieldNames.insert(samplerCoordinates[0]);
+                }
             }
         }
     }
@@ -418,10 +396,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
         }
 
         {
-            // Add HdSt_MaterialParam so that we get an accessor
-            //     mat4 HdGet_FIELDNAMESamplingTransform()
-            // converting local space to the coordinate at which
-            // we need to sample the 3d texture.
+            // Add sampling transform to buffer specs and sources.
 
             // Update the volume bounding box in the process.
 

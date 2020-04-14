@@ -199,7 +199,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     bool hasPtex = false;
     for (HdSt_MaterialParam const & param: params) {
-        if (param.IsPrimvar() || param.IsFallback()) {
+        if (param.IsPrimvarRedirect() || param.IsFallback()) {
             sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
         } else if (param.IsTexture()) {
             if (param.textureType == HdTextureType::Ptex) {
