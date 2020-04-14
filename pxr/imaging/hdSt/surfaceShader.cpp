@@ -158,7 +158,7 @@ HdStSurfaceShader::BindResources(const int program,
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D, resource->GetTexelsTextureId());
             glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
-        } else if (binding.GetType() == HdBinding::TEXTURE_3D) {
+        } else if (binding.GetType() == HdBinding::TEXTURE_FIELD) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_3D, resource->GetTexelsTextureId());
@@ -201,7 +201,7 @@ HdStSurfaceShader::UnbindResources(const int program,
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D, 0);
             glBindSampler(samplerUnit, 0);
-        } else if (binding.GetType() == HdBinding::TEXTURE_3D) {
+        } else if (binding.GetType() == HdBinding::TEXTURE_FIELD) {
             int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_3D, 0);

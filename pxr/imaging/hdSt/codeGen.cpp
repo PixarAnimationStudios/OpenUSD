@@ -428,8 +428,8 @@ namespace {
             break;
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
-        case HdBinding::TEXTURE_3D:
-        case HdBinding::BINDLESS_TEXTURE_3D:
+        case HdBinding::TEXTURE_FIELD:
+        case HdBinding::BINDLESS_TEXTURE_FIELD:
         case HdBinding::TEXTURE_UDIM_ARRAY:
         case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
         case HdBinding::TEXTURE_UDIM_LAYOUT:
@@ -2792,7 +2792,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << " HdGet_" << it->second.name
                 << "() { return HdGet_" << it->second.name << "(0); }\n";
 
-        } else if (bindingType == HdBinding::BINDLESS_TEXTURE_3D) {
+        } else if (bindingType == HdBinding::BINDLESS_TEXTURE_FIELD) {
             // a function returning sampler requires bindless_texture
             if (caps.bindlessTextureEnabled) {
                 accessors
@@ -2850,7 +2850,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << " HdGet_" << it->second.name
                 << "() { return HdGet_" << it->second.name << "(0); }\n";
 
-        } else if (bindingType == HdBinding::TEXTURE_3D) {
+        } else if (bindingType == HdBinding::TEXTURE_FIELD) {
             declarations
                 << LayoutQualifier(it->first)
                 << "uniform sampler3D sampler3d_" << it->second.name << ";\n";

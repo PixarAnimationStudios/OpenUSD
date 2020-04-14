@@ -679,9 +679,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 } else if (param.textureType == HdTextureType::Field) {
                     // 3d texture
                     HdBinding textureBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_3D,
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_FIELD,
                                     bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_3D,
+                        : HdBinding(HdBinding::TEXTURE_FIELD,
                                     locator.uniformLocation++,
                                     locator.textureUnit++);
 
@@ -971,7 +971,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         }
         break;
     case HdBinding::TEXTURE_2D:
-    case HdBinding::TEXTURE_3D:
+    case HdBinding::TEXTURE_FIELD:
         // nothing
         break;
     default:
@@ -1045,7 +1045,7 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
         }
         break;
     case HdBinding::TEXTURE_2D:
-    case HdBinding::TEXTURE_3D:
+    case HdBinding::TEXTURE_FIELD:
         // nothing
         break;
     default:
@@ -1131,9 +1131,9 @@ HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
         HdBinding::Type type = binding.GetType();
 
         if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_3D) {
+            type == HdBinding::TEXTURE_FIELD) {
         } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_3D
+                || type == HdBinding::BINDLESS_TEXTURE_FIELD
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
             // nothing? or make it resident?? but it only binds the first one.
@@ -1157,9 +1157,9 @@ HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
         HdBinding::Type type = binding.GetType();
 
         if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_3D) {
+            type == HdBinding::TEXTURE_FIELD) {
         } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_3D
+                || type == HdBinding::BINDLESS_TEXTURE_FIELD
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
                    || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
 //            if (glIsTextureHandleResidentARB(it->handle)) {
@@ -1390,7 +1390,7 @@ HdSt_ResourceBinder::IntrospectBindings(HdStResourceGL const & programResource)
             // HdCodeGen::_GenerateShaderParameters
             if (type == HdBinding::TEXTURE_2D) {
                 textureName = "sampler2d_" + name;
-            } else if (type == HdBinding::TEXTURE_3D) {
+            } else if (type == HdBinding::TEXTURE_FIELD) {
                 textureName = "sampler3d_" + name;
             } else if (type == HdBinding::TEXTURE_PTEX_TEXEL) {
                 textureName = "sampler2darray_" + name;
