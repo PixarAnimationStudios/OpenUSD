@@ -1,6 +1,9 @@
 #usda 1.0
 (
     "Test schema file for testUsdFlattenProperties"
+    subLayers = [
+        @usd/schema.usda@
+    ]
 )
 
 def "GLOBAL" (
@@ -12,7 +15,9 @@ def "GLOBAL" (
 {
 }
 
-class FlattenPropertyTest "FlattenPropertyTest"
+class FlattenPropertyTest "FlattenPropertyTest" (
+    inherits = </Typed>
+)
 {
     string builtinAttr = "default value" (
         """Test attribute comment"""

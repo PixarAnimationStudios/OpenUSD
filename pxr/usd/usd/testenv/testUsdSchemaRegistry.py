@@ -132,17 +132,80 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_GetUsdSchemaTypeName(self):
+        testType = Tf.Type.FindByName("TestUsdSchemaRegistryMetadataTest")
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
-        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(modelAPI),
-                         "ModelAPI")
-        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(clipsAPI),
-                         "ClipsAPI")
-        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(collectionAPI),
-                         "CollectionAPI")
-        
+        # Test getting a schema type name from a TfType for a concrete typed
+        # schema. 
+        self.assertEqual(
+            Usd.SchemaRegistry.GetSchemaTypeName(testType), 
+            "MetadataTest")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(testType),
+            "MetadataTest")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(testType), 
+            "")
+
+        # Test the reverse of getting the TfType for concrete typed schema name.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetTypeFromSchemaTypeName("MetadataTest"),
+            testType)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("MetadataTest"),
+            testType)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("MetadataTest"), 
+            Tf.Type.Unknown)
+
+        # Test getting a schema type name from a TfType for an applied API
+        # schema.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetSchemaTypeName(collectionAPI),
+            "CollectionAPI")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(collectionAPI),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(collectionAPI), 
+            "CollectionAPI")
+
+        # Test the reverse of getting the TfType for an applied API schema name.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CollectionAPI"),
+            collectionAPI)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("CollectionAPI"),
+            Tf.Type.Unknown)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("CollectionAPI"), 
+            collectionAPI)
+
+        # Test getting a schema type name from a TfType for a non-apply API
+        # schema. This is the same API as for applied API schemas but may change
+        # in the future?
+        self.assertEqual(
+            Usd.SchemaRegistry.GetSchemaTypeName(modelAPI),
+            "ModelAPI")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(modelAPI),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(modelAPI), 
+            "ModelAPI")
+
+        # Test the reverse of getting the TfType for a non-apply API schema name
+        self.assertEqual(
+            Usd.SchemaRegistry.GetTypeFromSchemaTypeName("ModelAPI"),
+            modelAPI)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("ModelAPI"),
+            Tf.Type.Unknown)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("ModelAPI"), 
+            modelAPI)
+
         # A valid type without an associated schema prim definition returns an
         # empty type name.
         self.assertTrue(Tf.Type(Usd.Typed))        

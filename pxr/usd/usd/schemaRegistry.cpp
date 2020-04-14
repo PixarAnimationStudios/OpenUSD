@@ -60,16 +60,129 @@ using std::vector;
 
 TF_INSTANTIATE_SINGLETON(UsdSchemaRegistry);
 
-TF_MAKE_STATIC_DATA(TfType, _schemaBaseType) {
-    *_schemaBaseType = TfType::Find<UsdSchemaBase>();
-}
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (appliedAPISchemas)
     (multipleApplyAPISchemas)
     (multipleApplyAPISchemaPrefixes)
 );
+
+namespace {
+// Helper struct for caching a bidirecional mapping between schema TfType and
+// USD type name token. This cache is used as a static local instance providing
+// this type mapping without having to build the entire schema registry
+struct _TypeMapCache {
+    _TypeMapCache() {
+        const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
+
+        auto _MapDerivedTypes = [this, &schemaBaseType](
+            const TfType &baseType, bool isConcrete) 
+        {
+            set<TfType> types;
+            PlugRegistry::GetAllDerivedTypes(baseType, &types);
+            for (const TfType &type : types) {
+                // The USD type name is the type's alias under UsdSchemaBase. 
+                // Only concrete typed and API schemas should have a type name 
+                // alias.
+                const vector<string> aliases = schemaBaseType.GetAliases(type);
+                if (aliases.size() == 1) {
+                    TfToken typeName(aliases.front(), TfToken::Immortal);
+                    nameToType.insert(std::make_pair(
+                        typeName, TypeInfo(type, isConcrete)));
+                    typeToName.insert(std::make_pair(
+                        type, TypeNameInfo(typeName, isConcrete)));
+                }
+            }
+        };
+
+        _MapDerivedTypes(TfType::Find<UsdTyped>(), /*isConcrete=*/true);
+        _MapDerivedTypes(TfType::Find<UsdAPISchemaBase>(), /*isConcrete=*/false);
+    }
+
+    // For each type and type name mapping we also want to store if it's a 
+    // concrete prim type vs an API schema type. 
+    struct TypeInfo {
+        TfType type;
+        bool isConcrete;
+        TypeInfo(const TfType &type_, bool isConcrete_) 
+            : type(type_), isConcrete(isConcrete_) {}
+    };
+
+    struct TypeNameInfo {
+        TfToken name;
+        bool isConcrete;
+        TypeNameInfo(const TfToken &name_, bool isConcrete_) 
+            : name(name_), isConcrete(isConcrete_) {}
+    };
+
+    TfHashMap<TfToken, TypeInfo, TfHash> nameToType;
+    TfHashMap<TfType, TypeNameInfo, TfHash> typeToName;
+};
+}; 
+
+// Static singleton accessor
+static const _TypeMapCache &_GetTypeMapCache() {
+    static _TypeMapCache typeCache;
+    return typeCache;
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    return it != typeMapCache.typeToName.end() ? it->second.name : TfToken();
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    return it != typeMapCache.typeToName.end() && it->second.isConcrete ? 
+        it->second.name : TfToken();
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    return it != typeMapCache.typeToName.end() && !it->second.isConcrete ? 
+        it->second.name : TfToken();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    return it != typeMapCache.nameToType.end() ? it->second.type : TfType();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    return it != typeMapCache.nameToType.end() && it->second.isConcrete ? 
+        it->second.type : TfType();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    return it != typeMapCache.nameToType.end() && !it->second.isConcrete ? 
+        it->second.type : TfType();
+}
 
 template <class T>
 static void
@@ -133,15 +246,14 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
 void
 UsdSchemaRegistry::_FindAndAddPluginSchema()
 {
-    // Get all types that derive UsdSchemaBase.
-    set<TfType> types;
-    PlugRegistry::GetAllDerivedTypes(*_schemaBaseType, &types);
+    // Get all types that derive UsdSchemaBase by getting the type map cache.
+    const _TypeMapCache &typeCache = _GetTypeMapCache();
 
     // Get all the plugins that provide the types.
     std::vector<PlugPluginPtr> plugins;
-    for (const TfType &type: types) {
+    for (const auto &valuePair : typeCache.typeToName) {
         if (PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginForType(type)) {
+            PlugRegistry::GetInstance().GetPluginForType(valuePair.first)) {
 
             auto insertIt = 
                 std::lower_bound(plugins.begin(), plugins.end(), plugin);
@@ -232,57 +344,50 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     };
     std::vector<_PrimDefInfo> primTypesWithAPISchemas;
 
-    // Add them to the type -> path and typeName -> path maps, and the prim type
-    // & prop name -> path maps.
-    for (const TfType &type: types) {
-        // The path in the schema is the type's alias under UsdSchemaBase.
-        vector<string> aliases = _schemaBaseType->GetAliases(type);
-        if (aliases.size() == 1) {
-            SdfPath primPath = SdfPath::AbsoluteRootPath().
-                AppendChild(TfToken(aliases.front()));
-            // We register prim definitions by the schema type name which is the
-            // name of the defining prim in the schema as well as the TfType
-            // alias. The actual TfType's typename (i.e. C++ type name) is not a
-            // valid typename for a prim.
-            const TfToken &usdTypeNameToken = primPath.GetNameToken();
+    // Create the prim definitions for all the named concrete and API schemas
+    // we found types for.
+    for (const auto &valuePair: typeCache.nameToType) {
+        // We register prim definitions by the schema type name which we already
+        // grabbed from the TfType alias, and is also the name of the defining 
+        // prim in the schema layer. The actual TfType's typename 
+        // (i.e. C++ type name) is not a valid typename for a prim.
+        const TfToken &usdTypeNameToken = valuePair.first;
+        SdfPath primPath = SdfPath::AbsoluteRootPath().
+            AppendChild(usdTypeNameToken);
 
-            // We only map type names for types that have an underlying prim
-            // spec, i.e. concrete and API schema types.
-            SdfPrimSpecHandle primSpec = _schematics->GetPrimAtPath(primPath);
-            if (primSpec) {
-                // Map TfType to the USD type name
-                _typeToUsdTypeNameMap[type] = usdTypeNameToken;
-
-                // If the prim spec doesn't have a type name, then it's an
-                // API schema
-                if (primSpec->GetTypeName().IsEmpty()) {
-                    // Non-apply API schemas also have prim specs so make sure
-                    // this is actually an applied schema before adding the 
-                    // prim definition to applied API schema map.
-                    if (appliedAPISchemaNames.find(usdTypeNameToken) != 
-                            appliedAPISchemaNames.end()) {
-                        // Add it to the map using the USD type name.
-                        _appliedAPIPrimDefinitions[usdTypeNameToken] = 
-                            new UsdPrimDefinition(primSpec, 
-                                                  /*isAPISchema=*/ true);
-                    }
+        // We only map type names for types that have an underlying prim
+        // spec, i.e. concrete and API schema types.
+        SdfPrimSpecHandle primSpec = _schematics->GetPrimAtPath(primPath);
+        if (primSpec) {
+            // If the prim spec doesn't have a type name, then it's an
+            // API schema
+            if (primSpec->GetTypeName().IsEmpty()) {
+                // Non-apply API schemas also have prim specs so make sure
+                // this is actually an applied schema before adding the 
+                // prim definition to applied API schema map.
+                if (appliedAPISchemaNames.find(usdTypeNameToken) != 
+                        appliedAPISchemaNames.end()) {
+                    // Add it to the map using the USD type name.
+                    _appliedAPIPrimDefinitions[usdTypeNameToken] = 
+                        new UsdPrimDefinition(primSpec, 
+                                              /*isAPISchema=*/ true);
+                }
+            } else {
+                // Otherwise it's a concrete type. If it has no API schemas,
+                // add the new prim definition to the concrete typed schema 
+                // map also using both the USD and TfType name. Otherwise
+                // collect the API schemas and defer.
+                SdfTokenListOp fallbackAPISchemaListOp;
+                if (_schematics->HasField(primPath, UsdTokens->apiSchemas, 
+                                          &fallbackAPISchemaListOp)) {
+                    primTypesWithAPISchemas.emplace_back(
+                        usdTypeNameToken, primSpec);
+                    fallbackAPISchemaListOp.ApplyOperations(
+                        &primTypesWithAPISchemas.back().fallbackAPISchemas);
                 } else {
-                    // Otherwise it's a concrete type. If it has no API schemas,
-                    // add the new prim definition to the concrete typed schema 
-                    // map also using both the USD and TfType name. Otherwise
-                    // collect the API schemas and defer.
-                    SdfTokenListOp fallbackAPISchemaListOp;
-                    if (_schematics->HasField(primPath, UsdTokens->apiSchemas, 
-                                              &fallbackAPISchemaListOp)) {
-                        primTypesWithAPISchemas.emplace_back(
-                            usdTypeNameToken, primSpec);
-                        fallbackAPISchemaListOp.ApplyOperations(
-                            &primTypesWithAPISchemas.back().fallbackAPISchemas);
-                    } else {
-                        _concreteTypedPrimDefinitions[usdTypeNameToken] = 
-                            new UsdPrimDefinition(primSpec, 
-                                                  /*isAPISchema=*/ false);
-                    }
+                    _concreteTypedPrimDefinitions[usdTypeNameToken] = 
+                        new UsdPrimDefinition(primSpec, 
+                                              /*isAPISchema=*/ false);
                 }
             }
         }
@@ -415,8 +520,9 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfToken& apiSchemaType) const
 
 TfType
 UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
+    static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
     return PlugRegistry::GetInstance().FindDerivedTypeByName(
-        *_schemaBaseType, typeName.GetString());
+        schemaBaseType, typeName.GetString());
 }
 
 // The type name for an applied API schema will consist of a schema type name
