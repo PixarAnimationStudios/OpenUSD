@@ -25,21 +25,18 @@
 #define PXR_USD_SDF_PARSER_HELPERS_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/numeric/conversion/cast.hpp>
-#include <boost/type_traits/is_floating_point.hpp>
-#include <boost/type_traits/is_integral.hpp>
-#include <boost/type_traits/is_signed.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <boost/variant.hpp>
 
-#include <climits>
 #include <functional>
 #include <limits>
-#include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,12 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool Sdf_BoolFromString(const std::string &, bool *parseOk);
 
 namespace Sdf_ParserHelpers {
-
-using boost::variant;
-
-using std::string;
-using std::vector;
-using std::map;
 
 // Internal variant type.
 typedef boost::variant<uint64_t, int64_t, double,
@@ -80,7 +71,7 @@ struct _GetImpl
 // integral values.
 template <class T>
 struct _GetImpl<
-    T, typename boost::enable_if<boost::is_integral<T> >::type>
+    T, std::enable_if_t<std::is_integral<T>::value>>
     : public boost::static_visitor<T>
 {
     typedef T ResultType;
@@ -122,7 +113,7 @@ private:
 // and a quiet NaN.
 template <class T>
 struct _GetImpl<
-    T, typename boost::enable_if<boost::is_floating_point<T> >::type>
+    T, std::enable_if_t<std::is_floating_point<T>::value>>
     : public boost::static_visitor<T>
 {
     typedef T ResultType;
@@ -208,14 +199,14 @@ struct _GetImpl<bool> : public boost::static_visitor<bool>
 
     // For numbers, return true if not zero.
     template <class Number>
-    typename boost::enable_if<boost::is_arithmetic<Number>, bool>::type
+    std::enable_if_t<std::is_arithmetic<Number>::value, bool>
     operator()(Number val) {
         return val != static_cast<Number>(0);
     }
 
     // For anything else, throw bad_get().
     template <class T>
-    typename boost::disable_if<boost::is_arithmetic<T>, bool>::type
+    std::enable_if_t<!std::is_arithmetic<T>::value, bool>
     operator()(T) { throw boost::bad_get(); }
 };
 
@@ -251,9 +242,8 @@ struct Value
     // is signed, the resulting value holds an 'int64_t' internally.  If \p Int
     // is unsigned, the result value holds an 'uint64_t'.
     template <class Int>
-    Value(Int in, typename boost::enable_if<
-          boost::is_integral<Int> >::type * = 0) {
-        if (boost::is_signed<Int>::value) {
+    Value(Int in, std::enable_if_t<std::is_integral<Int>::value> * = 0) {
+        if (std::is_signed<Int>::value) {
             _variant = static_cast<int64_t>(in);
         } else {
             _variant = static_cast<uint64_t>(in);
@@ -263,8 +253,7 @@ struct Value
     // Construct and implicitly convert from a floating point type \p Flt.  The
     // resulting value holds a double internally.
     template <class Flt>
-    Value(Flt in, typename boost::enable_if<
-          boost::is_floating_point<Flt> >::type * = 0) :
+    Value(Flt in, std::enable_if_t<std::is_floating_point<Flt>::value> * = 0) :
         _variant(static_cast<double>(in)) {}
     
     // Construct and implicitly convert from std::string.
@@ -314,9 +303,9 @@ private:
     _Variant _variant;
 };
 
-typedef std::function<VtValue (vector<unsigned int> const &,
-                               vector<Value> const &,
-                               size_t &, string *)> ValueFactoryFunc;
+typedef std::function<VtValue (std::vector<unsigned int> const &,
+                               std::vector<Value> const &,
+                               size_t &, std::string *)> ValueFactoryFunc;
 
 struct ValueFactory {
     ValueFactory() {}
@@ -336,7 +325,7 @@ struct ValueFactory {
 
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found);
-};
+}
 
 /// Converts a string to a bool.
 /// Accepts case insensitive "yes", "no", "false", true", "0", "1".

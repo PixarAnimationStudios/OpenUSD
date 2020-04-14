@@ -44,27 +44,21 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/mpl/for_each.hpp>
-
-#include <functional>
-#include <type_traits>
-#include <utility>
+#include <algorithm>
+#include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_ParserHelpers {
 
-using std::pair;
-using std::make_pair;
-
-using boost::get;
+using std::string;
+using std::vector;
 
 // Check that there are enough values to parse so we don't overflow
 #define CHECK_BOUNDS(count, name)                                          \
@@ -113,7 +107,7 @@ MakeScalarValueImpl(
 }
 
 template <class Int>
-inline typename boost::enable_if<boost::is_integral<Int> >::type
+inline std::enable_if_t<std::is_integral<Int>::value>
 MakeScalarValueImpl(Int *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(1, ArchGetDemangled<Int>().c_str());
     *out = vars[index++].Get<Int>();
@@ -348,7 +342,7 @@ MakeShapedValueTemplate(vector<unsigned int> const &shape,
     return VtValue(array);
 }
 
-typedef map<std::string, ValueFactory> _ValueFactoryMap;
+typedef std::map<std::string, ValueFactory> _ValueFactoryMap;
 
 // Walk through types and register factories.
 struct _MakeFactoryMap {
@@ -359,8 +353,6 @@ struct _MakeFactoryMap {
     template <class CppType>
     void add(const SdfValueTypeName& scalar, const char* alias = NULL)
     {
-        namespace ph = std::placeholders;
-
         static const bool isShaped = true;
 
         const SdfValueTypeName array = scalar.GetArrayType();
@@ -371,14 +363,12 @@ struct _MakeFactoryMap {
             alias ? std::string(alias) + "[]" : array.GetAsToken().GetString();
 
         _ValueFactoryMap &f = *_factories;
-        f[scalarName] =
-            ValueFactory(scalarName, scalar.GetDimensions(), !isShaped,
-                         std::bind(MakeScalarValueTemplate<CppType>,
-                                   ph::_1, ph::_2, ph::_3, ph::_4));
-        f[arrayName] =
-            ValueFactory(arrayName, array.GetDimensions(), isShaped,
-                         std::bind(MakeShapedValueTemplate<CppType>,
-                                   ph::_1, ph::_2, ph::_3, ph::_4));
+        f[scalarName] = ValueFactory(
+            scalarName, scalar.GetDimensions(), !isShaped,
+            MakeScalarValueTemplate<CppType>);
+        f[arrayName] = ValueFactory(
+            arrayName, array.GetDimensions(), isShaped,
+            MakeShapedValueTemplate<CppType>);
     }
     
     _ValueFactoryMap *_factories;
@@ -516,7 +506,7 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
     return none;
 }
 
-};
+} // namespace Sdf_ParserHelpers
 
 bool
 Sdf_BoolFromString( const std::string &str, bool *parseOk )
