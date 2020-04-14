@@ -40,12 +40,12 @@
 
 -- glsl Outline.Vertex
 
-#version 120
+#version 450
 
-attribute vec4 position;
-attribute vec2 uvIn;
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec2 uvIn;
 
-varying vec2 uv;
+layout(location = 0) out vec2 uv;
 
 void main(void)
 {
@@ -54,16 +54,25 @@ void main(void)
 }
 
 -- glsl Outline.Fragment
-#version 120
+#version 450
 
 #define EPSILON 0.0001
 #define LARGE 100000
 
-varying vec2 uv; // Current texel coordinates.
-uniform sampler2D colorIn; // The color texture with the highlighted areas.
-uniform vec2 texelSize; // Size of a colorIn texel - to iterate adjacent texels.
-uniform bool enableOutline;
-uniform int radius; // The outline radius (thickness). 
+layout(location = 0) in vec2 uv;
+
+// The color texture with the highlighted areas.
+layout (binding = 0) uniform sampler2D colorIn;
+
+layout (std430, binding = 0) buffer ParameterBuffer
+{
+    // Size of a colorIn texel - to iterate adjacent texels.
+    vec2 texelSize;
+    // Draws outline when enabled, or color overlay when disabled.
+    int enableOutline;
+    // The outline radius (thickness). 
+    int radius;
+};
 
 // Given a delta x and y in relation to the current texel coordinates, check if
 // the colorIn texture has a non-black texel and its distance^2 to the current
@@ -148,7 +157,7 @@ void main()
     vec4 color = texture2D(colorIn, uv);
     bool isInside = color.r > EPSILON || color.g > EPSILON || color.b > EPSILON;
 
-    if (!enableOutline) { 
+    if (enableOutline==0) { 
         if (isInside) {
             // Inside the highlighted areas in colorIn : render colorIn.
             gl_FragColor = color;

@@ -278,8 +278,7 @@ UsdImagingGLEngine::RenderBatch(
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
-    SetColorCorrectionSettings(params.colorCorrectionMode, 
-                               params.renderResolution);
+    SetColorCorrectionSettings(params.colorCorrectionMode);
 
     // XXX App sets the clear color via 'params' instead of setting up Aovs 
     // that has clearColor in their descriptor. So for now we must pass this
@@ -1022,8 +1021,7 @@ UsdImagingGLEngine::RestartRenderer()
 //----------------------------------------------------------------------------
 void 
 UsdImagingGLEngine::SetColorCorrectionSettings(
-    TfToken const& id,
-    GfVec2i const& framebufferResolution)
+    TfToken const& id)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return;
@@ -1036,7 +1034,6 @@ UsdImagingGLEngine::SetColorCorrectionSettings(
     TF_VERIFY(_taskController);
 
     HdxColorCorrectionTaskParams hdParams;
-    hdParams.framebufferSize = framebufferResolution;
     hdParams.colorCorrectionMode = id;
     _taskController->SetColorCorrectionParams(hdParams);
 }

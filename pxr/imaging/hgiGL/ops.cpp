@@ -36,10 +36,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLOpsFn
 HgiGLOps::PushDebugGroup(const char* label)
 {
-    return [label] {
+    // Make copy of string string since the lamda will execute later.
+    std::string lbl = label;
+
+    return [lbl] {
         #if defined(GL_KHR_debug)
         if (GLEW_KHR_debug) {
-            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, label);
+            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, lbl.c_str());
         }
         #endif
     };

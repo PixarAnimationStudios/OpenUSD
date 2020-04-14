@@ -388,13 +388,9 @@ public:
     // ---------------------------------------------------------------------
 
     /// Set \p id to one of the HdxColorCorrectionTokens.
-    /// \p framebufferResolution should be the size of the bound framebuffer
-    /// that will be color corrected. It is recommended that a 16F or higher
-    /// AOV is bound for color correction.
     USDIMAGINGGL_API
     void SetColorCorrectionSettings(
-        TfToken const& id, 
-        GfVec2i const& framebufferResolution);
+        TfToken const& id);
 
     /// @}
 

@@ -21,22 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/glslProgram.h"
-#include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hf/perfLog.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
-#include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/imaging/hgiGL/texture.h"
+
+#include "pxr/imaging/hgi/graphicsCmds.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
+
+#include <iostream>
+
+// XXX Remove includes when entire task is using Hgi. We do not want to refer
+// to any specific Hgi implementation.
+#include "pxr/imaging/hgiGL/pipeline.h"
 
 #ifdef PXR_OCIO_PLUGIN_ENABLED
     #include <OpenColorIO/OpenColorIO.h>
@@ -52,60 +56,69 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorCorrectionShader)
 );
 
-namespace {
-    enum {
-        COLOR_IN = 0,
-        POSITION = 1,
-        UV_IN = 2,
-        LUT3D_IN = 3,
-    };
-}
-
-HdxColorCorrectionTask::HdxColorCorrectionTask(HdSceneDelegate* delegate, 
-                                               SdfPath const& id)
+HdxColorCorrectionTask::HdxColorCorrectionTask(
+    HdSceneDelegate* delegate, 
+    SdfPath const& id)
     : HdTask(id)
+    , _hgi(nullptr)
+    , _indexBuffer()
+    , _vertexBuffer()
+    , _texture3dLUT()
     , _shaderProgram()
-    , _texture(0)
-    , _texture3dLUT(0)
-    , _textureSize(0)
-    , _vertexBuffer(0)
-    , _copyFramebuffer(0)
-    , _framebufferSize(0)
+    , _resourceBindings()
+    , _pipeline()
     , _lut3dSizeOCIO(0)
-    , _aovBufferPath()
-    , _aovBuffer(nullptr)
-    , _aovTexture(nullptr)
-    , _aovFramebuffer(0)
 {
 }
 
 HdxColorCorrectionTask::~HdxColorCorrectionTask()
 {
-    if (_texture != 0) {
-        glDeleteTextures(1, &_texture);
+    if (!_hgi) return;
+
+    if (_texture3dLUT) {
+        _hgi->DestroyTexture(&_texture3dLUT);
     }
 
-    if (_texture3dLUT != 0) {
-        glDeleteTextures(1, &_texture3dLUT);
+    if (_vertexBuffer) {
+        _hgi->DestroyBuffer(&_vertexBuffer);
     }
 
-    if (_vertexBuffer != 0) {
-        glDeleteBuffers(1, &_vertexBuffer);
+    if (_indexBuffer) {
+        _hgi->DestroyBuffer(&_indexBuffer);
     }
 
     if (_shaderProgram) {
-        _shaderProgram.reset();
+        _DestroyShaderProgram();
     }
 
-    if (_copyFramebuffer != 0) {
-        glDeleteFramebuffers(1, &_copyFramebuffer);
+    if (_resourceBindings) {
+        _hgi->DestroyResourceBindings(&_resourceBindings);
     }
 
-    if (_aovFramebuffer != 0) {
-        glDeleteFramebuffers(1, &_aovFramebuffer);
+    if (_pipeline) {
+        _hgi->DestroyPipeline(&_pipeline);
     }
+}
 
-    GLF_POST_PENDING_GL_ERRORS();
+bool
+HdxColorCorrectionTask::_GetUseOcio() const
+{
+    // Client can choose to use Hydra's build-in sRGB color correction or use
+    // OpenColorIO for color correction in which case we insert extra OCIO code.
+    #ifdef PXR_OCIO_PLUGIN_ENABLED
+        bool useOCIO = 
+            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+
+        // Only use if $OCIO environment variable is set.
+        // (Otherwise this option should be disabled.)
+        if (TfGetenv("OCIO") == "") {
+            useOCIO = false;
+        }
+    #else
+        bool useOCIO = false;
+    #endif
+
+    return useOCIO;
 }
 
 std::string
@@ -161,7 +174,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
 
         // Create a GPU Shader Description
         OCIO::GpuShaderDesc shaderDesc;
-        shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_0);
+        shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_3);
         shaderDesc.setFunctionName("OCIODisplay");
         shaderDesc.setLut3DEdgeLen(_lut3dSizeOCIO);
 
@@ -172,26 +185,25 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         processor->getGpuLut3D(&lut3d[0], shaderDesc);
 
         // Load the data into an OpenGL 3D Texture
-        if (_texture3dLUT != 0) {
-            glDeleteTextures(1, &_texture3dLUT);
+        if (_texture3dLUT) {
+            _hgi->DestroyTexture(&_texture3dLUT);
         }
-        GLint restoreTexture;
-        glGetIntegerv(GL_TEXTURE_BINDING_3D, &restoreTexture);
-        glGenTextures(1, &_texture3dLUT);
-        glBindTexture(GL_TEXTURE_3D, _texture3dLUT);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F,
-                     _lut3dSizeOCIO, _lut3dSizeOCIO, _lut3dSizeOCIO,
-                     0, GL_RGB, GL_FLOAT, &lut3d[0]);
-        glBindTexture(GL_TEXTURE_3D, restoreTexture);
+
+        HgiTextureDesc lutDesc;
+        lutDesc.debugName = "OCIO 3d LUT";
+        lutDesc.type = HgiTextureType3D;
+        lutDesc.dimensions = GfVec3i(_lut3dSizeOCIO);
+        lutDesc.format = HgiFormatFloat32Vec3;
+        lutDesc.initialData = lut3d.data();
+        lutDesc.layerCount = 1;
+        lutDesc.mipLevels = 1;
+        lutDesc.pixelsByteSize = lut3d.size() * sizeof(lut3d[0]);
+        lutDesc.sampleCount = HgiSampleCount1;
+        lutDesc.usage = HgiTextureUsageBitsShaderRead;
+        _texture3dLUT = _hgi->CreateTexture(lutDesc);
 
         const char* gpuShaderText = processor->getGpuShaderText(shaderDesc);
 
-        GLF_POST_PENDING_GL_ERRORS();
         return std::string(gpuShaderText);
     #else
         return std::string();
@@ -205,57 +217,49 @@ HdxColorCorrectionTask::_CreateShaderResources()
         return true;
     }
 
-    // Client can choose to use Hydra's build-in sRGB color correction or use
-    // OpenColorIO for color correction in which case we insert extra OCIO code.
-    #ifdef PXR_OCIO_PLUGIN_ENABLED
-        bool useOCIO = 
-            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
-
-        // Only use if $OCIO environment variable is set.
-        // (Otherwise this option should be disabled.)
-        if (TfGetenv("OCIO") == "") {
-            useOCIO = false;
-        }
-    #else
-        bool useOCIO = false;
-    #endif
-
-    _shaderProgram.reset(new HdStGLSLProgram(_tokens->colorCorrectionShader));
-
+    bool useOCIO =_GetUseOcio();
     HioGlslfx glslfx(HdxPackageColorCorrectionShader());
 
-    std::string fragCode = "#version 120\n";
+    // Setup the vertex shader
+    HgiShaderFunctionDesc vertDesc;
+    vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
+    vertDesc.shaderStage = HgiShaderStageVertex;
+    vertDesc.shaderCode = "#version 450 \n";
+    vertDesc.shaderCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
+    HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
 
+    // Setup the fragment shader
+    HgiShaderFunctionDesc fragDesc;
+    fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
+    fragDesc.shaderStage = HgiShaderStageFragment;
+    fragDesc.shaderCode = "#version 450 \n";
     if (useOCIO) {
-        fragCode += "#define GLSLFX_USE_OCIO\n";
+        fragDesc.shaderCode += "#define GLSLFX_USE_OCIO\n";
+        // Our current version of OCIO outputs 130 glsl and texture3D is
+        // removed from glsl in 140.
+        fragDesc.shaderCode += "#define texture3D texture\n";
     }
-
-    fragCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
-
+    fragDesc.shaderCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
     if (useOCIO) {
         std::string ocioGpuShaderText = _CreateOpenColorIOResources();
-        fragCode += ocioGpuShaderText;
+        fragDesc.shaderCode += ocioGpuShaderText;
     }
+    HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
 
-    if (!_shaderProgram->CompileShader(GL_VERTEX_SHADER,
-            glslfx.GetSource(_tokens->colorCorrectionVertex)) ||
-        !_shaderProgram->CompileShader(GL_FRAGMENT_SHADER, fragCode) ||
-        !_shaderProgram->Link()) {
-        TF_CODING_ERROR("Failed to load color correction shader");
-        _shaderProgram.reset();
+    // Setup the shader program
+    HgiShaderProgramDesc programDesc;
+    programDesc.debugName =_tokens->colorCorrectionShader.GetString();
+    programDesc.shaderFunctions.emplace_back(std::move(vertFn));
+    programDesc.shaderFunctions.emplace_back(std::move(fragFn));
+    _shaderProgram = _hgi->CreateShaderProgram(programDesc);
+
+    if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
+        TF_CODING_ERROR("Failed to create color correction shader");
+        _PrintCompileErrors();
+        _DestroyShaderProgram();
         return false;
     }
 
-    GLuint programId = _shaderProgram->GetProgram().GetId();
-    _locations[COLOR_IN]  = glGetUniformLocation(programId, "colorIn");
-    _locations[POSITION] = glGetAttribLocation(programId, "position");
-    _locations[UV_IN]     = glGetAttribLocation(programId, "uvIn");
-    
-    if (useOCIO) {
-        _locations[LUT3D_IN] = glGetUniformLocation(programId, "LUT3dIn");
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
     return true;
 }
 
@@ -266,260 +270,176 @@ HdxColorCorrectionTask::_CreateBufferResources()
         return true;
     }
 
-    // A larger-than screen triangle with UVs made to fit the screen.
-    //                                 positions          |   uvs
-    static const float vertices[] = { -1,  3, -1, 1,        0, 2,
-                                      -1, -1, -1, 1,        0, 0,
-                                       3, -1, -1, 1,        2, 0 };
+    // A larger-than screen triangle made to fit the screen.
+    const size_t elementsPerVertex = 4;
+    static const float vertices[elementsPerVertex * 3] =
+        { -1,  3, 0, 1,
+          -1, -1, 0, 1,
+           3, -1, 0, 1 };
 
-    glGenBuffers(1, &_vertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices),
-                 &vertices[0], GL_STATIC_DRAW);
+    HgiBufferDesc vboDesc;
+    vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";
+    vboDesc.usage = HgiBufferUsageVertex;
+    vboDesc.initialData = vertices;
+    vboDesc.byteSize = sizeof(vertices) * sizeof(vertices[0]);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertices[0]);
+    _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    static const int32_t indices[3] = {0,1,2};
 
-    GLF_POST_PENDING_GL_ERRORS();
+    HgiBufferDesc iboDesc;
+    iboDesc.debugName = "HdxColorCorrectionTask IndexBuffer";
+    iboDesc.usage = HgiBufferUsageIndex32;
+    iboDesc.initialData = indices;
+    iboDesc.byteSize = sizeof(indices) * sizeof(indices[0]);
+    _indexBuffer = _hgi->CreateBuffer(iboDesc);
+
     return true;
-}
-
-void
-HdxColorCorrectionTask::_CopyTexture()
-{
-    GLint restoreReadFB, restoreDrawFB;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
-
-    if (_aovTexture) {
-        // If we have an AOV we copy it so we can read from it while writing the
-        // color corrected pixels back into the AOV.
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _aovFramebuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _copyFramebuffer);
-
-    } else {
-        // No AOV provided then make a copy of the default FB color attachment
-        // so we can read from the copy and write back into it corrected pixels.
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreDrawFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _copyFramebuffer);
-    }
-
-    int width = _textureSize[0];
-    int height = _textureSize[1];
-
-    glBlitFramebuffer(0, 0, width, height,
-                      0, 0, width, height,
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 bool
-HdxColorCorrectionTask::_CreateFramebufferResources()
+HdxColorCorrectionTask::_CreateResourceBindings(
+    HgiTextureHandle const &aovTexture)
 {
-    // If framebufferSize is not provided we use the viewport size.
-    // This can be incorrect if the client/app has changed the viewport to
-    // be different then the render window size. (E.g. UsdView CameraMask mode)
-    GfVec2i fboSize = _framebufferSize;
-    if (fboSize[0] <= 0 || fboSize[1] <= 0) {
-        GLint res[4] = {0};
-        glGetIntegerv(GL_VIEWPORT, res);
-        fboSize = GfVec2i(res[2], res[3]);
-        _framebufferSize = fboSize;
+    // The color aov has the rendered results and we wish to color correct it.
+    bool useOCIO =_GetUseOcio();
+
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "ColorCorrection";
+    resourceDesc.pipelineType = HgiPipelineTypeGraphics;
+
+    HgiTextureBindDesc texBind0;
+    texBind0.bindingIndex = 0;
+    texBind0.resourceType = HgiBindResourceTypeCombinedImageSampler;
+    texBind0.stageUsage = HgiShaderStageFragment;
+    texBind0.textures.push_back(aovTexture);
+    resourceDesc.textures.emplace_back(std::move(texBind0));
+
+    if (useOCIO && _texture3dLUT) {
+        HgiTextureBindDesc texBind1;
+        texBind1.bindingIndex = 1;
+        texBind1.resourceType = HgiBindResourceTypeCombinedImageSampler;
+        texBind1.stageUsage = HgiShaderStageFragment;
+        texBind1.textures.push_back(_texture3dLUT);
+        resourceDesc.textures.emplace_back(std::move(texBind1));
     }
 
-    bool createTexture = (_texture == 0 || fboSize != _textureSize);
-
-    if (createTexture) {
-        if (_texture != 0) {
-            glDeleteTextures(1, &_texture);
-            _texture = 0;
-        }
-
-        _textureSize = fboSize;
-
-        GLint restoreTexture;
-        glGetIntegerv(GL_TEXTURE_BINDING_2D, &restoreTexture);
-
-        glGenTextures(1, &_texture);
-        glBindTexture(GL_TEXTURE_2D, _texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        // XXX For now we assume we always want R16F. We could perhaps expose
-        //     this as client-API in HdxColorCorrectionTaskParams.
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, _textureSize[0], 
-                     _textureSize[1], 0, GL_RGBA, GL_FLOAT, 0);
-
-        glBindTexture(GL_TEXTURE_2D, restoreTexture);
-    }
-      
-    if (_copyFramebuffer == 0) {
-        glGenFramebuffers(1, &_copyFramebuffer);
-    }
-    if (_aovFramebuffer == 0) {
-        glGenFramebuffers(1, &_aovFramebuffer);
-    }
-
-    HgiTextureHandle texHandle;
-    if (_aovBuffer) {
-        VtValue rv = _aovBuffer->GetResource(/*ms*/false);
-        if (rv.IsHolding<HgiTextureHandle>()) {
-            texHandle = rv.UncheckedGet<HgiTextureHandle>();
+    // If nothing has changed in the descriptor we avoid re-creating the
+    // resource bindings object.
+    if (_resourceBindings) {
+        HgiResourceBindingsDesc const& desc= _resourceBindings->GetDescriptor();
+        if (desc == resourceDesc) {
+            return true;
+        } else {
+            _hgi->DestroyResourceBindings(&_resourceBindings);
         }
     }
 
-    // XXX Since this entire task is coded for GL we can static_cast to
-    // HgiGLTexture for now. When task is re-written to use Hgi everywhere, we
-    // should no longer need this cast and can just use HgiTextureHandle.
-    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle.Get());
+    _resourceBindings = _hgi->CreateResourceBindings(resourceDesc);
 
-    if (createTexture || aovTexture!=_aovTexture) {
-   
-        _aovTexture = aovTexture;
+    return true;
+}
 
-        GLint restoreReadFB, restoreDrawFB;
-        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _copyFramebuffer);
-
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-                               GL_TEXTURE_2D, _texture, 0);
-
-        // If an AOV is provided we'll use its texture on the read FB during
-        // CopyTexture.
-        if (aovTexture) {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, _aovFramebuffer);
-            glFramebufferTexture2D(
-                GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-                GL_TEXTURE_2D, _aovTexture->GetTextureId(), 0);
+bool
+HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
+{
+    if (_pipeline) {
+        if (_attachment0.format == aovTexture->GetDescriptor().format) {
+            return true;
         }
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
+        
+        _hgi->DestroyPipeline(&_pipeline);
     }
 
-    GLF_POST_PENDING_GL_ERRORS();
+    HgiPipelineDesc desc;
+    desc.debugName = "ColorCorrection Pipeline";
+    desc.pipelineType = HgiPipelineTypeGraphics;
+    desc.resourceBindings = _resourceBindings;
+    desc.shaderProgram = _shaderProgram;
+    
+    // Describe the vertex buffer
+    HgiVertexAttributeDesc posAttr;
+    posAttr.format = HgiFormatFloat32Vec3;
+    posAttr.offset = 0;
+    posAttr.shaderBindLocation = 0;
+
+    HgiVertexBufferDesc vboDesc;
+    vboDesc.bindingIndex = 0;
+    vboDesc.vertexStride = sizeof(float) * 4;
+    vboDesc.vertexAttributes.push_back(posAttr);
+
+    desc.vertexBuffers.emplace_back(std::move(vboDesc));
+
+    // Depth test and write can be off since we only colorcorrect the color aov.
+    desc.depthState.depthTestEnabled = false;
+    desc.depthState.depthWriteEnabled = false;
+
+    // We don't use the stencil mask in this task.
+    desc.depthState.stencilTestEnabled = false;
+
+    // Alpha to coverage would prevent any pixels that have an alpha of 0.0 from
+    // being written. We want to color correct all pixels. Even background
+    // pixels that were set with a clearColor alpha of 0.0.
+    desc.multiSampleState.alphaToCoverageEnable = false;
+
+    // Setup raserization state
+    desc.rasterizationState.cullMode = HgiCullModeBack;
+    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
+    desc.rasterizationState.winding = HgiWindingCounterClockwise;
+    
+    // Setup attachment descriptor
+    _attachment0.blendEnabled = false;
+    _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
+    _attachment0.storeOp = HgiAttachmentStoreOpStore;
+    _attachment0.format = aovTexture->GetDescriptor().format;
+    desc.colorAttachmentDescs.emplace_back(_attachment0);
+
+    _pipeline = _hgi->CreatePipeline(desc);
+
     return true;
 }
 
 void
-HdxColorCorrectionTask::_ApplyColorCorrection()
+HdxColorCorrectionTask::_ApplyColorCorrection(HgiTextureHandle const& aovTexture)
 {
-    // Client can choose to use Hydra's build-in sRGB color correction or use
-    // OpenColorIO for color correction in which case we insert extra OCIO code.
-    #ifdef PXR_OCIO_PLUGIN_ENABLED
-        bool useOCIO = 
-            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+    GfVec3i const& dimensions = aovTexture->GetDescriptor().dimensions;
 
-        // Only use if $OCIO environment variable is set.
-        // (Otherwise this option should be disabled.)
-        if (TfGetenv("OCIO") == "") {
-            useOCIO = false;
-        }
-    #else
-        bool useOCIO = false;
-    #endif
+// todo move this into HgiGL::SubmitCmds
 
-    // A note here: colorCorrection is used for all of our plugins and has to be
-    // robust to poor GL support.  OSX compatibility profile provides a
-    // GL 2.1 API, slightly restricting our choice of API and heavily
-    // restricting our shader syntax. See also HdxFullscreenShader.
-
-    // Read from the texture-copy we made of the clients FBO and output the
-    // color-corrected pixels into the clients FBO.
-
-    GLuint programId = _shaderProgram->GetProgram().GetId();
-    glUseProgram(programId);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _texture);
-    glUniform1i(_locations[COLOR_IN], 0);
-
-    if (useOCIO) {
-        glEnable(GL_TEXTURE_3D);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_3D, _texture3dLUT);
-        glUniform1i(_locations[LUT3D_IN], 1);
+    // XXX Not everything is using Hgi yet, so we have inconsistent state
+    // management in opengl. Remove when Hgi transition is complete.
+    HgiGLPipeline* glPipeline = dynamic_cast<HgiGLPipeline*>(_pipeline.Get());
+    if (glPipeline) {
+        glPipeline->CaptureOpenGlState();
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
-    glVertexAttribPointer(_locations[POSITION], 4, GL_FLOAT, GL_FALSE,
-                          sizeof(float)*6, 0);
-    glEnableVertexAttribArray(_locations[POSITION]);
-    glVertexAttribPointer(_locations[UV_IN], 2, GL_FLOAT, GL_FALSE,
-            sizeof(float)*6, reinterpret_cast<void*>(sizeof(float)*4));
-    glEnableVertexAttribArray(_locations[UV_IN]);
+    // Prepare graphics cmds.
+    HgiGraphicsCmdsDesc gfxDesc;
+    gfxDesc.width = dimensions[0];
+    gfxDesc.height = dimensions[1];
+    gfxDesc.colorAttachmentDescs.emplace_back(_attachment0);
+    gfxDesc.colorTextures.emplace_back(aovTexture);
 
-    // We are rendering a full-screen triangle, which would render to depth.
-    // Instead we want to preserve the original depth, so disable depth writes.
-    GLboolean restoreDepthWriteMask;
-    GLboolean restoreStencilWriteMask;
-    glGetBooleanv(GL_DEPTH_WRITEMASK, &restoreDepthWriteMask);
-    glGetBooleanv(GL_STENCIL_WRITEMASK, &restoreStencilWriteMask);
-    glDepthMask(GL_FALSE);
-    glStencilMask(GL_FALSE);
+    // Begin rendering
+    HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
+    gfxCmds->PushDebugGroup("ColorCorrection");
+    gfxCmds->BindResources(_resourceBindings);
+    gfxCmds->BindPipeline(_pipeline);
+    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
+    gfxCmds->SetViewport(vp);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
+    gfxCmds->PopDebugGroup();
 
-    // Depth test must be ALWAYS instead of disabling the depth_test because
-    // we still want to write to the depth buffer. Disabling depth_test disables
-    // depth_buffer writes.
-    GLint restoreDepthFunc;
-    glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
-    glDepthFunc(GL_ALWAYS);
+    // Done recording commands, submit work.
+    _hgi->SubmitCmds(gfxCmds.get(), 1);
 
-    GLint restoreViewport[4] = {0};
-    glGetIntegerv(GL_VIEWPORT, restoreViewport);
-    glViewport(0, 0, _framebufferSize[0], _framebufferSize[1]);
-
-    // The app may have alpha blending enabled.
-    // We want to pass-through the alpha values, not alpha-blend on top of dest.
-    GLboolean restoreblendEnabled;
-    glGetBooleanv(GL_BLEND, &restoreblendEnabled);
-    glDisable(GL_BLEND);
-
-    // Alpha to coverage would prevent any pixels that have an alpha of 0.0 from
-    // being written. We want to color correct all pixels. Even background
-    // pixels that were set with a clearColor alpha of 0.0
-    GLboolean restoreAlphaToCoverage;
-    glGetBooleanv(GL_SAMPLE_ALPHA_TO_COVERAGE, &restoreAlphaToCoverage);
-    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    if (restoreAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    // XXX Not everything is using Hgi yet, so we have inconsistent state
+    // management in opengl. Remove when Hgi transition is complete.
+    if (glPipeline) {
+        glPipeline->RestoreOpenGlState();
     }
-
-    if (restoreblendEnabled) {
-        glEnable(GL_BLEND);
-    }
-
-    glViewport(restoreViewport[0], restoreViewport[1],
-               restoreViewport[2], restoreViewport[3]);
-
-    glDepthFunc(restoreDepthFunc);
-    glDepthMask(restoreDepthWriteMask);
-    glStencilMask(restoreStencilWriteMask);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDisableVertexAttribArray(_locations[POSITION]);
-    glDisableVertexAttribArray(_locations[UV_IN]);
-
-    glUseProgram(0);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    if (useOCIO) {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_3D, 0);
-        glDisable(GL_TEXTURE_3D);
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -530,11 +450,18 @@ HdxColorCorrectionTask::Sync(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    // Find Hgi driver in task context.
+    if (!_hgi) {
+        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
+        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
+            return;
+        }
+    }
+
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxColorCorrectionTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
-            _framebufferSize = params.framebufferSize;
             _colorCorrectionMode = params.colorCorrectionMode;
             _displayOCIO = params.displayOCIO;
             _viewOCIO = params.viewOCIO;
@@ -542,9 +469,15 @@ HdxColorCorrectionTask::Sync(HdSceneDelegate* delegate,
             _looksOCIO = params.looksOCIO;
             _lut3dSizeOCIO = params.lut3dSizeOCIO;
             _aovName = params.aovName;
-            _aovBufferPath = params.aovBufferPath;
-            // Rebuild shader with new OCIO settings / shader-code.
-            _shaderProgram.reset();
+
+            // Rebuild Hgi objects when ColorCorrection params change
+            _DestroyShaderProgram();
+            if (_resourceBindings) {
+                _hgi->DestroyResourceBindings(&_resourceBindings);
+            }
+            if (_pipeline) {
+                _hgi->DestroyPipeline(&_pipeline);
+            }
         }
     }
 
@@ -555,13 +488,6 @@ void
 HdxColorCorrectionTask::Prepare(HdTaskContext* ctx,
                                 HdRenderIndex* renderIndex)
 {
-    // Aov path may change when visualizing a different aov (usdview)
-    if (!_aovBufferPath.IsEmpty()) {
-        _aovBuffer = static_cast<HdRenderBuffer*>(renderIndex->GetBprim(
-                HdPrimTypeTokens->renderBuffer, _aovBufferPath));
-    } else {
-        _aovBuffer = nullptr;
-    }
 }
 
 void
@@ -569,45 +495,57 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
-    // We currently only color correct the color aov. Depth aov currently won't
-    // work well due to how we use glBlitFramebuffer. Other aovs may work, if
-    // they are color buffers, but it isn't currently clear if we want to
-    // color correct those or leave them as their raw values for debugging.
-    if (!_aovName.IsEmpty() && _aovName != HdAovTokens->color) {
+    // We currently only color correct the color aov.
+    if (_aovName != HdAovTokens->color) {
         return;
     }
 
-    if (!_CreateBufferResources()) {
+    // The color aov has the rendered results and we wish to color correct it.
+    if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
         return;
     }
 
-    if (!_CreateShaderResources()) {
+    HgiTextureHandle aovTexture;
+    _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
+
+    if (!TF_VERIFY(_CreateBufferResources())) {
+        return;
+    }
+    if (!TF_VERIFY(_CreateShaderResources())) {
+        return;
+    }
+    if (!TF_VERIFY(_CreateResourceBindings(aovTexture))) {
+        return;
+    }
+    if (!TF_VERIFY(_CreatePipeline(aovTexture))) {
         return;
     }
 
-    _CreateFramebufferResources();
-
-    _CopyTexture();
-
-    // If an Aov is provided, we render the color corrected pixels in the aov.
-    // Otherwise, we render the color corrected pixels into bound FB.
-    GLint restoreReadFB, restoreDrawFB;
-    if (_aovTexture) {
-        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFB);
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _aovFramebuffer);
-    }
-
-    _ApplyColorCorrection();
-
-    if (_aovTexture) {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFB);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
-    }
+    _ApplyColorCorrection(aovTexture);
 }
 
+void
+HdxColorCorrectionTask::_DestroyShaderProgram()
+{
+    if (!_shaderProgram) return;
+
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        _hgi->DestroyShaderFunction(&fn);
+    }
+    _hgi->DestroyShaderProgram(&_shaderProgram);
+}
+
+void
+HdxColorCorrectionTask::_PrintCompileErrors()
+{
+    if (!_shaderProgram) return;
+
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        std::cout << fn->GetCompileErrors() << std::endl;
+    }
+    std::cout << _shaderProgram->GetCompileErrors() << std::endl;
+}
 
 // -------------------------------------------------------------------------- //
 // VtValue Requirements
@@ -618,15 +556,13 @@ std::ostream& operator<<(
     const HdxColorCorrectionTaskParams& pv)
 {
     out << "ColorCorrectionTask Params: (...) "
-        << pv.framebufferSize << " "
         << pv.colorCorrectionMode << " "
         << pv.displayOCIO << " "
         << pv.viewOCIO << " "
         << pv.colorspaceOCIO << " "
         << pv.looksOCIO << " "
         << pv.lut3dSizeOCIO << " "
-        << pv.aovName << " "
-        << pv.aovBufferPath
+        << pv.aovName
     ;
     return out;
 }
@@ -634,15 +570,13 @@ std::ostream& operator<<(
 bool operator==(const HdxColorCorrectionTaskParams& lhs,
                 const HdxColorCorrectionTaskParams& rhs)
 {
-    return lhs.framebufferSize == rhs. framebufferSize &&
-           lhs.colorCorrectionMode == rhs.colorCorrectionMode &&
+    return lhs.colorCorrectionMode == rhs.colorCorrectionMode &&
            lhs.displayOCIO == rhs.displayOCIO &&
            lhs.viewOCIO == rhs.viewOCIO &&
            lhs.colorspaceOCIO == rhs.colorspaceOCIO &&
            lhs.looksOCIO == rhs.looksOCIO &&
            lhs.lut3dSizeOCIO == rhs.lut3dSizeOCIO &&
-           lhs.aovName == rhs.aovName &&
-           lhs.aovBufferPath == rhs.aovBufferPath;
+           lhs.aovName == rhs.aovName;
 }
 
 bool operator!=(const HdxColorCorrectionTaskParams& lhs,

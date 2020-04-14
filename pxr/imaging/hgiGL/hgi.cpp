@@ -106,15 +106,7 @@ HgiGraphicsCmdsUniquePtr
 HgiGL::CreateGraphicsCmds(
     HgiGraphicsCmdsDesc const& desc)
 {
-    // XXX We should TF_CODING_ERROR here when there are no attachments, but
-    // during the Hgi transition we allow it to render to global gl framebuffer.
-    if (!desc.HasAttachments()) {
-        // TF_CODING_ERROR("Graphics cmds desc has no attachments");
-        return nullptr;
-    }
-
     HgiGLGraphicsCmds* cmds(new HgiGLGraphicsCmds(_device, desc));
-
     return HgiGraphicsCmdsUniquePtr(cmds);
 }
 

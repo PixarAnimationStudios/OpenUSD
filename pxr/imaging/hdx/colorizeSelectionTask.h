@@ -25,9 +25,12 @@
 #define PXR_IMAGING_HDX_COLORIZE_SELECTION_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/progressiveTask.h"
+
+#include "pxr/imaging/hgi/buffer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,6 +104,29 @@ private:
 
     GfVec4f _GetColorForMode(int mode) const;
 
+    // Utility function to create a storage buffer for the shader parameters.
+    void _CreateParameterBuffer();
+
+    // This struct must match ParameterBuffer in outline.glslfx.
+    // Be careful to remember the std430 rules.
+    struct _ParameterBuffer
+    {
+        // Size of a colorIn texel - to iterate adjacent texels.
+        GfVec2f texelSize;
+        // Draws outline when enabled, or color overlay when disabled.
+        int enableOutline = 0;
+        // The outline radius (thickness). 
+        int radius = 5;
+
+        bool operator==(const _ParameterBuffer& other) const {
+            return texelSize == other.texelSize &&
+                   enableOutline == other.enableOutline &&
+                   radius == other.radius;
+        }
+    };
+
+    class Hgi* _hgi;
+
     // Incoming data
     HdxColorizeSelectionTaskParams _params;
 
@@ -116,7 +142,11 @@ private:
     size_t _outputBufferSize;
     bool _converged;
 
-    HdxFullscreenShader _compositor;
+    std::unique_ptr<HdxFullscreenShader> _compositor;
+
+    _ParameterBuffer _parameterData;
+    HgiBufferHandle _parameterBuffer;
+    bool _pipelineCreated;
 };
 
 // VtValue requirements

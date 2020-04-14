@@ -129,15 +129,17 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
+// XXX we can remove this if we store the gl state before SubmitCmds and restore it after.
+
     // XXX Non-Hgi tasks expect default FB. Remove once all tasks use Hgi.
-    GLint fb;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fb);
+    GLint readFb;
+    GLint drawFb;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFb);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFb);
 
     // Create graphics work to render into aovs.
     HgiGraphicsCmdsDesc desc = stRenderPassState->MakeGraphicsCmdsDesc();
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
-
-    GfVec4i vp;
 
     // XXX When there are no aovBindings we get a null work object.
     // This would ideally never happen, but currently happens for some
@@ -145,15 +147,10 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     // has no aovBindings.
  
     if (gfxCmds) {
-        gfxCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
-
-        // XXX The application may have directly called into glViewport.
-        // We need to remove the offset to avoid double offset when we composite
-        // the Aov back into the client framebuffer.
-        // E.g. UsdView CameraMask.
-        glGetIntegerv(GL_VIEWPORT, vp.data());
-        GfVec4i aovViewport(0, 0, vp[2]+vp[0], vp[3]+vp[1]);
-        gfxCmds->SetViewport(aovViewport);
+        HdRprimCollection const &collection = GetRprimCollection();
+        std::string passName = "HdSt_RenderPass: " +
+            collection.GetMaterialTag().GetString();
+        gfxCmds->PushDebugGroup(passName.c_str());
     }
 
     // Draw
@@ -173,12 +170,12 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     }
 
     if (gfxCmds) {
-        gfxCmds->SetViewport(vp);
         gfxCmds->PopDebugGroup();
         _hgi->SubmitCmds(gfxCmds.get(), 1);
 
         // XXX Non-Hgi tasks expect default FB. Remove once all tasks use Hgi.
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFb);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFb);
     }
 }
 

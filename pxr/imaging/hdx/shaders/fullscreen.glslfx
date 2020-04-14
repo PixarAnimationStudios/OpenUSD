@@ -43,12 +43,12 @@
 
 -- glsl Fullscreen.Vertex
 
-#version 120
+#version 450
 
-attribute vec4 position;
-attribute vec2 uvIn;
+layout(location = 0) in vec4 position;
+layout(location = 1) in  vec2 uvIn;
 
-varying vec2 uv;
+layout(location = 0) out vec2 uv;
 
 void main(void)
 {
@@ -58,11 +58,11 @@ void main(void)
 
 -- glsl Composite.FragmentNoDepth
 
-#version 120
+#version 450
 
-varying vec2 uv;
+layout(location = 0) in vec2 uv;
 
-uniform sampler2D color;
+layout (binding = 0) uniform sampler2D color;
 
 void main(void)
 {
@@ -71,12 +71,12 @@ void main(void)
 
 -- glsl Composite.FragmentWithDepth
 
-#version 120
+#version 450
 
-varying vec2 uv;
+layout(location = 0) in vec2 uv;
 
-uniform sampler2D color;
-uniform sampler2D depth;
+layout (binding = 0) uniform sampler2D color;
+layout (binding = 1) uniform sampler2D depth;
 
 void main(void)
 {

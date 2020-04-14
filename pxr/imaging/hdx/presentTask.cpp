@@ -25,18 +25,16 @@
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/renderBuffer.h"
-#include "pxr/imaging/hgiGL/texture.h"
-#include "pxr/imaging/glf/diagnostic.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
  : HdTask(id)
- , _aovBufferPath()
- , _depthBufferPath()
- , _aovBuffer(nullptr)
- , _depthBuffer(nullptr)
+ , _hgi(nullptr)
  , _compositor()
 {
 }
@@ -46,19 +44,28 @@ HdxPresentTask::~HdxPresentTask()
 }
 
 void
-HdxPresentTask::Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits)
+HdxPresentTask::Sync(
+    HdSceneDelegate* delegate,
+    HdTaskContext* ctx,
+    HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    // Find Hgi driver in task context.
+    if (!_hgi) {
+        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
+        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
+            return;
+        }
+        _compositor.reset(new HdxFullscreenShader(_hgi, "Present"));
+    }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxPresentTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
-            _aovBufferPath = params.aovBufferPath;
-            _depthBufferPath = params.depthBufferPath;
+            // PresentTask has currently not params to sync.
         }
     }
     *dirtyBits = HdChangeTracker::Clean;
@@ -67,21 +74,6 @@ HdxPresentTask::Sync(HdSceneDelegate* delegate,
 void
 HdxPresentTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
 {
-    _aovBuffer = nullptr;
-    _depthBuffer = nullptr;
-
-    // An empty _aovBufferPath disables the task
-    if (!_aovBufferPath.IsEmpty()) {
-        _aovBuffer = static_cast<HdRenderBuffer*>(
-            renderIndex->GetBprim(
-                HdPrimTypeTokens->renderBuffer, _aovBufferPath));
-    }
-
-    if (!_depthBufferPath.IsEmpty()) {
-        _depthBuffer = static_cast<HdRenderBuffer*>(
-            renderIndex->GetBprim(
-                HdPrimTypeTokens->renderBuffer, _depthBufferPath));
-    }
 }
 
 void
@@ -89,64 +81,65 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
-    const bool mulSmp = false;
-
-    HgiGLTexture* colorTex = nullptr;
-    if (_aovBuffer) {
-        VtValue rv = _aovBuffer->GetResource(mulSmp);
-        if (rv.IsHolding<HgiTextureHandle>()) {
-            HgiTextureHandle colorHandle = rv.UncheckedGet<HgiTextureHandle>();
-            colorTex = dynamic_cast<HgiGLTexture*>(colorHandle.Get());
-        }
-    }
-
-    HgiGLTexture* depthTex = nullptr;
-    if (_depthBuffer) {
-        VtValue rv = _depthBuffer->GetResource(mulSmp);
-        if (rv.IsHolding<HgiTextureHandle>()) {
-            HgiTextureHandle depthHandle = rv.UncheckedGet<HgiTextureHandle>();
-            depthTex = dynamic_cast<HgiGLTexture*>(depthHandle.Get());
-        }
-    }
-
-    uint32_t colorId = colorTex ? colorTex->GetTextureId() : 0;
-    uint32_t depthId = depthTex ? depthTex->GetTextureId() : 0;
-
-    if (colorId == 0 && depthId == 0) {
+    // The color and depth aovs have the results we want to blit to the
+    // framebuffer. Depth is optional. When we are previewing a custom aov we
+    // may not have a depth buffer.
+    if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
         return;
     }
 
-    // Depth test must be ALWAYS instead of disabling the depth_test because
-    // we want to transfer the depth pixels. Disabling depth_test 
-    // disables depth writes and we need to copy depth to screen FB.
-    GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
-    glEnable(GL_DEPTH_TEST);
-    GLint restoreDepthFunc;
-    glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
-    glDepthFunc(GL_ALWAYS);
+    HgiTextureHandle aovTexture;
+    _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
 
-    // Any alpha blending the client wanted should have happened into the AOV. 
-    // When copying back to client buffer disable blending.
-    GLboolean blendEnabled;
-    glGetBooleanv(GL_BLEND, &blendEnabled);
-    glDisable(GL_BLEND);
-
-    HdxFullscreenShader::TextureMap textures;
-    textures[TfToken("color")] = colorId;
-    textures[TfToken("depth")] = depthId;
-    _compositor.SetProgramToCompositor(/*depthAware = */true);
-    _compositor.Draw(textures);
-
-    if (blendEnabled) {
-        glEnable(GL_BLEND);
+    HgiTextureHandle depthTexture;
+    if (_HasTaskContextData(ctx, HdAovTokens->depth)) {
+        _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
     }
 
-    glDepthFunc(restoreDepthFunc);
-    if (!restoreDepthEnabled) {
-        glDisable(GL_DEPTH_TEST);
-    }
+    // XXX TODO The below GL blit code needs to be replaced by HgiInterop.
+    // HgiInterop should take the aov color and depth results, which are 
+    // hgi textures of one specific backend (HgiGL, HgiMetal, etc), and blit 
+    // those results into the viewer's framebuffer.
+    // The viewer's framebuffer may be of a different graphics api, likely
+    // opengl. So HgiInterop should do the necessary conversions.
+    // For example, it should convert from HgiMetalTexture to HgiGLTexture and
+    // then blit those HgiGLTextures to the viewer.
+
+    { // XXX HgiInterop begin
+        // Depth test must be ALWAYS instead of disabling the depth_test because
+        // we want to transfer the depth pixels. Disabling depth_test 
+        // disables depth writes and we need to copy depth to screen FB.
+        GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
+        glEnable(GL_DEPTH_TEST);
+        GLint restoreDepthFunc;
+        glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
+        glDepthFunc(GL_ALWAYS);
+
+        // Any alpha blending the client wanted should have happened into the AOV. 
+        // When copying back to client buffer disable blending.
+        GLboolean blendEnabled;
+        glGetBooleanv(GL_BLEND, &blendEnabled);
+        glDisable(GL_BLEND);
+
+        HdxFullscreenShader::TextureMap textures;
+        textures[TfToken("color")] = aovTexture;
+        if (depthTexture) {
+            textures[TfToken("depth")] = depthTexture;
+        }
+
+        // Draw aov textures to framebuffer
+        _compositor->DrawToFramebuffer(textures);
+
+        if (blendEnabled) {
+            glEnable(GL_BLEND);
+        }
+
+        glDepthFunc(restoreDepthFunc);
+        if (!restoreDepthEnabled) {
+            glDisable(GL_DEPTH_TEST);
+        }
+    } // XXX HgiInterop end
 }
 
 
@@ -156,17 +149,15 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 
 std::ostream& operator<<(std::ostream& out, const HdxPresentTaskParams& pv)
 {
-    out << "PresentTask Params: (...) "
-        << pv.aovBufferPath << " "
-        << pv.depthBufferPath;
+    out << "PresentTask Params: (...) ";
     return out;
 }
 
 bool operator==(const HdxPresentTaskParams& lhs,
                 const HdxPresentTaskParams& rhs)
 {
-    return lhs.aovBufferPath   == rhs.aovBufferPath    &&
-           lhs.depthBufferPath == rhs.depthBufferPath;
+    // PresentTask currently has no params to compare
+    return true;
 }
 
 bool operator!=(const HdxPresentTaskParams& lhs,

@@ -58,6 +58,18 @@ HgiGLGraphicsCmds::EndRecording()
         return;
     }
 
+    if (!_descriptor.colorResolveTextures.empty() && 
+            _descriptor.colorResolveTextures.size() != 
+                _descriptor.colorTextures.size()) {
+        TF_CODING_ERROR("color and resolve texture count mismatch.");
+        return;
+    }
+
+    if (_descriptor.depthResolveTexture && !_descriptor.depthTexture) {
+        TF_CODING_ERROR("DepthResolve texture without depth texture.");
+        return;
+    }
+
     // At the end of the GraphicsCmd we resolve the multisample textures.
     // This emulates what happens in Metal or Vulkan when the multisample
     // resolve happens at the end of a render pass.
