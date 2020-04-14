@@ -676,7 +676,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
-                } else if (param.textureType == HdTextureType::Uvw) {
+                } else if (param.textureType == HdTextureType::Field) {
                     // 3d texture
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_3D,

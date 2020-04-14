@@ -385,7 +385,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                 VtValue(GfVec4f(0)),
                 SdfPath(),
                 TfTokenVector(),
-                HdTextureType::Uvw);
+                HdTextureType::Field);
 
             sourcesAndTextures.ProcessTextureMaterialParam(
                 textureParam,

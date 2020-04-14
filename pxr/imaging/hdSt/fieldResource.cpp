@@ -49,7 +49,7 @@ _GetBoundingBox(const GlfTextureHandleRefPtr &textureHandle)
 
 HdStFieldResource::HdStFieldResource(const GlfTextureHandleRefPtr &textureHandle)
     : _simpleTextureResource(textureHandle,
-                             HdTextureType::Uvw,
+                             HdTextureType::Field,
                              HdWrapBlack,
                              HdWrapBlack,
                              HdWrapBlack,
@@ -73,7 +73,7 @@ HdStFieldResource::~HdStFieldResource() = default;
 HdTextureType 
 HdStFieldResource::GetTextureType() const
 {
-    return HdTextureType::Uvw;
+    return HdTextureType::Field;
 }
 
 size_t

@@ -194,7 +194,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
                     tex.name,
                     texResource->GetTexelsTextureHandle()));
         }
-    } else if (textureType == HdTextureType::Uvw) {
+    } else if (textureType == HdTextureType::Field) {
         tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_3D;
         textures.push_back(tex);
         
