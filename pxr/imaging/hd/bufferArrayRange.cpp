@@ -28,9 +28,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-HdBufferArrayRange::~HdBufferArrayRange() {
-}
+HdBufferArrayRange::HdBufferArrayRange() = default;
+HdBufferArrayRange::~HdBufferArrayRange() = default;
 
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArrayRange &self)
