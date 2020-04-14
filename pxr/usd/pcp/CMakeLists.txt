@@ -18,7 +18,6 @@ pxr_library(pcp
         
     PUBLIC_HEADERS
         api.h
-        dynamicFileFormatInterface.h
 
     PUBLIC_CLASSES
         arc
@@ -28,6 +27,7 @@ pxr_library(pcp
         dependency
         dynamicFileFormatContext
         dynamicFileFormatDependencyData
+        dynamicFileFormatInterface
         errors
         instanceKey
         iterator

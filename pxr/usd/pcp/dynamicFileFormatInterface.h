@@ -47,6 +47,10 @@ class VtValue;
 class PcpDynamicFileFormatInterface
 {
 public:
+    /// Empty virtual destructor to prevent build errors with some compilers.
+    PCP_API
+    virtual ~PcpDynamicFileFormatInterface();
+
     /// Derived classes must implement this function to compose prim fields 
     /// using the given \p context and use them to generate file format 
     /// arguments for the layer at \p assetPath. The context provides methods 
