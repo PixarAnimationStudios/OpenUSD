@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/plugin/usdAbc/alembicReader.h"
 #include "pxr/usd/plugin/usdAbc/alembicUtil.h"
+#include "pxr/usd/usdGeom/hermiteCurves.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
@@ -2453,6 +2454,48 @@ struct _CopyIndices {
     }
 };
 
+/// Copy hermite points from interleaved IP3fArrayProperty.
+struct _CopyHermitePoints : _CopyGeneric<IP3fArrayProperty, GfVec3f> {
+    _CopyHermitePoints(const AlembicProperty& object_)
+        : _CopyGeneric<IP3fArrayProperty, GfVec3f>(object_, kStrictMatching) {}
+
+    using _CopyGeneric<IP3fArrayProperty, GfVec3f>::operator();
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const {
+        typedef typename IP3fArrayProperty::sample_ptr_type SamplePtr;
+        typedef typename IP3fArrayProperty::traits_type AlembicTraits;
+        SamplePtr samplePtr;
+        object.get(samplePtr, iss);
+        VtValue value = _CopyGenericValue<AlembicTraits, GfVec3f>(samplePtr);
+        VtVec3fArray interleaved = value.Get<VtVec3fArray>();
+        auto separated =
+            UsdGeomHermiteCurves::PointAndTangentArrays::Separate(interleaved);
+        return dst.Set(VtValue(separated.GetPoints()));
+    }
+};
+
+/// Copy hermite points from interleaved IP3fArrayProperty.
+struct _CopyHermiteTangents : _CopyGeneric<IP3fArrayProperty, GfVec3f> {
+    _CopyHermiteTangents(const AlembicProperty& object_)
+        : _CopyGeneric<IP3fArrayProperty, GfVec3f>(object_, kStrictMatching) {}
+
+    using _CopyGeneric<IP3fArrayProperty, GfVec3f>::operator();
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const {
+        typedef typename IP3fArrayProperty::sample_ptr_type SamplePtr;
+        typedef typename IP3fArrayProperty::traits_type AlembicTraits;
+        SamplePtr samplePtr;
+        object.get(samplePtr, iss);
+        VtValue value = _CopyGenericValue<AlembicTraits, GfVec3f>(samplePtr);
+        VtVec3fArray interleaved = value.Get<VtVec3fArray>();
+        auto separated =
+            UsdGeomHermiteCurves::PointAndTangentArrays::Separate(interleaved);
+        return dst.Set(VtValue(separated.GetTangents()));
+    }
+};
+
 /// Copy a bounding box from an IBox3dProperty.
 struct _CopyBoundingBox : _CopyGeneric<IBox3dProperty> {
     _CopyBoundingBox(const AlembicProperty& object_) :
@@ -2883,8 +2926,14 @@ _ConvertCurveBasis(BasisType value)
     case kCatmullromBasis:
         return UsdGeomTokens->catmullRom;
     case kHermiteBasis:
+        TF_WARN(
+            "'hermite' basis is no longer an allowed token for "
+            "UsdGeomBasisCurves.");
         return UsdGeomTokens->hermite;
     case kPowerBasis:
+        TF_WARN(
+            "'power' basis is no longer an allowed token for "
+            "UsdGeomBasisCurves.");
         return UsdGeomTokens->power;
     }
 }
@@ -3351,21 +3400,71 @@ _ReadCurves(_PrimReaderContext* context)
     (void)context->ExtractSchema("curveBasisAndType");
 
     // Set prim type.  This depends on the CurveType of the curve.
-    context->GetPrim().typeName = (sample.getType() != kVariableOrder)
-        ? UsdAbcPrimTypeNames->BasisCurves
-        : UsdAbcPrimTypeNames->NurbsCurves;
+    if (sample.getType() == kVariableOrder){
+        context->GetPrim().typeName = UsdAbcPrimTypeNames->NurbsCurves;
+        context->AddProperty(
+            UsdGeomTokens->order,
+            SdfValueTypeNames->IntArray,
+            _CopyGeneric<IInt32ArrayProperty, int>(
+                context->ExtractSchema(".orders")));
+        context->AddProperty(
+            UsdGeomTokens->knots,
+            SdfValueTypeNames->DoubleArray,
+            _CopyGeneric<IFloatArrayProperty, double>(
+                context->ExtractSchema(".knots")));
+    } else if ((sample.getType() == kCubic) &&
+               (sample.getBasis() == kHermiteBasis)) {
+        context->GetPrim().typeName = UsdAbcPrimTypeNames->HermiteCurves;
+        if (_ConvertCurveWrap(sample.getWrap()) != UsdGeomTokens->nonperiodic) {
+            TF_WARN("Wrap mode is not supported for cubic hermite curves: '%s'",
+                    context->GetPath().GetText());
+        }
+        if (_CopyGeneric<IV3fArrayProperty, GfVec3f>(
+                context->ExtractSchema(".velocities"))(_IsValidTag())) {
+            TF_WARN(
+                "Velocities are not supported for cubic hermite curves: '%s'",
+                context->GetPath().GetText());
+        }
+        // The Usd representation separates points and tangents
+        // The Alembic representation interleaves them as (P0, T0, ... Pn, Tn)
+        context->AddProperty(
+            UsdGeomTokens->points,
+            SdfValueTypeNames->Point3fArray,
+            _CopyHermitePoints(context->ExtractSchema("P")));
+        context->AddProperty(
+            UsdGeomTokens->tangents,
+            SdfValueTypeNames->Vector3fArray,
+            _CopyHermiteTangents(context->ExtractSchema("P")));
+    } else {
+        context->GetPrim().typeName = UsdAbcPrimTypeNames->BasisCurves;
+        context->AddUniformProperty(
+            UsdGeomTokens->type,
+            SdfValueTypeNames->Token,
+            _CopySynthetic(_ConvertCurveType(sample.getType())));
+        context->AddUniformProperty(
+            UsdGeomTokens->basis,
+            SdfValueTypeNames->Token,
+            _CopySynthetic(_ConvertCurveBasis(sample.getBasis())));
+        context->AddUniformProperty(
+            UsdGeomTokens->wrap,
+            SdfValueTypeNames->Token,
+            _CopySynthetic(_ConvertCurveWrap(sample.getWrap())));
+    }
 
-    // Add properties.
-    context->AddProperty(
-        UsdGeomTokens->points,
-        SdfValueTypeNames->Point3fArray,
-        _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P"), kNoMatching));
-    context->AddProperty(
-        UsdGeomTokens->velocities,
-        SdfValueTypeNames->Vector3fArray,
-        _CopyGeneric<IV3fArrayProperty, GfVec3f>(
-            context->ExtractSchema(".velocities")));
+    if ((context->GetPrim().typeName == UsdAbcPrimTypeNames->BasisCurves) ||
+        (context->GetPrim().typeName == UsdAbcPrimTypeNames->NurbsCurves)){
+        context->AddProperty(
+            UsdGeomTokens->points,
+            SdfValueTypeNames->Point3fArray,
+            _CopyGeneric<IP3fArrayProperty, GfVec3f>(
+                context->ExtractSchema("P"), kNoMatching));
+        context->AddProperty(
+            UsdGeomTokens->velocities,
+            SdfValueTypeNames->Vector3fArray,
+            _CopyGeneric<IV3fArrayProperty, GfVec3f>(
+                context->ExtractSchema(".velocities")));
+    }
+
     context->AddProperty(
         UsdGeomTokens->normals,
         SdfValueTypeNames->Normal3fArray,
@@ -3381,34 +3480,6 @@ _ReadCurves(_PrimReaderContext* context)
         SdfValueTypeNames->FloatArray,
         _CopyGeneric<IFloatGeomParam, float>(
             context->ExtractSchema("width")));
-
-    // The rest depend on the type.
-    if (sample.getType() != kVariableOrder) {
-        context->AddUniformProperty(
-            UsdGeomTokens->basis,
-            SdfValueTypeNames->Token,
-            _CopySynthetic(_ConvertCurveBasis(sample.getBasis())));
-        context->AddUniformProperty(
-            UsdGeomTokens->type,
-            SdfValueTypeNames->Token,
-            _CopySynthetic(_ConvertCurveType(sample.getType())));
-        context->AddUniformProperty(
-            UsdGeomTokens->wrap,
-            SdfValueTypeNames->Token,
-            _CopySynthetic(_ConvertCurveWrap(sample.getWrap())));
-    }
-    else {
-        context->AddProperty(
-            UsdGeomTokens->order,
-            SdfValueTypeNames->IntArray,
-            _CopyGeneric<IInt32ArrayProperty, int>(
-                context->ExtractSchema(".orders")));
-        context->AddProperty(
-            UsdGeomTokens->knots,
-            SdfValueTypeNames->DoubleArray,
-            _CopyGeneric<IFloatArrayProperty, double>(
-                context->ExtractSchema(".knots")));
-    }
 }
 
 static

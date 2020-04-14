@@ -385,8 +385,7 @@ public:
     // --------------------------------------------------------------------- //
     /// The basis specifies the vstep and matrix used for cubic 
     /// interpolation.  \note The 'hermite' and 'power' tokens have been
-    /// marked as deprecated for the 20.05 release of USD and are targeted
-    /// for removal in the 20.08 release. We've provided UsdGeomHermiteCurves
+    /// removed. We've provided UsdGeomHermiteCurves
     /// as an alternative for the 'hermite' basis.
     ///
     /// | ||
@@ -395,7 +394,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | bezier, bspline, catmullRom, hermite, power |
+    /// | \ref UsdGeomTokens "Allowed Values" | bezier, bspline, catmullRom |
     USDGEOM_API
     UsdAttribute GetBasisAttr() const;
 

@@ -59,7 +59,7 @@ class SdfAssetPath;
 /// for interchange, we strongly recommend the use of UsdGeomBasisCurves as
 /// the representation of curves intended to be rendered (ie. hair or grass).
 /// Hermite curves can be converted to a Bezier representation (though not
-/// losslessly).
+/// from Bezier back to Hermite in general).
 /// 
 /// \section UsdGeomHermiteCurves_Interpolation Point Interpolation
 /// 
@@ -219,7 +219,7 @@ public:
         VtArray<GfVec3f> _points;
         VtArray<GfVec3f> _tangents;
 
-        USDGEOM_API explicit PointAndTangentArrays(const VtVec3fArray& interleaved);
+        explicit PointAndTangentArrays(const VtVec3fArray& interleaved);
 
     public:
 
@@ -247,7 +247,7 @@ public:
 
         /// Given an \p interleaved points and tangents arrays (P0, T0, ..., Pn,
         /// Tn), separates them into two arrays (P0, ..., PN) and (T0, ..., Tn).
-        static PointAndTangentArrays Separate(const VtVec3fArray& interleaved) {
+        USDGEOM_API static PointAndTangentArrays Separate(const VtVec3fArray& interleaved) {
             return PointAndTangentArrays(interleaved);
         }
 
