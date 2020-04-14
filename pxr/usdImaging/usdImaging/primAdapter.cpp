@@ -615,6 +615,20 @@ UsdImagingPrimAdapter::_MergePrimvar(
         *it = primvar;
 }
 
+void
+UsdImagingPrimAdapter::_RemovePrimvar(
+    HdPrimvarDescriptorVector* vec,
+    TfToken const& name) const
+{
+    for (HdPrimvarDescriptorVector::iterator it = vec->begin();
+         it != vec->end(); ++it) {
+        if (it->name == name) {
+            vec->erase(it);
+            return;
+        }
+    }
+}
+
 /* static */
 HdInterpolation
 UsdImagingPrimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
@@ -683,6 +697,7 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
         TF_DEBUG(USDIMAGING_SHADERS)
             .Msg( "\t\t No primvar on <%s> named %s\n",
                   gprim.GetPath().GetText(), primvarName.GetText());
+        _RemovePrimvar(&valueCache->GetPrimvars(cachePath), primvarName);
     }
 }
 

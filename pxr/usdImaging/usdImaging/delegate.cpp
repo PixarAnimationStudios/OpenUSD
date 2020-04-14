@@ -2210,6 +2210,12 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtFloatArray vec(1, 1.0f);
                 value = VtValue(vec);
             }
+        } else if (key == HdTokens->normals) {
+            _UpdateSingleValue(cachePath,HdChangeTracker::DirtyNormals);
+            if (!TF_VERIFY(_valueCache.ExtractNormals(cachePath, &value))){
+                VtVec3fArray vec(1, GfVec3f(0,0,0));
+                value = VtValue(vec);
+            }
         } else if (key == HdTokens->transform) {
             // XXX(UsdImaging): We use cachePath directly as usdPath here
             // but should do the proper transformation.  Maybe we can use

@@ -526,6 +526,12 @@ protected:
         HdInterpolation interp,
         TfToken const& role = TfToken()) const;
 
+    // Convenience method for removing a primvar descriptor.
+    USDIMAGING_API
+    void _RemovePrimvar(
+        HdPrimvarDescriptorVector* vec,
+        TfToken const& name) const;
+
     // Convenience method for computing a primvar. THe primvar will only be
     // added to the list in the valueCache if there is no primvar of the same
     // name already present.  Thus, "local" primvars should be merged before
