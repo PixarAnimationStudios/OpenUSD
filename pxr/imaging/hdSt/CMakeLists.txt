@@ -82,6 +82,8 @@ pxr_library(hdSt
         resourceGL
         resourceRegistry
         rprimUtils
+        samplerObject
+        samplerObjectRegistry
         shaderCode
         simpleLightingShader
         smoothNormals

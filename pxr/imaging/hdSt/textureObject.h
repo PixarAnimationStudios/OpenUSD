@@ -149,6 +149,23 @@ private:
     HgiTextureHandle _gpuTexture;
 };
 
+template<HdTextureType textureType>
+struct HdSt_TypedTextureObjectHelper;
+
+/// \class HdStTypedTextureObject
+///
+/// A template alias such that, e.g., HdStUvTextureObject can be
+/// accessed as HdStTypedTextureObject<HdTextureType::Uv>.
+///
+template<HdTextureType textureType>
+using HdStTypedTextureObject =
+    typename HdSt_TypedTextureObjectHelper<textureType>::type;
+
+template<>
+struct HdSt_TypedTextureObjectHelper<HdTextureType::Uv> {
+    using type = HdStUvTextureObject;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
