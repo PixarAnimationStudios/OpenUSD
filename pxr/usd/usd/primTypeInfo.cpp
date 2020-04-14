@@ -31,12 +31,12 @@ Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
 {
     const UsdPrimDefinition *primDef = nullptr;
     const UsdSchemaRegistry &reg = UsdSchemaRegistry::GetInstance();
-    if (_authoredAppliedAPISchemas.empty()) {
+    if (_typeId.appliedAPISchemas.empty()) {
         // With no applied schemas we can just get the concrete typed prim 
         // definition from the schema registry. Prim definitions for all 
         // concrete types are created with the schema registry when it is 
         // instantiated so if the type exists, the definition will be there.
-        primDef = reg.FindConcretePrimDefinition(_primTypeName);
+        primDef = reg.FindConcretePrimDefinition(_typeId.primTypeName);
         if (!primDef) {
             // For invalid types, we use the empty prim definition so we don't
             // have to check again.
@@ -53,8 +53,8 @@ Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
         // registry does NOT take ownership of this new prim definition; this 
         // type info will own it instead.
         std::unique_ptr<UsdPrimDefinition> composedPrimDef = 
-            reg.BuildComposedPrimDefinition(_primTypeName, 
-                                            _authoredAppliedAPISchemas);
+            reg.BuildComposedPrimDefinition(_typeId.primTypeName, 
+                                            _typeId.appliedAPISchemas);
         // Try to cache the new prim definition, but if another thread beat us
         // to it, we'll use its definition instead and just let ours get 
         // deleted.

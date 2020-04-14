@@ -2970,13 +2970,13 @@ UsdStage::_ComposeSubtreeImpl(
     if (parent && !isMasterPrim) {
         // Compose the type info full type ID for the prim which includes
         // the type name and applied schemas.
-        const TfToken primTypeName = _ComposeTypeName(prim->_primIndex);
-        TfTokenVector appliedSchemas;
-        _ComposeAuthoredAppliedSchemas(prim->_primIndex, &appliedSchemas);
+        Usd_PrimTypeInfo::TypeId typeId(_ComposeTypeName(prim->_primIndex));
+        _ComposeAuthoredAppliedSchemas(
+            prim->_primIndex, &typeId.appliedAPISchemas);
 
         // Ask the type info cache for the type info for our type.
-        prim->_primTypeInfo = _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(
-            primTypeName, std::move(appliedSchemas));
+        prim->_primTypeInfo = 
+            _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(std::move(typeId));
     } else {
         prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
     }

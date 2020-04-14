@@ -40,14 +40,72 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Usd_PrimTypeInfo 
 {
 public:
+    // This struct holds the information used to uniquely type a 
+    // Usd_PrimTypeInfo and can be used to key each prim type info in the type
+    // info cache.
+    struct TypeId 
+    {
+        // Authored type name of the prim.
+        TfToken primTypeName;
+
+        // The list of applied API schemas authored on the prim.
+        TfTokenVector appliedAPISchemas;
+
+        TypeId() = default;
+
+        // Have both move and copy constructors to minimize the number vector
+        // copies when possible.
+        TypeId(const TypeId &typeId) = default;
+        TypeId(TypeId &&typeId) = default;
+        
+        // Explicit constructor from just a prim type name.        
+        explicit TypeId(const TfToken &primTypeName_) 
+            : primTypeName(primTypeName_) {}
+
+        // Is empty type
+        bool IsEmpty() const
+        {
+            return primTypeName.IsEmpty() &&
+                   appliedAPISchemas.empty();
+        }
+                    
+        // Hash function for hash map keying.
+        size_t Hash() const
+        {
+            size_t hash = primTypeName.Hash();
+            if (!appliedAPISchemas.empty()) {
+                size_t appliedHash = appliedAPISchemas.size();
+                for (const TfToken &apiSchema : appliedAPISchemas) {
+                    boost::hash_combine(appliedHash, apiSchema);
+                }
+                boost::hash_combine(hash, appliedHash);
+            }
+            return hash;
+        }
+
+        bool operator==(const TypeId &other) const
+        {
+            return primTypeName == other.primTypeName &&
+                   appliedAPISchemas == other.appliedAPISchemas;
+        }
+
+        bool operator!=(const TypeId &other) const
+        {
+            return !(*this == other);
+        }
+    };
+
+    // Returns the full type ID.
+    const TypeId &GetTypeId() const { return _typeId; }
+
     // Returns the concrete typed prim type name.
-    const TfToken &GetTypeName() const { return _primTypeName; }
+    const TfToken &GetTypeName() const { return _typeId.primTypeName; }
 
     // Returns the list of applied API schemas authored to the prim. This 
     // does NOT include the any applied schemas that are applied to the typed
     // prim type via schema registration.
     const TfTokenVector &GetAuthoredAppliedAPISchemas() const { 
-        return _authoredAppliedAPISchemas; 
+        return _typeId.appliedAPISchemas; 
     }
 
     // Returns the prim definition associated with this prim type.
@@ -70,21 +128,21 @@ private:
     // Only the PrimTypeInfoCache can create the PrimTypeInfo prims.
     friend class Usd_PrimTypeInfoCache;
 
-    Usd_PrimTypeInfo() : _primDefinition(nullptr) {};
+    // Default constructor. Empty type.
+    Usd_PrimTypeInfo() : _primDefinition(nullptr) {}
 
-    Usd_PrimTypeInfo(const TfToken &primTypeName,
-                     TfTokenVector &&appliedSchemas = TfTokenVector())
-        : _primTypeName(primTypeName)
-        , _authoredAppliedAPISchemas(std::move(appliedSchemas))
-        , _primDefinition(nullptr) {}
+    // Move constructor from a TypeId.
+    Usd_PrimTypeInfo(TypeId &&typeId)
+        : _typeId(std::move(typeId))
+        , _primDefinition(nullptr)
+    {}
 
     // Finds the prim definition, creating it if it doesn't already exist. This
     // cache access must be thread safe.
     USD_API
     const UsdPrimDefinition *_FindOrCreatePrimDefinition() const;
 
-    TfToken _primTypeName;
-    TfTokenVector _authoredAppliedAPISchemas;
+    TypeId _typeId;
 
     // Cached pointer to the prim definition.
     mutable std::atomic<const UsdPrimDefinition *> _primDefinition;

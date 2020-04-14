@@ -33,26 +33,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Class to be used as a static private singleton to cache all distinct prim 
-// types used by the prim data.
+// Private class to be used as a singleton by UsdStage to cache the type info
+// structures for all distinct prim types used by any prim data.
 class Usd_PrimTypeInfoCache {
 public:
+    using TypeId = Usd_PrimTypeInfo::TypeId;
+
     Usd_PrimTypeInfoCache() 
         : _emptyPrimTypeInfo(&Usd_PrimTypeInfo::GetEmptyPrimType()) {}
-    Usd_PrimTypeInfoCache(const Usd_PrimTypeInfoCache&) = delete;
 
-    // Finds the cached prim type info for the given prim type and list of 
-    // applied schemas, creating and caching a new one if it doesn't exist.
-    const Usd_PrimTypeInfo *FindOrCreatePrimTypeInfo(
-        const TfToken &primType, TfTokenVector &&appliedSchemas)
+    // Non-copyable
+    Usd_PrimTypeInfoCache(const Usd_PrimTypeInfoCache&) = delete;
+    Usd_PrimTypeInfoCache &operator=(const Usd_PrimTypeInfoCache&) = delete;
+
+    // Finds the cached prim type info for the given full prim type ID, 
+    // creating and caching a new one if it doesn't exist.
+    const Usd_PrimTypeInfo *FindOrCreatePrimTypeInfo(TypeId &&primTypeId)
     {
-        TfToken key = _CreatePrimTypeInfoKey(primType, appliedSchemas);
-        if (key.IsEmpty()) {
+        if (primTypeId.IsEmpty()) {
             return GetEmptyPrimTypeInfo();
         }
 
-        // Find try to find the prim type in the type info map
-        if (auto primTypeInfo = _primTypeInfoMap.Find(key)) {
+        if (auto primTypeInfo = _primTypeInfoMap.Find(primTypeId)) {
             return primTypeInfo;
         }
 
@@ -62,8 +64,8 @@ public:
         // same type info and managed to insert it first. In that case ours just
         // gets deleted since the hash map didn't take ownership.
         std::unique_ptr<Usd_PrimTypeInfo> newPrimTypeInfo(
-            new Usd_PrimTypeInfo(primType, std::move(appliedSchemas)));
-        return _primTypeInfoMap.Insert(key, std::move(newPrimTypeInfo));
+            new Usd_PrimTypeInfo(std::move(primTypeId)));
+        return _primTypeInfoMap.Insert(std::move(newPrimTypeInfo));
     }
 
     // Return the single empty prim type info
@@ -73,36 +75,6 @@ public:
     }
 
 private:
-    // Creates the unique prim type token key for the given prim type and 
-    // ordered list of applied API schemas.
-    static TfToken _CreatePrimTypeInfoKey(
-        const TfToken &primType,
-        const TfTokenVector &appliedSchemaTypes)
-    {
-        // In the common case where there are no applied schemas, we just use
-        // the prim type token itself.
-        if (appliedSchemaTypes.empty()) {
-            return primType;
-        }
-
-        // We generate a full type string that is a comma separated list of 
-        // the prim type and then each the applied schema type in order. Note
-        // that it's completely valid for there to be applied schemas when the 
-        // prim type is empty; they key just starts with an empty prim type.
-        size_t tokenSize = appliedSchemaTypes.size() + primType.size();
-        for (const TfToken &schemaType : appliedSchemaTypes) {
-            tokenSize += schemaType.size();
-        }
-        std::string fullTypeString;
-        fullTypeString.reserve(tokenSize);
-        fullTypeString += primType;
-        for (const TfToken &schemaType : appliedSchemaTypes) {
-            fullTypeString += ",";
-            fullTypeString += schemaType;
-        }
-        return TfToken(fullTypeString);
-    }
-
     // Wrapper around the thread safe hash map implementation used by the 
     // Usd_PrimTypeInfoCache to cache prim type info
     class _ThreadSafeHashMapImpl {
@@ -110,8 +82,11 @@ private:
         _ThreadSafeHashMapImpl() = default;
         _ThreadSafeHashMapImpl(const _ThreadSafeHashMapImpl&) = delete;
 
+        using KeyType = Usd_PrimTypeInfo::TypeId;
+        using ValueTypePtr = std::unique_ptr<Usd_PrimTypeInfo>;
+
         // Find and return a pointer to the prim type info if it already exists.
-        const Usd_PrimTypeInfo *Find(const TfToken &key) const 
+        const Usd_PrimTypeInfo *Find(const KeyType &key) const 
         {
             _HashMap::const_accessor accessor;
             if (_hashMap.find(accessor, key)) {
@@ -123,30 +98,28 @@ private:
         // Inserts and takes ownership of the prim type info only if it isn't 
         // already in the hash map. Returns the pointer to the value in the map
         // after insertion regardless.
-        const Usd_PrimTypeInfo *Insert(
-            const TfToken &key, std::unique_ptr<Usd_PrimTypeInfo> valuePtr)
+        const Usd_PrimTypeInfo *Insert(ValueTypePtr &&valuePtr)
         {
+            const KeyType &key = valuePtr->GetTypeId();
             _HashMap::accessor accessor;
             if (_hashMap.insert(accessor, key)) {
                 accessor->second = std::move(valuePtr);
             }
             return accessor->second.get();
         }
+
     private:
-        // Tokens hash to their pointer values but tbb::concurrent_hash_map is
-        // more efficient when there is more randomness in the lower order bits of
-        // the hash. Thus the shifted hash function.
         struct _TbbHashFunc {
-            inline bool equal(const TfToken &l, const TfToken &r) const {
+            inline bool equal(const KeyType &l, const KeyType &r) const {
                 return l == r;
             }
-            inline size_t hash(const TfToken &t) const {
+            inline size_t hash(const KeyType &t) const {
                 return t.Hash();
             }
         };
 
-        using _HashMap = tbb::concurrent_hash_map<
-            TfToken, std::unique_ptr<Usd_PrimTypeInfo>, _TbbHashFunc>;
+        using _HashMap = 
+            tbb::concurrent_hash_map<KeyType, ValueTypePtr, _TbbHashFunc>;
         _HashMap _hashMap;
     };
 
