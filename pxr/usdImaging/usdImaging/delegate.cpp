@@ -70,6 +70,8 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
+#include <tbb/concurrent_vector.h>
+
 #include <functional>
 #include <limits>
 #include <string>
@@ -392,6 +394,148 @@ public:
                 }
             }
         }
+    }
+};
+
+class UsdImagingDelegate::_RefreshWorker {
+private:
+    SdfPathVector _tasks;
+    SdfPathVector _usdPaths;
+    std::vector<TfTokenVector const*> _changedInfoFields;
+    UsdImagingDelegate *_delegate;
+    UsdImagingIndexProxy* _proxy;
+    TfTokenVector _noInfoFields;
+    tbb::concurrent_vector<std::pair<SdfPath, bool> > _deferredResyncs;
+
+public:
+    _RefreshWorker(UsdImagingDelegate *delegate, UsdImagingIndexProxy *proxy)
+        : _delegate(delegate),
+          _proxy(proxy)
+    {
+    }
+
+    void AddTask(SdfPath const& cachePath, SdfPath const& usdPath,
+                 TfTokenVector const* changedInfoFields) {
+        _tasks.push_back(cachePath);
+        _usdPaths.push_back(usdPath);
+        _changedInfoFields.push_back(changedInfoFields);
+    }
+
+    void AddTasks(SdfPathVector const& cachePaths, SdfPath const& usdPath,
+                 TfTokenVector const* changedInfoFields) {
+        _tasks.insert(_tasks.end(), cachePaths.begin(), cachePaths.end());
+        _usdPaths.insert(_usdPaths.end(),
+                cachePaths.size(), usdPath);
+        _changedInfoFields.insert(_changedInfoFields.end(),
+                cachePaths.size(), changedInfoFields);
+    }
+
+    void AddResync(SdfPath const& cachePath, bool repopulateFromRoot) {
+        _deferredResyncs.push_back(
+            std::make_pair(cachePath, repopulateFromRoot));
+    }
+
+    size_t GetTaskCount() {
+        return _tasks.size();
+    }
+
+    // Disables value cache mutations for all imaging delegates that have
+    // added tasks to this worker.
+    void DisableValueCacheMutations() {
+        _delegate->_valueCache.DisableMutation();
+    }
+
+    // Enables value cache mutations for all imaging delegates that have
+    // added tasks to this worker.
+    void EnableValueCacheMutations() {
+        _delegate->_valueCache.EnableMutation();
+    }
+
+    void RefreshObjects(size_t start, size_t end) {
+        for (size_t i = start; i < end; i++) {
+            SdfPath const& cachePath = _tasks[i];
+            SdfPath const& usdPath = _usdPaths[i];
+            TfTokenVector const& changedInfoFields =
+                _changedInfoFields[i] ? *_changedInfoFields[i] : _noInfoFields;
+            _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
+
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected prim: <%s>\n",
+                    cachePath.GetText());
+
+            // Due to the ResyncPrim condition when AllDirty is returned below,
+            // we may or may not find an associated primInfo for every prim in
+            // affectedPrims. If we find no primInfo, the prim that was
+            // previously affected by this refresh no longer exists and can be
+            // ignored.
+            //
+            // It is also possible that we find a primInfo, but the prim it
+            // refers to has been deleted from the stage and is no longer
+            // valid. Such a prim may end up in the affectedPrims during the
+            // refresh of a collection that previously pointed directly to a
+            // prim that has been deleted. The primInfo for this prim will
+            // still be in the index because we haven't had the index process
+            // removals yet.
+            if (primInfo != nullptr &&
+                primInfo->usdPrim.IsValid() &&
+                TF_VERIFY(primInfo->adapter, "%s", cachePath.GetText())) {
+                UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
+
+                // For the dirty bits that we've been told changed, go
+                // re-discover variability and stage the associated data.
+                HdDirtyBits dirtyBits = HdChangeTracker::Clean;
+                if (usdPath.IsAbsoluteRootOrPrimPath()) {
+                    dirtyBits = adapter->ProcessPrimChange(
+                        primInfo->usdPrim, cachePath, changedInfoFields);
+                } else if (usdPath.IsPropertyPath()) {
+                    dirtyBits = adapter->ProcessPropertyChange(
+                        primInfo->usdPrim, cachePath, usdPath.GetNameToken());
+                } else {
+                    TF_VERIFY(false, "Unexpected path: <%s>",
+                            usdPath.GetText());
+                }
+
+                if (dirtyBits == HdChangeTracker::Clean) {
+                    // Do nothing
+                } else if (dirtyBits != HdChangeTracker::AllDirty) {
+                    // Update Variability
+                    adapter->TrackVariability(primInfo->usdPrim, cachePath,
+                                              &primInfo->timeVaryingBits);
+
+                    // Propagate the dirty bits back out to the change tracker.
+                    HdDirtyBits combinedBits =
+                        dirtyBits | primInfo->timeVaryingBits;
+                    if (combinedBits != HdChangeTracker::Clean) {
+                        adapter->MarkDirty(primInfo->usdPrim, cachePath,
+                                           combinedBits, _proxy);
+                    }
+                } else {
+                    // If we want to resync the hydra prim, generate a fake
+                    // resync notice for the usd prim in its primInfo.
+                    _deferredResyncs.push_back(std::make_pair(
+                        primInfo->usdPrim.GetPath(), false));
+                }
+            }
+        }
+    }
+
+    void ResyncUsdPrims()
+    {
+        for (auto &&deferredResync : _deferredResyncs) {
+            _delegate->_ResyncUsdPrim(
+                deferredResync.first, _proxy, deferredResync.second);
+        }
+
+        // Remove any objects that were queued for removal to ensure
+        // RefreshObject doesn't apply changes to removed objects.
+        _proxy->_ProcessRemovals();
+    }
+
+    void Clear()
+    {
+        _tasks.clear();
+        _usdPaths.clear();
+        _changedInfoFields.clear();
+        _deferredResyncs.clear();
     }
 };
 
@@ -747,6 +891,28 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
 }
 
 void
+UsdImagingDelegate::_ExecuteWorkForObjectRefresh(_RefreshWorker* worker)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    worker->DisableValueCacheMutations();
+    {
+        // Release the GIL to ensure that threaded work won't deadlock if
+        // they also need the GIL.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        WorkParallelForN(
+            worker->GetTaskCount(), 
+            std::bind(&UsdImagingDelegate::_RefreshWorker::RefreshObjects, 
+                      worker, std::placeholders::_1, std::placeholders::_2));
+    }
+    worker->EnableValueCacheMutations();
+
+    worker->ResyncUsdPrims();
+    worker->Clear();
+}
+
+void
 UsdImagingDelegate::SetTime(UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
@@ -880,6 +1046,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
+    UsdImagingDelegate::_RefreshWorker refreshWorker(this, &indexProxy);
 
     if (!_usdPathsToResync.empty()) {
         // Make a copy of _usdPathsToResync but uniqued with a
@@ -897,15 +1064,14 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
-                _RefreshUsdObject(usdPath, TfTokenVector(), &indexProxy);
+                _RefreshUsdObject(&refreshWorker, usdPath);
             } else if (usdPath.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
-                _RefreshUsdObject(usdPath.GetParentPath(), TfTokenVector(),
-                               &indexProxy);
+                _RefreshUsdObject(&refreshWorker, usdPath.GetParentPath());
             } else if (usdPath.IsAbsoluteRootOrPrimPath()) {
-                _ResyncUsdPrim(usdPath, &indexProxy);
+                refreshWorker.AddResync(usdPath, false);
             } else {
                 TF_WARN("Unexpected path type to resync: <%s>",
                         usdPath.GetText());
@@ -913,9 +1079,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
         }
     }
 
-    // Remove any objects that were queued for removal to ensure RefreshObject
-    // doesn't apply changes to removed objects.
-    indexProxy._ProcessRemovals();
+    _ExecuteWorkForObjectRefresh(&refreshWorker);
 
     if (!_usdPathsToUpdate.empty()) {
         _PathsToUpdateMap usdPathsToUpdate;
@@ -927,18 +1091,16 @@ UsdImagingDelegate::ApplyPendingUpdates()
             if (usdPath.IsPropertyPath() || usdPath.IsAbsoluteRootOrPrimPath()){
                 // Note that changedPrimInfoFields will be empty if the
                 // path is a property path.
-                _RefreshUsdObject(usdPath, changedPrimInfoFields, &indexProxy);
-
-                // If any objects were removed as a result of the refresh (if it
-                // internally decided to resync), they must be ejected now,
-                // before the next call to _RefreshObject.
-                indexProxy._ProcessRemovals();
+                _RefreshUsdObject(&refreshWorker,
+                        usdPath, &changedPrimInfoFields);
             } else {
                 TF_RUNTIME_ERROR("Unexpected path type to update: <%s>",
                         usdPath.GetText());
             }
         }
     }
+
+    _ExecuteWorkForObjectRefresh(&refreshWorker);
 
     // If any changes called Repopulate() on the indexProxy, we need to
     // repopulate them before any updates. If the list is empty, _Populate is a
@@ -1174,15 +1336,18 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
 }
 
 void 
-UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath, 
-                                      TfTokenVector const& changedInfoFields,
-                                      UsdImagingIndexProxy* proxy) 
+UsdImagingDelegate::_RefreshUsdObject(_RefreshWorker *worker,
+                                      SdfPath const& usdPath, 
+                                      TfTokenVector const* changedInfoFields)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: %s %s\n",
-            usdPath.GetText(), TfStringify(changedInfoFields).c_str());
+            usdPath.GetText(),
+            changedInfoFields
+                ? TfStringify(*changedInfoFields).c_str()
+                : "null");
 
     SdfPathVector affectedCachePaths;
 
@@ -1191,7 +1356,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         for (auto it = range.first; it != range.second; ++it) {
             SdfPath cachePath = it->second;
             if (_GetHdPrimInfo(cachePath)) {
-                affectedCachePaths.push_back(cachePath);
+                worker->AddTask(cachePath, usdPath, changedInfoFields);
             }
         }
     } else if (usdPath.IsPropertyPath()) {
@@ -1208,7 +1373,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         if (attrName == UsdGeomTokens->modelDrawMode ||
             attrName == UsdGeomTokens->modelApplyDrawMode ||
             TfStringStartsWith(attrName, UsdShadeTokens->materialBinding)) {
-            _ResyncUsdPrim(usdPrimPath, proxy, true);
+            worker->AddResync(usdPrimPath, true);
             return;
         }
 
@@ -1246,13 +1411,13 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 "material binding changes.\n", usdPath.GetText());
 
             TF_FOR_ALL(it, _hdPrimInfoMap) {
-                affectedCachePaths.push_back(it->first);
+                worker->AddTask(it->first, usdPath, changedInfoFields);
             }
         } else if (TfStringStartsWith(attrName, UsdShadeTokens->coordSys)) {
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
                 "HdCoordSys bindings affected for %s\n", usdPath.GetText());
             // Coordinate system bindings apply to all descendent gprims.
-            _ResyncUsdPrim(usdPrimPath, proxy, true);
+            worker->AddResync(usdPrimPath, true);
             return;
         } else if (usdPrim && usdPrim.IsA<UsdShadeShader>()) {
             // Shader edits get forwarded to parent material.
@@ -1267,7 +1432,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 for (auto it = range.first; it != range.second; ++it) {
                     SdfPath cachePath = it->second;
                     if (_GetHdPrimInfo(cachePath)) {
-                        affectedCachePaths.push_back(cachePath);
+                        worker->AddTask(cachePath, usdPath, changedInfoFields);
                     }
                 }
             }
@@ -1278,71 +1443,12 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             for (auto it = range.first; it != range.second; ++it) {
                 SdfPath cachePath = it->second;
                 if (_GetHdPrimInfo(cachePath)) {
-                    affectedCachePaths.push_back(cachePath);
+                    worker->AddTask(cachePath, usdPath, changedInfoFields);
                 }
             }
         }
     }
-
-    // PERFORMANCE: We could execute this in parallel, for large numbers of
-    // prims.
-    for (SdfPath const& affectedCachePath: affectedCachePaths) {
-
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(affectedCachePath);
-
-        TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected prim: <%s>\n",
-                affectedCachePath.GetText());
-
-        // Due to the ResyncPrim condition when AllDirty is returned below, we
-        // may or may not find an associated primInfo for every prim in
-        // affectedPrims. If we find no primInfo, the prim that was previously
-        // affected by this refresh no longer exists and can be ignored.
-        //
-        // It is also possible that we find a primInfo, but the prim it refers
-        // to has been deleted from the stage and is no longer valid. Such a
-        // prim may end up in the affectedPrims during the refresh of a
-        // collection that previously pointed directly to a prim that has
-        // been deleted. The primInfo for this prim will still be in the index
-        // because we haven't had the index process removals yet.
-        if (primInfo != nullptr &&
-            primInfo->usdPrim.IsValid() &&
-            TF_VERIFY(primInfo->adapter, "%s", affectedCachePath.GetText())) {
-            UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
-
-            // For the dirty bits that we've been told changed, go re-discover
-            // variability and stage the associated data.
-            HdDirtyBits dirtyBits = HdChangeTracker::Clean;
-            if (usdPath.IsAbsoluteRootOrPrimPath()) {
-                dirtyBits = adapter->ProcessPrimChange(
-                    primInfo->usdPrim, affectedCachePath, changedInfoFields);
-            } else if (usdPath.IsPropertyPath()) {
-                dirtyBits = adapter->ProcessPropertyChange(
-                    primInfo->usdPrim, affectedCachePath, usdPath.GetNameToken());
-            } else {
-                TF_VERIFY(false, "Unexpected path: <%s>", usdPath.GetText());
-            }
-
-            if (dirtyBits == HdChangeTracker::Clean) {
-                // Do nothing
-            } else if (dirtyBits != HdChangeTracker::AllDirty) {
-                // Update Variability
-                adapter->TrackVariability(primInfo->usdPrim, affectedCachePath,
-                                          &primInfo->timeVaryingBits);
-
-                // Propagate the dirty bits back out to the change tracker.
-                HdDirtyBits combinedBits =
-                    dirtyBits | primInfo->timeVaryingBits;
-                if (combinedBits != HdChangeTracker::Clean) {
-                    adapter->MarkDirty(primInfo->usdPrim, affectedCachePath,
-                                       combinedBits, proxy);
-                }
-            } else {
-                // If we want to resync the hydra prim, generate a fake resync
-                // notice for the usd prim in its primInfo.
-                _ResyncUsdPrim(primInfo->usdPrim.GetPath(), proxy);
-            }
-        }
-    }
+    worker->AddTasks(affectedCachePaths, usdPath, changedInfoFields);
 }
 
 // -------------------------------------------------------------------------- //

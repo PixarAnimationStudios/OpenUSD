@@ -472,6 +472,7 @@ public:
 private:
     // Internal friend class.
     class _Worker;
+    class _RefreshWorker;
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
@@ -501,15 +502,19 @@ private:
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const&,
                               UsdStageWeakPtr const& sender);
 
+    // Execute all object refresh tasks that have been added to the given
+    // worker.
+    void _ExecuteWorkForObjectRefresh(_RefreshWorker* worker);
+
     // The lightest-weight update, it does fine-grained invalidation of
     // individual properties at the given path (prim or property).
     //
     // If \p path is a prim path, changedPrimInfoFields will be populated
     // with the list of scene description fields that caused this prim to
     // be refreshed.
-    void _RefreshUsdObject(SdfPath const& usdPath, 
-                           TfTokenVector const& changedPrimInfoFields,
-                           UsdImagingIndexProxy* proxy);
+    void _RefreshUsdObject(_RefreshWorker *worker,
+                           SdfPath const& usdPath, 
+                           TfTokenVector const* changedPrimInfoFields=nullptr);
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
