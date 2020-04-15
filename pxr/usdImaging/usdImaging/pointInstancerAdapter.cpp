@@ -183,6 +183,21 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     instrData.parentInstancerCachePath = parentInstancerCachePath;
     instrData.visibleTime = std::numeric_limits<double>::infinity();
 
+    // Store the reverse mapping from prototype paths back to this new
+    // instancer that uses the prototype.
+    for (auto usdProtoPath : usdProtoPaths) {
+        _PrototypeData& protoData = _prototypeData[usdProtoPath];
+        protoData.instancerCachePaths.insert(instancerCachePath);
+    }
+
+    // Store the reverse mapping from the parent instancer path back to
+    // this new instancer.
+    if (!parentInstancerCachePath.IsEmpty()) {
+        _ParentInstancerData& parentData =
+            _parentInstancerData[parentInstancerCachePath];
+        parentData.childCachePaths.insert(instancerCachePath);
+    }
+
     TF_DEBUG(USDIMAGING_INSTANCER)
         .Msg("[Add PI] %s, parentInstancerCachePath <%s>\n",
              instancerCachePath.GetText(), parentInstancerCachePath.GetText());
@@ -227,7 +242,8 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
                                            TfToken(),
                                            TfToken(),
                                            instancerAdapter};
-        _PopulatePrototype(protoIndex, instrData, protoRootPrim, index, &ctx);
+        _PopulatePrototype(protoIndex, instancerCachePath,
+                instrData, protoRootPrim, index, &ctx);
     }
 
     // Make sure we populate instancer data to the value cache the first time
@@ -243,6 +259,7 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
 void
 UsdImagingPointInstancerAdapter::_PopulatePrototype(
     int protoIndex,
+    SdfPath const& instancerCachePath,
     _InstancerData& instrData,
     UsdPrim const& protoRootPrim,
     UsdImagingIndexProxy* index,
@@ -419,6 +436,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             proto.adapter = adapter;
             proto.protoRootPath = instrData.prototypePaths[protoIndex];
             proto.paths = instancerChain;
+
+            _PrototypeData& protoData = _prototypeData[protoPath];
+            protoData.instancerCachePaths.insert(instancerCachePath);
 
             // Book keeping, for debugging.
             instantiatedPrimCount++;
@@ -893,40 +913,28 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
     // instancer that references this prim must be rebuilt, we don't currently
     // support incrementally rebuilding an instancer.
 
-    // Scan all instancers for dependencies
     if (instancersToUnload.empty()) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-
-            if (inst.parentInstancerCachePath == cachePath) {
-                instancersToUnload.push_back(instancerPath);
-                continue;
-            }
-
-            // Check if this is a new prim under an existing proto root.
-            // Once the prim is found, we know the entire instancer will be
-            // unloaded so we can stop searching.
-            bool foundPrim = false;
-            for (SdfPath const& protoPath : inst.prototypePaths) {
-                if (cachePath.HasPrefix(protoPath)) {
-                    // Append this instancer to the unload list (we can't modify
-                    // the structure while iterating).
+        // Check the reverse lookup of prototypes to instancers. This will
+        // catch any instancers that have this prototype or any ancestor of
+        // this prototype in its prototypePaths or protoPrimMap.
+        SdfPath cachePathAncestor = cachePath;
+        while (!cachePathAncestor.IsAbsoluteRootPath()) {
+            _PrototypeDataMap::iterator protoIt =
+                _prototypeData.find(cachePathAncestor);
+            if (protoIt != _prototypeData.end()) {
+                for (auto instancerPath : protoIt->second.instancerCachePaths) {
                     instancersToUnload.push_back(instancerPath);
-                    foundPrim = true;
-                    break;
                 }
             }
+            cachePathAncestor = cachePathAncestor.GetParentPath();
+        }
 
-            // Check if this is a populated prototype prim with a name-mangled
-            // path...
-            if (inst.protoPrimMap.find(cachePath) != inst.protoPrimMap.end()) {
+        // Check if the cache path indicates a parent instancer.
+        _ParentInstancerDataMap::iterator parentIt =
+            _parentInstancerData.find(cachePath);
+        if (parentIt != _parentInstancerData.end()) {
+            for (auto instancerPath : parentIt->second.childCachePaths) {
                 instancersToUnload.push_back(instancerPath);
-                foundPrim = true;
-            }
-
-            if (foundPrim) {
-                continue;
             }
         }
     }
@@ -934,17 +942,16 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
     // Propagate changes from the parent instancers down to the children.
     SdfPathVector moreToUnload;
     TF_FOR_ALL(i, instancersToUnload) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-            if (inst.parentInstancerCachePath == *i) {
+        _ParentInstancerDataMap::iterator parentIt =
+            _parentInstancerData.find(cachePath);
+        if (parentIt != _parentInstancerData.end()) {
+            for (auto instancerPath : parentIt->second.childCachePaths) {
                 moreToUnload.push_back(instancerPath);
             }
         }
     }
     instancersToUnload.insert(instancersToUnload.end(), moreToUnload.begin(),
             moreToUnload.end());
-    moreToUnload.clear();
 
     if (instancersToReload) {
         instancersToReload->reserve(instancersToUnload.size());
@@ -1132,6 +1139,29 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
 
+    // Remove the reverse mapping from the prototype paths to the instancer.
+    for (auto usdProtoPath : instIt->second.prototypePaths) {
+        _PrototypeDataMap::iterator protoIt = _prototypeData.find(usdProtoPath);
+        if (protoIt != _prototypeData.end()) {
+            protoIt->second.instancerCachePaths.erase(instancerPath);
+            if (protoIt->second.instancerCachePaths.empty()) {
+                _prototypeData.erase(protoIt);
+            }
+        }
+    }
+
+    // Remove the reverse mapping from the parent instancer to the instancer.
+    if (!instIt->second.parentInstancerCachePath.IsEmpty()) {
+        _ParentInstancerDataMap::iterator parentIt =
+            _parentInstancerData.find(instIt->second.parentInstancerCachePath);
+        if (parentIt != _parentInstancerData.end()) {
+            parentIt->second.childCachePaths.erase(instancerPath);
+            if (parentIt->second.childCachePaths.empty()) {
+                _parentInstancerData.erase(parentIt);
+            }
+        }
+    }
+
     // XXX: There's a nasty catch-22 where PI's ProcessPrimRemoval tries to
     // remove that point instancer as well as any parents (since we don't have
     // good invalidation for a parent PI when a child PI is removed/resynced,
@@ -1148,9 +1178,18 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 
     // First, we need to make sure all proto rprims are removed.
     TF_FOR_ALL(protoPrimIt, protoPrimMap) {
-        SdfPath     const& cachePath = protoPrimIt->first;
-        _ProtoPrim const& proto     = protoPrimIt->second;
+        SdfPath const& cachePath = protoPrimIt->first;
+        _ProtoPrim const& proto = protoPrimIt->second;
+        _PrototypeDataMap::iterator protoIt = _prototypeData.find(cachePath);
 
+        // Remove the proto prim cache path from the reverse map of
+        // prototypes paths to instancer paths as well.
+        if (protoIt != _prototypeData.end()) {
+            protoIt->second.instancerCachePaths.erase(instancerPath);
+            if (protoIt->second.instancerCachePaths.empty()) {
+                _prototypeData.erase(protoIt);
+            }
+        }
         proto.adapter->ProcessPrimRemoval(cachePath, index);
     }
 

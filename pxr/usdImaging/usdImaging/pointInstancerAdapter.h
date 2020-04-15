@@ -191,12 +191,15 @@ protected:
 private:
     struct _ProtoPrim;
     struct _InstancerData;
+    struct _PrototypeData;
+    struct _ParentInstancerData;
 
     SdfPath _Populate(UsdPrim const& prim,
                    UsdImagingIndexProxy* index,
                    UsdImagingInstancerContext const* instancerContext);
 
     void _PopulatePrototype(int protoIndex,
+                            SdfPath const& instancerCachePath,
                             _InstancerData& instrData,
                             UsdPrim const& protoRootPrim,
                             UsdImagingIndexProxy* index,
@@ -295,7 +298,7 @@ private:
     // Indexed by cachePath (each prim has one entry)
     typedef std::unordered_map<SdfPath, _ProtoPrim, SdfPath::Hash> _ProtoPrimMap;
 
-    // All data asscoiated with a given Instancer prim. PrimMap could
+    // All data associated with a given Instancer prim. PrimMap could
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
@@ -321,6 +324,32 @@ private:
                                _InstancerData, 
                                SdfPath::Hash> _InstancerDataMap;
     _InstancerDataMap _instancerData;
+
+    // For each prototype used by any point instancer, store the set of paths
+    // to the instancers that use this prototype.
+    struct _PrototypeData {
+        SdfPathSet instancerCachePaths;
+    };
+
+    // A reverse mapping from prototype paths back to the instancers that use
+    // that prototype prim.
+    typedef std::unordered_map<SdfPath /*prototypePath*/, 
+                               _PrototypeData, 
+                               SdfPath::Hash> _PrototypeDataMap;
+    _PrototypeDataMap _prototypeData;
+
+    // For store the child instancers of every parent instancer.
+    struct _ParentInstancerData {
+        SdfPathSet childCachePaths;
+    };
+
+    // A reverse mapping from prototype paths back to the instancers that use
+    // that prototype prim.
+    typedef std::unordered_map<SdfPath /*prototypePath*/, 
+                               _ParentInstancerData, 
+                               SdfPath::Hash> _ParentInstancerDataMap;
+    _ParentInstancerDataMap _parentInstancerData;
+
 };
 
 
