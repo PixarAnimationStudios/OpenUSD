@@ -34,6 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStUvTextureObject;
+class HdStFieldTextureObject;
 
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
@@ -118,6 +119,39 @@ private:
     const uint64_t _glTextureSamplerHandle;
 };
 
+/// \class HdStFieldSamplerObject
+///
+/// A sampler suitable for HdStFieldTextureObject.
+///
+class HdStFieldSamplerObject final : public HdStSamplerObject {
+public:
+    HdStFieldSamplerObject(
+        HdStFieldTextureObject const &uvTexture,
+        HdStSamplerParameters const &samplerParameters,
+        bool createBindlessHandle);
+
+    ~HdStFieldSamplerObject() override;
+
+    /// The GL sampler (as understood by glBindSampler)
+    ///
+    uint32_t GetGLSamplerName() const {
+        return _glSamplerName;
+    }
+
+    /// The GL sampler texture handle for bindless textures (as returned by
+    /// glGetTextureSamplerHandleARB).
+    ///
+    /// Only available when requested.
+    ///
+    uint64_t GetGLTextureSamplerHandle() const {
+        return _glTextureSamplerHandle;
+    }
+
+private:
+    const uint32_t _glSamplerName;
+    const uint64_t _glTextureSamplerHandle;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedSamplerObjectHelper;
 
@@ -133,6 +167,11 @@ using HdStTypedSamplerObject =
 template<>
 struct HdSt_TypedSamplerObjectHelper<HdTextureType::Uv> {
     using type = HdStUvSamplerObject;
+};
+
+template<>
+struct HdSt_TypedSamplerObjectHelper<HdTextureType::Field> {
+    using type = HdStFieldSamplerObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

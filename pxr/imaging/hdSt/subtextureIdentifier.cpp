@@ -23,7 +23,12 @@
 //
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+////////////////////////////////////////////////////////////////////////////
+// HdStSubtextureIdentifier
 
 HdStSubtextureIdentifier::~HdStSubtextureIdentifier() = default;
 
@@ -31,6 +36,34 @@ HdStSubtextureIdentifier::ID
 HdStSubtextureIdentifier::Hash() const {
     static ID result = TfToken().Hash();
     return result;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// HdStVdbSubtextureIdentifier
+
+HdStVdbSubtextureIdentifier::HdStVdbSubtextureIdentifier(
+    TfToken const &gridName)
+ : _gridName(gridName)
+{
+}
+
+HdStVdbSubtextureIdentifier::~HdStVdbSubtextureIdentifier() = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStVdbSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStVdbSubtextureIdentifier>(GetGridName());
+}
+
+HdStSubtextureIdentifier::ID
+HdStVdbSubtextureIdentifier::Hash() const
+{
+    static ID typeHash = TfToken("vdb").Hash();
+
+    ID hash = typeHash;
+    boost::hash_combine(hash, _gridName.Hash());
+
+    return hash;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

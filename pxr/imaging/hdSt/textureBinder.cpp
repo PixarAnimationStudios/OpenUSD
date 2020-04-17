@@ -58,6 +58,16 @@ HdSt_TextureBinder::GetBufferSpecs(
                     _bindlessHandleTupleType);
             }
             break;
+        case HdTextureType::Field:
+            if (UsesBindlessTextures()) {
+                specs->emplace_back(
+                    texture.name,
+                    _bindlessHandleTupleType);
+            }
+            specs->emplace_back(
+                TfToken(texture.name.GetString() + "SamplingTransform"),
+                HdTupleType{HdTypeDoubleMat4, 1});
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture type");
         }
@@ -133,6 +143,27 @@ public:
                 name,
                 sampler.GetGLTextureSamplerHandle()));
     }
+
+    static void Compute(
+        TfToken const &name,
+        HdStFieldTextureObject const &texture,
+        HdStFieldSamplerObject const &sampler,
+        HdBufferSourceSharedPtrVector * const sources)
+    {
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                TfToken(name.GetString() + "SamplingTransform"),
+                VtValue(texture.GetSamplingTransform())));
+
+        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
+            return;
+        }
+
+        sources->push_back(
+            std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                name,
+                sampler.GetGLTextureSamplerHandle()));
+    }
 };
 
 void
@@ -171,6 +202,22 @@ public:
     {
         _BindTexture(
             GL_TEXTURE_2D,
+            texture.GetTexture(),
+            sampler.GetGLSamplerName(),
+            name,
+            binder,
+            bind);
+    }
+
+    static void Compute(
+        TfToken const &name,
+        HdStFieldTextureObject const &texture,
+        HdStFieldSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        const bool bind)
+    {
+        _BindTexture(
+            GL_TEXTURE_3D,
             texture.GetTexture(),
             sampler.GetGLSamplerName(),
             name,
@@ -217,6 +264,10 @@ void _Dispatch(
     switch (namedTextureHandle.type) {
     case HdTextureType::Uv:
         _CastAndCompute<HdTextureType::Uv, Functor>(
+            namedTextureHandle, std::forward<Args>(args)...);
+        break;
+    case HdTextureType::Field:
+        _CastAndCompute<HdTextureType::Field, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
     default:

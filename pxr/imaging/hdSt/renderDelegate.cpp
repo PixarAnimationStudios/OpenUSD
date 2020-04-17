@@ -66,13 +66,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
                       "Enable tiny prim culling");
 
-// This token is repeated from usdVolImaging which we cannot access from here.
-// Should we even instantiate bprims of different types for OpenVDB vs Field3d?
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (openvdbAsset)
-);
-
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -91,13 +84,6 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
     HdPrimTypeTokens->sphereLight
-};
-
-const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
-{
-    HdPrimTypeTokens->texture,
-    _tokens->openvdbAsset,
-    HdPrimTypeTokens->renderBuffer
 };
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
@@ -213,10 +199,26 @@ HdStRenderDelegate::GetSupportedSprimTypes() const
     return SUPPORTED_SPRIM_TYPES;
 }
 
+static
+TfTokenVector
+_ComputeSupportedBprimTypes()
+{
+    TfTokenVector result;
+    result.push_back(HdPrimTypeTokens->texture);
+    result.push_back(HdPrimTypeTokens->renderBuffer);
+
+    for (const TfToken &primType : HdStField::GetSupportedBprimTypes()) {
+        result.push_back(primType);
+    }
+
+    return result;
+}
+
 const TfTokenVector &
 HdStRenderDelegate::GetSupportedBprimTypes() const
 {
-    return SUPPORTED_BPRIM_TYPES;
+    static const TfTokenVector result = _ComputeSupportedBprimTypes();
+    return result;
 }
 
 HdRenderParam *
@@ -360,7 +362,7 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(bprimId);
-    } else if (typeId == _tokens->openvdbAsset) {
+    } else if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(bprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_hgi, bprimId);
@@ -376,7 +378,7 @@ HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(SdfPath::EmptyPath());
-    } else if (typeId == _tokens->openvdbAsset) {
+    } else if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_hgi, SdfPath::EmptyPath());

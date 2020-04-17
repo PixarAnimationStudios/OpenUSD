@@ -55,7 +55,34 @@ public:
     virtual ~HdStSubtextureIdentifier();
 };
 
-// No subclasses of HdStSubtextureIdentifier implemented yet.
+///
+/// \class HdStVdbSubtextureIdentifier
+///
+/// Identifies the grid in an OpenVDB file by its name.
+///
+class HdStVdbSubtextureIdentifier : public HdStSubtextureIdentifier
+{
+public:
+    /// C'tor using name of grid in OpenVDB file
+    HDST_API
+    explicit HdStVdbSubtextureIdentifier(TfToken const &gridName);
+
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    HDST_API
+    ID Hash() const override;
+
+    /// Name of grid in OpenVDB file
+    HDST_API
+    TfToken const &GetGridName() const { return _gridName; }
+
+    HDST_API
+    ~HdStVdbSubtextureIdentifier() override;
+
+private:
+    TfToken _gridName;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

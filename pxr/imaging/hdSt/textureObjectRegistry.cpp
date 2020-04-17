@@ -53,6 +53,8 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
     switch(textureType) {
     case HdTextureType::Uv:
         return std::make_shared<HdStUvTextureObject>(textureId, this);
+    case HdTextureType::Field:
+        return std::make_shared<HdStFieldTextureObject>(textureId, this);
     default:
         TF_CODING_ERROR(
             "Texture type not supported by texture object registry.");

@@ -30,6 +30,9 @@
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 
 #include "pxr/imaging/glf/uvTextureData.h"
+#ifdef PXR_OPENVDB_SUPPORT_ENABLED
+#include "pxr/imaging/glf/vdbTextureData.h"
+#endif
 
 #include "pxr/imaging/hgi/hgi.h"
 
@@ -79,7 +82,16 @@ static
 std::string
 _GetDebugName(const HdStTextureIdentifier &textureId)
 {
-    return textureId.GetFilePath().GetString();
+    if (HdStVdbSubtextureIdentifier const * vdbSubtextureId =
+            dynamic_cast<const HdStVdbSubtextureIdentifier*>(
+                textureId.GetSubtextureIdentifier())) {
+        return
+            textureId.GetFilePath().GetString() + " - " +
+            vdbSubtextureId->GetGridName().GetString();
+    }
+     
+    return
+        textureId.GetFilePath().GetString();
 }
 
 static
@@ -144,6 +156,8 @@ HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
     GlfBaseTextureDataRefPtr const &textureData,
     const std::string &debugName)
 {
+    TRACE_FUNCTION();
+
     _textureDesc.debugName = debugName;
 
     if (!textureData) {
@@ -186,6 +200,8 @@ _ConvertRGBToRGBA(
     const GfVec3i &dimensions,
     const T alpha)
 {
+    TRACE_FUNCTION();
+
     const T * const typedData = reinterpret_cast<const T*>(data);
 
     const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
@@ -350,6 +366,8 @@ HdStUvTextureObject::~HdStUvTextureObject()
 void
 HdStUvTextureObject::_Load()
 {
+    TRACE_FUNCTION();
+
     _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
         GlfUVTextureData::New(
             GetTextureIdentifier().GetFilePath(),
@@ -365,6 +383,8 @@ HdStUvTextureObject::_Load()
 void
 HdStUvTextureObject::_Commit()
 {
+    TRACE_FUNCTION();
+
     Hgi * const hgi = _GetHgi();
     if (!hgi) {
         return;
@@ -388,6 +408,125 @@ HdTextureType
 HdStUvTextureObject::GetTextureType() const
 {
     return HdTextureType::Uv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Field texture
+
+#ifdef PXR_OPENVDB_SUPPORT_ENABLED
+
+// Compute transform mapping GfRange3d to unit box [0,1]^3
+static
+GfMatrix4d
+_ComputeSamplingTransform(const GfRange3d &range)
+{
+    const GfVec3d size(range.GetSize());
+
+    const GfVec3d scale(1.0 / size[0], 1.0 / size[1], 1.0 / size[2]);
+
+    return
+        // First map range so that min becomes (0,0,0)
+        GfMatrix4d(1.0).SetTranslateOnly(-range.GetMin()) *
+        // Then scale to unit box
+        GfMatrix4d(1.0).SetScale(scale);
+}
+
+// Compute transform mapping bounding box to unit box [0,1]^3
+static
+GfMatrix4d
+_ComputeSamplingTransform(const GfBBox3d &bbox)
+{
+    return
+        // First map so that bounding box goes to its GfRange3d
+        bbox.GetInverseMatrix() *
+        // Then scale to unit box [0,1]^3
+        _ComputeSamplingTransform(bbox.GetRange());
+}
+
+#endif
+
+HdStFieldTextureObject::HdStFieldTextureObject(
+    const HdStTextureIdentifier &textureId,
+    HdSt_TextureObjectRegistry * const textureObjectRegistry)
+  : HdStTextureObject(textureId, textureObjectRegistry)
+{
+}
+
+HdStFieldTextureObject::~HdStFieldTextureObject()
+{
+    if (Hgi * hgi = _GetHgi()) {
+        hgi->DestroyTexture(&_gpuTexture);
+    }
+}
+
+void
+HdStFieldTextureObject::_Load()
+{
+    TRACE_FUNCTION();
+
+    // Proper casting.
+    HdStVdbSubtextureIdentifier const * vdbSubtextureId =
+        dynamic_cast<const HdStVdbSubtextureIdentifier*>(
+            GetTextureIdentifier().GetSubtextureIdentifier());
+
+    if (!vdbSubtextureId) {
+        TF_CODING_ERROR("Only supporting VDB files for now");
+        return;
+    }
+
+#ifdef PXR_OPENVDB_SUPPORT_ENABLED
+    GlfVdbTextureDataRefPtr const texData =
+        GlfVdbTextureData::New(
+            GetTextureIdentifier().GetFilePath(),
+            vdbSubtextureId->GetGridName(),
+            GetTargetMemory());
+
+    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
+        texData,
+        _GetDebugName(GetTextureIdentifier()));
+
+    if (texData) {
+        _bbox = texData->GetBoundingBox();
+        _samplingTransform = _ComputeSamplingTransform(_bbox);
+    } else {
+        _bbox = GfBBox3d();
+        _samplingTransform = GfMatrix4d(1.0);
+    }
+
+    if (_cpuData->GetTextureDesc().type != HgiTextureType3D) {
+        TF_CODING_ERROR("Wrong texture type for field");
+    }
+#endif
+}
+
+void
+HdStFieldTextureObject::_Commit()
+{
+    TRACE_FUNCTION();
+
+    Hgi * const hgi = _GetHgi();
+    if (!hgi) {
+        return;
+    }
+        
+    // Free previously allocated texture
+    hgi->DestroyTexture(&_gpuTexture);
+
+    if (!_cpuData) {
+        return;
+    }
+    
+    // Upload to GPU
+    _gpuTexture = hgi->CreateTexture(_cpuData->GetTextureDesc());
+
+    // Free CPU memory after transfer to GPU
+    _cpuData.reset();
+}
+
+HdTextureType
+HdStFieldTextureObject::GetTextureType() const
+{
+    return HdTextureType::Field;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

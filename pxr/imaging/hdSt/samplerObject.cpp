@@ -50,7 +50,13 @@ HdStSamplerParameters::operator!=(const HdStSamplerParameters &other) const
     return !(*this == other);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// HdStTextureObject
+
 HdStSamplerObject::~HdStSamplerObject() = default;
+
+///////////////////////////////////////////////////////////////////////////////
+// Helpers
 
 // Generate GL sampler
 static
@@ -163,6 +169,9 @@ _GenGLTextureSamplerHandle(HgiTextureHandle const &textureHandle,
     return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Uv sampler
+
 HdStUvSamplerObject::HdStUvSamplerObject(
     HdStUvTextureObject const &texture,
     HdStSamplerParameters const &samplerParameters,
@@ -191,6 +200,32 @@ HdStUvSamplerObject::~HdStUvSamplerObject()
     // because it itself was destroyed or because the file was
     // reloaded or target memory was changed.
 
+    if (_glSamplerName) {
+        glDeleteSamplers(1, &_glSamplerName);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Field sampler
+
+HdStFieldSamplerObject::HdStFieldSamplerObject(
+    HdStFieldTextureObject const &texture,
+    HdStSamplerParameters const &samplerParameters,
+    const bool createBindlessHandle)
+  : _glSamplerName(
+      _GenGLSampler(
+          samplerParameters))
+  , _glTextureSamplerHandle(
+      _GenGLTextureSamplerHandle(
+          texture.GetTexture(),
+          _glSamplerName,
+          createBindlessHandle))
+{
+}
+
+HdStFieldSamplerObject::~HdStFieldSamplerObject()
+{
+    // See above comment about destroying _glTextureSamplerHandle
     if (_glSamplerName) {
         glDeleteSamplers(1, &_glSamplerName);
     }

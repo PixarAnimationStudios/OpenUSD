@@ -146,6 +146,66 @@ private:
     HgiTextureHandle _gpuTexture;
 };
 
+using HdStFieldTextureObjectSharedPtr =
+    std::shared_ptr<class HdStFieldTextureObject>;
+
+/// \class HdStFieldTextureObject
+///
+/// A uvw texture with a bounding box describing how to transform it.
+///
+class HdStFieldTextureObject final : public HdStTextureObject
+{
+public:
+    HDST_API
+    HdStFieldTextureObject(
+        const HdStTextureIdentifier &textureId,
+        HdSt_TextureObjectRegistry *textureObjectRegistry);
+
+    HDST_API
+    ~HdStFieldTextureObject() override;
+
+    /// Get the handle to the actual GPU resource.
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    HgiTextureHandle const &GetTexture() const {
+        return _gpuTexture;
+    }
+
+    /// The box the texture fills out.
+    ///
+    /// Only valid after the commit phase.
+    ///
+    HDST_API
+    const GfBBox3d &GetBoundingBox() const { return _bbox; }
+
+    /// The sampling transform.
+    ///
+    /// Only valid after the commit phase.
+    ///
+    HDST_API
+    const GfMatrix4d &GetSamplingTransform() const {
+        return _samplingTransform;
+    }
+
+    HDST_API
+    HdTextureType GetTextureType() const override;
+
+protected:
+    HDST_API
+    void _Load() override;
+
+    HDST_API
+    void _Commit() override;
+
+private:
+    std::unique_ptr<class HdSt_TextureObjectCpuData> _cpuData;
+    GfBBox3d _bbox;
+    GfMatrix4d _samplingTransform;
+    HgiTextureHandle _gpuTexture;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
@@ -161,6 +221,11 @@ using HdStTypedTextureObject =
 template<>
 struct HdSt_TypedTextureObjectHelper<HdTextureType::Uv> {
     using type = HdStUvTextureObject;
+};
+
+template<>
+struct HdSt_TypedTextureObjectHelper<HdTextureType::Field> {
+    using type = HdStFieldTextureObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

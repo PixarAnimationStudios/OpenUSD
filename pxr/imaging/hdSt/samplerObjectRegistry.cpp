@@ -68,6 +68,9 @@ _MakeSamplerObject(
     case HdTextureType::Uv:
         return _MakeTypedSamplerObject<HdTextureType::Uv>(
             texture, samplerParameters, createBindlessHandle);
+    case HdTextureType::Field:
+        return _MakeTypedSamplerObject<HdTextureType::Field>(
+            texture, samplerParameters, createBindlessHandle);
     default:
         TF_CODING_ERROR("Unsupported texture type");
         return nullptr;
