@@ -160,12 +160,6 @@ public:
     /// be changed so that all reporters reporting on a collector update their
     /// respective trees. 
     TRACE_API void UpdateTraceTrees();
-
-    /// Old API, internally calls UpdateTraceTrees().
-    TRACE_API void UpdateAggregateTree();
-
-    /// Old API, internally calls UpdateTraceTrees().
-    TRACE_API void UpdateEventTree();
     
     /// Clears event tree and counters.
     TRACE_API void ClearTree();

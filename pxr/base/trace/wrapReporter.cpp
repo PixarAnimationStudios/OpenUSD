@@ -119,8 +119,7 @@ void wrapReporter()
 
         .add_property("aggregateTreeRoot", &This::GetAggregateTreeRoot)
 
-        .def("UpdateAggregateTree", &This::UpdateAggregateTree)
-        .def("UpdateEventTree", &This::UpdateEventTree)
+        .def("UpdateTraceTrees", &This::UpdateTraceTrees)
 
         .def("ClearTree", &This::ClearTree)
 

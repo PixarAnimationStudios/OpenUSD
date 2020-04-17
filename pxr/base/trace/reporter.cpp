@@ -251,7 +251,7 @@ TraceReporter::Report(
         iterationCount = 1;
     }
 
-    UpdateAggregateTree();
+    UpdateTraceTrees();
 
     // Fold recursive calls if we need to.
     if (GetFoldRecursiveCalls()) {
@@ -276,7 +276,7 @@ TraceReporter::Report(
 void
 TraceReporter::ReportTimes(std::ostream &s)
 {
-    UpdateAggregateTree();
+    UpdateTraceTrees();
 
     s << "\nTotal time for each key ==============\n";
     _PrintTimes(s);
@@ -286,7 +286,7 @@ TraceReporter::ReportTimes(std::ostream &s)
 void 
 TraceReporter::ReportChromeTracing(std::ostream &s)
 {
-    UpdateEventTree();
+    UpdateTraceTrees();
 
     JsWriter w(s);
     _eventTree->WriteChromeTraceObject(w);
@@ -321,19 +321,6 @@ TraceReporter::UpdateTraceTrees()
 {
     _RebuildEventAndAggregateTrees();
 }
-
-void
-TraceReporter::UpdateAggregateTree()
-{
-    _RebuildEventAndAggregateTrees();
-}
-
-void
-TraceReporter::UpdateEventTree()
-{
-    _RebuildEventAndAggregateTrees();
-}
-
 
 void 
 TraceReporter::ClearTree() 
