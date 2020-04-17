@@ -35,12 +35,9 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStGLSLFXShader> HdStGLSLFXShaderSharedPtr;
 typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
 
 // XXX: DOCS!

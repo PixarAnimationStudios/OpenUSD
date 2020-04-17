@@ -29,12 +29,9 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hd/renderPass.h"
 
-#include <boost/shared_ptr.hpp>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-typedef boost::shared_ptr<class HdSt_RenderPass> HdSt_RenderPassSharedPtr;
 
 class Hgi;
 

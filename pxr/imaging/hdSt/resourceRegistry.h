@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
-#include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_vector.h>
 
 #include <atomic>
