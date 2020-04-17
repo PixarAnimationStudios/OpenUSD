@@ -54,8 +54,8 @@ using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 
 typedef boost::shared_ptr<class HdStGLSLProgram>
     HdStGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
-    HdSt_BasisCurvesTopologySharedPtr;
+using HdSt_BasisCurvesTopologySharedPtr =
+    std::shared_ptr<class HdSt_BasisCurvesTopology>;
 
 using HdStShaderCodePtr =
     std::weak_ptr<class HdStShaderCode>;

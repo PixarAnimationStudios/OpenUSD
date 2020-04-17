@@ -31,9 +31,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
-                                              HdSt_BasisCurvesTopologySharedPtr;
+using HdSt_BasisCurvesTopologySharedPtr =
+    std::shared_ptr<class HdSt_BasisCurvesTopology>;
 
 using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 
