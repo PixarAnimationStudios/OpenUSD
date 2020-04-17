@@ -60,7 +60,8 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
             _bufferId,
             _descriptor.byteSize,
             _descriptor.initialData,
-            flags);
+            flags | GL_DYNAMIC_STORAGE_BIT);
+
         _mapped = glMapNamedBufferRange(_bufferId, 0, desc.byteSize, flags);
     } else {
         TF_CODING_ERROR("Unknown HgiBufferUsage bit");
