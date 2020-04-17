@@ -265,12 +265,18 @@ GLenum
 HdStGLConversions::GetWrap(HdWrap wrap)
 {
     switch (wrap) {
-        case HdWrapClamp : return GL_CLAMP_TO_EDGE;
-        case HdWrapRepeat : return GL_REPEAT;
-        case HdWrapBlack : return GL_CLAMP_TO_BORDER;
-        case HdWrapMirror : return GL_MIRRORED_REPEAT;
-        case HdWrapUseMetadata : return GL_CLAMP_TO_BORDER;
-        case HdWrapLegacy : return GL_REPEAT;
+        case HdWrapClamp:
+            return GL_CLAMP_TO_EDGE;
+        case HdWrapLegacyNoOpinionFallbackRepeat:
+        case HdWrapRepeat:
+            return GL_REPEAT;
+        case HdWrapNoOpinion:
+        case HdWrapBlack:
+            return GL_CLAMP_TO_BORDER;
+        case HdWrapMirror:
+            return GL_MIRRORED_REPEAT;
+        case HdWrapLegacyClamp:
+            return GL_CLAMP;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);

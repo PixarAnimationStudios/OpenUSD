@@ -347,6 +347,46 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
     }
 }
 
+static
+HdWrap
+_GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
+{
+    if (hasWrapMode) {
+        switch(wrapMode) {
+        case GL_CLAMP_TO_EDGE: return HdWrapClamp;
+        case GL_REPEAT: return HdWrapRepeat;
+        case GL_CLAMP_TO_BORDER: return HdWrapBlack;
+        case GL_MIRRORED_REPEAT: return HdWrapMirror;
+        //
+        // For GlfImage legacy plugins that still use the GL_CLAMP
+        // (obsoleted in OpenGL 3.0).
+        //
+        // Note that some graphics drivers produce results for GL_CLAMP
+        // that match neither GL_CLAMP_TO_BORDER not GL_CLAMP_TO_EDGE.
+        //
+        case GL_CLAMP: return HdWrapLegacyClamp;
+        default:
+            TF_CODING_ERROR("Unsupported GL wrap mode %d", wrapMode);
+        }
+    }
+
+    return HdWrapNoOpinion;
+}
+
+static
+std::pair<HdWrap, HdWrap>
+_GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
+{
+    if (!uvTexture) {
+        return { HdWrapUseMetadata, HdWrapUseMetadata };
+    }
+
+    const GlfBaseTextureData::WrapInfo &wrapInfo = uvTexture->GetWrapInfo();
+
+    return { _GetWrapParameter(wrapInfo.hasWrapModeS, wrapInfo.wrapModeS), 
+             _GetWrapParameter(wrapInfo.hasWrapModeT, wrapInfo.wrapModeT) };
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Uv texture
 
@@ -354,6 +394,7 @@ HdStUvTextureObject::HdStUvTextureObject(
     const HdStTextureIdentifier &textureId,
     HdSt_TextureObjectRegistry * const textureObjectRegistry)
   : HdStTextureObject(textureId, textureObjectRegistry)
+  , _wrapParameters{HdWrapUseMetadata, HdWrapUseMetadata}
 {
 }
 
@@ -369,16 +410,22 @@ HdStUvTextureObject::_Load()
 {
     TRACE_FUNCTION();
 
-    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
+    GlfUVTextureDataRefPtr const textureData =
         GlfUVTextureData::New(
             GetTextureIdentifier().GetFilePath(),
             GetTargetMemory(),
-            /* borders */ 0, 0, 0, 0),
-        _GetDebugName(GetTextureIdentifier()));
+            /* borders */ 0, 0, 0, 0);
+
+    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
+        textureData, _GetDebugName(GetTextureIdentifier()));
 
     if (_cpuData->GetTextureDesc().type != HgiTextureType2D) {
         TF_CODING_ERROR("Wrong texture type for uv");
     }
+
+    // _GetWrapParameters can only be called after the texture has
+    // been loaded by HdSt_TextureObjectCpuData.
+    _wrapParameters = _GetWrapParameters(textureData);
 }
 
 void

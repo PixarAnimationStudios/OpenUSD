@@ -66,24 +66,6 @@ _GenGLSampler(HdStSamplerParameters const &samplerParameters)
     GLuint result = 0;
     glGenSamplers(1, &result);
 
-    if (samplerParameters.wrapS == HdWrapUseMetadata ||
-        samplerParameters.wrapS == HdWrapLegacy) {
-        TF_WARN(
-            "Using texture metadata to get wrapS is not supported yet.");
-    }
-
-    if (samplerParameters.wrapT == HdWrapUseMetadata ||
-        samplerParameters.wrapT == HdWrapLegacy) {
-        TF_WARN(
-            "Using texture metadata to get wrapT is not supported yet.");
-    }
-
-    if (samplerParameters.wrapR == HdWrapUseMetadata ||
-        samplerParameters.wrapR == HdWrapLegacy) {
-        TF_WARN(
-            "Using texture metadata to get wrapR is not supported yet.");
-    }
-
     glSamplerParameteri(
         result,
         GL_TEXTURE_WRAP_S,
@@ -194,13 +176,58 @@ _GenGlTextureHandle(const GLuint textureName,
 ///////////////////////////////////////////////////////////////////////////////
 // Uv sampler
 
+// Resolve a wrap parameter using the opinion authored in the metadata of a
+// texture file.
+static
+void
+_ResolveSamplerParameter(
+    const HdWrap textureOpinion,
+    HdWrap * const parameter)
+{
+    if (*parameter == HdWrapNoOpinion) {
+        *parameter = textureOpinion;
+    }
+
+    // Legacy behavior for HwUvTexture_1
+    if (*parameter == HdWrapLegacyNoOpinionFallbackRepeat) {
+        if (textureOpinion == HdWrapNoOpinion) {
+            // Use repeat if there is no opinion on either the
+            // texture node or in the texture file.
+            *parameter = HdWrapRepeat;
+        } else {
+            *parameter = textureOpinion;
+        }
+    }
+}
+
+// Resolve wrapS or wrapT of the samplerParameters using metadata
+// from the texture file.
+static
+HdStSamplerParameters
+_ResolveUvSamplerParameters(
+    HdStUvTextureObject const &texture,
+    HdStSamplerParameters const &samplerParameters)
+{
+    HdStSamplerParameters result = samplerParameters;
+    _ResolveSamplerParameter(
+        texture.GetWrapParameters().first,
+        &result.wrapS);
+
+    _ResolveSamplerParameter(
+        texture.GetWrapParameters().second,
+        &result.wrapT);
+
+    return result;
+}
+
 HdStUvSamplerObject::HdStUvSamplerObject(
     HdStUvTextureObject const &texture,
     HdStSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
   : _glSamplerName(
       _GenGLSampler(
-          samplerParameters))
+          _ResolveUvSamplerParameters(
+              texture, samplerParameters)))
   , _glTextureSamplerHandle(
       _GenGLTextureSamplerHandle(
           texture.GetTexture(),

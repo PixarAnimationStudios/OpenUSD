@@ -136,6 +136,14 @@ public:
         return _gpuTexture;
     }
 
+    /// Opinion about wrapS and wrapT parameters from the texture file.
+    ///
+    /// Only valid after commit phase. Can be HdWrapNoOpinion.
+    HDST_API
+    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const {
+        return _wrapParameters;
+    }
+
     HDST_API
     HdTextureType GetTextureType() const override;
 
@@ -149,6 +157,7 @@ protected:
 private:
     std::unique_ptr<class HdSt_TextureObjectCpuData> _cpuData;
     HgiTextureHandle _gpuTexture;
+    std::pair<HdWrap, HdWrap> _wrapParameters;
 };
 
 using HdStFieldTextureObjectSharedPtr =

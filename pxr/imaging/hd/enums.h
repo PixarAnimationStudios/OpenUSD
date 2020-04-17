@@ -176,8 +176,11 @@ enum HdPointsGeomStyle {
 ///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
 ///     <li>\b HdWrapBlack               Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
 ///     <li>\b HdWrapMirror              Creates a mirrored repeating pattern.</li>
-///     <li>\b HdWrapUseMetadata         Data Texture can define its own wrap mode, if not defined by the texture it will use HdWrapBlack</li>
-///     <li>\b HdWrapLegacy              (deprecated) Texture can define its own wrap mode, if not defined by the texture it will use HdWrapRepeat</li>
+///     <li>\b HdWrapLegacyClamp         (deprecated) For clients needing to translate GLenum to HdWrap, this corresponds to obsolete GL_CLAMP.</li>
+///     <li>\b HdWrapNoOpinion           No opinion. The data texture can define its own wrap mode that we can use instead. Fallback to HdWrapBlack</li>
+///     <li>\b HdWrapLegacyNoOpinionFallbackRepeat  (deprecated) Similar to HdWrapNoOpinon but fallback to HdWrapRepeat</li>
+///     <li>\b HdWrapUseMetadata         (deprecated) Alias for HdWrapNoOpinion</li>
+///     <li>\b HdWrapLegacy              (deprecated) Alias for HdWrapLegacyNoOpinionFallbackRepeat</li>
 /// </ul>
 ///
 enum HdWrap 
@@ -186,8 +189,13 @@ enum HdWrap
     HdWrapRepeat,
     HdWrapBlack,
     HdWrapMirror,
-    HdWrapUseMetadata,
-    HdWrapLegacy,
+    HdWrapLegacyClamp, // deprecated
+
+    HdWrapNoOpinion,
+    HdWrapLegacyNoOpinionFallbackRepeat, // deprecated
+
+    HdWrapUseMetadata = HdWrapNoOpinion, // deprecated alias
+    HdWrapLegacy = HdWrapLegacyNoOpinionFallbackRepeat // deprecated alias
 };
 
 /// \enum HdMinFilter
