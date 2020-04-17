@@ -42,8 +42,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <tbb/enumerable_thread_specific.h>
 
 #include <vector>
@@ -116,7 +114,8 @@ using HdDriverVector = std::vector<HdDriver*>;
 /// If two viewers use different HdRenderDelegate's, then it may unfortunately 
 /// require populating two HdRenderIndex's.
 ///
-class HdRenderIndex final : public boost::noncopyable {
+class HdRenderIndex final 
+{
 public:
     typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
 
@@ -501,6 +500,11 @@ private:
 
     // Remove default constructor
     HdRenderIndex() = delete;
+
+    // Don't allow copies
+    HdRenderIndex(const HdRenderIndex &) = delete;
+    HdRenderIndex &operator=(const HdRenderIndex &) = delete; 
+
 };
 
 template <typename T>
