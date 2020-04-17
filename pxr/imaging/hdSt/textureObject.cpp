@@ -253,6 +253,7 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
         case GL_FLOAT:
             _textureDesc.format = _CheckValid<HgiFormatFloat32>();
             _textureDesc.initialData = unconvertedData;
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
                             glType);
@@ -267,6 +268,7 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
         case GL_FLOAT:
             _textureDesc.format = _CheckValid<HgiFormatFloat32Vec2>();
             _textureDesc.initialData = unconvertedData;
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
                             glType);
@@ -296,6 +298,7 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
         case GL_FLOAT:
             _textureDesc.format = _CheckValid<HgiFormatFloat32Vec3>();
             _textureDesc.initialData = unconvertedData;
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
                             glType);
@@ -310,6 +313,7 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
         case GL_FLOAT:
             _textureDesc.format = _CheckValid<HgiFormatFloat32Vec4>();
             _textureDesc.initialData = unconvertedData;
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
                             glType);
