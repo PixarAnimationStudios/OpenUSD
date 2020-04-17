@@ -180,11 +180,16 @@ HdStUvSamplerObject::HdStUvSamplerObject(
 
 HdStUvSamplerObject::~HdStUvSamplerObject()
 {
-    // Delete GL objects in order opposite of creation.
-
-    if (_glTextureSamplerHandle) {
-        glMakeTextureHandleNonResidentARB(_glTextureSamplerHandle);
-    }
+    // Deleting the GL sampler automatically deletes the
+    // texture sampler handle.
+    // In fact, even destroying the underlying texture (which
+    // is out of our control here), deletes the texture sampler
+    // handle and the same texture sampler handle might be re-used
+    // by the driver, so it is unsafe to call
+    // glMakeTextureHandleNonResidentARB(_glTextureSamplerHandle);
+    // here: HdStTextureObject might destroy a GPU texture either
+    // because it itself was destroyed or because the file was
+    // reloaded or target memory was changed.
 
     if (_glSamplerName) {
         glDeleteSamplers(1, &_glSamplerName);

@@ -76,7 +76,8 @@ public:
 /// The GPU resources is con-/destructed immediately in the
 /// c'tor/d'tor. By going through the HdSt_SamplerObjectRegistry, we
 /// can obtain a shared pointer that can safely be dropped in a
-/// different thread. The HdSt_SamplerObjectRegistry is 
+/// different thread. The HdSt_SamplerObjectRegistry is also dispatching
+/// by texture type to construct the corresponding sampler type.
 ///
 class HdStSamplerObject
 {
@@ -88,7 +89,7 @@ public:
 ///
 /// A sampler suitable for HdStUvTextureObject.
 ///
-class HdStUvSamplerObject : public HdStSamplerObject {
+class HdStUvSamplerObject final : public HdStSamplerObject {
 public:
     HDST_API 
     HdStUvSamplerObject(

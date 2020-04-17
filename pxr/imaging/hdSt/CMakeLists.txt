@@ -90,6 +90,8 @@ pxr_library(hdSt
         subtextureIdentifier
         surfaceShader
         texture
+        textureHandle
+        textureHandleRegistry
         textureIdentifier
         textureObject
         textureObjectRegistry
