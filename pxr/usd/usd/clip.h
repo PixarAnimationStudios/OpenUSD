@@ -25,12 +25,12 @@
 #define PXR_USD_USD_CLIP_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/pcp/layerStack.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
+#include "pxr/base/tf/declarePtrs.h"
 
 #include <boost/optional.hpp>
 
@@ -42,6 +42,8 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 class PcpPrimIndex;
 class Usd_InterpolatorBase;

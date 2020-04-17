@@ -39,6 +39,7 @@
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/variantSets.h"
 
+#include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/sdf/primSpec.h"
 
