@@ -125,6 +125,8 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _purposeCache() // note that purpose is uniform, so no GetTime()
     , _drawModeCache(GetTime())
     , _inheritedPrimvarCache()
+    , _displayRender(true)
+    , _displayProxy(true)
     , _displayGuides(true)
     , _enableUsdDrawModes(true)
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
@@ -1407,22 +1409,15 @@ UsdImagingDelegate::GetPickabilityMap() const
 }
 
 void
-UsdImagingDelegate::SetDisplayGuides(bool displayGuides) 
+UsdImagingDelegate::_MarkRenderTagsDirty()
 {
-    _displayGuides = displayGuides;
-    
     UsdImagingIndexProxy indexProxy(this, nullptr);
 
-    // _displayGuides changes a prims render tag.
-    // So we need to make sure all prims render tags get re-evaluated.
-    // XXX: Should be smarted and only invalidate prims whose
-    // purpose == UsdGeomTokens->guide.
-    // Look at GetRenderTag for complixity with this.
-    for (_HdPrimInfoMap::iterator it  = _hdPrimInfoMap.begin();
-                                it != _hdPrimInfoMap.end();
-                              ++it) {
-        const SdfPath &cachePath = it->first;
-        _HdPrimInfo &primInfo = it->second;
+    for (_HdPrimInfoMap::iterator it = _hdPrimInfoMap.begin();
+            it != _hdPrimInfoMap.end();
+            ++it) {
+        const SdfPath& cachePath = it->first;
+        _HdPrimInfo& primInfo = it->second;
 
         if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
             primInfo.adapter->MarkRenderTagDirty(primInfo.usdPrim,
@@ -1430,6 +1425,57 @@ UsdImagingDelegate::SetDisplayGuides(bool displayGuides)
                                                  &indexProxy);
         }
     }
+}
+
+void
+UsdImagingDelegate::SetDisplayRender(const bool displayRender)
+{
+    if (_displayRender == displayRender) {
+        return;
+    }
+
+    _displayRender = displayRender;
+
+    // _displayRender changes a prims render tag.
+    // So we need to make sure all prims render tags get re-evaluated.
+    // XXX: Should be smarter and only invalidate prims whose
+    // purpose == UsdGeomTokens->render.
+    // Look at GetRenderTag for complexity with this.
+    _MarkRenderTagsDirty();
+}
+
+void
+UsdImagingDelegate::SetDisplayProxy(const bool displayProxy)
+{
+    if (_displayProxy == displayProxy) {
+        return;
+    }
+
+    _displayProxy = displayProxy;
+
+    // _displayProxy changes a prims render tag.
+    // So we need to make sure all prims render tags get re-evaluated.
+    // XXX: Should be smarter and only invalidate prims whose
+    // purpose == UsdGeomTokens->proxy.
+    // Look at GetRenderTag for complexity with this.
+    _MarkRenderTagsDirty();
+}
+
+void
+UsdImagingDelegate::SetDisplayGuides(const bool displayGuides)
+{
+    if (_displayGuides == displayGuides) {
+        return;
+    }
+
+    _displayGuides = displayGuides;
+
+    // _displayGuides changes a prims render tag.
+    // So we need to make sure all prims render tags get re-evaluated.
+    // XXX: Should be smarter and only invalidate prims whose
+    // purpose == UsdGeomTokens->guide.
+    // Look at GetRenderTag for complexity with this.
+    _MarkRenderTagsDirty();
 }
 
 void
@@ -1572,7 +1618,9 @@ UsdImagingDelegate::GetRenderTag(SdfPath const& id)
     if (purpose == UsdGeomTokens->default_) {
         // Simple mapping so all render tags in multiple delegates match
         purpose = HdRenderTagTokens->geometry;
-    } else if (purpose == UsdGeomTokens->guide && !_displayGuides) {
+    } else if ((purpose == UsdGeomTokens->render && !_displayRender) ||
+            (purpose == UsdGeomTokens->proxy && !_displayProxy) ||
+            (purpose == UsdGeomTokens->guide && !_displayGuides)) {
         // When guides are disabled on the delegate we move the
         // guide prims to the hidden command buffer
         purpose = HdRenderTagTokens->hidden;

@@ -234,9 +234,19 @@ public:
     USDIMAGING_API
     void ClearPickabilityMap();
 
-    /// Sets display guides rendering
+    /// Sets display of prims with purpose "render"
     USDIMAGING_API
-    void SetDisplayGuides(bool displayGuides);
+    void SetDisplayRender(const bool displayRender);
+    bool GetDisplayRender() const { return _displayRender; }
+
+    /// Sets display of prims with purpose "proxy"
+    USDIMAGING_API
+    void SetDisplayProxy(const bool displayProxy);
+    bool GetDisplayProxy() const { return _displayProxy; }
+
+    /// Sets display of prims with purpose "guide"
+    USDIMAGING_API
+    void SetDisplayGuides(const bool displayGuides);
     bool GetDisplayGuides() const { return _displayGuides; }
 
     /// Returns whether draw modes are enabled.
@@ -628,6 +638,10 @@ private:
 
     Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
 
+    // Mark render tags dirty for all prims.
+    // This is done in response to toggling the purpose-based display settings.
+    void _MarkRenderTagsDirty();
+
 
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
 
@@ -691,7 +705,9 @@ private:
     // Pickability
     PickabilityMap _pickablesMap;
 
-    // Display guides rendering
+    // Purpose-based rendering toggles
+    bool _displayRender;
+    bool _displayProxy;
     bool _displayGuides;
     bool _enableUsdDrawModes;
 
