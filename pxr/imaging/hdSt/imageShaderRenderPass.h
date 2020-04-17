@@ -29,8 +29,6 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hd/renderPass.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,8 +38,8 @@ using HdStResourceRegistrySharedPtr =
 
 using HdSt_ImageShaderRenderPassSharedPtr =
     std::shared_ptr<class HdSt_ImageShaderRenderPass>;
-typedef boost::shared_ptr<class HdSt_DrawBatch> 
-    HdSt_DrawBatchSharedPtr;
+using HdStResourceRegistrySharedPtr = 
+    std::shared_ptr<class HdStResourceRegistry>;
 
 class Hgi;
 
