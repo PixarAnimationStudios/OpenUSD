@@ -28,8 +28,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -46,9 +44,9 @@ class HdStInstancer;
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
-typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
+using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;

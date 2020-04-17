@@ -31,8 +31,6 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -42,8 +40,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdBindingRequestVector = std::vector<class HdBindingRequest>;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
+using HdStShaderCodeSharedPtr =
+    std::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtrVector =
+    std::vector<HdStShaderCodeSharedPtr>;
 
 using HdStTextureResourceHandleSharedPtr =
     std::shared_ptr<class HdStTextureResourceHandle>;

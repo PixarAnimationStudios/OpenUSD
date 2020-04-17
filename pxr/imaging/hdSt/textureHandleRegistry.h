@@ -32,8 +32,6 @@
 #include "pxr/imaging/hd/enums.h"
 
 #include <tbb/concurrent_vector.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
 #include <set>
 #include <memory>
@@ -57,9 +55,9 @@ using HdStTextureObjectSharedPtr =
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
 using HdStShaderCodePtr =
-    boost::weak_ptr<class HdStShaderCode>;
+    std::weak_ptr<class HdStShaderCode>;
 using HdStShaderCodeSharedPtr =
-    boost::shared_ptr<class HdStShaderCode>;
+    std::shared_ptr<class HdStShaderCode>;
 
 /// \class HdSt_TextureHandleRegistry
 ///

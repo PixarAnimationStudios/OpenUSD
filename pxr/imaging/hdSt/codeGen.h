@@ -30,18 +30,15 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <map>
 #include <vector>
 #include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
+using HdSt_GeometricShaderPtr = std::shared_ptr<class HdSt_GeometricShader>;
 
 /// \class HdSt_CodeGen
 ///

@@ -32,14 +32,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdStDrawItem;
-class HdStShaderCode;
 class HdStResourceGL;
 
 using HdStBufferResourceGLSharedPtr = 
@@ -47,9 +45,9 @@ using HdStBufferResourceGLSharedPtr =
 using HdStBufferArrayRangeGLSharedPtr =
     std::shared_ptr<class HdStBufferArrayRangeGL>;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
-typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
+using HdBindingRequestVector = std::vector<class HdBindingRequest>;
 
 /// \class HdSt_ResourceBinder
 /// 

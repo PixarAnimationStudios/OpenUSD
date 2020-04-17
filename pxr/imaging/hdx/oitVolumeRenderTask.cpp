@@ -41,15 +41,13 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
-#include <boost/make_shared.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitVolumeRenderPassShader(
-        boost::make_shared<HdStRenderPassShader>(
+        std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {

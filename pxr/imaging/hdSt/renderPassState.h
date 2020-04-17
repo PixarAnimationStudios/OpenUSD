@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,13 +38,13 @@ using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassShader>
-                HdStRenderPassShaderSharedPtr;
-typedef boost::shared_ptr<class HdSt_FallbackLightingShader>
-                HdSt_FallbackLightingShaderSharedPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdStLightingShaderSharedPtr = std::shared_ptr<class HdStLightingShader>;
+using HdStRenderPassShaderSharedPtr =
+    std::shared_ptr<class HdStRenderPassShader>;
+using HdSt_FallbackLightingShaderSharedPtr =
+    std::shared_ptr<class HdSt_FallbackLightingShader>;
+using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
 
 /// \class HdStRenderPassState
 ///

@@ -47,8 +47,6 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/make_shared.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -221,7 +219,7 @@ _MakeFallbackVolumeShader()
     // Despite its name, HdStSurfaceShader is really just a pair of
     // GLSL code and bindings and not specific to surface shading.
     HdStSurfaceShaderSharedPtr const result =
-        boost::make_shared<HdStSurfaceShader>();
+        std::make_shared<HdStSurfaceShader>();
     
     result->SetFragmentSource(glslfx.GetVolumeSource());
     result->SetParams(
@@ -321,7 +319,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
 
     // Generate new shader from volume shader
     HdSt_VolumeShaderSharedPtr const result =
-        boost::make_shared<HdSt_VolumeShader>(
+        std::make_shared<HdSt_VolumeShader>(
             sceneDelegate->GetRenderIndex().GetRenderDelegate());
 
     // The params for the new shader

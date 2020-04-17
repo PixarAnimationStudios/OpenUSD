@@ -56,10 +56,11 @@ typedef boost::shared_ptr<class HdStGLSLProgram>
     HdStGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
     HdSt_BasisCurvesTopologySharedPtr;
-typedef boost::shared_ptr<class HdSt_GeometricShader>
-    HdSt_GeometricShaderSharedPtr;
-typedef boost::weak_ptr<class HdStShaderCode>
-    HdStShaderCodePtr;
+
+using HdStShaderCodePtr =
+    std::weak_ptr<class HdStShaderCode>;
+using HdSt_GeometricShaderSharedPtr =
+    std::shared_ptr<class HdSt_GeometricShader>;
 
 using HdStTextureResourceSharedPtr =
     std::shared_ptr<class HdStTextureResource>;

@@ -36,8 +36,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <vector>
 
@@ -48,7 +46,7 @@ class HdSceneDelegate;
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
-typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
+using HdStSurfaceShaderSharedPtr = std::shared_ptr<class HdStSurfaceShader>;
 
 using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 using HdStResourceRegistrySharedPtr = 

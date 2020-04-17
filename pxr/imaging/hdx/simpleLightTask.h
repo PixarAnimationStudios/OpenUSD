@@ -48,8 +48,8 @@ class HdRenderIndex;
 class HdSceneDelegate;
 
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
-typedef boost::shared_ptr<class HdStSimpleLightingShader> 
-    HdStSimpleLightingShaderSharedPtr;
+using HdStSimpleLightingShaderSharedPtr =
+    std::shared_ptr<class HdStSimpleLightingShader>;
 typedef boost::shared_ptr<class HdxShadowMatrixComputation> 
     HdxShadowMatrixComputationSharedPtr;
 

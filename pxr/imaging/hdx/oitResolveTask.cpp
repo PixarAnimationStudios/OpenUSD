@@ -47,8 +47,6 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
-#include <boost/make_shared.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
@@ -246,7 +244,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
             HdBlendFactor::HdBlendFactorOne,
             HdBlendFactor::HdBlendFactorOne);
 
-        _renderPassShader = boost::make_shared<HdStRenderPassShader>(
+        _renderPassShader = std::make_shared<HdStRenderPassShader>(
             HdxPackageOitResolveImageShader());
         _renderPassState->SetRenderPassShader(_renderPassShader);
 

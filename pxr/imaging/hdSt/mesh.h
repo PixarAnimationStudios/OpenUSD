@@ -35,8 +35,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,8 +46,6 @@ class HdSceneDelegate;
 using Hd_VertexAdjacencySharedPtr = std::shared_ptr<class Hd_VertexAdjacency>;
 using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
-
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
 using HdStResourceRegistrySharedPtr =
     std::shared_ptr<class HdStResourceRegistry>;

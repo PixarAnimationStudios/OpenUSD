@@ -48,9 +48,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/pointer_cast.hpp>
-
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_USE_NEW_TEXTURE_SYSTEM, false,
@@ -104,7 +101,7 @@ static
 HdStShaderCode::NamedTextureHandleVector
 _GetNamedTextureHandles(
     HdStMaterialNetwork::TextureDescriptorVector const &descs,
-    boost::weak_ptr<HdStShaderCode> const &shaderCode,
+    std::weak_ptr<HdStShaderCode> const &shaderCode,
     HdStResourceRegistrySharedPtr const& resourceRegistry)
 {
     const bool usesBindlessTextures =
@@ -472,7 +469,7 @@ HdStMaterial::Reload()
 HdStShaderCodeSharedPtr
 HdStMaterial::GetShaderCode() const
 {
-    return boost::static_pointer_cast<HdStShaderCode>(_surfaceShader);
+    return _surfaceShader;
 }
 
 void

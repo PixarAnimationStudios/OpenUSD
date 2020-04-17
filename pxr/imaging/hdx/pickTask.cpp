@@ -49,7 +49,6 @@
 #include "pxr/imaging/glf/info.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/make_shared.hpp>
 
 #include <iostream>
 
@@ -67,7 +66,7 @@ _InitIdRenderPassState(HdRenderIndex *index)
             dynamic_cast<HdStRenderPassState*>(
                 rps.get())) {
         extendedState->SetRenderPassShader(
-            boost::make_shared<HdStRenderPassShader>(
+            std::make_shared<HdStRenderPassShader>(
                 HdxPackageRenderPassPickingShader()));
     }
 

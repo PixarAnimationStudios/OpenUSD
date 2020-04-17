@@ -31,8 +31,6 @@
 
 #include "pxr/imaging/hdSt/renderPassState.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdxOitVolumeRenderTask

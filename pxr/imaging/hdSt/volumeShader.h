@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderDelegate;
 
-using HdSt_VolumeShaderSharedPtr = boost::shared_ptr<class HdSt_VolumeShader>;
+using HdSt_VolumeShaderSharedPtr = std::shared_ptr<class HdSt_VolumeShader>;
 
 /// A shader class that (on top of the behaviors of HdStSurfaceShader) querries
 /// the render delegate for the raymarching step sizes and binds them to the

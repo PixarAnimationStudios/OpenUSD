@@ -35,14 +35,12 @@
 
 #include "pxr/base/gf/vec4f.h"
 
-#include <boost/weak_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdStShaderCodePtr =
-    boost::weak_ptr<class HdStShaderCode>;
+    std::weak_ptr<class HdStShaderCode>;
 using HdStTextureObjectSharedPtr =
     std::shared_ptr<class HdStTextureObject>;
 using HdStSamplerObjectSharedPtr =

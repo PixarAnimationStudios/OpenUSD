@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStDrawItem;
 class HdStMaterial;
 using HdStFieldResourceSharedPtr = std::shared_ptr<class HdStFieldResource>;
-using HdStShaderCodeSharedPtr = boost::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 class HdSceneDelegate;
 
 /// Represents a Volume Prim.
