@@ -27,7 +27,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 const UsdPrimDefinition * 
-Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
+UsdPrimTypeInfo::_FindOrCreatePrimDefinition() const
 {
     const UsdPrimDefinition *primDef = nullptr;
     const UsdSchemaRegistry &reg = UsdSchemaRegistry::GetInstance();
@@ -70,10 +70,10 @@ Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
 }
 
 /*static*/ 
-const Usd_PrimTypeInfo &
-Usd_PrimTypeInfo::GetEmptyPrimType()
+const UsdPrimTypeInfo &
+UsdPrimTypeInfo::GetEmptyPrimType()
 {
-    static const Usd_PrimTypeInfo empty;
+    static const UsdPrimTypeInfo empty;
     return empty;
 }
 

@@ -123,6 +123,7 @@ pxr_library(usd
         wrapPrimDefinition.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
+        wrapPrimTypeInfo.cpp
         wrapProperty.cpp
         wrapReferences.cpp
         wrapRelationship.cpp

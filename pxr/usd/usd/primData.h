@@ -314,7 +314,7 @@ private:
     UsdStage *_stage;
     const PcpPrimIndex *_primIndex;
     SdfPath _path;
-    const Usd_PrimTypeInfo *_primTypeInfo;
+    const UsdPrimTypeInfo *_primTypeInfo;
     Usd_PrimData *_firstChild;
     TfPointerAndBits<Usd_PrimData> _nextSiblingOrParent;
     mutable std::atomic<int64_t> _refCount;

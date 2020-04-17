@@ -47,9 +47,9 @@ static_assert(sizeof(Usd_PrimData) == 64,
               "Expected sizeof(Usd_PrimData) == 64");
 
 // Usd_PrimData need to be always initialized with a valid type info pointer
-static const Usd_PrimTypeInfo *_GetEmptyPrimTypeInfo() 
+static const UsdPrimTypeInfo *_GetEmptyPrimTypeInfo() 
 {
-    static const Usd_PrimTypeInfo *empty = &Usd_PrimTypeInfo::GetEmptyPrimType();
+    static const UsdPrimTypeInfo *empty = &UsdPrimTypeInfo::GetEmptyPrimType();
     return empty;
 }
 

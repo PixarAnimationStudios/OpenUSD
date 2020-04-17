@@ -2970,7 +2970,8 @@ UsdStage::_ComposeSubtreeImpl(
     if (parent && !isMasterPrim) {
         // Compose the type info full type ID for the prim which includes
         // the type name and applied schemas.
-        Usd_PrimTypeInfo::TypeId typeId(_ComposeTypeName(prim->_primIndex));
+        Usd_PrimTypeInfoCache::TypeId typeId(
+            _ComposeTypeName(prim->_primIndex));
         _ComposeAuthoredAppliedSchemas(
             prim->_primIndex, &typeId.appliedAPISchemas);
 
