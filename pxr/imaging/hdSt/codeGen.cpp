@@ -675,15 +675,22 @@ HdSt_CodeGen::Compile()
 
         // For PRIMVAR_REDIRECT, the HD_HAS_* flag will be defined after
         // the corresponding HdGet_* function.
+
+        // XXX: (HYD-1882) The #define HD_HAS_... for a primvar
+        // redirect will be defined immediately after the primvar
+        // redirect HdGet_... in the loop over
+        // _metaData.shaderParameterBinding below.  Given that this
+        // loop is not running in a canonical order (e.g., textures
+        // first, then primvar redirects, ...) and that the texture is
+        // picking up the HD_HAS_... flag, the answer to the following
+        // question is random:
+        //
+        // If there is a texture trying to use a primvar called NAME
+        // for coordinates and there is a primvar redirect called NAME,
+        // will the texture use it or not?
+        // 
         HdBinding::Type bindingType = it->first.GetType();
         if (bindingType != HdBinding::PRIMVAR_REDIRECT) {
-            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
-        }
-    }
-
-    TF_FOR_ALL (it, _metaData.fieldRedirectBinding) {
-        HdBinding::Type bindingType = it->first.GetType();
-        if (bindingType == HdBinding::FIELD_REDIRECT) {
             _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
         }
     }
@@ -2660,7 +2667,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
         break;
     }
 
-    // accessors.
+    // Non-field redirect accessors.
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
 
         // adjust datatype
@@ -3101,26 +3108,41 @@ HdSt_CodeGen::_GenerateShaderParameters()
         }
     }
 
-    TF_FOR_ALL (it, _metaData.fieldRedirectBinding) {
+    // Field redirect accessors, need to access above field textures.
+    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
         HdBinding::Type bindingType = it->first.GetType();
+
         if (bindingType == HdBinding::FIELD_REDIRECT) {
 
+            // adjust datatype
+            std::string swizzle = _GetSwizzleString(it->second.dataType);
+
+            const TfToken fieldName =
+                it->second.inPrimvars.empty()
+                ? TfToken("FIELDNAME_WAS_NOT_SPECIFIED")
+                : it->second.inPrimvars[0];
+
+            // Create an HdGet_INPUTNAME(vec3) for the shader to access a 
+            // field texture HdGet_FIELDNAMETexture(vec3).
             accessors
-                << "vec3 HdGet_" << it->second.name << "(vec3 p) {\n"
-                << "#if defined(HD_HAS_" << it->second.fieldName << "Texture)\n"
-                << "    return vec3(\n"
-                << "        HdGet_" << it->second.fieldName << "Texture(p)"
-                << ".xyz);\n"
+                << _GetUnpackedType(it->second.dataType, false)
+                << " HdGet_" << it->second.name << "(vec3 coord) {\n"
+                // If field exists, use it
+                << "#if defined(HD_HAS_" << fieldName << "Texture)\n"
+                << "  return HdGet_" << fieldName << "Texture(coord)"
+                << swizzle << ";\n"
                 << "#else\n"
-                << "    int shaderCoord = GetDrawingCoord().shaderCoord; \n"
-                << "    return vec3(shaderData[shaderCoord]."
-                << it->second.name << ".xyz);\n"
+                // Otherwise use default value.
+                << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
+                << "  return "
+                << _GetPackedTypeAccessor(it->second.dataType, false)
+                << "(shaderData[shaderCoord]." << it->second.name 
+                << swizzle <<  ");\n"
                 << "#endif\n"
-                << "};\n"
-                ;
+                << "\n}\n";
         }
     }
-    
+
     _genFS << declarations.str()
            << accessors.str();
 

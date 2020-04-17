@@ -693,38 +693,26 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 }
-            } else if (param.IsPrimvarRedirect()) {
+            } else if (param.IsPrimvarRedirect() || param.IsFieldRedirect()) {
                 TfTokenVector const& samplePrimvars = param.samplerCoords;
                 TfTokenVector glNames;
                 glNames.reserve(samplePrimvars.size());
                 for (auto const& pv : samplePrimvars) {
                     glNames.push_back(HdStGLConversions::GetGLSLIdentifier(pv));
                 }
+
+                HdBinding binding = param.IsPrimvarRedirect()
+                    ? HdBinding(HdBinding::PRIMVAR_REDIRECT,
+                                shaderPrimvarRedirectLocation++)
+                    : HdBinding(HdBinding::FIELD_REDIRECT,
+                                shaderFieldRedirectLocation++);
                 
-                metaDataOut->shaderParameterBinding[
-                            HdBinding(HdBinding::PRIMVAR_REDIRECT,
-                                        shaderPrimvarRedirectLocation++)]
+                metaDataOut->shaderParameterBinding[binding]
                     = MetaData::ShaderParameterAccessor(
                     /*name=*/glName,
                     /*type=*/glType,
                     /*swizzle=*/glSwizzle,
                     /*inPrimvars=*/glNames);
-            } else if (param.IsFieldRedirect()) {
-                TfToken glFieldName;
-                /* We store the field name in sampler coordinates.
-                   There should only ever be one field name */
-                TfTokenVector const& fieldNames = param.samplerCoords;
-                if (!fieldNames.empty()) {
-                    glFieldName = 
-                        HdStGLConversions::GetGLSLIdentifier(fieldNames[0]);
-                }
-                
-                metaDataOut->fieldRedirectBinding[
-                            HdBinding(HdBinding::FIELD_REDIRECT,
-                                        shaderFieldRedirectLocation++)]
-                    = MetaData::FieldRedirectAccessor(
-                        /*name=*/glName,
-                        /*fieldName=*/glFieldName);
             } else if (param.IsAdditionalPrimvar()) {
                 // Additional primvars is used so certain primvars survive
                 // primvar filtering. We can ignore them here, because primvars
