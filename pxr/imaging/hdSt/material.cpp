@@ -254,12 +254,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     // Release any fallback texture resources
     _internalTextureResourceHandles.clear();
 
-    HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
+    HdBufferSpecVector specs;
+    HdBufferSourceSharedPtrVector sources;
+
+    // Texture descriptors for the old texture system.
+    HdStShaderCode::TextureDescriptorVector textureResourceDescriptors;
 
     bool hasPtex = false;
     for (HdSt_MaterialParam const & param: params) {
         if (param.IsPrimvarRedirect() || param.IsFallback()) {
-            sourcesAndTextures.ProcessMaterialParamFallbackValue(param);
+            HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+                param, &specs, &sources);
         } else if (param.IsTexture()) {
             if (param.textureType == HdTextureType::Ptex) {
                 hasPtex = true;
@@ -271,14 +276,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             //
             if (!(useNewTextureSystem &&
                   _IsSupportedByNewTextureSystem(param.textureType))) {
-                sourcesAndTextures.ProcessTextureMaterialParam(
-                    param,
-                    _GetTextureResourceHandle(sceneDelegate, param));
+
+                HdSt_MaterialBufferSourceAndTextureHelper::
+                    ProcessTextureMaterialParam(
+                        param,
+                        _GetTextureResourceHandle(sceneDelegate, param),
+                        &specs, &sources, &textureResourceDescriptors);
             }
         }
     }
 
-    _surfaceShader->SetTextureDescriptors(sourcesAndTextures.textures);
+    _surfaceShader->SetTextureDescriptors(textureResourceDescriptors);
 
     if (useNewTextureSystem) {
         // Create textures for those texture types supported
@@ -291,15 +299,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
         _surfaceShader->SetNamedTextureHandles(textures);
 
-        HdSt_TextureBinder::GetBufferSpecs(
-            textures,
-            &sourcesAndTextures.specs);
+        HdSt_TextureBinder::GetBufferSpecs(textures, &specs);
     }
 
-    _surfaceShader->SetBufferSources(
-        sourcesAndTextures.specs,
-        sourcesAndTextures.sources,
-        resourceRegistry);
+    _surfaceShader->SetBufferSources(specs, sources, resourceRegistry);
 
     if (_hasPtex != hasPtex) {
         _hasPtex = hasPtex;

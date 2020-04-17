@@ -37,6 +37,7 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
 
@@ -549,6 +550,19 @@ HdStSurfaceShader::ComputeBufferSourcesFromTextures() const
     } else {
         return { { GetShaderData(), std::move(result) } };
     }
+}
+
+void
+HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+    const HdSt_MaterialParam &param,
+    HdBufferSpecVector * const specs,
+    HdBufferSourceSharedPtrVector * const sources)
+{
+    HdBufferSourceSharedPtr const source =
+        std::make_shared<HdVtBufferSource>(
+            param.name, param.fallbackValue);
+    source->GetBufferSpecs(specs);
+    sources->push_back(std::move(source));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

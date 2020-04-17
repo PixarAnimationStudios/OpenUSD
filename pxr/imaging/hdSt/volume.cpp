@@ -266,19 +266,6 @@ _ComputeNameToFieldIdentifier(
     return result;
 }
 
-void
-_AddFallbackValueToSpecsAndSources(
-    const HdSt_MaterialParam &param,
-    HdBufferSpecVector * const specs,
-    HdBufferSourceSharedPtrVector * const sources)
-{
-    HdBufferSourceSharedPtr const source =
-        std::make_shared<HdVtBufferSource>(
-            param.name, param.fallbackValue);
-    source->GetBufferSpecs(specs);
-    sources->push_back(std::move(source));
-}
-
 // Add GLSL code such as "HdGet_density(vec3 p)" for sampling the fields
 // to the volume shader code and add necessary 3d textures and other
 // parameters and buffer sources to the resulting HdSt_VolumeShader.
@@ -322,7 +309,7 @@ _ComputeMaterialShader(
              param.IsPrimvarRedirect() ||
              param.IsFallback() ) {
             // Add fallback values for parameters
-            _AddFallbackValueToSpecsAndSources(
+            HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
                 param, &bufferSpecs, &bufferSources);
 
             if (param.IsFieldRedirect()) {

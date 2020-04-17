@@ -32,39 +32,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdSceneDelegate;
-
 /// HdSt_MaterialBufferSourceAndTextureHelper
 ///
-/// A helper to generate the buffer sources and texture descriptors
-/// from material params.
+/// A helper for the old texture system to add texture resources to
+/// the texture descriptors and buffer specs and sources for bindless
+/// textures. This class will be deleted once the new texture system is
+/// fully functional.
 ///
 struct HdSt_MaterialBufferSourceAndTextureHelper
 {
-    /// Add a buffer spec and a buffer source based on the given name
-    /// and value.
-    void AddSourceFromValue(const TfToken &name, const VtValue &value);
-    /// Add a buffer source and its respective spec.
-    void AddSource(HdBufferSourceSharedPtr const &source);
-
-    /// Add buffer spec and source for material param's fallback value.
-    void ProcessMaterialParamFallbackValue(
-        HdSt_MaterialParam const &param);
-
     /// Process material param of type HdSt_MaterialParam::ParamTypeTexture
     /// given the texture requested by the param.
+    static
     void ProcessTextureMaterialParam(
         HdSt_MaterialParam const &param,
-        HdStTextureResourceHandleSharedPtr const &handle);
-
-    /// The buffer sources created by the above methods.
-    HdBufferSourceSharedPtrVector sources;
-
-    /// The buffer specs
-    HdBufferSpecVector specs;
-
-    /// The texture descriptors created by the above methods.
-    HdStShaderCode::TextureDescriptorVector textures;
+        HdStTextureResourceHandleSharedPtr const &handle,
+        HdBufferSpecVector * specs,
+        HdBufferSourceSharedPtrVector * sources,
+        HdStShaderCode::TextureDescriptorVector * textureDescriptors);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -145,6 +145,15 @@ public:
     static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                              HdStShaderCodeSharedPtr const &shaderB);
 
+    /// Adds the fallback value of the given material param to
+    /// buffer specs and sources using the param's name.
+    ///
+    HDST_API
+    static void AddFallbackValueToSpecsAndSources(
+        const HdSt_MaterialParam &param,
+        HdBufferSpecVector * const specs,
+        HdBufferSourceSharedPtrVector * const sources);
+
 protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
