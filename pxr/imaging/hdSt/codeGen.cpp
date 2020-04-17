@@ -2847,9 +2847,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors
                     << " vec3(0.0, 0.0, 0.0)";
             }
-            accessors
-                << ")" << swizzle << ");\n"
-                << "}\n";
+            accessors << ");\n}\n";
 
             // vec4 HdGet_name()
             accessors
