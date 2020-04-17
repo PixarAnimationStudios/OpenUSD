@@ -46,8 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxColorChannelTask::HdxColorChannelTask(
     HdSceneDelegate* delegate, 
     SdfPath const& id)
-    : HdTask(id)
-    , _hgi(nullptr)
+    : HdxTask(id)
     , _channel(HdxColorChannelTokens->color)
 {
 }
@@ -55,25 +54,20 @@ HdxColorChannelTask::HdxColorChannelTask(
 HdxColorChannelTask::~HdxColorChannelTask()
 {
     if (_parameterBuffer) {
-        _hgi->DestroyBuffer(&_parameterBuffer);
+        _GetHgi()->DestroyBuffer(&_parameterBuffer);
     }
 }
 
 void
-HdxColorChannelTask::Sync(HdSceneDelegate* delegate,
-                             HdTaskContext* ctx,
-                             HdDirtyBits* dirtyBits)
+HdxColorChannelTask::_Sync(HdSceneDelegate* delegate,
+                           HdTaskContext* ctx,
+                           HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Find Hgi driver in task context.
-    if (!_hgi) {
-        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
-        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
-            return;
-        }
-        _compositor.reset(new HdxFullscreenShader(_hgi, "ColorChannel"));
+    if (!_compositor) {
+        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "ColorChannel"));
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
@@ -145,10 +139,10 @@ HdxColorChannelTask::_CreateParameterBuffer()
         bufDesc.usage = HgiBufferUsageStorage;
         bufDesc.initialData = &_parameterData;
         bufDesc.byteSize = sizeof(_parameterData);
-        _parameterBuffer = _hgi->CreateBuffer(bufDesc);
+        _parameterBuffer = _GetHgi()->CreateBuffer(bufDesc);
     } else {
         // Update the existing storage buffer with new values.
-        HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+        HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
         HgiBufferCpuToGpuOp copyOp;
         copyOp.byteSize = sizeof(_parameterData);
         copyOp.cpuSourceBuffer = &_parameterData;
@@ -156,7 +150,7 @@ HdxColorChannelTask::_CreateParameterBuffer()
         copyOp.destinationByteOffset = 0;
         copyOp.gpuDestinationBuffer = _parameterBuffer;
         blitCmds->CopyBufferCpuToGpu(copyOp);
-        _hgi->SubmitCmds(blitCmds.get(), 1);
+        _GetHgi()->SubmitCmds(blitCmds.get(), 1);
     }
 }
 

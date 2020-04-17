@@ -30,6 +30,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
+
+
 /// \class HdxTask
 ///
 /// Base class for (some) tasks in Hdx that provides common progressive 
@@ -44,7 +47,7 @@ public:
     HdxTask(SdfPath const& id);
 
     HDX_API
-    virtual ~HdxTask();
+    ~HdxTask() override;
 
     /// This function returns true when a (progressive) task considers its
     /// execution results converged. Usually this means that a progressive
@@ -57,6 +60,29 @@ public:
     /// specifically those tasks for IsConverged.
     HDX_API
     virtual bool IsConverged() const;
+
+    /// We override HdTask::Sync, but make it 'final' to make sure derived
+    /// classes can't override it and instead override _Sync.
+    /// This 'non-virtual interface'-like pattern allows us to ensure we always
+    /// initialized Hgi during the Sync task so derived classes don't have to.
+    void Sync(
+        HdSceneDelegate* delegate,
+        HdTaskContext* ctx,
+        HdDirtyBits* dirtyBits) final;
+
+protected:
+    // This is called during the hydra Sync Phase via HdxTask::Sync.
+    // Please see HdTask::Sync for Sync Phase documentation.
+    virtual void _Sync(
+        HdSceneDelegate* delegate,
+        HdTaskContext* ctx,
+        HdDirtyBits* dirtyBits) = 0;
+
+    // Return pointer to Hydra Graphics Interface.
+    HDX_API
+    Hgi* _GetHgi() const;
+
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

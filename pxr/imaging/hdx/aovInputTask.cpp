@@ -34,7 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxAovInputTask::HdxAovInputTask(HdSceneDelegate* delegate, SdfPath const& id)
  : HdxTask(id)
- , _hgi(nullptr)
  , _converged(false)
  , _aovBufferPath()
  , _depthBufferPath()
@@ -46,10 +45,10 @@ HdxAovInputTask::HdxAovInputTask(HdSceneDelegate* delegate, SdfPath const& id)
 HdxAovInputTask::~HdxAovInputTask()
 {
     if (_aovTexture) {
-        _hgi->DestroyTexture(&_aovTexture);
+        _GetHgi()->DestroyTexture(&_aovTexture);
     }
     if (_depthTexture) {
-        _hgi->DestroyTexture(&_depthTexture);
+        _GetHgi()->DestroyTexture(&_depthTexture);
     }
 }
 
@@ -60,20 +59,12 @@ HdxAovInputTask::IsConverged() const
 }
 
 void
-HdxAovInputTask::Sync(HdSceneDelegate* delegate,
+HdxAovInputTask::_Sync(HdSceneDelegate* delegate,
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    // Find Hgi driver in task context.
-    if (!_hgi) {
-        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
-        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
-            return;
-        }
-    }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxAovInputTaskParams params;
@@ -199,7 +190,7 @@ HdxAovInputTask::_UpdateTexture(
     // existing texture resource and upload new pixels instead of destroying.
     // But atm we don't have Hgi api for this.
     if (texture) {
-        _hgi->DestroyTexture(&texture);
+        _GetHgi()->DestroyTexture(&texture);
     }
 
     HgiTextureDesc texDesc;
@@ -217,7 +208,7 @@ HdxAovInputTask::_UpdateTexture(
     texDesc.usage = HgiTextureUsageBitsColorTarget | 
                     HgiTextureUsageBitsShaderRead;
 
-    texture = _hgi->CreateTexture(texDesc);
+    texture = _GetHgi()->CreateTexture(texDesc);
 
     buffer->Unmap();
 }

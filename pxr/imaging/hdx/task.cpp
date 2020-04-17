@@ -22,11 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdx/task.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxTask::HdxTask(SdfPath const& id)
     : HdTask(id)
+    , _hgi(nullptr)
 {
 }
 
@@ -38,6 +41,36 @@ bool
 HdxTask::IsConverged() const
 {
     return true;
+}
+
+void
+HdxTask::Sync(
+    HdSceneDelegate* delegate,
+    HdTaskContext* ctx,
+    HdDirtyBits* dirtyBits)
+{
+    // Hgi is pushed is provided by the application and pushed into the
+    // task context by hydra.
+    // We only have to find the Hgi driver once as it should not change.
+    // All gpu resources (in tasks and Storm) are created with a specific
+    // Hgi device so we (correctly) assume Hgi* will not change during a
+    // Hydra session. Not all tasks need Hgi, so we do not consider it an
+    // error here to not find Hgi.
+    if (!_hgi) {
+        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
+    }
+
+    // Proceeed with the Sync Phase
+    _Sync(delegate, ctx, dirtyBits);
+}
+
+Hgi*
+HdxTask::_GetHgi() const
+{
+    if (ARCH_UNLIKELY(!_hgi)) {
+        TF_CODING_ERROR("Hgi driver missing. See HdxTask::Sync.");
+    }
+    return _hgi;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -59,7 +59,7 @@ HdxOitRenderTask::~HdxOitRenderTask()
 }
 
 void
-HdxOitRenderTask::Sync(
+HdxOitRenderTask::_Sync(
     HdSceneDelegate* delegate,
     HdTaskContext* ctx,
     HdDirtyBits* dirtyBits)
@@ -68,7 +68,7 @@ HdxOitRenderTask::Sync(
     HF_MALLOC_TAG_FUNCTION();
 
     if (_isOitEnabled) {
-        HdxRenderTask::Sync(delegate, ctx, dirtyBits);
+        HdxRenderTask::_Sync(delegate, ctx, dirtyBits);
     }
 }
 

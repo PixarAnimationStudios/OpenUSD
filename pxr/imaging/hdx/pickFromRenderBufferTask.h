@@ -78,12 +78,6 @@ public:
     /// Hooks for progressive rendering.
     virtual bool IsConverged() const override;
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the pick task
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
@@ -92,6 +86,13 @@ public:
     /// Execute the pick task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     HdxPickFromRenderBufferTaskParams _params;

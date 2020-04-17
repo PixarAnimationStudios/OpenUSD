@@ -47,9 +47,9 @@ HdxPickFromRenderBufferTask::IsConverged() const
 }
 
 void
-HdxPickFromRenderBufferTask::Sync(HdSceneDelegate* delegate,
-                                  HdTaskContext* ctx,
-                                  HdDirtyBits* dirtyBits)
+HdxPickFromRenderBufferTask::_Sync(HdSceneDelegate* delegate,
+                                   HdTaskContext* ctx,
+                                   HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

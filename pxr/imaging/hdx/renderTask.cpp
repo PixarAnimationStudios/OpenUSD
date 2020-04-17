@@ -65,9 +65,9 @@ HdxRenderTask::IsConverged() const
 }
 
 void
-HdxRenderTask::Sync(HdSceneDelegate* delegate,
-                    HdTaskContext*   ctx,
-                    HdDirtyBits*     dirtyBits)
+HdxRenderTask::_Sync(HdSceneDelegate* delegate,
+                     HdTaskContext* ctx,
+                     HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 

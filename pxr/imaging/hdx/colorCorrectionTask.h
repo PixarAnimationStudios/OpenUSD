@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hgi/attachmentDesc.h"
 #include "pxr/imaging/hgi/buffer.h"
@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A task for performing color correction (and optionally color grading) on a 
 /// color buffer to transform its color for display.
 ///
-class HdxColorCorrectionTask : public HdTask
+class HdxColorCorrectionTask : public HdxTask
 {
 public:
     HDX_API
@@ -54,12 +54,6 @@ public:
 
     HDX_API
     virtual ~HdxColorCorrectionTask();
-
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
     HDX_API
@@ -69,6 +63,13 @@ public:
     /// Execute the color correction task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     HdxColorCorrectionTask() = delete;
@@ -101,8 +102,6 @@ private:
 
     // Print shader compile errors.
     void _PrintCompileErrors();
-
-    class Hgi* _hgi;
 
     HgiAttachmentDesc _attachment0;
     HgiBufferHandle _indexBuffer;

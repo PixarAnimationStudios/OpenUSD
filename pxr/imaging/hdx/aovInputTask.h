@@ -55,12 +55,6 @@ public:
     virtual bool IsConverged() const override;
 
     HDX_API
-    virtual void Sync(
-        HdSceneDelegate* delegate,
-        HdTaskContext* ctx,
-        HdDirtyBits* dirtyBits) override;
-
-    HDX_API
     virtual void Prepare(
         HdTaskContext* ctx,
         HdRenderIndex* renderIndex) override;
@@ -68,13 +62,18 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+protected:
+    HDX_API
+    virtual void _Sync(
+        HdSceneDelegate* delegate,
+        HdTaskContext* ctx,
+        HdDirtyBits* dirtyBits) override;
+
 private:
     void _UpdateTexture(
         HdTaskContext* ctx,
         HgiTextureHandle& texture,
         HdRenderBuffer* buffer);
-
-    class Hgi* _hgi;
 
     bool _converged;
 

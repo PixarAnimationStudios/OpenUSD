@@ -82,12 +82,6 @@ public:
     /// Hooks for progressive rendering.
     virtual bool IsConverged() const override;
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the render pass resources
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
@@ -96,6 +90,13 @@ public:
     /// Execute the task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     // The core colorizing logic of this task: given the ID buffers and the
@@ -124,8 +125,6 @@ private:
                    radius == other.radius;
         }
     };
-
-    class Hgi* _hgi;
 
     // Incoming data
     HdxColorizeSelectionTaskParams _params;

@@ -33,8 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
- : HdTask(id)
- , _hgi(nullptr)
+ : HdxTask(id)
  , _compositor()
 {
 }
@@ -44,7 +43,7 @@ HdxPresentTask::~HdxPresentTask()
 }
 
 void
-HdxPresentTask::Sync(
+HdxPresentTask::_Sync(
     HdSceneDelegate* delegate,
     HdTaskContext* ctx,
     HdDirtyBits* dirtyBits)
@@ -52,13 +51,8 @@ HdxPresentTask::Sync(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Find Hgi driver in task context.
-    if (!_hgi) {
-        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
-        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
-            return;
-        }
-        _compositor.reset(new HdxFullscreenShader(_hgi, "Present"));
+    if (!_compositor) {
+        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "Present"));
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {

@@ -73,12 +73,6 @@ public:
     /// Hooks for progressive rendering (delegated to renderpasses).
     virtual bool IsConverged() const override;
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the tasks resources
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
@@ -93,6 +87,12 @@ public:
     virtual const TfTokenVector &GetRenderTags() const override;
 
 protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
+
     HDX_API
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 

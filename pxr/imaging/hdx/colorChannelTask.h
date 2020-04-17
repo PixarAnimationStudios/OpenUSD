@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/fullscreenShader.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/tokens.h"
 
 
@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A task for choosing a color channel for display.
 ///
-class HdxColorChannelTask : public HdTask
+class HdxColorChannelTask : public HdxTask
 {
 public:
     HDX_API
@@ -46,12 +46,6 @@ public:
 
     HDX_API
     virtual ~HdxColorChannelTask();
-
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
     HDX_API
@@ -61,6 +55,13 @@ public:
     /// Execute the color channel task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     HdxColorChannelTask() = delete;
@@ -83,8 +84,6 @@ private:
             return channel == other.channel;
         }
     };
-
-    class Hgi* _hgi;
 
     std::unique_ptr<HdxFullscreenShader> _compositor;
     _ParameterBuffer _parameterData;

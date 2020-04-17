@@ -422,9 +422,9 @@ static _Colorizer _colorizerTable[] = {
 };
 
 void
-HdxColorizeTask::Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits)
+HdxColorizeTask::_Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

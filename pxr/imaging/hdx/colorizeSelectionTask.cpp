@@ -53,7 +53,6 @@ HdxColorizeSelectionTask::HdxColorizeSelectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
     : HdxTask(id)
-    , _hgi(nullptr)
     , _params()
     , _lastVersion(-1)
     , _hasSelection(false)
@@ -74,7 +73,7 @@ HdxColorizeSelectionTask::~HdxColorizeSelectionTask()
     delete[] _outputBuffer;
 
     if (_parameterBuffer) {
-        _hgi->DestroyBuffer(&_parameterBuffer);
+        _GetHgi()->DestroyBuffer(&_parameterBuffer);
     }
 }
 
@@ -85,20 +84,15 @@ HdxColorizeSelectionTask::IsConverged() const
 }
 
 void
-HdxColorizeSelectionTask::Sync(HdSceneDelegate* delegate,
-                               HdTaskContext* ctx,
-                               HdDirtyBits* dirtyBits)
+HdxColorizeSelectionTask::_Sync(HdSceneDelegate* delegate,
+                                HdTaskContext* ctx,
+                                HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Find Hgi driver in task context.
-    if (!_hgi) {
-        _hgi = HdTask::_GetDriver<Hgi*>(ctx, HgiTokens->renderDriver);
-        if (!TF_VERIFY(_hgi, "Hgi driver missing from TaskContext")) {
-            return;
-        }
-        _compositor.reset(new HdxFullscreenShader(_hgi, "ColorizeSelection"));
+    if (!_compositor) {
+        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "ColorizeSelection"));
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
@@ -380,10 +374,10 @@ HdxColorizeSelectionTask::_CreateParameterBuffer()
         bufDesc.usage = HgiBufferUsageStorage;
         bufDesc.initialData = &_parameterData;
         bufDesc.byteSize = sizeof(_parameterData);
-        _parameterBuffer = _hgi->CreateBuffer(bufDesc);
+        _parameterBuffer = _GetHgi()->CreateBuffer(bufDesc);
     } else {
         // Update the existing storage buffer with new values.
-        HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+        HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
         HgiBufferCpuToGpuOp copyOp;
         copyOp.byteSize = sizeof(_parameterData);
         copyOp.cpuSourceBuffer = &_parameterData;
@@ -391,7 +385,7 @@ HdxColorizeSelectionTask::_CreateParameterBuffer()
         copyOp.destinationByteOffset = 0;
         copyOp.gpuDestinationBuffer = _parameterBuffer;
         blitCmds->CopyBufferCpuToGpu(copyOp);
-        _hgi->SubmitCmds(blitCmds.get(), 1);
+        _GetHgi()->SubmitCmds(blitCmds.get(), 1);
     }
 }
 

@@ -25,9 +25,9 @@
 #define PXR_IMAGING_HDX_PRESENT_TASK_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/fullscreenShader.h"
+#include "pxr/imaging/hdx/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A task for taking the final rendered and composited result of the aovs and
 /// blit it into the viewers framebuffer.
 ///
-class HdxPresentTask : public HdTask
+class HdxPresentTask : public HdxTask
 {
 public:
     HDX_API
@@ -46,20 +46,19 @@ public:
     virtual ~HdxPresentTask();
 
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
-    HDX_API
     virtual void Prepare(HdTaskContext* ctx,
                          HdRenderIndex* renderIndex) override;
 
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
-private:
-    class Hgi* _hgi;
+protected:
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
+private:
     std::unique_ptr<HdxFullscreenShader> _compositor;
 
     HdxPresentTask() = delete;
