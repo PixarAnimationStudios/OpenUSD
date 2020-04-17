@@ -154,6 +154,8 @@ HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 
         // Make sure the copy is finished before reads from buffer.
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 

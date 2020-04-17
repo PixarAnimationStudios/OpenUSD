@@ -69,6 +69,7 @@ HgiGLPipeline::~HgiGLPipeline()
 {
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &_vao);
+    HGIGL_POST_PENDING_GL_ERRORS();
 }
 
 void
