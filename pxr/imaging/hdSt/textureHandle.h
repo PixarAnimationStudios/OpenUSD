@@ -27,13 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 
-// Only here because of HdStSamplerParameters which should go into a
-// different file.
-#include "pxr/imaging/hdSt/samplerObject.h"
-
 #include "pxr/imaging/hd/enums.h"
-
-#include "pxr/base/gf/vec4f.h"
+#include "pxr/imaging/hd/types.h"
 
 #include <memory>
 
@@ -69,7 +64,7 @@ public:
     HDST_API
     HdStTextureHandle(
         HdStTextureObjectSharedPtr const &textureObject,
-        const HdStSamplerParameters &samplerParams,
+        const HdSamplerParameters &samplerParams,
         size_t memoryRequest,
         bool createBindlessHandle,
         HdStShaderCodePtr const & shaderCode,
@@ -94,7 +89,7 @@ public:
  
     /// Get sampler parameters.
     ///
-    HdStSamplerParameters const &GetSamplerParameters() const {
+    HdSamplerParameters const &GetSamplerParameters() const {
         return _samplerParams;
     }
 
@@ -121,7 +116,7 @@ public:
 private:
     HdStTextureObjectSharedPtr _textureObject;
     HdStSamplerObjectSharedPtr _samplerObject;
-    HdStSamplerParameters _samplerParams;
+    HdSamplerParameters _samplerParams;
     size_t _memoryRequest;
     bool _createBindlessHandle;
     HdStShaderCodePtr _shaderCode;

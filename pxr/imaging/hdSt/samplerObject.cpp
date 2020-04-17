@@ -33,23 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool
-HdStSamplerParameters::operator==(const HdStSamplerParameters &other) const
-{
-    return
-        (wrapS == other.wrapS) &&
-        (wrapT == other.wrapT) &&
-        (wrapR == other.wrapR) &&
-        (minFilter == other.minFilter) &&
-        (magFilter == other.magFilter);
-}
-
-bool
-HdStSamplerParameters::operator!=(const HdStSamplerParameters &other) const
-{
-    return !(*this == other);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // HdStTextureObject
 
@@ -61,7 +44,7 @@ HdStSamplerObject::~HdStSamplerObject() = default;
 // Generate GL sampler
 static
 GLuint
-_GenGLSampler(HdStSamplerParameters const &samplerParameters)
+_GenGLSampler(HdSamplerParameters const &samplerParameters)
 {
     GLuint result = 0;
     glGenSamplers(1, &result);
@@ -203,12 +186,12 @@ _ResolveSamplerParameter(
 // Resolve wrapS or wrapT of the samplerParameters using metadata
 // from the texture file.
 static
-HdStSamplerParameters
+HdSamplerParameters
 _ResolveUvSamplerParameters(
     HdStUvTextureObject const &texture,
-    HdStSamplerParameters const &samplerParameters)
+    HdSamplerParameters const &samplerParameters)
 {
-    HdStSamplerParameters result = samplerParameters;
+    HdSamplerParameters result = samplerParameters;
     _ResolveSamplerParameter(
         texture.GetWrapParameters().first,
         &result.wrapS);
@@ -222,7 +205,7 @@ _ResolveUvSamplerParameters(
 
 HdStUvSamplerObject::HdStUvSamplerObject(
     HdStUvTextureObject const &texture,
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
   : _glSamplerName(
       _GenGLSampler(
@@ -259,7 +242,7 @@ HdStUvSamplerObject::~HdStUvSamplerObject()
 
 HdStFieldSamplerObject::HdStFieldSamplerObject(
     HdStFieldTextureObject const &texture,
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
   : _glSamplerName(
       _GenGLSampler(
@@ -286,7 +269,7 @@ HdStFieldSamplerObject::~HdStFieldSamplerObject()
 HdStPtexSamplerObject::HdStPtexSamplerObject(
     HdStPtexTextureObject const &ptexTexture,
     // samplerParameters are ignored are ptex
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
   : _texelsGLTextureHandle(
       _GenGlTextureHandle(

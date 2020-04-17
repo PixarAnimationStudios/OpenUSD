@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/imaging/hd/types.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

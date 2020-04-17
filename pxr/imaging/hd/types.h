@@ -35,6 +35,94 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \enum HdWrap
+///
+/// Enumerates wrapping attributes type values.
+///
+/// <ul>
+///     <li>\b HdWrapClamp               Clamp coordinate to range [1/(2N),1-1/(2N)] where N is the size of the texture in the direction of clamping</li>
+///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
+///     <li>\b HdWrapBlack               Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
+///     <li>\b HdWrapMirror              Creates a mirrored repeating pattern.</li>
+///     <li>\b HdWrapLegacyClamp         (deprecated) For clients needing to translate GLenum to HdWrap, this corresponds to obsolete GL_CLAMP.</li>
+///     <li>\b HdWrapNoOpinion           No opinion. The data texture can define its own wrap mode that we can use instead. Fallback to HdWrapBlack</li>
+///     <li>\b HdWrapLegacyNoOpinionFallbackRepeat  (deprecated) Similar to HdWrapNoOpinon but fallback to HdWrapRepeat</li>
+///     <li>\b HdWrapUseMetadata         (deprecated) Alias for HdWrapNoOpinion</li>
+///     <li>\b HdWrapLegacy              (deprecated) Alias for HdWrapLegacyNoOpinionFallbackRepeat</li>
+/// </ul>
+///
+enum HdWrap 
+{
+    HdWrapClamp,
+    HdWrapRepeat,
+    HdWrapBlack,
+    HdWrapMirror,
+    HdWrapLegacyClamp, // deprecated
+
+    HdWrapNoOpinion,
+    HdWrapLegacyNoOpinionFallbackRepeat, // deprecated
+
+    HdWrapUseMetadata = HdWrapNoOpinion, // deprecated alias
+    HdWrapLegacy = HdWrapLegacyNoOpinionFallbackRepeat // deprecated alias
+};
+
+/// \enum HdMinFilter
+///
+/// Enumerates minFilter attribute type values.
+///
+/// <ul>
+///     <li>\b HdMinFilterNearest                Nearest to center of the pixel</li>
+///     <li>\b HdMinFilterLinear                 Weighted average od the four texture elements closest to the pixel</li>
+///     <li>\b HdMinFilterNearestMipmapNearest   Nearest to center of the pixel from the nearest mipmaps</li>
+///     <li>\b HdMinFilterLinearMipmapNeares     Weighted average using texture elements from the nearest mipmaps</li>
+///     <li>\b HdMinFilterNearestMipmapLinear    Weighted average of the nearest pixels from the two nearest mipmaps</li>
+///     <li>\b HdMinFilterLinearMipmapLinear     WeightedAverage of the weighted averages from the nearest mipmaps</li>
+/// </ul>
+///
+enum HdMinFilter 
+{
+    HdMinFilterNearest,
+    HdMinFilterLinear,
+    HdMinFilterNearestMipmapNearest,
+    HdMinFilterLinearMipmapNearest,
+    HdMinFilterNearestMipmapLinear,
+    HdMinFilterLinearMipmapLinear,
+};
+
+/// \enum HdMagFilter
+///
+/// Enumerates magFilter attribute type values.
+///
+/// <ul>
+///     <li>HdFilterNearest       Nearest to center of the pixel</li>
+///     <li>HdFilterLinear        Weighted average of the four texture elements closest to the pixel</li>
+/// </ul>
+///
+enum HdMagFilter 
+{
+    HdMagFilterNearest,
+    HdMagFilterLinear,
+};
+
+/// \class HdSamplerParameters
+///
+/// Collection of standard parameters such as wrap modes to sample a texture.
+///
+class HdSamplerParameters {
+public:
+    HdWrap wrapS;
+    HdWrap wrapT;
+    HdWrap wrapR;
+    HdMinFilter minFilter;
+    HdMagFilter magFilter;
+
+    HD_API 
+    bool operator==(const HdSamplerParameters &other) const;
+
+    HD_API
+    bool operator!=(const HdSamplerParameters &other) const;
+};
+
 ///
 /// Type representing a set of dirty bits.
 ///

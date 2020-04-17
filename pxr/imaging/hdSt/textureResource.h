@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/imaging/glf/texture.h"

@@ -156,7 +156,7 @@ HdStTextureHandleSharedPtr
 HdSt_TextureHandleRegistry::AllocateTextureHandle(
         HdStTextureIdentifier const &textureId,
         HdTextureType textureType,
-        HdStSamplerParameters const &samplerParams,
+        HdSamplerParameters const &samplerParams,
         size_t memoryRequest,
         bool createBindlessHandle,
         HdStShaderCodePtr const &shaderCode)

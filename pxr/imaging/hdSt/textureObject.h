@@ -29,6 +29,7 @@
 
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/gf/bbox3d.h"

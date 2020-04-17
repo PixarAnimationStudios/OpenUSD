@@ -75,7 +75,7 @@ using Hd_VertexAdjacencySharedPtr =
 using HdSt_MeshTopologySharedPtr = 
     std::shared_ptr<class HdSt_MeshTopology>;
 class HdStTextureIdentifier;
-class HdStSamplerParameters;
+class HdSamplerParameters;
 
 /// \class HdStResourceRegistry
 ///
@@ -118,7 +118,7 @@ public:
         HdTextureType textureType,
         /// Sampling parameters such as wrapS, ...
         /// wrapS, wrapT, wrapR mode, min filer, mag filter
-        const HdStSamplerParameters &samplerParams,
+        const HdSamplerParameters &samplerParams,
         /// Memory request. The texture is down-sampled to meet the
         /// target memory which is the maximum of all memory requests
         /// associated to the texture.

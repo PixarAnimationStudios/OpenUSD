@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStSamplerParameters;
+class HdSamplerParameters;
 using HdStTextureObjectSharedPtr =
     std::shared_ptr<class HdStTextureObject>;
 using HdStSamplerObjectSharedPtr =
@@ -68,7 +68,7 @@ public:
     HDST_API 
     HdStSamplerObjectSharedPtr AllocateSampler(
         HdStTextureObjectSharedPtr const &texture,
-        HdStSamplerParameters const &samplerParameters,
+        HdSamplerParameters const &samplerParameters,
         bool createBindlessHandle);
 
     /// Delete samplers no longer used by a client.

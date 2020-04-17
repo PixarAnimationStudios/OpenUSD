@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/types.h"
 
 #include <memory>
 
@@ -39,28 +40,6 @@ class HdStPtexTextureObject;
 
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
-
-/// \class HdStSamplerParameters
-///
-/// Collection of standard parmaeters such as wrap modes to sample a texture.
-///
-/// This should probably go into a different file such as hd/types.h or
-/// hd/samplerParameters.h.
-///
-class HdStSamplerParameters {
-public:
-    HdWrap wrapS;
-    HdWrap wrapT;
-    HdWrap wrapR;
-    HdMinFilter minFilter;
-    HdMagFilter magFilter;
-
-    HDST_API 
-    bool operator==(const HdStSamplerParameters &other) const;
-
-    HDST_API
-    bool operator!=(const HdStSamplerParameters &other) const;
-};
 
 /// \class HdStSamplerObject
 ///
@@ -94,7 +73,7 @@ public:
     HDST_API 
     HdStUvSamplerObject(
         HdStUvTextureObject const &uvTexture,
-        HdStSamplerParameters const &samplerParameters,
+        HdSamplerParameters const &samplerParameters,
         bool createBindlessHandle);
 
     HDST_API 
@@ -128,7 +107,7 @@ class HdStFieldSamplerObject final : public HdStSamplerObject {
 public:
     HdStFieldSamplerObject(
         HdStFieldTextureObject const &uvTexture,
-        HdStSamplerParameters const &samplerParameters,
+        HdSamplerParameters const &samplerParameters,
         bool createBindlessHandle);
 
     ~HdStFieldSamplerObject() override;
@@ -163,7 +142,7 @@ public:
     HdStPtexSamplerObject(
         HdStPtexTextureObject const &ptexTexture,
         // samplerParameters are ignored by ptex
-        HdStSamplerParameters const &samplerParameters,
+        HdSamplerParameters const &samplerParameters,
         bool createBindlessHandle);
 
     ~HdStPtexSamplerObject() override;

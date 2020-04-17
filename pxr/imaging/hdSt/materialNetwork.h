@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 
-// Needed just for HdStSamplerParameters
+// Needed just for HdSamplerParameters
 #include "pxr/imaging/hdSt/samplerObject.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -82,7 +82,7 @@ public:
         TfToken name;
         HdStTextureIdentifier textureId;
         HdTextureType type;
-        HdStSamplerParameters samplerParameters;
+        HdSamplerParameters samplerParameters;
         // Memory request in bytes.
         size_t memoryRequest;
     };

@@ -38,7 +38,7 @@ static
 HdStSamplerObjectSharedPtr
 _MakeTypedSamplerObject(
     HdStTextureObjectSharedPtr const &texture,
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
 {
     // e.g. HdStUvTextureObject
@@ -61,7 +61,7 @@ static
 HdStSamplerObjectSharedPtr
 _MakeSamplerObject(
     HdStTextureObjectSharedPtr const &texture,
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
 {
     switch(texture->GetTextureType()) {
@@ -83,7 +83,7 @@ _MakeSamplerObject(
 HdStSamplerObjectSharedPtr
 HdSt_SamplerObjectRegistry::AllocateSampler(
     HdStTextureObjectSharedPtr const &texture,
-    HdStSamplerParameters const &samplerParameters,
+    HdSamplerParameters const &samplerParameters,
     bool const createBindlessHandle)
 {
     TRACE_FUNCTION();

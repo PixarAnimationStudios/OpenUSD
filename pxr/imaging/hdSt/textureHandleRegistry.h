@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hgi;
 
 class HdStTextureIdentifier;
-class HdStSamplerParameters;
+class HdSamplerParameters;
 class HdSt_SamplerObjectRegistry;
 
 using HdStTextureHandlePtr =
@@ -87,7 +87,7 @@ public:
     HdStTextureHandleSharedPtr AllocateTextureHandle(
         const HdStTextureIdentifier &textureId,
         HdTextureType textureType,
-        const HdStSamplerParameters &samplerParams,
+        const HdSamplerParameters &samplerParams,
         /// memoryRequest in bytes.
         size_t memoryRequest,
         bool createBindlessHandle,

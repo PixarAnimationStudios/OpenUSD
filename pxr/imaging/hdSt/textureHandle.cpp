@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStTextureHandle::HdStTextureHandle(
     HdStTextureObjectSharedPtr const &textureObject,
-    const HdStSamplerParameters &samplerParams,
+    const HdSamplerParameters &samplerParams,
     const size_t memoryRequest,
     const bool createBindlessHandle,
     HdStShaderCodePtr const & shaderCode,

@@ -641,7 +641,7 @@ _ResolveMagSamplerParameter(
 // Resolve sampling parameters for texture node by
 // looking at material node parameters and falling back to
 // fallback values from Sdr.
-static HdStSamplerParameters
+static HdSamplerParameters
 _GetSamplerParameters(
     SdfPath const &nodePath,
     HdSt_MaterialNode const& node,

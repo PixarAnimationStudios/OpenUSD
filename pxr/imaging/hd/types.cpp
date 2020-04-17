@@ -107,6 +107,22 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
 }
 
+bool
+HdSamplerParameters::operator==(const HdSamplerParameters &other) const
+{
+    return
+        (wrapS == other.wrapS) &&
+        (wrapT == other.wrapT) &&
+        (wrapR == other.wrapR) &&
+        (minFilter == other.minFilter) &&
+        (magFilter == other.magFilter);
+}
+
+bool
+HdSamplerParameters::operator!=(const HdSamplerParameters &other) const
+{
+    return !(*this == other);
+}
 
 template <class T>
 static void const *_GetArrayData(VtValue const &v) {

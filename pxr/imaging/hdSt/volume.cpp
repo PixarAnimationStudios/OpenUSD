@@ -356,7 +356,7 @@ _ComputeMaterialShader(
             TfTokenVector(),
             textureType);
 
-        static const HdStSamplerParameters samplerParams{
+        static const HdSamplerParameters samplerParams{
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
             HdMinFilterLinear, HdMagFilterLinear };
 
