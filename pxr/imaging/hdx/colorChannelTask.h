@@ -31,13 +31,11 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/garch/gl.h"
 
-#include <boost/shared_ptr.hpp>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStGLSLProgram;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
 
 /// \class HdxColorChannelTask
 ///

@@ -31,13 +31,11 @@
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/vec2i.h"
 
-#include <boost/shared_ptr.hpp>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStGLSLProgram;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
 
 /// ----------------------------------------------------------------------------
 /// *** DEPRECATED *** ///
