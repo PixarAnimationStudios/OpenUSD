@@ -32,8 +32,8 @@
 
 #include "pxr/imaging/plugin/hdEmbree/meshSamplers.h"
 
-#include <embree2/rtcore.h>
-#include <embree2/rtcore_ray.h>
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_ray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -182,12 +182,12 @@ private:
                                bool refined);
 
     // Utility function to call rtcNewSubdivisionMesh and populate topology.
-    void _CreateEmbreeSubdivMesh(RTCScene scene);
+    RTCGeometry _CreateEmbreeSubdivMesh(RTCScene scene, RTCDevice device);
     // Utility function to call rtcNewTriangleMesh and populate topology.
-    void _CreateEmbreeTriangleMesh(RTCScene scene);
+    RTCGeometry _CreateEmbreeTriangleMesh(RTCScene scene, RTCDevice device);
 
     // An embree intersection filter callback, for doing backface culling.
-    static void _EmbreeCullFaces(void *userData, RTCRay &ray);
+    static void _EmbreeCullFaces(const RTCFilterFunctionNArguments* args);
 
 private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
@@ -245,6 +245,18 @@ private:
     // An object used to manage allocation of embree user vertex buffers to
     // primvars.
     HdEmbreeRTCBufferAllocator _embreeBufferAllocator;
+
+    // Embree recommends after creating one should hold onto the geometry
+    //
+    //      "However, it is generally recommended to store the geometry handle
+    //       inside the application's geometry representation and look up the
+    //       geometry handle from that representation directly.""
+    //
+    // found this to be necessary in the case where multiple threads were
+    // commiting to the scene at the same time, and a geometry needed to be
+    // referenced again while other threads were committing
+    RTCGeometry _geometry;
+    std::vector<RTCGeometry> _rtcInstanceGeometries;
 
     // This class does not support copying.
     HdEmbreeMesh(const HdEmbreeMesh&)             = delete;

@@ -42,7 +42,7 @@
 
 #include "pxr/base/tf/errorMark.h"
 
-#include <embree2/rtcore.h>
+#include <embree3/rtcore.h>
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE

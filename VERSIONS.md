@@ -27,7 +27,7 @@ Our test machines have the following software versions installed
 | Ptex          | 2.1.28               | 2.1.28                       | 2.1.28                         |
 | PySide2       | 2.0.0~alpha0, 5.14.1 | 5.14.1                       | 5.14.1                         |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
-| Embree        | 2.16.4               | 2.16.4                       | 2.16.4                         |
+| Embree        | 3.2.2                | 3.2.2                        | 3.2.2                          |
 | RenderMan     | 23.0                 | 23.0                         | 23.0                           |
 | Alembic       | 1.7.10               | 1.7.10                       | 1.7.10                         |
 | OpenEXR       | 2.2.0                | 2.2.0                        | 2.2.0                          |

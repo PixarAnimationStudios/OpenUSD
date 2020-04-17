@@ -32,8 +32,8 @@
 
 #include "pxr/base/gf/matrix4d.h"
 
-#include <embree2/rtcore.h>
-#include <embree2/rtcore_ray.h>
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_ray.h>
 
 #include <random>
 #include <atomic>
@@ -142,17 +142,17 @@ private:
                    std::default_random_engine &random);
 
     // Compute the color at the given ray hit.
-    GfVec4f _ComputeColor(RTCRay const& rayHit,
+    GfVec4f _ComputeColor(RTCRayHit const& rayHit,
                           std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
-    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool clip);
+    bool _ComputeDepth(RTCRayHit const& rayHit, float *depth, bool clip);
     // Compute the given ID at the given ray hit.
-    bool _ComputeId(RTCRay const& rayHit, TfToken const& idType, int32_t *id);
+    bool _ComputeId(RTCRayHit const& rayHit, TfToken const& idType, int32_t *id);
     // Compute the normal at the given ray hit.
-    bool _ComputeNormal(RTCRay const& rayHit, GfVec3f *normal, bool eye);
+    bool _ComputeNormal(RTCRayHit const& rayHit, GfVec3f *normal, bool eye);
     // Compute a primvar at the given ray hit.
-    bool _ComputePrimvar(RTCRay const& rayHit, TfToken const& primvar,
+    bool _ComputePrimvar(RTCRayHit const& rayHit, TfToken const& primvar,
         GfVec3f *value);
 
     // Compute the ambient occlusion term at a given point by firing rays

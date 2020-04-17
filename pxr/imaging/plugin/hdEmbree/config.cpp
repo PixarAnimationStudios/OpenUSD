@@ -45,9 +45,6 @@ TF_DEFINE_ENV_SETTING(HDEMBREE_TILE_SIZE, 8,
 TF_DEFINE_ENV_SETTING(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES, 16,
         "Ambient occlusion samples per camera ray (must be >= 0; a value of 0 disables ambient occlusion)");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_SUBDIVISION_CACHE, 128*1024*1024,
-        "Number of bytes to allocate for the embree subdivision surface cache (must be >= 128MB)");
-
 TF_DEFINE_ENV_SETTING(HDEMBREE_JITTER_CAMERA, 1,
         "Should HdEmbree jitter camera rays while rendering? (values >0 are true)");
 
@@ -69,8 +66,6 @@ HdEmbreeConfig::HdEmbreeConfig()
             TfGetEnvSetting(HDEMBREE_TILE_SIZE));
     ambientOcclusionSamples = std::max(0,
             TfGetEnvSetting(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES));
-    subdivisionCache = std::max(128*1024*1024,
-            TfGetEnvSetting(HDEMBREE_SUBDIVISION_CACHE));
     jitterCamera = (TfGetEnvSetting(HDEMBREE_JITTER_CAMERA) > 0);
     useFaceColors = (TfGetEnvSetting(HDEMBREE_USE_FACE_COLORS) > 0);
     cameraLightIntensity = (std::max(100,
@@ -85,8 +80,6 @@ HdEmbreeConfig::HdEmbreeConfig()
             <<    tileSize                << "\n"
             << "  ambientOcclusionSamples    = "
             <<    ambientOcclusionSamples << "\n"
-            << "  subdivisionCache           = "
-            <<    subdivisionCache        << "\n"
             << "  jitterCamera               = "
             <<    jitterCamera            << "\n"
             << "  useFaceColors              = "
