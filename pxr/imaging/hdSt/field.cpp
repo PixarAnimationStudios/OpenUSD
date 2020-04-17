@@ -39,12 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (fieldName)
+    (textureMemory)
+
     (openvdbAsset)
 );
 
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
   : HdField(id)
   , _fieldType(fieldType)
+  , _textureMemory(0)
   , _isInitialized(false)
 {
 }
@@ -85,6 +88,13 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
                 "FieldAsset of type %s not supported by Storm.",
                 _fieldType.GetString().c_str());
         }
+
+        const VtValue textureMemoryValue = sceneDelegate->Get(
+            GetId(), _tokens->textureMemory);
+        // Note that the memory request is apparently authored as
+        // float even though it is in bytes and thus should be an
+        // integral type.
+        _textureMemory = textureMemoryValue.GetWithDefault<float>(0.0f);
         
         if (_isInitialized) {
             // Force volume prim to pick up the new field resource and

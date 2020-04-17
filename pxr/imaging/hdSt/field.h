@@ -59,6 +59,9 @@ public:
         return _textureId;
     }
 
+    /// Get memory request for this field
+    size_t GetTextureMemory() const { return _textureMemory; }
+
     /// Bprim types handled by this class
     HDST_API
     static const TfTokenVector &GetSupportedBprimTypes();
@@ -71,6 +74,7 @@ private:
     const TfToken _fieldType;
 
     HdStTextureIdentifier _textureId;
+    size_t _textureMemory;
 
     bool _isInitialized : 1;
 };

@@ -235,15 +235,21 @@ _ComputeVolumeShader(const HdStMaterial * const material)
     }
 }
 
-using _NameToTextureIdentifier =
-    std::unordered_map<TfToken, HdStTextureIdentifier, TfToken::HashFunctor>;
+struct _TextureInfo
+{
+    HdStTextureIdentifier textureId;
+    size_t memoryRequest;
+};
 
-_NameToTextureIdentifier
-_ComputeNameToFieldIdentifier(
+using _NameToTextureInfo =
+    std::unordered_map<TfToken, _TextureInfo, TfToken::HashFunctor>;
+
+_NameToTextureInfo
+_ComputeNameToTextureInfo(
     HdSceneDelegate * const sceneDelegate,
     SdfPath const &id)
 {
-    _NameToTextureIdentifier result;
+    _NameToTextureInfo result;
 
     const HdVolumeFieldDescriptorVector & fields =
         sceneDelegate->GetVolumeFieldDescriptors(id);
@@ -254,7 +260,9 @@ _ComputeNameToFieldIdentifier(
                         sceneDelegate->GetRenderIndex().GetBprim(
                             field.fieldPrimType, field.fieldId))) {
             result.insert(
-                { field.fieldName, fieldPrim->GetTextureIdentifier() } );
+                { field.fieldName,
+                  _TextureInfo{ fieldPrim->GetTextureIdentifier(),
+                                fieldPrim->GetTextureMemory() } });
         } else {
             HF_VALIDATION_WARN(
                 id,
@@ -279,7 +287,7 @@ HdSt_VolumeShaderSharedPtr
 _ComputeMaterialShader(
     HdSceneDelegate * const sceneDelegate,
     const HdStShaderCodeSharedPtr &volumeShader,
-    const _NameToTextureIdentifier &nameToTextureIdentifier,
+    const _NameToTextureInfo & nameToTextureInfo,
     const GfRange3d &authoredExtents)
 {
     TRACE_FUNCTION();
@@ -329,8 +337,8 @@ _ComputeMaterialShader(
     for (const auto & fieldName : fieldNames) {
         // See whether we have the the field in the volume field descriptors
         // given to us by the scene delegate.
-        const auto it = nameToTextureIdentifier.find(fieldName);
-        if (it == nameToTextureIdentifier.end()) {
+        const auto it = nameToTextureInfo.find(fieldName);
+        if (it == nameToTextureInfo.end()) {
             continue;
         }
 
@@ -358,10 +366,10 @@ _ComputeMaterialShader(
         // loading of the texture will be done later.
         HdStTextureHandleSharedPtr const textureHandle =
             resourceRegistry->AllocateTextureHandle(
-                /* textureIdentifier = */ it->second,
+                it->second.textureId,
                 textureType,
                 samplerParams,
-                /* memoryRequest = */ 0,
+                it->second.memoryRequest,
                 HdSt_TextureBinder::UsesBindlessTextures(),
                 std::weak_ptr<HdStShaderCode>(result));
 
@@ -503,7 +511,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _ComputeMaterialShader(
             sceneDelegate,
             volumeShader,
-            _ComputeNameToFieldIdentifier(sceneDelegate, GetId()),
+            _ComputeNameToTextureInfo(sceneDelegate, GetId()),
             _sharedData.bounds.GetRange());
         
     drawItem->SetMaterialShader(materialShader);

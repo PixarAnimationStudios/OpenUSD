@@ -87,6 +87,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PreviewDomeLight)
     (MaterialTexture)
     (lightFilterType)
+    (textureMemory)
 );
 
 // This environment variable matches a set of similar ones in
@@ -2282,6 +2283,14 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             // it to primvars:color automatically by virtue of UsdGeomPrimvar.
             TF_VERIFY(pv.ComputeFlattened(&value, _time), "%s, %s\n", 
                       id.GetText(), key.GetText());
+        } else if (key == _tokens->textureMemory) {
+            // XXX: This is for volume fields only should be done in
+            // UsdImagingFieldAdapter::UpdateForTime but cannot right now since
+            // UpdateForTime is never called on a bprim (HdSyncRequestVector
+            // is only requested for rprims).
+            if (!_GetUsdPrim(cachePath).GetAttribute(key).Get(&value, _time)) {
+                value = VtValue(0.0f);
+            }
         } else {
             // XXX: This does not work for point instancer child prims; while we
             // do not hit this code path given the current state of the

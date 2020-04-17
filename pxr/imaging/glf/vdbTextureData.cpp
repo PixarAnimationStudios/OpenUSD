@@ -34,6 +34,7 @@
 
 #include "openvdb/openvdb.h"
 #include "openvdb/tools/Dense.h"
+#include "openvdb/tools/GridTransformer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,6 +55,7 @@ GlfVdbTextureData::GlfVdbTextureData(
       _gridName(gridName),
       _targetMemory(targetMemory),
       _nativeWidth(0), _nativeHeight(0), _nativeDepth(1),
+      _resizedWidth(0), _resizedHeight(0), _resizedDepth(1),
       _bytesPerPixel(0),
       _glInternalFormat(GL_RGB),
       _glFormat(GL_RGB),
@@ -116,19 +118,19 @@ GlfVdbTextureData::ComputeBytesUsedByMip(int mipLevel) const
 int
 GlfVdbTextureData::ResizedWidth(int mipLevel) const
 {
-    return _nativeWidth;
+    return _resizedWidth;
 }
 
 int
 GlfVdbTextureData::ResizedHeight(int mipLevel) const
 {
-    return _nativeHeight;
+    return _resizedHeight;
 }
 
 int
 GlfVdbTextureData::ResizedDepth(int mipLevel) const
 {
-    return _nativeDepth;
+    return _resizedDepth;
 }
 
 bool
@@ -157,69 +159,9 @@ public:
     virtual const unsigned char * GetData() const = 0;
 
     virtual ~GlfVdbTextureData_DenseGridHolderBase() = default;
-
-protected:
-    // Compute the tree's bounding box of an OpenVDB grid
-    static openvdb::CoordBBox
-    _ComputeTreeBoundingBox(const openvdb::GridBase::Ptr &grid)
-    {
-        TRACE_FUNCTION();
-
-        // There is a tradeoff between using 
-        // evalLeafBoundingBox() (less CPU time) or
-        // evalActiveVoxelBoundingBox() (less memory)
-        // here.
-        return grid->evalActiveVoxelBoundingBox();
-    }
 };
-
 
 namespace {
-
-// Holds on to an OpenVDB dense grid
-template<typename GridType>
-class _DenseGridHolder : public GlfVdbTextureData_DenseGridHolderBase
-{
-public:
-    using ValueType = typename GridType::ValueType;
-    using DenseGrid = openvdb::tools::Dense<ValueType,
-                                            openvdb::tools::LayoutXYZ>;
-    using GridPtr = typename GridType::Ptr;
-
-    // Create dense grid holder or return null pointer for empty grid.
-    // Callee owns result.
-    static 
-    _DenseGridHolder *New(const GridPtr &grid)
-    {
-        // Determine bounding box of grid
-        const openvdb::CoordBBox bbox = _ComputeTreeBoundingBox(grid);
-        if (bbox.empty()) {
-            // Empty grid
-            return nullptr;
-        }
-        // Allocate dense grid of that size and copy grid to it.
-        return new _DenseGridHolder(grid, bbox);
-    }
-
-    _DenseGridHolder(const GridPtr &grid, const openvdb::CoordBBox &bbox)
-        // Allocate dense grid of given size
-        : _denseGrid(bbox)
-    {
-        TRACE_FUNCTION_SCOPE("GlfVdbTextureData: Copy to dense");
-        openvdb::tools::copyToDense(grid->tree(), _denseGrid);
-    }
-
-    const unsigned char * GetData() const override {
-        return reinterpret_cast<const unsigned char*>(_denseGrid.data());
-    }
-
-    const openvdb::CoordBBox & GetTreeBoundingBox() const override {
-        return _denseGrid.bbox();
-    }
-
-private:
-    DenseGrid _denseGrid;
-};
 
 // Extracts the transform associated with an OpenVDB grid
 GfMatrix4d
@@ -254,8 +196,252 @@ _ExtractTransformFromGrid(const openvdb::GridBase::Ptr &grid)
     return GfMatrix4d(reinterpret_cast<const double (*)[4]>(m.asPointer()));
 }
 
+// Holds on to an OpenVDB dense grid
+template<typename GridType>
+class _DenseGridHolder final : public GlfVdbTextureData_DenseGridHolderBase
+{
+public:
+    using ValueType = typename GridType::ValueType;
+    using DenseGrid = openvdb::tools::Dense<ValueType,
+                                            openvdb::tools::LayoutXYZ>;
+    using GridPtr = typename GridType::Ptr;
+
+    // Create dense grid holder from grid and bounding box or return
+    // null pointer for empty grid.
+    // Callee owns result.
+    static 
+    _DenseGridHolder *New(const GridPtr &grid, const openvdb::CoordBBox &bbox)
+    {
+        TRACE_FUNCTION();
+
+        if (bbox.empty()) {
+            // Empty grid
+            return nullptr;
+        }
+        // Allocate dense grid and copy grid to it.
+        return new _DenseGridHolder(grid, bbox);
+    }
+
+    _DenseGridHolder(const GridPtr &grid, const openvdb::CoordBBox &bbox)
+        // Allocate dense grid of given size
+        : _denseGrid(bbox)
+    {
+        TRACE_FUNCTION_SCOPE("GlfVdbTextureData: Copy to dense");
+        openvdb::tools::copyToDense(grid->tree(), _denseGrid);
+    }
+
+    const unsigned char * GetData() const override {
+        return reinterpret_cast<const unsigned char*>(_denseGrid.data());
+    }
+
+    const openvdb::CoordBBox & GetTreeBoundingBox() const override {
+        return _denseGrid.bbox();
+    }
+
+private:
+    DenseGrid _denseGrid;
+};
+
+// A base class for a template to hold on to an OpenVDB grid.
+//
+// This is to dispatch to the templated openvdb::tools::resampleToMatch,
+// dense grids, ...
+//
+class _GridHolderBase
+{
+public:
+    // Get grid transform from OpenVDB grid.
+    virtual GfMatrix4d GetGridTransform() const = 0;
+
+    // Get metadata for corresponding OpenGL texture.
+    virtual void GetMetadata(int *bytesPerPixel,
+                             GLenum *glInternalFormat,
+                             GLenum *glFormat,
+                             GLenum *glType) const = 0;
+
+    // Create a new OpenVDB grid (of the right type) by resampling
+    // the old grid. The new grid will have the given transform.
+    virtual _GridHolderBase *GetResampled(const GfMatrix4d &newTransform) = 0;
+
+    // Convert to dense grid.
+    virtual GlfVdbTextureData_DenseGridHolderBase *GetDense() const = 0;
+    
+    // Get bounding box of the tree in the grid.
+    const openvdb::CoordBBox &GetTreeBoundingBox() const {
+        return _treeBoundingBox;
+    }
+
+    // Dispatch OpenVDB grid pointer by type to construct corresponding
+    // templated subclass of _GridHolderBase - also computes the bounding
+    // box of the tree in the grid.
+    static _GridHolderBase* New(const openvdb::GridBase::Ptr &grid);
+
+protected:
+    _GridHolderBase(const openvdb::GridBase::Ptr &grid)
+      : _treeBoundingBox(_ComputeTreeBoundingBox(grid))
+    { }
+
+private:
+    // Compute the tree's bounding box of an OpenVDB grid
+    static openvdb::CoordBBox
+    _ComputeTreeBoundingBox(const openvdb::GridBase::Ptr &grid)
+    {
+        TRACE_FUNCTION();
+
+        // There is a tradeoff between using 
+        // evalLeafBoundingBox() (less CPU time) or
+        // evalActiveVoxelBoundingBox() (less memory)
+        // here.
+        return grid->evalActiveVoxelBoundingBox();
+    }
+
+    const openvdb::CoordBBox _treeBoundingBox;
+};
+
+template<typename GridType>
+class _GridHolder final : public _GridHolderBase
+{
+public:
+    using GridPtr = typename GridType::Ptr;
+    using This = _GridHolder<GridType>;
+
+    // Construct's _GridHolder if given OpenVDB grid pointer has the
+    // correct type - also computed the bounding box of the tree in the grid.
+    static _GridHolderBase* New(const openvdb::GridBase::Ptr &grid) {
+        GridPtr const typedGrid = openvdb::gridPtrCast<GridType>(grid);
+        if (!typedGrid) {
+            return nullptr;
+        }
+        return new This(typedGrid);
+    }
+
+    _GridHolder(const GridPtr &grid)
+        : _GridHolderBase(grid)
+        , _grid(grid)
+    {
+    }
+
+    GfMatrix4d GetGridTransform() const override {
+        return _ExtractTransformFromGrid(_grid);
+    }
+
+    void GetMetadata(int *bytesPerPixel,
+                     GLenum *glInternalFormat,
+                     GLenum *glFormat,
+                     GLenum *glType) const override;
+    
+    _GridHolderBase *GetResampled(const GfMatrix4d &newTransform) override {
+        TRACE_FUNCTION();
+
+        GridPtr const result = GridType::create();
+
+        result->setTransform(
+            openvdb::math::Transform::createLinearTransform(
+                openvdb::math::Mat4d(newTransform.data())));
+
+        openvdb::tools::resampleToMatch<openvdb::tools::BoxSampler>(
+            *_grid, *result);
+
+        return New(result);
+    }
+    
+    GlfVdbTextureData_DenseGridHolderBase *GetDense() const override {
+        return _DenseGridHolder<GridType>::New(_grid, GetTreeBoundingBox());
+    }
+
+private:
+    const GridPtr _grid;
+};
+
+template<>
+void
+_GridHolder<openvdb::FloatGrid>::GetMetadata(int *bytesPerPixel,
+                                             GLenum *glInternalFormat,
+                                             GLenum *glFormat,
+                                             GLenum *glType) const
+{
+    *bytesPerPixel = sizeof(float);
+    *glInternalFormat = GL_RED;
+    *glFormat = GL_RED;
+    *glType = GL_FLOAT;
+}
+
+template<>
+void
+_GridHolder<openvdb::DoubleGrid>::GetMetadata(int *bytesPerPixel,
+                                              GLenum *glInternalFormat,
+                                              GLenum *glFormat,
+                                              GLenum *glType) const
+{
+    *bytesPerPixel = sizeof(double);
+    *glInternalFormat = GL_RED;
+    *glFormat = GL_RED;
+    *glType = GL_DOUBLE;
+}
+
+template<>
+void
+_GridHolder<openvdb::Vec3fGrid>::GetMetadata(int *bytesPerPixel,
+                                             GLenum *glInternalFormat,
+                                             GLenum *glFormat,
+                                             GLenum *glType) const
+{
+    *bytesPerPixel = sizeof(float);
+    *glInternalFormat = GL_RED;
+    *glFormat = GL_RED;
+    *glType = GL_FLOAT;
+}
+
+template<>
+void
+_GridHolder<openvdb::Vec3dGrid>::GetMetadata(int *bytesPerPixel,
+                                             GLenum *glInternalFormat,
+                                             GLenum *glFormat,
+                                             GLenum *glType) const
+{
+    *bytesPerPixel = sizeof(double);
+    *glInternalFormat = GL_RED;
+    *glFormat = GL_RED;
+    *glType = GL_DOUBLE;
+}
+
+_GridHolderBase *
+_GridHolderBase::New(const openvdb::GridBase::Ptr &grid)
+{
+    if (!grid) {
+        return nullptr;
+    }
+
+    if (_GridHolderBase * g = _GridHolder<openvdb::FloatGrid>::New(grid)) {
+        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+            "[VdbTextureData] Grid is holding floats\n");
+        return g;
+    }
+
+    if (_GridHolderBase * g = _GridHolder<openvdb::DoubleGrid>::New(grid)) {
+        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+            "[VdbTextureData] Grid is holding doubles\n");
+        return g;
+    }
+
+    if (_GridHolderBase * g = _GridHolder<openvdb::Vec3fGrid>::New(grid)) {
+        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+            "[VdbTextureData] Grid is holding float vectors\n");
+        return g;
+    }
+
+    if (_GridHolderBase * g = _GridHolder<openvdb::Vec3dGrid>::New(grid)) {
+        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+            "[VdbTextureData] Grid is holding double vectors\n");
+        return g;
+    }
+    
+    TF_WARN("Unsupported OpenVDB grid type");
+    return nullptr;
+}
+
 // Load the grid with given name from the OpenVDB file at given path
-openvdb::GridBase::Ptr
+_GridHolderBase*
 _LoadGrid(const std::string &filePath, std::string const &gridName)
 {
     TRACE_FUNCTION();
@@ -292,7 +478,7 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
         f.close();
     }
 
-    return result;
+    return _GridHolderBase::New(result);
 }
 
 GfVec3d
@@ -305,6 +491,43 @@ GfRange3d
 _ToRange3d(const openvdb::CoordBBox &b)
 {
     return GfRange3d(_ToVec3d(b.min()), _ToVec3d(b.max()));
+}
+
+// We can compute the approximate distance of the new sampling points
+// using the cube root of native to target memory - if it weren't for
+// rounding and re-sampling issues.
+//
+// This function accounts for that so that if when we feed the resulting
+// sampling point distance to OpenVDB's resampleToMatch, we should be
+// under the target memory and not just near the target memory.
+//
+double
+_ResamplingAdjustment(const int nativeLength, const double scale)
+{
+    // This is done in two steps:
+
+    // First, we can use the approximate distance to compute how many
+    // voxels the texture can have at most accross the direction we
+    // consider here to not exceed the target memory.
+    const int maxNumberOfSamples = floor(nativeLength / scale);
+
+    // Second, before dividing the length of the interval containing all
+    // original sampling points by the above number of samples, we account
+    // for the fact that re-sampling might pick up ad additional sample
+    // at each end.
+    //
+    // Example:
+    //
+    // Imagine you have samples at {-3, -2, -1, 0, 1, 2, 3} and pick a
+    // distance of 1.3 for the new sampling points.
+    //
+    // You would expect 6 / 1.3 ~ 4.6 new sampling points.
+    //
+    // However, the value at 3.9 is not zero with linear interpolation
+    // so the sampling points you need are at
+    // {-3.9, -2.6, -1.3, 0, 1.3, 2.6, 3.9}, so actually 7 points in total.
+    //
+    return nativeLength / double(std::max(1, maxNumberOfSamples - 2));
 }
 
 } // end anonymous namespace
@@ -320,78 +543,82 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
         _filePath.c_str(),
         _gridName.c_str());
 
-    openvdb::GridBase::Ptr const grid = _LoadGrid(_filePath, _gridName);
-    if (!grid) {
+    // Load grid from OpenVDB file
+    std::unique_ptr<_GridHolderBase> gridHolder(
+        _LoadGrid(_filePath, _gridName));
+
+    if (!gridHolder) {
+        // Runtime or coding errors already issued
         return false;
     }
 
-    if (openvdb::FloatGrid::Ptr const floatGrid =
-            openvdb::gridPtrCast<openvdb::FloatGrid>(grid)) {
+    // Get grid transform 
+    GfMatrix4d gridTransform = gridHolder->GetGridTransform();
+    
+    // Get _bytesPerPixel, ...
+    gridHolder->GetMetadata(&_bytesPerPixel,
+                            &_glInternalFormat,
+                            &_glFormat,
+                            &_glType);
+
+    // Get tree bounding box to compute native dimensions and size
+    const openvdb::CoordBBox &nativeTreeBoundingBox =
+        gridHolder->GetTreeBoundingBox();
+    const openvdb::Coord nativeDim = nativeTreeBoundingBox.dim();
+    _nativeWidth  = nativeDim.x();
+    _nativeHeight = nativeDim.y();
+    // Following convention from GlfBaseTexture to set
+    // depth to 1 for an empty texture.
+    _nativeDepth  = std::max(1, nativeDim.z());
+    
+    const size_t nativeSize = nativeTreeBoundingBox.volume() * _bytesPerPixel;
+
+    TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+        "[VdbTextureData] Native dimensions %d x %d x %d\n",
+        _nativeWidth, _nativeHeight, _nativeDepth);
+
+    // Check whether native size is more than target memory if given
+    if (nativeSize > _targetMemory && _targetMemory > 0) {
+        TRACE_FUNCTION_SCOPE("Down-sampling");
+        // We need to down-sample.
+
+        // Compute the spacing of the points where we will
+        // (re-)sample the volume.
+
+        // As first approximation, use the cube-root.
+        const double approxScale =
+            cbrt(double(nativeSize) / double(_targetMemory));
 
         TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
-            "[VdbTextureData] Converting float grid to dense");
-        TRACE_SCOPE("Converting to float dense grid");
+            "[VdbTextureData] Approximate scaling factor %f\n", approxScale);
 
-        _denseGrid.reset(
-            _DenseGridHolder<openvdb::FloatGrid>::New(floatGrid));
-        _bytesPerPixel = sizeof(float);
-        _glInternalFormat = GL_RED;
-        _glFormat = GL_RED;
-        _glType = GL_FLOAT;
-
-    } else if (openvdb::DoubleGrid::Ptr const doubleGrid =
-                   openvdb::gridPtrCast<openvdb::DoubleGrid>(grid)) {
+        // There will be additional samples near the boundary
+        // of the original voluem, so scale down a bit more.
+        const double scale =
+            std::min({ _ResamplingAdjustment(_nativeWidth,  approxScale),
+                       _ResamplingAdjustment(_nativeHeight, approxScale),
+                       _ResamplingAdjustment(_nativeDepth,  approxScale) });
 
         TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
-            "[VdbTextureData] Converting double grid to dense");
-        TRACE_SCOPE("Converting to double dense grid");
+            "[VdbTextureData] Scaling by factor %f\n", scale);
+        
+        // Apply voxel scaling to grid transform
+        gridTransform =
+            GfMatrix4d(GfVec4d(scale, scale, scale, 1.0)) * gridTransform;
 
-        _denseGrid.reset(
-            _DenseGridHolder<openvdb::DoubleGrid>::New(doubleGrid));
-        _bytesPerPixel = sizeof(double);
-        _glInternalFormat = GL_RED;
-        _glFormat = GL_RED;
-        _glType = GL_DOUBLE;
-
-    } else if (openvdb::Vec3fGrid::Ptr const vec3fGrid =
-                   openvdb::gridPtrCast<openvdb::Vec3fGrid>(grid)) {
-
-        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
-            "[VdbTextureData] Converting vec3f grid to dense");
-        TRACE_SCOPE("Converting to vec3f dense grid");
-
-        _denseGrid.reset(
-            _DenseGridHolder<openvdb::Vec3fGrid>::New(vec3fGrid));
-        _bytesPerPixel = 3 * sizeof(float);
-        _glInternalFormat = GL_RGB;
-        _glFormat = GL_RGB;
-        _glType = GL_FLOAT;
-
-    } else if (openvdb::Vec3dGrid::Ptr const vec3dGrid =
-                   openvdb::gridPtrCast<openvdb::Vec3dGrid>(grid)) {
-
-        TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
-            "[VdbTextureData] Converting vec3d grid to dense");
-        TRACE_SCOPE("Converting to vec3d dense grid");
-
-        _denseGrid.reset(
-            _DenseGridHolder<openvdb::Vec3dGrid>::New(vec3dGrid));
-        _bytesPerPixel = 3 * sizeof(double);
-        _glInternalFormat = GL_RGB;
-        _glFormat = GL_RGB;
-        _glType = GL_DOUBLE;
-
-    } else {
-        TF_WARN("Unsupported OpenVDB grid type");
-        return false;
+        // And resample to match new grid transform
+        gridHolder.reset(gridHolder->GetResampled(gridTransform));
     }
+
+    // Convert grid to dense grid
+    _denseGrid.reset(gridHolder->GetDense());
 
     if (!_denseGrid) {
-        _nativeWidth  = 0;
-        _nativeHeight = 0;
+        _resizedWidth = 0;
+        _resizedHeight = 0;
         // Following convention from GlfBaseTexture to set
         // depth to 1 by default.
-        _nativeDepth  = 1;
+        _resizedDepth = 1;
         _size = 0;
 
         // Not emitting warning as volume might be empty for
@@ -400,22 +627,32 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
         return false;
     }
 
+    // Get the bounding box of dense grid and combine with above
+    // grid transform to compute volume bounding box, dimensions and size.
     const openvdb::CoordBBox &treeBoundingBox =
         _denseGrid->GetTreeBoundingBox();
 
     _boundingBox.Set(_ToRange3d(treeBoundingBox),
-                     _ExtractTransformFromGrid(grid));
-    
-    const openvdb::Coord dim = treeBoundingBox.dim();
-    _nativeWidth  = dim.x();
-    _nativeHeight = dim.y();
-    _nativeDepth  = dim.z();
+                     gridTransform);
 
-    TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
-        "[VdbTextureData] Dimensions %d x %d x %d\n",
-        _nativeWidth, _nativeHeight, _nativeDepth);
+    const openvdb::Coord dim = treeBoundingBox.dim();
+    _resizedWidth = dim.x();
+    _resizedHeight = dim.y();
+    _resizedDepth = dim.z();
 
     _size = treeBoundingBox.volume() * _bytesPerPixel;
+
+    TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+        "[VdbTextureData] Resized dimensions %d x %d x %d "
+        "(size: %zd, target: %zd)\n",
+        _resizedWidth, _resizedHeight, _resizedDepth,
+        _size, _targetMemory);
+
+    TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
+        "[VdbTextureData] %s",
+        (_size <= _targetMemory || _targetMemory == 0) ?
+            "Target memory was met." :
+            "WARNING: the target memory was EXCEEDED");
 
     return true;
 }
