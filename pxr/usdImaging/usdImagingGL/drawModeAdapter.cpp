@@ -407,7 +407,9 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
 
             for (int i = 0; i < 6; ++i) {
-                if (UsdAttribute attr = prim.GetAttribute(textureAttrs[i])) {
+                UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
+                SdfAssetPath textureFile;
+                if (attr && attr.Get(&textureFile, time)) {
                     SdfPath textureNodePath = _GetMaterialPath(prim)
                         .AppendProperty(textureAttrs[i]);
 
@@ -417,10 +419,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     textureNode.identifier = UsdImagingTokens->UsdUVTexture;
                     textureNode.parameters[_tokens->st] = _tokens->cardsUv;
                     textureNode.parameters[_tokens->fallback] = fallback;
-                    VtValue textureFile;
-                    if (attr && attr.Get(&textureFile, time)) {
-                        textureNode.parameters[_tokens->file] = textureFile;
-                    }
+                    textureNode.parameters[_tokens->file] = textureFile;
 
                     // Insert connection between texture node and terminal
                     HdMaterialRelationship rel;
@@ -569,12 +568,24 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             } else {
                 // Generate mask for suppressing axes with no textures
                 uint8_t axes_mask = 0;
-                if (model.GetModelCardTextureXPosAttr()) axes_mask |= xPos;
-                if (model.GetModelCardTextureXNegAttr()) axes_mask |= xNeg;
-                if (model.GetModelCardTextureYPosAttr()) axes_mask |= yPos;
-                if (model.GetModelCardTextureYNegAttr()) axes_mask |= yNeg;
-                if (model.GetModelCardTextureZPosAttr()) axes_mask |= zPos;
-                if (model.GetModelCardTextureZNegAttr()) axes_mask |= zNeg;
+                const TfToken textureAttrs[6] = {
+                    UsdGeomTokens->modelCardTextureXPos,
+                    UsdGeomTokens->modelCardTextureYPos,
+                    UsdGeomTokens->modelCardTextureZPos,
+                    UsdGeomTokens->modelCardTextureXNeg,
+                    UsdGeomTokens->modelCardTextureYNeg,
+                    UsdGeomTokens->modelCardTextureZNeg,
+                };
+                const uint8_t mask[6] = {
+                    xPos, yPos, zPos, xNeg, yNeg, zNeg,
+                };
+                for (int i = 0; i < 6; ++i) {
+                    UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
+                    SdfAssetPath asset;
+                    if (attr && attr.Get(&asset, time)) {
+                        axes_mask |= mask[i];
+                    }
+                }
 
                 // If no textures are bound, generate the full geometry.
                 if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }

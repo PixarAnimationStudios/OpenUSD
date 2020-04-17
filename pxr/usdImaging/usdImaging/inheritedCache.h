@@ -780,8 +780,7 @@ struct UsdImaging_DrawModeStrategy
             query_type const* query)
     {
         value_type v = UsdGeomTokens->default_;
-        if (*query) {
-            query->Get(&v);
+        if (*query && query->Get(&v)) {
             return v;
         }
         return *owner->_GetValue(prim.GetParent());
