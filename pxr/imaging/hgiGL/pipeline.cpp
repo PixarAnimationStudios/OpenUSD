@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <vector>
-
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/hgiGL/conversions.h"
@@ -37,19 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLPipeline::HgiGLPipeline(
     HgiPipelineDesc const& desc)
     : HgiPipeline(desc)
-    , _restoreDrawFramebuffer(0)
-    , _restoreReadFramebuffer(0)
-    , _restoreRenderBuffer(0)
-    , _restoreVao(0)
-    , _restoreDepthTest(false)
-    , _restoreDepthWriteMask(false)
-    , _restoreStencilWriteMask(false)
-    , _restoreDepthFunc(0)
-    , _restoreViewport{0,0,0,0}
-    , _restoreblendEnabled(false)
-    , _restoreColorOp(0)
-    , _restoreAlphaOp(0)
-    , _restoreAlphaToCoverage(false)
     , _vao()
 {
     glCreateVertexArrays(1, &_vao);
@@ -159,66 +144,5 @@ HgiGLPipeline::BindPipeline()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
-void
-HgiGLPipeline::CaptureOpenGlState()
-{
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFramebuffer);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_restoreReadFramebuffer);
-    glGetIntegerv(GL_RENDERBUFFER_BINDING, &_restoreRenderBuffer);
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &_restoreVao);
-    glGetBooleanv(GL_DEPTH_TEST, (GLboolean*)&_restoreDepthTest);
-    glGetBooleanv(GL_DEPTH_WRITEMASK, (GLboolean*)&_restoreDepthWriteMask);
-    glGetBooleanv(GL_STENCIL_WRITEMASK, (GLboolean*)&_restoreStencilWriteMask);
-    glGetIntegerv(GL_DEPTH_FUNC, &_restoreDepthFunc);
-    glGetIntegerv(GL_VIEWPORT, _restoreViewport);
-    glGetBooleanv(GL_BLEND, (GLboolean*)&_restoreblendEnabled);
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, &_restoreColorOp);
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &_restoreAlphaOp);
-    glGetIntegerv(GL_BLEND_SRC_RGB, &_restoreColorSrcFnOp);
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, &_restoreAlphaSrcFnOp);
-    glGetIntegerv(GL_BLEND_DST_RGB, &_restoreColorDstFnOp);
-    glGetIntegerv(GL_BLEND_DST_ALPHA, &_restoreAlphaDstFnOp);
-    glGetBooleanv(
-        GL_SAMPLE_ALPHA_TO_COVERAGE, 
-        (GLboolean*)&_restoreAlphaToCoverage);
-    HGIGL_POST_PENDING_GL_ERRORS();
-}
-
-void
-HgiGLPipeline::RestoreOpenGlState()
-{
-    if (_restoreAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    }
-
-    glBlendFuncSeparate(_restoreColorSrcFnOp, _restoreColorDstFnOp, 
-                        _restoreAlphaSrcFnOp, _restoreAlphaDstFnOp);
-    glBlendEquationSeparate(_restoreColorOp, _restoreAlphaOp);
-
-    if (_restoreblendEnabled) {
-        glEnable(GL_BLEND);
-    } else {
-        glDisable(GL_BLEND);
-    }
-
-    glViewport(_restoreViewport[0], _restoreViewport[1],
-               _restoreViewport[2], _restoreViewport[3]);
-    glDepthFunc(_restoreDepthFunc);
-    glDepthMask(_restoreDepthWriteMask);
-    glStencilMask(_restoreStencilWriteMask);
-    if (_restoreDepthTest) {
-        glEnable(GL_DEPTH_TEST);
-    } else {
-        glDisable(GL_DEPTH_TEST);
-    }
-    glBindVertexArray(_restoreVao);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFramebuffer);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _restoreRenderBuffer);
-
-    HGIGL_POST_PENDING_GL_ERRORS();
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

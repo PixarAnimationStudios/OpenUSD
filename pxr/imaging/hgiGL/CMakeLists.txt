@@ -24,6 +24,7 @@ pxr_library(hgiGL
     PRIVATE_CLASSES
         conversions
         diagnostic
+        scopedStateHolder
 
     PUBLIC_CLASSES
         blitCmds

@@ -25,12 +25,8 @@
 #define PXR_IMAGING_HGIGL_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
-
 #include "pxr/imaging/hgiGL/api.h"
-
-#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,18 +46,6 @@ public:
     HGIGL_API
     void BindPipeline();
 
-    /// CaptureOpenGlState and RestoreOpenGlState are transition helpers since
-    /// not all rendering is going via Hgi yet.
-    /// We restore all the old opengl state defensively assuming that
-    /// non-hgi code is not careful with state management.
-    /// However, this does not apply to newer api's like Vulkan or Metal where
-    /// all state is reset to default at the end of a render pass.
-    /// XXX Remove both these functions when Hgi transition is complete.
-    HGIGL_API
-    void CaptureOpenGlState();
-    HGIGL_API
-    void RestoreOpenGlState();
-
 protected:
     friend class HgiGL;
 
@@ -72,24 +56,6 @@ private:
     HgiGLPipeline() = delete;
     HgiGLPipeline & operator=(const HgiGLPipeline&) = delete;
     HgiGLPipeline(const HgiGLPipeline&) = delete;
-
-    int32_t _restoreDrawFramebuffer;
-    int32_t _restoreReadFramebuffer;
-    int32_t _restoreRenderBuffer;
-    int32_t _restoreVao;
-    bool _restoreDepthTest;
-    bool _restoreDepthWriteMask;
-    bool _restoreStencilWriteMask;
-    int32_t _restoreDepthFunc;
-    int32_t _restoreViewport[4];
-    bool _restoreblendEnabled;
-    int32_t _restoreColorOp;
-    int32_t _restoreAlphaOp;
-    int32_t _restoreColorSrcFnOp;
-    int32_t _restoreAlphaSrcFnOp;
-    int32_t _restoreColorDstFnOp;
-    int32_t _restoreAlphaDstFnOp;
-    bool _restoreAlphaToCoverage;
 
     uint32_t _vao;
 };

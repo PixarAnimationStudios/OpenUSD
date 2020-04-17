@@ -159,14 +159,6 @@ HdSt_ImageShaderRenderPass::_Execute(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-// XXX we can remove this if we store the gl state before SubmitCmds and restore it after.
-
-    // XXX Non-Hgi tasks expect default FB. Remove once all tasks use Hgi.
-    GLint readFb;
-    GLint drawFb;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFb);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFb);
-
     // Create graphics work to render into aovs.
     HgiGraphicsCmdsDesc desc = stRenderPassState->MakeGraphicsCmdsDesc();
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
@@ -199,9 +191,6 @@ HdSt_ImageShaderRenderPass::_Execute(
     if (gfxCmds) {
         gfxCmds->PopDebugGroup();
         _hgi->SubmitCmds(gfxCmds.get(), 1);
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFb);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFb);
     }
 }
 

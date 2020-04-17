@@ -38,10 +38,6 @@
 
 #include <iostream>
 
-// XXX Remove includes when entire task is using Hgi. We do not want to refer
-// to any specific Hgi implementation.
-#include "pxr/imaging/hgiGL/pipeline.h"
-
 #ifdef PXR_OCIO_PLUGIN_ENABLED
     #include <OpenColorIO/OpenColorIO.h>
     namespace OCIO = OCIO_NAMESPACE;
@@ -405,15 +401,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection(HgiTextureHandle const& aovTexture
 {
     GfVec3i const& dimensions = aovTexture->GetDescriptor().dimensions;
 
-// todo move this into HgiGL::SubmitCmds
-
-    // XXX Not everything is using Hgi yet, so we have inconsistent state
-    // management in opengl. Remove when Hgi transition is complete.
-    HgiGLPipeline* glPipeline = dynamic_cast<HgiGLPipeline*>(_pipeline.Get());
-    if (glPipeline) {
-        glPipeline->CaptureOpenGlState();
-    }
-
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
     gfxDesc.width = dimensions[0];
@@ -434,12 +421,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection(HgiTextureHandle const& aovTexture
 
     // Done recording commands, submit work.
     _hgi->SubmitCmds(gfxCmds.get(), 1);
-
-    // XXX Not everything is using Hgi yet, so we have inconsistent state
-    // management in opengl. Remove when Hgi transition is complete.
-    if (glPipeline) {
-        glPipeline->RestoreOpenGlState();
-    }
 }
 
 void

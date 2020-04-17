@@ -36,10 +36,6 @@
 
 #include <iostream>
 
-// XXX Remove includes when entire task is using Hgi. We do not want to refer
-// to any specific Hgi implementation.
-#include "pxr/imaging/hgiGL/pipeline.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -540,15 +536,6 @@ HdxFullscreenShader::_Draw(
         TF_CODING_ERROR("Could not determine the backbuffer dimensions");
     }
 
-// todo move this into HgiGL::SubmitCmds
-
-    // XXX Not everything is using Hgi yet, so we have inconsistent state
-    // management in opengl. Remove when Hgi transition is complete.
-    HgiGLPipeline* glPipeline = dynamic_cast<HgiGLPipeline*>(_pipeline.Get());
-    if (glPipeline) {
-        glPipeline->CaptureOpenGlState();
-    }
-
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
     gfxDesc.width = dimensions[0];
@@ -577,12 +564,6 @@ HdxFullscreenShader::_Draw(
 
     // Done recording commands, submit work.
     _hgi->SubmitCmds(gfxCmds.get(), 1);
-
-    // XXX Not everything is using Hgi yet, so we have inconsistent state
-    // management in opengl. Remove when Hgi transition is complete.
-    if (glPipeline) {
-        glPipeline->RestoreOpenGlState();
-    }
 }
 
 void
