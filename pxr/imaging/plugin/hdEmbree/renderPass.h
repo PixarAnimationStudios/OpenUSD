@@ -39,8 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
-
 /// \class HdEmbreeRenderPass
 ///
 /// HdRenderPass represents a single render iteration, rendering a view of the

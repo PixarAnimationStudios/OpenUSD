@@ -36,13 +36,12 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
+using HdxRenderSetupTaskSharedPtr =
+    std::shared_ptr<class HdxRenderSetupTask>;
 using HdStRenderPassShaderSharedPtr =
     std::shared_ptr<class HdStRenderPassShader>;
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;

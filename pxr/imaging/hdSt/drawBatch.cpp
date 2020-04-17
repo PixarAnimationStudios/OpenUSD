@@ -249,8 +249,6 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
             // code is broken and needs to be fixed.  When we open up more
             // shaders for customization, we will need to check them as well.
             
-            typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
-
             HioGlslfxSharedPtr glslSurfaceFallback = 
                 HioGlslfxSharedPtr(
                         new HioGlslfx(HdStPackageFallbackSurfaceShader()));
