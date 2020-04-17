@@ -1927,14 +1927,17 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     }
 
     // Suppress the dirtybit for points, so we don't publish 'points' as a
-    // primvar.
-    requestedBits &= ~HdChangeTracker::DirtyPoints;
+    // primvar. Also suppressing normals: normals will instead be computed
+    // post-skinning, as if they were unauthored (since GPU normal skinning
+    // is not yet supported).
+    requestedBits &= ~(HdChangeTracker::DirtyPoints|
+                       HdChangeTracker::DirtyNormals);
 
     // Since The SkeletonAdapter hijacks skinned prims (see SkelRootAdapter),
     // make sure to delegate to the actual adapter registered for the prim.
     UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skinnedPrim);
     adapter->UpdateForTime(skinnedPrim, skinnedPrimPath,
-                        time, requestedBits, instancerContext);
+                           time, requestedBits, instancerContext);
 
     
     // Don't publish skinning related primvars since they're consumed only by
