@@ -28,6 +28,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -35,7 +37,6 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
 
@@ -138,6 +139,13 @@ HdStSurfaceShader::GetTextures() const
 {
     return _textureDescriptors;
 }
+
+HdStShaderCode::NamedTextureHandleVector const &
+HdStSurfaceShader::GetNamedTextureHandles() const
+{
+    return _namedTextureHandles;
+}
+
 /*virtual*/
 void
 HdStSurfaceShader::BindResources(const int program,
@@ -182,7 +190,11 @@ HdStSurfaceShader::BindResources(const int program,
             glBindTexture(GL_TEXTURE_BUFFER, resource->GetLayoutTextureId());
         }
     }
+
+    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
+
     glActiveTexture(GL_TEXTURE0);
+
     binder.BindShaderResources(this);
 }
 /*virtual*/
@@ -225,8 +237,10 @@ HdStSurfaceShader::UnbindResources(const int program,
             glBindTexture(GL_TEXTURE_BUFFER, 0);
         }
     }
-    glActiveTexture(GL_TEXTURE0);
 
+    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
+
+    glActiveTexture(GL_TEXTURE0);
 }
 /*virtual*/
 void
@@ -273,6 +287,12 @@ HdStSurfaceShader::_ComputeHash() const
         boost::hash_combine(hash, texDesc.type);
     }
 
+    boost::hash_combine(hash, _namedTextureHandles.size());
+    for (auto const &namedTextureHandle : _namedTextureHandles) {
+        boost::hash_combine(hash, namedTextureHandle.name);
+        boost::hash_combine(hash, namedTextureHandle.type);
+    }
+
     boost::hash_combine(hash, _materialTag.Hash());
 
     return hash;
@@ -308,6 +328,14 @@ HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 }
 
 void
+HdStSurfaceShader::SetNamedTextureHandles(
+    const NamedTextureHandleVector &namedTextureHandles)
+{
+    _namedTextureHandles = namedTextureHandles;
+    _isValidComputedHash = false;
+}
+
+void
 HdStSurfaceShader::SetBufferSources(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferSourceSharedPtrVector &bufferSources,
@@ -335,7 +363,9 @@ HdStSurfaceShader::SetBufferSources(
         }
 
         if (_paramArray->IsValid()) {
-            resourceRegistry->AddSources(_paramArray, bufferSources);
+            if (!bufferSources.empty()) {
+                resourceRegistry->AddSources(_paramArray, bufferSources);
+            }
         }
     }
     _isValidComputedHash = false;
@@ -392,17 +422,34 @@ HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    bool bindlessTexture = GlfContextCaps::GetInstance()
-                                                .bindlessTextureEnabled;
+    if (GlfContextCaps::GetInstance().bindlessTextureEnabled) {
+        return true;
+    }
 
-    // Without bindless textures, we can't aggregate unless textures also match.
-    if (!bindlessTexture) {
-        bool texturesMatch = shaderA->GetTextures() == shaderB->GetTextures();
-        if (!texturesMatch) {
+    // Without bindless textures, we can't aggregate unless
+    // textures also match.
+    if (shaderA->GetTextures() != shaderB->GetTextures()) {
+        return false;
+    }
+
+    // Without bindless textures, we can't aggregate unless the
+    // textures and their sampling parameters match.
+    for (size_t i = 0; i < shaderA->GetNamedTextureHandles().size(); ++i) {
+        HdStTextureHandleSharedPtr const &handleA =
+            shaderA->GetNamedTextureHandles()[i].handle;
+        HdStTextureHandleSharedPtr const &handleB =
+            shaderB->GetNamedTextureHandles()[i].handle;
+        
+        if (handleA->GetTextureObject() != handleB->GetTextureObject()) {
+            return false;
+        }
+        
+        if (handleA->GetSamplerParameters() !=
+                        handleB->GetSamplerParameters()) {
             return false;
         }
     }
-     
+
     return true;
 }
 
@@ -487,5 +534,21 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
     return primvarNames;
 }
 
+std::vector<HdStShaderCode::BarAndSources>
+HdStSurfaceShader::ComputeBufferSourcesFromTextures() const
+{
+    // Add buffer sources for bindless texture handles (and
+    // other texture metadata such as the sampling transform for
+    // a field texture).
+    HdBufferSourceSharedPtrVector result;
+    HdSt_TextureBinder::ComputeBufferSources(
+        GetNamedTextureHandles(), &result);
+
+    if (result.empty()) {
+        return { };
+    } else {
+        return { { GetShaderData(), std::move(result) } };
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

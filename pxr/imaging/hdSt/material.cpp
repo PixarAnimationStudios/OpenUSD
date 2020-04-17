@@ -30,6 +30,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -43,6 +45,7 @@
 #include "pxr/imaging/glf/uvTextureStorage.h"
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <boost/pointer_cast.hpp>
@@ -50,6 +53,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HDST_USE_NEW_TEXTURE_SYSTEM, false,
+                      "Use new texture system for Storm.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -79,6 +84,56 @@ HdStMaterial::~HdStMaterial()
                                         GetId().GetText());
 }
 
+// The new texture system does not support all HdTextureType's yet.
+// Use old texture system for those.
+static
+bool
+_IsSupportedByNewTextureSystem(const HdTextureType type)
+{
+    switch(type) {
+    case HdTextureType::Uv:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// Use data authored on material network nodes to create
+// textures with the new texture system.
+static
+HdStShaderCode::NamedTextureHandleVector
+_GetNamedTextureHandles(
+    HdStMaterialNetwork::TextureDescriptorVector const &descs,
+    boost::weak_ptr<HdStShaderCode> const &shaderCode,
+    HdStResourceRegistrySharedPtr const& resourceRegistry)
+{
+    const bool usesBindlessTextures =
+        HdSt_TextureBinder::UsesBindlessTextures();
+
+    HdStShaderCode::NamedTextureHandleVector result;
+
+    for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
+
+        if (_IsSupportedByNewTextureSystem(desc.type)) {
+
+            HdStTextureHandleSharedPtr const textureHandle =
+                resourceRegistry->AllocateTextureHandle(
+                    desc.textureId,
+                    desc.type,
+                    desc.samplerParameters,
+                    desc.memoryRequest,
+                    usesBindlessTextures,
+                    shaderCode);
+
+            result.push_back({ desc.name,
+                               desc.type,
+                               textureHandle });
+        }
+    }
+
+    return result;
+}
+
 /* virtual */
 void
 HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
@@ -101,6 +156,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
+    const bool useNewTextureSystem =
+        TfGetEnvSetting(HDST_USE_NEW_TEXTURE_SYSTEM);
+
     bool needsRprimMaterialStateUpdate = false;
 
     std::string fragmentSource;
@@ -108,6 +166,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
+    HdStMaterialNetwork::TextureDescriptorVector textureDescriptors;
 
     VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
     if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
@@ -120,6 +179,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
             params = _networkProcessor.GetMaterialParams();
+            if (useNewTextureSystem) {
+                textureDescriptors = _networkProcessor.GetTextureDescriptors();
+            }
         }
     }
 
@@ -205,14 +267,38 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             if (param.textureType == HdTextureType::Ptex) {
                 hasPtex = true;
             }
-            sourcesAndTextures.ProcessTextureMaterialParam(
-                param, 
-                _GetTextureResourceHandle(sceneDelegate, param));
+
+            // Use the old texture system unless the environment
+            // variable is set and the texture type can be handled
+            // by the new texture system.
+            //
+            if (!(useNewTextureSystem &&
+                  _IsSupportedByNewTextureSystem(param.textureType))) {
+                sourcesAndTextures.ProcessTextureMaterialParam(
+                    param,
+                    _GetTextureResourceHandle(sceneDelegate, param));
+            }
         }
     }
 
-    _surfaceShader->SetTextureDescriptors(
-        sourcesAndTextures.textures);
+    _surfaceShader->SetTextureDescriptors(sourcesAndTextures.textures);
+
+    if (useNewTextureSystem) {
+        // Create textures for those texture types supported
+        // by the new texture system.
+        const HdStShaderCode::NamedTextureHandleVector textures =
+            _GetNamedTextureHandles(
+                textureDescriptors,
+                _surfaceShader,
+                resourceRegistry);
+
+        _surfaceShader->SetNamedTextureHandles(textures);
+
+        HdSt_TextureBinder::GetBufferSpecs(
+            textures,
+            &sourcesAndTextures.specs);
+    }
+
     _surfaceShader->SetBufferSources(
         sourcesAndTextures.specs,
         sourcesAndTextures.sources,
@@ -221,7 +307,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if (_hasPtex != hasPtex) {
         _hasPtex = hasPtex;
         needsRprimMaterialStateUpdate = true;
-        }
+    }
 
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {

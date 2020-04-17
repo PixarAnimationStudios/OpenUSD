@@ -97,5 +97,20 @@ HdStShaderCode::GetTextures() const
     return HdStShaderCode::TextureDescriptorVector();
 }
 
+/* virtual */
+HdStShaderCode::NamedTextureHandleVector const &
+HdStShaderCode::GetNamedTextureHandles() const
+{
+    static HdStShaderCode::NamedTextureHandleVector empty;
+    return empty;
+}
+
+/*virtual*/
+std::vector<HdStShaderCode::BarAndSources>
+HdStShaderCode::ComputeBufferSourcesFromTextures() const
+{
+    return {};
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

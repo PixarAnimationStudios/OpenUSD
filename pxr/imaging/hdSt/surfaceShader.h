@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/imaging/garch/gl.h"
 
@@ -51,6 +50,7 @@ using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
+using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
 
@@ -88,6 +88,8 @@ public:
     HDST_API
     virtual TextureDescriptorVector GetTextures() const override;
     HDST_API
+    NamedTextureHandleVector const & GetNamedTextureHandles() const override;
+    HDST_API
     virtual void BindResources(int program,
                                HdSt_ResourceBinder const &binder,
                                HdRenderPassState const &state) override;
@@ -115,10 +117,23 @@ public:
     HDST_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
+    void SetNamedTextureHandles(const NamedTextureHandleVector &);
+    HDST_API
     void SetBufferSources(
         HdBufferSpecVector const &bufferSpecs,
         HdBufferSourceSharedPtrVector &bufferSources, 
         HdStResourceRegistrySharedPtr const &resourceRegistry);
+
+    /// Called after textures have been committed.
+    ///
+    /// Shader can return buffer sources for different BARs (most
+    /// likely, the shader bar) that require texture metadata such as
+    /// the bindless texture handle which is only available after the
+    /// commit.
+    ///
+    HDST_API
+    std::vector<BarAndSources>
+    ComputeBufferSourcesFromTextures() const override;
 
     HDST_API
     void SetMaterialTag(TfToken const &materialTag);
@@ -153,7 +168,11 @@ private:
     mutable size_t              _computedHash;
     mutable bool                _isValidComputedHash;
 
+    // Old texture system
     TextureDescriptorVector _textureDescriptors;
+
+    // New texture system
+    NamedTextureHandleVector _namedTextureHandles;
 
     TfToken _materialTag;
 

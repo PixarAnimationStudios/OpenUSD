@@ -36,6 +36,8 @@
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/textureHandleRegistry.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -94,6 +96,7 @@ HdStResourceRegistry::HdStResourceRegistry()
     , _uniformUboAggregationStrategy()
     , _uniformSsboAggregationStrategy()
     , _singleAggregationStrategy()
+    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>())
 {
     // default aggregation strategies for varying (vertex, varying) primvars
     SetNonUniformAggregationStrategy(
@@ -174,6 +177,7 @@ void
 HdStResourceRegistry::SetHgi(Hgi* hgi)
 {
     _hgi = hgi;
+    _textureHandleRegistry->SetHgi(hgi);
 }
 
 /// ------------------------------------------------------------------------
@@ -631,8 +635,31 @@ std::ostream &operator <<(
 }
 
 void
+HdStResourceRegistry::_CommitTextures()
+{
+    const std::set<HdStShaderCodeSharedPtr> shaderCodes =
+        _textureHandleRegistry->Commit();
+
+    // Give assoicated HdStShaderCode objects a chance to add buffer
+    // sources that rely on texture sampler handles (bindless) or
+    // texture metadata (e.g., sampling transform for volume fields).
+    for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
+        for (HdStShaderCode::BarAndSources & barAndSources :
+                 shaderCode->ComputeBufferSourcesFromTextures()) {
+            AddSources(barAndSources.first, barAndSources.second);
+        }
+    }
+}
+
+void
 HdStResourceRegistry::_Commit()
 {
+    // Process textures first before resolving buffer sources since
+    // some computation buffer sources need meta-data from textures
+    // (such as the grid transform for an OpenVDB file) or texture
+    // handles (for bindless textures).
+    _CommitTextures();
+
     // TODO: requests should be sorted by resource, and range.
     {
         HD_TRACE_SCOPE("Resolve");
@@ -1052,5 +1079,21 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 }
+
+HdStTextureHandleSharedPtr
+HdStResourceRegistry::AllocateTextureHandle(
+        HdStTextureIdentifier const &textureId,
+        const HdTextureType textureType,
+        HdStSamplerParameters const &samplerParams,
+        const size_t memoryRequest,
+        const bool createBindlessHandle,
+        HdStShaderCodePtr const &shaderCode)
+{
+    return _textureHandleRegistry->AllocateTextureHandle(
+        textureId, textureType,
+        samplerParams, memoryRequest, createBindlessHandle,
+        shaderCode);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

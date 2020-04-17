@@ -27,6 +27,10 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hdSt/textureIdentifier.h"
+
+// Needed just for HdStSamplerParameters
+#include "pxr/imaging/hdSt/samplerObject.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,6 +73,25 @@ public:
     HDST_API
     HdSt_MaterialParamVector const& GetMaterialParams() const;
 
+    // Information necessary to allocate a texture.
+    struct TextureDescriptor {
+        // Name by which the texture will be accessed, i.e., the name
+        // of the accesor for thexture will be HdGet_name(...).
+        // It is generated from the input name the corresponding texture
+        // node is connected to.
+        TfToken name;
+        HdStTextureIdentifier textureId;
+        HdTextureType type;
+        HdStSamplerParameters samplerParameters;
+        // Memory request in bytes.
+        size_t memoryRequest;
+    };
+
+    using TextureDescriptorVector = std::vector<TextureDescriptor>;
+
+    HDST_API
+    TextureDescriptorVector const& GetTextureDescriptors() const;
+
     /// Primarily used during reload of the material (glslfx may have changed)
     HDST_API
     void ClearGlslfx();
@@ -79,6 +102,7 @@ private:
     std::string _geometrySource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
+    TextureDescriptorVector _textureDescriptors;
     HioGlslfxUniquePtr _surfaceGfx;
 };
 
