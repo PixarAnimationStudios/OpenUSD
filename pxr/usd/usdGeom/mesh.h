@@ -55,12 +55,8 @@ class SdfAssetPath;
 /// \class UsdGeomMesh
 ///
 /// Encodes a mesh surface whose definition and feature-set
-/// will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
-/// 
-/// 1. Certain interpolation ("tag") parameters not yet supported
-/// 
-/// 2. Does not (as of 9/2014) yet support hierarchical edits.  We do intend
-/// to provide some encoding in a future version of the schema.
+/// will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html.
+/// Certain interpolation ("tag") parameters are not yet supported.
 /// 
 /// A key property of this mesh schema is that it encodes both subdivision
 /// surfaces, and non-subdived "polygonal meshes", by varying the
@@ -368,7 +364,7 @@ public:
     // --------------------------------------------------------------------- //
     // CORNERINDICES 
     // --------------------------------------------------------------------- //
-    /// The vertex indices of all vertices that are sharp corners.
+    /// The point indices of sharp corners.
     ///
     /// | ||
     /// | -- | -- |
@@ -415,9 +411,10 @@ public:
     // --------------------------------------------------------------------- //
     // CREASEINDICES 
     // --------------------------------------------------------------------- //
-    /// The indices of all vertices forming creased edges.  The size of 
+    /// The point indices forming creased edges.  The size of 
     /// this array must be equal to the sum of all elements of the 
-    /// 'creaseLengths' attribute.
+    /// 'creaseLengths' attribute. Neighboring indices should correspond with the
+    /// valid edges indices.
     ///
     /// | ||
     /// | -- | -- |
