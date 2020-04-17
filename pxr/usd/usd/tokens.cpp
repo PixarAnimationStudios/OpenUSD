@@ -45,6 +45,7 @@ UsdTokensType::UsdTokensType() :
     expandPrimsAndProperties("expandPrimsAndProperties", TfToken::Immortal),
     expansionRule("expansionRule", TfToken::Immortal),
     explicitOnly("explicitOnly", TfToken::Immortal),
+    fallbackPrimTypes("fallbackPrimTypes", TfToken::Immortal),
     includeRoot("includeRoot", TfToken::Immortal),
     includes("includes", TfToken::Immortal),
     allTokens({
@@ -67,6 +68,7 @@ UsdTokensType::UsdTokensType() :
         expandPrimsAndProperties,
         expansionRule,
         explicitOnly,
+        fallbackPrimTypes,
         includeRoot,
         includes
     })

@@ -74,6 +74,12 @@ public:
         return _emptyPrimTypeInfo;
     }
 
+    // Computes a mapping of invalid prim type name to its valid fallback
+    // type name from the provided fallback prim types dictionary.
+    void ComputeInvalidPrimTypeToFallbackMap(
+        const VtDictionary &fallbackPrimTypesDict,
+        TfHashMap<TfToken, TfToken, TfHash> *typeToFallbackTypeMap);
+
 private:
     // Wrapper around the thread safe hash map implementation used by the 
     // Usd_PrimTypeInfoCache to cache prim type info

@@ -30,14 +30,28 @@ UsdPrimTypeInfo::UsdPrimTypeInfo(_TypeId &&typeId)
     : _typeId(std::move(typeId))
     , _primDefinition(nullptr)
 {
-    if (_typeId.primTypeName.IsEmpty()) {
-        return;
-    }
-    _schemaType = UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(
-        _typeId.primTypeName);
-    if (_schemaType) {
-        _schemaTypeName = _typeId.primTypeName;
-    }
+    // Helper for initializing the schema type from either the mapped type
+    // name or the prim type name.
+    auto _SetSchemaType = [this](const TfToken &typeName)
+    {
+        // Empty type name returns false.
+        if (typeName.IsEmpty()) {
+            return false;
+        }
+        _schemaType = 
+            UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(typeName);
+        if (_schemaType) {
+            _schemaTypeName = typeName;
+        }
+        // Return true even if the schema type is invalid since the type name
+        // is not empty.
+        return true;
+    };
+
+    // Set the schema type using the mapped type name over the prim type
+    // name if we have a mapped type name.
+    _SetSchemaType(_typeId.mappedTypeName) || 
+        _SetSchemaType(_typeId.primTypeName);
 }
 
 const UsdPrimDefinition * 

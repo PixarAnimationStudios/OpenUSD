@@ -17,6 +17,14 @@ def "GLOBAL" (
                 the particular schema class. 
                 """
             }
+            dictionary fallbackPrimTypes = {
+                string doc = """
+                A dictionary metadata that maps the name of a concrete schema
+                prim type to an ordered list of schema prim types to use instead
+                if the schema prim type doesn't exist in version of USD being
+                used.
+                """
+            }
         }
     }
 )

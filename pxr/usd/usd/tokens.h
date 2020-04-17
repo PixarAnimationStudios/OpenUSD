@@ -138,6 +138,10 @@ struct UsdTokensType {
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken explicitOnly;
+    /// \brief "fallbackPrimTypes"
+    /// 
+    ///  A dictionary metadata that maps the name of a concrete schema prim type to an ordered list of schema prim types to use instead if the schema prim type doesn't exist in version of USD being used. 
+    const TfToken fallbackPrimTypes;
     /// \brief "includeRoot"
     /// 
     /// UsdCollectionAPI

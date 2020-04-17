@@ -2171,6 +2171,8 @@ private:
     std::unique_ptr<Usd_ClipCache> _clipCache;
     std::unique_ptr<Usd_InstanceCache> _instanceCache;
 
+    TfHashMap<TfToken, TfToken, TfHash> _invalidPrimTypeToFallbackMap;
+
     // A map from Path to Prim, for fast random access.
     typedef TfHashMap<
         SdfPath, Usd_PrimDataIPtr, SdfPath::Hash> PathToNodeMap;

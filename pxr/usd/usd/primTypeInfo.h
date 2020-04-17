@@ -34,9 +34,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Class that holds the full type information for a prim. It holds the type
-/// name and applied API schema names which represent a unique full type as 
-/// well as a the type information about the registered concrete typed schema 
-/// this prim type corresponds to. It also provides access to the prim 
+/// name, applied API schema names, and possibly a mapped schema type name which
+/// represent a unique full type.
+/// The info this holds is used to cache and provide the "real" schema type for 
+/// the prim's type name regardless of whether it is a recognized prim type or 
+/// not. The optional "mapped schema type name" is used to obtain a valid schema 
+/// type for an unrecognized prim type name if the stage provides a fallback 
+/// type for the unrecognized type. This class also provides access to the prim
 /// definition that defines all the built-in properties and metadata of a prim 
 /// of this type.
 class UsdPrimTypeInfo 
@@ -56,13 +60,16 @@ public:
     /// Returns the TfType of the actual concrete schema that prims of this 
     /// type will use to create their prim definition. Typically, this will
     /// be the type registered in the schema registry for the concrete prim type
-    /// returned by GetTypeName. But, this may be also be the unknown type if 
-    /// the type name is not a registered concrete schema type name.
+    /// returned by GetTypeName. But if the stage provided this type info with
+    /// a fallback type because the prim type name is not a recognized schema, 
+    /// this will return the provided fallback schema type instead.
     const TfType &GetSchemaType() const { return _schemaType; }
 
     /// Returns the type name associated with the schema type returned from 
-    /// GetSchemaType. This will be the same as GetTypeName if the prim type 
-    /// is a valid prim schema type, but will be empty if not.
+    /// GetSchemaType. This will always be equivalent to calling 
+    /// UsdSchemaRegistry::GetConcreteSchemaTypeName on the type returned by 
+    /// GetSchemaType and will typically be the same as GetTypeName as long as
+    /// the prim type name is a recognized prim type.
     const TfToken &GetSchemaTypeName() const { return _schemaTypeName; }
 
     /// Returns the prim definition associated with this prim type's schema 
@@ -108,6 +115,11 @@ private:
         // Authored type name of the prim.
         TfToken primTypeName;
 
+        // Optional type name that the type name should be mapped to instead.
+        // Will be used typically to provide a fallback schema type for an 
+        // unrecognized prim type name.
+        TfToken mappedTypeName;
+
         // The list of applied API schemas authored on the prim.
         TfTokenVector appliedAPISchemas;
 
@@ -125,12 +137,16 @@ private:
         // Is empty type
         bool IsEmpty() const {
             return primTypeName.IsEmpty() &&
+                   mappedTypeName.IsEmpty() &&
                    appliedAPISchemas.empty();
         }
 
         // Hash function for hash map keying.
         size_t Hash() const {
             size_t hash = primTypeName.Hash();
+            if (!mappedTypeName.IsEmpty()) {
+                boost::hash_combine(hash, mappedTypeName.Hash());
+            }
             if (!appliedAPISchemas.empty()) {
                 size_t appliedHash = appliedAPISchemas.size();
                 for (const TfToken &apiSchema : appliedAPISchemas) {
@@ -143,6 +159,7 @@ private:
 
         bool operator==(const _TypeId &other) const {
             return primTypeName == other.primTypeName &&
+                   mappedTypeName == other.mappedTypeName &&
                    appliedAPISchemas == other.appliedAPISchemas;
         }
 

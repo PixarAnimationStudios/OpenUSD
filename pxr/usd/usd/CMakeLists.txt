@@ -47,7 +47,6 @@ pxr_library(usd
         primFlags
         primRange
         primTypeInfo
-        primTypeInfoCache
         property
         references
         relationship
@@ -84,6 +83,7 @@ pxr_library(usd
         instanceKey
         integerCoding
         interpolators
+        primTypeInfoCache
         usdzResolver
         valueUtils
 

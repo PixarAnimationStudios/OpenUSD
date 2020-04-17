@@ -25,6 +25,38 @@
 import os, unittest
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
+# Helper for verifying change procesing related to fallback prim type metadata
+# changes. This is used to wrap a call that will change the layer metadata and
+# verifies that the ObjectsChanged notice is sent and whether the change caused
+# all prims to be resynced or not. 
+class ChangeNoticeVerifier(object):
+    def __init__(self, testRunner, expectedResyncAll=False):
+        self.testRunner = testRunner
+        self.expectedResyncAll = expectedResyncAll
+        self.receivedNotice = False
+    def __enter__(self):
+        self._listener = Tf.Notice.RegisterGlobally(
+            'UsdNotice::ObjectsChanged', self._OnNotice)
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._listener.Revoke()
+        # Verify that we actually did receive a notice on exit, otherwise we'd
+        # end up with a false positive if no notice got sent
+        self.testRunner.assertTrue(self.receivedNotice)
+
+    def _OnNotice(self, notice, sender):
+        self.receivedNotice = True
+        # If we expected a resync all the root path will be in the notices
+        # resynced paths, otherwise it will be its changed info only paths.
+        if self.expectedResyncAll:
+            self.testRunner.assertEqual(notice.GetResyncedPaths(), 
+                                        [Sdf.Path('/')])
+            self.testRunner.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
+        else :
+            self.testRunner.assertEqual(notice.GetResyncedPaths(), [])
+            self.testRunner.assertEqual(notice.GetChangedInfoOnlyPaths(), 
+                                        [Sdf.Path('/')])
+
 class TestUsdFallbackPrimTypes(unittest.TestCase):
 
     @classmethod
@@ -46,6 +78,13 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
     def test_OpenLayerWithFallbackTypes(self):
         stage = Usd.Stage.Open("WithFallback.usda")
         self.assertTrue(stage)
+
+        def _VerifyFallbacksInStageMetdata(typeName, expectedFallbacksList):
+            fallbacks = stage.GetMetadataByDictKey("fallbackPrimTypes", typeName)
+            if expectedFallbacksList is None:
+                self.assertIsNone(fallbacks)
+            else:
+                self.assertEqual(fallbacks, Vt.TokenArray(expectedFallbacksList))
 
         emptyPrimDef = Usd.SchemaRegistry().GetEmptyPrimDefinition()
         validType1PrimDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
@@ -70,6 +109,7 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
         # ValidPrim_1 : Has no fallbacks defined in metadata but its type name
         # is a valid schema so it doesn't matter. This is the most typical case.
         prim = stage.GetPrimAtPath("/ValidPrim_1")
+        _VerifyFallbacksInStageMetdata("ValidType_1", None)
         self.assertTrue(prim)
         self.assertEqual(prim.GetTypeName(), "ValidType_1")
         primTypeInfo = prim.GetPrimTypeInfo()
@@ -83,6 +123,7 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
         # ValidPrim_2 : Has fallbacks defined in metadata but its type name
         # is a valid schema, so it ignores fallbacks.
         prim = stage.GetPrimAtPath("/ValidPrim_2")
+        _VerifyFallbacksInStageMetdata("ValidType_2", ["ValidType_1"])
         self.assertTrue(prim)
         self.assertEqual(prim.GetTypeName(), "ValidType_2")
         primTypeInfo = prim.GetPrimTypeInfo()
@@ -96,6 +137,7 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
         # InvalidPrim_1 : Has no fallbacks defined in metadata and its type name
         # is not a valid schema. This will have an invalid schema type.
         prim = stage.GetPrimAtPath("/InvalidPrim_1")
+        _VerifyFallbacksInStageMetdata("InvalidType_1", None)
         self.assertTrue(prim)
         self.assertEqual(prim.GetTypeName(), "InvalidType_1")
         primTypeInfo = prim.GetPrimTypeInfo()
@@ -105,10 +147,74 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
         self.assertFalse(prim.IsA(Usd.Typed))
         _VerifyPrimDefsSame(prim.GetPrimDefinition(), emptyPrimDef)
 
+        # InvalidPrim_2 : This prim's type is not a valid schema type, but the
+        # type has a single fallback defined in metadata which is a valid type.
+        # This prim's schema type will be this fallback type.
+        prim = stage.GetPrimAtPath("/InvalidPrim_2")
+        _VerifyFallbacksInStageMetdata("InvalidType_2", ["ValidType_2"])
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_2")
+        primTypeInfo = prim.GetPrimTypeInfo()
+        self.assertEqual(primTypeInfo.GetTypeName(), "InvalidType_2")
+        self.assertEqual(primTypeInfo.GetSchemaType(), self.validType2)
+        self.assertEqual(primTypeInfo.GetSchemaTypeName(), "ValidType_2")
+        self.assertTrue(prim.IsA(self.validType2))
+        self.assertTrue(prim.IsA(Usd.Typed))
+        _VerifyPrimDefsSame(prim.GetPrimDefinition(), validType2PrimDef)
+
+        # InvalidPrim_3 : This prim's type is not a valid schema type, but the
+        # type has two fallbacks defined in metadata which are both valid types.
+        # This prim's schema type will be the first fallback type in the list.
+        prim = stage.GetPrimAtPath("/InvalidPrim_3")
+        _VerifyFallbacksInStageMetdata("InvalidType_3", 
+                                       ["ValidType_1", "ValidType_2"])
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_3")
+        primTypeInfo = prim.GetPrimTypeInfo()
+        self.assertEqual(primTypeInfo.GetTypeName(), "InvalidType_3")
+        self.assertEqual(primTypeInfo.GetSchemaType(), self.validType1)
+        self.assertEqual(primTypeInfo.GetSchemaTypeName(), "ValidType_1")
+        self.assertTrue(prim.IsA(self.validType1))
+        self.assertTrue(prim.IsA(Usd.Typed))
+        _VerifyPrimDefsSame(prim.GetPrimDefinition(), validType1PrimDef)
+
+        # InvalidPrim_4 : This prim's type is not a valid schema type, but the
+        # type has two fallbacks defined in metadata. The first fallback type
+        # is itself invalid, but second is a valid type. This prim's schema type
+        # will be the second fallback type in the list.
+        prim = stage.GetPrimAtPath("/InvalidPrim_4")
+        _VerifyFallbacksInStageMetdata("InvalidType_4", 
+                                       ["InvalidType_3", "ValidType_2"])
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_4")
+        primTypeInfo = prim.GetPrimTypeInfo()
+        self.assertEqual(primTypeInfo.GetTypeName(), "InvalidType_4")
+        self.assertEqual(primTypeInfo.GetSchemaType(), self.validType2)
+        self.assertEqual(primTypeInfo.GetSchemaTypeName(), "ValidType_2")
+        self.assertTrue(prim.IsA(self.validType2))
+        self.assertTrue(prim.IsA(Usd.Typed))
+        _VerifyPrimDefsSame(prim.GetPrimDefinition(), validType2PrimDef)
+
+        # InvalidPrim_5 : This prim's type is not a valid schema type, but the
+        # type has two fallbacks defined in metadata. However, both of these 
+        # types are also invalid types. This will have an invalid schema type.
+        prim = stage.GetPrimAtPath("/InvalidPrim_5")
+        _VerifyFallbacksInStageMetdata("InvalidType_5", 
+                                       ["InvalidType_3", "InvalidType_2"])
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_5")
+        primTypeInfo = prim.GetPrimTypeInfo()
+        self.assertEqual(primTypeInfo.GetTypeName(), "InvalidType_5")
+        self.assertEqual(primTypeInfo.GetSchemaType(), Tf.Type.Unknown)
+        self.assertEqual(primTypeInfo.GetSchemaTypeName(), "")
+        self.assertFalse(prim.IsA(Usd.Typed))
+        _VerifyPrimDefsSame(prim.GetPrimDefinition(), emptyPrimDef)
+
         # InvalidPrim_WithAPISchemas_1 : Has no fallbacks defined in metadata 
         # and its type name is not a valid schema. This will have an invalid 
         # schema type, but the API schemas will still be applied
         prim = stage.GetPrimAtPath("/InvalidPrim_WithAPISchemas_1")
+        _VerifyFallbacksInStageMetdata("InvalidType_1", None)
         self.assertTrue(prim)
         self.assertEqual(prim.GetTypeName(), "InvalidType_1")
         primTypeInfo = prim.GetPrimTypeInfo()
@@ -137,6 +243,109 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
                          prim.GetAppliedSchemas())
         _VerifyPrimDefsSame(otherPrim.GetPrimDefinition(), 
                              prim.GetPrimDefinition())
+
+        # InvalidPrim_2 : This prim's type is not a valid schema type, but the
+        # type has a single fallback defined in metadata which is a valid type.
+        # This prim's schema type will be this fallback type and the API schemas
+        # will be applied over the fallbacktype.
+        prim = stage.GetPrimAtPath("/InvalidPrim_WithAPISchemas_2")
+        _VerifyFallbacksInStageMetdata("InvalidType_2", ["ValidType_2"])
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_2")
+        primTypeInfo = prim.GetPrimTypeInfo()
+        self.assertEqual(primTypeInfo.GetTypeName(), "InvalidType_2")
+        self.assertEqual(primTypeInfo.GetSchemaType(), self.validType2)
+        self.assertEqual(primTypeInfo.GetSchemaTypeName(), "ValidType_2")
+        self.assertEqual(primTypeInfo.GetAppliedAPISchemas(), 
+                         ["CollectionAPI:foo"])
+        self.assertTrue(prim.IsA(self.validType2))
+        self.assertTrue(prim.IsA(Usd.Typed))
+        self.assertEqual(prim.GetAppliedSchemas(), ["CollectionAPI:foo"])
+
+        # Create a new prim using the fallback typename and the same API schemas
+        # as the above. Verify that because these two prims have the same 
+        # effective schema type and applied schemas, that they use the same
+        # prim definition even though their type names differ.
+        otherPrim = stage.DefinePrim("/Valid2WithCollection", "ValidType_2")
+        Usd.CollectionAPI.ApplyCollection(otherPrim, "foo")
+        otherPrimTypeInfo = otherPrim.GetPrimTypeInfo()
+        self.assertNotEqual(otherPrim.GetTypeName(), prim.GetTypeName())
+        self.assertNotEqual(otherPrimTypeInfo, primTypeInfo)
+        self.assertEqual(otherPrimTypeInfo.GetSchemaTypeName(), 
+                         primTypeInfo.GetSchemaTypeName())
+        self.assertEqual(otherPrimTypeInfo.GetSchemaType(), 
+                         primTypeInfo.GetSchemaType())
+        self.assertEqual(otherPrim.GetAppliedSchemas(), 
+                         prim.GetAppliedSchemas())
+        _VerifyPrimDefsSame(otherPrim.GetPrimDefinition(), 
+                             prim.GetPrimDefinition())
+
+    def test_Sublayer(self):
+        # Create a new layer with same layer above as a sublayer. We don't 
+        # compose sublayer metadata in stage level metadata so we don't get
+        # the fallback types like in the above test case.
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.subLayerPaths.append('WithFallback.usda')
+        stage = Usd.Stage.Open(layer)
+
+        # The two prims with valid schema type names are still valid types.
+        prim = stage.GetPrimAtPath("/ValidPrim_1")
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "ValidType_1")
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaType(), 
+                         self.validType1)
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), 
+                         "ValidType_1")
+
+        prim = stage.GetPrimAtPath("/ValidPrim_2")
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "ValidType_2")
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaType(), 
+                         self.validType2)
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), 
+                         "ValidType_2")
+
+        # All of the prims with invalid types have no schema type since we 
+        # have no fallbacks from the sublayer.
+        for primPath, typeName in [("/InvalidPrim_1", "InvalidType_1"),
+                                   ("/InvalidPrim_2", "InvalidType_2"),
+                                   ("/InvalidPrim_3", "InvalidType_3"),
+                                   ("/InvalidPrim_4", "InvalidType_4"),
+                                   ("/InvalidPrim_5", "InvalidType_5")] :
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim)
+            self.assertEqual(prim.GetTypeName(), typeName)
+            self.assertEqual(prim.GetPrimTypeInfo().GetSchemaType(), 
+                             Tf.Type.Unknown)
+            self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), "")
+
+    def test_FallbackAuthoring(self):
+        # Test the manual authoring of fallback type metadata on the stage.
+        stage = Usd.Stage.Open("WithFallback.usda")
+        self.assertTrue(stage)
+
+        # InvalidPrim_1 : Has no fallbacks defined in metadata and its type name
+        # is not a valid schema. This will have an invalid schema type.
+        prim = stage.GetPrimAtPath("/InvalidPrim_1")
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetTypeName(), "InvalidType_1")
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaType(), 
+                         Tf.Type.Unknown)
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), "")
+
+        # Author a fallback value for InvalidType_1 in the stage's 
+        # fallbackPrimTypes metadata dictionary. This will resync all prims
+        # on the stage.
+        with ChangeNoticeVerifier(self, expectedResyncAll=True):
+            stage.SetMetadataByDictKey("fallbackPrimTypes", "InvalidType_1",
+                                       Vt.TokenArray(["ValidType_2"]))
+
+        # InvalidPrim_1 now has a schema type from the fallback type.
+        self.assertEqual(prim.GetTypeName(), "InvalidType_1")
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaType(), 
+                         self.validType2)
+        self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), 
+                         "ValidType_2")
 
 if __name__ == "__main__":
     unittest.main()
