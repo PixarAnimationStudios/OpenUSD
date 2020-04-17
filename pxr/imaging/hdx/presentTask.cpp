@@ -123,9 +123,15 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
         glDisable(GL_BLEND);
 
         HdxFullscreenShader::TextureMap textures;
-        textures[TfToken("color")] = aovTexture;
+
+        HdxFullscreenShader::HdxFullscreenShaderTex colorShaderTex;
+        colorShaderTex.handle = aovTexture;
+        textures[TfToken("color")] = colorShaderTex;
+
         if (depthTexture) {
-            textures[TfToken("depth")] = depthTexture;
+            HdxFullscreenShader::HdxFullscreenShaderTex depthShaderTex;
+            depthShaderTex.handle = depthTexture;
+            textures[TfToken("depth")] = depthShaderTex;
         }
 
         // Draw aov textures to framebuffer

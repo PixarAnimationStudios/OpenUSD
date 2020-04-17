@@ -46,6 +46,22 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fullscreenShader)
 );
 
+static void
+_DestroyEraseTexture(
+    Hgi* hgi,
+    HdxFullscreenShader::TextureMap& textures, 
+    TfToken const& name)
+{
+    auto it = textures.find(name);
+    if (it != textures.end()) {
+        if (it->second.destroyPolicy == 
+                HdxFullscreenShader::DestroyPolicy::Destroy) {
+            hgi->DestroyTexture(&it->second.handle);
+        }
+        textures.erase(it);
+    }
+}
+
 HdxFullscreenShader::HdxFullscreenShader(
     Hgi* hgi,
     std::string const& debugName)
@@ -84,7 +100,7 @@ HdxFullscreenShader::~HdxFullscreenShader()
     }
 
     for (auto& texture : _textures) {
-        _hgi->DestroyTexture(&texture.second);
+        _DestroyEraseTexture(_hgi, _textures, texture.first);
     }
 
     if (_shaderProgram) {
@@ -131,6 +147,7 @@ HdxFullscreenShader::SetProgram(
     fragDesc.debugName = technique.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     fragDesc.shaderCode = fsGlslfx.GetSource(technique);
+    TF_VERIFY(!fragDesc.shaderCode.empty());
     HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
 
     // Setup the shader program
@@ -265,22 +282,15 @@ HdxFullscreenShader::SetTexture(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    // Destroy the old texture (if any) if we received new pixels.
+    _DestroyEraseTexture(_hgi, _textures, name);
+
+    // Texture was removed, exit.
     if (width == 0 || height == 0 || data == nullptr) {
-        auto it = _textures.find(name);
-        if (it != _textures.end()) {
-            _hgi->DestroyTexture(&it->second);
-            _textures.erase(it);
-        }
         return;
     }
 
     size_t pixelByteSize = HdDataSizeOfFormat(format);
-
-    // If we already had the texture, destroy it since we have new pixels.
-    auto it = _textures.find(name);
-    if (it != _textures.end()) {
-        _hgi->DestroyTexture(&it->second);
-    }
 
     HgiTextureDesc texDesc;
     texDesc.debugName = "HdxFullscreenShader texture " + name.GetString();
@@ -293,8 +303,36 @@ HdxFullscreenShader::SetTexture(
     texDesc.sampleCount = HgiSampleCount1;
     texDesc.usage = HgiTextureUsageBitsShaderRead;
     HgiTextureHandle tex = _hgi->CreateTexture(texDesc);
+    
+    HdxFullscreenShaderTex shaderTex;
+    shaderTex.destroyPolicy = HdxFullscreenShader::DestroyPolicy::Destroy;
+    shaderTex.handle = tex;
 
-    _textures[name] = tex;
+    _textures[name] = shaderTex;
+}
+
+void
+HdxFullscreenShader::BindTextures(
+    TfTokenVector const& names,
+    HgiTextureHandleVector const& textures)
+{
+    if (!TF_VERIFY(names.size() == textures.size())) {
+        return;
+    }
+
+    for (size_t i=0; i<names.size(); i++) {
+        TfToken const& name = names[i];
+        _DestroyEraseTexture(_hgi, _textures, name);
+        HgiTextureHandle const& tex = textures[i];
+        if (tex) {
+            HdxFullscreenShaderTex shaderTex;
+            shaderTex.destroyPolicy = 
+                HdxFullscreenShader::DestroyPolicy::NoDestroy;
+            shaderTex.handle = tex;
+
+            _textures[name] = shaderTex;
+        }
+    }
 }
 
 bool
@@ -312,7 +350,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
     size_t bindSlots = 0;
 
     for (auto const& texture : textures) {
-        HgiTextureHandle texHandle = texture.second;
+        HgiTextureHandle texHandle = texture.second.handle;
         if (!texHandle) continue;
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
@@ -525,7 +563,7 @@ HdxFullscreenShader::_Draw(
     if (!dimensionSrc) {
         auto const& it = textures.find(TfToken("color"));
         if (it != textures.end()) {
-            dimensionSrc = it->second;
+            dimensionSrc = it->second.handle;
         }
     }
 

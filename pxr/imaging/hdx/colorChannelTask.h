@@ -28,14 +28,11 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/tokens.h"
-#include "pxr/imaging/garch/gl.h"
 
-#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
 
 /// \class HdxColorChannelTask
 ///
@@ -70,35 +67,28 @@ private:
     HdxColorChannelTask(const HdxColorChannelTask &) = delete;
     HdxColorChannelTask &operator =(const HdxColorChannelTask &) = delete;
 
-    // Utility function to create the GL program for color channel
-    bool _CreateShaderResources();
+    // Utility function to create a storage buffer for the shader parameters.
+    void _CreateParameterBuffer();
 
-    // Utility function to create buffer resources.
-    bool _CreateBufferResources();
-
-    // Utility function to setup the copy-framebuffer
-    bool _CreateFramebufferResources();
-
-    // Copies the client framebuffer texture into ours
-    void _CopyTexture();
-
-    /// Apply the color channel filtering to the currently bound framebuffer.
+    /// Apply the color channel filtering.
     void _ApplyColorChannel();
-    
-    // Get an integer that represents the color channel. This can be used to
-    // pass the color channel option as a uniform uint argument of the glsl
-    // shader (see the `#define CHANNEL_*` lines in the shader). 
-    // If _channel contains an invalid entry this will return 'color'.
-    GLint _GetChannelAsGLint();
 
-    HdStGLSLProgramSharedPtr _shaderProgram;
-    GLuint _texture;
-    GfVec2i _textureSize;
-    GLint _locations[5];
-    GLuint _vertexBuffer;
+    // This struct must match ParameterBuffer in colorChannel.glslfx.
+    // Be careful to remember the std430 rules.
+    struct _ParameterBuffer
+    {
+        int channel;
+        
+        bool operator==(const _ParameterBuffer& other) const {
+            return channel == other.channel;
+        }
+    };
 
-    GLuint _copyFramebuffer;
-    GfVec2i _framebufferSize;
+    class Hgi* _hgi;
+
+    std::unique_ptr<HdxFullscreenShader> _compositor;
+    _ParameterBuffer _parameterData;
+    HgiBufferHandle _parameterBuffer;
 
     // The color channel to be rendered (see HdxColorChannelTokens for the
     // possible values).
@@ -114,10 +104,6 @@ struct HdxColorChannelTaskParams
 {
     HdxColorChannelTaskParams() {}
     
-    // Resolution of bound framebuffer we are color correcting.
-    // This must be set if the viewport and framebuffer do not match.
-    GfVec2i framebufferSize = GfVec2i(0);
-
     // Specifies which output color channel should be drawn. Defaults to 'color'
     // (untouched RGBA).
     TfToken channel = HdxColorChannelTokens->color;

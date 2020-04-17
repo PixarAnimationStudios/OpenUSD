@@ -48,7 +48,14 @@ class Hgi;
 ///
 class HdxFullscreenShader {
 public:
-    typedef std::map<TfToken, HgiTextureHandle> TextureMap;
+    enum class DestroyPolicy {Destroy, NoDestroy};
+
+    struct HdxFullscreenShaderTex {
+        DestroyPolicy destroyPolicy = DestroyPolicy::NoDestroy;
+        HgiTextureHandle handle;
+    };
+
+    typedef std::map<TfToken, HdxFullscreenShaderTex> TextureMap;
     typedef std::map<uint32_t, HgiBufferHandle> BufferMap;
 
     /// Create a new fullscreen shader object. Creation of GPU resources is
@@ -87,6 +94,7 @@ public:
     /// Upload a named texture with a given format. These textures will
     /// be used by Draw() called with no arguments. If width == 0,
     /// height == 0, or data == nullptr, the image is removed from the bindings.
+    /// The lifetime of the created textures is managed by HdxFullscreenShader.
     ///   \param name The name of the texture (used to look up GLSL binding).
     ///   \param width The width of the image.
     ///   \param height The height of the image.
@@ -96,6 +104,16 @@ public:
     HDX_API
     void SetTexture(TfToken const& name, int width, int height,
                     HdFormat format, void *data);
+
+    /// Bind (externally managed) textures to the shader program.
+    /// This function can be used to bind textures to a custom shader program.
+    /// The lifetime of textures is managed by the caller. HdxFullscreenShader
+    /// will not destroy the provided textures.
+    /// If an invalid 'texture' is passed, the binding will be cleared.
+    HDX_API
+    void BindTextures(
+        TfTokenVector const& names,
+        HgiTextureHandleVector const& textures);
 
     /// Customize the pipeline state, such as setting the blend mode that will
     /// by used when rendering the triangle. Note that the ShaderProgram and
