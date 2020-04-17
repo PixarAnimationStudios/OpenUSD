@@ -28,29 +28,11 @@
 {
     "techniques": {
         "default": {
-            "OutlineVertex": {
-                "source": [ "Outline.Vertex" ]
-            },
             "OutlineFragment": {
                 "source": [ "Outline.Fragment" ]
             }
         }
     }
-}
-
--- glsl Outline.Vertex
-
-#version 450
-
-layout(location = 0) in vec4 position;
-layout(location = 1) in vec2 uvIn;
-
-layout(location = 0) out vec2 uv;
-
-void main(void)
-{
-    gl_Position = position;
-    uv = uvIn;
 }
 
 -- glsl Outline.Fragment
