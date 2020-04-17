@@ -41,39 +41,47 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
 enum HgiFormat
 {
-    HgiFormatInvalid=-1,
+    HgiFormatInvalid = -1,
 
     // UNorm8 - a 1-byte value representing a float between 0 and 1.
     // float value = (unorm / 255.0f);
-    HgiFormatUNorm8=0,
-    HgiFormatUNorm8Vec2=1,
-    HgiFormatUNorm8Vec3=HgiFormatInvalid, // Unsupported Metal (MTLPixelFormat)
-    HgiFormatUNorm8Vec4=3,
+    HgiFormatUNorm8 = 0,
+    HgiFormatUNorm8Vec2,
+    /* HgiFormatUNorm8Vec3 */ // Unsupported Metal (MTLPixelFormat)
+    HgiFormatUNorm8Vec4,
 
     // SNorm8 - a 1-byte value representing a float between -1 and 1.
     // float value = max(snorm / 127.0f, -1.0f);
-    HgiFormatSNorm8=4,
-    HgiFormatSNorm8Vec2=5,
-    HgiFormatSNorm8Vec3=HgiFormatInvalid, // Unsupported Metal (MTLPixelFormat)
-    HgiFormatSNorm8Vec4=7,
+    HgiFormatSNorm8,
+    HgiFormatSNorm8Vec2,
+    /* HgiFormatSNorm8Vec3 */ // Unsupported Metal (MTLPixelFormat)
+    HgiFormatSNorm8Vec4,
 
     // Float16 - a 2-byte IEEE half-precision float.
-    HgiFormatFloat16=8,
-    HgiFormatFloat16Vec2=9,
-    HgiFormatFloat16Vec3=10,
-    HgiFormatFloat16Vec4=11,
+    HgiFormatFloat16,
+    HgiFormatFloat16Vec2,
+    HgiFormatFloat16Vec3,
+    HgiFormatFloat16Vec4,
 
     // Float32 - a 4-byte IEEE float.
-    HgiFormatFloat32=12,
-    HgiFormatFloat32Vec2=13,
-    HgiFormatFloat32Vec3=14,
-    HgiFormatFloat32Vec4=15,
+    HgiFormatFloat32,
+    HgiFormatFloat32Vec2,
+    HgiFormatFloat32Vec3,
+    HgiFormatFloat32Vec4,
 
     // Int32 - a 4-byte signed integer
-    HgiFormatInt32=16,
-    HgiFormatInt32Vec2=17,
-    HgiFormatInt32Vec3=18,
-    HgiFormatInt32Vec4=19,
+    HgiFormatInt32,
+    HgiFormatInt32Vec2,
+    HgiFormatInt32Vec3,
+    HgiFormatInt32Vec4,
+
+    // UNorm8 SRGB - a 1-byte value representing a float between 0 and 1.
+    // Gamma compression/decompression happens during read/write.
+    // Alpha component is linear.
+    /* HgiFormatUNorm8srgb */     // Unsupported by OpenGL
+    /* HgiFormatUNorm8Vec2srgb */ // Unsupported by OpenGL
+    /* HgiFormatUNorm8Vec3srgb */ // Unsupported Metal (MTLPixelFormat)
+    HgiFormatUNorm8Vec4srgb,
 
     HgiFormatCount
 };

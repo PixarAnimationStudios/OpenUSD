@@ -35,12 +35,12 @@ static const _FormatDesc FORMAT_DESC[] =
 {
     {HdFormatUNorm8,     HgiFormatUNorm8}, 
     {HdFormatUNorm8Vec2, HgiFormatUNorm8Vec2}, 
-    {HdFormatUNorm8Vec3, HgiFormatUNorm8Vec3}, 
+    {HdFormatUNorm8Vec3, HgiFormatInvalid}, // Unsupported by HgiFormat
     {HdFormatUNorm8Vec4, HgiFormatUNorm8Vec4}, 
 
     {HdFormatSNorm8,     HgiFormatSNorm8}, 
     {HdFormatSNorm8Vec2, HgiFormatSNorm8Vec2}, 
-    {HdFormatSNorm8Vec3, HgiFormatSNorm8Vec3}, 
+    {HdFormatSNorm8Vec3, HgiFormatInvalid}, // Unsupported by HgiFormat
     {HdFormatSNorm8Vec4, HgiFormatSNorm8Vec4}, 
 
     {HdFormatFloat16,     HgiFormatFloat16}, 
@@ -59,13 +59,14 @@ static const _FormatDesc FORMAT_DESC[] =
     {HdFormatInt32Vec4, HgiFormatInt32Vec4}, 
 };
 
+// A few random format validations to make sure that the format conversion
+// table stays up-to-date with changes to HdFormat and HgiFormat.
 constexpr bool _CompileTimeValidateFormatTable() {
-    return (TfArraySize(FORMAT_DESC) == HdFormatCount &&
-            TfArraySize(FORMAT_DESC) == HgiFormatCount &&
+    return (HdFormatCount == 20 &&
             HdFormatUNorm8 == 0 && HgiFormatUNorm8 == 0 &&
-            HdFormatFloat16Vec4 == 11 && HgiFormatFloat16Vec4 == 11 &&
-            HdFormatFloat32Vec4 == 15 && HgiFormatFloat32Vec4 == 15 &&
-            HdFormatInt32Vec4 == 19 && HgiFormatInt32Vec4 == 19) ? true : false;
+            HdFormatFloat16Vec4 == 11 && HgiFormatFloat16Vec4 == 9 &&
+            HdFormatFloat32Vec4 == 15 && HgiFormatFloat32Vec4 == 13 &&
+            HdFormatInt32Vec4 == 19 && HgiFormatInt32Vec4 == 17) ? true : false;
 }
 
 static_assert(_CompileTimeValidateFormatTable(), 
@@ -80,7 +81,12 @@ HdStHgiConversions::GetHgiFormat(HdFormat hdFormat)
         return HgiFormatInvalid;
     }
 
-    return FORMAT_DESC[hdFormat].hgiFormat;
+    HgiFormat hgiFormat = FORMAT_DESC[hdFormat].hgiFormat;
+    if (ARCH_UNLIKELY(hgiFormat == HgiFormatInvalid)) {
+        TF_CODING_ERROR("Unsupported format");
+    }
+
+    return hgiFormat;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

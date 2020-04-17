@@ -294,23 +294,18 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
     case GL_RGB:
         switch(glType) {
         case GL_UNSIGNED_BYTE:
-            if (HgiFormatUNorm8Vec3 == HgiFormatInvalid) {
-                // RGB no longer supported on MTL, so we can convert
-                // it and use it here.
-                _convertedRawData = 
-                    _ConvertRGBToRGBA<unsigned char>(
-                        unconvertedData,
-                        _textureDesc.dimensions,
-                        255);
-                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
-                _textureDesc.initialData = _convertedRawData.get();
-                // texture data can be dropped because data have been
-                // copied/converted into our own buffer.
-                keepTextureDataAlive = false;
-            } else {
-                _textureDesc.format = HgiFormatUNorm8Vec3;
-                _textureDesc.initialData = unconvertedData;
-            }
+            // RGB (24bit) is not supported on MTL, so we can convert
+            // it and use it here.
+            _convertedRawData = 
+                _ConvertRGBToRGBA<unsigned char>(
+                    unconvertedData,
+                    _textureDesc.dimensions,
+                    255);
+            _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            _textureDesc.initialData = _convertedRawData.get();
+            // texture data can be dropped because data have been
+            // copied/converted into our own buffer.
+            keepTextureDataAlive = false;
             break;
         case GL_FLOAT:
             _textureDesc.format = _CheckValid<HgiFormatFloat32Vec3>();

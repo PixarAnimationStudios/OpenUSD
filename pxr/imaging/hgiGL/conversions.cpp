@@ -42,38 +42,43 @@ struct _FormatDesc {
 static const _FormatDesc FORMAT_DESC[] =
 {
     // format,  type,        internal format  elements
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8,          1}, // HdFormatUNorm8,
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8,         2}, // HdFormatUNorm8Vec2,
-    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8,        3}, // HdFormatUNorm8Vec3,
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8,       4}, // HdFormatUNorm8Vec4,
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8,           1}, // UNorm8
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8,          2}, // UNorm8Vec2
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8,      3}, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8,        4}, // UNorm8Vec4
 
-    {GL_RED,  GL_BYTE,          GL_R8_SNORM,    1}, // HdFormatSNorm8,
-    {GL_RG,   GL_BYTE,          GL_RG8_SNORM,   2}, // HdFormatSNorm8Vec2,
-    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM,  3}, // HdFormatSNorm8Vec3,
-    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM, 4}, // HdFormatSNorm8Vec4,
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM,     1}, // SNorm8
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM,    2}, // SNorm8Vec2
+    // {GL_RGB,  GL_BYTE,       GL_RGB8_SNORM,   3}, // Unsupported by HgiFormat
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM,  4}, // SNorm8Vec4
 
-    {GL_RED,  GL_HALF_FLOAT,    GL_R16F,        1}, // HdFormatFloat16,
-    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F,       2}, // HdFormatFloat16Vec2,
-    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F,      3}, // HdFormatFloat16Vec3,
-    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F,     4}, // HdFormatFloat16Vec4,
+    {GL_RED,  GL_HALF_FLOAT,    GL_R16F,         1}, // Float16
+    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F,        2}, // Float16Vec2
+    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F,       3}, // Float16Vec3
+    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F,      4}, // Float16Vec4
 
-    {GL_RED,  GL_FLOAT,         GL_R32F,        1}, // HdFormatFloat32,
-    {GL_RG,   GL_FLOAT,         GL_RG32F,       2}, // HdFormatFloat32Vec2,
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F,      3}, // HdFormatFloat32Vec3,
-    {GL_RGBA, GL_FLOAT,         GL_RGBA32F,     4}, // HdFormatFloat32Vec4,
+    {GL_RED,  GL_FLOAT,         GL_R32F,         1}, // Float32
+    {GL_RG,   GL_FLOAT,         GL_RG32F,        2}, // Float32Vec2
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F,       3}, // Float32Vec3
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F,      4}, // Float32Vec4
 
-    {GL_RED,  GL_INT,           GL_R32I,        1}, // HdFormatInt32,
-    {GL_RG,   GL_INT,           GL_RG32I,       2}, // HdFormatInt32Vec2,
-    {GL_RGB,  GL_INT,           GL_RGB32I,      3}, // HdFormatInt32Vec3,
-    {GL_RGBA, GL_INT,           GL_RGBA32I,     4}, // HdFormatInt32Vec4,
+    {GL_RED,  GL_INT,           GL_R32I,         1}, // Int32
+    {GL_RG,   GL_INT,           GL_RG32I,        2}, // Int32Vec2
+    {GL_RGB,  GL_INT,           GL_RGB32I,       3}, // Int32Vec3
+    {GL_RGBA, GL_INT,           GL_RGBA32I,      4}, // Int32Vec4
+
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8,     3}, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8, 4}, // UNorm8Vec4sRGB,
 };
 
+// A few random format validations to make sure out GL table stays aligned
+// with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
     return (TfArraySize(FORMAT_DESC) == HgiFormatCount &&
             HgiFormatUNorm8 == 0 &&
-            HgiFormatFloat16Vec4 == 11 &&
-            HgiFormatFloat32Vec4 == 15 &&
-            HgiFormatInt32Vec4 == 19) ? true : false;
+            HgiFormatFloat16Vec4 == 9 &&
+            HgiFormatFloat32Vec4 == 13 &&
+            HgiFormatUNorm8Vec4srgb == 18) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 
@@ -167,7 +172,7 @@ HgiGLConversions::GetFormat(
 {
     if ((inFormat < 0) || (inFormat >= HgiFormatCount))
     {
-        TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
+        TF_CODING_ERROR("Unexpected  %d", inFormat);
         *outFormat = GL_RGBA;
         *outType = GL_BYTE;
         *outInternalFormat = GL_RGBA8;
