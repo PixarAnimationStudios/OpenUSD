@@ -29,8 +29,6 @@
 
 #include "pxr/imaging/hd/enums.h"
 
-#include "pxr/imaging/garch/gl.h"
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -102,7 +100,7 @@ public:
 
     /// The GL sampler (as understood by glBindSampler)
     ///
-    GLuint GetGLSamplerName() const {
+    uint32_t GetGLSamplerName() const {
         return _glSamplerName;
     }
 
@@ -116,7 +114,7 @@ public:
     }
 
 private:
-    const GLuint _glSamplerName;
+    const uint32_t _glSamplerName;
     const uint64_t _glTextureSamplerHandle;
 };
 
