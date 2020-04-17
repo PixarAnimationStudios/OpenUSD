@@ -94,9 +94,8 @@ public:
     {
         _WaitUntilInitialized();
 
-        static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
-        const TfType primSchemaType = schemaBaseType.FindDerivedByName(
-            prim.GetTypeName().GetString());
+        // Get the actual schema type from the prim definition.
+        const TfType &primSchemaType = prim.GetPrimTypeInfo().GetSchemaType();
         if (!primSchemaType) {
             TF_CODING_ERROR(
                 "Could not find prim type '%s' for prim %s",

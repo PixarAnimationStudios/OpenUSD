@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class ValidType_1 "ValidType_1" (
+    doc = "A valid type"
+)
+{
+    uniform double ValidType1Double = 1
+}
+
+class ValidType_2 "ValidType_2" (
+    doc = "Another valid type"
+)
+{
+    int ValidType2Int = 0
+}
+

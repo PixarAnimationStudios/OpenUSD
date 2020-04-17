@@ -79,12 +79,9 @@ UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
         }
     }
 
-    // Get Prim TfType
-    const std::string &typeName = GetTypeName().GetString();
-
-    return !typeName.empty() &&
-        PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
-        IsA(schemaType);
+    // Check that the actual schema type of the prim (accounts for fallback
+    // types for types with no schema) is or derives from the passed in type.
+    return GetPrimTypeInfo().GetSchemaType().IsA(schemaType);
 }
 
 bool

@@ -1,0 +1,27 @@
+#usda 1.0
+(
+)
+
+def ValidType_1 "ValidPrim_1" (
+    apiSchemas = []
+) 
+{
+}
+
+def ValidType_2 "ValidPrim_2" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_1 "InvalidPrim_1" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_1 "InvalidPrim_WithAPISchemas_1" (
+    apiSchemas = ["CollectionAPI:foo"]
+) 
+{
+}

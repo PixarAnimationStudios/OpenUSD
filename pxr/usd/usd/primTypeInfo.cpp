@@ -26,6 +26,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+UsdPrimTypeInfo::UsdPrimTypeInfo(_TypeId &&typeId)
+    : _typeId(std::move(typeId))
+    , _primDefinition(nullptr)
+{
+    if (_typeId.primTypeName.IsEmpty()) {
+        return;
+    }
+    _schemaType = UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(
+        _typeId.primTypeName);
+    if (_schemaType) {
+        _schemaTypeName = _typeId.primTypeName;
+    }
+}
+
 const UsdPrimDefinition * 
 UsdPrimTypeInfo::_FindOrCreatePrimDefinition() const
 {
@@ -36,7 +50,7 @@ UsdPrimTypeInfo::_FindOrCreatePrimDefinition() const
         // definition from the schema registry. Prim definitions for all 
         // concrete types are created with the schema registry when it is 
         // instantiated so if the type exists, the definition will be there.
-        primDef = reg.FindConcretePrimDefinition(_typeId.primTypeName);
+        primDef = reg.FindConcretePrimDefinition(_schemaTypeName);
         if (!primDef) {
             // For invalid types, we use the empty prim definition so we don't
             // have to check again.
@@ -53,7 +67,7 @@ UsdPrimTypeInfo::_FindOrCreatePrimDefinition() const
         // registry does NOT take ownership of this new prim definition; this 
         // type info will own it instead.
         std::unique_ptr<UsdPrimDefinition> composedPrimDef = 
-            reg.BuildComposedPrimDefinition(_typeId.primTypeName, 
+            reg.BuildComposedPrimDefinition(_schemaTypeName, 
                                             _typeId.appliedAPISchemas);
         // Try to cache the new prim definition, but if another thread beat us
         // to it, we'll use its definition instead and just let ours get 

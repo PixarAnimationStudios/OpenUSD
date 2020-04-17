@@ -62,19 +62,7 @@ UsdTyped::_IsCompatible() const
     if (!UsdSchemaBase::_IsCompatible())
         return false;
 
-    // A typed prim must have a non-empty typeName for it to be compatible.
-    const std::string &typeName = GetPrim().GetTypeName().GetString();
-    if (typeName.empty()) {
-        return false;
-    }
-
-    // Typed schemas are compatible if the prim's type is a subtype of this
-    // schema object's type.
-    if (!_schemaBaseTfType->FindDerivedByName(typeName).IsA(_GetType())) {
-        return false;
-    }
-
-    return true;
+    return GetPrim().IsA(_GetType());
 }
 
 TF_MAKE_STATIC_DATA(TfType, _tfType) {

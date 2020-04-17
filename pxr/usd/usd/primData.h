@@ -102,6 +102,11 @@ public:
         return _primTypeInfo->GetTypeName(); 
     }
 
+    /// Returns the full type info for the prim.
+    const UsdPrimTypeInfo &GetPrimTypeInfo() const {
+        return *_primTypeInfo;
+    }
+
     /// Return true if this prim is active, meaning neither it nor any of its
     /// ancestors have active=false.  Return false otherwise.
     bool IsActive() const { return _flags[Usd_PrimActiveFlag]; }

@@ -143,6 +143,17 @@ public:
     /// Construct an invalid prim.
     UsdPrim() : UsdObject(_Null<UsdPrim>()) {}
 
+    /// Return the prim's full type info composed from its type name, applied
+    /// API schemas, and any fallback types defined on the stage for 
+    /// unrecognized prim type names. The returned type structure contains the 
+    /// "true" schema type used to create this prim's prim definition and answer
+    /// the IsA query. This value is cached and efficient to query.
+    /// \sa GetTypeName
+    /// \sa GetAppliedSchemas
+    const UsdPrimTypeInfo &GetPrimTypeInfo() const {
+        return _Prim()->GetPrimTypeInfo();
+    }
+
     /// Return this prim's definition based on the prim's type if the type
     /// is a registered prim type. Returns an empty prim definition if it is 
     /// not.
@@ -171,8 +182,13 @@ public:
         return SetMetadata(SdfFieldKeys->Specifier, specifier);
     }
 
-    /// Return this prim's composed type name.  Note that this value is
-    /// cached and is efficient to query.
+    /// Return this prim's composed type name. This value is cached and is 
+    /// efficient to query. 
+    /// Note that this is just the composed type name as authored and may not 
+    /// represent the full type of the prim and its prim definition. If you 
+    /// need to reason about the actual type of the prim, use GetPrimTypeInfo 
+    /// instead as it accounts for recognized schemas, applied API schemas,
+    /// fallback types, etc.
     const TfToken &GetTypeName() const { return _Prim()->GetTypeName(); };
 
     /// Author this Prim's typeName at the current EditTarget.
@@ -250,8 +266,11 @@ public:
     }
 
     /// Return a vector containing the names of API schemas which have
-    /// been applied to this prim, using the Apply() method on
-    /// the particular schema class. 
+    /// been applied to this prim. This includes both the authored API schemas
+    /// applied using the Apply() method on the particular schema class as 
+    /// well as any built-in API schemas that are automatically included 
+    /// through the prim type's prim definition.
+    /// To get only the authored API schemas use GetPrimTypeInfo instead.
     USD_API
     TfTokenVector GetAppliedSchemas() const;
 
@@ -453,10 +472,8 @@ private:
                  const TfToken &instanceName) const;
 
 public:
-    /// Return true if the UsdPrim is/inherits a Schema of type T.
-    ///
-    /// This will also return true if the UsdPrim is a schema that inherits
-    /// from schema \c T.
+    /// Return true if the prim's schema type, is or inherits schema type T.
+    /// \see GetPrimTypeInfo UsdPrimTypeInfo::GetSchemaType
     template <typename T>
     bool IsA() const {
         static_assert(std::is_base_of<UsdSchemaBase, T>::value,
@@ -464,7 +481,8 @@ public:
         return _IsA(TfType::Find<T>(), /*validateSchemaType=*/false);
     };
     
-    /// Return true if prim type is/inherits a Schema with TfType \p schemaType
+    /// Return true if the prim's schema type is or inherits \p schemaType.
+    /// \see GetPrimTypeInfo UsdPrimTypeInfo::GetSchemaType
     USD_API
     bool IsA(const TfType& schemaType) const;
 

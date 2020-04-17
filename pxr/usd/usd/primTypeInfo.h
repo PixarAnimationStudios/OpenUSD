@@ -53,7 +53,20 @@ public:
         return _typeId.appliedAPISchemas; 
     }
 
-    // Returns the prim definition associated with this prim type.
+    /// Returns the TfType of the actual concrete schema that prims of this 
+    /// type will use to create their prim definition. Typically, this will
+    /// be the type registered in the schema registry for the concrete prim type
+    /// returned by GetTypeName. But, this may be also be the unknown type if 
+    /// the type name is not a registered concrete schema type name.
+    const TfType &GetSchemaType() const { return _schemaType; }
+
+    /// Returns the type name associated with the schema type returned from 
+    /// GetSchemaType. This will be the same as GetTypeName if the prim type 
+    /// is a valid prim schema type, but will be empty if not.
+    const TfToken &GetSchemaTypeName() const { return _schemaTypeName; }
+
+    /// Returns the prim definition associated with this prim type's schema 
+    /// type and applied API schemas.
     const UsdPrimDefinition &GetPrimDefinition() const {
         // First check if we've already cached the prim definition pointer; 
         // we can just return it. Note that we use memory_order_acquire for
@@ -142,10 +155,7 @@ private:
     UsdPrimTypeInfo() : _primDefinition(nullptr) {}
 
     // Move constructor from a _TypeId.
-    UsdPrimTypeInfo(_TypeId &&typeId)
-        : _typeId(std::move(typeId))
-        , _primDefinition(nullptr)
-    {}
+    UsdPrimTypeInfo(_TypeId &&typeId);
 
     // Returns the full type ID.
     const _TypeId &_GetTypeId() const { return _typeId; }
@@ -156,6 +166,8 @@ private:
     const UsdPrimDefinition *_FindOrCreatePrimDefinition() const;
 
     _TypeId _typeId;
+    TfType _schemaType;
+    TfToken _schemaTypeName;
 
     // Cached pointer to the prim definition.
     mutable std::atomic<const UsdPrimDefinition *> _primDefinition;

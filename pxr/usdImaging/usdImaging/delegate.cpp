@@ -244,7 +244,7 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
                _IsDrawModeApplied(prim)) {
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
-        adapterKey = prim.GetTypeName();
+        adapterKey = prim.GetPrimTypeInfo().GetSchemaTypeName();
 
         // XXX Checking for preview binding purpose here is wrong.
         // What we really want to do is check for Storm specifically, because
@@ -2624,7 +2624,9 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         // Asking for the lightFilterType is the render delegates way of
         // determining the type of the light filter.
         if (paramName == _tokens->lightFilterType) {
-            return VtValue(prim.GetTypeName());
+            // Use the schema type name from the prim type info which is the
+            // official type of the prim.
+            return VtValue(prim.GetPrimTypeInfo().GetSchemaTypeName());
         }
         if (paramName == HdTokens->lightFilterLink) {
             UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);

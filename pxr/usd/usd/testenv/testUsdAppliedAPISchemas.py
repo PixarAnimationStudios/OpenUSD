@@ -25,7 +25,7 @@
 import os, unittest
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
-class TestUsdSchemaRegistry(unittest.TestCase):
+class TestUsdAppliedAPISchemas(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         pr = Plug.Registry()
@@ -182,6 +182,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         untypedPrim = stage.DefinePrim("/Untyped")
         self.assertEqual(untypedPrim.GetTypeName(), '')
         self.assertEqual(untypedPrim.GetAppliedSchemas(), [])
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         [])
         self.assertEqual(untypedPrim.GetPropertyNames(), [])
 
         # Add an api schema to the prim's metadata.
@@ -192,6 +195,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # Prim still has no type but does have applied schemas
         self.assertEqual(untypedPrim.GetTypeName(), '')
         self.assertEqual(untypedPrim.GetAppliedSchemas(), ["TestSingleApplyAPI"])
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestSingleApplyAPI"])
         self.assertTrue(untypedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
 
@@ -225,6 +231,10 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         typedPrim = stage.DefinePrim("/TypedPrim", "TestTypedSchema")
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), [])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestTypedSchema')
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
         self.assertEqual(typedPrim.GetPropertyNames(), ["testAttr", "testRel"])
 
         # Add an api schemas to the prim's metadata.
@@ -237,6 +247,11 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestTypedSchema')
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"])
+
         self.assertTrue(typedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
         self.assertTrue(typedPrim.HasAPI(
@@ -294,6 +309,13 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
         self.assertTrue(typedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
         self.assertTrue(typedPrim.HasAPI(
@@ -322,6 +344,14 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
             ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI", 
              "TestMultiApplyAPI:garply"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestMultiApplyAPI:garply"])
+
         self.assertTrue(typedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
         self.assertTrue(typedPrim.HasAPI(
@@ -391,6 +421,13 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
         self.assertTrue(typedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
         self.assertTrue(typedPrim.HasAPI(
@@ -433,6 +470,14 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
             ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI", 
              "TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+
         self.assertTrue(typedPrim.HasAPI(
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
         self.assertTrue(typedPrim.HasAPI(

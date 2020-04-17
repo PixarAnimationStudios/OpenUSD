@@ -40,6 +40,10 @@ void wrapUsdPrimTypeInfo()
              return_value_policy<return_by_value>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
              return_value_policy<TfPySequenceToList>())
+        .def("GetSchemaType", &This::GetSchemaType,
+             return_value_policy<return_by_value>())
+        .def("GetSchemaTypeName", &This::GetSchemaTypeName,
+             return_value_policy<return_by_value>())
         .def("GetPrimDefinition", &This::GetPrimDefinition,
              return_internal_reference<>())
         .def(self == self)

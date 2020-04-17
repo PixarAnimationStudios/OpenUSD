@@ -187,6 +187,7 @@ pxr_test_scripts(
     testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
+    testenv/testUsdFallbackPrimTypes.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
@@ -378,6 +379,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdCratePayloadConversionFromVersion07.testenv
     DEST testUsdCratePayloadConversionFromVersion07
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFallbackPrimTypes
+    DEST testUsdFallbackPrimTypes
 )
 
 pxr_install_test_dir(
@@ -661,6 +667,12 @@ pxr_register_test(testUsdCreateProperties
 
 pxr_register_test(testUsdCreateAttributeCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCreateAttributeCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFallbackPrimTypes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFallbackPrimTypes"
     EXPECTED_RETURN_CODE 0
 )
 
