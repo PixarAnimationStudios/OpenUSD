@@ -1157,6 +1157,8 @@ TfType::_ExecuteDefinitionCallback() const
 string
 TfType::GetCanonicalTypeName(const std::type_info &t)
 {
+    TfAutoMallocTag2 tag("Tf", "TfType::GetCanonicalTypeName");
+
     using LookupMap =
         TfHashMap<std::type_index, std::string, std::hash<std::type_index>>;
     static LookupMap lookupMap;
