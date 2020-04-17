@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/fullscreenShaderGL.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,7 +39,7 @@ class HdRenderBuffer;
 /// GL buffer, possibly with a "colorizing" step (for example, mapping
 /// normals to RGB, or texture coords to RG).
 ///
-class HdxColorizeTask : public HdxProgressiveTask
+class HdxColorizeTask : public HdxTask
 {
 public:
     HDX_API

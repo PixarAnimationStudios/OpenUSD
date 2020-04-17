@@ -21,17 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdxProgressiveTask::HdxProgressiveTask(SdfPath const& id)
+HdxTask::HdxTask(SdfPath const& id)
     : HdTask(id)
 {
 }
 
-HdxProgressiveTask::~HdxProgressiveTask()
+HdxTask::~HdxTask()
 {
 }
 
+bool
+HdxTask::IsConverged() const
+{
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
+

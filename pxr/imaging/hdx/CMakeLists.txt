@@ -55,13 +55,13 @@ pxr_library(hdx
         pickTask
         pickFromRenderBufferTask
         presentTask
-        progressiveTask
         renderTask
         renderSetupTask
         selectionTask
         selectionTracker
         shadowTask
         simpleLightTask
+        task
         taskController
         tokens
         types

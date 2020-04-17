@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// maybe operate on this HgiTexture without having to worry about converting
 /// the aov data from CPU to GPU.
 ///
-class HdxAovInputTask : public HdxProgressiveTask
+class HdxAovInputTask : public HdxTask
 {
 public:
     HDX_API

@@ -52,7 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxColorizeSelectionTask::HdxColorizeSelectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
-    : HdxProgressiveTask(id)
+    : HdxTask(id)
     , _hgi(nullptr)
     , _params()
     , _lastVersion(-1)

@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPickFromRenderBufferTask::HdxPickFromRenderBufferTask(
         HdSceneDelegate* delegate, SdfPath const& id)
-    : HdxProgressiveTask(id)
+    : HdxTask(id)
     , _index(nullptr)
     , _primId(nullptr)
     , _instanceId(nullptr)

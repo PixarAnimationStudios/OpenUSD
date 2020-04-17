@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxAovInputTask::HdxAovInputTask(HdSceneDelegate* delegate, SdfPath const& id)
- : HdxProgressiveTask(id)
+ : HdxTask(id)
  , _hgi(nullptr)
  , _converged(false)
  , _aovBufferPath()

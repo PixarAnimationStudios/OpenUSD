@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
@@ -66,7 +66,7 @@ struct HdxPickFromRenderBufferTaskParams
 /// to the camera frustum used to generate the ID buffers.  It then runs the
 /// pick query against the subset of the ID buffers contained by the pick
 /// frustum.
-class HdxPickFromRenderBufferTask : public HdxProgressiveTask
+class HdxPickFromRenderBufferTask : public HdxTask
 {
 public:
     HDX_API

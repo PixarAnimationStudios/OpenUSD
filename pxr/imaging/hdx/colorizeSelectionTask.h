@@ -28,7 +28,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/fullscreenShader.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 
 #include "pxr/imaging/hgi/buffer.h"
 
@@ -70,7 +70,7 @@ struct HdxColorizeSelectionTaskParams
 /// If enableOutline is true then instead of overlaying the ID buffer as is, an
 /// outline with thickness of outlineRadius pixels around the areas with IDs
 /// will be overlaid. Otherwise, the ID buffer will be overlaid as is.
-class HdxColorizeSelectionTask : public HdxProgressiveTask
+class HdxColorizeSelectionTask : public HdxTask
 {
 public:
     HDX_API

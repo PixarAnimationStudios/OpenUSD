@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -61,7 +61,7 @@ using HdxRenderSetupTaskSharedPtr = std::shared_ptr<class HdxRenderSetupTask>;
 /// setup task you run before the render task, you can change the render
 /// parameters without incurring a hydra sync or rebuilding any resources.
 ///
-class HdxRenderTask : public HdxProgressiveTask
+class HdxRenderTask : public HdxTask
 {
 public:
     HDX_API

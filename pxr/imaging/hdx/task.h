@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_PROGRESSIVE_TASK_H
-#define PXR_IMAGING_HDX_PROGRESSIVE_TASK_H
+#ifndef PXR_IMAGING_HDX_TASK_H
+#define PXR_IMAGING_HDX_TASK_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
@@ -30,26 +30,36 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdxProgressiveTask
+/// \class HdxTask
 ///
-/// This is an interface class that declares that derived tasks implement
-/// some form of progressive rendering, as queried by the virtual
-/// IsConverged().
+/// Base class for (some) tasks in Hdx that provides common progressive 
+/// rendering and Hgi functionality.
 ///
-/// Applications with data-driven task lists can determine their convergence
-/// state by determining which tasks are progressive tasks and then querying
-/// specifically those tasks.
-class HdxProgressiveTask : public HdTask {
+/// Tasks that require neither progressive rendering nor Hgi can continue to
+/// derive directly from HdTask.
+///
+class HdxTask : public HdTask {
 public:
     HDX_API
-    HdxProgressiveTask(SdfPath const& id);
+    HdxTask(SdfPath const& id);
 
     HDX_API
-    virtual ~HdxProgressiveTask();
+    virtual ~HdxTask();
 
-    virtual bool IsConverged() const = 0;
+    /// This function returns true when a (progressive) task considers its
+    /// execution results converged. Usually this means that a progressive
+    /// render delegate is finished rendering into the HdRenderBuffers used by
+    /// this task.
+    /// Returns true by default which is a good default for rasterizers.
+    ///
+    /// Applications with data-driven task lists can determine their convergence
+    /// state by determining which tasks are HdxTasks and then querying
+    /// specifically those tasks for IsConverged.
+    HDX_API
+    virtual bool IsConverged() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HDX_PROGRESSIVE_TASK_H
+#endif
+

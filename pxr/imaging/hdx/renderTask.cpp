@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // -------------------------------------------------------------------------- //
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdxProgressiveTask(id)
+    : HdxTask(id)
     , _pass()
     , _renderTags()
     , _setupTask()
