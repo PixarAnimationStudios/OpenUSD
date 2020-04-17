@@ -82,62 +82,6 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
     return textureId.GetFilePath().GetString();
 }
 
-// Should this be in HgiGL?
-static
-HgiFormat
-_GetFormat(const GLenum format, const GLenum type)
-{
-    switch(format) {
-    case GL_RED:
-        switch(type) {
-        case GL_FLOAT:
-            return HgiFormatFloat32;
-        case GL_UNSIGNED_BYTE:
-            return HgiFormatUNorm8;
-        default:
-            break;
-        }
-        break;
-    case GL_RG:
-        switch(type) {
-        case GL_FLOAT:
-            return HgiFormatFloat32Vec2;
-        case GL_UNSIGNED_BYTE:
-            return HgiFormatUNorm8Vec2;
-        default:
-            break;
-        }
-        break;
-    case GL_RGB:
-        switch(type) {
-        case GL_FLOAT:
-            return HgiFormatFloat32Vec3;
-        case GL_UNSIGNED_BYTE:
-            return HgiFormatUNorm8Vec3;
-        default:
-            break;
-        }
-        break;
-    case GL_RGBA:
-        switch(type) {
-        case GL_FLOAT:
-            return HgiFormatFloat32Vec4;
-        case GL_UNSIGNED_BYTE:
-            return HgiFormatUNorm8Vec4;
-        default:
-            break;
-        }
-        break;
-    default:
-        break;
-    }
-
-    TF_CODING_ERROR("Unsupported texture format %d %d",
-                    format, type);
-
-    return HgiFormatInvalid;
-}
-
 static
 HgiTextureType
 _GetTextureType(int numDimensions)
@@ -153,34 +97,233 @@ _GetTextureType(int numDimensions)
     }
 }
 
-
-static
-HgiTextureDesc
-_GetTextureDesc(GlfBaseTextureDataRefPtr const &cpuData,
-                const std::string &debugName)
+// A helper class that creates an HgiTextureDesc from GlfBaseTextureData.
+//
+// It will convert RGB to RGBA if necessary, creates a 1x1(x1) black texture
+// if the texture has 0 extents and manages the life time of the CPU buffers
+// (either by keeping GlfBaseTextureData or its own buffer alive).
+// 
+class HdSt_TextureObjectCpuData
 {
-    HgiTextureDesc textureDesc;
-    textureDesc.debugName = debugName;
-    textureDesc.format = _GetFormat(cpuData->GLFormat(), cpuData->GLType());
-    textureDesc.pixelsByteSize = HgiDataSizeOfFormat(textureDesc.format);
+public:
+    // Created using texture data and a debug name used for the
+    // texture descriptor.
+    HdSt_TextureObjectCpuData(GlfBaseTextureDataRefPtr const &textureData,
+                              const std::string &debugName);
 
-    const GfVec3i dimensions(cpuData->ResizedWidth(),
-                             cpuData->ResizedHeight(),
-                             cpuData->ResizedDepth());
+    ~HdSt_TextureObjectCpuData() = default;
 
-    if (dimensions[0] * dimensions[1] * dimensions[2] > 0) {
-        textureDesc.dimensions = dimensions;
-        textureDesc.initialData = cpuData->GetRawBuffer();
-    } else {
-        textureDesc.dimensions = GfVec3i(1,1,1);
+    // Texture descriptor, including initialData pointer.
+    const HgiTextureDesc &GetTextureDesc() const { return _textureDesc; }
 
-        static char zeros[256];
-        textureDesc.initialData = zeros;
+private:
+    // Computes dimension ensuring they are at least 1
+    // in each direction.
+    // Returns true if the texture had non-zero extents.
+    bool _ComputeDimensions(
+        GlfBaseTextureDataRefPtr const &textureData);
+    // Fill texture descriptor's dimension, format and
+    // initialData.
+    // The initialData can come either directly from the
+    // provided texture data or from our own buffer if
+    // a conversion was necessary.
+    void _ConvertFormatIfNecessary(
+        GlfBaseTextureDataRefPtr const &textureData);
+
+    // The result!
+    HgiTextureDesc _textureDesc;
+
+    // To avoid a copy, hold on to original data if we
+    // can use them.
+    GlfBaseTextureDataRefPtr _textureData;
+    // Buffer if we had to convert the data.
+    std::unique_ptr<const unsigned char[]> _convertedRawData;
+};
+
+HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
+    GlfBaseTextureDataRefPtr const &textureData,
+    const std::string &debugName)
+{
+    _textureDesc.debugName = debugName;
+
+    if (!textureData) {
+        return;
     }
 
-    textureDesc.type = _GetTextureType(cpuData->NumDimensions());
+    // Read texture file
+    textureData->Read(0, false);
+
+    // Fill texture descriptor's dimension, format and
+    // initialData.
+    _ConvertFormatIfNecessary(textureData);
+
+    _textureDesc.type = _GetTextureType(textureData->NumDimensions());
+    _textureDesc.pixelsByteSize = HgiDataSizeOfFormat(_textureDesc.format);
+}
+
+bool
+HdSt_TextureObjectCpuData::_ComputeDimensions(
+    GlfBaseTextureDataRefPtr const &textureData)
+{
+    const GfVec3i dims(textureData->ResizedWidth(),
+                       textureData->ResizedHeight(),
+                       textureData->ResizedDepth());
+
+    if (dims[0] * dims[1] * dims[2] > 0) {
+        _textureDesc.dimensions = dims;
+        return true;
+    } else {
+        _textureDesc.dimensions = GfVec3i(1,1,1);
+        return false;
+    }
+}
+
+template<typename T>
+static
+std::unique_ptr<const unsigned char[]>
+_ConvertRGBToRGBA(
+    const unsigned char * const data,
+    const GfVec3i &dimensions,
+    const T alpha)
+{
+    const T * const typedData = reinterpret_cast<const T*>(data);
+
+    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
+
+    std::unique_ptr<unsigned char[]> result =
+        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+
+    T * const typedConvertedData = reinterpret_cast<T*>(result.get());
+
+    for (size_t i = 0; i < num; i++) {
+        typedConvertedData[4 * i + 0] = typedData[3 * i + 0];
+        typedConvertedData[4 * i + 1] = typedData[3 * i + 1];
+        typedConvertedData[4 * i + 2] = typedData[3 * i + 2];
+        typedConvertedData[4 * i + 3] = alpha;
+    }
+
+    return std::move(result);
+}
+
+// Some of these formats have been aliased to HgiFormatInvalid because
+// they are not available on MTL. Guard against us trying to use
+// formats that are no longer available.
+template<HgiFormat f>
+static
+constexpr HgiFormat _CheckValid()
+{
+    static_assert(f != HgiFormatInvalid, "Invalid HgiFormat");
+    return f;
+}
+
+void
+HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
+    GlfBaseTextureDataRefPtr const &textureData)
+{
+    // Whether we need to keep the ref ptr to texture data alive because
+    // we are using its CPU buffer.
+    bool keepTextureDataAlive = true;
+
+    static const unsigned char zeros[256] = {};
+
+    const bool nonEmpty = _ComputeDimensions(textureData);
+
+    // Use zero-initialized data when texture has no extent.
+    const unsigned char * const unconvertedData =
+        nonEmpty ? textureData->GetRawBuffer() : zeros;
+
+    if (!nonEmpty) {
+        // If using zero-initialized data, no need to keep texture data
+        // around.
+        keepTextureDataAlive = false;
+    }
+
+    const GLenum glFormat = textureData->GLFormat();
+    const GLenum glType = textureData->GLType();
+
+    // Format dispatch, mostly we can just use the CPU buffer from
+    // the texture data provided.
+    switch(glFormat) {
+    case GL_RED:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            _textureDesc.format = _CheckValid<HgiFormatUNorm8>();
+            _textureDesc.initialData = unconvertedData;
+            break;
+        case GL_FLOAT:
+            _textureDesc.format = _CheckValid<HgiFormatFloat32>();
+            _textureDesc.initialData = unconvertedData;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+                            glType);
+        }
+        break;
+    case GL_RG:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec2>();
+            _textureDesc.initialData = unconvertedData;
+            break;
+        case GL_FLOAT:
+            _textureDesc.format = _CheckValid<HgiFormatFloat32Vec2>();
+            _textureDesc.initialData = unconvertedData;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+                            glType);
+        }
+        break;
+    case GL_RGB:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            if (HgiFormatUNorm8Vec3 == HgiFormatInvalid) {
+                // RGB no longer supported on MTL, so we can convert
+                // it and use it here.
+                _convertedRawData = 
+                    _ConvertRGBToRGBA<unsigned char>(
+                        unconvertedData,
+                        _textureDesc.dimensions,
+                        255);
+                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+                _textureDesc.initialData = _convertedRawData.get();
+                // texture data can be dropped because data have been
+                // copied/converted into our own buffer.
+                keepTextureDataAlive = false;
+            } else {
+                _textureDesc.format = HgiFormatUNorm8Vec3;
+                _textureDesc.initialData = unconvertedData;
+            }
+            break;
+        case GL_FLOAT:
+            _textureDesc.format = _CheckValid<HgiFormatFloat32Vec3>();
+            _textureDesc.initialData = unconvertedData;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+                            glType);
+        }
+        break;
+    case GL_RGBA:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            _textureDesc.initialData = unconvertedData;
+            break;
+        case GL_FLOAT:
+            _textureDesc.format = _CheckValid<HgiFormatFloat32Vec4>();
+            _textureDesc.initialData = unconvertedData;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+                            glType);
+        }
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported texture format %d %d",
+                        glFormat, glType);
+    }
     
-    return textureDesc;
+
+    if (keepTextureDataAlive) {
+        _textureData = textureData;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,13 +346,15 @@ HdStUvTextureObject::~HdStUvTextureObject()
 void
 HdStUvTextureObject::_Load()
 {
-    _cpuData = GlfUVTextureData::New(
-        GetTextureIdentifier().GetFilePath(),
-        GetTargetMemory(),
-        /* borders */ 0, 0, 0, 0);
+    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
+        GlfUVTextureData::New(
+            GetTextureIdentifier().GetFilePath(),
+            GetTargetMemory(),
+            /* borders */ 0, 0, 0, 0),
+        _GetDebugName(GetTextureIdentifier()));
 
-    if (_cpuData) {
-        _cpuData->Read(0, false);
+    if (_cpuData->GetTextureDesc().type != HgiTextureType2D) {
+        TF_CODING_ERROR("Wrong texture type for uv");
     }
 }
 
@@ -228,20 +373,11 @@ HdStUvTextureObject::_Commit()
         return;
     }
 
-    const HgiTextureDesc textureDesc =
-        _GetTextureDesc(
-            _cpuData,
-            _GetDebugName(GetTextureIdentifier()));
-
-    if (textureDesc.type != HgiTextureType2D) {
-        TF_CODING_ERROR("Wrong texture type for uv");
-    }
-
     // Upload to GPU
-    _gpuTexture = hgi->CreateTexture(textureDesc);
+    _gpuTexture = hgi->CreateTexture(_cpuData->GetTextureDesc());
 
     // Free CPU memory after transfer to GPU
-    _cpuData = TfNullPtr;
+    _cpuData.reset();
 }
 
 HdTextureType

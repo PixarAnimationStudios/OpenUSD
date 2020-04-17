@@ -31,14 +31,11 @@
 #include "pxr/imaging/hd/enums.h"
 
 #include "pxr/imaging/hgi/handle.h"
-#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/gf/bbox3d.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 
 class Hgi;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
@@ -145,7 +142,7 @@ protected:
     void _Commit() override;
 
 private:
-    GlfBaseTextureDataRefPtr _cpuData;
+    std::unique_ptr<class HdSt_TextureObjectCpuData> _cpuData;
     HgiTextureHandle _gpuTexture;
 };
 
