@@ -33,6 +33,7 @@
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 #include "pxr/imaging/glf/vdbTextureData.h"
 #endif
+#include "pxr/imaging/glf/ptexTexture.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 
@@ -527,6 +528,47 @@ HdTextureType
 HdStFieldTextureObject::GetTextureType() const
 {
     return HdTextureType::Field;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Ptex texture
+
+HdStPtexTextureObject::HdStPtexTextureObject(
+    const HdStTextureIdentifier &textureId,
+    HdSt_TextureObjectRegistry * const textureObjectRegistry)
+  : HdStTextureObject(textureId, textureObjectRegistry)
+  , _texelGLTextureName(0)
+  , _layoutGLTextureName(0)
+{
+}
+
+HdStPtexTextureObject::~HdStPtexTextureObject() = default;
+
+void
+HdStPtexTextureObject::_Load()
+{
+    // Glf is both loading the texture and creating the
+    // GL resources, so not thread-safe. Everything is
+    // postponed to the single-threaded Commit.
+}
+
+void
+HdStPtexTextureObject::_Commit()
+{
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+    _gpuTexture = GlfPtexTexture::New(
+        GetTextureIdentifier().GetFilePath());
+    _gpuTexture->SetMemoryRequested(GetTargetMemory());
+
+    _texelGLTextureName = _gpuTexture->GetGlTextureName();
+    _layoutGLTextureName = _gpuTexture->GetLayoutTextureName();
+#endif
+}
+
+HdTextureType
+HdStPtexTextureObject::GetTextureType() const
+{
+    return HdTextureType::Ptex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

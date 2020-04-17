@@ -32,10 +32,15 @@
 
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/declarePtrs.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
+#endif
 
 class Hgi;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
@@ -206,6 +211,59 @@ private:
     HgiTextureHandle _gpuTexture;
 };
 
+using HdStPtexTextureObjectSharedPtr =
+    std::shared_ptr<class HdStPtexTextureObject>;
+
+/// \class HdStPtexTextureObject
+///
+/// A ptex texture - it is using Glf to both load the texture
+/// and allocate the GPU resources (unlike the other texture
+/// types).
+///
+class HdStPtexTextureObject : public HdStTextureObject
+{
+public:
+    HDST_API
+    HdStPtexTextureObject(
+        const HdStTextureIdentifier &textureId,
+        HdSt_TextureObjectRegistry *textureObjectRegistry);
+
+    HDST_API
+    ~HdStPtexTextureObject() override;
+
+    /// Get the GL texture name for the texels
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    uint32_t GetTexelGLTextureName() const { return _texelGLTextureName; }
+
+    /// Get the GL texture name for the layout
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
+
+    HDST_API
+    HdTextureType GetTextureType() const override;
+
+protected:
+    HDST_API
+    void _Load() override;
+
+    HDST_API
+    void _Commit() override;
+
+private:
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+    GlfPtexTextureRefPtr _gpuTexture;
+#endif
+
+    uint32_t _texelGLTextureName;
+    uint32_t _layoutGLTextureName;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
@@ -226,6 +284,11 @@ struct HdSt_TypedTextureObjectHelper<HdTextureType::Uv> {
 template<>
 struct HdSt_TypedTextureObjectHelper<HdTextureType::Field> {
     using type = HdStFieldTextureObject;
+};
+
+template<>
+struct HdSt_TypedTextureObjectHelper<HdTextureType::Ptex> {
+    using type = HdStPtexTextureObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

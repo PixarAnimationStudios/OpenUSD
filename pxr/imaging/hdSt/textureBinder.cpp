@@ -68,6 +68,16 @@ HdSt_TextureBinder::GetBufferSpecs(
                 TfToken(texture.name.GetString() + "SamplingTransform"),
                 HdTupleType{HdTypeDoubleMat4, 1});
             break;
+        case HdTextureType::Ptex:
+            if (UsesBindlessTextures()) {
+                specs->emplace_back(
+                    texture.name,
+                    _bindlessHandleTupleType);
+                specs->emplace_back(
+                    TfToken(texture.name.GetString() + "_layout"),
+                    _bindlessHandleTupleType);
+            }
+            break;
         default:
             TF_CODING_ERROR("Unsupported texture type");
         }
@@ -164,6 +174,27 @@ public:
                 name,
                 sampler.GetGLTextureSamplerHandle()));
     }
+
+    static void Compute(
+        TfToken const &name,
+        HdStPtexTextureObject const &texture,
+        HdStPtexSamplerObject const &sampler,
+        HdBufferSourceSharedPtrVector * const sources)
+    {
+        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
+            return;
+        }
+
+        sources->push_back(
+            std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                name,
+                sampler.GetTexelsGLTextureHandle()));
+
+        sources->push_back(
+            std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                TfToken(name.GetString() + "_layout"),
+                sampler.GetLayoutGLTextureHandle()));
+    }
 };
 
 void
@@ -224,6 +255,29 @@ public:
             binder,
             bind);
     }
+    
+    static void Compute(
+        TfToken const &name,
+        HdStPtexTextureObject const &texture,
+        HdStPtexSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        const bool bind)
+    {
+        const HdBinding texelBinding = binder.GetBinding(name);
+        const int texelSamplerUnit = texelBinding.GetTextureUnit();
+
+        glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
+        glBindTexture(GL_TEXTURE_2D_ARRAY,
+                      bind ? texture.GetTexelGLTextureName() : 0);
+
+        const HdBinding layoutBinding = binder.GetBinding(
+            TfToken(name.GetString() + "_layout"));
+        const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
+
+        glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
+        glBindTexture(GL_TEXTURE_BUFFER,
+                      bind ? texture.GetLayoutGLTextureName() : 0);
+    }
 };
 
 template<HdTextureType textureType, class Functor, typename ...Args>
@@ -268,6 +322,10 @@ void _Dispatch(
         break;
     case HdTextureType::Field:
         _CastAndCompute<HdTextureType::Field, Functor>(
+            namedTextureHandle, std::forward<Args>(args)...);
+        break;
+    case HdTextureType::Ptex:
+        _CastAndCompute<HdTextureType::Ptex, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
     default:

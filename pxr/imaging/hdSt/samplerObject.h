@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStUvTextureObject;
 class HdStFieldTextureObject;
+class HdStPtexTextureObject;
 
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
@@ -152,6 +153,40 @@ private:
     const uint64_t _glTextureSamplerHandle;
 };
 
+/// \class HdStPtexSamplerObject
+///
+/// Ptex doesn't bind samplers, so this class is just holding the
+/// texture handles for bindless textures.
+///
+class HdStPtexSamplerObject final : public HdStSamplerObject {
+public:
+    HdStPtexSamplerObject(
+        HdStPtexTextureObject const &ptexTexture,
+        // samplerParameters are ignored by ptex
+        HdStSamplerParameters const &samplerParameters,
+        bool createBindlessHandle);
+
+    ~HdStPtexSamplerObject() override;
+
+    /// The GL texture handle for bindless textures (as returned by
+    /// glGetTextureHandleARB). This is for texels.
+    ///
+    /// Only available when requested.
+    ///
+    uint64_t GetTexelsGLTextureHandle() const {
+        return _texelsGLTextureHandle;
+    }
+
+    /// Similar to GetGLTexelsTextureHandle but for layout.
+    uint64_t GetLayoutGLTextureHandle() const {
+        return _layoutGLTextureHandle;
+    }
+
+private:
+    const uint64_t _texelsGLTextureHandle;
+    const uint64_t _layoutGLTextureHandle;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedSamplerObjectHelper;
 
@@ -172,6 +207,11 @@ struct HdSt_TypedSamplerObjectHelper<HdTextureType::Uv> {
 template<>
 struct HdSt_TypedSamplerObjectHelper<HdTextureType::Field> {
     using type = HdStFieldSamplerObject;
+};
+
+template<>
+struct HdSt_TypedSamplerObjectHelper<HdTextureType::Ptex> {
+    using type = HdStPtexSamplerObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

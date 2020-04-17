@@ -89,6 +89,8 @@ _IsSupportedByNewTextureSystem(const HdTextureType type)
 {
     switch(type) {
     case HdTextureType::Uv:
+    case HdTextureType::Field:
+    case HdTextureType::Ptex:
         return true;
     default:
         return false;

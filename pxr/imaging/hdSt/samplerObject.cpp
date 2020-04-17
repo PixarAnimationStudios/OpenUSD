@@ -169,6 +169,28 @@ _GenGLTextureSamplerHandle(HgiTextureHandle const &textureHandle,
     return result;
 }
 
+// Get texture handle for bindless textures.
+static
+GLuint64EXT
+_GenGlTextureHandle(const GLuint textureName,
+                    const bool createGLTextureHandle)
+{
+    if (!createGLTextureHandle) {
+        return 0;
+    }
+
+    if (textureName == 0) {
+        return 0;
+    }
+
+    const GLuint64EXT result = glGetTextureHandleARB(textureName);
+    glMakeTextureHandleResidentARB(result);
+
+    GLF_POST_PENDING_GL_ERRORS();
+
+    return result;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Uv sampler
 
@@ -228,6 +250,35 @@ HdStFieldSamplerObject::~HdStFieldSamplerObject()
     // See above comment about destroying _glTextureSamplerHandle
     if (_glSamplerName) {
         glDeleteSamplers(1, &_glSamplerName);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Ptex sampler
+
+HdStPtexSamplerObject::HdStPtexSamplerObject(
+    HdStPtexTextureObject const &ptexTexture,
+    // samplerParameters are ignored are ptex
+    HdStSamplerParameters const &samplerParameters,
+    const bool createBindlessHandle)
+  : _texelsGLTextureHandle(
+      _GenGlTextureHandle(
+          ptexTexture.GetTexelGLTextureName(),
+          createBindlessHandle))
+  , _layoutGLTextureHandle(
+      _GenGlTextureHandle(
+          ptexTexture.GetLayoutGLTextureName(),
+          createBindlessHandle))
+{
+}
+
+HdStPtexSamplerObject::~HdStPtexSamplerObject()
+{
+    if (_texelsGLTextureHandle) {
+        glMakeTextureHandleNonResidentARB(_texelsGLTextureHandle);
+    }
+    if (_layoutGLTextureHandle) {
+        glMakeTextureHandleNonResidentARB(_layoutGLTextureHandle);
     }
 }
     
