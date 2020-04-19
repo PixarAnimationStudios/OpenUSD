@@ -342,6 +342,38 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
         val->Swap(a);
         return;
     }
+    else if (val->IsHolding<SdfTimeSampleMap>()) {
+        // Quick test that the first entry of the time sample map is holding
+        // either an asset path or an array of asset paths.
+        const SdfTimeSampleMap &tsmc = val->UncheckedGet<SdfTimeSampleMap>();
+        if (!tsmc.empty() &&
+            (tsmc.begin()->second.IsHolding<SdfAssetPath>() ||
+             tsmc.begin()->second.IsHolding<VtArray<SdfAssetPath>>())) {
+            SdfTimeSampleMap tsmap;
+            val->Swap(tsmap);
+            // Go through each time sampled value and execute the resolve
+            // function on each asset path (or array of asset paths).
+            TF_FOR_ALL(ts, tsmap) {
+                if (ts->second.IsHolding<SdfAssetPath>()) {
+                    SdfAssetPath ap;
+                    ts->second.Swap(ap);
+                    ap = SdfAssetPath(
+                        resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+                    ts->second.Swap(ap);
+                }
+                else if (ts->second.IsHolding<VtArray<SdfAssetPath>>()) {
+                    VtArray<SdfAssetPath> a;
+                    ts->second.Swap(a);
+                    for (SdfAssetPath &ap: a) {
+                        ap = SdfAssetPath(
+                            resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+                    }
+                    ts->second.Swap(a);
+                }
+            }
+            val->Swap(tsmap);
+        }
+    }
     else if (val->IsHolding<SdfReference>()) {
         SdfReference ref;
         val->Swap(ref);
