@@ -89,19 +89,17 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
         GLenum glFormat = 0;
         GLenum glPixelType = 0;
 
-        if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
-            HgiGLConversions::GetFormat(
-                texDesc.format,
-                &glFormat,
-                &glPixelType,
-                &glInternalFormat);
-        } else if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
+        if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
             TF_VERIFY(texDesc.format == HgiFormatFloat32);
             glFormat = GL_DEPTH_COMPONENT;
             glPixelType = GL_FLOAT;
             glInternalFormat = GL_DEPTH_COMPONENT32F;
         } else {
-            TF_CODING_ERROR("Unknown HgTextureUsage bit");
+            HgiGLConversions::GetFormat(
+                texDesc.format,
+                &glFormat,
+                &glPixelType,
+                &glInternalFormat);
         }
 
         // Make sure writes are finished before we read from the texture

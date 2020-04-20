@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,8 +53,10 @@ size_t HgiGetComponentCount(HgiFormat f)
     case HgiFormatFloat16Vec4:
     case HgiFormatFloat32Vec4:
     case HgiFormatInt32Vec4:
+    case HgiFormatUNorm8Vec4srgb:
         return 4;
     default:
+        TF_CODING_ERROR("Missing Format");
         return 0;
     }
 }
@@ -72,6 +75,7 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     //     return 3;
     case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8Vec4:
+    case HgiFormatUNorm8Vec4srgb:
         return 4;
     case HgiFormatFloat16:
         return 2;
@@ -94,6 +98,7 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     case HgiFormatInt32Vec4:
         return 16;
     default:
+        TF_CODING_ERROR("Missing Format");
         return 0;
     }
 }
