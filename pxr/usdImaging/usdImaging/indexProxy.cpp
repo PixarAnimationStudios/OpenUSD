@@ -152,9 +152,7 @@ UsdImagingIndexProxy::AddDependency(SdfPath const& cachePath,
     }
 
     SdfPath usdPath = usdPrim.GetPath();
-    if (std::find(primInfo->extraDependencies.cbegin(),
-                  primInfo->extraDependencies.cend(),
-                  usdPath) != primInfo->extraDependencies.cend()) {
+    if (primInfo->extraDependencies.count(usdPath) != 0) {
         // XXX: Ideally, we'd TF_VERIFY here, but usd resyncs can
         // sometimes cause double-inserts (see _AddHdPrimInfo), so we need to
         // silently guard against this.
@@ -163,7 +161,7 @@ UsdImagingIndexProxy::AddDependency(SdfPath const& cachePath,
 
     _delegate->_dependencyInfo.insert(
         UsdImagingDelegate::_DependencyMap::value_type(usdPath, cachePath));
-    primInfo->extraDependencies.push_back(usdPath);
+    primInfo->extraDependencies.insert(usdPath);
 
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Add dependency] <%s> -> <%s>\n",
         usdPath.GetText(), cachePath.GetText());
