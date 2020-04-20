@@ -201,6 +201,9 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     _get_resources_dir(${pluginInstallPrefix} ${NAME} resourcesPath)
 
     foreach(resourceFile ${ARGN})
+        # A resource file may be marked to not do any variable substitution,
+        # like <src file>:no_subst, for these resources _plugInfo_subst will not
+        # be called
         # A resource file may be specified like <src file>:<dst file> to
         # indicate that it should be installed to a different location in
         # the resources area. Check if this is the case.
@@ -209,8 +212,15 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
         if (n EQUAL 1)
            set(resourceDestFile ${resourceFile})
         elseif (n EQUAL 2)
-           list(GET resourceFile 1 resourceDestFile)
+           list(GET resourceFile 1 secondaryOption)
            list(GET resourceFile 0 resourceFile)
+           if (${secondaryOption} STREQUAL "no_subst")
+               set(plugInfoNoSubstitution ON)
+               set(resourceDestFile ${resourceFile})
+           else()
+               # secondaryOption provides resourceDestFile
+               set(resourceDestFile ${secondaryOption})
+           endif()
         else()
            message(FATAL_ERROR
                "Failed to parse resource path ${resourceFile}")
@@ -224,7 +234,16 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
         # path. Otherwise, use the original relative path which is relative to
         # the source directory.
         if (${destFileName} STREQUAL "plugInfo.json")
-            _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
+            if (DEFINED plugInfoNoSubstitution)
+                # Do not substitute variables and only copy the plugInfo file
+                configure_file(
+                    ${resourceFile}
+                    ${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}
+                    COPYONLY
+                )
+            else()
+                _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
+            endif()
             set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
         endif()
 

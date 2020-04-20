@@ -152,7 +152,7 @@ pxr_library(usd
         generatedSchema.usda
         schema.usda:usd/schema.usda
         codegenTemplates/api.h
-        codegenTemplates/plugInfo.json
+        codegenTemplates/plugInfo.json:no_subst
         codegenTemplates/schemaClass.cpp
         codegenTemplates/schemaClass.h
         codegenTemplates/tokens.cpp
