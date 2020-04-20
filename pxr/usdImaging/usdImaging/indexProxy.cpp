@@ -115,6 +115,7 @@ UsdImagingIndexProxy::_RemoveDependencies(SdfPath const& cachePath)
             UsdImagingDelegate::_DependencyMap::value_type(
                 dep, cachePath));
     }
+    primInfo->extraDependencies.clear();
 }
 
 void
