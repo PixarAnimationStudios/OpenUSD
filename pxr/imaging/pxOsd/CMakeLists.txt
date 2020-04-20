@@ -28,6 +28,7 @@ pxr_library(pxOsd
         module.cpp
         wrapMeshTopology.cpp
         wrapSubdivTags.cpp
+        wrapTokens.cpp
 
     PYMODULE_FILES
         __init__.py

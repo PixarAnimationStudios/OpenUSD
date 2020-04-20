@@ -143,7 +143,7 @@ public:
     /// Sets hole face indices. faceIndices needs to be sorted in
     /// ascending order.
     void SetHoleIndices(VtIntArray const &holeIndices) {
-        _topology.SetHoleIndices(holeIndices);
+        _topology = _topology.WithHoleIndices(holeIndices);
     }
 
     /// Returns the hole face indices.
@@ -159,7 +159,7 @@ public:
 
     /// Sets subdivision tags.
     void SetSubdivTags(PxOsdSubdivTags const &subdivTags) {
-        _topology.SetSubdivTags(subdivTags);
+        _topology = _topology.WithSubdivTags(subdivTags);
     }
 
     /// Returns subdivision tags

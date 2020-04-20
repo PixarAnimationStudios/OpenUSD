@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,13 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/imaging/pxOsd/tokens.h"
+
+#include "pxr/base/tf/pyStaticTokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapTokens()
 {
-    TF_WRAP(Tokens);
-    TF_WRAP(MeshTopology);
-    TF_WRAP(SubdivTags);
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "OpenSubdivTokens",
+        PxOsdOpenSubdivTokens, PXOSD_OPENSUBDIV_TOKENS);
 }
+
