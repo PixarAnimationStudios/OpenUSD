@@ -8,6 +8,7 @@
 
 def SkelRoot "Root" (
     kind = "component"
+    prepend apiSchemas = ["SkelBindingAPI"]
 )
 {
     rel skel:skeleton = </Root/Skeleton>
@@ -47,7 +48,9 @@ def SkelRoot "Root" (
         30: [(-0.30484766, -1, 0), (0, 0.8949245, 0.3258497)],
     }
 
-    def Skeleton "Skeleton"
+    def Skeleton "Skeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = <Animation>
         uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (2, 0, 0, 1) )]
@@ -191,7 +194,9 @@ def SkelRoot "Root" (
         }
     }
 
-    def Mesh "Mesh"
+    def Mesh "Mesh" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
         int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
@@ -208,7 +213,9 @@ def SkelRoot "Root" (
         uniform token subdivisionScheme = "none"
     }
 
-    def Mesh "MeshWithNormals"
+    def Mesh "MeshWithNormals" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 0, 0, 1) )
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
@@ -245,7 +252,9 @@ def SkelRoot "Root" (
             elementSize = 2
         )
     }
-    def BasisCurves "Curves"
+    def BasisCurves "Curves" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         int[] curveVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
         point3f[] points = [(-0.5, -1, 0.5), (0.5, -1, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0.5), (-0.5, 0, 0.5), (0.5, 0, 0.5), (0.5, 1, 0.5), (-0.5, 1, 0.5), (-0.5, 1, 0.5), (0.5, 1, 0.5), (0.5, 1, -0.5), (-0.5, 1, -0.5), (-0.5, 1, -0.5), (0.5, 1, -0.5), (0.5, 0, -0.5), (-0.5, 0, -0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5), (0.5, -1, -0.5), (-0.5, -1, -0.5), (-0.5, -1, -0.5), (0.5, -1, -0.5), (0.5, -1, 0.5), (-0.5, -1, 0.5), (0.5, -1, 0.5), (0.5, -1, -0.5), (0.5, 0, -0.5), (0.5, 0, 0.5), (0.5, 0, 0.5), (0.5, 0, -0.5), (0.5, 1, -0.5), (0.5, 1, 0.5), (-0.5, -1, -0.5), (-0.5, -1, 0.5), (-0.5, 0, 0.5), (-0.5, 0, -0.5), (-0.5, 0, -0.5), (-0.5, 0, 0.5), (-0.5, 1, 0.5), (-0.5, 1, -0.5)]
@@ -261,7 +270,9 @@ def SkelRoot "Root" (
         uniform token subdivisionScheme = "none"
     }
 
-    def Sphere "Sphere"
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (0, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0] (
@@ -274,7 +285,9 @@ def SkelRoot "Root" (
         )
     }
 
-    def Cube "Cube"
+    def Cube "Cube" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (1, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0, 1] (
@@ -288,7 +301,9 @@ def SkelRoot "Root" (
         uniform token[] skel:joints = ["joint1", "joint1/joint2"]
     }
 
-    def Cylinder "Cylinder"
+    def Cylinder "Cylinder" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (2, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0] (

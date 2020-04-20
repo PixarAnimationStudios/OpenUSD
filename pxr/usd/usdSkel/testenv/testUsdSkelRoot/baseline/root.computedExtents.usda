@@ -7,6 +7,7 @@
 )
 
 def SkelRoot "Root" (
+    prepend apiSchemas = ["SkelBindingAPI"]
     kind = "component"
 )
 {
@@ -121,7 +122,9 @@ def SkelRoot "Root" (
         }
     }
 
-    def Mesh "Cube"
+    def Mesh "Cube" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         float3[] extent = [(-0.5, -1, -0.5), (0.5, 1, 0.5)]
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]

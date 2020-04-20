@@ -7,6 +7,7 @@
 )
 
 def Xform "Root" (
+    prepend apiSchemas = ["SkelBindingAPI"]
     kind = "component"
 )
 {
@@ -44,7 +45,9 @@ def Xform "Root" (
     }
     rel skel:skeleton = </Root/Skeleton>
 
-    def Skeleton "Skeleton"
+    def Skeleton "Skeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) ), ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (2, 0, 0, 1) )]
         uniform token[] joints = ["joint1", "joint1/joint2", "joint1/joint2/joint3"]
@@ -185,7 +188,9 @@ def Xform "Root" (
         }
     }
 
-    def Mesh "Mesh"
+    def Mesh "Mesh" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         float3[] extent.timeSamples = {
             1: [(-0.5, -1, -0.5), (0.5, 1, 0.5)],
@@ -266,7 +271,9 @@ def Xform "Root" (
         uniform token subdivisionScheme = "none"
     }
 
-    def Mesh "MeshWithNormals"
+    def Mesh "MeshWithNormals" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         float3[] extent.timeSamples = {
             1: [(0.45, -1, 0.45), (0.55, 1, 0.55)],
@@ -382,7 +389,9 @@ def Xform "Root" (
         uniform token subdivisionScheme = "none"
     }
 
-    def BasisCurves "Curves"
+    def BasisCurves "Curves" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         int[] curveVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
         float3[] extent.timeSamples = {
@@ -462,7 +471,9 @@ def Xform "Root" (
         uniform token subdivisionScheme = "none"
     }
 
-    def Sphere "Sphere"
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (0, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0] (
@@ -508,7 +519,9 @@ def Xform "Root" (
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 
-    def Cube "Cube"
+    def Cube "Cube" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (1, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0, 1] (
@@ -555,7 +568,9 @@ def Xform "Root" (
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 
-    def Cylinder "Cylinder"
+    def Cylinder "Cylinder" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         matrix4d primvars:skel:geomBindTransform = ( (0, 0, 0.1, 0), (0.1, 0, 0, 0), (0, 0.1, 0, 0), (2, 0.5, 0.5, 1) )
         int[] primvars:skel:jointIndices = [0] (

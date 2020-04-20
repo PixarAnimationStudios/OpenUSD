@@ -253,12 +253,14 @@ def Xform "GroundTruth"
     }
 }
 
-def Xform "TestPlane"
+def Xform "TestPlane" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     rel skel:skeleton = </TestPlane/Skel>
 
     def Mesh "Mesh" (
-        apiSchemas = ["BindingAPI"]
+        apiSchemas = ["SkelBindingAPI"]
     )
     {
         float3[] extent = [(-5, -0.00000166893, -5), (5, 0.0000023841858, 5)]
@@ -597,7 +599,9 @@ def Xform "TestPlane"
         }
     }
 
-    def Skeleton "Skel"
+    def Skeleton "Skel" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = </TestPlane/Skel/Anim>
 

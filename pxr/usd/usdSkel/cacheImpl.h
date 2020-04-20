@@ -74,7 +74,7 @@ class UsdSkel_CacheImpl
 public:
     using RWMutex = tbb::queuing_rw_mutex;
 
-    struct SkinningQueryKey {
+    struct _SkinningQueryKey {
         UsdAttribute jointIndicesAttr;
         UsdAttribute jointWeightsAttr;
         UsdAttribute geomBindTransformAttr;
@@ -115,16 +115,16 @@ public:
 
         UsdSkelSkinningQuery
         _FindOrCreateSkinningQuery(const UsdPrim& skinnedPrim,
-                                   const SkinningQueryKey& key);
+                                   const _SkinningQueryKey& key);
 
         using _PrimToSkinMap =
-            std::unordered_map<UsdPrim,SkinningQueryKey,UsdSkel_HashPrim>;
+            std::unordered_map<UsdPrim,_SkinningQueryKey,UsdSkel_HashPrim>;
 
         /// Recursively populate the cache beneath \p prim.
         /// Returns the number of skinnable prims populated beneath \p prim.
         void _RecursivePopulate(const SdfPath& rootPath,
                                 const UsdPrim& prim,
-                                SkinningQueryKey key,
+                                _SkinningQueryKey key,
                                 UsdSkelAnimQuery animQuery,
                                 _PrimToSkinMap* skinBindingMap,
                                 size_t depth=1);
