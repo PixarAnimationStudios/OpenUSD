@@ -257,7 +257,7 @@ SdfPath
 HdSceneDelegate::GetScenePrimPath(SdfPath const& rprimId,
                                   int instanceIndex)
 {
-    return rprimId;
+    return rprimId.ReplacePrefix(_delegateID, SdfPath::AbsoluteRootPath());
 }
 
 
