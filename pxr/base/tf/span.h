@@ -163,6 +163,18 @@ public:
         return _data[idx];
     }
 
+    /// Return a reference to the first element in the span.
+    reference front() const {
+        TF_DEV_AXIOM(!empty());
+        return *begin();
+    }
+
+    /// Return a reference to the last element in the span.
+    reference back() const {
+        TF_DEV_AXIOM(!empty());
+        return *(end() - 1);
+    }
+
     /// Returns a non-const iterator the start of the span.
     iterator begin() const noexcept { return _data; }
 
@@ -204,6 +216,17 @@ public:
             TF_DEV_AXIOM(((index_type)offset+(index_type)count) <= _size);
             return TfSpan<T>(_data + offset, count);
         }
+    }
+
+    /// Return a subspan consisting of the first \p count elements of this span.
+    TfSpan<T> first(size_t count) const {
+        return subspan(0, count);
+    }
+
+    /// Return a subspan consisting of the last \p count elements of this span.
+    TfSpan<T> last(size_t count) const {
+        TF_DEV_AXIOM(_size >= count);
+        return TfSpan<T>(end() - count, count);
     }
 
 private:
