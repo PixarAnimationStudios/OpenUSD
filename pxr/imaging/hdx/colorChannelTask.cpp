@@ -101,7 +101,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
         _tokens->colorChannelFrag);
 
     _CreateParameterBuffer();
-    _compositor->SetBuffer(_parameterBuffer, 0);
+    _compositor->BindBuffer(_parameterBuffer, 0);
 
     _compositor->BindTextures(
         {_tokens->colorIn}, 

@@ -32,6 +32,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (color)
+    (depth)
+);
+
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
  : HdxTask(id)
  , _compositor()
@@ -118,14 +124,10 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 
         HdxFullscreenShader::TextureMap textures;
 
-        HdxFullscreenShader::HdxFullscreenShaderTex colorShaderTex;
-        colorShaderTex.handle = aovTexture;
-        textures[TfToken("color")] = colorShaderTex;
+        textures[_tokens->color] = aovTexture;
 
         if (depthTexture) {
-            HdxFullscreenShader::HdxFullscreenShaderTex depthShaderTex;
-            depthShaderTex.handle = depthTexture;
-            textures[TfToken("depth")] = depthShaderTex;
+            textures[_tokens->depth] = depthTexture;
         }
 
         // Draw aov textures to framebuffer

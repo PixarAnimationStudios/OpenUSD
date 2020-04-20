@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdx/hgiConversions.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -74,6 +75,9 @@ HdxColorizeSelectionTask::~HdxColorizeSelectionTask()
 
     if (_parameterBuffer) {
         _GetHgi()->DestroyBuffer(&_parameterBuffer);
+    }
+    if (_texture) {
+        _GetHgi()->DestroyTexture(&_texture);
     }
 }
 
@@ -202,15 +206,16 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     // Blit!
     _compositor->SetProgram(HdxPackageOutlineShader(), _tokens->outlineFrag);
 
-    _compositor->SetTexture(
-        _tokens->colorIn,
+    _CreateTexture(
         _primId->GetWidth(), 
         _primId->GetHeight(),
         HdFormatUNorm8Vec4, 
         _outputBuffer);
 
+    _compositor->BindTextures({_tokens->colorIn}, {_texture});
+
     _CreateParameterBuffer();
-    _compositor->SetBuffer(_parameterBuffer, 0);
+    _compositor->BindBuffer(_parameterBuffer, 0);
 
     // Blend the selection color on top.  ApplySelectionColor uses the
     // calculation:
@@ -387,6 +392,41 @@ HdxColorizeSelectionTask::_CreateParameterBuffer()
         blitCmds->CopyBufferCpuToGpu(copyOp);
         _GetHgi()->SubmitCmds(blitCmds.get(), 1);
     }
+}
+
+void
+HdxColorizeSelectionTask::_CreateTexture(
+    int width, 
+    int height,
+    HdFormat format,
+    void *data)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // Destroy the old texture (if any) if we received new pixels.
+    if (_texture) {
+        _GetHgi()->DestroyTexture(&_texture);
+    }
+
+    // Texture was removed, exit.
+    if (width == 0 || height == 0 || data == nullptr) {
+        return;
+    }
+
+    size_t pixelByteSize = HdDataSizeOfFormat(format);
+
+    HgiTextureDesc texDesc;
+    texDesc.debugName = "HdxColorizeSelectionTask texture";
+    texDesc.dimensions = GfVec3i(width, height, 1);
+    texDesc.format = HdxHgiConversions::GetHgiFormat(format);
+    texDesc.initialData = data;
+    texDesc.layerCount = 1;
+    texDesc.mipLevels = 1;
+    texDesc.pixelsByteSize = width * height * pixelByteSize;
+    texDesc.sampleCount = HgiSampleCount1;
+    texDesc.usage = HgiTextureUsageBitsShaderRead;
+    _texture = _hgi->CreateTexture(texDesc);
 }
 
 // -------------------------------------------------------------------------- //

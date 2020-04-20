@@ -44,23 +44,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((compositeFragmentNoDepth,      "CompositeFragmentNoDepth"))
     ((compositeFragmentWithDepth,    "CompositeFragmentWithDepth"))
     (fullscreenShader)
+    (color)
 );
-
-static void
-_DestroyEraseTexture(
-    Hgi* hgi,
-    HdxFullscreenShader::TextureMap& textures, 
-    TfToken const& name)
-{
-    auto it = textures.find(name);
-    if (it != textures.end()) {
-        if (it->second.destroyPolicy == 
-                HdxFullscreenShader::DestroyPolicy::Destroy) {
-            hgi->DestroyTexture(&it->second.handle);
-        }
-        textures.erase(it);
-    }
-}
 
 HdxFullscreenShader::HdxFullscreenShader(
     Hgi* hgi,
@@ -97,10 +82,6 @@ HdxFullscreenShader::~HdxFullscreenShader()
 
     if (_indexBuffer) {
         _hgi->DestroyBuffer(&_indexBuffer);
-    }
-
-    for (auto& texture : _textures) {
-        _DestroyEraseTexture(_hgi, _textures, texture.first);
     }
 
     if (_shaderProgram) {
@@ -166,7 +147,7 @@ HdxFullscreenShader::SetProgram(
 }
 
 void
-HdxFullscreenShader::SetBuffer(
+HdxFullscreenShader::BindBuffer(
     HgiBufferHandle const& buffer,
     uint32_t bindingIndex)
 {
@@ -272,46 +253,6 @@ HdxFullscreenShader::_CreateBufferResources()
 }
 
 void
-HdxFullscreenShader::SetTexture(
-    TfToken const& name, 
-    int width, 
-    int height,
-    HdFormat format,
-    void *data)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // Destroy the old texture (if any) if we received new pixels.
-    _DestroyEraseTexture(_hgi, _textures, name);
-
-    // Texture was removed, exit.
-    if (width == 0 || height == 0 || data == nullptr) {
-        return;
-    }
-
-    size_t pixelByteSize = HdDataSizeOfFormat(format);
-
-    HgiTextureDesc texDesc;
-    texDesc.debugName = "HdxFullscreenShader texture " + name.GetString();
-    texDesc.dimensions = GfVec3i(width, height, 1);
-    texDesc.format = HdxHgiConversions::GetHgiFormat(format);
-    texDesc.initialData = data;
-    texDesc.layerCount = 1;
-    texDesc.mipLevels = 1;
-    texDesc.pixelsByteSize = width * height * pixelByteSize;
-    texDesc.sampleCount = HgiSampleCount1;
-    texDesc.usage = HgiTextureUsageBitsShaderRead;
-    HgiTextureHandle tex = _hgi->CreateTexture(texDesc);
-    
-    HdxFullscreenShaderTex shaderTex;
-    shaderTex.destroyPolicy = HdxFullscreenShader::DestroyPolicy::Destroy;
-    shaderTex.handle = tex;
-
-    _textures[name] = shaderTex;
-}
-
-void
 HdxFullscreenShader::BindTextures(
     TfTokenVector const& names,
     HgiTextureHandleVector const& textures)
@@ -322,15 +263,11 @@ HdxFullscreenShader::BindTextures(
 
     for (size_t i=0; i<names.size(); i++) {
         TfToken const& name = names[i];
-        _DestroyEraseTexture(_hgi, _textures, name);
         HgiTextureHandle const& tex = textures[i];
         if (tex) {
-            HdxFullscreenShaderTex shaderTex;
-            shaderTex.destroyPolicy = 
-                HdxFullscreenShader::DestroyPolicy::NoDestroy;
-            shaderTex.handle = tex;
-
-            _textures[name] = shaderTex;
+            _textures[name] = tex;
+        } else {
+            _textures.erase(name);
         }
     }
 }
@@ -350,7 +287,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
     size_t bindSlots = 0;
 
     for (auto const& texture : textures) {
-        HgiTextureHandle texHandle = texture.second.handle;
+        HgiTextureHandle texHandle = texture.second;
         if (!texHandle) continue;
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
@@ -399,10 +336,10 @@ HdxFullscreenShader::_CreateDefaultPipeline(
                            depthDst.Get()->GetDescriptor().format))) {
             return true;
         }
-             
+
         _hgi->DestroyPipeline(&_pipeline);
     }
-    
+
     _attachment0.blendEnabled = _blendingEnabled;
     _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
     _attachment0.storeOp = HgiAttachmentStoreOpStore;
@@ -429,7 +366,7 @@ HdxFullscreenShader::_CreateDefaultPipeline(
     desc.shaderProgram = _shaderProgram;
     desc.colorAttachmentDescs.emplace_back(_attachment0);
     desc.depthAttachmentDesc = _depthAttachment;
-    
+
     // Describe the vertex buffer
     HgiVertexAttributeDesc posAttr;
     posAttr.format = HgiFormatFloat32Vec3;
@@ -484,16 +421,6 @@ HdxFullscreenShader::_CreateDefaultPipeline(
     CreatePipeline(desc);
 
     return true;
-}
-
-void 
-HdxFullscreenShader::Draw(
-    TextureMap const& textures,
-    HgiTextureHandle const& colorDst,
-    HgiTextureHandle const& depthDst)
-{
-    bool depthWrite = depthDst.Get() != nullptr;
-    _Draw(textures, colorDst, depthDst, depthWrite);
 }
 
 void
@@ -561,9 +488,9 @@ HdxFullscreenShader::_Draw(
     // error out if 'colorDst' is not provided.
     HgiTextureHandle dimensionSrc = colorDst;
     if (!dimensionSrc) {
-        auto const& it = textures.find(TfToken("color"));
+        auto const& it = textures.find(_tokens->color);
         if (it != textures.end()) {
-            dimensionSrc = it->second.handle;
+            dimensionSrc = it->second;
         }
     }
 

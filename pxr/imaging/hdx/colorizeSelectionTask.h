@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdx/task.h"
 
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -108,6 +109,14 @@ private:
     // Utility function to create a storage buffer for the shader parameters.
     void _CreateParameterBuffer();
 
+    // Create a new GPU texture for the provided format and pixel data.
+    // If an old texture exists it will be destroyed first.
+    void _CreateTexture(
+        int width, 
+        int height,
+        HdFormat format,
+        void *data);
+
     // This struct must match ParameterBuffer in outline.glslfx.
     // Be careful to remember the std430 rules.
     struct _ParameterBuffer
@@ -145,6 +154,7 @@ private:
 
     _ParameterBuffer _parameterData;
     HgiBufferHandle _parameterBuffer;
+    HgiTextureHandle _texture;
     bool _pipelineCreated;
 };
 
