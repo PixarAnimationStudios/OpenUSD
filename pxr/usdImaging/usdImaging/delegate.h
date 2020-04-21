@@ -59,7 +59,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
-#include "pxr/base/tf/denseHashset.h"
+#include "pxr/base/tf/denseHashSet.h"
 
 #include <boost/container/flat_map.hpp>
 #include <tbb/spin_rw_mutex.h>
