@@ -10,10 +10,12 @@
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
+#include "pxr/imaging/plugin/LoFi/binding.h"
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class LoFiBinder;
 /// \class LoFiDrawItem
 ///
 class LoFiDrawItem : public HdDrawItem  {
@@ -30,11 +32,14 @@ public:
     }
     const LoFiVertexArray* GetVertexArray() const {return _vertexArray;};
 
+    LoFiBinder* Binder(){return &_binder;};
+    const LoFiBinder* GetBinder() const {return &_binder;};
+
     // associated glsl program
-    void SetGLSLProgram(LoFiGLSLProgram* program) {
+    void SetGLSLProgram(LoFiGLSLProgramSharedPtr program) {
       _program = program;
     }
-    const LoFiGLSLProgram* GetGLSLProgram() const {return _program;};
+    LoFiGLSLProgramSharedPtr GetGLSLProgram() const {return _program;};
 
     inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
 
@@ -44,11 +49,13 @@ protected:
 
 private:
     // vertex array hash to get it backfrom registry
-    size_t              _hash;
-    LoFiVertexArray*    _vertexArray;
-    LoFiGLSLProgram*    _program;
+    size_t                      _hash;
+    LoFiVertexArray*            _vertexArray;
+    LoFiGLSLProgramSharedPtr    _program;
+    LoFiBinder                  _binder;
 };
 
+typedef std::set<const LoFiDrawItem*> LoFiDrawItemPtrSet;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -5,6 +5,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
+#include "pxr/imaging/plugin/LoFi/topology.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -14,12 +15,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
 LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
-  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements,
+  uint32_t tuppleSize, HdInterpolation interpolation)
   : _channel(channel)
   , _hash(0)
   , _key(0)
   , _numInputElements(numInputElements)
   , _numOutputElements(numOutputElements) 
+  , _tuppleSize(tuppleSize)
   , _needReallocate(true)
   , _needUpdate(true)
   , _interpolation(interpolation)
@@ -43,7 +46,6 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
 // destructor
 LoFiVertexBuffer::~LoFiVertexBuffer()
 {
-  TF_STATUS(TfStringPrintf("DELETE LOFI VERTEX BUFFER %d", _vbo));
   if(_vbo)glDeleteBuffers(1, &_vbo);
 }
 
@@ -69,7 +71,6 @@ void LoFiVertexBuffer::Reallocate()
   if(!_vbo)
   {
     glGenBuffers(1, &_vbo);
-    TF_STATUS(TfStringPrintf("CREATE NEW VERTEX BUFFER OBJECT %d", _vbo));
   } 
 
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
@@ -79,7 +80,7 @@ void LoFiVertexBuffer::Reallocate()
     NULL, 
     GL_DYNAMIC_DRAW
   );
-  glVertexAttribPointer(_channel, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+  glVertexAttribPointer(_channel, _tuppleSize, GL_FLOAT, GL_FALSE, 0, NULL);
   glEnableVertexAttribArray(_channel);
   _needReallocate = false;
 }
@@ -97,72 +98,85 @@ void LoFiVertexBuffer::Populate(const void* datas)
   _needUpdate = false;
 }
 
-void LoFiVertexBuffer::ComputeOutputDatas(const GfVec3i* samples,
+void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
                                           char* result)
 {
-  switch(_interpolation) 
+  if(topo->type == LoFiTopology::Type::POINTS)
   {
-    case LoFiInterpolationConstant:
-    {
-      for(size_t i=0;i<_numOutputElements;++i) 
-      {
-        memcpy(result + i * _elementSize, _rawInputDatas, _elementSize);
-      }
-      break;
-    }
-  
-    case LoFiInterpolationUniform:
-    {
-      for(size_t i=0;i<_numOutputElements;++i) 
-      {
-        memcpy(
-          (void*)(result + i * _elementSize),
-          (void*)(_rawInputDatas + samples[i][1] * _elementSize), 
-          _elementSize
-        );
-      }
-      break;
-    }
-
-    case LoFiInterpolationVarying:
-    {
-      for(size_t i=0;i<_numOutputElements;++i) 
-      {
-        memcpy(
-          (void*)(result + i * _elementSize),
-          (void*)(_rawInputDatas + samples[i][0] * _elementSize), 
-          _elementSize
-        );
-      }
-      break;
-    }
-      
-    case LoFiInterpolationVertex:
-    {
-      for(size_t i=0;i<_numOutputElements;++i) 
-      {
-        memcpy(
-          (void*)(result + i * _elementSize),
-          (void*)(_rawInputDatas + samples[i][0] * _elementSize), 
-          _elementSize
-        );
-      }
-      break;
-    }
-      
-    case LoFiInterpolationFaceVarying:
-    {
-      for(size_t i=0;i<_numOutputElements;++i) 
-      {
-        memcpy(
-          (void*)(result + i * _elementSize),
-          (void*)(_rawInputDatas + samples[i][2] * _elementSize), 
-          _elementSize
-        );
-      }  
-      break;
-    } 
+    memcpy(result, _rawInputDatas, _numInputElements * _elementSize);
   }
+  else if(topo->type == LoFiTopology::Type::LINES)
+  {
+    //memcpy(result, &topo->GetSamples()[0], _numInputElements * _elementSize);
+  }
+  else if(topo->type == LoFiTopology::Type::TRIANGLES)
+  {
+    const int* samples = topo->samples;
+    switch(_interpolation) 
+    {
+      case LoFiInterpolationConstant:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(result + i * _elementSize, _rawInputDatas, _elementSize);
+        }
+        break;
+      }
+    
+      case LoFiInterpolationUniform:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(
+            (void*)(result + i * _elementSize),
+            (void*)(_rawInputDatas + samples[i * 3 + 1] * _elementSize), 
+            _elementSize
+          );
+        }
+        break;
+      }
+
+      case LoFiInterpolationVarying:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(
+            (void*)(result + i * _elementSize),
+            (void*)(_rawInputDatas + samples[i * 3] * _elementSize), 
+            _elementSize
+          );
+        }
+        break;
+      }
+        
+      case LoFiInterpolationVertex:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(
+            (void*)(result + i * _elementSize),
+            (void*)(_rawInputDatas + samples[i * 3] * _elementSize), 
+            _elementSize
+          );
+        }
+        break;
+      }
+        
+      case LoFiInterpolationFaceVarying:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(
+            (void*)(result + i * _elementSize),
+            (void*)(_rawInputDatas + samples[i * 3 + 2] * _elementSize), 
+            _elementSize
+          );
+        }  
+        break;
+      } 
+    }
+  }
+  
 }
 
 

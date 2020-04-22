@@ -79,7 +79,6 @@ LoFiVertexArray::Populate()
     if(buffer->GetNeedReallocate())buffer->Reallocate();
     if(buffer->GetNeedUpdate())
     {
-
       VtArray<char> datas(buffer->ComputeOutputSize());
       buffer->ComputeOutputDatas(_topology, datas.data());
       buffer->Populate(datas.cdata());
@@ -96,7 +95,19 @@ void
 LoFiVertexArray::Draw()
 {
   Bind();
-  glDrawArrays(GL_TRIANGLES, 0, _numElements);
+  switch(_topology->type)
+  {
+    case LoFiTopology::Type::POINTS:
+      glDrawArrays(GL_POINTS, 0, _numElements);
+      break;
+    case LoFiTopology::Type::LINES:
+      glDrawArrays(GL_LINES, 0, _numElements);
+      break;
+    case LoFiTopology::Type::TRIANGLES:
+      glDrawArrays(GL_TRIANGLES, 0, _numElements);
+      break;
+  }
+  
   Unbind();
 }
 
@@ -144,10 +155,10 @@ LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedP
 
 LoFiVertexBufferSharedPtr 
 LoFiVertexArray::CreateBuffer(LoFiAttributeChannel channel, 
-  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements, uint32_t tuppleSize, HdInterpolation interpolation)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, interpolation)
+    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, tuppleSize, interpolation)
   );
 }
 

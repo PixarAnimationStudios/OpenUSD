@@ -31,12 +31,14 @@ pxr_plugin(LoFi
         binding
         codeGen
         shader
+        topology
         vertexBuffer
         vertexArray
         drawItem
         resourceRegistry
         utils
         mesh
+        points
         sceneDelegate
         renderDelegate
         renderPass
@@ -51,10 +53,10 @@ pxr_plugin(LoFi
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/camera.glsl
-        shaders/simple.glsl
         shaders/common.glslfx
         shaders/simple.glslfx
+        shaders/mesh.glslfx
+        shaders/points.glslfx
         shaders/visibility.glslfx
 )
 

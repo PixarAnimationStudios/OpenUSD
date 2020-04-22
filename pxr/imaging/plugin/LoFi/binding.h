@@ -9,11 +9,19 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/plugin/LoFi/api.h"
+#include "pxr/imaging/plugin/LoFi/shader.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class LoFiDrawItem;
+
+enum LoFiProgramType {
+  LOFI_PROGRAM_MESH,
+  LOFI_PROGRAM_CURVE,
+  LOFI_PROGRAM_POINT,
+  LOFI_PROGRAM_INSTANCE
+};
 
 enum LoFiBindingType { 
   UNKNOWN,
@@ -33,28 +41,39 @@ struct LoFiBinding {
   TfToken             name;
   TfToken             dataType;
   size_t              arraySize;
+  void*               rawDatasPtr;
 };
 typedef std::vector<LoFiBinding> LoFiBindingList;
 
 
 class LoFiBinder {
 public:
+  void Clear();
   void CreateUniformBinding(const TfToken& name, const TfToken& dataType, size_t location);
   void CreateTextureBinding(const TfToken& name, const TfToken& dataType, size_t location);
   void CreateAttributeBinding(const TfToken& name, const TfToken& dataType, size_t location);
 
-  const LoFiBindingList& GetUniformBindings(){return _uniformBindings;};
-  const LoFiBindingList& GetTextureBindings(){return _textureBindings;};
-  const LoFiBindingList& GetAttributeBindings(){return _attributeBindings;};
+  const LoFiBindingList& GetUniformBindings() const {return _uniformBindings;};
+  const LoFiBindingList& GetTextureBindings() const {return _textureBindings;};
+  const LoFiBindingList& GetAttributeBindings() const {return _attributeBindings;};
+
+  void SetProgramType(LoFiProgramType type){_programType = type;};
+  LoFiProgramType GetProgramType() const {return _programType;};
+  TfToken GetProgramName() const {return _programName;};
+  void ComputeProgramName();
+  bool HaveAttribute(const TfToken& name);
+
+  void Bind();
 
 private:
-  LoFiBindingList _uniformBindings;
-  LoFiBindingList _textureBindings;
-  LoFiBindingList _attributeBindings;
+  LoFiBindingList           _uniformBindings;
+  LoFiBindingList           _textureBindings;
+  LoFiBindingList           _attributeBindings;
 
-  int _uniformLocation;
-  int _textureLocation;
-  int _attributeLocation;
+  LoFiProgramType           _programType;
+  TfToken                   _programName;
+  LoFiGLSLProgramSharedPtr  _program;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
