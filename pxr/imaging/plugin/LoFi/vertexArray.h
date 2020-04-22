@@ -9,6 +9,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/plugin/LoFi/topology.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
@@ -48,6 +49,7 @@ public:
   CreateBuffer( LoFiAttributeChannel channel, 
                 uint32_t numInputElements, 
                 uint32_t numOutputElements,
+                uint32_t tuppleSize,
                 HdInterpolation interpolation);
 
   // channels
@@ -74,11 +76,11 @@ public:
   inline void SetNumElements(uint32_t numElements){_numElements = numElements;};
 
   // topology
-  inline void SetTopologyPtr(const GfVec3i* topology) {
+  inline void SetTopologyPtr(const LoFiTopology* topology) {
     _topology = topology;
     _needReallocate = true;
   }
-  const GfVec3i* GetTopologyPtr() const {return _topology;};
+  const LoFiTopology* GetTopologyPtr() const {return _topology;};
 
   // allocate
   void Reallocate();
@@ -102,7 +104,7 @@ private:
   bool                              _needUpdate;
 
   // topology
-  const GfVec3i*                    _topology;
+  const LoFiTopology*               _topology;
 
 };
 

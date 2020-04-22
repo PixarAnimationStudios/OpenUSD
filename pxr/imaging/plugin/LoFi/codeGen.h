@@ -17,13 +17,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum LoFiGeometricProgramType {
-    LOFI_PROGRAM_MESH,
-    LOFI_PROGRAM_CURVE,
-    LOFI_PROGRAM_POINT,
-    LOFI_PROGRAM_INSTANCE
-};
-
 typedef std::vector<LoFiAttributeChannel> LoFiAttributeChannelList;
 
 class LoFiCodeGen
@@ -32,13 +25,13 @@ public:
     typedef size_t ID;
 
     /// Constructor.
-    LoFiCodeGen(LoFiGeometricProgramType type, 
-        const LoFiShaderCodeSharedPtrList& shaders);
+    LoFiCodeGen(LoFiProgramType type, 
+        const LoFiShaderCodeSharedPtr& shader);
 
-    LoFiCodeGen(LoFiGeometricProgramType type, 
+    LoFiCodeGen(LoFiProgramType type, 
         const LoFiBindingList& uniformBindings,
         const LoFiBindingList& vertexBufferBindings,
-        const LoFiShaderCodeSharedPtrList& shaders);
+        const LoFiShaderCodeSharedPtr& shader);
     
     /// Return the hash value of glsl shader to be generated.
     ID ComputeHash() const;
@@ -87,7 +80,7 @@ private:
     void _GenerateResults();
 
     // shader code
-    LoFiShaderCodeSharedPtrList _shaders;
+    LoFiShaderCodeSharedPtr     _shaderCode;
 
     // bindings
     LoFiBindingList             _uniformBindings;
@@ -103,7 +96,7 @@ private:
     std::string                 _fragmentCode;
 
     size_t                      _glslVersion;
-    LoFiGeometricProgramType    _type;
+    LoFiProgramType             _type;
 };
 
 

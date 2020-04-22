@@ -21,7 +21,7 @@ public:
   LoFiShaderCode(const TfToken& filename);
 
   std::string
-  LoFiShaderCode::GetSource(const TfToken& key);
+  GetSource(const TfToken& key);
 
   // non copyable
   LoFiShaderCode(const LoFiShaderCode& ) = delete;

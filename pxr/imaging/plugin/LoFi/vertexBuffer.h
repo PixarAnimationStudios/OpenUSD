@@ -16,6 +16,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/imaging/plugin/LoFi/topology.h"
 
 #include <boost/functional/hash.hpp>
 #include <iostream>
@@ -59,6 +60,7 @@ public:
   LoFiVertexBuffer( LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements,
+                    uint32_t tuppleSize,
                     HdInterpolation interpolation);
 
   // destructor
@@ -101,12 +103,13 @@ public:
     _numOutputElements = numOutputElements;
   };
   uint32_t ComputeOutputSize() {return _numOutputElements * _elementSize;};
-  void ComputeOutputDatas(const GfVec3i* samples,
+
+  void ComputeOutputDatas(const LoFiTopology* topo,
                           char* outputDatas);
 
   // opengl
   void Reallocate();
-  void Populate(const void* triangulatedDatas);
+  void Populate(const void* datas);
   GLuint Get() const {return _vbo;};
 
 private: 
@@ -118,6 +121,7 @@ private:
   uint32_t                          _numInputElements;
   uint32_t                          _numOutputElements;
   uint32_t                          _elementSize;
+  uint32_t                          _tuppleSize;
   
   bool                              _needReallocate;
   bool                              _needUpdate;

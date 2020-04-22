@@ -113,27 +113,26 @@ static int _GetNumComponents(TfToken const& type)
 }
 
 /// Constructor.
-LoFiCodeGen::LoFiCodeGen(LoFiGeometricProgramType type, 
-  const LoFiShaderCodeSharedPtrList& shaders)
+LoFiCodeGen::LoFiCodeGen(LoFiProgramType type, 
+  const LoFiShaderCodeSharedPtr& shaderCode)
   : _type(type)
-  , _shaders(shaders)
+  , _shaderCode(shaderCode)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   _glslVersion = caps.glslVersion;
 }
 
-LoFiCodeGen::LoFiCodeGen(LoFiGeometricProgramType type, 
+LoFiCodeGen::LoFiCodeGen(LoFiProgramType type, 
             const LoFiBindingList& uniformBindings,
             const LoFiBindingList& vertexBufferBindings,
-            const LoFiShaderCodeSharedPtrList& shaders)
+            const LoFiShaderCodeSharedPtr& shaderCode)
   : _type(type)
   , _uniformBindings(uniformBindings)
   , _attributeBindings(vertexBufferBindings)
-  , _shaders(shaders)
+  , _shaderCode(shaderCode)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
   _glslVersion = caps.glslVersion;
-  std::cout << "NUM SHADERS : "<< _shaders.size() << std::endl;
 }
 
 void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
@@ -236,7 +235,7 @@ void LoFiCodeGen::_EmitStageEmittor(std::stringstream &ss,
                                     int arraySize, 
                                     int* index)
 { 
-  if(stage == LoFiStageTokens->fragment)
+  if(stage == LoFiShaderTokens->fragment)
   {
     if(_glslVersion>=330)
     {
@@ -302,30 +301,30 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 
     std::stringstream vertexData;
     vertexData  << "  " << dataType << " " 
-                << LoFiStageTokens->vertex <<"_" << name << ";\n";
+                << LoFiShaderTokens->vertex <<"_" << name << ";\n";
     vertexDatas.push_back(vertexData.str());
     
     std::stringstream geometryData;
     geometryData  << "  " << dataType << " " 
-                  << LoFiStageTokens->geometry <<"_" << name << ";\n";
+                  << LoFiShaderTokens->geometry <<"_" << name << ";\n";
     geometryDatas.push_back(geometryData.str());
 
     // primvars
     _EmitAccessor(streamVS, name, dataType, *it);
-    _EmitStageEmittor(streamVS, LoFiStageTokens->vertex,
+    _EmitStageEmittor(streamVS, LoFiShaderTokens->vertex,
                     name, dataType, 1);
 
     if(hasGeometryShader)
     {
-      _EmitStageAccessor(streamGS,  LoFiStageTokens->vertex,
+      _EmitStageAccessor(streamGS,  LoFiShaderTokens->vertex,
                         name, dataType, 1);
-      _EmitStageEmittor(streamGS, LoFiStageTokens->geometry, name, dataType, 1);
-      _EmitStageAccessor(streamFS,  LoFiStageTokens->geometry,
+      _EmitStageEmittor(streamGS, LoFiShaderTokens->geometry, name, dataType, 1);
+      _EmitStageAccessor(streamFS,  LoFiShaderTokens->geometry,
                         name, dataType, 1);
     }
     else
     {
-      _EmitStageAccessor(streamFS,  LoFiStageTokens->vertex,
+      _EmitStageAccessor(streamFS,  LoFiShaderTokens->vertex,
                         name, dataType, 1);
     }
   }
@@ -414,14 +413,12 @@ LoFiCodeGen::_GenerateUniforms()
 
 void LoFiCodeGen::_GenerateResults()
 {
-  _EmitStageEmittor(_genFS,  LoFiStageTokens->fragment,
+  _EmitStageEmittor(_genFS,  LoFiShaderTokens->fragment,
                     TfToken("result"), LoFiGLTokens->vec4, 1);
 }
 
 void LoFiCodeGen::GenerateProgramCode()
 {
-  LoFiShaderCodeSharedPtr shaderCode = _shaders[0];
-
   // initialize source buckets
   _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
 
@@ -444,9 +441,9 @@ void LoFiCodeGen::GenerateProgramCode()
   _GenerateResults();
 
   // shader sources which own main()
-  _genVS << shaderCode->GetSource(LoFiShaderTokens->vertex);
-  _genGS << shaderCode->GetSource(LoFiShaderTokens->geometry);
-  _genFS << shaderCode->GetSource(LoFiShaderTokens->fragment);
+  _genVS << _shaderCode->GetSource(LoFiShaderTokens->vertex);
+  _genGS << _shaderCode->GetSource(LoFiShaderTokens->geometry);
+  _genFS << _shaderCode->GetSource(LoFiShaderTokens->fragment);
 
   // cache strings
   _vertexCode = _genVS.str();

@@ -26,7 +26,6 @@ class LoFiRenderParam;
 
 TF_DECLARE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 
-class LoFiRenderer;
 ///
 /// \class LoFiRenderDelegate
 ///
@@ -103,9 +102,6 @@ private:
 
     // LoFi initialization routine.
     void _Initialize();
-
-    // Handle for the top-level LoFi renderer
-    //LoFiRenderer* _renderer;
 
     // Handle to the render param to pass
     //LoFiRenderParam* _renderParams;

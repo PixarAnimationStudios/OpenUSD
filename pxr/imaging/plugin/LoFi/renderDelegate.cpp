@@ -14,6 +14,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/plugin/LoFi/mesh.h"
+#include "pxr/imaging/plugin/LoFi/points.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -29,6 +30,7 @@ TF_DEFINE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
+    HdPrimTypeTokens->points,
 };
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -68,11 +70,7 @@ LoFiRenderDelegate::_Initialize()
   if (_counterResourceRegistry.fetch_add(1) == 0) {
       _resourceRegistry.reset( new LoFiResourceRegistry() );
       HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
-  }
-
-  // Create the top-level renderer.
-  //_renderer = new LoFiRenderer(_resourceRegistry);
-    
+  } 
 
   // Create the RenderPassState object
   _renderPassState = CreateRenderPassState();
@@ -146,6 +144,8 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->mesh) {
         return new LoFiMesh(rprimId, instancerId);
+    } else if(typeId == HdPrimTypeTokens->points) {
+        return new LoFiPoints(rprimId, instancerId);
     } else {
         TF_CODING_ERROR("Unknown Rprim type=%s id=%s", 
             typeId.GetText(), 

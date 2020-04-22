@@ -40,3 +40,8 @@ mat4  GetModelMatrix() {
 mat4  GetMVPMatrix() {
   return GetProjectionMatrix() * GetViewMatrix() * GetModelMatrix();
 }
+vec3 GetViewPoint()
+{
+  mat4 m = GetViewMatrix();
+  return vec3(-m[3][0], -m[3][1], -m[3][2]);
+}

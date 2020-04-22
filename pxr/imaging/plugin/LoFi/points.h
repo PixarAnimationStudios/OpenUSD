@@ -3,16 +3,13 @@
 //
 // unlicensed
 //
-#ifndef PXR_IMAGING_PLUGIN_LOFI_MESH_H
-#define PXR_IMAGING_PLUGIN_LOFI_MESH_H
+#ifndef PXR_IMAGING_PLUGIN_LOFI_POINTS_H
+#define PXR_IMAGING_PLUGIN_LOFI_POINTS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-//#include "pxr/imaging/hd/extComputation.h"
-//#include "pxr/imaging/hd/extComputationUtils.h"
-//#include "pxr/imaging/hd/vertexAdjacency.h"
-#include "pxr/imaging/plugin/LoFi/binding.h"
+
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
@@ -25,22 +22,21 @@
 
 #include <memory>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class LoFiMesh
+/// \class LoFiPoints
 ///
-class LoFiMesh final : public HdMesh 
+class LoFiPoints final : public HdPoints 
 {
 
 public:
-    HF_MALLOC_TAG_NEW("new LoFiMesh");
+    HF_MALLOC_TAG_NEW("new LoFiPoints");
 
-    /// LoFiMesh constructor
-    LoFiMesh(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    /// LoFiPoints constructor
+    LoFiPoints(SdfPath const& id, SdfPath const& instancerId = SdfPath());
 
-    /// LoFiMesh destructor.
-    ~LoFiMesh() override = default;
+    /// LoFiPoints destructor.
+    ~LoFiPoints() override = default;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -56,7 +52,7 @@ protected:
         TfToken const &reprToken,
         HdDirtyBits *dirtyBits) override;
 
-    void _PopulateMesh( HdSceneDelegate*              sceneDelegate,
+    void _PopulatePoints( HdSceneDelegate*              sceneDelegate,
                         HdDirtyBits*                  dirtyBits,
                         TfToken const                 &reprToken,
                         LoFiResourceRegistrySharedPtr registry);
@@ -69,60 +65,36 @@ protected:
 
     void _PopulateBinder(LoFiResourceRegistrySharedPtr registry);
 
-
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
-    /*
-    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
-                               HdDirtyBits dirtyBits);
-
-    TfTokenVector _UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate, 
-                                                  HdDirtyBits dirtyBits);
-    */
-
-    //void _PopulateTopology(HdSceneDelegate* sceneDelegate);
-
     // Get num points
-    const inline int GetNumPoints() const{return _positions.size();};
-
-    // Get num triangles
-    const inline int GetNumTriangles() const{return _samples.size()/3;};
-
-    // Get num samples
-    const inline int GetNumSamples() const{return _samples.size();};
+    const inline int GetNumPoints() const{return _points.size();};
 
     // Get positions ptr
-    const inline GfVec3f* GetPositionsPtr() const{return _positions.cdata();};
+    const inline GfVec3f* GetPointsPtr() const{return _points.cdata();};
 
-    // Get normals ptr
-    const inline GfVec3f* GetNormalsPtr() const{return _normals.cdata();};
+    // Get width ptr
+    const inline float* GetWidthsPtr() const{return _widths.cdata();};
 
     // Get colors ptr
     const inline GfVec3f* GetColorsPtr() const{return _colors.cdata();};
 
-    // Get samples ptr
-    const inline GfVec3i* GetSamplesPtr() const{return _samples.cdata();};
 
     // This class does not support copying.
-    LoFiMesh(const LoFiMesh&) = delete;
-    LoFiMesh &operator =(const LoFiMesh&) = delete;
+    LoFiPoints(const LoFiPoints&) = delete;
+    LoFiPoints &operator =(const LoFiPoints&) = delete;
 
 private:
-    enum DirtyBits : HdDirtyBits {
-        DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
-        DirtyFlatNormals    = (DirtySmoothNormals << 1),
-        DirtyIndices        = (DirtyFlatNormals   << 1),
-        DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyPointsIndices  = (DirtyHullIndices   << 1)
-    };
     
     uint64_t                        _instanceId;
     GfMatrix4f                      _transform;
-    VtArray<GfVec3f>                _positions;
+    uint64_t                        _numPoints;
+    VtArray<GfVec3f>                _points;
+    VtArray<float>                  _widths;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
-    VtArray<GfVec3i>                _samples;
+    VtArray<int>                    _samples;
     LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;
 
@@ -130,4 +102,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_PLUGIN_LOFI_MESH_H
+#endif // PXR_IMAGING_PLUGIN_LOFI_POINTS_H

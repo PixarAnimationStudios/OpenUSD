@@ -15,18 +15,18 @@
         "default": {
             "vertex": {
                 "source": [ "Common.Camera",
-                            "Simple.Vertex" ]
+                            "Mesh.Vertex" ]
             },
             "fragment": {
                 "source": [ "Common.Camera",
-                            "Simple.Fragment" ]
+                            "Mesh.Fragment" ]
             }
         }
     }
 }
 
 --- --------------------------------------------------------------------------
--- glsl Simple.Vertex
+-- glsl Mesh.Vertex
 
 void main()
 {
@@ -40,8 +40,7 @@ void main()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Simple.Fragment
-
+-- glsl Mesh.Fragment
 void main()
 {
   vec3 viewPoint = GetViewPoint();
