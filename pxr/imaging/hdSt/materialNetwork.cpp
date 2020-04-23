@@ -799,7 +799,7 @@ _MakeMaterialParamsForTexture(
         }
     }
 
-    // Note that the memory request is apparently authored authored as
+    // Note that the memory request is apparently authored as
     // float even though it is in bytes and thus should be an integral
     // type.
     const size_t memoryRequest =
