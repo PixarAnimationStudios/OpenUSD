@@ -602,7 +602,6 @@ pxr_register_test(testUsdValueClips_Legacy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
     EXPECTED_RETURN_CODE 0
     ENV
-        USD_AUTHOR_LEGACY_CLIPS=1
         USD_READ_LEGACY_CLIPS=1
 )
 

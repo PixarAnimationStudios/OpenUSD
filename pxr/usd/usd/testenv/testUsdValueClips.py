@@ -767,7 +767,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         ValidateAttributeTimeSamples(self.assertEqual, attr)
 
-    @unittest.skipIf(Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'),
+    @unittest.skipIf(Tf.GetEnvSetting('USD_READ_LEGACY_CLIPS'),
                      "skipping test when using legacy clips")
     def test_MultipleClipsWithTimesSpanningClips(self):
         """Tests that clip time mappings that span multiple clips work as
@@ -792,7 +792,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 3)), 
                          [1.0, 2.0, 3.0])
 
-    @unittest.skipIf(Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'),
+    @unittest.skipIf(Tf.GetEnvSetting('USD_READ_LEGACY_CLIPS'),
                      "skipping test when using legacy clips")
     def test_MultipleClipsWithTimesSpanningClips2(self):
         """Another test similar to test_MultipleClipsWithTimesSpanningClips"""
@@ -983,7 +983,7 @@ class TestUsdValueClips(unittest.TestCase):
                 model.SetClipTemplateStride(-1)
 
             # Offsets are not available in legacy mode, so we skip during that test
-            if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+            if not Tf.GetEnvSetting('USD_READ_LEGACY_CLIPS'):
                 model.SetClipTemplateActiveOffset(2)
                 self.assertEqual(model.GetClipTemplateActiveOffset(), 2)
 
@@ -1190,7 +1190,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Test with template offsets applied
         # Offsets are not available in legacy mode, so we skip during that test
-        if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+        if not Tf.GetEnvSetting('USD_READ_LEGACY_CLIPS'):
             stage = Usd.Stage.Open('template/int3/result_int_3.usda')
             prim = stage.GetPrimAtPath(primPath)
             attr = prim.GetAttribute(attrName)
@@ -1227,7 +1227,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Test with template offsets applied
         # Offsets are not available in legacy mode, so we skip during that test
-        if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+        if not Tf.GetEnvSetting('USD_READ_LEGACY_CLIPS'):
             stage = Usd.Stage.Open('template/subint3/result_subint_3.usda')
             prim = stage.GetPrimAtPath(primPath)
             attr = prim.GetAttribute(attrName)

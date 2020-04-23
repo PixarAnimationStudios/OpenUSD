@@ -122,18 +122,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USDCLIPS_INFO_KEYS);
 TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPISetNames, USDCLIPS_SET_NAMES);
 
-TF_DEFINE_ENV_SETTING(
-    USD_AUTHOR_LEGACY_CLIPS, false,
-    "If on, clip info will be stored in separate metadata fields "
-    "instead of in the clips dictionary when using API that does "
-    "not specify a clip set.");
-
-bool 
-UsdClipsAPI::IsAuthoringLegacyClipMetadata()
-{
-    return TfGetEnvSetting(USD_AUTHOR_LEGACY_CLIPS);
-}
-
 namespace
 {
 
@@ -150,18 +138,12 @@ _MakeKeyPath(const std::string& clipSet, const TfToken& clipInfoKey)
         /* Special-case to pre-empt coding errors. */           \
         return false;                                           \
     }                                                           \
-    if (TfGetEnvSetting(USD_AUTHOR_LEGACY_CLIPS)) {             \
-        return GetPrim().SetMetadata(MetadataKey, InArg);       \
-    }                                                           \
     return FnName(InArg, UsdClipsAPISetNames->default_);        \
 
 #define USD_CLIPS_API_GETTER(FnName, OutArg, MetadataKey)       \
     if (GetPath() == SdfPath::AbsoluteRootPath()) {             \
         /* Special-case to pre-empt coding errors.  */          \
         return false;                                           \
-    }                                                           \
-    if (TfGetEnvSetting(USD_AUTHOR_LEGACY_CLIPS)) {             \
-        return GetPrim().GetMetadata(MetadataKey, OutArg);      \
     }                                                           \
     return FnName(OutArg, UsdClipsAPISetNames->default_);       \
 
