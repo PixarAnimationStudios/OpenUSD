@@ -57,11 +57,13 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
         return std::make_shared<HdStFieldTextureObject>(textureId, this);
     case HdTextureType::Ptex:
         return std::make_shared<HdStPtexTextureObject>(textureId, this);
-    default:
-        TF_CODING_ERROR(
-            "Texture type not supported by texture object registry.");
-        return nullptr;
+    case HdTextureType::Udim:
+        return std::make_shared<HdStUdimTextureObject>(textureId, this);
     }
+
+    TF_CODING_ERROR(
+        "Texture type not supported by texture object registry.");
+    return nullptr;
 }
 
 HdStTextureObjectSharedPtr

@@ -74,10 +74,13 @@ _MakeSamplerObject(
     case HdTextureType::Ptex:
         return _MakeTypedSamplerObject<HdTextureType::Ptex>(
             texture, samplerParameters, createBindlessHandle);
-    default:
-        TF_CODING_ERROR("Unsupported texture type");
-        return nullptr;
+    case HdTextureType::Udim:
+        return _MakeTypedSamplerObject<HdTextureType::Udim>(
+            texture, samplerParameters, createBindlessHandle);
     }
+
+    TF_CODING_ERROR("Unsupported texture type");
+    return nullptr;
 }    
 
 HdStSamplerObjectSharedPtr

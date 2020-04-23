@@ -81,22 +81,6 @@ HdStMaterial::~HdStMaterial()
                                         GetId().GetText());
 }
 
-// The new texture system does not support all HdTextureType's yet.
-// Use old texture system for those.
-static
-bool
-_IsSupportedByNewTextureSystem(const HdTextureType type)
-{
-    switch(type) {
-    case HdTextureType::Uv:
-    case HdTextureType::Field:
-    case HdTextureType::Ptex:
-        return true;
-    default:
-        return false;
-    }
-}
-
 // Use data authored on material network nodes to create
 // textures with the new texture system.
 static
@@ -112,22 +96,18 @@ _GetNamedTextureHandles(
     HdStShaderCode::NamedTextureHandleVector result;
 
     for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
-
-        if (_IsSupportedByNewTextureSystem(desc.type)) {
-
-            HdStTextureHandleSharedPtr const textureHandle =
-                resourceRegistry->AllocateTextureHandle(
-                    desc.textureId,
-                    desc.type,
-                    desc.samplerParameters,
-                    desc.memoryRequest,
-                    usesBindlessTextures,
-                    shaderCode);
-
-            result.push_back({ desc.name,
-                               desc.type,
-                               textureHandle });
-        }
+        HdStTextureHandleSharedPtr const textureHandle =
+            resourceRegistry->AllocateTextureHandle(
+                desc.textureId,
+                desc.type,
+                desc.samplerParameters,
+                desc.memoryRequest,
+                usesBindlessTextures,
+                shaderCode);
+        
+        result.push_back({ desc.name,
+                           desc.type,
+                           textureHandle });
     }
 
     return result;
@@ -276,9 +256,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             // variable is set and the texture type can be handled
             // by the new texture system.
             //
-            if (!(useNewTextureSystem &&
-                  _IsSupportedByNewTextureSystem(param.textureType))) {
-
+            if (!useNewTextureSystem) {
                 HdSt_MaterialBufferSourceAndTextureHelper::
                     ProcessTextureMaterialParam(
                         param,

@@ -94,6 +94,35 @@ _GenGLSampler(HdSamplerParameters const &samplerParameters)
 
 // Get texture sampler handle for bindless textures.
 static
+GLuint64EXT
+_GenGLTextureSamplerHandle(const GLuint textureName,
+                           const GLuint samplerName,
+                           const bool createBindlessHandle)
+{
+    if (!createBindlessHandle) {
+        return 0;
+    }
+
+    if (textureName == 0) {
+        return 0;
+    }
+
+    if (samplerName == 0) {
+        return 0;
+    }
+
+    const GLuint64EXT result =
+        glGetTextureSamplerHandleARB(textureName, samplerName);
+
+    glMakeTextureHandleResidentARB(result);
+
+    GLF_POST_PENDING_GL_ERRORS();
+
+    return result;
+}
+
+// Get texture sampler handle for bindless textures.
+static
 GLuint64EXT 
 _GenGLTextureSamplerHandle(HgiTextureHandle const &textureHandle,
                            const GLuint samplerName,
@@ -114,24 +143,8 @@ _GenGLTextureSamplerHandle(HgiTextureHandle const &textureHandle,
         return 0;
     }
 
-    const GLuint textureName = glTexture->GetTextureId();
-
-    if (textureName == 0) {
-        return 0;
-    }
-
-    if (samplerName == 0) {
-        return 0;
-    }
-
-    const GLuint64EXT result =
-        glGetTextureSamplerHandleARB(textureName, samplerName);
-
-    glMakeTextureHandleResidentARB(result);
-
-    GLF_POST_PENDING_GL_ERRORS();
-
-    return result;
+    return _GenGLTextureSamplerHandle(
+        glTexture->GetTextureId(), samplerName, createBindlessHandle);
 }
 
 // Get texture handle for bindless textures.
@@ -282,14 +295,38 @@ HdStPtexSamplerObject::HdStPtexSamplerObject(
 {
 }
 
-HdStPtexSamplerObject::~HdStPtexSamplerObject()
+// See above comment about destroying bindless texture handles
+HdStPtexSamplerObject::~HdStPtexSamplerObject() = default;
+
+///////////////////////////////////////////////////////////////////////////////
+// Udim sampler
+
+HdStUdimSamplerObject::HdStUdimSamplerObject(
+    HdStUdimTextureObject const &udimTexture,
+    HdSamplerParameters const &samplerParameters,
+    const bool createBindlessHandle)
+  : _glTexelsSamplerName(
+      _GenGLSampler(
+          samplerParameters))
+  , _texelsGLTextureHandle(
+      _GenGLTextureSamplerHandle(
+          udimTexture.GetTexelGLTextureName(),
+          _glTexelsSamplerName,
+          createBindlessHandle))
+  , _layoutGLTextureHandle(
+      _GenGlTextureHandle(
+          udimTexture.GetLayoutGLTextureName(),
+          createBindlessHandle))
 {
-    if (_texelsGLTextureHandle) {
-        glMakeTextureHandleNonResidentARB(_texelsGLTextureHandle);
-    }
-    if (_layoutGLTextureHandle) {
-        glMakeTextureHandleNonResidentARB(_layoutGLTextureHandle);
+}
+
+HdStUdimSamplerObject::~HdStUdimSamplerObject()
+{
+    // See above comment about destroying bindless texture handles
+
+    if (_glTexelsSamplerName) {
+        glDeleteSamplers(1, &_glTexelsSamplerName);
     }
 }
-    
+   
 PXR_NAMESPACE_CLOSE_SCOPE

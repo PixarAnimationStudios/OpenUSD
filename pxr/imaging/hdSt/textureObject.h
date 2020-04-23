@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #ifdef PXR_PTEX_SUPPORT_ENABLED
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 #endif
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfUdimTexture);
 
 class Hgi;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
@@ -110,9 +111,6 @@ private:
     size_t _targetMemory;
 };
 
-using HdStUvTextureObjectSharedPtr =
-    std::shared_ptr<class HdStUvTextureObject>;
-
 /// \class HdStUvTextureObject
 ///
 /// A uv texture.
@@ -160,9 +158,6 @@ private:
     HgiTextureHandle _gpuTexture;
     std::pair<HdWrap, HdWrap> _wrapParameters;
 };
-
-using HdStFieldTextureObjectSharedPtr =
-    std::shared_ptr<class HdStFieldTextureObject>;
 
 /// \class HdStFieldTextureObject
 ///
@@ -221,16 +216,13 @@ private:
     HgiTextureHandle _gpuTexture;
 };
 
-using HdStPtexTextureObjectSharedPtr =
-    std::shared_ptr<class HdStPtexTextureObject>;
-
 /// \class HdStPtexTextureObject
 ///
 /// A ptex texture - it is using Glf to both load the texture
 /// and allocate the GPU resources (unlike the other texture
 /// types).
 ///
-class HdStPtexTextureObject : public HdStTextureObject
+class HdStPtexTextureObject final : public HdStTextureObject
 {
 public:
     HDST_API
@@ -274,6 +266,56 @@ private:
     uint32_t _layoutGLTextureName;
 };
 
+/// \class HdStUdimTextureObject
+///
+/// A udim texture - it is using Glf to both load the texture
+/// and allocate the GPU resources (unlike the other texture
+/// types).
+///
+class HdStUdimTextureObject final : public HdStTextureObject
+{
+public:
+    HDST_API
+    HdStUdimTextureObject(
+        const HdStTextureIdentifier &textureId,
+        HdSt_TextureObjectRegistry *textureObjectRegistry);
+
+    HDST_API
+    ~HdStUdimTextureObject() override;
+
+    /// Get the GL texture name for the texels
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    uint32_t GetTexelGLTextureName() const { return _texelGLTextureName; }
+
+    /// Get the GL texture name for the layout
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
+
+    HDST_API
+    HdTextureType GetTextureType() const override;
+
+protected:
+    HDST_API
+    void _Load() override;
+
+    HDST_API
+    void _Commit() override;
+
+private:
+    std::vector<std::tuple<int, TfToken>> _tiles;
+
+    GlfUdimTextureRefPtr _gpuTexture;
+
+    uint32_t _texelGLTextureName;
+    uint32_t _layoutGLTextureName;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
@@ -299,6 +341,11 @@ struct HdSt_TypedTextureObjectHelper<HdTextureType::Field> {
 template<>
 struct HdSt_TypedTextureObjectHelper<HdTextureType::Ptex> {
     using type = HdStPtexTextureObject;
+};
+
+template<>
+struct HdSt_TypedTextureObjectHelper<HdTextureType::Udim> {
+    using type = HdStUdimTextureObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

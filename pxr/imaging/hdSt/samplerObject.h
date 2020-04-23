@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStUvTextureObject;
 class HdStFieldTextureObject;
 class HdStPtexTextureObject;
+class HdStUdimTextureObject;
 
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
@@ -166,6 +167,49 @@ private:
     const uint64_t _layoutGLTextureHandle;
 };
 
+/// \class HdStUdimSamplerObject
+///
+/// A sampler suitable for Udim textures (wraps one GPU sampler
+/// for the texels texture).
+///
+class HdStUdimSamplerObject final : public HdStSamplerObject {
+public:
+    HdStUdimSamplerObject(
+        HdStUdimTextureObject const &ptexTexture,
+        HdSamplerParameters const &samplerParameters,
+        bool createBindlessHandle);
+
+    ~HdStUdimSamplerObject() override;
+
+    /// The GL sampler (as understood by glBindSampler) for the
+    /// texels texture.
+    ///
+    uint32_t GetTexelsGLSamplerName() const {
+        return _glTexelsSamplerName;
+    }
+
+    /// The GL texture handle for bindless textures (as returned by
+    /// glGetTextureHandleARB). This is for texels.
+    ///
+    /// Only available when requested.
+    ///
+    uint64_t GetTexelsGLTextureHandle() const {
+        return _texelsGLTextureHandle;
+    }
+
+    /// Similar to GetGLTexelsTextureHandle but for layout.
+    ///
+    uint64_t GetLayoutGLTextureHandle() const {
+        return _layoutGLTextureHandle;
+    }
+
+private:
+    const uint32_t _glTexelsSamplerName;
+
+    const uint64_t _texelsGLTextureHandle;
+    const uint64_t _layoutGLTextureHandle;
+};
+
 template<HdTextureType textureType>
 struct HdSt_TypedSamplerObjectHelper;
 
@@ -191,6 +235,11 @@ struct HdSt_TypedSamplerObjectHelper<HdTextureType::Field> {
 template<>
 struct HdSt_TypedSamplerObjectHelper<HdTextureType::Ptex> {
     using type = HdStPtexSamplerObject;
+};
+
+template<>
+struct HdSt_TypedSamplerObjectHelper<HdTextureType::Udim> {
+    using type = HdStUdimSamplerObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

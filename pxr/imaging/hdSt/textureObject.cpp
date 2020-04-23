@@ -34,8 +34,11 @@
 #include "pxr/imaging/glf/vdbTextureData.h"
 #endif
 #include "pxr/imaging/glf/ptexTexture.h"
+#include "pxr/imaging/glf/udimTexture.h"
 
 #include "pxr/imaging/hgi/hgi.h"
+
+#include "pxr/usd/ar/resolver.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -363,6 +366,9 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Uv texture
+
 static
 HdWrap
 _GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
@@ -422,9 +428,6 @@ _GetImageOriginLocation(const HdStSubtextureIdentifier * const subId)
     }
     return GlfImage::OriginLowerLeft;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Uv texture
 
 HdStUvTextureObject::HdStUvTextureObject(
     const HdStTextureIdentifier &textureId,
@@ -656,6 +659,121 @@ HdTextureType
 HdStPtexTextureObject::GetTextureType() const
 {
     return HdTextureType::Ptex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Udim texture
+
+static const char UDIM_PATTERN[] = "<UDIM>";
+static const int UDIM_START_TILE = 1001;
+static const int UDIM_END_TILE = 1100;
+
+// Split a udim file path such as /someDir/myFile.<UDIM>.exr into a
+// prefix (/someDir/myFile.) and suffix (.exr).
+static
+std::pair<std::string, std::string>
+_SplitUdimPattern(const std::string &path)
+{
+    static const std::string pattern(UDIM_PATTERN);
+
+    const std::string::size_type pos = path.find(pattern);
+
+    if (pos != std::string::npos) {
+        return { path.substr(0, pos), path.substr(pos + pattern.size()) };
+    }
+    
+    return { std::string(), std::string() };
+}
+
+// Find all udim tiles for a given udim file path /someDir/myFile.<UDIM>.exr as
+// pairs, e.g., (0, /someDir/myFile.1001.exr), ...
+//
+// The scene delegate is assumed to already have resolved the asset path with
+// the <UDIM> pattern to a "file path" with the <UDIM> pattern as above.
+// This function will replace <UDIM> by different integers and check whether
+// the "file" exists using an ArGetResolver.
+//
+// Note that the ArGetResolver is still needed, for, e.g., usdz file
+// where the path we get from the scene delegate is
+// /someDir/myFile.usdz[myImage.<UDIM>.EXR] and we need to use the
+// ArGetResolver to check whether, e.g., myImage.1001.EXR exists in
+// the zip file /someDir/myFile.usdz by calling
+// resolver.Resolve(/someDir/myFile.usdz[myImage.1001.EXR]).
+// However, we don't need to bind, e.g., the usd stage's resolver context
+// because that part of the resolution will be done by the scene delegate
+// for us already.
+//
+static
+std::vector<std::tuple<int, TfToken>>
+_FindUdimTiles(const std::string &filePath)
+{
+    std::vector<std::tuple<int, TfToken>> result;
+
+    // Get prefix and suffix from udim pattern.
+    const std::pair<std::string, std::string>
+        splitPath = _SplitUdimPattern(filePath);
+    if (splitPath.first.empty() && splitPath.second.empty()) {
+        TF_WARN("Expected udim pattern but got '%s'.",
+                filePath.c_str());
+        return result;
+    }
+
+    ArResolver& resolver = ArGetResolver();
+    
+    for (int i = UDIM_START_TILE; i < UDIM_END_TILE; i++) {
+        // Add integer between prefix and suffix and see whether
+        // the tile exists by consulting the resolver.
+        const std::string resolvedPath =
+            resolver.Resolve(
+                splitPath.first + std::to_string(i) + splitPath.second);
+        if (!resolvedPath.empty()) {
+            // Record pair in result.
+            result.emplace_back(i - UDIM_START_TILE, resolvedPath);
+        }
+    }
+
+    return result;
+}
+
+HdStUdimTextureObject::HdStUdimTextureObject(
+    const HdStTextureIdentifier &textureId,
+    HdSt_TextureObjectRegistry * const textureObjectRegistry)
+  : HdStTextureObject(textureId, textureObjectRegistry)
+  , _texelGLTextureName(0)
+  , _layoutGLTextureName(0)
+{
+}
+
+HdStUdimTextureObject::~HdStUdimTextureObject() = default;
+
+void
+HdStUdimTextureObject::_Load()
+{
+    // Glf is both loading the tiles and creating the GL resources, so
+    // not thread-safe.
+    //
+    // The only thing we can do here is determine the tiles.
+    _tiles = _FindUdimTiles(GetTextureIdentifier().GetFilePath());
+}
+
+void
+HdStUdimTextureObject::_Commit()
+{
+    // Load tiles.
+    _gpuTexture = GlfUdimTexture::New(
+        GetTextureIdentifier().GetFilePath(),
+        GlfImage::OriginLowerLeft,
+        std::move(_tiles));
+    _gpuTexture->SetMemoryRequested(GetTargetMemory());
+
+    _layoutGLTextureName = _gpuTexture->GetGlLayoutName();
+    _texelGLTextureName = _gpuTexture->GetGlTextureName();
+}
+
+HdTextureType
+HdStUdimTextureObject::GetTextureType() const
+{
+    return HdTextureType::Udim;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

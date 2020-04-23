@@ -64,6 +64,9 @@ pxr_library(usdImaging
         textureUtils
         volumeAdapter
 
+    PRIVATE_CLASSES
+        materialParamUtils
+
     PUBLIC_HEADERS
         api.h
         unitTestHelper.h
