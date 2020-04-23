@@ -115,8 +115,7 @@ class TestFileFormat(unittest.TestCase):
         """
 
         stage = UsdMtlx._TestFile('NodeGraphs.mtlx', nodeGraphs=True)
-        with open('NodeGraphs.usda', 'w') as f:
-            print(stage.GetRootLayer().ExportToString(), file=f)
+        stage.GetRootLayer().Export('NodeGraphs.usda')
 
     def test_MultiBindInputs(self):
         """
@@ -151,8 +150,7 @@ class TestFileFormat(unittest.TestCase):
         """
 
         stage = UsdMtlx._TestFile('Looks.mtlx')
-        with open('Looks.usda', 'w') as f:
-            print(stage.GetRootLayer().ExportToString(), file=f)
+        stage.GetRootLayer().Export('Looks.usda')
 
 if __name__ == '__main__':
     unittest.main()
