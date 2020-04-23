@@ -59,6 +59,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
+#include "pxr/base/tf/denseHashSet.h"
 
 #include <boost/container/flat_map.hpp>
 #include <tbb/spin_rw_mutex.h>
@@ -601,7 +602,8 @@ private:
         HdDirtyBits       timeVaryingBits;  // Dirty Bits to set when
                                             // time changes
         HdDirtyBits       dirtyBits;        // Current dirty state of the prim.
-        SdfPathVector     extraDependencies;// Dependencies that aren't usdPrim.
+        TfDenseHashSet<SdfPath, SdfPath::Hash>
+                          extraDependencies;// Dependencies that aren't usdPrim.
     };
 
     typedef TfHashMap<SdfPath, _HdPrimInfo, SdfPath::Hash> _HdPrimInfoMap;
