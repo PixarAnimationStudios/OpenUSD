@@ -96,9 +96,9 @@ public:
 
 
 protected:
-    virtual void _Commit();
-    virtual void _GarbageCollect();
-    virtual void _GarbageCollectBprims();
+    virtual void _Commit() override;
+    virtual void _GarbageCollect() override;
+    virtual void _GarbageCollectBprims() override;
 
 private:
     // Not copyable

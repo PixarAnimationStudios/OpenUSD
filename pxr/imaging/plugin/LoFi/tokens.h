@@ -58,6 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (model)                         \
     (view)                          \
     (invview)                       \
+    (viewport)                      \
     (projection)                    \
     (tex0)                          \
     (tex1)                          \

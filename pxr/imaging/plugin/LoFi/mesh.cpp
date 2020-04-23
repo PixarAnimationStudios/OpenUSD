@@ -134,28 +134,24 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
     case CHANNEL_POSITION:
       _positions = value.Get<VtArray<GfVec3f>>();
       numInputElements = _positions.size();
-      tuppleSize = 3;
       if(!numInputElements)valid = false;
       else datasPtr = (const char*)_positions.cdata();
       break;
     case CHANNEL_NORMAL:
       _normals = value.Get<VtArray<GfVec3f>>();
       numInputElements = _normals.size();
-      tuppleSize = 3;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_normals.cdata();
       break;
     case CHANNEL_COLOR:
       _colors = value.Get<VtArray<GfVec3f>>();
       numInputElements = _colors.size();
-      tuppleSize = 3;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_colors.cdata();
       break;
     case CHANNEL_UV:
       _uvs = value.Get<VtArray<GfVec2f>>();
       numInputElements = _uvs.size();
-      tuppleSize = 2;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_uvs.cdata();
       break;
@@ -172,7 +168,6 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
         channel, 
         numInputElements,
         numOutputElements,
-        tuppleSize,
         interpolation);
 
     size_t bufferKey = buffer->ComputeKey(GetId());
@@ -205,7 +200,7 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       else
       {
         old->SetRawInputDatas(datasPtr);
-        old->SetNeedUpdate(false);
+        old->SetNeedUpdate(true);
         old->SetHash(bufferHash);
         _vertexArray->SetBuffer(channel, old);
         return LoFiVertexBufferState::TO_UPDATE;
@@ -241,7 +236,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
 
     _topology.samples = (const int*)&_samples[0];
     _topology.numElements = _samples.size()/3;
-    //_vertexArray->SetTopologyPtr((const GfVec3i*)&_samples[0]);
     _vertexArray->SetNumElements(_samples.size());
     _vertexArray->SetNeedReallocate(true);
     needReallocate = true;
@@ -342,7 +336,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   }
 
   // if no authored colors compute random vertex colors
-  if(!haveAuthoredDisplayColor && needReallocate)
+  if(!haveAuthoredDisplayColor || needReallocate)
   {
 
     LoFiComputeVertexColors( _positions, _colors);
@@ -356,7 +350,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
 
   // update state
   _vertexArray->UpdateState();
-  
+
 }
 
 void 
@@ -372,6 +366,7 @@ LoFiMesh::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
   binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
   binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
   binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
+  binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
 
   binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
   binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);

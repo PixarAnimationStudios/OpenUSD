@@ -33,14 +33,23 @@ void main()
   mat4 viewModel = GetViewMatrix() * GetModelMatrix();
   vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
   gl_Position = GetProjectionMatrix() * p;
-  gl_PointSize = LOFI_GET_width();
+
+  float radius = GetViewportSize().y * (GetProjectionMatrix()[1][1] * LOFI_GET_width() / gl_Position.w );
+  gl_PointSize = clamp(radius, 1, 128);
   LOFI_SET_position(p.xyz);
+  #ifdef LOFI_HAS_color
   LOFI_SET_color(LOFI_GET_color());
+  #endif
+
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Points.Fragment
 void main()
 {
+#ifdef LOFI_HAS_color
   LOFI_SET_result(vec4(LOFI_GET_color(),1.0));
+#else
+  LOFI_SET_result(vec4(0.0,0.0,0.0,1.0));
+#endif
 }

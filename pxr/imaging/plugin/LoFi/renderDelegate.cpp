@@ -91,9 +91,11 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
 void 
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
-  //_renderPassState->SetCamera(_sceneDelegate)
-  
   _resourceRegistry->Commit();
+  //if (tracker->IsGarbageCollectionNeeded()) {
+    _resourceRegistry->GarbageCollect();
+  //  tracker->ClearGarbageCollectionNeeded();
+  //}
 }
 
 HdRenderSettingDescriptorList
@@ -157,7 +159,7 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
 void
 LoFiRenderDelegate::DestroyRprim(HdRprim *rPrim)
 {
-    //std::cout << "Destroy LoFi Rprim id=" << rPrim->GetId() << std::endl;
+    std::cout << "Destroy LoFi Rprim id=" << rPrim->GetId() << std::endl;
     delete rPrim;
 }
 

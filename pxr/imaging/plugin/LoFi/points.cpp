@@ -31,20 +31,22 @@ LoFiPoints::LoFiPoints(SdfPath const& id, SdfPath const& instancerId)
 HdDirtyBits
 LoFiPoints::GetInitialDirtyBitsMask() const
 {
-  // The initial dirty bits control what data is available on the first
-  // run through _PopulateLoFiPoints(), so it should list every data item
-  // that _PopulateLoFi requests.
-  int mask = HdChangeTracker::Clean
-            | HdChangeTracker::InitRepr
-            | HdChangeTracker::DirtyExtent
-            | HdChangeTracker::DirtyNormals
-            | HdChangeTracker::DirtyPoints
-            | HdChangeTracker::DirtyPrimvar
-            | HdChangeTracker::DirtyRepr
-            | HdChangeTracker::DirtyTopology
-            | HdChangeTracker::DirtyTransform
-            | HdChangeTracker::DirtyVisibility
-            ;
+  HdDirtyBits mask = HdChangeTracker::Clean
+    | HdChangeTracker::InitRepr
+    | HdChangeTracker::DirtyExtent
+    | HdChangeTracker::DirtyPoints
+    | HdChangeTracker::DirtyPrimID
+    | HdChangeTracker::DirtyPrimvar
+    | HdChangeTracker::DirtyRepr
+    | HdChangeTracker::DirtyMaterialId
+    | HdChangeTracker::DirtyTransform
+    | HdChangeTracker::DirtyVisibility
+    | HdChangeTracker::DirtyWidths
+    ;
+
+    if (!GetInstancerId().IsEmpty()) {
+        mask |= HdChangeTracker::DirtyInstancer;
+    }
 
   return (HdDirtyBits)mask;
 }
@@ -119,42 +121,36 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
   
   const char* datasPtr = NULL;
   bool valid = true;
-  short tuppleSize = 3;
   switch(channel)
   {
     case CHANNEL_POSITION:
       _points = value.Get<VtArray<GfVec3f>>();
       numInputElements = _points.size();
-      tuppleSize = 3;
       if(!numInputElements)valid = false;
       else datasPtr = (const char*)_points.cdata();
       break;
     case CHANNEL_WIDTH:
       _widths = value.Get<VtArray<float>>();
       numInputElements = _widths.size();
-      tuppleSize = 1;
-      for(int i=0;i<_widths.size();++i)_widths[i] = 6;
+
       if(!numInputElements)valid = false;
       else datasPtr = (const char*)_widths.cdata();
       break;
     case CHANNEL_NORMAL:
       _normals = value.Get<VtArray<GfVec3f>>();
       numInputElements = _normals.size();
-      tuppleSize = 3;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_normals.cdata();
       break;
     case CHANNEL_COLOR:
       _colors = value.Get<VtArray<GfVec3f>>();
       numInputElements = _colors.size();
-      tuppleSize = 3;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_colors.cdata();
       break;
     case CHANNEL_UV:
       _uvs = value.Get<VtArray<GfVec2f>>();
       numInputElements = _uvs.size();
-      tuppleSize = 2;
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_uvs.cdata();
       break;
@@ -172,7 +168,6 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
         channel, 
         numInputElements,
         numInputElements,
-        tuppleSize,
         interpolation);
 
     size_t bufferKey = buffer->ComputeKey(GetId());
@@ -194,7 +189,6 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
     {
       size_t bufferHash = buffer->ComputeHash(datasPtr);
       LoFiVertexBufferSharedPtr old = instance.GetValue();
-      _vertexArray->SetBuffer(channel, old);
 
       if(bufferHash == old->GetHash()) 
       {
@@ -204,12 +198,10 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       else
       {
         old->SetRawInputDatas(datasPtr);
-        old->SetNeedUpdate(false);
+        old->SetNeedUpdate(true);
         old->SetHash(bufferHash);
-        _vertexArray->SetBuffer(channel, old);
         return LoFiVertexBufferState::TO_UPDATE;
       }
-
     }
   }
   else return LoFiVertexBufferState::INVALID;
@@ -225,7 +217,6 @@ void LoFiPoints::_PopulatePoints( HdSceneDelegate*              sceneDelegate,
 
   const SdfPath& id = GetId();
   bool needReallocate = false;
-  
 
   if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) 
   {
@@ -243,10 +234,9 @@ void LoFiPoints::_PopulatePoints( HdSceneDelegate*              sceneDelegate,
   bool haveAuthoredDisplayColor = false;
 
   // get primvars
-  HdPrimvarDescriptorVector primvars;
-
   HdInterpolation interp = HdInterpolationVertex;
-  primvars = GetPrimvarDescriptors(sceneDelegate, interp);
+  HdPrimvarDescriptorVector primvars = 
+    GetPrimvarDescriptors(sceneDelegate, interp);
   for (HdPrimvarDescriptor const& pv: primvars) 
   {
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
@@ -287,7 +277,7 @@ void LoFiPoints::_PopulatePoints( HdSceneDelegate*              sceneDelegate,
         if(state != LoFiVertexBufferState::INVALID)
             haveAuthoredNormals = true;
       }
-        
+      
       else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
       {
         _PopulatePrimvar(sceneDelegate,
@@ -312,19 +302,18 @@ void LoFiPoints::_PopulatePoints( HdSceneDelegate*              sceneDelegate,
     }
   }
 
-  size_t numPoints = _points.size();
+  uint64_t numPoints = _points.size();
   _samples.resize(numPoints);
   for(int i=0;i<numPoints;++i)_samples[i] = i;
 
   _topology.samples = (const int*)&_samples[0];
   _topology.numElements = numPoints;
   _vertexArray->SetNumElements(numPoints);
-  _vertexArray->SetNeedReallocate(true);
+  _vertexArray->SetNeedReallocate(numPoints != _numPoints);
+  _numPoints = numPoints;
 
   // update state
   _vertexArray->UpdateState();
-  
-  
 }
 
 void 
@@ -340,13 +329,15 @@ LoFiPoints::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
   binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
   binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
   binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
+  binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
 
   binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
-  binder->CreateAttributeBinding(LoFiBufferTokens->width, LoFiGLTokens->_float, CHANNEL_WIDTH);
-  binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
+  if(_normals.size())
+    binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
   
   if(_colors.size())
     binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
+  binder->CreateAttributeBinding(LoFiBufferTokens->width, LoFiGLTokens->_float, CHANNEL_WIDTH);
 
   binder->SetProgramType(LOFI_PROGRAM_POINT);
   binder->ComputeProgramName();
