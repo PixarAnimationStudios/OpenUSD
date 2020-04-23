@@ -77,7 +77,8 @@ class TestUsdView(Usdviewq.Launcher):
         callBack(appController)
         # Process event triggered by the callbacks
         app.processEvents()
-        appController._cleanAndClose()
+        # Trigger application shutdown.
+        app.instance().closeAllWindows()
         return
 
     # Verify that we have a valid file as input, and it contains

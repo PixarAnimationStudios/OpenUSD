@@ -307,7 +307,8 @@ class Launcher(object):
             # UI is fully populated (and to capture all the timing information
             # we'd want).
             app.processEvents()
-            appController._cleanAndClose()
+            # Use closeAllWindows() to trigger shutdown of the application. 
+            app.instance().closeAllWindows()
             return
 
         app.exec_()
