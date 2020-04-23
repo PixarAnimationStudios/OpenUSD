@@ -44,6 +44,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _restoreAlphaOp(0)
     , _restoreAlphaToCoverage(false)
     , _lineWidth(1.0f)
+    , _cullFace(true)
+    , _cullMode(GL_BACK)
 {
     #if defined(GL_KHR_debug)
     if (GLEW_KHR_debug) {
@@ -71,6 +73,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
         GL_SAMPLE_ALPHA_TO_COVERAGE, 
         (GLboolean*)&_restoreAlphaToCoverage);
     glGetFloatv(GL_LINE_WIDTH, &_lineWidth);
+    glGetBooleanv(GL_CULL_FACE, (GLboolean*)&_cullFace);
+    glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -119,6 +123,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _restoreRenderBuffer);
     glLineWidth(_lineWidth);
+    if (_cullFace) {
+        glEnable(GL_CULL_FACE);
+    } else {
+        glDisable(GL_CULL_FACE);
+    }
+    glCullFace(_cullMode);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)

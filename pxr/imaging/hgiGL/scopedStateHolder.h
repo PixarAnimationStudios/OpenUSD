@@ -75,6 +75,8 @@ private:
     int32_t _restoreAlphaDstFnOp;
     bool _restoreAlphaToCoverage;
     float _lineWidth;
+    bool _cullFace;
+    int32_t _cullMode;
 };
 
 
