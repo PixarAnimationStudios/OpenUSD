@@ -10,6 +10,9 @@
             string PublicMultipleApplyAPI = "testo"
         }
     }
+    fallbackPrimTypes = {
+        token[] Derived = ["OldDerived", "OlderDerived"]
+    }
 )
 
 class "NonAppliedAPI"

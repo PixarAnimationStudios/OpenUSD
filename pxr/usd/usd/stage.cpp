@@ -468,6 +468,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _initialLoadSet(load)
     , _populationMask(mask)
     , _isClosingStage(false)
+    , _isWritingFallbackPrimTypes(false)
 {
     if (!TF_VERIFY(_rootLayer))
         return;
@@ -3201,6 +3202,37 @@ UsdStage::SaveSessionLayers()
     }
 }
 
+void 
+UsdStage::WriteFallbackPrimTypes()
+{
+    // Mark that we're writing the fallback prim types from the schema registry
+    // so that we can ignore changes to the fallbackPrimTypes metadata if we 
+    // end up writing it below. Otherwise we could end up rebuilding the entire
+    // stage unnecessarily when this particular data shouldn't change any of
+    // the prims' composition.
+    TfScopedVar<bool> resetIsWriting(_isWritingFallbackPrimTypes, true);
+
+    // Any fallback types for schema prim types will be defined in the schemas
+    // themselves. The schema registry provides the fallback prim type 
+    // dictionary for us to write in the metadata
+    const VtDictionary &schemaFallbackTypes = 
+        UsdSchemaRegistry::GetInstance().GetFallbackPrimTypes();
+    if (!schemaFallbackTypes.empty()) {
+        // The stage may already have metadata for fallback prim types, written
+        // from this version of Usd, a different version of Usd, or possibly
+        // direct user authoring of the metadata. We don't overwrite any 
+        // existing fallbacks; we only add entries for the types that don't have
+        // fallbacks defined in the metadata yet.
+        VtDictionary existingFallbackTypes;
+        if (GetMetadata(UsdTokens->fallbackPrimTypes, &existingFallbackTypes)) {
+            VtDictionaryOver(&existingFallbackTypes, schemaFallbackTypes);
+            SetMetadata(UsdTokens->fallbackPrimTypes, existingFallbackTypes);
+        } else {
+            SetMetadata(UsdTokens->fallbackPrimTypes, schemaFallbackTypes);
+        }
+    }
+}
+
 std::pair<bool, UsdPrim>
 UsdStage::_IsValidPathForCreatingPrim(const SdfPath &path) const
 {
@@ -3785,11 +3817,19 @@ UsdStage::_HandleLayersDidChange(
 
     // A fallback prim types change occurs when the fallbackPrimTypes metadata
     // changes on the root or session layer. 
+    // Note that we never process these changes while writing the schema 
+    // defined prim type fallbacks to the stage metadata via 
+    // WriteFallbackPrimTypes. Since the function can only write fallbacks for 
+    // recognized schema types and does not overwrite existing fallback entries,
+    // it creates no effective changes to the composed prims. So, we have to 
+    // ignore this layer metadata change to avoid unnecessarily recomposing 
+    // the whole stage.
     auto _IsFallbackPrimTypesChange = 
         [this](const SdfLayerHandle &layer, const SdfPath &sdfPath,
                const TfToken &infoKey)
     {
         return infoKey == UsdTokens->fallbackPrimTypes &&
+               !this->_isWritingFallbackPrimTypes &&
                sdfPath == SdfPath::AbsoluteRootPath() &&
                (layer == this->GetRootLayer() || 
                 layer == this->GetSessionLayer());

@@ -398,6 +398,7 @@ void wrapUsdStage()
 
         .def("Save", &UsdStage::Save)
         .def("SaveSessionLayers", &UsdStage::SaveSessionLayers)
+        .def("WriteFallbackPrimTypes", &UsdStage::WriteFallbackPrimTypes)
 
         .def("GetGlobalVariantFallbacks",
              &UsdStage::GetGlobalVariantFallbacks,

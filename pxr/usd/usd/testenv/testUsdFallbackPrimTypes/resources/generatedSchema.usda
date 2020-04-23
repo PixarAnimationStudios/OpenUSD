@@ -1,6 +1,10 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    fallbackPrimTypes = {
+        token[] ValidType_1 = ["FallbackType_1"]
+        token[] ValidType_2 = ["FallbackType_2", "FallbackType_1"]
+    }
 )
 
 class ValidType_1 "ValidType_1" (

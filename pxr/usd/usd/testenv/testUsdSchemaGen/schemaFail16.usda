@@ -1,0 +1,32 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+# Abstract typed schemas can't use the fallbackPrimTypes metadata field
+class "AbstractBase" (
+    inherits = </Typed>
+    customData = {
+        token[] fallbackTypes = ["OldDerived", "OlderDerived"]
+    }
+)
+{
+}
+

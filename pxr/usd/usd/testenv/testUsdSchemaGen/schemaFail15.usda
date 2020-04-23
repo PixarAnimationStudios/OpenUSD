@@ -1,0 +1,33 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+# API schemas can't use the fallbackPrimTypes metadata field
+class "SingleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] fallbackTypes = ["OldDerived", "OlderDerived"]
+    }
+)
+{
+}
+

@@ -347,5 +347,77 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
         self.assertEqual(prim.GetPrimTypeInfo().GetSchemaTypeName(), 
                          "ValidType_2")
 
+    def test_WritingSchemaFallbacks(self):
+        # Test the writing of fallback types defined in the schema through the
+        # stage API.
+
+        # Our test schema plugin has some fallbacks defined. Verify that we
+        # can get these as dictionary from the schema registry
+        schemaFallbacks = {
+            "ValidType_1" : Vt.TokenArray(["FallbackType_1"]),
+            "ValidType_2" : Vt.TokenArray(["FallbackType_2", "FallbackType_1"])
+        }
+        self.assertEqual(Usd.SchemaRegistry().GetFallbackPrimTypes(),
+                         schemaFallbacks)
+
+        # Create a new empty layer and stage from that layer. There will be
+        # no fallbackPrimTypes set on the newly opened stage
+        layer = Sdf.Layer.CreateNew("tempNew.usda")
+        self.assertTrue(layer)
+        stage = Usd.Stage.Open(layer)
+        self.assertTrue(stage)
+        self.assertFalse(stage.GetMetadata("fallbackPrimTypes"))
+        self.assertFalse(layer.GetPrimAtPath('/').GetInfo('fallbackPrimTypes'))
+
+        # Create a prim spec on the layer and save the layer itself. There will
+        # be no fallback metadata on the stage since we saved through the
+        # layer's API.
+        spec = Sdf.PrimSpec(layer, "ValidPrim", Sdf.SpecifierDef, "ValidType_2")
+        self.assertTrue(stage.GetPrimAtPath("/ValidPrim"))
+        layer.Save()
+        self.assertFalse(stage.GetMetadata("fallbackPrimTypes"))
+        self.assertFalse(layer.GetPrimAtPath('/').GetInfo('fallbackPrimTypes'))
+
+        # Now write the schema fallbacks to the layer using the stage API. This 
+        # will write the schema fallbacks dictionary to the root layer. Verify 
+        # that this layer change does not a cause a full stage resync.
+        with ChangeNoticeVerifier(self, expectedResyncAll=False):
+            stage.WriteFallbackPrimTypes()
+        self.assertEqual(stage.GetMetadata("fallbackPrimTypes"), 
+                         schemaFallbacks)
+        self.assertEqual(layer.GetPrimAtPath('/').GetInfo('fallbackPrimTypes'),
+                         schemaFallbacks)
+
+        # Now manually author a different dictionary of fallback to the root
+        # layer. This will trigger a full stage resync and changes the stage's
+        # fallback types.
+        newFallbacks = {
+            "ValidType_1" : Vt.TokenArray(["ValidType_2, FallbackType_2"]),
+            "InValidType_1" : Vt.TokenArray(["ValidType_1"])
+        }
+        with ChangeNoticeVerifier(self, expectedResyncAll=True):
+            layer.GetPrimAtPath('/').SetInfo('fallbackPrimTypes', 
+                                             newFallbacks)
+        self.assertEqual(stage.GetMetadata("fallbackPrimTypes"), 
+                         newFallbacks)
+        self.assertEqual(layer.GetPrimAtPath('/').GetInfo('fallbackPrimTypes'),
+                         newFallbacks)
+
+        # Write the schema fallbacks again and verify that it will add fallback 
+        # types to the metadata dictionary from the schema registry but only for
+        # types that aren't already in the dictionary.
+        with ChangeNoticeVerifier(self, expectedResyncAll=False):
+            stage.WriteFallbackPrimTypes()
+        postSaveFallbacks = {
+            "ValidType_1" : Vt.TokenArray(["ValidType_2, FallbackType_2"]),
+            "ValidType_2" : Vt.TokenArray(["FallbackType_2", "FallbackType_1"]),
+            "InValidType_1" : Vt.TokenArray(["ValidType_1"])
+        }
+        self.assertEqual(stage.GetMetadata("fallbackPrimTypes"), 
+                         postSaveFallbacks)
+        self.assertEqual(layer.GetPrimAtPath('/').GetInfo('fallbackPrimTypes'),
+                         postSaveFallbacks)
+
+
 if __name__ == "__main__":
     unittest.main()

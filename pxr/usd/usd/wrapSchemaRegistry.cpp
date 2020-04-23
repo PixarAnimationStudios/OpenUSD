@@ -139,5 +139,8 @@ void wrapUsdSchemaRegistry()
         .def("BuildComposedPrimDefinition", 
              &_WrapBuildComposedPrimDefinition,
              return_value_policy<manage_new_object>())
+
+        .def("GetFallbackPrimTypes", &This::GetFallbackPrimTypes, 
+             return_value_policy<return_by_value>())
         ;
 }

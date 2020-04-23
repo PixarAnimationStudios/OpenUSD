@@ -323,6 +323,26 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
             }
 
             _AddSchema(generatedSchema, _schematics);
+
+            // Schema generation will have added any defined fallback prim 
+            // types as a dictionary in layer metadata which will be composed
+            // into the single fallback types dictionary.
+            VtDictionary generatedFallbackPrimTypes;
+            if (generatedSchema->HasField(SdfPath::AbsoluteRootPath(), 
+                                          UsdTokens->fallbackPrimTypes,
+                                          &generatedFallbackPrimTypes)) {
+                for (const auto &it: generatedFallbackPrimTypes) {
+                    if (it.second.IsHolding<VtTokenArray>()) {
+                        _fallbackPrimTypes.insert(it);
+                    } else {
+                        TF_CODING_ERROR("Found a VtTokenArray value for type "
+                            "name key '%s' in fallbackPrimTypes layer metadata "
+                            "dictionary in generated schema file '%s'.",
+                            it.first.c_str(),
+                            generatedSchema->GetRealPath().c_str());
+                    }
+                }
+            }
         }
     }
 

@@ -97,6 +97,12 @@ IS_PRIVATE_APPLY = "isPrivateApply"
 # schema definition, to define prefix for properties created by the API schema. 
 PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
 
+# Custom-data key authored on a concrete typed schema class prim in the schema
+# definition, to define fallbacks for the type that can be saved in root layer
+# metadata to provide fallback types to versions of Usd without the schema 
+# class type.
+FALLBACK_TYPES = "fallbackTypes"
+
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
 #------------------------------------------------------------------------------#
@@ -433,6 +439,8 @@ class ClassInfo(object):
         self.isTyped = _IsTyped(usdPrim)
         self.isAPISchemaBase = self.cppClassName == 'UsdAPISchemaBase'
 
+        self.fallbackPrimTypes = self.customData.get(FALLBACK_TYPES)
+
         self.isApi = not self.isTyped and not self.isConcrete and \
                 not self.isAPISchemaBase
         self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
@@ -442,8 +450,9 @@ class ClassInfo(object):
 
         if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
-            raise Exception(errorMsg("propertyNamespacePrefix should only "
-                "be used as a metadata field on multiple-apply API schemas"))
+            raise _GetSchemaDefException("propertyNamespacePrefix should only "
+                "be used as a metadata field on multiple-apply API schemas",
+                sdfPrim.path)
 
         if self.isApi and \
            self.apiSchemaType not in API_SCHEMA_TYPE_TOKENS:
@@ -505,7 +514,12 @@ class ClassInfo(object):
                                 'isPrivateApply, only applied API schemas '
                                 'have an Apply() method generated. ',
                                 sdfPrim.path)
-         
+        
+        if self.fallbackPrimTypes and not self.isConcrete:
+            raise _GetSchemaDefException(
+                "fallbackPrimTypes can only be used as a customData field on "
+                "concrete typed schema classes", sdfPrim.path)
+
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
 
@@ -1099,6 +1113,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
     allMultipleApplyAPISchemaNamespaces = {}
+    allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
         # information.
@@ -1133,6 +1148,12 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                     "prim metadata fallbacks" % str(invalidMetadata) , 
                     p.GetPath())
 
+        if p.HasAuthoredTypeName():
+            fallbackTypes = p.GetCustomDataByKey(FALLBACK_TYPES)
+            if fallbackTypes:
+                allFallbackSchemaPrimTypes[p.GetName()] = \
+                    Vt.TokenArray(fallbackTypes)
+
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
@@ -1145,11 +1166,15 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.'
 
     # Add the list of all applied and multiple-apply API schemas.
-    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemaNamespaces) > 0:
+    if allAppliedAPISchemas or allMultipleApplyAPISchemaNamespaces:
         flatLayer.customLayerData = {
                 'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
                 'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
+
+    if allFallbackSchemaPrimTypes:
+        flatLayer.GetPrimAtPath('/').SetInfo(Usd.Tokens.fallbackPrimTypes, 
+                                             allFallbackSchemaPrimTypes)
 
     #
     # Generate Schematics

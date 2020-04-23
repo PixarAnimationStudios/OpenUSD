@@ -202,6 +202,20 @@ public:
     BuildComposedPrimDefinition(
         const TfToken &primType, const TfTokenVector &appliedAPISchemas) const;
 
+    /// Returns a dictionary mapping concrete schema prim type names to a 
+    /// VtTokenArray of fallback prim type names if fallback types are defined
+    /// for the schema type in its registered schema.
+    /// 
+    /// The standard use case for this to provide schema defined metadata that
+    /// can be saved with a stage to inform an older version of USD - that 
+    /// may not have some schema types - as to which types it can used instead 
+    /// when encountering a prim of one these types.
+    ///
+    /// \sa UsdStage::WriteFallbackPrimTypes
+    const VtDictionary &GetFallbackPrimTypes() const {
+        return _fallbackPrimTypes;
+    }
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 
@@ -222,6 +236,8 @@ private:
 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor> 
         _multipleApplyAPISchemaNamespaces;
+
+    VtDictionary _fallbackPrimTypes;
 
     friend class UsdPrimDefinition;
 };

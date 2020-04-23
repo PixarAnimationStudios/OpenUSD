@@ -250,6 +250,9 @@ class "Base" (
 class Derived "Derived" (
     inherits = </Base>
     doc = """\\em Emphasized! \\section Test_Section Test Section"""
+    customData = {
+        token[] fallbackTypes = ["OldDerived", "OlderDerived"]
+    }
 ) {
 
     float3 pivotPosition = (0, 0, 0) (
