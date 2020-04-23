@@ -631,9 +631,13 @@ private:
         _EraseSubtree(entry);
 
         // And siblings.
-        if (_Entry * const nextSibling = entry->GetNextSibling()) {
-            _EraseSubtreeAndSiblings(nextSibling);
-            _EraseFromTable(nextSibling);
+        _Entry *sibling = entry->GetNextSibling();
+        _Entry *nextSibling = sibling ? sibling->GetNextSibling() : nullptr;
+        while (sibling) {
+            _EraseSubtree(sibling);
+            _EraseFromTable(sibling);
+            sibling = nextSibling;
+            nextSibling = sibling ? sibling->GetNextSibling() : nullptr;
         }
     }
 
