@@ -69,6 +69,18 @@ static bool __contains__(const GfSize3 &self, size_t value) {
     return false;
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfSize3 __truediv__(const GfSize3 &self, size_t value)
+{
+    return self / value;
+}
+
+static GfSize3 __itruediv__(GfSize3 &self, size_t value)
+{
+    return self /= value;
+}
+#endif
+
 static string _Repr(GfSize3 const &self) {
     return TF_PY_REPR_PREFIX + "Size3(" + TfPyRepr(self[0]) + ", " +
         TfPyRepr(self[1]) + ", " + TfPyRepr(self[2]) + ")";
@@ -113,6 +125,13 @@ void wrapSize3()
         .def( self * size_t() )
         .def( self / size_t() )
         
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
+
         .def("__repr__", _Repr)
 
         ;

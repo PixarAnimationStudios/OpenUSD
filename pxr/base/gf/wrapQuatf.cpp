@@ -59,6 +59,18 @@ static string __repr__(GfQuatf const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfQuatf __truediv__(const GfQuatf &self, float value)
+{
+    return self / value;
+}
+
+static GfQuatf __itruediv__(GfQuatf &self, float value)
+{
+    return self /= value;
+}
+#endif
+
 // Zero-initialized default ctor for python.
 static GfQuatf *__init__() { return new GfQuatf(0); }
 
@@ -138,6 +150,13 @@ void wrapQuatf()
         .def(self * float())
         .def(float() * self)
         .def(self / float())
+
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
 
         .def("__repr__", __repr__)
 

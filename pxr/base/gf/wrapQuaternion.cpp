@@ -50,6 +50,17 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( GetNormalized_overloads,
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( Normalize_overloads,
                                         Normalize, 0, 1 );
 
+#if PY_MAJOR_VERSION == 2
+static GfQuaternion __truediv__(const GfQuaternion &self, double value)
+{
+    return self / value;
+}
+
+static GfQuaternion __itruediv__(GfQuaternion &self, double value)
+{
+    return self /= value;
+}
+#endif
 
 static string _Repr(GfQuaternion const &self) {
     return TF_PY_REPR_PREFIX + "Quaternion(" + TfPyRepr(self.GetReal()) + ", " +
@@ -106,6 +117,13 @@ void wrapQuaternion()
         .def( self * double() )
         .def( double() * self )
         .def( self / double() )
+
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)

@@ -307,6 +307,18 @@ static bool __contains__(const GfVec4i &self, int value) {
     return false;
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfVec4i __truediv__(const GfVec4i &self, int value)
+{
+    return self / value;
+}
+
+static GfVec4i __itruediv__(GfVec4i &self, int value)
+{
+    return self /= value;
+}
+#endif
+
 template <class V>
 static V *__init__() {
     // Default contstructor zero-initializes from python.
@@ -420,6 +432,13 @@ void wrapVec4i()
         .def(self - self)
         .def(self * self)
         .def(str(self))
+
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
 
         .def("Axis", &Vec::Axis).staticmethod("Axis")
 
