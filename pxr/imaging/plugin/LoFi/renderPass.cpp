@@ -128,9 +128,9 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 
   GfMatrix4d viewMatrix = renderPassState->GetWorldToViewMatrix();
   GfMatrix4d projMatrix = renderPassState->GetProjectionMatrix();
+  GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
   auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
-
 
   // first check draw item program map
   for(auto drawItem: drawItems)
@@ -166,10 +166,14 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     glUseProgram(pgm);
       
     GfMatrix4f identity(1);
+    GLuint viewportUniform = glGetUniformLocation(pgm, "viewport");
     GLuint modelUniform = glGetUniformLocation(pgm, "model");
     GLuint viewUniform = glGetUniformLocation(pgm, "view");
     GLuint projUniform = glGetUniformLocation(pgm, "projection");
     
+    // viewport
+    glUniform4fv(viewportUniform, 1,(const GLfloat*)&viewport[0]);
+
     // view matrix
     glUniformMatrix4fv(
       viewUniform,
@@ -189,6 +193,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     LoFiDrawItemPtrSet drawItemSet = _programDrawItemsMap[programName];
     for(auto drawItem: drawItemSet)
     {
+      if(!drawItem->GetVisible()) continue;
       const LoFiBinder* binder = drawItem->GetBinder();
       // model matrix
       glUniformMatrix4fv(

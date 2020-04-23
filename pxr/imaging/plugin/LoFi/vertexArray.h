@@ -49,7 +49,6 @@ public:
   CreateBuffer( LoFiAttributeChannel channel, 
                 uint32_t numInputElements, 
                 uint32_t numOutputElements,
-                uint32_t tuppleSize,
                 HdInterpolation interpolation);
 
   // channels

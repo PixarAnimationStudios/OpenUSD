@@ -60,7 +60,6 @@ public:
   LoFiVertexBuffer( LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements,
-                    uint32_t tuppleSize,
                     HdInterpolation interpolation);
 
   // destructor
@@ -81,7 +80,7 @@ public:
   inline void SetNeedReallocate(bool needReallocate) {
     _needReallocate = needReallocate;
   };
-  inline bool GetNeedUpdate(){return true;};//_needUpdate;};
+  inline bool GetNeedUpdate(){return _needUpdate;};
   inline void SetNeedUpdate(bool needUpdate) {
     _needUpdate = needUpdate;
   };

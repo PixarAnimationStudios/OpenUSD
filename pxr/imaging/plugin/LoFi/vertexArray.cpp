@@ -70,13 +70,11 @@ LoFiVertexArray::Reallocate()
 void 
 LoFiVertexArray::Populate()
 {
-
   Bind();
   
   for(auto& elem: _buffers)
   {
     LoFiVertexBufferSharedPtr buffer = elem.second;
-    if(buffer->GetNeedReallocate())buffer->Reallocate();
     if(buffer->GetNeedUpdate())
     {
       VtArray<char> datas(buffer->ComputeOutputSize());
@@ -155,10 +153,10 @@ LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedP
 
 LoFiVertexBufferSharedPtr 
 LoFiVertexArray::CreateBuffer(LoFiAttributeChannel channel, 
-  uint32_t numInputElements, uint32_t numOutputElements, uint32_t tuppleSize, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, tuppleSize, interpolation)
+    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, interpolation)
   );
 }
 

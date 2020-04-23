@@ -15,14 +15,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
 LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
-  uint32_t numInputElements, uint32_t numOutputElements,
-  uint32_t tuppleSize, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
   : _channel(channel)
   , _hash(0)
   , _key(0)
   , _numInputElements(numInputElements)
   , _numOutputElements(numOutputElements) 
-  , _tuppleSize(tuppleSize)
   , _needReallocate(true)
   , _needUpdate(true)
   , _interpolation(interpolation)
@@ -32,14 +30,23 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
   {
     case CHANNEL_POSITION:
     case CHANNEL_NORMAL:
+    case CHANNEL_TANGENT:
     case CHANNEL_COLOR:
+      _tuppleSize = 3;
       _elementSize = sizeof(GfVec3f);
       break;
     case CHANNEL_UV:
+      _tuppleSize = 2;
       _elementSize = sizeof(GfVec2f);
       break;
+    case CHANNEL_WIDTH:
+      _tuppleSize = 1;
+      _elementSize = sizeof(float);
+      break;  
     default:
-      _elementSize = 1;
+      _tuppleSize = 1;
+      _elementSize = sizeof(float);
+      break;
   }
 }
 
@@ -87,7 +94,6 @@ void LoFiVertexBuffer::Reallocate()
 
 void LoFiVertexBuffer::Populate(const void* datas)
 {
-  
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
   glBufferSubData(
     GL_ARRAY_BUFFER, 

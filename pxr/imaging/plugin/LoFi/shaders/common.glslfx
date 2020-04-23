@@ -40,6 +40,12 @@ mat4  GetModelMatrix() {
 mat4  GetMVPMatrix() {
   return GetProjectionMatrix() * GetViewMatrix() * GetModelMatrix();
 }
+vec2 GetViewportSize() {
+  return LOFI_GET_viewport().zw;
+}
+vec2 GetViewportPos() {
+  return LOFI_GET_viewport().xy;
+}
 vec3 GetViewPoint()
 {
   mat4 m = GetViewMatrix();
