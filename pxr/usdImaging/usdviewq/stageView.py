@@ -1961,7 +1961,8 @@ class StageView(QtOpenGL.QGLWidget):
         if (event.modifiers() & (QtCore.Qt.AltModifier | QtCore.Qt.MetaModifier)):
             if event.button() == QtCore.Qt.LeftButton:
                 self.switchToFreeCamera()
-                self._cameraMode = "tumble"
+                ctrlModifier = event.modifiers() & QtCore.Qt.ControlModifier
+                self._cameraMode = "truck" if ctrlModifier else "tumble"
             if event.button() == QtCore.Qt.MidButton:
                 self.switchToFreeCamera()
                 self._cameraMode = "truck"
