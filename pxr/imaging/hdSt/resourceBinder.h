@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <memory>
 
@@ -48,6 +49,17 @@ using HdStBufferArrayRangeGLSharedPtr =
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
 using HdBindingRequestVector = std::vector<class HdBindingRequest>;
+
+/// Suffixes appended to material param names for a binding name.
+///
+#define HDST_RESOURCE_BINDING_SUFFIX_TOKENS     \
+    ((fallback, "_fallback"))                   \
+    ((samplingTransform, "_samplingTransform")) \
+    ((layout, "_layout"))                       \
+    ((texture, "_texture"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdSt_ResourceBindingSuffixTokens,
+                         HDST_RESOURCE_BINDING_SUFFIX_TOKENS);
 
 /// \class HdSt_ResourceBinder
 /// 

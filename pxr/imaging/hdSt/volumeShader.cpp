@@ -119,34 +119,58 @@ HdSt_VolumeShader::SetFillsPointsBar(const bool fillsPointsBar)
     _fillsPointsBar = fillsPointsBar;
 }
 
+static
+TfToken
+_ConcatFallback(const TfToken &token)
+{
+    return TfToken(
+        token.GetString()
+        + HdSt_ResourceBindingSuffixTokens->fallback.GetString());
+}
+
 void
 HdSt_VolumeShader::GetParamsAndBufferSpecsForBBox(
     HdSt_MaterialParamVector * const params,
     HdBufferSpecVector * const specs)
 {
-    params->emplace_back(
-        HdSt_MaterialParam::ParamTypeFallback,
-        _tokens->volumeBBoxInverseTransform,
-        VtValue(GfMatrix4d()));
-    specs->emplace_back(
-        _tokens->volumeBBoxInverseTransform,
-        HdTupleType{HdTypeDoubleMat4, 1});
+    {
+        params->emplace_back(
+            HdSt_MaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxInverseTransform,
+            VtValue(GfMatrix4d()));
 
-    params->emplace_back(
-        HdSt_MaterialParam::ParamTypeFallback,
-        _tokens->volumeBBoxLocalMin,
-        VtValue(GfVec3d()));
-    specs->emplace_back(
-        _tokens->volumeBBoxLocalMin,
-        HdTupleType{HdTypeDoubleVec3, 1});
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxInverseTransform));
+        specs->emplace_back(
+            sourceName,
+            HdTupleType{HdTypeDoubleMat4, 1});
+    }
+     
+    {
+        params->emplace_back(
+            HdSt_MaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMin,
+            VtValue(GfVec3d()));
 
-    params->emplace_back(
-        HdSt_MaterialParam::ParamTypeFallback,
-        _tokens->volumeBBoxLocalMax,
-        VtValue(GfVec3d()));
-    specs->emplace_back(
-        _tokens->volumeBBoxLocalMax,
-        HdTupleType{HdTypeDoubleVec3, 1});
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxLocalMin));
+        specs->emplace_back(
+            sourceName,
+            HdTupleType{HdTypeDoubleVec3, 1});
+    }
+     
+    {
+        params->emplace_back(
+            HdSt_MaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMax,
+            VtValue(GfVec3d()));
+
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxLocalMax));
+        specs->emplace_back(
+            sourceName,
+            HdTupleType{HdTypeDoubleVec3, 1});
+    }
 }
 
 void
@@ -156,20 +180,32 @@ HdSt_VolumeShader::GetBufferSourcesForBBox(
 {
     const GfRange3d &range = bbox.GetRange();
 
-    sources->push_back(
-        std::make_shared<HdVtBufferSource>(
-            _tokens->volumeBBoxInverseTransform,
-            VtValue(bbox.GetInverseMatrix())));
+    {
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxInverseTransform));
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                sourceName,
+                VtValue(bbox.GetInverseMatrix())));
+    }
 
-    sources->push_back(
-        std::make_shared<HdVtBufferSource>(
-            _tokens->volumeBBoxLocalMin,
-            VtValue(GetSafeMin(range))));
+    {
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxLocalMin));
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                sourceName,
+                VtValue(GetSafeMin(range))));
+    }
 
-    sources->push_back(
-        std::make_shared<HdVtBufferSource>(
-            _tokens->volumeBBoxLocalMax,
-            VtValue(GetSafeMax(range))));
+    {
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->volumeBBoxLocalMax));
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                sourceName,
+                VtValue(GetSafeMax(range))));
+    }
 }
 
 GfVec3d

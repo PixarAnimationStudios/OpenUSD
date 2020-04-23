@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -139,8 +140,9 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
                 sources);
         }
         
-        tex.name =
-            TfToken(name.GetString() + "_layout");
+        tex.name = TfToken(
+            name.GetString() +
+            HdSt_ResourceBindingSuffixTokens->layout.GetString());
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
         textureDescriptors->push_back(tex);
@@ -166,8 +168,9 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
                 sources);
         }
         
-        tex.name =
-            TfToken(name.GetString() + "_layout");
+        tex.name = TfToken(
+            name.GetString() +
+            HdSt_ResourceBindingSuffixTokens->layout.GetString());
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_LAYOUT;
         textureDescriptors->push_back(tex);

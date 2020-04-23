@@ -558,9 +558,13 @@ HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources)
 {
+    const TfToken sourceName(
+        param.name.GetString()
+        + HdSt_ResourceBindingSuffixTokens->fallback.GetString());
+
     HdBufferSourceSharedPtr const source =
         std::make_shared<HdVtBufferSource>(
-            param.name, param.fallbackValue);
+            sourceName, param.fallbackValue);
     source->GetBufferSpecs(specs);
     sources->push_back(std::move(source));
 }

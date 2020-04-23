@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -42,6 +43,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdSt_ResourceBindingSuffixTokens,
+                        HDST_RESOURCE_BINDING_SUFFIX_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -146,6 +149,15 @@ namespace {
 HdSt_ResourceBinder::HdSt_ResourceBinder()
     : _numReservedTextureUnits(0)
 {
+}
+
+static
+TfToken
+_ConcatLayout(const TfToken &token)
+{
+    return TfToken(
+        token.GetString()
+        + HdSt_ResourceBindingSuffixTokens->layout.GetString());
 }
 
 void
@@ -610,8 +622,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                     locator.uniformLocation++,
                                     locator.textureUnit++);
 
-                    TfToken glLayoutName = TfToken(std::string(
-                                                glName.GetText()) + "_layout");
+                    const TfToken glLayoutName(_ConcatLayout(glName));
                     metaDataOut->shaderParameterBinding[layoutBinding] =
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glLayoutName,
@@ -619,8 +630,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                 HdType::HdTypeInt32));
 
                     // Layout for Ptex
-                    TfToken layoutName = TfToken(std::string(
-                                                name.GetText()) + "_layout");
+                    const TfToken layoutName(_ConcatLayout(name));
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding; 
                 } else if (param.textureType == HdTextureType::Udim) {
@@ -642,9 +652,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     _bindingMap[param.name] = textureBinding;
 
                     // Layout for UDIM
-                    TfToken layoutName =
-                        TfToken(std::string(param.name.GetText())
-                        + "_layout");
+                    const TfToken layoutName(_ConcatLayout(param.name));
+
                     HdBinding layoutBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT,
                             bindlessTextureLocation++)

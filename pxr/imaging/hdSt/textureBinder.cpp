@@ -44,6 +44,13 @@ HdSt_TextureBinder::UsesBindlessTextures()
 
 static const HdTupleType _bindlessHandleTupleType{ HdTypeUInt32Vec2, 1 };
 
+static
+TfToken
+_Concat(const TfToken &a, const TfToken &b)
+{
+    return TfToken(a.GetString() + b.GetString());
+}
+
 void
 HdSt_TextureBinder::GetBufferSpecs(
     const NamedTextureHandleVector &textures,
@@ -65,7 +72,9 @@ HdSt_TextureBinder::GetBufferSpecs(
                     _bindlessHandleTupleType);
             }
             specs->emplace_back(
-                TfToken(texture.name.GetString() + "SamplingTransform"),
+                _Concat(
+                    texture.name,
+                    HdSt_ResourceBindingSuffixTokens->samplingTransform),
                 HdTupleType{HdTypeDoubleMat4, 1});
             break;
         case HdTextureType::Ptex:
@@ -74,7 +83,9 @@ HdSt_TextureBinder::GetBufferSpecs(
                     texture.name,
                     _bindlessHandleTupleType);
                 specs->emplace_back(
-                    TfToken(texture.name.GetString() + "_layout"),
+                    _Concat(
+                        texture.name,
+                        HdSt_ResourceBindingSuffixTokens->layout),
                     _bindlessHandleTupleType);
             }
             break;
@@ -84,7 +95,9 @@ HdSt_TextureBinder::GetBufferSpecs(
                     texture.name,
                     _bindlessHandleTupleType);
                 specs->emplace_back(
-                    TfToken(texture.name.GetString() + "_layout"),
+                    _Concat(
+                        texture.name,
+                        HdSt_ResourceBindingSuffixTokens->layout),
                     _bindlessHandleTupleType);
             }
             break;
@@ -170,7 +183,9 @@ public:
     {
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
-                TfToken(name.GetString() + "SamplingTransform"),
+                _Concat(
+                    name,
+                    HdSt_ResourceBindingSuffixTokens->samplingTransform),
                 VtValue(texture.GetSamplingTransform())));
 
         if (!HdSt_TextureBinder::UsesBindlessTextures()) {
@@ -200,7 +215,9 @@ public:
 
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
-                TfToken(name.GetString() + "_layout"),
+                _Concat(
+                    name,
+                    HdSt_ResourceBindingSuffixTokens->layout),
                 sampler.GetLayoutGLTextureHandle()));
     }
 
@@ -221,7 +238,9 @@ public:
 
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
-                TfToken(name.GetString() + "_layout"),
+                _Concat(
+                    name,
+                    HdSt_ResourceBindingSuffixTokens->layout),
                 sampler.GetLayoutGLTextureHandle()));
     }
 };
@@ -300,7 +319,7 @@ public:
                       bind ? texture.GetTexelGLTextureName() : 0);
 
         const HdBinding layoutBinding = binder.GetBinding(
-            TfToken(name.GetString() + "_layout"));
+            _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
         const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
 
         glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
@@ -325,7 +344,7 @@ public:
                       bind ? sampler.GetTexelsGLSamplerName() : 0);
 
         const HdBinding layoutBinding = binder.GetBinding(
-            TfToken(name.GetString() + "_layout"));
+            _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
         const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
 
         glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);

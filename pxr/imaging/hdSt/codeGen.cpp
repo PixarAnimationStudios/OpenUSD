@@ -2683,7 +2683,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "  return "
                 << _GetPackedTypeAccessor(it->second.dataType, false)
-                << "(shaderData[shaderCoord]." << it->second.name << swizzle
+                << "(shaderData[shaderCoord]."
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->fallback
+                << swizzle
                 << ");\n"
                 << "}\n";
 
@@ -2819,7 +2821,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "   vec4 c = vec4(\n"
                 << "     shaderData[shaderCoord]."
-                << it->second.name << "SamplingTransform * vec4(coord, 1));\n"
+                << it->second.name
+                << HdSt_ResourceBindingSuffixTokens->samplingTransform
+                << " * vec4(coord, 1));\n"
                 << "   vec3 sampleCoord = c.xyz / c.w;\n"
                 << "  return "
                 << _GetPackedTypeAccessor(it->second.dataType, false) << "("
@@ -2881,7 +2885,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "   int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "   vec4 c = vec4(\n"
                 << "     shaderData[shaderCoord]."
-                << it->second.name << "SamplingTransform * vec4(coord, 1));\n"
+                << it->second.name
+                << HdSt_ResourceBindingSuffixTokens->samplingTransform
+                << " * vec4(coord, 1));\n"
                 << "   vec3 sampleCoord = c.xyz / c.w;\n"
                 << "   return "
                 << _GetPackedTypeAccessor(it->second.dataType, false)
@@ -2936,7 +2942,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "  vec3 c = hd_sample_udim(HdGet_"
                     << it->second.inPrimvars[0] << "().xy);\n"
                     << "  c.z = texelFetch(sampler1D(shaderData[shaderCoord]."
-                    << it->second.name << "_layout), int(c.z), 0).x - 1;\n"
+                    << it->second.name
+                    << HdSt_ResourceBindingSuffixTokens->layout
+                    << "), int(c.z), 0).x - 1;\n"
                     << "#else\n"
                     << "  vec3 c = vec3(0.0, 0.0, 0.0);\n"
                     << "#endif\n";
@@ -2975,8 +2983,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << it->second.dataType
                 << " HdGet_" << it->second.name
                 << "(vec2 coord) { vec3 c = hd_sample_udim(coord);\n"
-                << "  c.z = texelFetch(sampler1d_" << it->second.name
-                << "_layout" << ", int(c.z), 0).x - 1;\n"
+                << "  c.z = texelFetch(sampler1d_"
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
+                << ", int(c.z), 0).x - 1;\n"
                 << "if (c.z < -0.5) { return vec4(0, 0, 0, 0)"
                 << swizzle << "; } else {\n"
                 << "  return texture(sampler2dArray_"
@@ -3014,7 +3023,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "sampler2DArray(shaderData[shaderCoord]."
                 << it->second.name << "),"
                 << "isamplerBuffer(shaderData[shaderCoord]."
-                << it->second.name << "_layout), "
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
+                <<"), "
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
                 << "}\n"
                 << _GetUnpackedType(it->second.dataType, false)
@@ -3028,7 +3038,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "sampler2DArray(shaderData[shaderCoord]."
                 << it->second.name << "),"
                 << "isamplerBuffer(shaderData[shaderCoord]."
-                << it->second.name << "_layout), "
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
+                << "), "
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
         } else if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL) {
@@ -3042,7 +3053,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
                 << "sampler2darray_" << it->second.name << ","
-                << "isamplerbuffer_" << it->second.name << "_layout,"
+                << "isamplerbuffer_"
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
+                << ","
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
                 << "}\n"
                 << _GetUnpackedType(it->second.dataType, false)
@@ -3053,7 +3066,9 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
                 << "sampler2darray_" << it->second.name << ","
-                << "isamplerbuffer_" << it->second.name << "_layout,"
+                << "isamplerbuffer_" 
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
+                << ","
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
@@ -3093,7 +3108,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
                 << "  return "
                 << _GetPackedTypeAccessor(it->second.dataType, false)
-                << "(shaderData[shaderCoord]." << it->second.name 
+                << "(shaderData[shaderCoord]."
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->fallback
                 << swizzle <<  ");\n"
                 << "#endif\n"
                 << "\n}\n"
@@ -3126,15 +3142,20 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << _GetUnpackedType(it->second.dataType, false)
                 << " HdGet_" << it->second.name << "(vec3 coord) {\n"
                 // If field exists, use it
-                << "#if defined(HD_HAS_" << fieldName << "Texture)\n"
-                << "  return HdGet_" << fieldName << "Texture(coord)"
+                << "#if defined(HD_HAS_"
+                << fieldName << HdSt_ResourceBindingSuffixTokens->texture
+                << ")\n"
+                << "  return HdGet_"
+                << fieldName << HdSt_ResourceBindingSuffixTokens->texture
+                << "(coord)"
                 << swizzle << ";\n"
                 << "#else\n"
                 // Otherwise use default value.
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
                 << "  return "
                 << _GetPackedTypeAccessor(it->second.dataType, false)
-                << "(shaderData[shaderCoord]." << it->second.name 
+                << "(shaderData[shaderCoord]."
+                << it->second.name << HdSt_ResourceBindingSuffixTokens->fallback
                 << swizzle <<  ");\n"
                 << "#endif\n"
                 << "\n}\n";
