@@ -286,6 +286,61 @@ _GetTerminalNode(
     return &terminalIt->second;
 }
 
+// Get the fallback value for material node, first consulting Sdr to find
+// whether the node has an input for the fallback value and then checking
+// whether the output named outputName is known to Sdr and using either
+// the default value specified by the SdrShaderProperty or using a
+// default constructed value of the type specified by SdrShaderProperty.
+//
+static VtValue
+_GetNodeFallbackValue(
+    HdSt_MaterialNode const& node,
+    TfToken const& outputName)
+{
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+
+    // Find the corresponding Sdr node.
+    SdrShaderNodeConstPtr const sdrNode = 
+        shaderReg.GetShaderNodeByIdentifierAndType(
+            node.nodeTypeId,
+            HioGlslfxTokens->glslfx);
+    if (!sdrNode) {
+        return VtValue();
+    }
+
+    // XXX Storm hack: Incorrect usage of GetDefaultInput to
+    // determine what the fallback value is.
+    // GetDefaultInput is meant to be used for 'disabled'
+    // node where the 'default input' becomes the value
+    // pass-through in the network. But Storm has no other
+    // mechanism currently to deal with fallback values.
+    if (SdrShaderPropertyConstPtr const& defaultInput = 
+            sdrNode->GetDefaultInput()) {
+        TfToken const& def = defaultInput->GetName();
+        auto const& defParamIt = node.parameters.find(def);
+        if (defParamIt != node.parameters.end()) {
+            return defParamIt->second;
+        }
+    }
+
+    // Sdr supports specifying default values for outputs so if we
+    // did not use the GetDefaultInput hack above, we fallback to
+    // using this DefaultOutput value.
+    if (SdrShaderPropertyConstPtr const& output = 
+            sdrNode->GetShaderOutput(outputName)) {
+        const VtValue out =  output->GetDefaultValue();
+        if (!out.IsEmpty()) {
+            return out;
+        }
+
+        // If no default value was registered with Sdr for
+        // the output, fallback to the type's default.
+        return output->GetTypeAsSdfType().first.GetDefaultValue();
+    }
+
+    return VtValue();
+}
+
 static VtValue
 _GetParamFallbackValue(
     HdSt_MaterialNetwork const& network,
@@ -307,46 +362,10 @@ _GetParamFallbackValue(
             auto const& pnIt = network.nodes.find(con.upstreamNode);
             HdSt_MaterialNode const& upstreamNode = pnIt->second;
         
-            // Find the Sdr node that is connected to the terminal input
-
-            SdrShaderNodeConstPtr conSdr = 
-                shaderReg.GetShaderNodeByIdentifierAndType(
-                    upstreamNode.nodeTypeId,
-                    HioGlslfxTokens->glslfx);
-
-            if (conSdr) {
-                // XXX Storm hack: Incorrect usage of GetDefaultInput to
-                // determine what the fallback value is.
-                // GetDefaultInput is meant to be used for 'disabled'
-                // node where the 'default input' becomes the value
-                // pass-through in the network. But Storm has no other
-                // mechanism currently to deal with fallback values.
-                if (SdrShaderPropertyConstPtr const& defaultInput = 
-                        conSdr->GetDefaultInput()) {
-                    TfToken const& def = defaultInput->GetName();
-                    auto const& defParamIt = upstreamNode.parameters.find(def);
-                    if (defParamIt != upstreamNode.parameters.end()) {
-                        return defParamIt->second;
-                    }
-                }
-
-                // Sdr supports specifying default values for outputs so if we
-                // did not use the GetDefaultInput hack above, we fallback to
-                // using this DefaultOutput value.
-                if (SdrShaderPropertyConstPtr const& output = 
-                        conSdr->GetShaderOutput(con.upstreamOutputName)) {
-                    VtValue out =  output->GetDefaultValue();
-                    if (out.IsEmpty()) {
-                        // If no default value was registered with Sdr for
-                        // the output, fallback to the type's default.
-                        if (out.IsEmpty()) {
-                            out = output->GetTypeAsSdfType()
-                                .first.GetDefaultValue();
-                        }
-                    }
-
-                    return out;
-                }
+            const VtValue fallbackValue =
+                _GetNodeFallbackValue(upstreamNode, con.upstreamOutputName);
+            if (!fallbackValue.IsEmpty()) {
+                return fallbackValue;
             }
         }
     }
