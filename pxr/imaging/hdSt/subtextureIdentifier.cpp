@@ -66,4 +66,36 @@ HdStVdbSubtextureIdentifier::Hash() const
     return hash;
 }
 
+////////////////////////////////////////////////////////////////////////////
+// HdStUvOrientationSubtextureIdentifier
+
+HdStUvOrientationSubtextureIdentifier::HdStUvOrientationSubtextureIdentifier(
+    const bool flipVertically)
+ : _flipVertically(flipVertically)
+{
+}
+
+HdStUvOrientationSubtextureIdentifier::~HdStUvOrientationSubtextureIdentifier()
+    = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStUvOrientationSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStUvOrientationSubtextureIdentifier>(
+        GetFlipVertically());
+}
+
+HdStSubtextureIdentifier::ID
+HdStUvOrientationSubtextureIdentifier::Hash() const
+{
+    static ID vertFlipFalse = TfToken("notVerticallyFlipped").Hash();
+    static ID vertFlipTrue = TfToken("verticallyFlipped").Hash();
+
+    if (GetFlipVertically()) {
+        return vertFlipTrue;
+    } else {
+        return vertFlipFalse;
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

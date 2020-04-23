@@ -117,6 +117,14 @@ _Uniquify(const tbb::concurrent_vector<std::weak_ptr<T>> &objects,
     }
 }
 
+// Unfortunately, there are some issues with using GlfUvTextureData outside the
+// main thread. Disabling multi-threaded loading for now.
+//
+// In particular, testUsdImagingGLTextureWrapStormTextureSystem has
+// non-deterministic results with multi-threading.
+//
+static const bool _isGlfBaseTextureDataThreadSafe = false;
+
 std::set<HdStTextureObjectSharedPtr>
 HdSt_TextureObjectRegistry::Commit()
 {
@@ -129,10 +137,16 @@ HdSt_TextureObjectRegistry::Commit()
     {
         TRACE_FUNCTION_SCOPE("Loading textures");
 
-        // Parallel load texture files
-        WorkParallelForEach(result.begin(), result.end(),
-                            [](const HdStTextureObjectSharedPtr &texture) {
-                                texture->_Load(); });
+        if (_isGlfBaseTextureDataThreadSafe) {
+            // Parallel load texture files
+            WorkParallelForEach(result.begin(), result.end(),
+                                [](const HdStTextureObjectSharedPtr &texture) {
+                                    texture->_Load(); });
+        } else {
+            for (const HdStTextureObjectSharedPtr &texture : result) {
+                texture->_Load();
+            }
+        }
     }
 
     {

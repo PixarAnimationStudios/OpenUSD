@@ -83,12 +83,21 @@ static
 std::string
 _GetDebugName(const HdStTextureIdentifier &textureId)
 {
-    if (HdStVdbSubtextureIdentifier const * vdbSubtextureId =
+    if (const HdStVdbSubtextureIdentifier * const vdbSubtextureId =
             dynamic_cast<const HdStVdbSubtextureIdentifier*>(
                 textureId.GetSubtextureIdentifier())) {
         return
             textureId.GetFilePath().GetString() + " - " +
             vdbSubtextureId->GetGridName().GetString();
+    }
+
+    if (const HdStUvOrientationSubtextureIdentifier * const subId =
+            dynamic_cast<const HdStUvOrientationSubtextureIdentifier*>(
+                textureId.GetSubtextureIdentifier())) {
+        return
+            textureId.GetFilePath().GetString()
+            + " - flipVertically="
+            + std::to_string(int(subId->GetFlipVertically()));
     }
      
     return
@@ -122,7 +131,9 @@ public:
     // Created using texture data and a debug name used for the
     // texture descriptor.
     HdSt_TextureObjectCpuData(GlfBaseTextureDataRefPtr const &textureData,
-                              const std::string &debugName);
+                              const std::string &debugName,
+                              const GlfImage::ImageOriginLocation originLocation
+                                          = GlfImage::OriginUpperLeft);
 
     ~HdSt_TextureObjectCpuData() = default;
 
@@ -155,7 +166,8 @@ private:
 
 HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
     GlfBaseTextureDataRefPtr const &textureData,
-    const std::string &debugName)
+    const std::string &debugName,
+    const GlfImage::ImageOriginLocation originLocation)
 {
     TRACE_FUNCTION();
 
@@ -166,7 +178,7 @@ HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
     }
 
     // Read texture file
-    textureData->Read(0, false);
+    textureData->Read(0, false, originLocation);
 
     // Fill texture descriptor's dimension, format and
     // initialData.
@@ -257,6 +269,7 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
 
     const GLenum glFormat = textureData->GLFormat();
     const GLenum glType = textureData->GLType();
+    const GLenum glInternalFormat = textureData->GLInternalFormat();
 
     // Format dispatch, mostly we can just use the CPU buffer from
     // the texture data provided.
@@ -301,7 +314,11 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
                     unconvertedData,
                     _textureDesc.dimensions,
                     255);
-            _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            if (glInternalFormat == GL_SRGB8) {
+                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4srgb>();
+            } else {
+                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            }
             _textureDesc.initialData = _convertedRawData.get();
             // texture data can be dropped because data have been
             // copied/converted into our own buffer.
@@ -319,7 +336,11 @@ HdSt_TextureObjectCpuData::_ConvertFormatIfNecessary(
     case GL_RGBA:
         switch(glType) {
         case GL_UNSIGNED_BYTE:
-            _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            if (glInternalFormat == GL_SRGB8_ALPHA8) {
+                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4srgb>();
+            } else {
+                _textureDesc.format = _CheckValid<HgiFormatUNorm8Vec4>();
+            }
             _textureDesc.initialData = unconvertedData;
             break;
         case GL_FLOAT:
@@ -382,6 +403,26 @@ _GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
              _GetWrapParameter(wrapInfo.hasWrapModeT, wrapInfo.wrapModeT) };
 }
 
+// Read from the HdStUvOrientationSubtextureIdentifier whether we need
+// to flip the image.
+//
+// This is to support the legacy HwUvTexture_1 shader node which has the
+// vertical orientation opposite to UsdUvTexture.
+//
+static
+GlfImage::ImageOriginLocation
+_GetImageOriginLocation(const HdStSubtextureIdentifier * const subId)
+{
+    using SubId = const HdStUvOrientationSubtextureIdentifier;
+    
+    if (SubId* const uvSubId = dynamic_cast<SubId*>(subId)) {
+        if (uvSubId->GetFlipVertically()) {
+            return GlfImage::OriginUpperLeft;
+        }
+    }
+    return GlfImage::OriginLowerLeft;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Uv texture
 
@@ -412,7 +453,10 @@ HdStUvTextureObject::_Load()
             /* borders */ 0, 0, 0, 0);
 
     _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
-        textureData, _GetDebugName(GetTextureIdentifier()));
+        textureData,
+        _GetDebugName(GetTextureIdentifier()),
+        _GetImageOriginLocation(
+            GetTextureIdentifier().GetSubtextureIdentifier()));
 
     if (_cpuData->GetTextureDesc().type != HgiTextureType2D) {
         TF_CODING_ERROR("Wrong texture type for uv");
@@ -421,6 +465,7 @@ HdStUvTextureObject::_Load()
     // _GetWrapParameters can only be called after the texture has
     // been loaded by HdSt_TextureObjectCpuData.
     _wrapParameters = _GetWrapParameters(textureData);
+
 }
 
 void

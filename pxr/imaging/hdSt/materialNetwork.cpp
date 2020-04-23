@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -659,6 +660,26 @@ _GetSamplerParameters(
                  nodePath, node, sdrNode)};
 }
 
+//
+// We need to flip the image for the legacy HwUvTexture_1 shader node.
+//
+static
+std::unique_ptr<HdStSubtextureIdentifier>
+_GetSubtextureIdentifier(
+    const HdTextureType textureType,
+    const TfToken &nodeType)
+{
+    if (textureType != HdTextureType::Uv) {
+        return nullptr;
+    }
+
+    const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
+
+    return
+        std::make_unique<HdStUvOrientationSubtextureIdentifier>(
+            flipVertically);
+}
+
 static void
 _MakeMaterialParamsForTexture(
     HdSt_MaterialNetwork const& network,
@@ -786,7 +807,9 @@ _MakeMaterialParamsForTexture(
 
     textureDescriptors->push_back(
         { paramName,
-          HdStTextureIdentifier(TfToken(filePath)),
+          HdStTextureIdentifier(
+              TfToken(filePath),
+              _GetSubtextureIdentifier(textureType, node.nodeTypeId)),
           textureType,
           _GetSamplerParameters(nodePath, node, sdrNode),
           memoryRequest});

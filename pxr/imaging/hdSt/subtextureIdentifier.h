@@ -60,7 +60,7 @@ public:
 ///
 /// Identifies the grid in an OpenVDB file by its name.
 ///
-class HdStVdbSubtextureIdentifier : public HdStSubtextureIdentifier
+class HdStVdbSubtextureIdentifier final : public HdStSubtextureIdentifier
 {
 public:
     /// C'tor using name of grid in OpenVDB file
@@ -82,6 +82,40 @@ public:
 
 private:
     TfToken _gridName;
+};
+
+///
+/// \class HdStUvOrientationSubtextureIdentifier
+///
+/// Specifies whether a UV texture should be loaded flipped vertically.
+///
+/// This class is here for the texture system to support both the
+/// legacy HwUvTexture_1 (flipVertically = true) and UsdUvTexture
+/// (flipVertically = false) which have opposite conventions for the
+/// vertical orientation.
+///
+class HdStUvOrientationSubtextureIdentifier final
+                                : public HdStSubtextureIdentifier
+{
+public:
+    /// C'tor takes bool whether flipping vertically
+    HDST_API
+    explicit HdStUvOrientationSubtextureIdentifier(bool flipVertically);
+
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    HDST_API
+    ID Hash() const override;
+
+    HDST_API
+    bool GetFlipVertically() const { return _flipVertically; }
+    
+    HDST_API
+    ~HdStUvOrientationSubtextureIdentifier() override;
+
+private:
+    bool _flipVertically;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
