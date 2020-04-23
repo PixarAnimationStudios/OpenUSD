@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/materialNetwork.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -34,7 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 using HdStSurfaceShaderSharedPtr = std::shared_ptr<class HdStSurfaceShader>;
 
 using HdStTextureResourceSharedPtr = 
@@ -43,6 +43,8 @@ using HdStTextureResourceHandleSharedPtr =
     std::shared_ptr<class HdStTextureResourceHandle>;
 using HdStTextureResourceHandleSharedPtrVector =
     std::vector<HdStTextureResourceHandleSharedPtr>;
+using HdStResourceRegistrySharedPtr =
+    std::shared_ptr<class HdStResourceRegistry>;
 
 class HioGlslfx;
 
@@ -103,10 +105,32 @@ public:
     void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
 private:
+    // Uses HdSceneDelegate::GetTextureResourceID and
+    // HdSceneDelegate::GetTextureResource (which will be obsoleted
+    // and removed at some point). Also resolves to a 1x1-texture with
+    // fallback value if the above calls return invalid results.
     HdStTextureResourceHandleSharedPtr
-    _GetTextureResourceHandle(HdSceneDelegate *sceneDelegate,
-                              HdSt_MaterialParam const &param);
+    _GetTextureResourceHandleFromSceneDelegate(
+        HdSceneDelegate * sceneDelegate,
+        HdStResourceRegistrySharedPtr const& resourceRegistry,
+        HdStMaterialNetwork::TextureDescriptor const &desc);
 
+    // Processes the texture descriptors from a material network to
+    // create textures using either the Storm texture system or the
+    // HdSceneDelegate::GetTextureResource/ID.
+    //
+    // Adds buffer specs/sources necessary for textures, e.g., bindless
+    // handles or sampling transform for field textures.
+    void _ProcessTextureDescriptors(
+        HdSceneDelegate * sceneDelegate,
+        HdStResourceRegistrySharedPtr const& resourceRegistry,
+        std::weak_ptr<HdStShaderCode> const &shaderCode,
+        HdStMaterialNetwork::TextureDescriptorVector const &descs,
+        HdStShaderCode::NamedTextureHandleVector * texturesFromStorm,
+        HdStShaderCode::TextureDescriptorVector * texturesFromSceneDelegate,
+        HdBufferSpecVector * specs,
+        HdBufferSourceSharedPtrVector * sources);
+    
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
 

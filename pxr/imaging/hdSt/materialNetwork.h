@@ -85,6 +85,17 @@ public:
         HdSamplerParameters samplerParameters;
         // Memory request in bytes.
         size_t memoryRequest;
+
+        // Use HdSceneDelegate::GetTextureResourceID and
+        // HdSceneDelegate::GetTextureResource instead of allocating
+        // the texture using the Storm texture system.
+        bool askSceneDelegateForTexture;
+        // The value passed to HdSceneDelegate::GetTextureResourceID.
+        SdfPath texturePrim;
+
+        // Fallback value from texture node used when the texture
+        // file does not exist.
+        VtValue fallbackValue;
     };
 
     using TextureDescriptorVector = std::vector<TextureDescriptor>;

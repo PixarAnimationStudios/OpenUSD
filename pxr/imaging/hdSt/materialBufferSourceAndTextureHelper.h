@@ -45,7 +45,7 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
     /// given the texture requested by the param.
     static
     void ProcessTextureMaterialParam(
-        HdSt_MaterialParam const &param,
+        TfToken const &name,
         HdStTextureResourceHandleSharedPtr const &handle,
         HdBufferSpecVector * specs,
         HdBufferSourceSharedPtrVector * sources,

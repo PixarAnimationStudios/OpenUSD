@@ -732,7 +732,8 @@ _MakeMaterialParamsForTexture(
 
     // Extract texture file path
     std::string filePath;
-
+    bool askSceneDelegateForTexture = true;
+    
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
@@ -740,14 +741,24 @@ _MakeMaterialParamsForTexture(
         TfToken const& fileProp = assetIdentifierPropertyNames[0];
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
+            const VtValue &v = it->second;
             // We use the nodePath, not the filePath, for the 'connection'.
             // Based on the connection path we will do a texture lookup via
             // the scene delegate. The scene delegate will lookup this texture
             // prim (by path) to query the file attribute value for filepath.
             // The reason for this re-direct is to support other texture uses
             // such as render-targets.
-            filePath = _ResolveAssetPath(it->second);
+            filePath = _ResolveAssetPath(v);
             texParam.connection = nodePath;
+            
+            // Use the type of the filePath attribute to determine whether
+            // to use the Storm texture system (for SdfAssetPath/std::string)
+            // or use the HdSceneDelegate::GetTextureResource/ID (for all other
+            // types). The HdSceneDelegate::GetTextureResource/ID path will
+            // be obsoleted and probably removed at some point.
+            if (v.IsHolding<SdfAssetPath>() || v.IsHolding<std::string>()) {
+                askSceneDelegateForTexture = false;
+            }
         }
     } else {
         TF_WARN("Invalid number of asset identifier input names: %s", 
@@ -824,6 +835,14 @@ _MakeMaterialParamsForTexture(
     const size_t memoryRequest =
         _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
 
+    // Given to HdSceneDelegate::GetTextureResourceID.
+    // This is equal to nodePath. With one exception: it is empty if
+    // there is no file attribute on the texture node.
+    //
+    // Unfortunately, some clients depend on this exception.
+    //
+    const SdfPath & texturePrimPathForSceneDelegate = texParam.connection;
+
     textureDescriptors->push_back(
         { paramName,
           HdStTextureIdentifier(
@@ -831,7 +850,10 @@ _MakeMaterialParamsForTexture(
               _GetSubtextureIdentifier(textureType, node.nodeTypeId)),
           textureType,
           _GetSamplerParameters(nodePath, node, sdrNode),
-          memoryRequest});
+          memoryRequest,
+          askSceneDelegateForTexture,
+          texturePrimPathForSceneDelegate,
+          _GetNodeFallbackValue(node, outputName) });
 
     params->push_back(std::move(texParam));
 }
