@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include <memory>
 
@@ -47,6 +48,9 @@ using HdStResourceRegistrySharedPtr =
     std::shared_ptr<class HdStResourceRegistry>;
 
 class HioGlslfx;
+
+HDST_API
+extern TfEnvSetting<bool> HDST_USE_NEW_TEXTURE_SYSTEM;
 
 class HdStMaterial final: public HdMaterial {
 public:
