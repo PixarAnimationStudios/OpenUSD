@@ -35,7 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 /// \class HioGlslfxConfig 
 ///
 /// A class representing the configuration of a glslfx file.
@@ -127,7 +126,8 @@ public:
     /// The \p filename parameter is only used for error reporting.
     ///
     HIO_API
-    static HioGlslfxConfig * Read(std::string const & input,
+    static HioGlslfxConfig * Read(TfToken const & technique,
+                                  std::string const & input,
                                   std::string const & filename,
                                   std::string *errorStr);
 
@@ -157,7 +157,9 @@ public:
 
 private:
     // private ctor. should only be called by ::Read
-    HioGlslfxConfig(VtDictionary const & dict, std::string *errorStr);
+    HioGlslfxConfig(TfToken const& technique,
+                    VtDictionary const & dict,
+                    std::string *errorStr);
 
     void _Init(VtDictionary const & dict, std::string *errorStr);
 
@@ -176,6 +178,7 @@ private:
     _SourceKeyMap _GetSourceKeyMap(VtDictionary const & dict,
                                    std::string *errorStr) const;
 
+    TfToken _technique;
     Parameters _params;
     Textures _textures;
     Attributes _attributes;

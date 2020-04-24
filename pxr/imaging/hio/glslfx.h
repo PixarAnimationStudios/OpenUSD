@@ -60,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (surfaceShader)             \
     (displacementShader)        \
     (volumeShader)              \
+    ((defVal, "default"))
 
 
 TF_DECLARE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_API, HIO_GLSLFX_TOKENS);
@@ -118,6 +119,11 @@ TF_DECLARE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_API, HIO_GLSLFX_TOKENS);
 ///             'fragmentShader': {
 ///                 'source': [ 'MyFragment' ]
 ///             }
+///         },
+///         'metal': {
+///             'fragmentShader': {
+///                 'source': [ 'MyFragment.Metal' ]
+///             }
 ///         }
 ///     }
 /// }
@@ -148,11 +154,15 @@ public:
 
     /// Create a glslfx object from a file
     HIO_API
-    HioGlslfx(std::string const & filePath);
+    HioGlslfx(
+        std::string const & filePath,
+        TfToken const & technique = HioGlslfxTokens->defVal);
 
     /// Create a glslfx object from a stream
     HIO_API
-    HioGlslfx(std::istream &is);
+    HioGlslfx(
+        std::istream &is,
+        TfToken const & technique = HioGlslfxTokens->defVal);
 
     /// Return the parameters specified in the configuration
     HIO_API
@@ -258,6 +268,8 @@ private:
 
     std::unique_ptr<HioGlslfxConfig> _config;
 
+    TfToken _technique;
+    
     bool _valid;
     std::string _invalidReason; // if _valid is false, reason why
     size_t _hash;

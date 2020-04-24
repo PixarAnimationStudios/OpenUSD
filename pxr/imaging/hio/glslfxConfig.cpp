@@ -54,13 +54,19 @@ VtDictionary Hio_GetDictionaryFromInput
     (const string &input, const string &filename, string *errorStr);
 
 HioGlslfxConfig *
-HioGlslfxConfig::Read(string const & input, string const & filename, string *errorStr)
+HioGlslfxConfig::Read(TfToken const & technique,
+                      string const & input,
+                      string const & filename,
+                      string *errorStr)
 {
-    return new HioGlslfxConfig(
+    return new HioGlslfxConfig(technique,
         Hio_GetDictionaryFromInput(input, filename, errorStr), errorStr );
 }
 
-HioGlslfxConfig::HioGlslfxConfig(VtDictionary const & dict, string * errors)
+HioGlslfxConfig::HioGlslfxConfig(TfToken const & technique,
+                                 VtDictionary const & dict,
+                                 string * errors)
+: _technique(technique)
 {
     _Init(dict, errors);
 }
@@ -119,14 +125,15 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
         return ret;
     }
 
-    if (techniquesDict.size() > 1) {
-        *errorStr = TfStringPrintf("Expect only one entry for %s",
-                                   _tokens->techniques.GetText());
+    VtDictionary::const_iterator entry = techniquesDict.find(_technique);
+    if (entry == techniquesDict.end()) {
+        *errorStr = TfStringPrintf("No entry for %s: %s",
+                                   _tokens->techniques.GetText(), 
+                                   _technique.GetText());
         return ret;
     }
-
-    // get the value of the first technique spec
-    VtDictionary::const_iterator entry = techniquesDict.begin();
+    
+    // get the value of the technique spec
     VtValue techniqueSpec = entry->second;
     
     // verify that it also holds a VtDictionary
