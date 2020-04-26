@@ -43,6 +43,9 @@ public:
 
     inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
 
+    void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
+    const VtArray<GfMatrix4f>& GetInstancesXforms() const {return _instancesXform;};
+
 protected:
     
     size_t _GetBufferArraysHash() const;
@@ -53,6 +56,7 @@ private:
     LoFiVertexArray*            _vertexArray;
     LoFiGLSLProgramSharedPtr    _program;
     LoFiBinder                  _binder;
+    VtArray<GfMatrix4f>         _instancesXform;
 };
 
 typedef std::set<const LoFiDrawItem*> LoFiDrawItemPtrSet;

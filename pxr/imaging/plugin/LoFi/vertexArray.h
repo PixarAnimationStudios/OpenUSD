@@ -88,7 +88,7 @@ public:
   void Unbind() const;
 
   // draw
-  void Draw();
+  void Draw() const;
 
 private:
   // datas

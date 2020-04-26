@@ -81,7 +81,6 @@ LoFiVertexArray::Populate()
       buffer->ComputeOutputDatas(_topology, datas.data());
       buffer->Populate(datas.cdata());
     }
-    
   }
   Unbind();
   _needReallocate = false;
@@ -90,7 +89,7 @@ LoFiVertexArray::Populate()
 
 // draw
 void
-LoFiVertexArray::Draw()
+LoFiVertexArray::Draw() const
 {
   Bind();
   switch(_topology->type)

@@ -204,7 +204,24 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
       );
 
       const LoFiVertexArray* vertexArray = drawItem->GetVertexArray();
+      vertexArray->Draw();
+
+      if(drawItem->HasInstancer())
+      {
+        for(const auto& instanceXform: drawItem->GetInstancesXforms())
+        {
+          // model matrix
+          glUniformMatrix4fv(
+            modelUniform,
+            1,
+            GL_FALSE,
+            &(GfMatrix4f(drawItem->GetMatrix()) * instanceXform)[0][0]
+          );
+          vertexArray->Draw();
+        }
+      }
       
+      /*
       switch(binder->GetProgramType())
       {
         case LoFiProgramType::LOFI_PROGRAM_POINT:
@@ -218,6 +235,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           glDrawArrays(GL_TRIANGLES, 0, vertexArray->GetNumElements());
           break;
       }
+      */
       
 
       vertexArray->Unbind();
