@@ -58,7 +58,7 @@ UsdImaging_GetUdimTiles(
                 layerHandle, TfStringPrintf(formatString.c_str(), t))
             : TfStringPrintf(formatString.c_str(), t);
         if (!resolver.Resolve(path).empty()) {
-            ret.emplace_back(t - startTile, TfToken(path));
+            ret.emplace_back(t - startTile, TfToken(resolver.Resolve(path)));
         }
     }
     ret.shrink_to_fit();
