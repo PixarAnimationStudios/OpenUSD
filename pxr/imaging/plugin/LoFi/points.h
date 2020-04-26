@@ -87,7 +87,6 @@ protected:
 private:
     
     uint64_t                        _instanceId;
-    GfMatrix4f                      _transform;
     uint64_t                        _numPoints;
     VtArray<GfVec3f>                _points;
     VtArray<float>                  _widths;

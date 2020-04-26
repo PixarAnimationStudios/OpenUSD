@@ -31,6 +31,17 @@ LoFiDrawItem::_GetBufferArraysHash() const
     return _hash;
 }
 
+void 
+LoFiDrawItem::PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms)
+{
+    size_t numInstances = xforms.size();
+    _instancesXform.resize(numInstances);
+    for(int i=0;i<numInstances;++i)
+    {
+        _instancesXform[i] = GfMatrix4f(xforms[i]);
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

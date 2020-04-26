@@ -117,12 +117,12 @@ private:
     };
     
     uint64_t                        _instanceId;
-    GfMatrix4f                      _transform;
     VtArray<GfVec3f>                _positions;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
+    VtArray<GfMatrix4f>             _instances;
     LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;
 

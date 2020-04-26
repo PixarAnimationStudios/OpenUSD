@@ -5,6 +5,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/plugin/LoFi/mesh.h"
+#include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
@@ -336,7 +337,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   }
 
   // if no authored colors compute random vertex colors
-  if(!haveAuthoredDisplayColor || needReallocate)
+  if(!haveAuthoredDisplayColor && needReallocate)
   {
 
     LoFiComputeVertexColors( _positions, _colors);
@@ -427,6 +428,20 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   if(!initialized)
   {
     _PopulateBinder(resourceRegistry);
+  }
+
+  // instances
+  if (!GetInstancerId().IsEmpty()) {
+
+      // Retrieve instance transforms from the instancer.
+      HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+      HdInstancer *instancer =
+          renderIndex.GetInstancer(GetInstancerId());
+      VtMatrix4dArray transforms =
+          static_cast<LoFiInstancer*>(instancer)->
+              ComputeInstanceTransforms(GetId());
+
+      drawItem->PopulateInstancesXforms(transforms);
   }
 
   // Clean all dirty bits.

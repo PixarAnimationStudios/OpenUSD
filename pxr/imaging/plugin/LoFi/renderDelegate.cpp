@@ -15,6 +15,7 @@
 
 #include "pxr/imaging/plugin/LoFi/mesh.h"
 #include "pxr/imaging/plugin/LoFi/points.h"
+#include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -30,7 +31,7 @@ TF_DEFINE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
-    HdPrimTypeTokens->points,
+    HdPrimTypeTokens->points
 };
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -144,6 +145,7 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
+    std::cout << "LOFI CREATE FUCKIN RPRIM : INSTANCER = " << instancerId.GetText() << std::endl;
     if (typeId == HdPrimTypeTokens->mesh) {
         return new LoFiMesh(rprimId, instancerId);
     } else if(typeId == HdPrimTypeTokens->points) {
@@ -229,9 +231,8 @@ LoFiRenderDelegate::CreateInstancer(
     SdfPath const& id,
     SdfPath const& instancerId)
 {
-    TF_CODING_ERROR("Creating Instancer not supported id=%s instancerId=%s", 
-        id.GetText(), instancerId.GetText());
-    return nullptr;
+    std::cout << "LOFI CREATE FUCKIN INSTANCER :D !!" << std::endl;
+    return new LoFiInstancer(delegate, id, instancerId);
 }
 
 void 
