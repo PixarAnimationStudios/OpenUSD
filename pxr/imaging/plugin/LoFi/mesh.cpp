@@ -228,7 +228,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
   {
-    //HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
     LoFiTriangulateMesh(
       topology.GetFaceVertexCounts(), 
       topology.GetFaceVertexIndices(),
@@ -237,7 +236,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
 
     // compute adjacency
     _adjacency.Compute(_samples);
-
+    std::cout << "COMPUTE ADJACENCY DONE..." << std::endl;
     _topology.samples = (const int*)&_samples[0];
     _topology.numElements = _samples.size()/3;
     _vertexArray->SetNumElements(_samples.size());

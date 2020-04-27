@@ -47,6 +47,7 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     );
   TF_VERIFY(resourceRegistry);
 
+  bool hasGeometryShader = false;
   TfToken shaderPath;
   switch(binder->GetProgramType())
   {
@@ -55,15 +56,18 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       break;
     case LoFiProgramType::LOFI_PROGRAM_CURVE:
       shaderPath = _GetShaderPath("curve.glslfx");
+      hasGeometryShader = true;
       break;
     case LoFiProgramType::LOFI_PROGRAM_POINT:
       shaderPath = _GetShaderPath("points.glslfx");
       break;
-    case LoFiProgramType::LOFI_PROGRAM_INSTANCE:
-      shaderPath = _GetShaderPath("instance.glslfx");
+    case LoFiProgramType::LOFI_PROGRAM_CONTOUR:
+      shaderPath = _GetShaderPath("contour.glslfx");
+      hasGeometryShader = true;
       break;
   }
 
+  std::cout << "GENERATE PROGRAM CODE..." << std::endl;
   LoFiShaderCodeSharedPtr shaderCode(new LoFiShaderCode(shaderPath));
 
   LoFiCodeGen codeGen(
@@ -72,17 +76,24 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     binder->GetAttributeBindings(),
     shaderCode
   );
-  codeGen.GenerateProgramCode(true);
+  codeGen.GenerateProgramCode(hasGeometryShader);
 
-  const char* vertexCode = codeGen.GetVertexShaderCode().c_str();
-  const char* geometryCode = codeGen.GetGeometryShaderCode().c_str();
-  const char* fragmentCode = codeGen.GetFragmentShaderCode().c_str();
+  std::cout << "GENERATE PROGRAM CODE DONE, BUILD IT" << std::endl;
+  std::cout << "HAVE GEOMETRY SHADER : " << hasGeometryShader << std::endl;
 
-  std::cout << "GEOMETRY SHADER CODE : " << std::endl;
-  std::cout << geometryCode << std::endl;
+  if(!hasGeometryShader)
+    program->Build(
+      binder->GetProgramName().GetText(), 
+      codeGen.GetVertexShaderCode().c_str(), 
+      codeGen.GetFragmentShaderCode().c_str());
+  else
+    program->Build(
+      binder->GetProgramName().GetText(), 
+      codeGen.GetVertexShaderCode().c_str(), 
+      codeGen.GetGeometryShaderCode().c_str(), 
+      codeGen.GetFragmentShaderCode().c_str());
 
-  //program->Build(binder->GetProgramName().GetText(), vertexCode, fragmentCode);
-  program->Build(binder->GetProgramName().GetText(), vertexCode, geometryCode, fragmentCode);
+  std::cout << "BUILD PROGRAM DONE, WTF???" << std::endl;
 
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());
@@ -209,7 +220,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
       );
 
       const LoFiVertexArray* vertexArray = drawItem->GetVertexArray();
-      vertexArray->Draw();
 
       if(drawItem->HasInstancer())
       {
@@ -225,24 +235,11 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           vertexArray->Draw();
         }
       }
-      
-      /*
-      switch(binder->GetProgramType())
+      else
       {
-        case LoFiProgramType::LOFI_PROGRAM_POINT:
-          glPointSize(1);
-          glEnable(GL_VERTEX_PROGRAM_POINT_SIZE); 
-          vertexArray->Bind();
-          glDrawArrays(GL_POINTS, 0, vertexArray->GetNumElements());
-          break;
-        case LoFiProgramType::LOFI_PROGRAM_MESH:
-          vertexArray->Bind();
-          glDrawArrays(GL_TRIANGLES, 0, vertexArray->GetNumElements());
-          break;
+        vertexArray->Draw();
       }
-      */
       
-
       vertexArray->Unbind();
 
     }

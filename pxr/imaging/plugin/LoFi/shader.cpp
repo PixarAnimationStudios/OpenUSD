@@ -18,7 +18,7 @@ void LoFiGLSLShader::OutputInfoLog()
   glGetShaderInfoLog(_id, 512, NULL, &buffer[0]);
  
   std::cerr << "[LoFi][Compile GLSL shader] Info log : " << 
-  (std::string)buffer << std::endl;
+    (std::string)buffer << std::endl;
 }
 
 void LoFiGLSLShader::Load(const char* filename, GLenum type)
@@ -87,7 +87,6 @@ void LoFiGLSLProgram::_ComputeHash()
 
 void LoFiGLSLProgram::_Build()
 {  
-  std::cout << "### BUILD FUCKIN SHADER"<< std::endl;
   _pgm = glCreateProgram();
   
   if(_vert)
@@ -96,12 +95,10 @@ void LoFiGLSLProgram::_Build()
     glAttachShader(_pgm,_vert->Get());
   }
 
-  std::cout << _geom << ":"<<_geom->Get() << std::endl;
   if(_geom)
   {
     _geom->Compile();
     glAttachShader(_pgm,_geom->Get());
-    std::cout << "### ATTACH FUCKIN GEOMETRY SHADER"<< std::endl;
   }
   
   if(_frag)
@@ -133,12 +130,6 @@ void LoFiGLSLProgram::_Build()
 void LoFiGLSLProgram::Build(const char* name, const char* vertex, 
   const char* fragment)
 {
-  /*
-  std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl;
-  std::cout << name << std::endl;
-  std::cout << vertex << std::endl;
-  std::cout << fragment << std::endl;
-  */
   _name = name;
   LoFiGLSLShader vertShader;
   vertShader.Set(vertex, GL_VERTEX_SHADER);
@@ -161,7 +152,6 @@ void LoFiGLSLProgram::Build(const char* name, const char* vertex,
   vertShader.Set(vertex, GL_VERTEX_SHADER);
   _vert = &vertShader;
 
-  std::cout << "### BUILD : " << geom << std::endl;
   LoFiGLSLShader geomShader;
   geomShader.Set(geom, GL_GEOMETRY_SHADER);
   _geom = &geomShader;

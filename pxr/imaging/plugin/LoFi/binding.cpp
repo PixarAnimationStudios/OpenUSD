@@ -79,8 +79,8 @@ void LoFiBinder::ComputeProgramName()
     case LoFiProgramType::LOFI_PROGRAM_CURVE:
       name += "CURVE_";
       break;
-    case LoFiProgramType::LOFI_PROGRAM_INSTANCE:
-      name += "INSTANCE_";
+    case LoFiProgramType::LOFI_PROGRAM_CONTOUR:
+      name += "CONTOUR_";
       break;
   }
   size_t hash = 0;
