@@ -215,8 +215,8 @@ void LoFiCodeGen::_EmitStageAccessor(std::stringstream &ss,
   {
     if (arraySize > 1) 
     {
-      ss << type << " LOFI_GET_" << name << "(int arrayIndex)"
-          << " { return " << stage << "_" << name << "[arrayIndex]; }\n";
+      ss << type << " LOFI_GET_" << name << "(int index)"
+          << " { return " << stage << "_" << name << "[index]; }\n";
     } 
     else 
     {
@@ -301,12 +301,12 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
 
     std::stringstream vertexData;
     vertexData  << "  " << dataType << " " 
-                << LoFiShaderTokens->vertex <<"_" << name << ";\n";
+                << LoFiShaderTokens->vertex <<"_" << name;
     vertexDatas.push_back(vertexData.str());
     
     std::stringstream geometryData;
     geometryData  << "  " << dataType << " " 
-                  << LoFiShaderTokens->geometry <<"_" << name << ";\n";
+                  << LoFiShaderTokens->geometry <<"_" << name;
     geometryDatas.push_back(geometryData.str());
 
     // primvars
@@ -317,7 +317,7 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
     if(hasGeometryShader)
     {
       _EmitStageAccessor(streamGS,  LoFiShaderTokens->vertex,
-                        name, dataType, 1);
+                        name, dataType, 6);
       _EmitStageEmittor(streamGS, LoFiShaderTokens->geometry, name, dataType, 1);
       _EmitStageAccessor(streamFS,  LoFiShaderTokens->geometry,
                         name, dataType, 1);
@@ -334,15 +334,16 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
   TF_FOR_ALL(it, vertexDatas)
   {
     if(_glslVersion>=330)
-      _genVS << "out " << it->c_str();
+      _genVS << "out " << it->c_str() << ";\n";
     else
-      _genVS << "varying " << it->c_str();
+      _genVS << "varying " << it->c_str() << ";\n";
   }
   _genVS << streamVS.str();
 
   
   if(hasGeometryShader)
   {
+    _genGS << "#define LOFI_NUM_PRIMITIVE_VERTS 6\n";
     // geometry shader code
     TF_FOR_ALL(it, vertexDatas)
     {
@@ -354,19 +355,20 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
     TF_FOR_ALL(it, geometryDatas)
     {
       if(_glslVersion>=330)
-        _genGS << "out " << it->c_str();
+        _genGS << "out " << it->c_str() << ";\n";
       else
-        _genGS << "varying " << it->c_str();
+        _genGS << "varying " << it->c_str() << ";\n";
     }
+    
     _genGS<< streamGS.str();
 
     // fragment shader code
     TF_FOR_ALL(it, geometryDatas)
     {
       if(_glslVersion>=330)
-        _genFS << "in " << it->c_str();
+        _genFS << "in " << it->c_str() << ";\n";
       else
-        _genFS << "varying " << it->c_str();
+        _genFS << "varying " << it->c_str() << ";\n";
     }
     _genFS << streamFS.str();
   }
@@ -376,9 +378,9 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
     TF_FOR_ALL(it, vertexDatas)
     {
       if(_glslVersion>=330)
-        _genFS << "in " << it->c_str();
+        _genFS << "in " << it->c_str() << ";\n";
       else
-        _genFS << "varying " << it->c_str();
+        _genFS << "varying " << it->c_str() << ";\n";
     }
     _genFS << streamFS.str();
   }
@@ -417,7 +419,7 @@ void LoFiCodeGen::_GenerateResults()
                     TfToken("result"), LoFiGLTokens->vec4, 1);
 }
 
-void LoFiCodeGen::GenerateProgramCode()
+void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader)
 {
   // initialize source buckets
   _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
@@ -433,11 +435,11 @@ void LoFiCodeGen::GenerateProgramCode()
   }
 
   _genVS << _genCommon.str();
-  //_genGS << _genCommon.str();
+  _genGS << _genCommon.str();
   _genFS << _genCommon.str();
 
   _GenerateUniforms();
-  _GeneratePrimvars(false);
+  _GeneratePrimvars(hasGeometryShader);
   _GenerateResults();
 
   // shader sources which own main()

@@ -72,12 +72,17 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     binder->GetAttributeBindings(),
     shaderCode
   );
-  codeGen.GenerateProgramCode();
+  codeGen.GenerateProgramCode(true);
 
   const char* vertexCode = codeGen.GetVertexShaderCode().c_str();
+  const char* geometryCode = codeGen.GetGeometryShaderCode().c_str();
   const char* fragmentCode = codeGen.GetFragmentShaderCode().c_str();
 
-  program->Build(binder->GetProgramName().GetText(), vertexCode, fragmentCode);
+  std::cout << "GEOMETRY SHADER CODE : " << std::endl;
+  std::cout << geometryCode << std::endl;
+
+  //program->Build(binder->GetProgramName().GetText(), vertexCode, fragmentCode);
+  program->Build(binder->GetProgramName().GetText(), vertexCode, geometryCode, fragmentCode);
 
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());

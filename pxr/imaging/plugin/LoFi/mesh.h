@@ -9,9 +9,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-//#include "pxr/imaging/hd/extComputation.h"
-//#include "pxr/imaging/hd/extComputationUtils.h"
-//#include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/plugin/LoFi/halfedge.h"
 #include "pxr/imaging/plugin/LoFi/binding.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
@@ -122,6 +120,7 @@ private:
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
+    LoFiAdjacency                   _adjacency;
     VtArray<GfMatrix4f>             _instances;
     LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;

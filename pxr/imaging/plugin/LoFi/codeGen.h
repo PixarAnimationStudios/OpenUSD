@@ -45,7 +45,7 @@ public:
     /// Return the generated fragment shader source
     const std::string& GetFragmentShaderCode() const { return _fragmentCode; }
 
-    void GenerateProgramCode();
+    void GenerateProgramCode(bool hasGeometryShader);
 
 private:
     void _EmitDeclaration(  std::stringstream &ss,

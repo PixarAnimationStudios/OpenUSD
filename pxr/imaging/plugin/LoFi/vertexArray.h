@@ -81,6 +81,9 @@ public:
   }
   const LoFiTopology* GetTopologyPtr() const {return _topology;};
 
+  // adjacency
+  void SetAdjacency(const VtArray<int>& adjacency);
+
   // allocate
   void Reallocate();
   void Populate();
@@ -95,6 +98,8 @@ private:
   LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
   GLuint                            _ebo;
+  int*                              _adjacency;
+  size_t                            _numAdjacency;
 
   // flags
   uint32_t                          _channels;

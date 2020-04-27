@@ -15,6 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // constructor
 LoFiVertexArray::LoFiVertexArray()
 : _vao(0)
+, _ebo(0)
 , _channels(0)
 , _needReallocate(true)
 , _needUpdate(true)
@@ -42,6 +43,14 @@ LoFiVertexArray::UpdateState()
   }
 }
 
+// adjacency
+void 
+LoFiVertexArray::SetAdjacency(const VtArray<int>& adjacency)
+{
+  _adjacency = (int*)&adjacency[0];
+  _numAdjacency = adjacency.size();
+}
+
 // allocate
 void 
 LoFiVertexArray::Reallocate()
@@ -62,6 +71,11 @@ LoFiVertexArray::Reallocate()
     LoFiVertexBufferSharedPtr buffer = elem.second;
     buffer->Reallocate();
   }
+
+  if(!_ebo)glGenBuffers(1, &_ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, _numAdjacency * sizeof(int), _adjacency, GL_DYNAMIC_DRAW);
+  
   Unbind();
   _needReallocate = false;
   _needUpdate = true;
@@ -82,6 +96,7 @@ LoFiVertexArray::Populate()
       buffer->Populate(datas.cdata());
     }
   }
+  if(_ebo)glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
   Unbind();
   _needReallocate = false;
   _needUpdate = false;
@@ -101,8 +116,16 @@ LoFiVertexArray::Draw() const
       glDrawArrays(GL_LINES, 0, _numElements);
       break;
     case LoFiTopology::Type::TRIANGLES:
-      glDrawArrays(GL_TRIANGLES, 0, _numElements);
+      if(_ebo)
+      {
+        glDrawElements(GL_TRIANGLES_ADJACENCY, // primitive type
+                      _numElements * 2,        // index count
+                      GL_UNSIGNED_INT,      // index type
+                      0);                     // start index
+      }
+      else glDrawArrays(GL_TRIANGLES, 0, _numElements);
       break;
+
   }
   
   Unbind();
