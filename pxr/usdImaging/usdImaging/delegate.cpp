@@ -529,14 +529,6 @@ public:
         // RefreshObject doesn't apply changes to removed objects.
         _proxy->_ProcessRemovals();
     }
-
-    void Clear()
-    {
-        _tasks.clear();
-        _usdPaths.clear();
-        _changedInfoFields.clear();
-        _deferredResyncs.clear();
-    }
 };
 
 void 
@@ -909,7 +901,6 @@ UsdImagingDelegate::_ExecuteWorkForObjectRefresh(_RefreshWorker* worker)
     worker->EnableValueCacheMutations();
 
     worker->ResyncUsdPrims();
-    worker->Clear();
 }
 
 void
@@ -1046,12 +1037,12 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
-    UsdImagingDelegate::_RefreshWorker refreshWorker(this, &indexProxy);
 
     if (!_usdPathsToResync.empty()) {
         // Make a copy of _usdPathsToResync but uniqued with a
         // prefix-check, which removes all elements that are prefixed by
         // other elements.
+        UsdImagingDelegate::_RefreshWorker refreshWorker(this, &indexProxy);
         SdfPathVector usdPathsToResync;
         usdPathsToResync.reserve(_usdPathsToResync.size());
         std::sort(_usdPathsToResync.begin(), _usdPathsToResync.end());
@@ -1077,11 +1068,11 @@ UsdImagingDelegate::ApplyPendingUpdates()
                         usdPath.GetText());
             }
         }
+        _ExecuteWorkForObjectRefresh(&refreshWorker);
     }
 
-    _ExecuteWorkForObjectRefresh(&refreshWorker);
-
     if (!_usdPathsToUpdate.empty()) {
+        UsdImagingDelegate::_RefreshWorker refreshWorker(this, &indexProxy);
         _PathsToUpdateMap usdPathsToUpdate;
         std::swap(usdPathsToUpdate, _usdPathsToUpdate);
         TF_FOR_ALL(pathIt, usdPathsToUpdate) {
@@ -1098,9 +1089,8 @@ UsdImagingDelegate::ApplyPendingUpdates()
                         usdPath.GetText());
             }
         }
+        _ExecuteWorkForObjectRefresh(&refreshWorker);
     }
-
-    _ExecuteWorkForObjectRefresh(&refreshWorker);
 
     // If any changes called Repopulate() on the indexProxy, we need to
     // repopulate them before any updates. If the list is empty, _Populate is a
