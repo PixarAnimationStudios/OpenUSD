@@ -56,6 +56,8 @@ pxr_plugin(LoFi
     RESOURCE_FILES
         plugInfo.json
         shaders/common.glslfx
+        shaders/noise.glslfx
+        shaders/contour.glslfx
         shaders/simple.glslfx
         shaders/mesh.glslfx
         shaders/points.glslfx

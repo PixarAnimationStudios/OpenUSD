@@ -1,0 +1,114 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2020 benmalartre
+//
+// Unlicensed 
+//
+
+#import $TOOLS/LoFi/shaders/common.glslfx
+
+--- --------------------------------------------------------------------------
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "vertex": {
+                "source": [ "Common.Camera",
+                            "Contour.Vertex" ]
+            },
+            "geometry": {
+              "source": [ "Common.Camera",
+                            "Contour.Geometry" ]
+            },
+            "fragment": {
+                "source": [ "Common.Camera",
+                            "Contour.Fragment" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Contour.Vertex
+
+void main()
+{
+  mat4 viewModel = GetViewMatrix() * GetModelMatrix();
+  vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
+  vec4 n = viewModel * vec4(LOFI_GET_normal(), 0.0);
+  gl_Position = GetProjectionMatrix() * p;
+  LOFI_SET_color(LOFI_GET_color());
+  LOFI_SET_position(gl_Position.xyz/gl_Position.w);
+  LOFI_SET_normal(n.xyz);
+}
+
+
+--- --------------------------------------------------------------------------
+-- glsl Contour.Geometry
+
+layout(triangles_adjacency) in;
+layout(triangle_strip, max_vertices = 12) out;
+
+//uniform float HalfWidth;
+bool IsFront(vec2 A, vec2 B, vec2 C)
+{
+    return 0 < (A.x * B.y - B.x * A.y) + (B.x * C.y - C.x * B.y) + (C.x * A.y - A.x * C.y);
+}
+
+
+void EmitEdge(vec2 P0, vec2 P1)
+{
+    float halfWidth = 0.005;
+    vec2 V = normalize(P1 - P0);
+    vec2 N = vec2(-V.y, V.x) * halfWidth;
+
+    gl_Position = vec4(P0 - N, 0, 1); EmitVertex();
+    gl_Position = vec4(P0 + N, 0, 1); EmitVertex();
+    gl_Position = vec4(P1 - N, 0, 1); EmitVertex();
+    gl_Position = vec4(P1 + N, 0, 1); EmitVertex();
+    EndPrimitive();
+}
+
+
+void main()
+{
+    vec2 v0 = LOFI_GET_position(0).xy;
+    vec2 v1 = LOFI_GET_position(1).xy;
+    vec2 v2 = LOFI_GET_position(2).xy;
+    vec2 v3 = LOFI_GET_position(3).xy;
+    vec2 v4 = LOFI_GET_position(4).xy;
+    vec2 v5 = LOFI_GET_position(5).xy;
+
+    if (IsFront(v0, v2, v4)) {
+        if (!IsFront(v0, v1, v2)) EmitEdge(v0, v2);
+        if (!IsFront(v2, v3, v4)) EmitEdge(v2, v4);
+        if (!IsFront(v0, v4, v5)) EmitEdge(v4, v0);
+    } 
+
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Contour.Fragment
+void main()
+{
+  /*
+  vec3 viewPoint = GetViewPoint();
+  vec3 delta = normalize(viewPoint - LOFI_GET_position());
+
+  vec3 lightDir = normalize((GetViewMatrix() * vec4(1.0,1.0,1.0,0.0)).xyz);
+  vec3 color = LOFI_GET_color();
+  float dc = dot(delta, LOFI_GET_normal())  ;
+  if(dc< 0.5) color *= 0.0;
+  float dl = dot(lightDir, LOFI_GET_normal())  ;
+  if(dl<0.5)color *=0.2;  
+  
+#ifdef LOFI_HAS_color
+  LOFI_SET_result(vec4(color,1.0));
+#else
+  LOFI_SET_result(vec4(1.0,0.0,0.0,1.0));
+#endif
+*/
+LOFI_SET_result(vec4(0.0,0.0,0.0,1.0));
+
+}
