@@ -37,6 +37,7 @@ pxr_plugin(LoFi
         drawItem
         resourceRegistry
         utils
+        halfedge
         mesh
         points
         instancer

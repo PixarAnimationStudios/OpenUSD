@@ -235,9 +235,13 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
       _samples
     );
 
+    // compute adjacency
+    _adjacency.Compute(_samples);
+
     _topology.samples = (const int*)&_samples[0];
     _topology.numElements = _samples.size()/3;
     _vertexArray->SetNumElements(_samples.size());
+    _vertexArray->SetAdjacency(_adjacency.Get());
     _vertexArray->SetNeedReallocate(true);
     needReallocate = true;
   }
