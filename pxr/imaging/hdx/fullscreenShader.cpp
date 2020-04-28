@@ -100,34 +100,39 @@ HdxFullscreenShader::~HdxFullscreenShader()
 void
 HdxFullscreenShader::SetProgram(
     TfToken const& glslfx, 
-    TfToken const& technique) 
+    TfToken const& shaderName) 
 {
-    if (_glslfx == glslfx && _technique == technique) {
+    if (_glslfx == glslfx && _shaderName == shaderName) {
         return;
     }
 
     _glslfx = glslfx;
-    _technique = technique;
+    _shaderName = shaderName;
 
     if (_shaderProgram) {
         _DestroyShaderProgram();
     }
 
-    HioGlslfx vsGlslfx(HdxPackageFullscreenShader());
-    HioGlslfx fsGlslfx(glslfx);
+    // For Metal shaders we grab a different technique from the glslfx.
+    TfToken const& technique = _hgi->GetAPIName() == HgiTokens->Metal ? 
+        HgiTokens->Metal : HioGlslfxTokens->defVal;
+
+    HioGlslfx vsGlslfx(HdxPackageFullscreenShader(), technique);
+    HioGlslfx fsGlslfx(glslfx, technique);
 
     // Setup the vertex shader
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
     vertDesc.shaderCode = vsGlslfx.GetSource(_tokens->fullscreenVertex);
+    TF_VERIFY(!vertDesc.shaderCode.empty());
     HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
 
     // Setup the fragment shader
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.debugName = technique.GetString();
+    fragDesc.debugName = _shaderName.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    fragDesc.shaderCode = fsGlslfx.GetSource(technique);
+    fragDesc.shaderCode = fsGlslfx.GetSource(_shaderName);
     TF_VERIFY(!fragDesc.shaderCode.empty());
     HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
 
@@ -165,9 +170,15 @@ HdxFullscreenShader::CreatePipeline(HgiPipelineDesc pipeDesc)
     if (pipeDesc.debugName.empty()) {
         pipeDesc.debugName = "HdxFullscreenShader Pipeline";
     }
+
+    // CreatePipeline call lets the caller set blend and raster state, but
+    // we always override resources, shader program and vertex descriptor since
+    // those either use the internal shader and textures or are already set
+    // via other functions on this class.
     pipeDesc.pipelineType = HgiPipelineTypeGraphics;
     pipeDesc.resourceBindings = _resourceBindings;
     pipeDesc.shaderProgram = _shaderProgram;
+    pipeDesc.vertexBuffers.push_back(_vboDesc);
 
     if (_pipeline) {
         _hgi->DestroyPipeline(&_pipeline);
@@ -323,6 +334,42 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
     return true;
 }
 
+void
+HdxFullscreenShader::_CreateVertexBufferDescriptor()
+{
+    if (!_vboDesc.vertexAttributes.empty()) {
+        return;
+    }
+
+    // Describe the vertex buffer
+    HgiVertexAttributeDesc posAttr;
+    posAttr.format = HgiFormatFloat32Vec3;
+    posAttr.offset = 0;
+    posAttr.shaderBindLocation = 0;
+
+    HgiVertexAttributeDesc uvAttr;
+    uvAttr.format = HgiFormatFloat32Vec2;
+    uvAttr.offset = sizeof(float) * 4; // after posAttr
+    uvAttr.shaderBindLocation = 1;
+
+// todo OpenGL and Metal both re-use slot indices between buffers and textures.
+// Vulkan does not allow this and each bound resource must have a unique index.
+// We need to clarify the Hgi API. We probably want to follow the Vulkan rules,
+// because when we do we still have both pieces of information.
+// Metal and GL can look in the 'textures' vector to find the bindIndex.
+// Vulkan can use the provided 'bindIndex' to determine the index in the
+// descriptor set.
+// However we still have a problem with the glsl.
+// In there we will have written the 'binding=xx' value and it the same glsl
+// won't be compatible between opengl and vulkan...
+    size_t bindSlots = 0;
+
+    _vboDesc.bindingIndex = bindSlots++;
+    _vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
+    _vboDesc.vertexAttributes.push_back(posAttr);
+    _vboDesc.vertexAttributes.push_back(uvAttr);
+}
+
 bool
 HdxFullscreenShader::_CreateDefaultPipeline(
     HgiTextureHandle const& colorDst,
@@ -367,36 +414,7 @@ HdxFullscreenShader::_CreateDefaultPipeline(
     desc.colorAttachmentDescs.emplace_back(_attachment0);
     desc.depthAttachmentDesc = _depthAttachment;
 
-    // Describe the vertex buffer
-    HgiVertexAttributeDesc posAttr;
-    posAttr.format = HgiFormatFloat32Vec3;
-    posAttr.offset = 0;
-    posAttr.shaderBindLocation = 0;
-
-    HgiVertexAttributeDesc uvAttr;
-    uvAttr.format = HgiFormatFloat32Vec2;
-    uvAttr.offset = sizeof(float) * 4; // after posAttr
-    uvAttr.shaderBindLocation = 1;
-
-// todo OpenGL and Metal both re-use slot indices between buffers and textures.
-// Vulkan does not allow this and each bound resource must have a unique index.
-// We need to clarify the Hgi API. We probably want to follow the Vulkan rules,
-// because when we do we still have both pieces of information.
-// Metal and GL can look in the 'textures' vector to find the bindIndex.
-// Vulkan can use the provided 'bindIndex' to determine the index in the
-// descriptor set.
-// However we still have a problem with the glsl.
-// In there we will have written the 'binding=xx' value and it the same glsl
-// won't be compatible between opengl and vulkan...
-    size_t bindSlots = 0;
-
-    HgiVertexBufferDesc vboDesc;
-    vboDesc.bindingIndex = bindSlots++;
-    vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
-    vboDesc.vertexAttributes.push_back(posAttr);
-    vboDesc.vertexAttributes.push_back(uvAttr);
-
-    desc.vertexBuffers.emplace_back(std::move(vboDesc));
+    desc.vertexBuffers.push_back(_vboDesc);
 
     // Depth test and write must be on since we may want to transfer depth.
     // Depth test must be on because when off it also disables depth writes.
@@ -473,6 +491,9 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
+
+    // Create descriptor for vertex pos and uvs
+    _CreateVertexBufferDescriptor();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);
