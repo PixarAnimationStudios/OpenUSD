@@ -610,25 +610,24 @@ _ResolveMinSamplerParameter(
     HdSt_MaterialNode const& node,
     SdrShaderNodeConstPtr const &sdrNode)
 {
-    // Using linear as fallback value.
-    //
-    // Node that this is ambiguous in usdImagingGL/textureUtils.cpp where
-    // the fallback value is linearMipmapLinear when the Usd attribute was
-    // not authored, but linear when an empty token was authored.
+    // Using linearMipmapLinear as fallback value.
+
+    // Note that it is ambiguous whether the fallback value in the old
+    // texture system (usdImagingGL/textureUtils.cpp) was linear or
+    // linearMipmapLinear: when nothing was authored in USD for the
+    // min filter, linearMipmapLinear was used, but when an empty
+    // token was authored, linear was used.
 
     const TfToken value = _ResolveParameter(
-        node, sdrNode, _tokens->minFilter, _samplingValueTokens->linear);
+        node, sdrNode, _tokens->minFilter,
+        _samplingValueTokens->linearMipmapLinear);
 
     if (value == _samplingValueTokens->nearest) {
         return HdMinFilterNearest;
     }
 
-    if (value == _samplingValueTokens->linearMipmapNearest) {
-        return HdMinFilterLinearMipmapNearest;
-    }
-
-    if (value == _samplingValueTokens->linearMipmapLinear) {
-        return HdMinFilterLinearMipmapLinear;
+    if (value == _samplingValueTokens->linear) {
+        return HdMinFilterLinear;
     }
 
     if (value == _samplingValueTokens->nearestMipmapNearest) {
@@ -639,7 +638,15 @@ _ResolveMinSamplerParameter(
         return HdMinFilterNearestMipmapLinear;
     }
 
-    return HdMinFilterLinear;
+    if (value == _samplingValueTokens->linearMipmapNearest) {
+        return HdMinFilterLinearMipmapNearest;
+    }
+
+    if (value == _samplingValueTokens->linearMipmapLinear) {
+        return HdMinFilterLinearMipmapLinear;
+    }
+
+    return HdMinFilterLinearMipmapLinear;
 }
 
 static HdMagFilter

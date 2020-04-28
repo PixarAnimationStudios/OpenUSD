@@ -176,6 +176,7 @@ class HdStUdimSamplerObject final : public HdStSamplerObject {
 public:
     HdStUdimSamplerObject(
         HdStUdimTextureObject const &ptexTexture,
+        // samplerParameters are ignored by udim (at least for now)
         HdSamplerParameters const &samplerParameters,
         bool createBindlessHandle);
 

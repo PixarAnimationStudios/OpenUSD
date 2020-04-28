@@ -301,13 +301,28 @@ HdStPtexSamplerObject::~HdStPtexSamplerObject() = default;
 ///////////////////////////////////////////////////////////////////////////////
 // Udim sampler
 
+// Wrap modes such as repeat or mirror do not make sense for udim, so set them
+// to clamp.
+//
+// Mipmaps would make sense for udim up to a certain level, but
+// GlfUdimTexture produces broken mipmaps, so forcing HdMinFilterLinear.
+// The old texture system apparently never exercised the case of using
+// mipmaps for a udim.
+static
+HdSamplerParameters UDIM_SAMPLER_PARAMETERS{
+    HdWrapClamp,
+    HdWrapClamp,
+    HdWrapClamp,
+    HdMinFilterLinear,
+    HdMagFilterLinear};
+
 HdStUdimSamplerObject::HdStUdimSamplerObject(
     HdStUdimTextureObject const &udimTexture,
     HdSamplerParameters const &samplerParameters,
     const bool createBindlessHandle)
   : _glTexelsSamplerName(
       _GenGLSampler(
-          samplerParameters))
+          UDIM_SAMPLER_PARAMETERS))
   , _texelsGLTextureHandle(
       _GenGLTextureSamplerHandle(
           udimTexture.GetTexelGLTextureName(),
