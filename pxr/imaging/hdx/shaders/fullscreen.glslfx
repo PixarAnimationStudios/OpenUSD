@@ -37,7 +37,28 @@
             "CompositeFragmentWithDepth": {
                 "source": [ "Composite.FragmentWithDepth" ]
             }
+        },
+        "Metal": {
+            "FullscreenVertex": {
+                "source": [
+                    "Fullscreen.Metal.Common",
+                    "Fullscreen.Metal.Vertex"
+                ]
+            },
+            "CompositeFragmentNoDepth": {
+                "source": [
+                    "Fullscreen.Metal.Common",
+                    "Composite.Metal.FragmentNoDepth"
+                ]
+            },
+            "CompositeFragmentWithDepth": {
+                "source": [
+                    "Fullscreen.Metal.Common",
+                    "Composite.Metal.FragmentWithDepth"
+                ]
+            }
         }
+
     }
 }
 
@@ -83,4 +104,57 @@ void main(void)
     float depth = texture2D(depth, uv).r;
     gl_FragColor = texture2D(color, uv);
     gl_FragDepth = depth;
+}
+
+-- glsl Fullscreen.Metal.Common
+
+struct Interpolated {
+    float4 position [[position]];
+    float2 uv;
+};
+
+-- glsl Fullscreen.Metal.Vertex
+
+struct Vertex {
+    float4 position [[attribute(0)]];
+    float2 uvIn [[attribute(1)]];
+};
+
+vertex Interpolated vertexEntryPoint(Vertex v [[stage_in]])
+{
+    Interpolated out;
+    out.position = v.position;
+    out.uv = v.uvIn;
+    return out;
+}
+
+-- glsl Composite.Metal.FragmentNoDepth
+
+constexpr sampler texSampler(address::clamp_to_edge);
+
+fragment half4 fragmentEntryPoint(
+    Interpolated input[[stage_in]],
+    texture2d<float> color[[texture(0)]])
+{
+    return color.sample(texSampler, input.uv);
+}
+
+-- glsl Composite.Metal.FragmentWithDepth
+
+struct Out {
+    float4 color [[color(0)]];
+    float depth [[depth(any)]];
+};
+
+constexpr sampler texSampler(address::clamp_to_edge);
+
+fragment Out fragmentEntryPoint(
+    Interpolated input[[stage_in]],
+    texture2d<float> color[[texture(0)]],
+    depth2d<float> depth[[texture(1)]])
+{
+    Out out;
+    out.depth = depth.sample(texSampler, input.uv).r;
+    out.color = color.sample(texSampler, input.uv);
+    return out;
 }
