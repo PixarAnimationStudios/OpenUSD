@@ -1262,52 +1262,20 @@ namespace {
 
 
 bool
-_GetInfluences(const UsdSkelBindingAPI& binding,
+_GetInfluences(const UsdSkelSkinningQuery& skinningQuery,
                UsdTimeCode time,
                VtVec2fArray* influences,
                int* numInfluencesPerComponent,
                bool* isConstant)
 {
-    const UsdGeomPrimvar ji = binding.GetJointIndicesPrimvar();
-    const UsdGeomPrimvar jw = binding.GetJointWeightsPrimvar();
-    
-    const int indicesElementSize = ji.GetElementSize();
-    const int weightsElementSize = jw.GetElementSize();
-    if (indicesElementSize != weightsElementSize) {
-        TF_WARN("%s -- jointIndices element size (%d) != "
-                "jointWeights element size (%d).",
-                binding.GetPrim().GetPath().GetText(),
-                indicesElementSize, weightsElementSize);
-        return false;
-    }
-    
-    if (indicesElementSize <= 0) {
-        TF_WARN("%s -- Invalid element size for skel:jointIndices and "
-                "skel:jointWeights primvars (%d): element size must greater "
-                "than zero.", binding.GetPrim().GetPath().GetText(),
-                indicesElementSize);
-        return false;
-    }
-    const TfToken indicesInterpolation = ji.GetInterpolation();
-    const TfToken weightsInterpolation = jw.GetInterpolation();
-    if (indicesInterpolation != weightsInterpolation) {
-        TF_WARN("%s -- jointIndices interpolation (%s) != "
-                "jointWeights interpolation (%s).",
-                binding.GetPrim().GetPath().GetText(),
-                indicesInterpolation.GetText(),
-                weightsInterpolation.GetText());
-        return false;
-    }
-    
     VtIntArray vji;
-    VtFloatArray vjw;
-    if (ji.ComputeFlattened(&vji, time) &&
-        jw.ComputeFlattened(&vjw, time)) {
-
+    VtFloatArray vjw;   
+    if (skinningQuery.ComputeJointInfluences(&vji, &vjw, time)) {
         influences->resize(vji.size());
         if (UsdSkelInterleaveInfluences(vji, vjw, *influences)) {
-            *numInfluencesPerComponent = indicesElementSize;
-            *isConstant = indicesInterpolation == UsdGeomTokens->constant;
+            *numInfluencesPerComponent =
+                skinningQuery.GetNumInfluencesPerComponent();
+            *isConstant = skinningQuery.IsRigidlyDeformed();
             return true;
         }
     }
@@ -1317,7 +1285,7 @@ _GetInfluences(const UsdSkelBindingAPI& binding,
 
 bool
 _ComputeSkinningTransforms(const UsdSkelSkeletonQuery& skelQuery,
-                           const UsdSkelAnimMapper& jointMapper,
+                           const UsdSkelSkinningQuery& skinningQuery,
                            UsdTimeCode time,
                            VtMatrix4fArray* xforms)
 {
@@ -1328,11 +1296,19 @@ _ComputeSkinningTransforms(const UsdSkelSkeletonQuery& skelQuery,
     // skeleton, and share the results across each skinned prim.
     VtMatrix4fArray xformsInSkelOrder;
     if (skelQuery.ComputeSkinningTransforms(&xformsInSkelOrder, time)) {
-
-        // Each skinned prim may specify its own ordering of joints.
-        // (eg., because only a subset set of joints may apply to the prim).
-        // Return the remapped results.
-        return jointMapper.RemapTransforms(xformsInSkelOrder, xforms);
+        
+        if (skinningQuery.GetJointMapper()) {
+            // Each skinned prim may specify its own ordering of joints.
+            // (eg., because only a subset set of joints may apply to the prim).
+            // Return the remapped results.
+            return skinningQuery.GetJointMapper()->RemapTransforms(
+                xformsInSkelOrder, xforms);
+        } else {
+            // Prim does not specify a joint order, so joints are returned
+            // in skel order.
+            *xforms = std::move(xformsInSkelOrder);
+            return true;
+        }
     }
     return false;
 }
@@ -1341,7 +1317,7 @@ _ComputeSkinningTransforms(const UsdSkelSkeletonQuery& skelQuery,
 bool
 _ComputeSubShapeWeights(const UsdSkelSkeletonQuery& skelQuery,
                         const UsdSkelBlendShapeQuery& blendShapeQuery,
-                        const UsdSkelAnimMapper& blendShapeMapper,
+                        const UsdSkelSkinningQuery& skinningQuery,
                         UsdTimeCode time,
                         VtFloatArray* subShapeWeights)
 {
@@ -1358,12 +1334,20 @@ _ComputeSubShapeWeights(const UsdSkelSkeletonQuery& skelQuery,
             // (eg., because only a subset of blend shapes may apply to
             // the prim). Remap them.
             VtFloatArray weightsInPrimOrder;
-            const float defaultValue = 0.0f;
-            if (blendShapeMapper.Remap(weights, &weightsInPrimOrder,
-                                       /*elementSize*/ 1, &defaultValue)) {
-                return blendShapeQuery.ComputeFlattenedSubShapeWeights(
-                    weightsInPrimOrder, subShapeWeights);
+            
+            if (skinningQuery.GetBlendShapeMapper()) {
+                const float defaultValue = 0.0f;
+                if (!skinningQuery.GetBlendShapeMapper()->Remap(
+                        weights, &weightsInPrimOrder,
+                        /*elementSize*/ 1, &defaultValue)) {
+                    return false;
+                }
+            } else {
+                weightsInPrimOrder = std::move(weights);
             }
+
+            return blendShapeQuery.ComputeFlattenedSubShapeWeights(
+                weightsInPrimOrder, subShapeWeights);
         }
     }
     return false;
@@ -1497,10 +1481,15 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
         //       computations to remove the non-varying inputs into its own
         //       computation.
         
-        UsdSkelBindingAPI binding(skinnedPrim);
+        const SdfPath skinnedPrimPath =
+            UsdImagingGprimAdapter::_ResolveCachePath(
+                skinnedPrim.GetPath(), instancerContext);
 
-        // TODO: Handle inherited primvars for jointIndices, jointWeights
-        // and geomBindTransform.
+        const _SkinnedPrimData* skinnedPrimData =
+            _GetSkinnedPrimData(skinnedPrimPath);
+        if (!TF_VERIFY(skinnedPrimData)) {
+            return;
+        }
 
         // restPoints, geomBindXform
         if (!_IsEnabledAggregatorComputation()) {
@@ -1509,10 +1498,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
 
             // read (optional) geomBindTransform property.
             // If unauthored, it is identity.
-            GfMatrix4d geomBindXform(1);
-            if (UsdAttribute attr = binding.GetGeomBindTransformAttr()) {
-                attr.Get(&geomBindXform);
-            }
+            const GfMatrix4d geomBindXform =
+                skinnedPrimData->skinningQuery.GetGeomBindTransform();
+
             // Skinning computations use float precision.
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->geomBindXform) =
@@ -1526,7 +1514,8 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             int numInfluencesPerComponent = 0;
             bool usesConstantJointPrimvar = false;
             
-            _GetInfluences(binding, time, &influences,
+            _GetInfluences(skinnedPrimData->skinningQuery,
+                           time, &influences,
                            &numInfluencesPerComponent,
                            &usesConstantJointPrimvar);
 
@@ -1539,18 +1528,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
                 computationPath, _tokens->hasConstantInfluences)
                     = usesConstantJointPrimvar;
         }
+            
         // blendShapeOffsets, blendShapeOffsetRanges, numBlendShapeOffsetRanges
         if (!_IsEnabledAggregatorComputation()) {
-            const SdfPath skinnedPrimPath =
-                UsdImagingGprimAdapter::_ResolveCachePath(
-                            skinnedPrim.GetPath(), instancerContext);
-
-            const _SkinnedPrimData* skinnedPrimData =   
-                _GetSkinnedPrimData(skinnedPrimPath);
-            if (!TF_VERIFY(skinnedPrimData)) {
-                return;
-            }
-            
             VtVec4fArray offsets;
             VtVec2iArray ranges;
             if (skinnedPrimData->blendShapeQuery) {
@@ -1583,16 +1563,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
 
         // skinningXforms, skelLocalToWorld, blendShapeWeights
         {
-            SdfPath skinnedPrimPath =
-                UsdImagingGprimAdapter::_ResolveCachePath(
-                            skinnedPrim.GetPath(), instancerContext);
-
-            const _SkinnedPrimData* skinnedPrimData =   
-                _GetSkinnedPrimData(skinnedPrimPath);
-            if (!TF_VERIFY(skinnedPrimData)) {
-                return;
-            }
-                
             const _SkelData* skelData = _GetSkelData(skinnedPrimData->skelPath);
             if (!TF_VERIFY(skelData)) {
                 return;
@@ -1601,10 +1571,13 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             VtMatrix4fArray skinningXforms;
             if (!skinnedPrimData->hasJointInfluences ||
                 !_ComputeSkinningTransforms(skelData->skelQuery,
-                                            skinnedPrimData->jointMapper,
+                                            skinnedPrimData->skinningQuery,
                                             time, &skinningXforms)) {
-                skinningXforms.assign(skinnedPrimData->jointMapper.size(),
-                                      GfMatrix4f(1));
+                skinningXforms.assign(
+                    skinnedPrimData->skinningQuery.GetJointMapper() ?
+                    skinnedPrimData->skinningQuery.GetJointMapper()->size() :
+                    skelData->skelQuery.GetTopology().size(),
+                    GfMatrix4f(1));
             }
 
             valueCache->GetExtComputationInput(
@@ -1614,7 +1587,7 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             if (!skinnedPrimData->blendShapeQuery ||
                 !_ComputeSubShapeWeights(skelData->skelQuery,
                                          *skinnedPrimData->blendShapeQuery,
-                                         skinnedPrimData->blendShapeMapper,
+                                         skinnedPrimData->skinningQuery,
                                          time, &weights)) {
                 if (skinnedPrimData->blendShapeQuery) {
                     weights.assign(
@@ -1716,10 +1689,16 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
     }
 
     if (requestedBits & HdExtComputation::DirtySceneInput) {
-        UsdSkelBindingAPI binding(skinnedPrim);
 
-        // TODO: Handle inherited primvars for jointIndices, jointWeights
-        // and geomBindTransform.
+        const SdfPath skinnedPrimPath =
+            UsdImagingGprimAdapter::_ResolveCachePath(
+                skinnedPrim.GetPath(), instancerContext);
+
+        const _SkinnedPrimData* skinnedPrimData =
+            _GetSkinnedPrimData(skinnedPrimPath);
+        if (!TF_VERIFY(skinnedPrimData)) {
+            return;
+        }
 
         // restPoints, geomBindXform
         {
@@ -1730,10 +1709,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
             
             // read (optional) geomBindTransform property.
             // If unauthored, it is identity.
-            GfMatrix4d geomBindXform(1);
-            if (UsdAttribute attr = binding.GetGeomBindTransformAttr()) {
-                attr.Get(&geomBindXform);
-            }
+            const GfMatrix4d geomBindXform =
+                skinnedPrimData->skinningQuery.GetGeomBindTransform();
+
             // Skinning computations use float precision.
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->geomBindXform) =
@@ -1746,7 +1724,8 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
             int numInfluencesPerComponent = 0;
             bool usesConstantJointPrimvar = false;
             
-            _GetInfluences(binding, time, &influences,
+            _GetInfluences(skinnedPrimData->skinningQuery,
+                           time, &influences,
                            &numInfluencesPerComponent,
                            &usesConstantJointPrimvar);
 
@@ -1759,17 +1738,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
                 computationPath, _tokens->hasConstantInfluences)
                     = usesConstantJointPrimvar;
         }
+
         // blendShapeOffsets, blendShapeOffsetRanges, numBlendShapeOffsetRanges
         {
-            const SdfPath skinnedPrimPath =
-                UsdImagingGprimAdapter::_ResolveCachePath(
-                            skinnedPrim.GetPath(), instancerContext);
-
-            const _SkinnedPrimData* skinnedPrimData =   
-                _GetSkinnedPrimData(skinnedPrimPath);
-            if (!TF_VERIFY(skinnedPrimData)) {
-                return;
-            }
             
             VtVec4fArray offsets;
             VtVec2iArray ranges;
@@ -2089,31 +2060,11 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
     const UsdSkelSkeletonQuery& skelQuery,
     const UsdSkelSkinningQuery& skinningQuery,
     const SdfPath& skelRootPath)
-    : skelPath(skelQuery.GetPrim().GetPath()),
-      skelRootPath(skelRootPath)
-{
-    hasJointInfluences = skinningQuery.HasJointInfluences();
-    if (hasJointInfluences) {
-        if (skinningQuery.GetJointMapper()) {
-            jointMapper = *skinningQuery.GetJointMapper();
-        } else {
-            // Store an identity mapper.
-            jointMapper = UsdSkelAnimMapper(skelQuery.GetTopology().size());
-        }
-    }
-
-    if (skinningQuery.HasBlendShapes() && skelQuery.GetAnimQuery()) {
-
-        blendShapeQuery =
-            std::make_shared<UsdSkelBlendShapeQuery>(
-                UsdSkelBindingAPI(skinningQuery.GetPrim()));
-        if (blendShapeQuery->IsValid()) {
-            blendShapeMapper = *skinningQuery.GetBlendShapeMapper();
-        } else {
-            blendShapeQuery.reset();
-        }
-   }
-}
+    : skinningQuery(skinningQuery),
+      skelPath(skelQuery.GetPrim().GetPath()),
+      skelRootPath(skelRootPath),
+      hasJointInfluences(skinningQuery.HasJointInfluences())
+{}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
