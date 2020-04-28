@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/pxOsd/api.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
+#include "pxr/imaging/pxOsd/meshTopologyValidation.h"
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -194,6 +195,28 @@ public:
     PXOSD_API
     bool operator==(PxOsdMeshTopology const &other) const;
 
+    /// Returns a validation object which is empty if the topology is valid
+    ///
+    /// \code{.cpp}
+    /// // Validation with minimal reporting
+    /// if (!topology.Validate()) TF_CODING_ERROR("Invalid topology.");
+    /// \endcode
+    ///
+    /// \code{.cpp}
+    /// {
+    ///    PxOsdMeshTopologyValidation validation = topology.Validate();
+    ///    if (!validation){
+    ///        for (auto const& elem: validation){
+    ///             TF_WARN(elem.message);
+    ///        }
+    ///    }
+    /// }
+    /// \endcode
+    ///
+    /// \note Internally caches the result of the validation if the topology is
+    /// valid
+    PxOsdMeshTopologyValidation Validate() const;
+
 private:
 
     // note: if you're going to add more members, make sure
@@ -207,6 +230,31 @@ private:
     VtIntArray _holeIndices;
 
     PxOsdSubdivTags _subdivTags;
+
+    struct _Validated {
+        std::atomic<bool> value;
+
+        _Validated() : value(false) {}
+        _Validated(const _Validated& other) : value(other.value.load()) {}
+        _Validated(_Validated&& other) : value(other.value.load()) {
+            other.value = false;
+        }
+        _Validated& operator=(const _Validated& other) {
+            value.store(other.value.load());
+            return *this;
+        }
+        _Validated& operator=(_Validated&& other) {
+            value.store(other.value.load());
+            other.value = false;
+            return *this;
+        }
+    };
+
+    // This should NOT be included in the hash
+    // This evaluates to true if the topology has been successfully
+    // pre-validated. If this is false, the topology is either invalid
+    // or it hasn't been validated yet.
+    mutable _Validated _validated;
 };
 
 PXOSD_API

@@ -26,6 +26,7 @@
 ///
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
+#include "pxr/imaging/pxOsd/meshTopologyValidation.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/trace/trace.h"
@@ -120,6 +121,19 @@ PxOsdMeshTopology::operator==(PxOsdMeshTopology const &other) const {
             _faceVertexIndices == other._faceVertexIndices  && 
             _subdivTags == other._subdivTags                && 
             _holeIndices == other._holeIndices);
+}
+
+PxOsdMeshTopologyValidation
+PxOsdMeshTopology::Validate() const
+{
+    TRACE_FUNCTION();
+    if (_validated.value){
+        return PxOsdMeshTopologyValidation();
+    }
+
+    PxOsdMeshTopologyValidation validation(*this);
+    _validated.value.store(bool(validation));
+    return validation;
 }
 
 std::ostream&
