@@ -928,7 +928,17 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 TfTokenVector
 Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-    return _valueCacheMap[taskId][HdTokens->renderTags].Get<TfTokenVector>();
+    const auto it1 = _valueCacheMap.find(taskId);
+    if (it1 == _valueCacheMap.end()) {
+        return {};
+    }
+
+    const auto it2 = it1->second.find(HdTokens->renderTags);
+    if (it2 == it1->second.end()) {
+        return {};
+    }
+
+    return it2->second.Get<TfTokenVector>();
 }
 
 
