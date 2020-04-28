@@ -1379,7 +1379,7 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
         // Do nothing
     }
     else if ((usdShaderImpl = UsdShadeShader::Define(_stage, shaderImplPath))) {
-        TF_DEBUG(USDMTLX_READER).Msg("Created  shader mtlx %s, as usd %s\n",
+        TF_DEBUG(USDMTLX_READER).Msg("Created shader mtlx %s, as usd %s\n",
                                      mtlxNodeDef->getName().c_str(),
                                      name.GetString().c_str());
         usdShaderImpl.CreateIdAttr(VtValue(TfToken(shaderId)));
