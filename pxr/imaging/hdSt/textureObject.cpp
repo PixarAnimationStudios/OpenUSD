@@ -37,6 +37,7 @@
 #include "pxr/imaging/glf/udimTexture.h"
 
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -135,7 +136,8 @@ public:
     // texture descriptor.
     HdSt_TextureObjectCpuData(GlfBaseTextureDataRefPtr const &textureData,
                               const std::string &debugName,
-                              const GlfImage::ImageOriginLocation originLocation
+                              bool generateMips = false,
+                              GlfImage::ImageOriginLocation originLocation
                                           = GlfImage::OriginUpperLeft);
 
     ~HdSt_TextureObjectCpuData() = default;
@@ -167,9 +169,28 @@ private:
     std::unique_ptr<const unsigned char[]> _convertedRawData;
 };
 
+// Compute the number of mip levels given the dimensions of a texture using
+// the same formula as OpenGL.
+static
+uint16_t _ComputeNumMipLevels(const GfVec3i &dimensions)
+{
+    const int dim = std::max({dimensions[0], dimensions[1], dimensions[2]});
+
+    for (uint16_t i = 1; i < 8 * sizeof(int) - 1; i++) {
+        const int powerTwo = 1 << i;
+        if (powerTwo > dim) {
+            return i;
+        }
+    }
+    
+    // Can never be reached, but compiler doesn't know that.
+    return 1;
+}
+
 HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
     GlfBaseTextureDataRefPtr const &textureData,
     const std::string &debugName,
+    const bool generateMips,
     const GlfImage::ImageOriginLocation originLocation)
 {
     TRACE_FUNCTION();
@@ -189,6 +210,10 @@ HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
 
     _textureDesc.type = _GetTextureType(textureData->NumDimensions());
     _textureDesc.pixelsByteSize = HgiDataSizeOfFormat(_textureDesc.format);
+
+    if (generateMips) {
+        _textureDesc.mipLevels = _ComputeNumMipLevels(_textureDesc.dimensions);
+    }
 }
 
 bool
@@ -458,6 +483,7 @@ HdStUvTextureObject::_Load()
     _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
         textureData,
         _GetDebugName(GetTextureIdentifier()),
+        /* generateMips = */ true,
         _GetImageOriginLocation(
             GetTextureIdentifier().GetSubtextureIdentifier()));
 
@@ -488,8 +514,15 @@ HdStUvTextureObject::_Commit()
         return;
     }
 
+    const HgiTextureDesc &desc = _cpuData->GetTextureDesc();
+
     // Upload to GPU
-    _gpuTexture = hgi->CreateTexture(_cpuData->GetTextureDesc());
+    _gpuTexture = hgi->CreateTexture(desc);
+    if (desc.mipLevels > 1) {
+        HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+        blitCmds->GenerateMipMaps(_gpuTexture);
+        hgi->SubmitCmds(blitCmds.get(), 1);
+    }
 
     // Free CPU memory after transfer to GPU
     _cpuData.reset();

@@ -72,6 +72,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (rgba)
     (fallback)
+    (minFilter)
+    (magFilter)
+    (linear)
+    (linearMipmapLinear)
 
     (varname)
     (result)
@@ -420,6 +424,10 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     textureNode.parameters[_tokens->st] = _tokens->cardsUv;
                     textureNode.parameters[_tokens->fallback] = fallback;
                     textureNode.parameters[_tokens->file] = textureFile;
+                    textureNode.parameters[_tokens->minFilter] =
+                        _tokens->linearMipmapLinear;
+                    textureNode.parameters[_tokens->magFilter] =
+                        _tokens->linear;
 
                     // Insert connection between texture node and terminal
                     HdMaterialRelationship rel;
