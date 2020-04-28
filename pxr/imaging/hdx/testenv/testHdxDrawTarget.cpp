@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
     HdMaterialNetworkMap material1;
     HdMaterialNetwork& network1 = material1.map[terminalType];
     HdMaterialNode terminal1;
-    terminal1.path = materialId.AppendPath(SdfPath("/Shader"));
+    terminal1.path = materialId.AppendPath(SdfPath("Shader"));
     terminal1.identifier = sdrSurfaceNode->GetIdentifier();
     terminal1.parameters[TfToken("texColor")] = VtValue(GfVec3f(1));
 
@@ -189,14 +189,14 @@ int main(int argc, char *argv[])
     rel.inputName = TfToken("rgb");
     rel.outputId = terminal1.path;
     rel.outputName = TfToken("texColor");
-    network1.relationships.emplace_back(std::move(rel));
+    network1.relationships.push_back(std::move(rel));
 
     // Insert texture node
-    network1.nodes.emplace_back(std::move(textureNode));
+    network1.nodes.push_back(std::move(textureNode));
 
     // Insert terminal
     material1.terminals.push_back(terminal1.path);
-    network1.nodes.emplace_back(std::move(terminal1)); // must be last in vector
+    network1.nodes.push_back(std::move(terminal1)); // must be last in vector
     delegate->AddMaterialResource(
         materialId,
         VtValue(material1));
