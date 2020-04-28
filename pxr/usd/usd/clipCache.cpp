@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/clipCache.h"
 
+#include "pxr/usd/usd/clipsAPI.h"
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/resolver.h"
@@ -85,17 +86,20 @@ _ValidateClipFields(
     // this provides users with a way to 'block' clips specified in a 
     // weaker layer.
     if (clipPrimPath.empty()) {
-        *errMsg = "No clip prim path specified";
+        *errMsg = TfStringPrintf(
+            "No clip prim path specified in '%s'",
+            UsdClipsAPIInfoKeys->primPath.GetText());
         return false;
     }
 
     const size_t numClips = clipAssetPaths.size();
 
-    // Each entry in the 'clipAssetPaths' array is the asset path to a clip.
+    // Each entry in the clipAssetPaths array is the asset path to a clip.
     for (const auto& clipAssetPath : clipAssetPaths) {
         if (clipAssetPath.GetAssetPath().empty()) {
-            *errMsg = TfStringPrintf("Empty clip asset path in metadata '%s'",
-                                     UsdTokens->clipAssetPaths.GetText());
+            *errMsg = TfStringPrintf(
+                "Empty clip asset path in '%s'",
+                UsdClipsAPIInfoKeys->assetPaths.GetText());
             return false;
         }
     }
@@ -109,9 +113,9 @@ _ValidateClipFields(
     const SdfPath path(clipPrimPath);
     if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         *errMsg = TfStringPrintf(
-            "Path '%s' in metadata '%s' must be an absolute path to a prim",
+            "Path '%s' in '%s' must be an absolute path to a prim",
             clipPrimPath.c_str(),
-            UsdTokens->clipPrimPath.GetText());
+            UsdClipsAPIInfoKeys->primPath.GetText());
         return false;
     }
 
@@ -122,9 +126,9 @@ _ValidateClipFields(
             startFrameAndClipIndex[1] >= numClips) {
 
             *errMsg = TfStringPrintf(
-                "Invalid clip index %d in metadata '%s'", 
+                "Invalid clip index %d in '%s'", 
                 (int)startFrameAndClipIndex[1],
-                UsdTokens->clipActive.GetText());
+                UsdClipsAPIInfoKeys->active.GetText());
             return false;
         }
     }
@@ -140,11 +144,11 @@ _ValidateClipFields(
         
         if (!status.second) {
             *errMsg = TfStringPrintf(
-                "Clip %d cannot be active at time %.3f in metadata '%s' "
-                "because clip %d was already specified as active at this time.",
+                "Clip %d cannot be active at time %.3f in '%s' because "
+                "clip %d was already specified as active at this time.",
                 (int)startFrameAndClipIndex[1],
                 startFrameAndClipIndex[0],
-                UsdTokens->clipActive.GetText(),
+                UsdClipsAPIInfoKeys->active.GetText(),
                 status.first->second);
             return false;
         }

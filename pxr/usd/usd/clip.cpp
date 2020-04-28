@@ -253,18 +253,21 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const size_t indexOfSourceLayer)
 {
     if (stride <= 0) {
-        TF_WARN("Invalid clipTemplateStride %f for prim <%s>. "
-                "clipTemplateStride must be greater than 0.", 
-                stride, usdPrimPath.GetText());
+        TF_WARN("Invalid %s %f for prim <%s>. %s must be greater than 0.", 
+                UsdClipsAPIInfoKeys->templateStride.GetText(), stride,
+                usdPrimPath.GetText(),
+                UsdClipsAPIInfoKeys->templateStride.GetText());
         return;
     }
 
     bool activeOffsetProvided = activeOffset != _DefaultClipOffsetValue;
     if (activeOffsetProvided && (std::abs(activeOffset) > stride)) {
-        TF_WARN("Invalid clipTemplateOffset %f for prim <%s>. "
-                "absolute value of clipTemplateOffset must not exceed "
-                "clipTemplateStride %f.",
-                activeOffset, usdPrimPath.GetText(), stride);
+        TF_WARN("Invalid %s %f for prim <%s>. "
+                "Absolute value of %s must not exceed %s %f.",
+                UsdClipsAPIInfoKeys->templateActiveOffset.GetText(), 
+                activeOffset, usdPrimPath.GetText(),
+                UsdClipsAPIInfoKeys->templateActiveOffset.GetText(), 
+                UsdClipsAPIInfoKeys->templateStride.GetText(), stride);
         return;
     }
 
@@ -301,19 +304,23 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     if ((matchingGroups != 1 && matchingGroups != 2)
         || (matchingGroups == 2 
             && (integerHashSectionIndex != decimalHashSectionIndex - 1))) {
-        TF_WARN("Invalid template string specified %s, must be "
+        TF_WARN("Invalid %s '%s' for prim <%s>. It must be "
                 "of the form path/basename.###.usd or "
                 "path/basename.###.###.usd. Note that the number "
                 "of hash marks is variable in each group.",
-                templateAssetPath.c_str());
+                UsdClipsAPIInfoKeys->templateAssetPath.GetText(),
+                templateAssetPath.c_str(),
+                usdPrimPath.GetText());
         return;
     }
 
     if (startTimeCode > endTimeCode) {
-        TF_WARN("Invalid range specified in template clip metadata. "
-                "clipTemplateEndTime (%f) cannot be greater than "
-                "clipTemplateStartTime (%f).",
+        TF_WARN("Invalid time range specified for prim <%s>. "
+                "%s (%f) cannot be greater than %s (%f).",
+                usdPrimPath.GetText(),
+                UsdClipsAPIInfoKeys->templateEndTime.GetText(), 
                 endTimeCode,
+                UsdClipsAPIInfoKeys->templateStartTime.GetText(), 
                 startTimeCode);
         return;
     }
@@ -337,7 +344,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     size_t clipActiveIndex = 0;
 
     // If we have an activeOffset, we author a knot on the front so users can query
-    // at time t where t is the first sample - the clipActiveOffset
+    // at time t where t is the first sample - the active offset
     if (activeOffsetProvided) {
         const double promotedStart = startTimeCode*promotion;
         const double promotedOffset = std::abs(activeOffset)*promotion;
@@ -376,7 +383,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     }
 
     // If we have an offset, we author a knot on the end so users can query
-    // at time t where t is the last sample + the clipActiveOffset
+    // at time t where t is the last sample + the active offset
     if (activeOffsetProvided) {
         const double promotedEnd = endTimeCode*promotion;
         const double promotedOffset = std::abs(activeOffset)*promotion;
@@ -384,9 +391,12 @@ _DeriveClipInfo(const std::string& templateAssetPath,
         (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
     }
 
-    _ClipDerivationMsg(UsdTokens->clipAssetPaths, **clipAssetPaths, usdPrimPath);
-    _ClipDerivationMsg(UsdTokens->clipTimes, **clipTimes, usdPrimPath);
-    _ClipDerivationMsg(UsdTokens->clipActive, **clipActive, usdPrimPath);
+    _ClipDerivationMsg(
+        UsdClipsAPIInfoKeys->assetPaths, **clipAssetPaths, usdPrimPath);
+    _ClipDerivationMsg(
+        UsdClipsAPIInfoKeys->times, **clipTimes, usdPrimPath);
+    _ClipDerivationMsg(
+        UsdClipsAPIInfoKeys->active, **clipActive, usdPrimPath);
 }
 
 static bool
