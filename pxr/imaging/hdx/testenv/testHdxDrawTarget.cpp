@@ -180,8 +180,12 @@ int main(int argc, char *argv[])
     // to do a lookup of the prim via GetTextureResource on the sceneDelegate.
     // The file path cannot be empty though, because if it is empty HdSt will
     // use the fallback value of the texture node.
+    //
+    // Note that we do not author an SdfPath or std::string here so that
+    // the HdSceneDelegate::GetTextureResource API is used rather than the
+    // storm texture system.
     textureNode.parameters[TfToken("file")] = 
-        VtValue(drawTargetAttachmentId.GetString());
+        VtValue(drawTargetAttachmentId);
 
     // Insert connection between texture node and terminal
     HdMaterialRelationship rel;
