@@ -56,15 +56,16 @@ public:
     void RunTest(int argc, char *argv[]);
 
     virtual void InitTest() = 0;
+    HDST_API virtual void UninitTest();
     virtual void DrawTest() = 0;        // interactive mode
     virtual void OffscreenTest() = 0;   // offscreen mode (automated test)
 
     HDST_API
-    virtual void MousePress(int button, int x, int y);
+    virtual void MousePress(int button, int x, int y, int modKeys);
     HDST_API
-    virtual void MouseRelease(int button, int x, int y);
+    virtual void MouseRelease(int button, int x, int y, int modKeys);
     HDST_API
-    virtual void MouseMove(int x, int y);
+    virtual void MouseMove(int x, int y, int modKeys);
     HDST_API
     virtual void KeyRelease(int key);
 
@@ -94,6 +95,8 @@ protected:
     GfMatrix4d GetProjectionMatrix() const;
     HDST_API
     GfFrustum GetFrustum() const;
+
+    GfVec2i GetMousePos() const { return GfVec2i(_mousePos[0], _mousePos[1]); }
 
 private:
     HdSt_UnitTestWindow *_widget;

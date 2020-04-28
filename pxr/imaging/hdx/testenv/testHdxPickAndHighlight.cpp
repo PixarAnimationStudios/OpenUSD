@@ -35,13 +35,13 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
-#include "pxr/imaging/hdx/unitTestGLDrawing.h"
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -95,7 +95,7 @@ _GetSelectedInstances(HdSelectionSharedPtr const& sel,
 
 }
 
-class My_TestGLDrawing : public Hdx_UnitTestGLDrawing {
+class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() 
         : _hgi(Hgi::GetPlatformDefaultHgi())
@@ -111,18 +111,18 @@ public:
     void DrawScene();
     void DrawMarquee();
     
-    // Hdx_UnitTestGLDrawing overrides
-    virtual void InitTest();
-    virtual void UninitTest();
-    virtual void DrawTest();
-    virtual void OffscreenTest();
+    // HdSt_UnitTestGLDrawing overrides
+    void InitTest() override;
+    void UninitTest() override;
+    void DrawTest() override;
+    void OffscreenTest() override;
 
-    virtual void MousePress(int button, int x, int y, int modKeys);
-    virtual void MouseRelease(int button, int x, int y, int modKeys);
-    virtual void MouseMove(int x, int y, int modKeys);
+    void MousePress(int button, int x, int y, int modKeys) override;
+    void MouseRelease(int button, int x, int y, int modKeys) override;
+    void MouseMove(int x, int y, int modKeys) override;
 
 protected:
-    virtual void ParseArgs(int argc, char *argv[]);
+    void ParseArgs(int argc, char *argv[]) override;
     void _InitScene();
     void _Clear();
     HdSelectionSharedPtr _Pick(
@@ -486,14 +486,14 @@ My_TestGLDrawing::DrawMarquee()
 void
 My_TestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
     _startPos = _endPos = GetMousePos();
 }
 
 void
 My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
         HdSelectionSharedPtr selection = _Pick(_startPos, _endPos,
@@ -506,7 +506,7 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 void
 My_TestGLDrawing::MouseMove(int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MouseMove(x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MouseMove(x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
         _endPos = GetMousePos();
