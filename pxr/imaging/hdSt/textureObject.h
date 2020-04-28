@@ -78,6 +78,14 @@ public:
     HDST_API
     void SetTargetMemory(size_t);
 
+    /// Is texture valid? Only correct after commit phase.
+    ///
+    /// E.g., no file at given file path. Consulted by clients to
+    /// determine whether to use the fallback value.
+    ///
+    HDST_API
+    virtual bool IsValid() const = 0;
+
     /// Get texture type
     ///
     HDST_API
@@ -144,6 +152,9 @@ public:
     }
 
     HDST_API
+    bool IsValid() const override;
+
+    HDST_API
     HdTextureType GetTextureType() const override;
 
 protected:
@@ -200,6 +211,9 @@ public:
     }
 
     HDST_API
+    bool IsValid() const override;
+
+    HDST_API
     HdTextureType GetTextureType() const override;
 
 protected:
@@ -246,6 +260,9 @@ public:
     ///
     HDST_API
     uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
+
+    HDST_API
+    bool IsValid() const override;
 
     HDST_API
     HdTextureType GetTextureType() const override;
@@ -296,6 +313,9 @@ public:
     ///
     HDST_API
     uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
+
+    HDST_API
+    bool IsValid() const override;
 
     HDST_API
     HdTextureType GetTextureType() const override;

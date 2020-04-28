@@ -92,9 +92,9 @@ public:
         bool askSceneDelegateForTexture;
         // The value passed to HdSceneDelegate::GetTextureResourceID.
         SdfPath texturePrim;
-
         // Fallback value from texture node used when the texture
-        // file does not exist.
+        // file does not exist - only used in the implementation of
+        // HdStMaterial::_GetTextureResourceHandleFromSceneDelegate.
         VtValue fallbackValue;
     };
 

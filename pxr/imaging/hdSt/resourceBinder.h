@@ -56,7 +56,8 @@ using HdBindingRequestVector = std::vector<class HdBindingRequest>;
     ((fallback, "_fallback"))                   \
     ((samplingTransform, "_samplingTransform")) \
     ((layout, "_layout"))                       \
-    ((texture, "_texture"))
+    ((texture, "_texture"))                     \
+    ((valid, "_valid"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdSt_ResourceBindingSuffixTokens,
                          HDST_RESOURCE_BINDING_SUFFIX_TOKENS);
@@ -214,13 +215,23 @@ public:
              ShaderParameterAccessor(TfToken const &name,
                                      TfToken const &dataType,
                                      std::string const &swizzle=std::string(),
-                                     TfTokenVector const &inPrimvars=TfTokenVector())
+                                     TfTokenVector const &inPrimvars=TfTokenVector(),
+                                     bool const processTextureFallbackValue = false)
                  : name(name), dataType(dataType), swizzle(swizzle),
-                   inPrimvars(inPrimvars) {}
+                  inPrimvars(inPrimvars),
+                  processTextureFallbackValue(processTextureFallbackValue) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
              std::string swizzle; // e.g. xyzw
-             TfTokenVector inPrimvars;  // for primvar renaming and texture coordinates,
+             TfTokenVector inPrimvars; // for primvar renaming and texture
+                                       // coordinates,
+             bool processTextureFallbackValue; // use NAME_fallback from shader
+                                               // bar if texture is not valid
+                                               // (determineed from bool
+                                               // NAME_valid or bindless
+                                               // handle), only supported for
+                                               // material shader and for uv
+                                               // and field textures.
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
 

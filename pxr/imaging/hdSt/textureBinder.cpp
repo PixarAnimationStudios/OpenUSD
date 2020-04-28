@@ -63,6 +63,12 @@ HdSt_TextureBinder::GetBufferSpecs(
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
+            } else {
+                specs->emplace_back(
+                    _Concat(
+                        texture.name,
+                        HdSt_ResourceBindingSuffixTokens->valid),
+                    HdTupleType{HdTypeBool, 1});
             }
             break;
         case HdTextureType::Field:
@@ -70,6 +76,12 @@ HdSt_TextureBinder::GetBufferSpecs(
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
+            } else {
+                specs->emplace_back(
+                    _Concat(
+                        texture.name,
+                        HdSt_ResourceBindingSuffixTokens->valid),
+                    HdTupleType{HdTypeBool, 1});
             }
             specs->emplace_back(
                 _Concat(
@@ -118,10 +130,6 @@ public:
     , _name(name)
     , _value(value)
     {
-        if (_value == 0) {
-            TF_CODING_ERROR("Invalid texture handle: %s: %ld\n",
-                            name.GetText(), value);
-        }
     }
 
     ~HdSt_BindlessSamplerBufferSource() override = default;
@@ -165,14 +173,19 @@ public:
         HdStUvSamplerObject const &sampler,
         HdBufferSourceSharedPtrVector * const sources)
     {
-        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
-            return;
+        if (HdSt_TextureBinder::UsesBindlessTextures()) {
+            sources->push_back(
+                std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                    name,
+                    sampler.GetGLTextureSamplerHandle()));
+        } else {
+            sources->push_back(
+                std::make_shared<HdVtBufferSource>(
+                    _Concat(
+                        name,
+                        HdSt_ResourceBindingSuffixTokens->valid),
+                    VtValue(texture.IsValid())));
         }
-
-        sources->push_back(
-            std::make_shared<HdSt_BindlessSamplerBufferSource>(
-                name,
-                sampler.GetGLTextureSamplerHandle()));
     }
 
     static void Compute(
@@ -188,14 +201,19 @@ public:
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
                 VtValue(texture.GetSamplingTransform())));
 
-        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
-            return;
+        if (HdSt_TextureBinder::UsesBindlessTextures()) {
+            sources->push_back(
+                std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                    name,
+                    sampler.GetGLTextureSamplerHandle()));
+        } else {
+            sources->push_back(
+                std::make_shared<HdVtBufferSource>(
+                    _Concat(
+                        name,
+                        HdSt_ResourceBindingSuffixTokens->valid),
+                    VtValue(texture.IsValid())));
         }
-
-        sources->push_back(
-            std::make_shared<HdSt_BindlessSamplerBufferSource>(
-                name,
-                sampler.GetGLTextureSamplerHandle()));
     }
 
     static void Compute(

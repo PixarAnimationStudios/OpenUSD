@@ -256,6 +256,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
         } else if (param.IsTexture()) {
+            // Fallback value only supported for Uv and Field textures.
+            if (param.textureType == HdTextureType::Uv ||
+                param.textureType == HdTextureType::Field) {
+                HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+                    param, &specs, &sources);
+            }
             if (param.textureType == HdTextureType::Ptex) {
                 hasPtex = true;
             }

@@ -44,8 +44,13 @@ HdStSamplerObject::~HdStSamplerObject() = default;
 // Generate GL sampler
 static
 GLuint
-_GenGLSampler(HdSamplerParameters const &samplerParameters)
+_GenGLSampler(HdSamplerParameters const &samplerParameters,
+              const bool createSampler)
 {
+    if (!createSampler) {
+        return 0;
+    }
+
     GLuint result = 0;
     glGenSamplers(1, &result);
 
@@ -223,12 +228,13 @@ HdStUvSamplerObject::HdStUvSamplerObject(
   : _glSamplerName(
       _GenGLSampler(
           _ResolveUvSamplerParameters(
-              texture, samplerParameters)))
+              texture, samplerParameters),
+          texture.IsValid()))
   , _glTextureSamplerHandle(
       _GenGLTextureSamplerHandle(
           texture.GetTexture(),
           _glSamplerName,
-          createBindlessHandle))
+          createBindlessHandle && texture.IsValid()))
 {
 }
 
@@ -259,12 +265,13 @@ HdStFieldSamplerObject::HdStFieldSamplerObject(
     const bool createBindlessHandle)
   : _glSamplerName(
       _GenGLSampler(
-          samplerParameters))
+          samplerParameters,
+          texture.IsValid()))
   , _glTextureSamplerHandle(
       _GenGLTextureSamplerHandle(
           texture.GetTexture(),
           _glSamplerName,
-          createBindlessHandle))
+          createBindlessHandle && texture.IsValid()))
 {
 }
 
@@ -287,11 +294,11 @@ HdStPtexSamplerObject::HdStPtexSamplerObject(
   : _texelsGLTextureHandle(
       _GenGlTextureHandle(
           ptexTexture.GetTexelGLTextureName(),
-          createBindlessHandle))
+          createBindlessHandle && ptexTexture.IsValid()))
   , _layoutGLTextureHandle(
       _GenGlTextureHandle(
           ptexTexture.GetLayoutGLTextureName(),
-          createBindlessHandle))
+          createBindlessHandle && ptexTexture.IsValid()))
 {
 }
 
@@ -322,16 +329,17 @@ HdStUdimSamplerObject::HdStUdimSamplerObject(
     const bool createBindlessHandle)
   : _glTexelsSamplerName(
       _GenGLSampler(
-          UDIM_SAMPLER_PARAMETERS))
+          UDIM_SAMPLER_PARAMETERS,
+          udimTexture.IsValid()))
   , _texelsGLTextureHandle(
       _GenGLTextureSamplerHandle(
           udimTexture.GetTexelGLTextureName(),
           _glTexelsSamplerName,
-          createBindlessHandle))
+          createBindlessHandle && udimTexture.IsValid()))
   , _layoutGLTextureHandle(
       _GenGlTextureHandle(
           udimTexture.GetLayoutGLTextureName(),
-          createBindlessHandle))
+          createBindlessHandle && udimTexture.IsValid()))
 {
 }
 

@@ -580,9 +580,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         HdSt_MaterialParamVector params = (*shader)->GetParams();
         // for primvar and texture accessors
         for (HdSt_MaterialParam const& param : params) {
+            const bool isMaterialShader =
+                ((*shader) == drawItem->GetMaterialShader());
+
             // renderpass texture should be bindfull (for now)
-            bool bindless = useBindlessForTexture && 
-                                ((*shader) == drawItem->GetMaterialShader());
+            const bool bindless = useBindlessForTexture && isMaterialShader;
             std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
@@ -683,7 +685,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*name=*/glName,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
-                            /*inPrimvars=*/param.samplerCoords);
+                            /*inPrimvars=*/param.samplerCoords,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 } else if (param.textureType == HdTextureType::Field) {
                     // 3d texture
@@ -699,7 +702,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*name=*/glName,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
-                            /*inPrimvars=*/param.samplerCoords);
+                            /*inPrimvars=*/param.samplerCoords,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 }
             } else if (param.IsPrimvarRedirect() || param.IsFieldRedirect()) {

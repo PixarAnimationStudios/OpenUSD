@@ -194,19 +194,22 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
                     texResource->GetTexelsTextureHandle()),
                 specs,
                 sources);
+        } else {
+            _AddSource(
+                std::make_shared<HdVtBufferSource>(
+                    TfToken(
+                        name.GetString() +
+                        HdSt_ResourceBindingSuffixTokens->valid.GetString()),
+                    VtValue(true)),
+                specs,
+                sources);
         }
     } else if (textureType == HdTextureType::Field) {
         tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_FIELD;
         textureDescriptors->push_back(tex);
         
-        if (bindless) {
-            _AddSource(
-                std::make_shared<HdSt_BindlessSamplerBufferSource>(
-                    tex.name,
-                    texResource->GetTexelsTextureHandle()),
-                specs,
-                sources);
-        }
+        TF_CODING_ERROR(
+            "Field textures no longer supported by old texture system");
     }
 }
 

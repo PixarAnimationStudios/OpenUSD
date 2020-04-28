@@ -348,15 +348,20 @@ _ComputeMaterialShader(
             HdSt_ResourceBindingSuffixTokens->texture.GetString());
         static const HdTextureType textureType = HdTextureType::Field;
 
-        // Produce HdGet_FIELDNAMETexture(vec3 p) to sample
+        // Produce HdGet_FIELDNAME_texture(vec3 p) to sample
         // the texture.
-        params.emplace_back(
+        const HdSt_MaterialParam param(
             HdSt_MaterialParam::ParamTypeTexture,
             textureName,
             VtValue(GfVec4f(0)),
             SdfPath(),
             TfTokenVector(),
             textureType);
+
+        HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+            param, &bufferSpecs, &bufferSources);
+
+        params.push_back(param);
 
         static const HdSamplerParameters samplerParams{
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
