@@ -61,10 +61,16 @@ HgiGLBlitCmds::CopyTextureGpuToCpu(
     _ops.push_back( HgiGLOps::CopyTextureGpuToCpu(copyOp) );
 }
 
-void HgiGLBlitCmds::CopyBufferCpuToGpu(
-    HgiBufferCpuToGpuOp const& copyOp)
+void 
+HgiGLBlitCmds::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 {
     _ops.push_back( HgiGLOps::CopyBufferCpuToGpu(copyOp) );
+}
+
+void
+HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
+{
+    _ops.push_back( HgiGLOps::GenerateMipMaps(texture) );
 }
 
 HgiGLOpsVector const&

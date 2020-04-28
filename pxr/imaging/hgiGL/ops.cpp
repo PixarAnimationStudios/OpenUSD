@@ -436,4 +436,16 @@ HgiGLOps::BindFramebufferOp(
     };
 }
 
+HgiGLOpsFn
+HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
+{
+    return [texture] {
+        HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texture.Get());
+        if (glTex) {
+            glGenerateTextureMipmap(glTex->GetTextureId());
+            HGIGL_POST_PENDING_GL_ERRORS();
+        }
+    };
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

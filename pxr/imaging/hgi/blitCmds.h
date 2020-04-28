@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/cmds.h"
+#include "pxr/imaging/hgi/texture.h"
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -67,6 +68,10 @@ public:
     /// For example copy new data into a uniform block or storage buffer.
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
+
+    /// Generate mip maps for a texture
+    HGI_API
+    virtual void GenerateMipMaps(HgiTextureHandle const& texture) = 0;
 
 protected:
     HGI_API

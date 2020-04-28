@@ -54,6 +54,9 @@ public:
     HGIGL_API
     void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
 
+    HGIGL_API
+    void GenerateMipMaps(HgiTextureHandle const& texture) override;
+
     /// Return the list of recorded functions (cmds / ops).
     HGIGL_API
     HgiGLOpsVector const& GetOps() const;

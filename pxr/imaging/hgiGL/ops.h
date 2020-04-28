@@ -105,6 +105,9 @@ public:
         HgiGLDevice* device,
         HgiGraphicsCmdsDesc const& desc);
 
+    HGIGL_API
+    static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
