@@ -215,6 +215,7 @@ public:
     ///
     /// \note Internally caches the result of the validation if the topology is
     /// valid
+    PXOSD_API
     PxOsdMeshTopologyValidation Validate() const;
 
 private:

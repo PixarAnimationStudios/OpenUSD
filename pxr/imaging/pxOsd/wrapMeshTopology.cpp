@@ -82,5 +82,6 @@ void wrapMeshTopology()
              return_value_policy<copy_const_reference>())
         .def("WithSubdivTags", &This::WithSubdivTags)
         .def("ComputeHash", &This::ComputeHash)
+        .def("Validate", &This::Validate)
     ;
 }
