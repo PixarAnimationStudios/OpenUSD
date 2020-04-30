@@ -59,7 +59,8 @@ class LoFiVertexBuffer
 {
 public:
   // constructor
-  LoFiVertexBuffer( LoFiAttributeChannel channel, 
+  LoFiVertexBuffer( LoFiTopology* topo,
+                    LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements,
                     HdInterpolation interpolation);
@@ -108,10 +109,18 @@ public:
   void ComputeOutputDatas(const LoFiTopology* topo,
                           char* outputDatas);
 
+  // topology
+  inline void SetTopologyPtr(const LoFiTopology* topology) {
+    _topology = topology;
+    _needReallocate = true;
+  }
+  const LoFiTopology* GetTopologyPtr() const {return _topology;};
+
   // opengl
   void Reallocate();
-  void Populate(const void* datas);
+  void Populate();
   GLuint Get() const {return _vbo;};
+  void Bind();
 
 private: 
   // description
@@ -131,6 +140,7 @@ private:
 
   // datas
   const char*                       _rawInputDatas;
+  const LoFiTopology*               _topology;
 
   // opengl
   GLuint                            _vbo;

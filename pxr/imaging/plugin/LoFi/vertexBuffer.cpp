@@ -14,9 +14,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
-LoFiVertexBuffer::LoFiVertexBuffer(LoFiAttributeChannel channel,
+LoFiVertexBuffer::LoFiVertexBuffer(LoFiTopology* topo, LoFiAttributeChannel channel,
   uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
-  : _channel(channel)
+  : _topology(topo)
+  , _channel(channel)
   , _hash(0)
   , _key(0)
   , _numInputElements(numInputElements)
@@ -75,33 +76,50 @@ size_t LoFiVertexBuffer::ComputeHash(const char* datas)
 // allocate
 void LoFiVertexBuffer::Reallocate()
 {
-  if(!_vbo)
+  if(_needReallocate)
   {
-    glGenBuffers(1, &_vbo);
-  } 
+    if(!_vbo)
+    {
+      glGenBuffers(1, &_vbo);
+    } 
 
-  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-  glBufferData(
-    GL_ARRAY_BUFFER, 
-    _numOutputElements * _elementSize, 
-    NULL, 
-    GL_DYNAMIC_DRAW
-  );
-  glVertexAttribPointer(_channel, _tuppleSize, GL_FLOAT, GL_FALSE, 0, NULL);
-  glEnableVertexAttribArray(_channel);
-  _needReallocate = false;
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+
+    glBufferData(
+      GL_ARRAY_BUFFER, 
+      _numOutputElements * _elementSize, 
+      NULL, 
+      GL_DYNAMIC_DRAW
+    );
+
+    _needReallocate = false;
+  }
 }
 
-void LoFiVertexBuffer::Populate(const void* datas)
+void LoFiVertexBuffer::Populate()
+{
+  if(_needUpdate)
+  {
+    VtArray<char> datas(ComputeOutputSize());
+    ComputeOutputDatas(_topology, datas.data());
+
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+    glBufferSubData(
+      GL_ARRAY_BUFFER, 
+      0, 
+      _numOutputElements * _elementSize,
+      datas.cdata()
+    );
+
+    _needUpdate = false;
+  }
+}
+
+void LoFiVertexBuffer::Bind()
 {
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-  glBufferSubData(
-    GL_ARRAY_BUFFER, 
-    0, 
-    _numOutputElements * _elementSize,
-    datas
-  );
-  _needUpdate = false;
+  glVertexAttribPointer(_channel, _tuppleSize, GL_FLOAT, GL_FALSE, 0, NULL);
+  glEnableVertexAttribArray(_channel);
 }
 
 void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,

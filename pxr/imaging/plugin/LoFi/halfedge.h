@@ -35,8 +35,6 @@ public:
 
 private:
     VtArray<int> _adjacency;
-    bool         _valid;
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -141,9 +141,9 @@ void
 LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
                           TfTokenVector const &renderTags)
 {
-
   GfMatrix4d viewMatrix = renderPassState->GetWorldToViewMatrix();
   GfMatrix4d projMatrix = renderPassState->GetProjectionMatrix();
+  GfMatrix4d cullMatrix = renderPassState->GetCullMatrix();
   GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
   auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
@@ -153,6 +153,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   {
     const LoFiDrawItem* lofiDrawItem = 
       reinterpret_cast<const LoFiDrawItem*>(drawItem);
+
+    if(!lofiDrawItem->GetVisible()) continue;
 
     const LoFiBinder* binder = lofiDrawItem->GetBinder();
     TfToken programName = binder->GetProgramName();
@@ -167,7 +169,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     LoFiDrawItemPtrSet& drawItemSet = _programDrawItemsMap[programName];
     drawItemSet.insert(lofiDrawItem);
   }
-
   GfVec4f clearColor = GfVec4f(0.63f,0.63f,0.63f,1.f);
 
   glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
@@ -209,15 +210,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     LoFiDrawItemPtrSet drawItemSet = _programDrawItemsMap[programName];
     for(auto drawItem: drawItemSet)
     {
-      if(!drawItem->GetVisible()) continue;
       const LoFiBinder* binder = drawItem->GetBinder();
-      // model matrix
-      glUniformMatrix4fv(
-        modelUniform,
-        1,
-        GL_FALSE,
-        &GfMatrix4f(drawItem->GetMatrix())[0][0]
-      );
 
       const LoFiVertexArray* vertexArray = drawItem->GetVertexArray();
 
@@ -225,19 +218,38 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
       {
         for(const auto& instanceXform: drawItem->GetInstancesXforms())
         {
+          GfBBox3d instanceBBox = drawItem->GetBounds();
+          instanceBBox.Transform(GfMatrix4d(instanceXform));
+
+          // cull 
+          if(GfFrustum::IntersectsViewVolume (instanceBBox, GfMatrix4d(cullMatrix)))
+          {
+            // model matrix
+            glUniformMatrix4fv(
+              modelUniform,
+              1,
+              GL_FALSE,
+              &(GfMatrix4f(drawItem->GetMatrix()) * instanceXform)[0][0]
+            );
+            vertexArray->Draw();
+          }
+        }
+      }
+      else
+      {
+        // cull 
+        if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
+        {
           // model matrix
           glUniformMatrix4fv(
             modelUniform,
             1,
             GL_FALSE,
-            &(GfMatrix4f(drawItem->GetMatrix()) * instanceXform)[0][0]
+            &GfMatrix4f(drawItem->GetMatrix())[0][0]
           );
           vertexArray->Draw();
         }
-      }
-      else
-      {
-        vertexArray->Draw();
+        
       }
       
       vertexArray->Unbind();

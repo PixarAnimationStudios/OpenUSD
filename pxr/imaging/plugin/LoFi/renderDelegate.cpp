@@ -145,7 +145,7 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
-    std::cout << "LOFI CREATE RPRIM : INSTANCER = " << instancerId.GetText() << std::endl;
+    std::cout << "LOFI CREATE RPRIM " << rprimId.GetText() << " : INSTANCER = " << instancerId.GetText() << std::endl;
     if (typeId == HdPrimTypeTokens->mesh) {
         return new LoFiMesh(rprimId, instancerId);
     } else if(typeId == HdPrimTypeTokens->points) {

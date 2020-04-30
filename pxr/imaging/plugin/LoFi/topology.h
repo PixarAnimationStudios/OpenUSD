@@ -20,8 +20,7 @@ struct LoFiTopology
     enum Type {
         POINTS,
         LINES,
-        TRIANGLES,
-        TRIANGLES_ADJACENCY
+        TRIANGLES    
     };
     Type                type;
     const int*          samples;

@@ -47,8 +47,6 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const    &reprToken) override;
 
-    void InfosLog();
-
 protected:
     void _InitRepr(
         TfToken const &reprToken,
@@ -78,29 +76,6 @@ protected:
                                                   HdDirtyBits dirtyBits);
     */
 
-    //void _PopulateTopology(HdSceneDelegate* sceneDelegate);
-
-    // Get num points
-    const inline int GetNumPoints() const{return _positions.size();};
-
-    // Get num triangles
-    const inline int GetNumTriangles() const{return _samples.size()/3;};
-
-    // Get num samples
-    const inline int GetNumSamples() const{return _samples.size();};
-
-    // Get positions ptr
-    const inline GfVec3f* GetPositionsPtr() const{return _positions.cdata();};
-
-    // Get normals ptr
-    const inline GfVec3f* GetNormalsPtr() const{return _normals.cdata();};
-
-    // Get colors ptr
-    const inline GfVec3f* GetColorsPtr() const{return _colors.cdata();};
-
-    // Get samples ptr
-    const inline GfVec3i* GetSamplesPtr() const{return _samples.cdata();};
-
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
     LoFiMesh &operator =(const LoFiMesh&) = delete;
@@ -114,16 +89,15 @@ private:
         DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
     
-    uint64_t                        _instanceId;
     VtArray<GfVec3f>                _positions;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
     LoFiAdjacency                   _adjacency;
-    VtArray<GfMatrix4f>             _instances;
     LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;
+    LoFiVertexArraySharedPtr        _contourArray;
 
 };
 

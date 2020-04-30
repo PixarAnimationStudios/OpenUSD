@@ -65,14 +65,6 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
   TF_UNUSED(dirtyBits);
 
-  /*
-  // Create an empty repr.
-  _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                          _ReprComparator(reprToken));
-  if (it == _reprs.end()) {
-      _reprs.emplace_back(reprToken, HdReprSharedPtr());
-  }
-  */
  _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprToken));
   if(it == _reprs.end())
@@ -85,37 +77,12 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     *dirtyBits |= (HdChangeTracker::NewRepr
                | HdChangeTracker::DirtyNormals);
 
-    // add draw item
-    LoFiDrawItem *drawItem = new LoFiDrawItem(&_sharedData);
-    repr->AddDrawItem(drawItem);
+    // add draw items
+    LoFiDrawItem *surfaceItem = new LoFiDrawItem(&_sharedData);
+    repr->AddDrawItem(surfaceItem);
+    LoFiDrawItem *contourItem = new LoFiDrawItem(&_sharedData);
+    repr->AddDrawItem(contourItem);
   }
-}
-
-void LoFiMesh:: InfosLog()
-{
-  std::cout << "============================================" << std::endl;
-  std::cout << "MESH : " << GetId().GetText() << std::endl;
-  std::cout << "Num Samples: "<< _samples.size() << std::endl;
-  std::cout << "Have Positions: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_POSITION) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_POSITION))
-    std::cout << "Num Positions: " << _positions.size() << std::endl;
-  std::cout << "--------------------------------------------" << std::endl;
-  std::cout << "Have Normals: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_NORMAL) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_NORMAL))
-    std::cout << "Num Normals: " << _normals.size() << std::endl;
-  std::cout << "--------------------------------------------" << std::endl;
-  std::cout << "Have Colors: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_COLOR) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_COLOR))
-    std::cout << "Num Colors: " << _colors.size() << std::endl;
-  std::cout << "--------------------------------------------" << std::endl;
-  std::cout << "Have UVs: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_UV) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_UV))
-    std::cout << "Num UVs: " << _uvs.size() << std::endl;
-  std::cout << "============================================" << std::endl;
 }
 
 LoFiVertexBufferState
@@ -163,9 +130,11 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
   if(valid)
   {
     _vertexArray->SetHaveChannel(channel);
+    _contourArray->SetHaveChannel(channel);
 
     LoFiVertexBufferSharedPtr buffer = 
       LoFiVertexArray::CreateBuffer(
+        &_topology,
         channel, 
         numInputElements,
         numOutputElements,
@@ -176,11 +145,11 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
     auto instance = registry->RegisterVertexBuffer(bufferKey);
 
     if(instance.IsFirstInstance())
-    //if(!_vertexArray->HasBuffer(channel))
     {
       instance.SetValue(buffer); 
       buffer = instance.GetValue();
       _vertexArray->SetBuffer(channel, buffer);
+      _contourArray->SetBuffer(channel, buffer);
       buffer->SetNeedReallocate(true);
       buffer->SetValid(valid);
       buffer->SetRawInputDatas(datasPtr);
@@ -192,6 +161,7 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       size_t bufferHash = buffer->ComputeHash(datasPtr);
       LoFiVertexBufferSharedPtr old = instance.GetValue();
       _vertexArray->SetBuffer(channel, old);
+      _contourArray->SetBuffer(channel, old);
 
       if(bufferHash == old->GetHash()) 
       {
@@ -204,6 +174,7 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
         old->SetNeedUpdate(true);
         old->SetHash(bufferHash);
         _vertexArray->SetBuffer(channel, old);
+        _contourArray->SetBuffer(channel, old);
         return LoFiVertexBufferState::TO_UPDATE;
       }
 
@@ -234,14 +205,17 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
       _samples
     );
 
-    // compute adjacency
-    _adjacency.Compute(_samples);
-    std::cout << "COMPUTE ADJACENCY DONE..." << std::endl;
     _topology.samples = (const int*)&_samples[0];
     _topology.numElements = _samples.size()/3;
     _vertexArray->SetNumElements(_samples.size());
-    _vertexArray->SetAdjacency(_adjacency.Get());
-    _vertexArray->SetNeedReallocate(true);
+    _vertexArray->SetNeedUpdate(true);
+
+    // compute adjacency
+    _adjacency.Compute(_samples);
+    _contourArray->SetAdjacency(_adjacency.Get());
+    _contourArray->SetNumElements(_samples.size());
+    _contourArray->SetNeedUpdate(true);
+    
     needReallocate = true;
   }
 
@@ -339,12 +313,11 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
                       registry);
   }
 
-  // if no authored colors compute random vertex colors
-  if(!haveAuthoredDisplayColor && needReallocate)
+  // if no authored colors compute random vertex colors (test)
+  if(!haveAuthoredDisplayColor)
   {
-
     LoFiComputeVertexColors( _positions, _colors);
-    
+
     _PopulatePrimvar( sceneDelegate,
                       HdInterpolationVertex,
                       CHANNEL_COLOR,
@@ -354,6 +327,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
 
   // update state
   _vertexArray->UpdateState();
+  _contourArray->UpdateState();
 
 }
 
@@ -362,25 +336,50 @@ LoFiMesh::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
 {
   // get associated draw item
   HdReprSharedPtr& repr = _reprs.back().second;
-  LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(0));
 
-  // get binder
-  LoFiBinder* binder = drawItem->Binder();
-  binder->Clear();
-  binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
-  binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
-  binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
-  binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
+  // surface
+  {
+    LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(0));
 
-  binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
-  binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
-  if(_colors.size())
-    binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
-  if(_uvs.size())
-    binder->CreateAttributeBinding(LoFiBufferTokens->uv, LoFiGLTokens->vec2, CHANNEL_UV);
+    LoFiBinder* binder = drawItem->Binder();
+    binder->Clear();
+    binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
+    binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
+    binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
+    binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
 
-  binder->SetProgramType(LOFI_PROGRAM_MESH);
-  binder->ComputeProgramName();
+    binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
+    binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
+    if(_colors.size())
+      binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
+    if(_uvs.size())
+      binder->CreateAttributeBinding(LoFiBufferTokens->uv, LoFiGLTokens->vec2, CHANNEL_UV);
+
+    binder->SetProgramType(LOFI_PROGRAM_MESH);
+    binder->ComputeProgramName();
+  }
+  
+  // contour
+  {
+    LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(1));
+
+    LoFiBinder* binder = drawItem->Binder();
+    binder->Clear();
+    binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
+    binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
+    binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
+    binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
+
+    binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
+    binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
+    if(_colors.size())
+      binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
+    if(_uvs.size())
+      binder->CreateAttributeBinding(LoFiBufferTokens->uv, LoFiGLTokens->vec2, CHANNEL_UV);
+
+    binder->SetProgramType(LOFI_PROGRAM_CONTOUR);
+    binder->ComputeProgramName();
+  }
 }
 
 //_sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
@@ -406,46 +405,58 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   
   // check initialized
   bool initialized = false;
-  if(_vertexArray.get() != NULL ) initialized = true;
+  if(_vertexArray.get() != NULL) initialized = true;
 
   // get associated draw item
   HdReprSharedPtr& repr = _reprs.back().second;
   LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(0));
+  LoFiDrawItem* contourItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(1));
 
   // create vertex array and store in registry
   if(!initialized) 
   {
-    _instanceId = GetId().GetHash();
-    _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray());
-    _vertexArray->SetTopologyPtr(&_topology);
-    auto instance = resourceRegistry->RegisterVertexArray(_instanceId);
-    instance.SetValue(_vertexArray);  
+    // surface
+    {
+      size_t surfaceId = GetId().GetHash();
+      _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LOFI_TRIANGLES));
+      auto surfaceInstance = resourceRegistry->RegisterVertexArray(surfaceId);
+      surfaceInstance.SetValue(_vertexArray);  
 
-    drawItem->SetBufferArrayHash(_instanceId);
-    drawItem->SetVertexArray(_vertexArray.get());
+      drawItem->SetBufferArrayHash(surfaceId);
+      drawItem->SetVertexArray(_vertexArray.get());
+    }
+    
+    // contour
+    {
+      size_t contourId = GetId().GetHash();
+      boost::hash_combine(contourId, TfToken("Contour").Hash());
+      _contourArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LOFI_TRIANGLES));
+      auto contourInstance = resourceRegistry->RegisterVertexArray(contourId);
+      contourInstance.SetValue(_contourArray);  
+
+      contourItem->SetBufferArrayHash(contourId);
+      contourItem->SetVertexArray(_contourArray.get());
+    }
   }
   _UpdateVisibility(sceneDelegate, dirtyBits);
   _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
 
-  // populate binder
-  if(!initialized)
-  {
-    _PopulateBinder(resourceRegistry);
-  }
-
   // instances
-  if (!GetInstancerId().IsEmpty()) {
+  if (!GetInstancerId().IsEmpty())
+  {
+    // Retrieve instance transforms from the instancer.
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdInstancer *instancer =
+        renderIndex.GetInstancer(GetInstancerId());
+    VtMatrix4dArray transforms =
+        static_cast<LoFiInstancer*>(instancer)->
+            ComputeInstanceTransforms(GetId());
 
-      // Retrieve instance transforms from the instancer.
-      HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-      HdInstancer *instancer =
-          renderIndex.GetInstancer(GetInstancerId());
-      VtMatrix4dArray transforms =
-          static_cast<LoFiInstancer*>(instancer)->
-              ComputeInstanceTransforms(GetId());
-
-      drawItem->PopulateInstancesXforms(transforms);
+    drawItem->PopulateInstancesXforms(transforms);
+    contourItem->PopulateInstancesXforms(transforms);
   }
+
+  if(!initialized) _PopulateBinder(resourceRegistry);
 
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;

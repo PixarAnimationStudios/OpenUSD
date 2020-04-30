@@ -49,7 +49,7 @@ void main()
   vec3 lightDir = normalize((GetViewMatrix() * vec4(1.0,1.0,1.0,0.0)).xyz);
   vec3 color = LOFI_GET_color();
   float dc = dot(delta, LOFI_GET_normal())  ;
-  if(dc< 0.5) color *= 0.0;
+  //if(dc< 0.5) color *= 0.0;
   float dl = dot(lightDir, LOFI_GET_normal())  ;
   if(dl<0.5)color *=0.2;  
   

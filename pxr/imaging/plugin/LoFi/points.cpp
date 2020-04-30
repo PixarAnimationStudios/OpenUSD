@@ -88,28 +88,6 @@ LoFiPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
   }
 }
 
-void LoFiPoints:: InfosLog()
-{
-  std::cout << "============================================" << std::endl;
-  std::cout << "POINTS : " << GetId().GetText() << std::endl;
-  std::cout << "Num Points: "<< _points.size() << std::endl;
-  std::cout << "Have Positions: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_POSITION) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_POSITION))
-    std::cout << "Num Positions: " << _points.size() << std::endl;
-  std::cout << "--------------------------------------------" << std::endl;
-  std::cout << "Have Normals: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_NORMAL) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_NORMAL))
-    std::cout << "Num Normals: " << _normals.size() << std::endl;
-  std::cout << "--------------------------------------------" << std::endl;
-  std::cout << "Have Colors: " << 
-    _vertexArray->GetHaveChannel(CHANNEL_COLOR) << std::endl;
-  if(_vertexArray->GetHaveChannel(CHANNEL_COLOR))
-    std::cout << "Num Colors: " << _colors.size() << std::endl;
-  std::cout << "============================================" << std::endl;
-}
-
 LoFiVertexBufferState
 LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                             HdInterpolation interpolation,
@@ -165,6 +143,7 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
 
     LoFiVertexBufferSharedPtr buffer = 
       LoFiVertexArray::CreateBuffer(
+        &_topology,
         channel, 
         numInputElements,
         numInputElements,
@@ -309,7 +288,7 @@ void LoFiPoints::_PopulatePoints( HdSceneDelegate*              sceneDelegate,
   _topology.samples = (const int*)&_samples[0];
   _topology.numElements = numPoints;
   _vertexArray->SetNumElements(numPoints);
-  _vertexArray->SetNeedReallocate(numPoints != _numPoints);
+  _vertexArray->SetNeedUpdate(numPoints != _numPoints);
   _numPoints = numPoints;
 
   // update state
@@ -376,8 +355,7 @@ LoFiPoints::Sync( HdSceneDelegate *sceneDelegate,
   if(!initialized) 
   {
     _instanceId = GetId().GetHash();
-    _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray());
-    _vertexArray->SetTopologyPtr(&_topology);
+    _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LOFI_POINTS));
     auto instance = resourceRegistry->RegisterVertexArray(_instanceId);
     instance.SetValue(_vertexArray);  
 

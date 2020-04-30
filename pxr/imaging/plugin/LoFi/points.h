@@ -45,8 +45,6 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const    &reprToken) override;
 
-    void InfosLog();
-
 protected:
     void _InitRepr(
         TfToken const &reprToken,
@@ -66,19 +64,6 @@ protected:
     void _PopulateBinder(LoFiResourceRegistrySharedPtr registry);
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-
-    // Get num points
-    const inline int GetNumPoints() const{return _points.size();};
-
-    // Get positions ptr
-    const inline GfVec3f* GetPointsPtr() const{return _points.cdata();};
-
-    // Get width ptr
-    const inline float* GetWidthsPtr() const{return _widths.cdata();};
-
-    // Get colors ptr
-    const inline GfVec3f* GetColorsPtr() const{return _colors.cdata();};
-
 
     // This class does not support copying.
     LoFiPoints(const LoFiPoints&) = delete;

@@ -25,6 +25,13 @@ class LoFiVertexBuffer;
 
 typedef std::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
 
+enum LoFiVertexArrayDrawType
+  {
+    LOFI_POINTS,
+    LOFI_LINES,
+    LOFI_TRIANGLES
+  };
+
 /// \class LoFiVertexArray
 ///
 ///
@@ -32,7 +39,7 @@ class LoFiVertexArray
 {
 public:
   // constructor
-  LoFiVertexArray();
+  LoFiVertexArray(LoFiVertexArrayDrawType);
 
   // destructor
   ~LoFiVertexArray();
@@ -46,7 +53,8 @@ public:
   void SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedPtr buffer);
 
   static LoFiVertexBufferSharedPtr 
-  CreateBuffer( LoFiAttributeChannel channel, 
+  CreateBuffer( LoFiTopology* topo,
+                LoFiAttributeChannel channel, 
                 uint32_t numInputElements, 
                 uint32_t numOutputElements,
                 HdInterpolation interpolation);
@@ -60,10 +68,6 @@ public:
   };
 
   // state
-  inline bool GetNeedReallocate(){return _needReallocate;};
-  inline void SetNeedReallocate(bool needReallocate) {
-    _needReallocate = needReallocate;
-  };
   inline bool GetNeedUpdate(){return _needUpdate;};
   inline void SetNeedUpdate(bool needUpdate) {
     _needUpdate = needUpdate;
@@ -74,18 +78,10 @@ public:
   inline uint32_t GetNumElements() const{return _numElements;};
   inline void SetNumElements(uint32_t numElements){_numElements = numElements;};
 
-  // topology
-  inline void SetTopologyPtr(const LoFiTopology* topology) {
-    _topology = topology;
-    _needReallocate = true;
-  }
-  const LoFiTopology* GetTopologyPtr() const {return _topology;};
-
   // adjacency
   void SetAdjacency(const VtArray<int>& adjacency);
 
   // allocate
-  void Reallocate();
   void Populate();
   void Bind() const;
   void Unbind() const;
@@ -97,6 +93,9 @@ private:
   // datas
   LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
+  bool                              _indexed;
+
+  // index buffer
   GLuint                            _ebo;
   int*                              _adjacency;
   size_t                            _numAdjacency;
@@ -104,11 +103,10 @@ private:
   // flags
   uint32_t                          _channels;
   uint32_t                          _numElements;
-  bool                              _needReallocate;
   bool                              _needUpdate;
 
-  // topology
-  const LoFiTopology*               _topology;
+  // draw type
+  LoFiVertexArrayDrawType            _drawType;
 
 };
 
