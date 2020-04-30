@@ -68,8 +68,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     My_TestGLDrawing()
-        : _hgi(Hgi::GetPlatformDefaultHgi())
-        , _driver{HgiTokens->renderDriver, VtValue(_hgi.get())}
     {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
@@ -98,7 +96,7 @@ protected:
 
 private:
     std::unique_ptr<Hgi> _hgi;
-    HdDriver _driver;
+    std::unique_ptr<HdDriver> _driver;
 
     HdEngine _engine;
     HdStRenderDelegate _renderDelegate;
@@ -137,7 +135,10 @@ My_TestGLDrawing::~My_TestGLDrawing()
 void
 My_TestGLDrawing::InitTest()
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_driver});
+    _hgi.reset(Hgi::GetPlatformDefaultHgi());
+    _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
+
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
     _selTracker.reset(new HdxSelectionTracker);
