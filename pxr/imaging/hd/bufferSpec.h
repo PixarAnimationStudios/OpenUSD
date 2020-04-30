@@ -88,6 +88,17 @@ struct HdBufferSpec final {
     HD_API
     static void Dump(HdBufferSpecVector const &specs);
 
+    /// Return a size_t hash for this spec.
+    HD_API
+    size_t Hash() const;
+
+    /// Functor to use for unorderd sets, maps.
+    struct HashFunctor {
+        size_t operator()(HdBufferSpec const& spec) const {
+            return spec.Hash();
+        }
+    };
+
     /// Equality checks.
     bool operator == (HdBufferSpec const &other) const {
         return name == other.name && tupleType == other.tupleType;

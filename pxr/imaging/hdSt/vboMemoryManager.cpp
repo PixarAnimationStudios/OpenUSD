@@ -76,13 +76,7 @@ HdStVBOMemoryManager::ComputeAggregationId(
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
     for (HdBufferSpec const &spec : bufferSpecs) {
-        size_t const params[] = { 
-            spec.name.Hash(),
-            (size_t) spec.tupleType.type,
-            spec.tupleType.count
-        };
-        boost::hash_combine(result,
-                ArchHash((char const*)params, sizeof(size_t) * 3));
+        boost::hash_combine(result, spec.Hash());
     }
 
     boost::hash_combine(result, usageHint.value);
