@@ -69,7 +69,8 @@ class HdSt_ResourceBinder;
 ///
 /// This interface provides a simple way for clients to affect the
 /// composition of shading programs used for a render pass.
-class HdStShaderCode {
+class HdStShaderCode : public std::enable_shared_from_this<HdStShaderCode>
+{
 public:
     typedef size_t ID;
 

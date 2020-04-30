@@ -25,11 +25,13 @@
 
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
+#include "pxr/imaging/hdSt/field.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -317,5 +319,69 @@ HdSt_VolumeShader::ComputeBufferSourcesFromTextures() const
 
     return result;
 }
+
+void
+HdSt_VolumeShader::SetFieldDescriptors(
+    const HdVolumeFieldDescriptorVector & fieldDescs)
+{
+    _fieldDescriptors = fieldDescs;
+}
+
+void
+HdSt_VolumeShader::UpdateTextureHandles(
+    HdSceneDelegate * const sceneDelegate)
+{
+    TRACE_FUNCTION();
+
+    HdStResourceRegistrySharedPtr const resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
+    NamedTextureHandleVector textureHandles = GetNamedTextureHandles();
+
+    if (!TF_VERIFY(textureHandles.size() == _fieldDescriptors.size())) {
+        return;
+    }
+
+    // Walk through the vector of named texture handles and field descriptors
+    // simultaneously.
+    for (size_t i = 0; i < textureHandles.size(); i++) {
+        // To allocate the texture and update it in the vector ...
+
+        // use field descriptor to find field prim, ...
+        const HdVolumeFieldDescriptor &fieldDesc = _fieldDescriptors[i];
+
+        const HdStField * const fieldPrim =
+            dynamic_cast<HdStField*>(
+                sceneDelegate->GetRenderIndex().GetBprim(
+                    fieldDesc.fieldPrimType, fieldDesc.fieldId));
+
+        // ask field prim for texture information, ...
+        const HdStTextureIdentifier &textureId =
+            TF_VERIFY(fieldPrim) ?
+            fieldPrim->GetTextureIdentifier() : HdStTextureIdentifier();
+        const HdTextureType textureType = textureHandles[i].type;
+        const size_t textureMemory =
+            TF_VERIFY(fieldPrim) ?
+            fieldPrim->GetTextureMemory() : 0;
+        static const HdSamplerParameters samplerParams{
+            HdWrapBlack, HdWrapBlack, HdWrapBlack,
+            HdMinFilterLinear, HdMagFilterLinear };
+        
+        // allocate texture handle and assign it.
+        textureHandles[i].handle =
+            resourceRegistry->AllocateTextureHandle(
+                textureId,
+                textureType,
+                samplerParams,
+                textureMemory,
+                HdSt_TextureBinder::UsesBindlessTextures(),
+                shared_from_this());
+    }
+
+    // And update!
+    SetNamedTextureHandles(textureHandles);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -36,10 +36,14 @@ class HdRenderDelegate;
 
 using HdSt_VolumeShaderSharedPtr = std::shared_ptr<class HdSt_VolumeShader>;
 using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
+using HdVolumeFieldDescriptorVector =
+    std::vector<struct HdVolumeFieldDescriptor>;
 
 /// \class HdSt_VolumeShader
 ///
 /// Adds the following behaviors to HdStSurfaceShader:
+/// - walk through field descriptors to allocate textures and update
+///   the NamedTextureHandle's.
 /// - compute volume bounding box, adds it to the shader bar and
 ///   computes points for the points bar (if requested)
 /// - bind raymarching step sizes (querried from render delegate)
@@ -93,6 +97,20 @@ public:
     ///
     bool GetFillsPointsBar() const { return _fillsPointsBar; }
 
+    /// Set information to identify the field prims specifying what
+    /// textures to load.
+    ///
+    /// Must line up with the NamedTextureHandle's passed to
+    /// SetNamedTextureHandles.
+    ///
+    void SetFieldDescriptors(
+        const HdVolumeFieldDescriptorVector & fieldDescs);
+
+    /// Using the above field descriptors, (re-)allocate texture handles
+    /// for the associated textures to update the NamedTextureHandle's.
+    ///
+    void UpdateTextureHandles(HdSceneDelegate *);
+
     /// Add params and specs to communicate volume bounding box to shader.
     ///
     static void GetParamsAndBufferSpecsForBBox(
@@ -124,6 +142,8 @@ private:
 
     HdBufferArrayRangeSharedPtr _pointsBar;
     bool _fillsPointsBar;
+
+    HdVolumeFieldDescriptorVector _fieldDescriptors;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
