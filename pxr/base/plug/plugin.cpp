@@ -244,8 +244,8 @@ PlugPlugin::_Load()
                 _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
             }
             if (!_handle ) {
-                TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
-                                _path.c_str(), _name.c_str(), dsoError.c_str());
+                TF_CODING_ERROR("Failed to load plugin '%s': %s in '%s'",  
+                                _name.c_str(), dsoError.c_str(), _path.c_str());
                 isLoaded = false;
             }
         }
