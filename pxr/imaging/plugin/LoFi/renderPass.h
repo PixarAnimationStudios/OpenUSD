@@ -6,6 +6,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/gf/frustum.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/glf/glew.h"

@@ -129,15 +129,24 @@ LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id
 void
 LoFiResourceRegistry::_Commit()
 {
+  for(auto& instance: _vertexBufferRegistry)
+  {
+    LoFiVertexBufferSharedPtr vertexBuffer = instance.second.value;
+    if(vertexBuffer->GetNeedReallocate())
+    {
+      vertexBuffer->Reallocate();
+      vertexBuffer->Populate();
+    }
+    else if(vertexBuffer->GetNeedUpdate())
+    {
+      vertexBuffer->Populate();
+    }
+  }
+
   for(auto& instance: _vertexArrayRegistry)
   {
     LoFiVertexArraySharedPtr vertexArray = instance.second.value;
-    if(vertexArray->GetNeedReallocate())
-    {
-      vertexArray->Reallocate();
-      vertexArray->Populate();
-    }
-    else if(vertexArray->GetNeedUpdate())
+    if(vertexArray->GetNeedUpdate())
     {
       vertexArray->Populate();
     }

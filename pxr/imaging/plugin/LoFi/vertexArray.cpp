@@ -13,12 +13,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
-LoFiVertexArray::LoFiVertexArray()
+LoFiVertexArray::LoFiVertexArray(LoFiVertexArrayDrawType type)
 : _vao(0)
 , _ebo(0)
 , _channels(0)
-, _needReallocate(true)
+, _drawType(type)
 , _needUpdate(true)
+, _indexed(false)
+, _numAdjacency(0)
 {
 }
 
@@ -47,13 +49,14 @@ LoFiVertexArray::UpdateState()
 void 
 LoFiVertexArray::SetAdjacency(const VtArray<int>& adjacency)
 {
+  _indexed = true;
   _adjacency = (int*)&adjacency[0];
   _numAdjacency = adjacency.size();
 }
 
-// allocate
+// populate
 void 
-LoFiVertexArray::Reallocate()
+LoFiVertexArray::Populate()
 {
   if(!_vao)
   {
@@ -65,40 +68,19 @@ LoFiVertexArray::Reallocate()
     #endif
   }
   Bind();
-
-  for(auto& elem: _buffers)
-  {
-    LoFiVertexBufferSharedPtr buffer = elem.second;
-    buffer->Reallocate();
-  }
-
-  if(!_ebo)glGenBuffers(1, &_ebo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, _numAdjacency * sizeof(int), _adjacency, GL_DYNAMIC_DRAW);
-  
-  Unbind();
-  _needReallocate = false;
-  _needUpdate = true;
-}
-
-void 
-LoFiVertexArray::Populate()
-{
-  Bind();
   
   for(auto& elem: _buffers)
   {
     LoFiVertexBufferSharedPtr buffer = elem.second;
-    if(buffer->GetNeedUpdate())
-    {
-      VtArray<char> datas(buffer->ComputeOutputSize());
-      buffer->ComputeOutputDatas(_topology, datas.data());
-      buffer->Populate(datas.cdata());
-    }
+    buffer->Bind();
   }
-  if(_ebo)glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+  if(_indexed)
+  {
+    if(!_ebo)glGenBuffers(1, &_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, _numAdjacency * sizeof(int), _adjacency, GL_DYNAMIC_DRAW);
+  }
   Unbind();
-  _needReallocate = false;
   _needUpdate = false;
 }
 
@@ -107,25 +89,23 @@ void
 LoFiVertexArray::Draw() const
 {
   Bind();
-  switch(_topology->type)
+  switch(_drawType)
   {
-    case LoFiTopology::Type::POINTS:
+    case LOFI_POINTS:
       glDrawArrays(GL_POINTS, 0, _numElements);
       break;
-    case LoFiTopology::Type::LINES:
+    case LOFI_LINES:
       glDrawArrays(GL_LINES, 0, _numElements);
       break;
-    case LoFiTopology::Type::TRIANGLES:
-      glDrawArrays(GL_TRIANGLES, 0, _numElements);
-      break;
-    case LoFiTopology::Type::TRIANGLES_ADJACENCY:
-      if(_ebo)
-      {
+    case LOFI_TRIANGLES:
+      if(_indexed)
         glDrawElements(GL_TRIANGLES_ADJACENCY, // primitive type
                       _numElements * 2,        // index count
                       GL_UNSIGNED_INT,         // index type
-                      0);                      // start index
-      }
+                      0);
+      else
+        glDrawArrays(GL_TRIANGLES, 0, _numElements);
+      break;
   }
   
   Unbind();
@@ -135,6 +115,7 @@ LoFiVertexArray::Draw() const
 void 
 LoFiVertexArray::Bind() const
 {
+  glPointSize(5);
   #ifdef __APPLE__
     if(LOFI_GL_VERSION >= 330) glBindVertexArray(_vao);
     else glBindVertexArrayAPPLE(_vao);
@@ -174,11 +155,11 @@ LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedP
 }
 
 LoFiVertexBufferSharedPtr 
-LoFiVertexArray::CreateBuffer(LoFiAttributeChannel channel, 
+LoFiVertexArray::CreateBuffer(LoFiTopology* topo, LoFiAttributeChannel channel, 
   uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(channel, numInputElements, numOutputElements, interpolation)
+    new LoFiVertexBuffer(topo, channel, numInputElements, numOutputElements, interpolation)
   );
 }
 

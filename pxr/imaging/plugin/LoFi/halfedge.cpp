@@ -53,12 +53,8 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
 
   // verify that the mesh is clean:
   size_t numEntries = halfEdgesMap.size();
-  if(numEntries != numTriangles * 3)
-  {
-    std::cout << "Bad Mesh: Duplicated edges or inconsistent winding!!!" << std::endl;
-    _valid = false;
-    return;
-  }
+  bool problematic = false;
+  if(numEntries != numTriangles * 3)problematic = true;
 
   // populate the twin pointers by iterating over the hash map:
   uint64_t edgeIndex; 
@@ -77,8 +73,27 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
   }
 
   // now that we have a half-edge structure, it's easy to create adjacency info for OpenGL:
-  if (boundaryCount > 0)
+  if(problematic)
   {
+    int* adjacency = &_adjacency[0];
+    LoFiHalfEdge* halfEdge = &halfEdges[0];
+    for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
+    {
+        adjacency[0] = halfEdge[2].sample;
+        adjacency[1] = halfEdge[0].twin && halfEdge[0].twin->next ? 
+          (halfEdge[0].twin->next->sample) : adjacency[0];
+        adjacency[2] = halfEdge[0].sample;
+        adjacency[3] = halfEdge[1].twin && halfEdge[1].twin->next ? 
+          (halfEdge[1].twin->next->sample) : adjacency[1];
+        adjacency[4] = halfEdge[1].sample;
+        adjacency[5] = halfEdge[2].twin && halfEdge[2].twin->next ? 
+          (halfEdge[2].twin->next->sample) : adjacency[2];
+    }
+  }
+  else
+  {
+    if (boundaryCount > 0)
+    {
       int* adjacency = &_adjacency[0];
       LoFiHalfEdge* halfEdge = &halfEdges[0];
       for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
@@ -90,9 +105,9 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
           adjacency[4] = halfEdge[1].sample;
           adjacency[5] = halfEdge[2].twin ? (halfEdge[2].twin->next->sample) : adjacency[2];
       }
-  }
-  else
-  {
+    }
+    else
+    {
       int* adjacency = &_adjacency[0];
       LoFiHalfEdge* halfEdge = &halfEdges[0];
       for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
@@ -104,8 +119,8 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
           adjacency[4] = halfEdge[1].sample;
           adjacency[5] = halfEdge[2].twin->next->sample;
       }
+    }
   }
-  _valid = true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
