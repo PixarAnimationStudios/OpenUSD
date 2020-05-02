@@ -343,7 +343,7 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
   
   if(hasGeometryShader)
   {
-    _genGS << "#define LOFI_NUM_PRIMITIVE_VERTS 6\n";
+    _genGS << "#define LOFI_NUM_PRIMITIVE_VERTS 2\n";
     // geometry shader code
     TF_FOR_ALL(it, vertexDatas)
     {

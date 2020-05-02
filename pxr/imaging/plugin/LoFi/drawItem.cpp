@@ -14,52 +14,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 LoFiDrawItem::LoFiDrawItem(HdRprimSharedData const *sharedData)
-    : HdDrawItem(sharedData)
-    , _program(NULL)
-    , _dualMesh(NULL)
+  : HdDrawItem(sharedData)
+  , _program(NULL)
+  , _dualMesh(NULL)
 {
-    HF_MALLOC_TAG_FUNCTION();
+  HF_MALLOC_TAG_FUNCTION();
 }
 
 LoFiDrawItem::~LoFiDrawItem()
 {
-    /*NOTHING*/
+  /*NOTHING*/
 }
 
 size_t
 LoFiDrawItem::_GetBufferArraysHash() const
 {
-    return _hash;
+  return _hash;
 }
 
 void 
 LoFiDrawItem::ClearSilhouettes()
 {
-    if(_dualMesh)
-    {
-        _dualMesh->ClearSilhouettes();
-    }
+  if(_dualMesh)
+  {
+    _dualMesh->ClearSilhouettes();
+  }
 }
 void 
-LoFiDrawItem::FindSilhouettes(const GfMatrix4f& viewMatrix)
+LoFiDrawItem::FindSilhouettes(const GfMatrix4d& viewMatrix)
 {
-    if(_dualMesh)
-    {
+  if(_dualMesh)
+  {
+    _dualMesh->UncheckAllEdges();
+    _dualMesh->FindSilhouettes(viewMatrix);
 
-    }
+    /*
+    LoFiVertexBufferSharedPtr buffer = 
+      LoFiVertexArray::CreateBuffer(
+        &_topology,
+        CHANNEL_POSITION, 
+        silhouette,
+        numOutputElements,
+        interpolation);
+    */
+    
+  }
 }
 
 void 
 LoFiDrawItem::PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms)
 {
-    size_t numInstances = xforms.size();
-    _instancesXform.resize(numInstances);
-    for(int i=0;i<numInstances;++i)
-    {
-        _instancesXform[i] = GfMatrix4f(xforms[i]);
-    }
+  size_t numInstances = xforms.size();
+  _instancesXform.resize(numInstances);
+  for(int i=0;i<numInstances;++i)
+  {
+    _instancesXform[i] = GfMatrix4f(xforms[i]);
+  }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

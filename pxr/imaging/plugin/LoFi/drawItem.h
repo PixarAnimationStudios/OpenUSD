@@ -21,50 +21,50 @@ class LoFiBinder;
 ///
 class LoFiDrawItem : public HdDrawItem  {
 public:
-    HF_MALLOC_TAG_NEW("new LoFiDrawItem");
+  HF_MALLOC_TAG_NEW("new LoFiDrawItem");
 
-    LoFiDrawItem(HdRprimSharedData const *sharedData);
-    
-    virtual ~LoFiDrawItem();
+  LoFiDrawItem(HdRprimSharedData const *sharedData);
+  
+  virtual ~LoFiDrawItem();
 
-    // Associated vertex array
-    void SetVertexArray(LoFiVertexArray* vertexArray) {
-      _vertexArray = vertexArray;
-    }
-    const LoFiVertexArray* GetVertexArray() const {return _vertexArray;};
+  // Associated vertex array
+  void SetVertexArray(LoFiVertexArray* vertexArray) {
+    _vertexArray = vertexArray;
+  }
+  const LoFiVertexArray* GetVertexArray() const {return _vertexArray;};
 
-    LoFiBinder* Binder(){return &_binder;};
-    const LoFiBinder* GetBinder() const {return &_binder;};
+  LoFiBinder* Binder(){return &_binder;};
+  const LoFiBinder* GetBinder() const {return &_binder;};
 
-    // associated glsl program
-    void SetGLSLProgram(LoFiGLSLProgramSharedPtr program) {
-      _program = program;
-    }
-    LoFiGLSLProgramSharedPtr GetGLSLProgram() const {return _program;};
+  // associated glsl program
+  void SetGLSLProgram(LoFiGLSLProgramSharedPtr program) {
+    _program = program;
+  }
+  LoFiGLSLProgramSharedPtr GetGLSLProgram() const {return _program;};
 
-    // dual mesh
-    void SetDualMesh(LoFiDualMesh* dualMesh){_dualMesh = dualMesh;};
-    LoFiDualMesh* GetDualMesh(){return _dualMesh;};
-    void ClearSilhouettes();
-    void FindSilhouettes(const GfMatrix4f& viewMatrix);
+  // dual mesh
+  void SetDualMesh(LoFiDualMesh* dualMesh){_dualMesh = dualMesh;};
+  LoFiDualMesh* GetDualMesh(){return _dualMesh;};
+  void ClearSilhouettes();
+  void FindSilhouettes(const GfMatrix4d& viewMatrix);
 
-    inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
+  inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
 
-    void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
-    const VtArray<GfMatrix4f>& GetInstancesXforms() const {return _instancesXform;};
+  void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
+  const VtArray<GfMatrix4f>& GetInstancesXforms() const {return _instancesXform;};
 
 protected:
     
-    size_t _GetBufferArraysHash() const;
+  size_t _GetBufferArraysHash() const;
 
 private:
-    // vertex array hash to get it backfrom registry
-    size_t                      _hash;
-    LoFiVertexArray*            _vertexArray;
-    LoFiGLSLProgramSharedPtr    _program;
-    LoFiBinder                  _binder;
-    VtArray<GfMatrix4f>         _instancesXform;
-    LoFiDualMesh*               _dualMesh;
+  // vertex array hash to get it backfrom registry
+  size_t                      _hash;
+  LoFiVertexArray*            _vertexArray;
+  LoFiGLSLProgramSharedPtr    _program;
+  LoFiBinder                  _binder;
+  VtArray<GfMatrix4f>         _instancesXform;
+  LoFiDualMesh*               _dualMesh;
 };
 
 typedef std::set<const LoFiDrawItem*> LoFiDrawItemPtrSet;

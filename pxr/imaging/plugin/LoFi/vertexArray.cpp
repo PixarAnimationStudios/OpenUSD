@@ -13,15 +13,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
-LoFiVertexArray::LoFiVertexArray(LoFiVertexArrayDrawType type)
+LoFiVertexArray::LoFiVertexArray(LoFiTopology::Type type)
 : _vao(0)
 , _ebo(0)
 , _channels(0)
-, _drawType(type)
 , _needUpdate(true)
 , _indexed(false)
 , _numAdjacency(0)
 {
+  _topology.type = type;
 }
 
 // destructor
@@ -89,15 +89,15 @@ void
 LoFiVertexArray::Draw() const
 {
   Bind();
-  switch(_drawType)
+  switch(_topology.type)
   {
-    case LOFI_POINTS:
+    case LoFiTopology::Type::POINTS:
       glDrawArrays(GL_POINTS, 0, _numElements);
       break;
-    case LOFI_LINES:
+    case LoFiTopology::Type::LINES:
       glDrawArrays(GL_LINES, 0, _numElements);
       break;
-    case LOFI_TRIANGLES:
+    case LoFiTopology::Type::TRIANGLES:
       if(_indexed)
         glDrawElements(GL_TRIANGLES_ADJACENCY, // primitive type
                       _numElements * 2,        // index count
