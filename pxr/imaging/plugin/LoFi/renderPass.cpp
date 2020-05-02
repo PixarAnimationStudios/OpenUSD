@@ -67,7 +67,6 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       break;
   }
 
-  std::cout << "GENERATE PROGRAM CODE..." << std::endl;
   LoFiShaderCodeSharedPtr shaderCode(new LoFiShaderCode(shaderPath));
 
   LoFiCodeGen codeGen(
@@ -77,9 +76,6 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     shaderCode
   );
   codeGen.GenerateProgramCode(hasGeometryShader);
-
-  std::cout << "GENERATE PROGRAM CODE DONE, BUILD IT" << std::endl;
-  std::cout << "HAVE GEOMETRY SHADER : " << hasGeometryShader << std::endl;
 
   if(!hasGeometryShader)
   {
@@ -95,16 +91,7 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       codeGen.GetVertexShaderCode().c_str(), 
       codeGen.GetGeometryShaderCode().c_str(), 
       codeGen.GetFragmentShaderCode().c_str());
-    
-    std::cout << "################ VERTEX " << std::endl;
-    std::cout << codeGen.GetVertexShaderCode().c_str() << std::endl;
-    std::cout << "################ GEOMETRY " << std::endl;
-    std::cout << codeGen.GetGeometryShaderCode().c_str() << std::endl;
-    std::cout << "################ FRAGMENT " << std::endl;
-    std::cout << codeGen.GetFragmentShaderCode().c_str() << std::endl;
   }
-
-  std::cout << "BUILD PROGRAM DONE, WTF???" << std::endl;
 
   HdInstance<LoFiGLSLProgramSharedPtr> instance =
   resourceRegistry->RegisterGLSLProgram(program->Hash());
@@ -184,7 +171,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 
   glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
+  std::cout << "----------------- LOFI RENDER PASS EXECUTE -------------" << std::endl;
   for(auto programIt: _programs)
   {
     TfToken programName = programIt.first;
@@ -261,6 +248,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
             &GfMatrix4f(drawItem->GetMatrix())[0][0]
           );
           vertexArray->Draw();
+        
         }
         
       }

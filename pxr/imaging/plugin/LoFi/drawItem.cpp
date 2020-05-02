@@ -48,6 +48,24 @@ LoFiDrawItem::FindSilhouettes(const GfMatrix4d& viewMatrix)
     _dualMesh->UncheckAllEdges();
     _dualMesh->FindSilhouettes(viewMatrix);
 
+    LoFiTopology* topology = _vertexArray->GetTopology();
+    topology->numElements = _dualMesh->GetNumSilhouettes() * 2;
+    LoFiVertexBufferSharedPtr vertexBuffer = 
+      _vertexArray->CreateBuffer(
+        topology, 
+        CHANNEL_POSITION, 
+        topology->numElements,
+        topology->numElements,
+        HdInterpolationVertex);
+
+    _vertexArray->SetBuffer(CHANNEL_POSITION, vertexBuffer);
+    _vertexArray->SetNumElements(topology->numElements);
+    vertexBuffer->SetRawInputDatas(_dualMesh->GetPoints());
+
+    vertexBuffer->Reallocate();
+    vertexBuffer->Populate();
+    _vertexArray->Populate();
+
     /*
     LoFiVertexBufferSharedPtr buffer = 
       LoFiVertexArray::CreateBuffer(

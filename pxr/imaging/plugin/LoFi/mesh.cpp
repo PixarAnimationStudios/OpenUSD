@@ -79,9 +79,9 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     LoFiDrawItem *surfaceItem = new LoFiDrawItem(&_sharedData);
     repr->AddDrawItem(surfaceItem);
     
-    //LoFiDrawItem *contourItem = new LoFiDrawItem(&_sharedData);
-    //contourItem->SetDualMesh(_dualMesh);
-    //repr->AddDrawItem(contourItem);
+    LoFiDrawItem *contourItem = new LoFiDrawItem(&_sharedData);
+    contourItem->SetDualMesh(_dualMesh);
+    repr->AddDrawItem(contourItem);
     
   }
 }
@@ -212,8 +212,8 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     _adjacency.Compute(_samples);
     
     //_contourArray->SetAdjacency(_adjacency.Get());
-    //_contourArray->SetNumElements(_samples.size());
-    //_contourArray->SetNeedUpdate(true);
+    _contourArray->SetNumElements(2);
+    _contourArray->SetNeedUpdate(true);
     
     needReallocate = true;
   }
@@ -360,7 +360,7 @@ LoFiMesh::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
     binder->SetProgramType(LOFI_PROGRAM_MESH);
     binder->ComputeProgramName();
   }
-  /*
+  
   // contour
   {
     LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(1));
@@ -384,7 +384,7 @@ LoFiMesh::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
     binder->SetProgramType(LOFI_PROGRAM_CONTOUR);
     binder->ComputeProgramName();
   }
-  */
+  
   
 
 }
@@ -433,12 +433,11 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
       drawItem->SetVertexArray(_vertexArray.get());
     }
     
-    /*
     // contour
     {
       size_t contourId = GetId().GetHash();
       boost::hash_combine(contourId, TfToken("Contour").Hash());
-      _contourArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(.LoFiTopology::Type::LINES));
+      _contourArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LoFiTopology::Type::LINES));
       auto contourInstance = resourceRegistry->RegisterVertexArray(contourId);
       contourInstance.SetValue(_contourArray);  
 
@@ -455,10 +454,9 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
           4,
           HdInterpolationVertex);
       buffer->SetRawInputDatas((const char*)&CONTOUR_TEST_POSITIONS[0]);
+      buffer->SetNeedReallocate(true);
       _contourArray->SetBuffer(CHANNEL_POSITION, buffer);
     }
-    */
-
   }
   _UpdateVisibility(sceneDelegate, dirtyBits);
   _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
