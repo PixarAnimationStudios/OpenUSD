@@ -220,8 +220,6 @@ void LoFiDualMesh::Build(LoFiMesh* mesh)
 
   _mesh = mesh;
 
-  //ProjectPoints();
-
   const LoFiAdjacency* adjacency = _mesh->GetAdjacency();
   const std::vector<LoFiHalfEdge>& halfEdges = adjacency->GetHalfEdges();
 
@@ -229,8 +227,6 @@ void LoFiDualMesh::Build(LoFiMesh* mesh)
     ProjectEdge(&halfEdge);
 
   for(int j=0;j<8;++j)_children[j]->Split();
-
-  Log();
 }
 short _LoFiGetDualSurfaceIndex(const GfVec4f& dualPoint)
 {
@@ -279,11 +275,12 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
   bool facing = (ff > 0);
 
   GfVec3f trn = triangleNormals[halfEdge->triangle];
-  GfVec4f n1( trn[0], trn[1], trn[2], - GfDot(trn, positions[halfEdge->vertex].GetNormalized())); 
+  GfVec4f n1( trn[0], trn[1], trn[2], - GfDot(trn, positions[halfEdge->vertex])); 
 
   trn = triangleNormals[twinEdge->triangle];
-  GfVec4f n2( trn[0], trn[1], trn[2], - GfDot(trn, positions[twinEdge->vertex].GetNormalized()));
-
+  GfVec4f n2( trn[0], trn[1], trn[2], - GfDot(trn, positions[twinEdge->vertex]));
+  
+  /*
   size_t idx1 = _LoFiGetDualSurfaceIndex(n1);
   size_t idx2 = _LoFiGetDualSurfaceIndex(n2);
 
@@ -293,7 +290,6 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
       new LoFiDualEdge(halfEdge, facing, idx1, n1, n2);
     _children[idx1]->InsertEdge(dualEdge);
     _dualEdges.push_back(dualEdge);
-    std::cout << "INSERT IT IN OCTREE CHILD " << idx1 << std::endl;
   }
   else
   {
@@ -306,11 +302,9 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
       new LoFiDualEdge(halfEdge, facing, idx2, n1, n2);
     _children[idx2]->InsertEdge(dualEdge2);
     _dualEdges.push_back(dualEdge2);
-
-    std::cout << "INSERT IT IN  OCTREE CHILDS " << idx1 << " & " << idx2 << std::endl;
   }
-
-  /*
+  */
+  
   GfVec4f n = n2 - n1;
 
   float t[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
@@ -330,8 +324,6 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
   if (n[1] + n[3] != 0)t[10] = - (n1[1] + n1[3]) / (n[1] + n[3]);
   if (n[2] - n[3] != 0)t[11] = - (n1[2] - n1[3]) / (n[2] - n[3]);
   if (n[2] + n[3] != 0)t[12] = - (n1[2] + n1[3]) / (n[2] + n[3]);
-
-  std::cout << "PROJECT EDGE : (" << halfEdge->vertex << "," << twinEdge->vertex << ")" << std::endl;
 
   int p1 = 0, p2;
   while (p1 < 13) 
@@ -365,9 +357,8 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
       new LoFiDualEdge(halfEdge, facing, tp, pos1, pos2);
     _children[tp]->InsertEdge(dualEdge);
     _dualEdges.push_back(dualEdge);
-    std::cout << "INSERT IT IN OCTREE CHILD " << tp << std::endl;
   }
-  */
+  
 }
 
 void LoFiDualMesh::UncheckAllEdges()
@@ -400,6 +391,15 @@ void LoFiDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
   _children[6]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), -pos[2],
 			       _silhouettes);
   _children[7]->FindSilhouettes(pos, -1, _silhouettes);
+
+  _points.resize(_silhouettes.size() * 2);
+  const GfVec3f* positions = _mesh->GetPositionsPtr();
+  size_t index = 0;
+  for(const auto& silhouette: _silhouettes)
+  {
+    _points[index++] = positions[silhouette->vertex];
+    _points[index++] = positions[silhouette->twin->vertex];
+  }
 }
 
 

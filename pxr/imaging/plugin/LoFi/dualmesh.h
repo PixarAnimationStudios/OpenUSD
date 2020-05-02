@@ -135,6 +135,8 @@ public:
   void ClearSilhouettes();
   void FindSilhouettes(const GfMatrix4d& viewMatrix);
   void UncheckAllEdges();
+  size_t GetNumSilhouettes(){return _silhouettes.size();};
+  //int* GetSilhouettesSamples(){return _samples.cdata();};
 
   // project points to dual space
   //void ProjectPoints();
@@ -142,13 +144,17 @@ public:
   // project edges to dual space
   void ProjectEdge(const LoFiHalfEdge* halfEdge);
 
+  // points
+  const char* GetPoints(){return (const char*)_points.cdata();};
+
 private:      
   // mesh
   LoFiMesh* _mesh;    
-  //VtArray<GfVec4f> _dualPoints;
 
   std::vector<const LoFiHalfEdge*> _boundaries;
   std::vector<const LoFiHalfEdge*> _silhouettes;
+  VtArray<GfVec3f>                 _points;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
