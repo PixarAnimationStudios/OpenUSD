@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/plugin/LoFi/dualmesh.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
 #include "pxr/imaging/plugin/LoFi/binding.h"
@@ -41,6 +42,12 @@ public:
     }
     LoFiGLSLProgramSharedPtr GetGLSLProgram() const {return _program;};
 
+    // dual mesh
+    void SetDualMesh(LoFiDualMesh* dualMesh){_dualMesh = dualMesh;};
+    LoFiDualMesh* GetDualMesh(){return _dualMesh;};
+    void ClearSilhouettes();
+    void FindSilhouettes(const GfMatrix4f& viewMatrix);
+
     inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
 
     void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
@@ -57,6 +64,7 @@ private:
     LoFiGLSLProgramSharedPtr    _program;
     LoFiBinder                  _binder;
     VtArray<GfMatrix4f>         _instancesXform;
+    LoFiDualMesh*               _dualMesh;
 };
 
 typedef std::set<const LoFiDrawItem*> LoFiDrawItemPtrSet;

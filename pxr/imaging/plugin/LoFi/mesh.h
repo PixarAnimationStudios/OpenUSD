@@ -26,6 +26,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class LoFiOctree;
+class LoFiDualMesh;
 /// \class LoFiMesh
 ///
 class LoFiMesh final : public HdMesh 
@@ -47,6 +49,18 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const    &reprToken) override;
 
+    const LoFiAdjacency* GetAdjacency() const {return &_adjacency;};
+    const GfVec3f* GetTriangleNormalsPtr() const { return _triangleNormals.cdata();};
+    const GfVec3f* GetPositionsPtr() const {return _positions.cdata();};
+    const GfVec3f* GetNormalsPtr() const {return _normals.cdata();};
+    const VtArray<GfVec3f>& GetTriangleNormals() const { return _triangleNormals;};
+    const VtArray<GfVec3f>& GetPositions() const {return _positions;};
+    const VtArray<GfVec3f>& GetNormals() const {return _normals;};
+    size_t GetNumPoints(){return _positions.size();};
+    size_t GetNumTriangles(){return _samples.size()/3;};
+    GfVec3f GetBBoxMin(){return GfVec3f(_bbox.GetMin());};
+    GfVec3f GetBBoxMax(){return GfVec3f(_bbox.GetMax());};
+    
 protected:
     void _InitRepr(
         TfToken const &reprToken,
@@ -68,13 +82,6 @@ protected:
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
-    /*
-    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
-                               HdDirtyBits dirtyBits);
-
-    TfTokenVector _UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate, 
-                                                  HdDirtyBits dirtyBits);
-    */
 
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
@@ -90,6 +97,7 @@ private:
     };
     
     VtArray<GfVec3f>                _positions;
+    VtArray<GfVec3f>                _triangleNormals;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
@@ -98,6 +106,8 @@ private:
     LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;
     LoFiVertexArraySharedPtr        _contourArray;
+    LoFiDualMesh*                   _dualMesh;
+    GfRange3d                       _bbox;
 
 };
 

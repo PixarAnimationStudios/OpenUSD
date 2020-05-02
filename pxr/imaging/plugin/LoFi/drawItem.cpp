@@ -16,6 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 LoFiDrawItem::LoFiDrawItem(HdRprimSharedData const *sharedData)
     : HdDrawItem(sharedData)
     , _program(NULL)
+    , _dualMesh(NULL)
 {
     HF_MALLOC_TAG_FUNCTION();
 }
@@ -29,6 +30,23 @@ size_t
 LoFiDrawItem::_GetBufferArraysHash() const
 {
     return _hash;
+}
+
+void 
+LoFiDrawItem::ClearSilhouettes()
+{
+    if(_dualMesh)
+    {
+        _dualMesh->ClearSilhouettes();
+    }
+}
+void 
+LoFiDrawItem::FindSilhouettes(const GfMatrix4f& viewMatrix)
+{
+    if(_dualMesh)
+    {
+
+    }
 }
 
 void 

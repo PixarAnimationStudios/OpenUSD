@@ -107,6 +107,20 @@ LoFiTriangulateMesh(const VtArray<int>& counts,
                     const VtArray<int>& indices, 
                     VtArray<GfVec3i>& samples);
 
+/// Compute traingle normals
+void
+LoFiComputeTriangleNormals( const VtArray<GfVec3f>& positions,
+                            const VtArray<GfVec3i>& samples,
+                            VtArray<GfVec3f>& normals);
+
+/// Compute smooth vertex normals on a triangulated mesh
+void 
+LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
+                          const VtArray<int>& counts,
+                          const VtArray<int>& indices,
+                          const VtArray<GfVec3f>& triangleNormals,
+                          VtArray<GfVec3f>& normals);
+
 /// Compute smooth vertex normals on a triangulated polymesh
 void 
 LoFiComputeVertexNormals(const VtArray<GfVec3f>& positions,

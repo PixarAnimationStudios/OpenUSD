@@ -13,13 +13,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
 {
   size_t numTriangles = samples.size() / 3;
-  std::vector<LoFiHalfEdge> halfEdges;
-  halfEdges.resize(numTriangles * 3);
+  
+  _halfEdges.resize(numTriangles * 3);
   _adjacency.resize(numTriangles * 6);
   TfHashMap<uint64_t, LoFiHalfEdge*, TfHash> halfEdgesMap;
 
   const GfVec3i* sample = &samples[0];
-  LoFiHalfEdge* halfEdge = &halfEdges[0];
+  LoFiHalfEdge* halfEdge = &_halfEdges[0];
   for (int triIndex = 0; triIndex < numTriangles; ++triIndex)
   {
       uint64_t A = sample[0][0];
@@ -32,6 +32,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
       // create the half-edge that goes from C to A:
       halfEdgesMap[C | (A << 32)] = halfEdge;
       halfEdge->vertex = A;
+      halfEdge->triangle = triIndex;
       halfEdge->sample = sA;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
@@ -39,6 +40,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
       // create the half-edge that goes from A to B:
       halfEdgesMap[A | (B << 32)] = halfEdge;
       halfEdge->vertex = B;
+      halfEdge->triangle = triIndex;
       halfEdge->sample = sB;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
@@ -46,6 +48,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
       // create the half-edge that goes from B to C:
       halfEdgesMap[B | (C << 32)] = halfEdge;
       halfEdge->vertex = C;
+      halfEdge->triangle = triIndex;
       halfEdge->sample = sC;
       halfEdge->next = halfEdge - 2;
       ++halfEdge;
@@ -76,7 +79,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
   if(problematic)
   {
     int* adjacency = &_adjacency[0];
-    LoFiHalfEdge* halfEdge = &halfEdges[0];
+    LoFiHalfEdge* halfEdge = &_halfEdges[0];
     for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
     {
         adjacency[0] = halfEdge[2].sample;
@@ -95,7 +98,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
     if (boundaryCount > 0)
     {
       int* adjacency = &_adjacency[0];
-      LoFiHalfEdge* halfEdge = &halfEdges[0];
+      LoFiHalfEdge* halfEdge = &_halfEdges[0];
       for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
       {
           adjacency[0] = halfEdge[2].sample;
@@ -109,7 +112,7 @@ void LoFiAdjacency::Compute(const VtArray<GfVec3i>& samples)
     else
     {
       int* adjacency = &_adjacency[0];
-      LoFiHalfEdge* halfEdge = &halfEdges[0];
+      LoFiHalfEdge* halfEdge = &_halfEdges[0];
       for (int triIndex = 0; triIndex < numTriangles; ++triIndex, halfEdge += 3, adjacency += 6)
       {
           adjacency[0] = halfEdge[2].sample;
