@@ -15,15 +15,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef struct LoFiHalfEdge_t
+struct LoFiHalfEdge
 {
-    uint32_t                vertex;      // vertex index
-    uint32_t                sample;      // sample index
-    struct LoFiHalfEdge_t*  twin;        // opposite half-edge
-    struct LoFiHalfEdge_t*  next;        // next half-edge
+    uint32_t              vertex;    // vertex index
+    uint32_t              sample;    // sample index
+    uint32_t              triangle;  // triangle index
+    struct LoFiHalfEdge*  twin;      // opposite half-edge
+    struct LoFiHalfEdge*  next;      // next half-edge
 
-    LoFiHalfEdge_t():vertex(0),twin(NULL),next(NULL){};
-} LoFiHalfEdge;
+    LoFiHalfEdge():vertex(0),twin(NULL),next(NULL){};
+};
 
 /// \class LoFiAdjacency
 ///
@@ -31,10 +32,12 @@ class LoFiAdjacency
 {
 public:
     void Compute(const VtArray<GfVec3i>& samples);
-    const VtArray<int>& Get(){return _adjacency;};
+    const VtArray<int>& Get() const {return _adjacency;};
+    const std::vector<LoFiHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 
 private:
     VtArray<int> _adjacency;
+    std::vector<LoFiHalfEdge> _halfEdges;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

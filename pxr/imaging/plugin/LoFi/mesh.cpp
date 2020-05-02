@@ -5,15 +5,13 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/plugin/LoFi/mesh.h"
+#include "pxr/imaging/plugin/LoFi/dualmesh.h"
 #include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
-#include "pxr/imaging/hd/extComputationUtils.h"
-#include "pxr/imaging/hd/meshUtil.h"
-#include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -30,6 +28,7 @@ LoFiMesh::LoFiMesh(SdfPath const& id, SdfPath const& instancerId)
     : HdMesh(id, instancerId)
 {
   _topology.type = LoFiTopology::Type::TRIANGLES;
+  _dualMesh = new LoFiDualMesh();
 }
 
 HdDirtyBits
@@ -227,7 +226,9 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
 
   if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) 
   {
-    _sharedData.bounds.SetRange(GetExtent(sceneDelegate));
+    _bbox = GetExtent(sceneDelegate);
+    _sharedData.bounds.SetRange(_bbox);
+  
   }
   
   bool pointPositionsUpdated = false;
@@ -296,14 +297,17 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     }
   }
 
+  LoFiComputeTriangleNormals(_positions,
+                              _samples,
+                              _triangleNormals);
+
   // if no authored normals compute smooth vertex normals
   if(!haveAuthoredNormals && (needReallocate || pointPositionsUpdated))
   {
-
     LoFiComputeVertexNormals( _positions,
                               topology.GetFaceVertexCounts(),
                               topology.GetFaceVertexIndices(),
-                              _samples,
+                              _triangleNormals,
                               _normals);
     
     _PopulatePrimvar( sceneDelegate,
@@ -456,7 +460,12 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
     contourItem->PopulateInstancesXforms(transforms);
   }
 
-  if(!initialized) _PopulateBinder(resourceRegistry);
+  if(!initialized)
+  {
+    _PopulateBinder(resourceRegistry);
+    std::cout << "BUILD DUAL MESH FOR " << GetId().GetText() << std::endl;
+    _dualMesh->Build(this);
+  }
 
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;

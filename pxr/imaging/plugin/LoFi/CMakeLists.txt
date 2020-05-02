@@ -39,6 +39,7 @@ pxr_plugin(LoFi
         utils
         halfedge
         mesh
+        dualmesh
         points
         instancer
         sceneDelegate

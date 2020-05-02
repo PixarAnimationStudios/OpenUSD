@@ -35,6 +35,68 @@ LoFiTriangulateMesh(const VtArray<int>& counts,
   return cnt / 3;
 }
 
+void
+LoFiComputeTriangleNormals( const VtArray<GfVec3f>& positions,
+                            const VtArray<GfVec3i>& samples,
+                            VtArray<GfVec3f>& normals)
+{
+  // first compute triangle normals
+  int numTriangles = samples.size()/3;
+  normals.resize(numTriangles);
+  memset(normals.data(), 0.f, normals.size() * sizeof(GfVec3f));
+
+  for(int i = 0; i < numTriangles; ++i)
+  {
+    GfVec3f ab = positions[samples[i*3+1][0]] - positions[samples[i*3][0]];
+    GfVec3f ac = positions[samples[i*3+2][0]] - positions[samples[i*3][0]];
+    normals[i] = (ab ^ ac).GetNormalized();
+  }
+}
+
+void 
+LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
+                          const VtArray<int>& counts,
+                          const VtArray<int>& indices,
+                          const VtArray<GfVec3f>& triangleNormals,
+                          VtArray<GfVec3f>& normals)
+{
+  // we want smooth vertex normals
+  normals.resize(positions.size());
+  memset(normals.data(), 0.f, normals.size() * sizeof(GfVec3f));
+
+  // compute polygons normals
+  int numPolygons = counts.size();
+  VtArray<GfVec3f> polygonNormals;
+  polygonNormals.resize(numPolygons);
+  int base = 0;
+  for(int i=0; i < counts.size(); ++i)
+  {
+    int numVertices = counts[i];
+    int numTriangles = numVertices - 2;
+    GfVec3f n(0.f, 0.f, 0.f);
+    for(int j = 0; j < numTriangles; ++j)
+    {
+      n += triangleNormals[base + j];
+    }
+    polygonNormals[i] = n.GetNormalized();
+    base += numTriangles;
+  }
+
+  // finaly average vertex normals  
+  base = 0;
+  for(int i = 0; i < counts.size(); ++i)
+  {
+    int numVertices = counts[i];
+    for(int j = 0; j < numVertices; ++j)
+    {
+      normals[indices[base + j]] += polygonNormals[i];
+    }
+    base += numVertices;
+  }
+  
+  for(auto& n: normals) n.Normalize();
+}
+
 void 
 LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
