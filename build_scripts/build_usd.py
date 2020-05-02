@@ -1944,7 +1944,12 @@ else:
 
 if find_executable("cmake"):
     # Check cmake requirements
-    cmake_required_version = (3, 12)
+    if Windows():
+        # Windows build depend on boost 1.70, which is not supported before
+        # cmake version 3.14
+        cmake_required_version = (3, 14)
+    else:
+        cmake_required_version = (3, 12)
     cmake_version = GetCMakeVersion()
     if not cmake_version:
         PrintError("Failed to determine CMake version")
