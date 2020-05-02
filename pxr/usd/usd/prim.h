@@ -150,6 +150,7 @@ public:
     /// the IsA query. This value is cached and efficient to query.
     /// \sa GetTypeName
     /// \sa GetAppliedSchemas
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     const UsdPrimTypeInfo &GetPrimTypeInfo() const {
         return _Prim()->GetPrimTypeInfo();
     }
@@ -473,7 +474,9 @@ private:
 
 public:
     /// Return true if the prim's schema type, is or inherits schema type T.
-    /// \see GetPrimTypeInfo UsdPrimTypeInfo::GetSchemaType
+    /// \sa GetPrimTypeInfo 
+    /// \sa UsdPrimTypeInfo::GetSchemaType
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     template <typename T>
     bool IsA() const {
         static_assert(std::is_base_of<UsdSchemaBase, T>::value,
@@ -482,7 +485,9 @@ public:
     };
     
     /// Return true if the prim's schema type is or inherits \p schemaType.
-    /// \see GetPrimTypeInfo UsdPrimTypeInfo::GetSchemaType
+    /// \sa GetPrimTypeInfo 
+    /// \sa UsdPrimTypeInfo::GetSchemaType
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     USD_API
     bool IsA(const TfType& schemaType) const;
 

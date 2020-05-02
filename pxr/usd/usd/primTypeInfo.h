@@ -63,6 +63,8 @@ public:
     /// returned by GetTypeName. But if the stage provided this type info with
     /// a fallback type because the prim type name is not a recognized schema, 
     /// this will return the provided fallback schema type instead.
+    /// 
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     const TfType &GetSchemaType() const { return _schemaType; }
 
     /// Returns the type name associated with the schema type returned from 
@@ -70,6 +72,8 @@ public:
     /// UsdSchemaRegistry::GetConcreteSchemaTypeName on the type returned by 
     /// GetSchemaType and will typically be the same as GetTypeName as long as
     /// the prim type name is a recognized prim type.
+    ///
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     const TfToken &GetSchemaTypeName() const { return _schemaTypeName; }
 
     /// Returns the prim definition associated with this prim type's schema 

@@ -212,6 +212,7 @@ public:
     /// when encountering a prim of one these types.
     ///
     /// \sa UsdStage::WriteFallbackPrimTypes
+    /// \sa \ref Usd_OM_FallbackPrimTypes
     const VtDictionary &GetFallbackPrimTypes() const {
         return _fallbackPrimTypes;
     }

@@ -98,7 +98,7 @@ The definitions of both IsA schemas and applied API schemas are published, at
 runtime, into an introspectable 
 \ref Usd_OM_SchemaDefinitionRegistry "schema definition registry", which
 produces the \ref UsdPrimDefinition "prim definitions" consulted by 
-core Usd when performing property value resolution (i.e. retrieving a property's 
+core USD when performing property value resolution (i.e. retrieving a property's 
 value at a given UsdTimeCode). This allows IsA and applied API schemas to 
 provide \em fallback \em values for their properties, that is, a value
 that the property will possess, even when none has been authored. Because a
@@ -261,6 +261,7 @@ class PxHairman "PxHairman" (
                 string doc = """doc for schemaToken2"""
             }
         }
+        token[] fallbackTypes = ["PrimTypeName1", "PrimTypeName2"]
     }
 )
 {
@@ -269,7 +270,7 @@ class PxHairman "PxHairman" (
 
 Here's a short description of each datum in the per-class customData dictionary:
 
-  - \b className - If the Usd prim typeName for the schema must be different than 
+  - \b className - If the USD prim typeName for the schema must be different than 
     the un-prefixed class name,  then use className customData to provide the 
     class name for the C++ (which will be prefixed) and python schema classes. 
 
@@ -306,6 +307,14 @@ Here's a short description of each datum in the per-class customData dictionary:
   - \b isPrivateApply - boolean value indicating whether the Apply method that
     is auto-generated for an applied API schema must be private or public. 
     This defaults to False and must only be specified for API schemas.
+
+  - \b fallbackTypes - must only be specified for a concrete typed schema. 
+    This is a token array value used to specify the preferred fallback schema 
+    types that can be used instead when this schema isn't present.
+    This data is used by UsdStage::WriteFallbackPrimTypes to record, on a stage,
+    the \ref Usd_OM_FallbackPrimTypes "fallback prim types" metadata that USD 
+    versions which lack this schema will use to choose a suitable alternative 
+    schema type.
 
 \section Usd_CustomizingPerProperty Customizing Per-Property 
 

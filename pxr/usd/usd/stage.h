@@ -1335,7 +1335,7 @@ public:
     /// doesn't recognize as a type it does recognize defined for it in this 
     /// metadata.
     /// 
-    /// \sa UsdSchemaRegistry::GetFallbackPrimTypes
+    /// \sa \ref Usd_OM_FallbackPrimTypes UsdSchemaRegistry::GetFallbackPrimTypes
     USD_API
     void WriteFallbackPrimTypes();
 
