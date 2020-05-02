@@ -87,5 +87,12 @@ class TestSdfReferences(unittest.TestCase):
         self.assertTrue(ref0 <= ref1)
         self.assertTrue(ref1 >= ref0)
 
+        # Regression test for bug USD-5000 where less than operator was not 
+        # fully anti-symmetric
+        r1 = Sdf.Reference()
+        r2 = Sdf.Reference('//test/layer.sdf', layerOffset=Sdf.LayerOffset(48, -2))
+        self.assertTrue(r1 < r2)
+        self.assertFalse(r2 < r1)
+
 if __name__ == "__main__":
     unittest.main()
