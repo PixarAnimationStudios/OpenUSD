@@ -1514,10 +1514,12 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             int numInfluencesPerComponent = 0;
             bool usesConstantJointPrimvar = false;
             
-            _GetInfluences(skinnedPrimData->skinningQuery,
-                           time, &influences,
-                           &numInfluencesPerComponent,
-                           &usesConstantJointPrimvar);
+            if (skinnedPrimData->hasJointInfluences) {
+                _GetInfluences(skinnedPrimData->skinningQuery,
+                               time, &influences,
+                               &numInfluencesPerComponent,
+                               &usesConstantJointPrimvar);
+            }
 
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->influences) = influences;
@@ -1724,10 +1726,12 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
             int numInfluencesPerComponent = 0;
             bool usesConstantJointPrimvar = false;
             
-            _GetInfluences(skinnedPrimData->skinningQuery,
-                           time, &influences,
-                           &numInfluencesPerComponent,
-                           &usesConstantJointPrimvar);
+            if (skinnedPrimData->hasJointInfluences) {
+                _GetInfluences(skinnedPrimData->skinningQuery,
+                               time, &influences,
+                               &numInfluencesPerComponent,
+                               &usesConstantJointPrimvar);
+            }
 
             valueCache->GetExtComputationInput(
                 computationPath, _tokens->influences) = influences;
@@ -2064,7 +2068,12 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
       skelPath(skelQuery.GetPrim().GetPath()),
       skelRootPath(skelRootPath),
       hasJointInfluences(skinningQuery.HasJointInfluences())
-{}
+{
+    if (skinningQuery.HasBlendShapes() && skelQuery.GetAnimQuery()) {
+        blendShapeQuery = std::make_shared<UsdSkelBlendShapeQuery>(
+            UsdSkelBindingAPI(skinningQuery.GetPrim()));
+    }
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
