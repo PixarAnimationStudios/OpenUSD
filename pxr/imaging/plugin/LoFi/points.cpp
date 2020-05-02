@@ -355,7 +355,7 @@ LoFiPoints::Sync( HdSceneDelegate *sceneDelegate,
   if(!initialized) 
   {
     _instanceId = GetId().GetHash();
-    _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LOFI_POINTS));
+    _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LoFiTopology::Type::POINTS));
     auto instance = resourceRegistry->RegisterVertexArray(_instanceId);
     instance.SetValue(_vertexArray);  
 

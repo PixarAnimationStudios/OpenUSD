@@ -25,13 +25,6 @@ class LoFiVertexBuffer;
 
 typedef std::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
 
-enum LoFiVertexArrayDrawType
-  {
-    LOFI_POINTS,
-    LOFI_LINES,
-    LOFI_TRIANGLES
-  };
-
 /// \class LoFiVertexArray
 ///
 ///
@@ -39,13 +32,16 @@ class LoFiVertexArray
 {
 public:
   // constructor
-  LoFiVertexArray(LoFiVertexArrayDrawType);
+  LoFiVertexArray(LoFiTopology::Type type);
 
   // destructor
   ~LoFiVertexArray();
 
   // get GL VAO
   GLuint Get() const {return _vao;};
+
+  // topology
+  LoFiTopology* GetTopology(){return &_topology;};
 
   // buffers
   bool HasBuffer(LoFiAttributeChannel channel);
@@ -91,6 +87,7 @@ public:
 
 private:
   // datas
+  LoFiTopology                      _topology;
   LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
   bool                              _indexed;
@@ -104,9 +101,6 @@ private:
   uint32_t                          _channels;
   uint32_t                          _numElements;
   bool                              _needUpdate;
-
-  // draw type
-  LoFiVertexArrayDrawType            _drawType;
 
 };
 

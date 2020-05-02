@@ -37,6 +37,7 @@ public:
   // pos1 and pos2 should be projected to the same surface of the 4D cube
   LoFiDualEdge(const LoFiHalfEdge* halfEdge, bool facing,
 	   int tp, const GfVec4f& pos1, const GfVec4f& pos2);
+
   ~LoFiDualEdge() { };
 
   // index in mesh
@@ -52,28 +53,17 @@ public:
 
   // silhouette checked tag
   bool IsChecked() const { return _checked; };
-  void Check()   { _checked = true;};// _checkedEdges.push_back(this); };
+  void Check()   { _checked = true;};
   void Uncheck() { _checked = false; };
 
   // touch a box
   bool Touch(const GfVec3f& minp, const GfVec3f& maxp) const;
 
-/*
-  // clear silhouette checked tags
-  static void clearCheckTags() {
-    int csz = _checkedEdges.size();
-    for (int i = 0; i < csz; i++ )
-      _checkedEdges[i]->uncheck();
-    _checkedEdges.clear();
-  };
-*/
 private:
   const LoFiHalfEdge* _halfEdge;
   bool                _facing;
   bool                _checked;
   GfVec3f             _points[2];
-  short               _tp;
-
 };
 
 // octree node
@@ -109,6 +99,8 @@ public:
   // silhouettes
   void FindSilhouettes(const GfVec3f& n, float d, std::vector<const LoFiHalfEdge*>& silhouettes);
 
+  void Log();
+
 protected:
 
   // depth in octree
@@ -132,6 +124,7 @@ protected:
 
 class LoFiDualMesh : public LoFiOctree{
 public:
+  ~LoFiDualMesh();
   // build the tree
   void Build(LoFiMesh* mesh);
 
@@ -140,7 +133,11 @@ public:
 
   // silhouettes
   void ClearSilhouettes();
-  void FindSilhouettes(const GfVec3f& n, float d);
+  void FindSilhouettes(const GfMatrix4d& viewMatrix);
+  void UncheckAllEdges();
+
+  // project points to dual space
+  //void ProjectPoints();
 
   // project edges to dual space
   void ProjectEdge(const LoFiHalfEdge* halfEdge);
@@ -148,6 +145,7 @@ public:
 private:      
   // mesh
   LoFiMesh* _mesh;    
+  //VtArray<GfVec4f> _dualPoints;
 
   std::vector<const LoFiHalfEdge*> _boundaries;
   std::vector<const LoFiHalfEdge*> _silhouettes;

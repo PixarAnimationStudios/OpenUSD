@@ -26,6 +26,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+static float CONTOUR_TEST_POSITIONS[9] = {
+  -4,0,0,
+  0,4,0,
+  4,0,0
+};
+
 class LoFiOctree;
 class LoFiDualMesh;
 /// \class LoFiMesh
@@ -58,8 +65,6 @@ public:
     const VtArray<GfVec3f>& GetNormals() const {return _normals;};
     size_t GetNumPoints(){return _positions.size();};
     size_t GetNumTriangles(){return _samples.size()/3;};
-    GfVec3f GetBBoxMin(){return GfVec3f(_bbox.GetMin());};
-    GfVec3f GetBBoxMax(){return GfVec3f(_bbox.GetMax());};
     
 protected:
     void _InitRepr(
@@ -82,7 +87,6 @@ protected:
 
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
-
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
     LoFiMesh &operator =(const LoFiMesh&) = delete;
@@ -103,11 +107,9 @@ private:
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
     LoFiAdjacency                   _adjacency;
-    LoFiTopology                    _topology;
     LoFiVertexArraySharedPtr        _vertexArray;
     LoFiVertexArraySharedPtr        _contourArray;
     LoFiDualMesh*                   _dualMesh;
-    GfRange3d                       _bbox;
 
 };
 

@@ -27,11 +27,10 @@ LoFiDualEdge::LoFiDualEdge(const LoFiHalfEdge* halfEdge, bool facing,
   : _halfEdge(halfEdge)
   , _facing(facing)
   , _checked(false)
-  , _tp(tp)
 {
 
   float d1, d2;
-  switch (_tp) {
+  switch (tp) {
   case PX:
   case NX:
     d1 = GfMax(FLT_EPSILON, fabs(pos1[0]));
@@ -63,8 +62,7 @@ LoFiDualEdge::LoFiDualEdge(const LoFiHalfEdge* halfEdge, bool facing,
 }
 
 // intersect a box
-bool LoFiDualEdge::Touch(const GfVec3f& minp, const GfVec3f& maxp) const
-{
+bool LoFiDualEdge::Touch(const GfVec3f& minp, const GfVec3f& maxp) const {
   int m = 4;
   GfVec3f step = (_points[1] - _points[0]) / m;
   GfVec3f A = _points[0], B = _points[0] + step;
@@ -88,16 +86,12 @@ LoFiOctree::~LoFiOctree()
     if (_children[i]) delete _children[i];
     _children[i] = NULL;
   }
-  // delete dual edges
-  if (_depth == 0) 
-  {
-    int sz = _dualEdges.size();
-    for (int j=0; j<sz; j++) delete _dualEdges[j];
-  }
+
   _dualEdges.clear();
 }
 
-void LoFiOctree::Split() {
+void LoFiOctree::Split() 
+{
   int esz = _dualEdges.size();
 
   if (esz <= LOFI_OCTREE_MAX_EDGE_NUMBER || 
@@ -137,6 +131,7 @@ void LoFiOctree::Split() {
 }
 
 // intersect a plane
+
 bool LoFiOctree::_TouchPlane(const GfVec3f& n, float d) {
   bool sa = n[0]>=0, sb = n[1]>=0, sc = n[2]>=0;
   float p1x = _min[0], p1y, p1z, p2x = _max[0], p2y, p2z;
@@ -161,20 +156,23 @@ bool LoFiOctree::_TouchPlane(const GfVec3f& n, float d) {
 }
 
 // looking for silhouettes recursively
-void LoFiOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const LoFiHalfEdge*>& silhouettes) {
+void LoFiOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const LoFiHalfEdge*>& silhouettes) 
+{
   if (_isLeaf) 
   {
-    for (int i = 0; i < _dualEdges.size(); i++)
-      if (!_dualEdges[i]->IsChecked()) 
+    for (int j = 0; j < _dualEdges.size(); ++j)
+    {
+      if (!_dualEdges[j]->IsChecked()) 
       {
-        _dualEdges[i]->Check();
-        bool b1 = n * (_dualEdges[i]->GetDualPoint(0)) + d > 0;
-        bool b2 = n * (_dualEdges[i]->GetDualPoint(1)) + d > 0;
+        _dualEdges[j]->Check();
+        bool b1 = (n * _dualEdges[j]->GetDualPoint(0) + d )> 0;
+        bool b2 = (n * _dualEdges[j]->GetDualPoint(1) + d )> 0;
         if (b1 != b2) 
         {
-          silhouettes.push_back(_dualEdges[i]->GetEdge());
+          silhouettes.push_back(_dualEdges[j]->GetEdge());
         }
       }
+    }
   } 
   else 
   {
@@ -184,16 +182,45 @@ void LoFiOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const Lo
   }
 }
 
+void LoFiOctree::Log()
+{
+  if(_isLeaf)
+  {
+    for(const auto& dualEdge: _dualEdges)
+    {
+      const LoFiHalfEdge* halfEdge = dualEdge->GetEdge();
+      std::cout << "(" << halfEdge->vertex << "," << halfEdge->next->vertex << "),";
+    }
+    std::cout << std::endl;
+  }
+   else 
+  {
+    for (int i = 0; i < 8; i++)
+      if (_children[i])_children[i]->Log();
+  }
+}
+
+
+// destructor
+LoFiDualMesh::~LoFiDualMesh()
+{
+  // delete dual edges
+  int sz = _dualEdges.size();
+  for (int j=0; j<sz; j++) delete _dualEdges[j];
+}
+
 // build octree
 void LoFiDualMesh::Build(LoFiMesh* mesh) 
 {
   // clear boundaries
   _boundaries.clear();
   _silhouettes.clear();
-
+  _isLeaf = false;
   for(int j=0;j<8;++j)_children[j] = new LoFiOctree();
 
   _mesh = mesh;
+
+  //ProjectPoints();
 
   const LoFiAdjacency* adjacency = _mesh->GetAdjacency();
   const std::vector<LoFiHalfEdge>& halfEdges = adjacency->GetHalfEdges();
@@ -203,6 +230,21 @@ void LoFiDualMesh::Build(LoFiMesh* mesh)
 
   for(int j=0;j<8;++j)_children[j]->Split();
 
+  Log();
+}
+short _LoFiGetDualSurfaceIndex(const GfVec4f& dualPoint)
+{
+  float base = -1;
+  size_t index = 0;
+  for(int i=0;i<4;++i)
+  {
+    float ac = GfAbs(dualPoint[i]);
+    if(ac>base) {
+      index = i; base = ac;
+    }
+  }
+  if(dualPoint[index]<0)index+=4;
+  return index;
 }
 
 void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge) 
@@ -236,13 +278,39 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
 
   bool facing = (ff > 0);
 
-
   GfVec3f trn = triangleNormals[halfEdge->triangle];
-  GfVec4f n1( trn[0], trn[1], trn[2], - GfDot(trn, positions[halfEdge->vertex])); 
+  GfVec4f n1( trn[0], trn[1], trn[2], - GfDot(trn, positions[halfEdge->vertex].GetNormalized())); 
 
   trn = triangleNormals[twinEdge->triangle];
-  GfVec4f n2( trn[0], trn[1], trn[2], - GfDot(trn, positions[twinEdge->vertex]));
+  GfVec4f n2( trn[0], trn[1], trn[2], - GfDot(trn, positions[twinEdge->vertex].GetNormalized()));
 
+  size_t idx1 = _LoFiGetDualSurfaceIndex(n1);
+  size_t idx2 = _LoFiGetDualSurfaceIndex(n2);
+
+  if(idx1 == idx2)
+  {
+    LoFiDualEdge* dualEdge = 
+      new LoFiDualEdge(halfEdge, facing, idx1, n1, n2);
+    _children[idx1]->InsertEdge(dualEdge);
+    _dualEdges.push_back(dualEdge);
+    std::cout << "INSERT IT IN OCTREE CHILD " << idx1 << std::endl;
+  }
+  else
+  {
+    LoFiDualEdge* dualEdge1 = 
+      new LoFiDualEdge(halfEdge, facing, idx1, n1, n2);
+    _children[idx1]->InsertEdge(dualEdge1);
+    _dualEdges.push_back(dualEdge1);
+
+    LoFiDualEdge* dualEdge2 = 
+      new LoFiDualEdge(halfEdge, facing, idx2, n1, n2);
+    _children[idx2]->InsertEdge(dualEdge2);
+    _dualEdges.push_back(dualEdge2);
+
+    std::cout << "INSERT IT IN  OCTREE CHILDS " << idx1 << " & " << idx2 << std::endl;
+  }
+
+  /*
   GfVec4f n = n2 - n1;
 
   float t[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
@@ -262,6 +330,8 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
   if (n[1] + n[3] != 0)t[10] = - (n1[1] + n1[3]) / (n[1] + n[3]);
   if (n[2] - n[3] != 0)t[11] = - (n1[2] - n1[3]) / (n[2] - n[3]);
   if (n[2] + n[3] != 0)t[12] = - (n1[2] + n1[3]) / (n[2] + n[3]);
+
+  std::cout << "PROJECT EDGE : (" << halfEdge->vertex << "," << twinEdge->vertex << ")" << std::endl;
 
   int p1 = 0, p2;
   while (p1 < 13) 
@@ -294,7 +364,16 @@ void LoFiDualMesh::ProjectEdge(const LoFiHalfEdge* halfEdge)
     LoFiDualEdge* dualEdge = 
       new LoFiDualEdge(halfEdge, facing, tp, pos1, pos2);
     _children[tp]->InsertEdge(dualEdge);
+    _dualEdges.push_back(dualEdge);
+    std::cout << "INSERT IT IN OCTREE CHILD " << tp << std::endl;
   }
+  */
+}
+
+void LoFiDualMesh::UncheckAllEdges()
+{
+  for(auto& dualEdge: _dualEdges)
+    dualEdge->Uncheck();
 }
 
 void LoFiDualMesh::ClearSilhouettes()
@@ -303,30 +382,25 @@ void LoFiDualMesh::ClearSilhouettes()
 }
 
 // looking for silhouettes recursively
-void LoFiDualMesh::FindSilhouettes(const GfVec3f& n, float d)
+void LoFiDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
 {
-  /*
-  if (_isLeaf) 
-  {
-    for (int i = 0; i < _dualEdges.size(); i++)
-      if (!_dualEdges[i]->IsChecked()) 
-      {
-        _dualEdges[i]->Check();
-        bool b1 = n * (_dualEdges[i]->GetDualPoint(0)) + d > 0;
-        bool b2 = n * (_dualEdges[i]->GetDualPoint(1)) + d > 0;
-        if (b1 != b2) 
-        {
-          silhouettes.push_back(_dualEdges[i]->GetEdge());
-        }
-      }
-  } 
-  else 
-  {
-    for (int i = 0; i < 8; i++)
-      if (_children[i] && _children[i]->TouchPlane(n, d))
-	      _children[i]->FindSilhouettes(n, d, silhouettes);
-  }
-  */
+  ClearSilhouettes();
+  GfVec3f pos(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
+  _children[0]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), pos[0],
+			       _silhouettes);
+  _children[1]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), pos[1],
+			       _silhouettes);
+  _children[2]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), pos[2],
+			       _silhouettes);
+  _children[3]->FindSilhouettes(pos, 1, _silhouettes);
+  _children[4]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), -pos[0],
+			       _silhouettes);
+  _children[5]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), -pos[1],
+			       _silhouettes);
+  _children[6]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), -pos[2],
+			       _silhouettes);
+  _children[7]->FindSilhouettes(pos, -1, _silhouettes);
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

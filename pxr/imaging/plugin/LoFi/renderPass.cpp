@@ -82,16 +82,27 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
   std::cout << "HAVE GEOMETRY SHADER : " << hasGeometryShader << std::endl;
 
   if(!hasGeometryShader)
+  {
     program->Build(
       binder->GetProgramName().GetText(), 
       codeGen.GetVertexShaderCode().c_str(), 
       codeGen.GetFragmentShaderCode().c_str());
+  }
   else
+  {
     program->Build(
       binder->GetProgramName().GetText(), 
       codeGen.GetVertexShaderCode().c_str(), 
       codeGen.GetGeometryShaderCode().c_str(), 
       codeGen.GetFragmentShaderCode().c_str());
+    
+    std::cout << "################ VERTEX " << std::endl;
+    std::cout << codeGen.GetVertexShaderCode().c_str() << std::endl;
+    std::cout << "################ GEOMETRY " << std::endl;
+    std::cout << codeGen.GetGeometryShaderCode().c_str() << std::endl;
+    std::cout << "################ FRAGMENT " << std::endl;
+    std::cout << codeGen.GetFragmentShaderCode().c_str() << std::endl;
+  }
 
   std::cout << "BUILD PROGRAM DONE, WTF???" << std::endl;
 
@@ -240,6 +251,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
         // cull 
         if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
         {
+          ((LoFiDrawItem*)drawItem)->FindSilhouettes(viewMatrix.GetInverse());
+
           // model matrix
           glUniformMatrix4fv(
             modelUniform,
