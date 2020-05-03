@@ -24,7 +24,7 @@
 
 from __future__ import print_function
 
-from pxr import UsdUtils, Sdf, Usd, Gf, Vt
+from pxr import UsdUtils, Sdf, Usd, Ar, Gf, Vt
 import os, unittest
 
 class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
@@ -177,6 +177,29 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         assetArrayAttr = prim.GetAttribute('b')
         self.assertEqual(list(assetArrayAttr.Get()), 
                          [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
+
+    def test_TimeSampledAssets(self):
+        src_stage = Usd.Stage.Open('time_sampled_assets.usda')
+        layer = UsdUtils.FlattenLayerStack(src_stage)
+        result_stage = Usd.Stage.Open(layer)
+
+        prim = result_stage.GetPrimAtPath(
+            '/materials/usdpreviewsurface1/usduvtexture1')
+        attr = prim.GetAttribute('inputs:file')
+        time_samples = attr.GetTimeSamples()
+        for time_sample in time_samples:
+            time_sample_array_value = attr.Get(Usd.TimeCode(time_sample))
+            for time_sample_value in time_sample_array_value:
+                self.assertFalse(Ar.GetResolver().IsRelativePath(
+                    time_sample_value.path))
+
+        prim = result_stage.GetPrimAtPath('/volume/density')
+        attr = prim.GetAttribute('filePath')
+        time_samples = attr.GetTimeSamples()
+        for time_sample in time_samples:
+            time_sample_value = attr.Get(Usd.TimeCode(time_sample))
+            self.assertFalse(Ar.GetResolver().IsRelativePath(
+                time_sample_value.path))
 
 if __name__=="__main__":
     unittest.main()

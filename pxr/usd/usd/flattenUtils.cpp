@@ -325,53 +325,65 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
                const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
                VtValue *val)
 {
+    static auto updateAssetPathFn = [](
+        const SdfLayerHandle &sourceLayer,
+        const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+        VtValue &val) {
+            SdfAssetPath ap;
+            val.Swap(ap);
+            ap = SdfAssetPath(
+                    resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+            val.Swap(ap);
+        };
+    static auto updateAssetPathArrayFn = [](
+        const SdfLayerHandle &sourceLayer,
+        const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+        VtValue &val) {
+            VtArray<SdfAssetPath> a;
+            val.Swap(a);
+            for (SdfAssetPath &ap: a) {
+                ap = SdfAssetPath(
+                        resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+            }
+            val.Swap(a);
+        };
+
     if (val->IsHolding<SdfAssetPath>()) {
-        SdfAssetPath ap;
-        val->Swap(ap);
-        ap = SdfAssetPath(resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
-        val->Swap(ap);
+        updateAssetPathFn(sourceLayer, resolveAssetPathFn, *val);
         return;
     }
     else if (val->IsHolding<VtArray<SdfAssetPath>>()) {
-        VtArray<SdfAssetPath> a;
-        val->Swap(a);
-        for (SdfAssetPath &ap: a) {
-            ap = SdfAssetPath(
-                    resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
-        }
-        val->Swap(a);
+        updateAssetPathArrayFn(sourceLayer, resolveAssetPathFn, *val);
         return;
     }
     else if (val->IsHolding<SdfTimeSampleMap>()) {
-        // Quick test that the first entry of the time sample map is holding
-        // either an asset path or an array of asset paths.
         const SdfTimeSampleMap &tsmc = val->UncheckedGet<SdfTimeSampleMap>();
-        if (!tsmc.empty() &&
-            (tsmc.begin()->second.IsHolding<SdfAssetPath>() ||
-             tsmc.begin()->second.IsHolding<VtArray<SdfAssetPath>>())) {
-            SdfTimeSampleMap tsmap;
-            val->Swap(tsmap);
-            // Go through each time sampled value and execute the resolve
-            // function on each asset path (or array of asset paths).
-            TF_FOR_ALL(ts, tsmap) {
-                if (ts->second.IsHolding<SdfAssetPath>()) {
-                    SdfAssetPath ap;
-                    ts->second.Swap(ap);
-                    ap = SdfAssetPath(
-                        resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
-                    ts->second.Swap(ap);
-                }
-                else if (ts->second.IsHolding<VtArray<SdfAssetPath>>()) {
-                    VtArray<SdfAssetPath> a;
-                    ts->second.Swap(a);
-                    for (SdfAssetPath &ap: a) {
-                        ap = SdfAssetPath(
-                            resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+        if (!tsmc.empty()) {
+            // Quick test that the first entry of the time sample map is
+            // holding either an asset path or an array of asset paths.
+            bool holdingAssetPath = 
+                tsmc.begin()->second.IsHolding<SdfAssetPath>();
+            bool holdingAssetPathArray = 
+                tsmc.begin()->second.IsHolding<VtArray<SdfAssetPath>>();
+            if (holdingAssetPath || holdingAssetPathArray) {
+                SdfTimeSampleMap tsmap;
+                val->Swap(tsmap);
+                // Go through each time sampled value and execute the resolve
+                // function on each asset path (or array of asset paths).
+                if (holdingAssetPath) {
+                    for (auto &ts : tsmap) {
+                        updateAssetPathFn(
+                            sourceLayer, resolveAssetPathFn, ts.second);
                     }
-                    ts->second.Swap(a);
                 }
+                else { // holdingAssetPathArray must be true
+                    for (auto &ts : tsmap) {
+                        updateAssetPathArrayFn(
+                            sourceLayer, resolveAssetPathFn, ts.second);
+                    }
+                }
+                val->Swap(tsmap);
             }
-            val->Swap(tsmap);
         }
     }
     else if (val->IsHolding<SdfReference>()) {
