@@ -36,6 +36,7 @@ void main()
 {
   mat4 projViewModel = GetProjectionMatrix() * GetViewMatrix() * GetModelMatrix();
   vec4 p = projViewModel * vec4(LOFI_GET_position(), 1.0);
+
   gl_Position = p;
 
   LOFI_SET_position(p.xyz/p.w);
@@ -50,10 +51,12 @@ layout(triangle_strip, max_vertices = 4) out;
 
 void main()
 {
-  float width = 0.01;
+  float width = 0.0025;
+  vec3 c = GetViewPoint();
   vec3 start = LOFI_GET_position(0);
   vec3 end = LOFI_GET_position(1);
-  vec3 lhs = cross(normalize(end-start), vec3(0.0, 0.0, -1.0)) * width;
+  vec3 normal = normalize(((start+end)*0.5 ) - c);
+  vec3 lhs = cross(normalize(end-start), normal) * width;
 
   gl_Position = vec4(start+lhs, 1.0);
   EmitVertex();
@@ -70,5 +73,5 @@ void main()
 -- glsl Contour.Fragment
 void main()
 {
-  LOFI_SET_result(vec4(1.0,0.0,0.0,1.0));
+  LOFI_SET_result(vec4(0.0,0.0,0.0,1.0));
 }

@@ -131,13 +131,10 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
   }
   else if(topo->type == LoFiTopology::Type::LINES)
   {
-    std::cout << "LOFI VERTEX BUFFER COMPUTE DATAS FOR LINES" << std::endl;
     memcpy(result, _rawInputDatas, _numInputElements * _elementSize);
-    //memcpy(result, &topo->GetSamples()[0], _numInputElements * _elementSize);
   }
   else if(topo->type == LoFiTopology::Type::TRIANGLES)
   {
-    std::cout << "LOFI VERTEX BUFFER COMPUTE DATAS FOR TRIANGLES" << std::endl;
     const int* samples = topo->samples;
     switch(_interpolation) 
     {
