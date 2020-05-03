@@ -37,9 +37,7 @@ pxr_plugin(LoFi
         drawItem
         resourceRegistry
         utils
-        halfedge
         mesh
-        dualmesh
         points
         instancer
         sceneDelegate
@@ -58,7 +56,6 @@ pxr_plugin(LoFi
         plugInfo.json
         shaders/common.glslfx
         shaders/noise.glslfx
-        shaders/contour.glslfx
         shaders/simple.glslfx
         shaders/mesh.glslfx
         shaders/points.glslfx

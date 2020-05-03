@@ -9,7 +9,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/plugin/LoFi/halfedge.h"
 #include "pxr/imaging/plugin/LoFi/binding.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 #include "pxr/imaging/plugin/LoFi/vertexArray.h"
@@ -26,15 +25,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static float CONTOUR_TEST_POSITIONS[9] = {
-  -4,0,0,
-  0,4,0,
-  4,0,0
-};
-
-class LoFiOctree;
-class LoFiDualMesh;
 /// \class LoFiMesh
 ///
 class LoFiMesh final : public HdMesh 
@@ -55,16 +45,6 @@ public:
               HdRenderParam*   renderParam,
               HdDirtyBits*     dirtyBits,
               TfToken const    &reprToken) override;
-
-    const LoFiAdjacency* GetAdjacency() const {return &_adjacency;};
-    const GfVec3f* GetTriangleNormalsPtr() const { return _triangleNormals.cdata();};
-    const GfVec3f* GetPositionsPtr() const {return _positions.cdata();};
-    const GfVec3f* GetNormalsPtr() const {return _normals.cdata();};
-    const VtArray<GfVec3f>& GetTriangleNormals() const { return _triangleNormals;};
-    const VtArray<GfVec3f>& GetPositions() const {return _positions;};
-    const VtArray<GfVec3f>& GetNormals() const {return _normals;};
-    size_t GetNumPoints(){return _positions.size();};
-    size_t GetNumTriangles(){return _samples.size()/3;};
     
 protected:
     void _InitRepr(
@@ -101,15 +81,11 @@ private:
     };
     
     VtArray<GfVec3f>                _positions;
-    VtArray<GfVec3f>                _triangleNormals;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
-    LoFiAdjacency                   _adjacency;
     LoFiVertexArraySharedPtr        _vertexArray;
-    LoFiVertexArraySharedPtr        _contourArray;
-    LoFiDualMesh*                   _dualMesh;
 
 };
 

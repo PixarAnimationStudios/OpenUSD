@@ -16,7 +16,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 LoFiDrawItem::LoFiDrawItem(HdRprimSharedData const *sharedData)
   : HdDrawItem(sharedData)
   , _program(NULL)
-  , _dualMesh(NULL)
 {
   HF_MALLOC_TAG_FUNCTION();
 }
@@ -30,43 +29,6 @@ size_t
 LoFiDrawItem::_GetBufferArraysHash() const
 {
   return _hash;
-}
-
-void 
-LoFiDrawItem::ClearSilhouettes()
-{
-  if(_dualMesh)
-  {
-    _dualMesh->ClearSilhouettes();
-  }
-}
-void 
-LoFiDrawItem::FindSilhouettes(const GfMatrix4d& viewMatrix)
-{
-  if(_dualMesh)
-  {
-    _dualMesh->UncheckAllEdges();
-    _dualMesh->FindSilhouettes(viewMatrix);
-
-    LoFiTopology* topology = _vertexArray->GetTopology();
-    topology->numElements = _dualMesh->GetNumSilhouettes() * 2;
-    LoFiVertexBufferSharedPtr vertexBuffer = 
-      _vertexArray->CreateBuffer(
-        topology, 
-        CHANNEL_POSITION, 
-        topology->numElements,
-        topology->numElements,
-        HdInterpolationVertex);
-
-    _vertexArray->SetBuffer(CHANNEL_POSITION, vertexBuffer);
-    _vertexArray->SetNumElements(topology->numElements);
-    vertexBuffer->SetRawInputDatas(_dualMesh->GetPoints());
-
-    vertexBuffer->Reallocate();
-    vertexBuffer->Populate();
-    _vertexArray->Populate();
-    
-  }
 }
 
 void 
