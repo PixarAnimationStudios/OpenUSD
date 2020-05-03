@@ -171,7 +171,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 
   glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-  std::cout << "----------------- LOFI RENDER PASS EXECUTE -------------" << std::endl;
+
   for(auto programIt: _programs)
   {
     TfToken programName = programIt.first;

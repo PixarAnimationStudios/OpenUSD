@@ -98,7 +98,6 @@ LoFiVertexArray::Draw() const
       glDrawArrays(GL_LINES, 0, _numElements);
       break;
     case LoFiTopology::Type::TRIANGLES:
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       if(_indexed)
         glDrawElements(GL_TRIANGLES_ADJACENCY, // primitive type
                       _numElements * 2,        // index count
@@ -106,7 +105,6 @@ LoFiVertexArray::Draw() const
                       0);
       else
         glDrawArrays(GL_TRIANGLES, 0, _numElements);
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
       break;
   }
   

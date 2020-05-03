@@ -65,16 +65,6 @@ LoFiDrawItem::FindSilhouettes(const GfMatrix4d& viewMatrix)
     vertexBuffer->Reallocate();
     vertexBuffer->Populate();
     _vertexArray->Populate();
-
-    /*
-    LoFiVertexBufferSharedPtr buffer = 
-      LoFiVertexArray::CreateBuffer(
-        &_topology,
-        CHANNEL_POSITION, 
-        silhouette,
-        numOutputElements,
-        interpolation);
-    */
     
   }
 }
