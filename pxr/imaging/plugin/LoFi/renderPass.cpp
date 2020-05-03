@@ -61,10 +61,6 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     case LoFiProgramType::LOFI_PROGRAM_POINT:
       shaderPath = _GetShaderPath("points.glslfx");
       break;
-    case LoFiProgramType::LOFI_PROGRAM_CONTOUR:
-      shaderPath = _GetShaderPath("contour.glslfx");
-      hasGeometryShader = true;
-      break;
   }
 
   LoFiShaderCodeSharedPtr shaderCode(new LoFiShaderCode(shaderPath));
@@ -238,8 +234,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
         // cull 
         if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
         {
-          ((LoFiDrawItem*)drawItem)->FindSilhouettes(viewMatrix.GetInverse());
-
           // model matrix
           glUniformMatrix4fv(
             modelUniform,
@@ -250,7 +244,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           vertexArray->Draw();
         
         }
-        
       }
       
       vertexArray->Unbind();
