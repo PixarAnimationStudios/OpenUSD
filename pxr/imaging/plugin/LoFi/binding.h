@@ -45,7 +45,6 @@ struct LoFiBinding {
 };
 typedef std::vector<LoFiBinding> LoFiBindingList;
 
-
 class LoFiBinder {
 public:
   void Clear();
@@ -63,6 +62,11 @@ public:
   void ComputeProgramName();
   bool HaveAttribute(const TfToken& name);
 
+  size_t GetNumVertexPerPrimitive(){return _numVertexPerPrimitive;};
+  void SetNumVertexPerPrimitive(size_t numVertexPerPrimitive){
+    _numVertexPerPrimitive = numVertexPerPrimitive;
+  };
+
   void Bind();
 
 private:
@@ -73,6 +77,7 @@ private:
   LoFiProgramType           _programType;
   TfToken                   _programName;
   LoFiGLSLProgramSharedPtr  _program;
+  size_t                    _numVertexPerPrimitive;
 
 };
 

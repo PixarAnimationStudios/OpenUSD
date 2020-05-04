@@ -26,34 +26,34 @@ PXR_NAMESPACE_OPEN_SCOPE
 class LoFiRenderPass final : public HdRenderPass 
 {
 public:
-    /// Renderpass constructor.
-    ///   \param index The render index containing scene data to render.
-    ///   \param collection The initial rprim collection for this renderpass.
-    LoFiRenderPass( HdRenderIndex *index,
-                    HdRprimCollection const &collection);
+  /// Renderpass constructor.
+  ///   \param index The render index containing scene data to render.
+  ///   \param collection The initial rprim collection for this renderpass.
+  LoFiRenderPass( HdRenderIndex *index,
+                  HdRprimCollection const &collection);
 
-    /// Renderpass destructor.
-    virtual ~LoFiRenderPass();
+  /// Renderpass destructor.
+  virtual ~LoFiRenderPass();
 
 protected:
 
-    /// Setup simple GLSL program
-    TfToken _GetShaderPath(char const * shader);
-    void _GetShaderCode(const TfToken& path, const TfToken& name);
-    
-    LoFiGLSLProgramSharedPtr _SetupGLSLProgram(const LoFiBinder* binder);
+  /// Setup simple GLSL program
+  TfToken _GetShaderPath(char const * shader);
+  void _GetShaderCode(const TfToken& path, const TfToken& name);
+  
+  LoFiGLSLProgramSharedPtr _SetupGLSLProgram(const LoFiBinder* binder);
 
-    /// Setup the framebuffer with color and depth attachments
-    ///   \param width The width of the framebuffer
-    ///   \param height The height of the framebuffer
-    void _SetupDrawTarget(int width, int height);
+  /// Setup the framebuffer with color and depth attachments
+  ///   \param width The width of the framebuffer
+  ///   \param height The height of the framebuffer
+  void _SetupDrawTarget(int width, int height);
 
-    /// Draw the scene with the bound renderpass state.
-    ///   \param renderPassState Input parameters (including viewer parameters)
-    ///                          for this renderpass.
-    ///   \param renderTags Which rendertags should be drawn this pass.
-    void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
-                  TfTokenVector const &renderTags) override;
+  /// Draw the scene with the bound renderpass state.
+  ///   \param renderPassState Input parameters (including viewer parameters)
+  ///                          for this renderpass.
+  ///   \param renderTags Which rendertags should be drawn this pass.
+  void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
+                TfTokenVector const &renderTags) override;
 
 private:
   GlfDrawTargetRefPtr                 _drawTarget;

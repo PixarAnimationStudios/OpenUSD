@@ -37,7 +37,7 @@ LoFiInstancer::~LoFiInstancer()
 }
 
 void
-LoFiInstancer::_GetChannelInfosFromPrimvar(const TfToken& primvarName, const VtValue& value,
+LoFiInstancer::_GetPrimvarDatas(const TfToken& primvarName, const VtValue& value,
   LoFiAttributeChannel& channel, uint32_t& numElements)
 {
   numElements = 0;
@@ -73,7 +73,29 @@ LoFiInstancer::_GetChannelInfosFromPrimvar(const TfToken& primvarName, const VtV
     }
       
   }
+   else if(primvarName == HdInstancerTokens->instanceTransform)
+  {
+    channel = CHANNEL_TRANSFORM;
+    if(value.IsHolding<VtArray<GfMatrix4d>>())
+    {
+      _xforms = value.UncheckedGet<VtArray<GfMatrix4d>>();
+      numElements = _xforms.size();
+    }
+      
+  }
 }
+
+//void 
+//LoFiInstancer::_SyncColors()
+//{
+//  TfToken colorPrimvar("colors");
+//
+//  VtValue value = GetDelegate()->Get(GetId(), colorPrimvar);
+//  if(!value.IsEmpty() && value.IsHolding<VtArray<GfVec3f>>()) 
+//  {
+//    _colors = value.UncheckedGet<VtArray<GfVec3f>>();
+//  }
+//}
 
 void
 LoFiInstancer::_SyncPrimvars()
@@ -109,7 +131,7 @@ LoFiInstancer::_SyncPrimvars()
                         }
                         LoFiAttributeChannel channel;
                         uint32_t numElements;
-                        _GetChannelInfosFromPrimvar(pv.name, value, channel, numElements);
+                        _GetPrimvarDatas(pv.name, value, channel, numElements);
                         if(channel == CHANNEL_UNDEFINED || !numElements)continue;
 
                         _primvarMap[pv.name] = NULL;
@@ -133,6 +155,7 @@ LoFiInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     HF_MALLOC_TAG_FUNCTION();
 
     _SyncPrimvars();
+    //_SyncColors();
 
     // The transforms for this level of instancer are computed by:
     // foreach(index : indices) {
@@ -190,7 +213,7 @@ LoFiInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         }
       }
     }
-/*
+
     // "instanceTransform" holds a 4x4 transform matrix for each index.
     if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
 
@@ -200,7 +223,7 @@ LoFiInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         }
       }
     }
-*/
+
     if (GetParentId().IsEmpty()) {
         return transforms;
     }

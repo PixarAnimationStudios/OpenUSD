@@ -1,0 +1,76 @@
+#usda 1.0
+(
+    """ This file contains a schema for NPR contour generation in USD.
+    """
+    subLayers = [
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdNpr"
+        string libraryPath       = "pxr/usd/usdNpr"
+		
+		dictionary libraryTokens = {
+            dictionary surfaces = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent surface-linking
+                of a UsdContour prim.
+                """
+            }
+            dictionary silhouettes = {
+                string doc = """Boolean - Does the stroke draw silhouette of the surfaces."""
+            }
+            dictionary boundaries = {
+                string doc = """Boolean - Does the stroke draw boundaries of the surfaces."""
+            }
+			      dictionary creases = {
+                string doc = """Boolean - Does the stroke draw creases of the surfaces."""
+            }
+		}
+    }
+) {
+}
+
+
+class Contour "Contour" (
+    inherits = </Mesh>
+    doc = """Defines a procedurally generated contour for NPR rendering."""
+    customData = {
+        string className = "Contour"
+        string extraIncludes = """
+#include "pxr/usd/usd/collectionAPI.h" """
+    }
+    prepend apiSchemas = ["CollectionAPI:surfaces"]
+) {
+	bool drawSilhouette = true()
+	bool drawBoundary = true()
+	bool drawCrease = true()
+	
+	float silhouetteWidth = 1.0(
+		doc = """Thickness of the silhouette strokes"""
+	)
+	
+	float boundaryWidth = 1.0(
+		doc = """Thickness of the boundary strokes"""
+	)
+	
+	float creaseWidth = 1.0(
+		doc = """Thickness of the crease strokes"""
+	)
+	
+    vector3f viewPoint = (0.0, 0.0, 0.0) (
+        doc = """View Point"""
+    )
+	
+	rel contour:surfaces (
+		customData = {
+            string apiName = "contourSurfaces"
+        }       
+        doc = """Surfaces from which the strokes are generated"""
+	)
+}
+

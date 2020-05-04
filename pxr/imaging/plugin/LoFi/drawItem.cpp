@@ -18,6 +18,7 @@ LoFiDrawItem::LoFiDrawItem(HdRprimSharedData const *sharedData)
   , _program(NULL)
 {
   HF_MALLOC_TAG_FUNCTION();
+  _displayColor = GfVec3f(1.0,0.75,0.25);
 }
 
 LoFiDrawItem::~LoFiDrawItem()
@@ -41,6 +42,7 @@ LoFiDrawItem::PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms)
     _instancesXform[i] = GfMatrix4f(xforms[i]);
   }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

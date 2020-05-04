@@ -60,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (invview)                       \
     (viewport)                      \
     (projection)                    \
+    (normalMatrix)                  \
     (tex0)                          \
     (tex1)                          \
     (tex2)                          \
@@ -70,6 +71,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (tex7)                          \
     (nearplane)                     \
     (farplane)                      \
+    (displayColor)                  \
 
 #define LOFI_SHADER_TOKENS          \
     (vertex)                        \

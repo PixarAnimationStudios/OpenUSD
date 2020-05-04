@@ -42,13 +42,6 @@ public:
     /// Destructor.
     ~LoFiInstancer();
 
-    /// Populates the rprim's draw item with the appropriate instancer
-    /// buffer range data.
-    void PopulateDrawItem(HdRprim* prim,
-                          LoFiDrawItem* drawItem,
-                          HdRprimSharedData* sharedData,
-                          HdDirtyBits dirtyBits);
-
     /// Computes all instance transforms for the provided prototype id,
     /// taking into account the scene delegate's instancerTransform and the
     /// instance primvars "instanceTransform", "translate", "rotate", "scale".
@@ -57,18 +50,22 @@ public:
     ///   \return One transform per instance, to apply when drawing.
     VtMatrix4dArray ComputeInstanceTransforms(SdfPath const &prototypeId);
 
+    bool HaveColors() const {return _colors.size()>0;};
+    const VtArray<GfVec3f>& GetColors() const {return _colors;};
+
 private:
     // Checks the change tracker to determine whether instance primvars are
     // dirty, and if so pulls them. Since primvars can only be pulled once,
     // and are cached, this function is not re-entrant. However, this function
     // is called by ComputeInstanceTransforms, which is called (potentially)
-    // by HdEmbreeMesh::Sync(), which is dispatched in parallel, so it needs
+    // by LoFiMesh::Sync(), which is dispatched in parallel, so it needs
     // to be guarded by _instanceLock.
     //
     // Pulled primvars are cached in _primvarMap.
-    void _GetChannelInfosFromPrimvar(const TfToken& primvarName, const VtValue& value,
+    void _GetPrimvarDatas(const TfToken& primvarName, const VtValue& value,
         LoFiAttributeChannel& channel, uint32_t& numElements);
     void _SyncPrimvars();
+    //void _SyncColors();
     
 
     // Mutex guard for _SyncPrimvars().
@@ -84,6 +81,7 @@ private:
     VtArray<GfVec3f>        _positions;
     VtArray<GfVec4f>        _rotations;
     VtArray<GfVec3f>        _scales;
+    VtArray<GfVec3f>        _colors;
     VtArray<GfMatrix4d>     _xforms;
 
 };

@@ -15,6 +15,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+static GfVec3f DEFAULT_INSTANCE_COLOR(1.f,1.f,1.f);
+
 class LoFiBinder;
 /// \class LoFiDrawItem
 ///
@@ -42,9 +45,20 @@ public:
   LoFiGLSLProgramSharedPtr GetGLSLProgram() const {return _program;};
 
   inline void SetBufferArrayHash(size_t hash){ _hash = hash;};
+  const GfVec3f& GetDisplayColor() const {return _displayColor;};
+  void SetDisplayColor(const GfVec3f& color){_displayColor = color;};
 
   void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
   const VtArray<GfMatrix4f>& GetInstancesXforms() const {return _instancesXform;};
+
+  void PopulateInstancesColors(const VtArray<GfVec3f>& colors){_instancesColor = colors;};
+  bool HaveInstancesColors() const {return _instancesColor.size()>0;};
+  const VtArray<GfVec3f>& GetInstancesColors() const {return _instancesColor;};
+  const GfVec3f& GetInstanceColor(size_t index) const {
+    if(index >= 0 && index < _instancesColor.size())return _instancesColor[index];
+    else return DEFAULT_INSTANCE_COLOR;
+  }
+
 
 protected:
     
@@ -57,6 +71,8 @@ private:
   LoFiGLSLProgramSharedPtr    _program;
   LoFiBinder                  _binder;
   VtArray<GfMatrix4f>         _instancesXform;
+  VtArray<GfVec3f>            _instancesColor;
+  GfVec3f                     _displayColor;
 
 };
 
