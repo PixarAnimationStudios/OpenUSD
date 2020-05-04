@@ -181,6 +181,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     GLuint modelUniform = glGetUniformLocation(pgm, "model");
     GLuint viewUniform = glGetUniformLocation(pgm, "view");
     GLuint projUniform = glGetUniformLocation(pgm, "projection");
+    GLuint normalMatrixUniform = glGetUniformLocation(pgm, "normalMatrix");
+    GLuint displayColorUniform = glGetUniformLocation(pgm, "displayColor");
     
     // viewport
     glUniform4fv(viewportUniform, 1,(const GLfloat*)&viewport[0]);
@@ -207,9 +209,12 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
       const LoFiBinder* binder = drawItem->GetBinder();
 
       const LoFiVertexArray* vertexArray = drawItem->GetVertexArray();
+      const GfVec3f& displayColor = drawItem->GetDisplayColor();
 
       if(drawItem->HasInstancer())
       {
+        //drawItem->GetInstancesColors()
+        size_t instanceIndex = 0;
         for(const auto& instanceXform: drawItem->GetInstancesXforms())
         {
           GfBBox3d instanceBBox = drawItem->GetBounds();
@@ -218,6 +223,25 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           // cull 
           if(GfFrustum::IntersectsViewVolume (instanceBBox, GfMatrix4d(cullMatrix)))
           {
+            if(drawItem->HaveInstancesColors())
+            {
+              // displayColor
+              glUniform3fv(
+                displayColorUniform,
+                1,
+                &drawItem->GetInstanceColor(instanceIndex)[0]
+              );
+            }
+            else
+            {
+               // displayColor
+              glUniform3fv(
+                displayColorUniform,
+                1,
+                &displayColor[0]
+              );
+            }
+
             // model matrix
             glUniformMatrix4fv(
               modelUniform,
@@ -225,8 +249,23 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
               GL_FALSE,
               &(GfMatrix4f(drawItem->GetMatrix()) * instanceXform)[0][0]
             );
+
+            const GfMatrix4f 
+              normalMatrix(
+                (GfMatrix4f(viewMatrix * drawItem->GetMatrix()) *
+                 instanceXform).GetInverse().GetTranspose());
+
+            // normal matrix
+            glUniformMatrix4fv(
+              normalMatrixUniform,
+              1,
+              GL_FALSE,
+              &normalMatrix[0][0]
+            );
+
             vertexArray->Draw();
           }
+          instanceIndex++;
         }
       }
       else
@@ -234,6 +273,13 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
         // cull 
         if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
         {
+          // displayColor
+            glUniform3fv(
+              displayColorUniform,
+              1,
+              &displayColor[0]
+            );
+
           // model matrix
           glUniformMatrix4fv(
             modelUniform,
@@ -241,13 +287,21 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
             GL_FALSE,
             &GfMatrix4f(drawItem->GetMatrix())[0][0]
           );
+
+          // normal matrix
+          const GfMatrix4f normalMatrix(
+              (viewMatrix * drawItem->GetMatrix()).GetInverse().GetTranspose());
+          glUniformMatrix4fv(
+            normalMatrixUniform,
+            1,
+            GL_FALSE,
+            &normalMatrix[0][0]
+          );
+
           vertexArray->Draw();
-        
         }
       }
-      
       vertexArray->Unbind();
-
     }
   }
 

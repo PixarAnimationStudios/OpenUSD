@@ -269,14 +269,23 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
         else if(pv.name == TfToken("displayColor") || 
           pv.name == TfToken("primvars:displayColor"))
         {
-          LoFiVertexBufferState state =
+          if(interp != HdInterpolationConstant)
+          {
+             LoFiVertexBufferState state =
             _PopulatePrimvar(sceneDelegate,
                             interp,
                             CHANNEL_COLOR,
                             value,
                             registry);
-          if(state != LoFiVertexBufferState::INVALID)
-              haveAuthoredDisplayColor = true;
+            if(state != LoFiVertexBufferState::INVALID)
+                haveAuthoredDisplayColor = true;
+            _varyingColor = true;
+          }
+          else 
+          {
+            _displayColor = value.UncheckedGet<VtArray<GfVec3f>>()[0];
+            _varyingColor = false;
+          }
         }
       }
     }
@@ -299,16 +308,16 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   }
 
   // if no authored colors compute random vertex colors (test)
-  if(!haveAuthoredDisplayColor)
-  {
-    LoFiComputeVertexColors( _positions, _colors);
-
-    _PopulatePrimvar( sceneDelegate,
-                      HdInterpolationVertex,
-                      CHANNEL_COLOR,
-                      VtValue(_colors),
-                      registry);
-  }
+  //if(!haveAuthoredDisplayColor)
+  //{
+  //  LoFiComputeVertexColors( _positions, _colors);
+//
+  //  _PopulatePrimvar( sceneDelegate,
+  //                    HdInterpolationVertex,
+  //                    CHANNEL_COLOR,
+  //                    VtValue(_colors),
+  //                    registry);
+  //}
 
   // update state
   _vertexArray->UpdateState();
@@ -330,7 +339,9 @@ LoFiMesh::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
     binder->CreateUniformBinding(LoFiUniformTokens->model, LoFiGLTokens->mat4, 0);
     binder->CreateUniformBinding(LoFiUniformTokens->view, LoFiGLTokens->mat4, 1);
     binder->CreateUniformBinding(LoFiUniformTokens->projection, LoFiGLTokens->mat4, 2);
-    binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 3);
+    binder->CreateUniformBinding(LoFiUniformTokens->normalMatrix, LoFiGLTokens->mat4, 3);
+    binder->CreateUniformBinding(LoFiUniformTokens->viewport, LoFiGLTokens->vec4, 4);
+    binder->CreateUniformBinding(LoFiUniformTokens->displayColor, LoFiGLTokens->vec3, 5);
 
     binder->CreateAttributeBinding(LoFiBufferTokens->position, LoFiGLTokens->vec3, CHANNEL_POSITION);
     binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
@@ -395,19 +406,21 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   {
     // Retrieve instance transforms from the instancer.
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    HdInstancer *instancer =
-        renderIndex.GetInstancer(GetInstancerId());
+
+    LoFiInstancer* instancer = 
+       static_cast<LoFiInstancer*>(renderIndex.GetInstancer(GetInstancerId()));
     VtMatrix4dArray transforms =
-        static_cast<LoFiInstancer*>(instancer)->
-            ComputeInstanceTransforms(GetId());
+       instancer->ComputeInstanceTransforms(GetId());
 
     drawItem->PopulateInstancesXforms(transforms);
+    drawItem->PopulateInstancesColors(instancer->GetColors());
   }
 
   if(!initialized)
   {
     _PopulateBinder(resourceRegistry);
   }
+  drawItem->SetDisplayColor(_displayColor);
 
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;

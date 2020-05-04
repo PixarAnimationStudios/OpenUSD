@@ -86,6 +86,8 @@ private:
     VtArray<GfVec2f>                _uvs;
     VtArray<GfVec3i>                _samples;
     LoFiVertexArraySharedPtr        _vertexArray;
+    GfVec3f                         _displayColor;
+    bool                            _varyingColor;
 
 };
 

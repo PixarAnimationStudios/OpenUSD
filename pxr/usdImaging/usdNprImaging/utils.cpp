@@ -1,12 +1,10 @@
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/plugin/LoFi/utils.h"
+#include "pxr/usdImaging/usdNprImaging/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-uint32_t LOFI_GL_VERSION = 0;
-
 int 
-LoFiTriangulateMesh(const VtArray<int>& counts, 
+UsdNprTriangulateMesh(const VtArray<int>& counts, 
                     const VtArray<int>& indices, 
                     VtArray<GfVec3i>& samples)
 {
@@ -36,7 +34,7 @@ LoFiTriangulateMesh(const VtArray<int>& counts,
 }
 
 void 
-LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
+UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
                           const VtArray<GfVec3i>& samples,
@@ -90,25 +88,6 @@ LoFiComputeVertexNormals( const VtArray<GfVec3f>& positions,
   
   for(auto& n: normals) n.Normalize();
   
-}
-
-void 
-LoFiComputeVertexColors(  const VtArray<GfVec3f>& positions,
-                          VtArray<GfVec3f>& colors)
-{
-  // we want smooth vertex normals
-  colors.resize(positions.size());
-  memset(colors.data(), 0.f, colors.size() * sizeof(GfVec3f));
-
-  // set random color per vertex  
-  for(int i = 0; i < colors.size(); ++i)
-  {
-    colors[i] = GfVec3f(
-      (float)rand()/(float)RAND_MAX,
-      (float)rand()/(float)RAND_MAX,
-      (float)rand()/(float)RAND_MAX
-    );
-  }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

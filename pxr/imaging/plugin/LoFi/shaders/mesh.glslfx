@@ -32,9 +32,11 @@ void main()
 {
   mat4 viewModel = GetViewMatrix() * GetModelMatrix();
   vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
-  vec4 n = viewModel * vec4(LOFI_GET_normal(), 0.0);
+  vec4 n = LOFI_GET_normalMatrix() * vec4(LOFI_GET_normal(), 0.0);
   gl_Position = GetProjectionMatrix() * p;
+#ifdef LOFI_HAS_color
   LOFI_SET_color(LOFI_GET_color());
+#endif
   LOFI_SET_position(p.xyz);
   LOFI_SET_normal(n.xyz);
 }
@@ -47,16 +49,15 @@ void main()
   vec3 delta = normalize(viewPoint - LOFI_GET_position());
 
   vec3 lightDir = normalize((GetViewMatrix() * vec4(1.0,1.0,1.0,0.0)).xyz);
+#ifdef LOFI_HAS_color
   vec3 color = LOFI_GET_color();
+#else
+  vec3 color = LOFI_GET_displayColor();
+#endif
   float dc = dot(delta, LOFI_GET_normal())  ;
   //if(dc< 0.5) color *= 0.0;
   float dl = dot(lightDir, LOFI_GET_normal())  ;
   if(dl<0.5)color *=0.2;  
   
-#ifdef LOFI_HAS_color
   LOFI_SET_result(vec4(color,1.0));
-#else
-  LOFI_SET_result(vec4(1.0,0.0,0.0,1.0));
-#endif
-
 }

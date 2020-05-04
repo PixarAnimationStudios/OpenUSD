@@ -50,6 +50,6 @@ void main()
 #ifdef LOFI_HAS_color
   LOFI_SET_result(vec4(LOFI_GET_color(),1.0));
 #else
-  LOFI_SET_result(vec4(0.0,0.0,0.0,1.0));
+  LOFI_SET_result(vec4(LOFI_GET_displayColor.0,1.0));
 #endif
 }
