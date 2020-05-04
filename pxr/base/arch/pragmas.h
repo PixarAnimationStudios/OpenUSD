@@ -74,6 +74,9 @@
     #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION \
         _Pragma("clang diagnostic ignored \"-Winstantiation-after-specialization\"")
 
+    #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND \
+        _Pragma("clang diagnostic ignored \"-Wobjc-method-access\"")
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -197,6 +200,10 @@
 
 #if !defined ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
     #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+#endif
+
+#if !defined ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+    #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

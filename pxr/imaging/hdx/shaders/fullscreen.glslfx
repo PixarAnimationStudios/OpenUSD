@@ -154,7 +154,7 @@ fragment Out fragmentEntryPoint(
     depth2d<float> depth[[texture(1)]])
 {
     Out out;
-    out.depth = depth.sample(texSampler, input.uv).r;
+    out.depth = depth.sample(texSampler, input.uv);
     out.color = color.sample(texSampler, input.uv);
     return out;
 }
