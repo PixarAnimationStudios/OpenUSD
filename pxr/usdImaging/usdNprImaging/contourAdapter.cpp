@@ -115,11 +115,20 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         UsdImagingInstancerContext const* 
                                         instancerContext) const
 {
-  _dualMesh->ComputeOutputGeometry();
-  BaseAdapter::UpdateForTime(
-      prim, cachePath, time, requestedBits, instancerContext);
-
+  UsdGeomXformCache xformCache(time);
   UsdNprContour contour(prim);
+  std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
+  size_t index = 0;
+  for(UsdGeomMesh& contourSurface: contourSurfaces)
+  {
+    char varyingBits = _dualMesh->GetMeshVaryingBits(index);
+    if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+      _dualMesh->UpdateMesh(contourSurface, time, true, index);
+    else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+      _dualMesh->UpdateMesh(contourSurface, time, false, index);
+    index++;
+  }
+
   UsdRelationship viewPointRel = contour.GetContourViewPointRel();
   if(viewPointRel.HasAuthoredTargets())
   {
@@ -128,7 +137,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     {
       SdfPath viewPointPath = viewPointTargets[0];
 
-      UsdGeomXformCache xformCache(time);
+      
       GfMatrix4d viewPointMatrix = 
         xformCache.GetLocalToWorldTransform(
           prim.GetStage()->GetPrimAtPath(viewPointPath));
@@ -142,6 +151,11 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
     }
   }
+
+  _dualMesh->ComputeOutputGeometry();
+
+  BaseAdapter::UpdateForTime(
+      prim, cachePath, time, requestedBits, instancerContext);
 
   UsdImagingValueCache* valueCache = _GetValueCache();
 

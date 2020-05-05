@@ -20,7 +20,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 enum UsdHalfEdgeMeshVaryingBits {
   VARYING_TOPOLOGY = 1,
   VARYING_DEFORM = 2,
-  VARYING_TRANSFORM = 4
+  VARYING_TRANSFORM = 4,
+  VARYING_VISIBILITY = 8
 };
 
 struct UsdNprHalfEdge
@@ -42,8 +43,8 @@ class UsdNprHalfEdgeMesh
 {
 public:
   UsdNprHalfEdgeMesh(char varyingBits):_varyingBits(varyingBits){};
-  void Compute(const UsdGeomMesh& mesh, size_t meshIndex);
-  void Update(const UsdGeomMesh& mesh);
+  void Compute(const UsdGeomMesh& mesh, size_t meshIndex, const UsdTimeCode& timeCode);
+  void Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 
   const GfVec3f* GetPositionsPtr() const {return &_positions[0];};
@@ -56,6 +57,8 @@ public:
   bool IsTopoVarying(){return _varyingBits & VARYING_TOPOLOGY;};
   bool IsDeformVarying(){return _varyingBits & VARYING_DEFORM;};
   bool IsTransformVarying(){return _varyingBits & VARYING_TRANSFORM;};
+  bool IsVisibilityVarying(){return _varyingBits & VARYING_VISIBILITY;};
+  char GetVaryingBits(){return _varyingBits;};
 
 private:
   std::vector<UsdNprHalfEdge> _halfEdges; 

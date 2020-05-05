@@ -212,6 +212,7 @@ UsdNprDualMesh::~UsdNprDualMesh()
   for (int j=0;j<sm; ++j)delete _meshes[j];
 }
 
+// convert varying bits
 static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
 {
   char outVaryingBits = 0;
@@ -227,6 +228,10 @@ static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
   {
     outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM;
   }
+  if(varyingBits & HdChangeTracker::DirtyVisibility)
+  {
+    outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_VISIBILITY;
+  }
   return outVaryingBits;
 }
 
@@ -236,13 +241,22 @@ void UsdNprDualMesh::AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
   UsdNprHalfEdgeMesh* halfEdgeMesh = 
     new UsdNprHalfEdgeMesh(_ConvertVaryingBits(varyingBits));
   size_t meshIndex = _meshes.size();
-  halfEdgeMesh->Compute(mesh, meshIndex);
+  halfEdgeMesh->Compute(mesh, meshIndex, UsdTimeCode::EarliestTime());
   _meshes.push_back(halfEdgeMesh);
 }
 
-void UsdNprDualMesh::UpdateMesh(const UsdGeomMesh& mesh, size_t index)
+void UsdNprDualMesh::UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
+  bool recomputeAdjacency, size_t index)
 {
+  UsdNprHalfEdgeMesh* halfEdgeMesh = _meshes[index];
+  if(recomputeAdjacency)
+    halfEdgeMesh->Compute(mesh, index, timeCode);
+  else halfEdgeMesh->Update(mesh, timeCode);
+}
 
+char UsdNprDualMesh::GetMeshVaryingBits(size_t index)
+{
+  return _meshes[index]->GetVaryingBits();
 }
 
 // build octree
