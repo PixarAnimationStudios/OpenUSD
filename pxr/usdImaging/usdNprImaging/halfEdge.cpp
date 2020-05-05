@@ -18,7 +18,7 @@ void UsdNprHalfEdge::GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal
   normal = (ab ^ ac).GetNormalized();
 }
 
-void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex, const UsdTimeCode& timeCode)
+void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode)
 {
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   UsdAttribute faceVertexCountsAttr = mesh.GetFaceVertexCountsAttr();
@@ -53,37 +53,28 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex, cons
   UsdNprHalfEdge* halfEdge = &_halfEdges[0];
   for (int triIndex = 0; triIndex < _numTriangles; ++triIndex)
   {
-      uint64_t A = sample[0][0];
-      uint32_t sA = triIndex*3;sample++;
-      uint64_t B = sample[0][0];
-      uint32_t sB = triIndex*3+1;sample++;
-      uint64_t C = sample[0][0];
-      uint32_t sC = triIndex*3+2;sample++;
+      uint64_t A = sample[0][0];sample++;
+      uint64_t B = sample[0][0];sample++;
+      uint64_t C = sample[0][0];sample++;
 
       // create the half-edge that goes from C to A:
       halfEdgesMap[C | (A << 32)] = halfEdge;
-      halfEdge->mesh = meshIndex;
-      halfEdge->vertex = A;
+      halfEdge->vertex = C;
       halfEdge->triangle = triIndex;
-      halfEdge->sample = sA;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
       // create the half-edge that goes from A to B:
       halfEdgesMap[A | (B << 32)] = halfEdge;
-      halfEdge->mesh = meshIndex;
-      halfEdge->vertex = B;
+      halfEdge->vertex = A;
       halfEdge->triangle = triIndex;
-      halfEdge->sample = sB;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
       // create the half-edge that goes from B to C:
       halfEdgesMap[B | (C << 32)] = halfEdge;
-      halfEdge->mesh = meshIndex;
-      halfEdge->vertex = C;
+      halfEdge->vertex = B;
       halfEdge->triangle = triIndex;
-      halfEdge->sample = sC;
       halfEdge->next = halfEdge - 2;
       ++halfEdge;
   }

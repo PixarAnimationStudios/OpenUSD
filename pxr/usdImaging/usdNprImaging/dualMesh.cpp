@@ -1,7 +1,6 @@
 
 #include "pxr/usdImaging/usdNprImaging/dualMesh.h"
 #include "pxr/usdImaging/usdNprImaging/halfEdge.h"
-#include "pxr/imaging/pxOsd/tokens.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -132,7 +131,6 @@ void UsdNprOctree::Split()
 }
 
 // intersect a plane
-
 bool UsdNprOctree::_TouchPlane(const GfVec3f& n, float d) {
   bool sa = n[0]>=0, sb = n[1]>=0, sc = n[2]>=0;
   float p1x = _min[0], p1y, p1z, p2x = _max[0], p2y, p2z;
@@ -208,8 +206,7 @@ UsdNprDualMesh::~UsdNprDualMesh()
   // delete dual edges
   int sz = _dualEdges.size();
   for (int j=0; j<sz; ++j) delete _dualEdges[j];
-  int sm = _meshes.size();
-  for (int j=0;j<sm; ++j)delete _meshes[j];
+  delete _halfEdgeMesh;
 }
 
 // convert varying bits
@@ -236,70 +233,66 @@ static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
 }
 
 // mesh
-void UsdNprDualMesh::AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
+void UsdNprDualMesh::InitMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
 {
-  UsdNprHalfEdgeMesh* halfEdgeMesh = 
+  _halfEdgeMesh = 
     new UsdNprHalfEdgeMesh(_ConvertVaryingBits(varyingBits));
-  size_t meshIndex = _meshes.size();
-  halfEdgeMesh->Compute(mesh, meshIndex, UsdTimeCode::EarliestTime());
-  _meshes.push_back(halfEdgeMesh);
+  _halfEdgeMesh->Compute(mesh, UsdTimeCode::EarliestTime());
+  _meshXform = GfMatrix4f(1);
 }
 
 void UsdNprDualMesh::UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
-  bool recomputeAdjacency, size_t index)
+  bool recomputeAdjacency)
 {
-  UsdNprHalfEdgeMesh* halfEdgeMesh = _meshes[index];
   if(recomputeAdjacency)
-    halfEdgeMesh->Compute(mesh, index, timeCode);
-  else halfEdgeMesh->Update(mesh, timeCode);
+    _halfEdgeMesh->Compute(mesh, timeCode);
+  else _halfEdgeMesh->Update(mesh, timeCode);
 }
 
-char UsdNprDualMesh::GetMeshVaryingBits(size_t index)
+char UsdNprDualMesh::GetMeshVaryingBits()
 {
-  return _meshes[index]->GetVaryingBits();
+  return _halfEdgeMesh->GetVaryingBits();
+}
+
+// clear octree
+void UsdNprDualMesh::Clear()
+{
+  _creases.clear();
+  _boundaries.clear();
+  _silhouettes.clear();
+
+  for(auto& dualEdge: _dualEdges)delete dualEdge;
+    _dualEdges.clear();
+
+  for(int i=0;i<8;++i)
+    if(_children[i])
+    {
+      delete _children[i];
+      _children[i] = NULL;
+    }
 }
 
 // build octree
 void UsdNprDualMesh::Build() 
 {
-  // clear boundaries
-  _boundaries.clear();
-  _silhouettes.clear();
+  Clear();
+  
   _isLeaf = false;
   for(int j=0;j<8;++j)_children[j] = new UsdNprOctree();
 
-  for(const auto& mesh: _meshes)
-  {
-    const std::vector<UsdNprHalfEdge>& halfEdges = mesh->GetHalfEdges();
+  const std::vector<UsdNprHalfEdge>& halfEdges = _halfEdgeMesh->GetHalfEdges();
 
-    for(const auto& halfEdge: halfEdges) 
-      ProjectEdge(&halfEdge);
-  }
+  for(const auto& halfEdge: halfEdges) 
+    ProjectEdge(&halfEdge, _meshXform);
 
   for(int j=0;j<8;++j)_children[j]->Split();
 }
 
-short _UsdNprGetDualSurfaceIndex(const GfVec4f& dualPoint)
+void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge, const GfMatrix4f& m) 
 {
-  float base = -1;
-  size_t index = 0;
-  for(int i=0;i<4;++i)
-  {
-    float ac = GfAbs(dualPoint[i]);
-    if(ac>base) {
-      index = i; base = ac;
-    }
-  }
-  if(dualPoint[index]<0)index+=4;
-  return index;
-}
-
-void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge) 
-{
-  UsdNprHalfEdgeMesh* mesh = _meshes[halfEdge->mesh];
-  const GfVec3f* positions = mesh->GetPositionsPtr();
-  size_t numPoints =  mesh->GetNumPoints();
-  size_t numTriangles = mesh->GetNumTriangles();
+  const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
+  size_t numPoints =  _halfEdgeMesh->GetNumPoints();
+  size_t numTriangles = _halfEdgeMesh->GetNumTriangles();
 
   const UsdNprHalfEdge* twinEdge = halfEdge->twin;
   // check boundary
@@ -313,10 +306,11 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
   if (twinEdge->triangle < halfEdge->triangle) return;
 
   // facing of the edge
-  GfVec3f trn;
-  halfEdge->GetTriangleNormal(positions, trn);
-  float ff = trn * 
-    (positions[twinEdge->next->vertex] -
+  GfVec3f trn1, trn2;
+  halfEdge->GetTriangleNormal(positions, trn1);
+  trn1 = m.TransformDir(trn1);
+  float ff = trn1 * 
+    m.TransformDir(positions[twinEdge->next->vertex] -
     positions[halfEdge->next->vertex]);
 
 #ifndef NDEBUG
@@ -326,36 +320,16 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
 
   bool facing = (ff > 0);
 
-  GfVec4f n1( trn[0], trn[1], trn[2], - GfDot(trn, positions[halfEdge->vertex])); 
+  GfVec4f n1( trn1[0], trn1[1], trn1[2], 
+    - (trn1 * m.Transform(positions[halfEdge->vertex]))); 
 
-  twinEdge->GetTriangleNormal(positions, trn);
-  GfVec4f n2( trn[0], trn[1], trn[2], - GfDot(trn, positions[twinEdge->vertex]));
-  
-  /*
-  size_t idx1 = _UsdNprGetDualSurfaceIndex(n1);
-  size_t idx2 = _UsdNprGetDualSurfaceIndex(n2);
+  twinEdge->GetTriangleNormal(positions, trn2);
+  trn2 = m.TransformDir(trn2);
+  GfVec4f n2( trn2[0], trn2[1], trn2[2], 
+    - (trn2 * m.Transform(positions[twinEdge->vertex])));
 
-  if(idx1 == idx2)
-  {
-    UsdNprDualEdge* dualEdge = 
-      new UsdNprDualEdge(halfEdge, facing, idx1, n1, n2);
-    _children[idx1]->InsertEdge(dualEdge);
-    _dualEdges.push_back(dualEdge);
-  }
-  else
-  {
-    UsdNprDualEdge* dualEdge1 = 
-      new UsdNprDualEdge(halfEdge, facing, idx1, n1, n2);
-    _children[idx1]->InsertEdge(dualEdge1);
-    _dualEdges.push_back(dualEdge1);
+  if(GfAbs(trn1 * trn2) < 0.25)_creases.push_back(halfEdge);
 
-    UsdNprDualEdge* dualEdge2 = 
-      new UsdNprDualEdge(halfEdge, facing, idx2, n1, n2);
-    _children[idx2]->InsertEdge(dualEdge2);
-    _dualEdges.push_back(dualEdge2);
-  }
-  */
-  
   GfVec4f n = n2 - n1;
 
   float t[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
@@ -409,7 +383,6 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
     _children[tp]->InsertEdge(dualEdge);
     _dualEdges.push_back(dualEdge);
   }
-  
 }
 
 void UsdNprDualMesh::UncheckAllEdges()
@@ -443,41 +416,82 @@ void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
   _children[6]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), -pos[2],
 			       _silhouettes);
   _children[7]->FindSilhouettes(pos, -1, _silhouettes);
+}
 
+static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
+  float width, short index)
+{
+  const GfVec3f tangent = (B-A).GetNormalized();
+  const GfVec3f dir = ((A+B)*0.5 - V).GetNormalized();
+  const GfVec3f normal = (tangent ^ dir).GetNormalized();
+
+  switch(index) {
+    case 0:
+      return A - normal * width;
+    case 1:
+      return B - normal * width;
+    case 2:
+      return B + normal * width;
+    case 3:
+      return A + normal * width;
+  };
 }
 
 void UsdNprDualMesh::ComputeOutputGeometry()
 {
-  size_t numEdges = _silhouettes.size();
+  size_t numEdges = _silhouettes.size();// + _creases.size() + _boundaries.size();
   size_t numPoints = numEdges * 4;
 
   // topology
-  VtArray<int> faceVertexCounts(numEdges);
-  for(int i=0;i<numEdges;++i)faceVertexCounts[i] = 4;
-  VtArray<int> faceVertexIndices(numPoints);
-  for(int i=0;i<numPoints;++i)faceVertexIndices[i] = i;
-
-  _topology = 
-    HdMeshTopology(
-      PxOsdOpenSubdivTokens->none,
-      UsdGeomTokens->rightHanded,
-      faceVertexCounts,
-      faceVertexIndices);
+  _faceVertexCounts.resize(numEdges);
+  for(int i=0;i<numEdges;++i)_faceVertexCounts[i] = 4;
+  _faceVertexIndices.resize(numPoints);
+  for(int i=0;i<numPoints;++i)_faceVertexIndices[i] = i;
 
   // points
   _points.resize(numPoints);
   size_t index = 0;
   float width = 0.1;
+  
   for(const auto& halfEdge: _silhouettes)
   {
-    //const UsdNprHalfEdge* halfEdge = dualEdge->GetEdge();
+    const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
+    const GfVec3f& A = positions[halfEdge->vertex];
+    const GfVec3f& B = positions[halfEdge->twin->vertex];
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
+  }
+
+  /*
+  width = 0.2;
+  
+  for(const auto& halfEdge: _boundaries)
+  {
     const UsdNprHalfEdgeMesh* mesh = GetMesh(halfEdge->mesh);
     const GfVec3f* positions = mesh->GetPositionsPtr();
-    _points[index++] = positions[halfEdge->vertex] + GfVec3f(0,-width,0);
-    _points[index++] = positions[halfEdge->twin->vertex] + GfVec3f(0,-width,0);
-    _points[index++] = positions[halfEdge->twin->vertex] + GfVec3f(0,width,0);
-    _points[index++] = positions[halfEdge->vertex] + GfVec3f(0,width,0);
+    const GfVec3f& A = positions[halfEdge->vertex];
+    const GfVec3f& B = positions[halfEdge->next->vertex];
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
   }
+  /*
+  width = 0.1;
+  for(const auto& halfEdge: _creases)
+  {
+    const UsdNprHalfEdgeMesh* mesh = GetMesh(halfEdge->mesh);
+    const GfVec3f* positions = mesh->GetPositionsPtr();
+    const GfVec3f& A = positions[halfEdge->vertex];
+    const GfVec3f& B = positions[halfEdge->twin->vertex];
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
+    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
+  }
+  */
 }
 
 

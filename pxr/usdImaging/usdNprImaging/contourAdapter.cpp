@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -72,25 +73,25 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
 {
   UsdNprContour contour(prim);
   std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
-
-  _dualMesh.reset(new UsdNprDualMesh());
-  for(UsdGeomMesh& contourSurface: contourSurfaces)
+  //_dualMeshes.resize(contourSurfaces.size());
+  for(int i=0;i<contourSurfaces.size();++i)
   {
-    UsdPrim surfacePrim = contourSurface.GetPrim();
+    UsdNprDualMeshSharedPtr dualMesh(new UsdNprDualMesh() );
+    UsdPrim surfacePrim = contourSurfaces[i].GetPrim();
     const UsdImagingPrimAdapterSharedPtr& adapter = 
       _GetPrimAdapter(surfacePrim, false);
     std::cout << "GET CONTOUR SURFACE PRIM ADAPTER : " << adapter.get() << std::endl;
 
     SdfPath cachePath = _ResolveCachePath(surfacePrim.GetPath(), nullptr);
     HdDirtyBits varyingBits = HdChangeTracker::Clean;
-    adapter->TrackVariability(contourSurface.GetPrim(), cachePath, &varyingBits, nullptr );
+    adapter->TrackVariability(surfacePrim, cachePath, &varyingBits, nullptr );
     std::cout << "GET VARYING BITS : " << varyingBits << std::endl;
 
     _surfacePrims.push_back(surfacePrim);
-    _dualMesh->AddMesh(contourSurface, varyingBits);
+    dualMesh->InitMesh(contourSurfaces[i], varyingBits);
+    _dualMeshes.push_back(dualMesh);
   }
-  _dualMesh->Build();
-  _dualMesh->ComputeOutputGeometry();
+
   return _AddRprim(HdPrimTypeTokens->mesh,
                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
@@ -116,22 +117,11 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         instancerContext) const
 {
   if (requestedBits & HdChangeTracker::DirtyTopology) {
-    std::cout << "CONTOUR NEED A FUCKIN UPODATE !!! " << std::endl;
+    std::cout << "CONTOUR NEED A DAMNED UPDATE !!! " << std::endl;
     UsdGeomXformCache xformCache(time);
     UsdNprContour contour(prim);
-    std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
-    size_t index = 0;
     
-    for(UsdGeomMesh& contourSurface: contourSurfaces)
-    {
-      char varyingBits = _dualMesh->GetMeshVaryingBits(index);
-      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
-        _dualMesh->UpdateMesh(contourSurface, time, true, index);
-      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
-        _dualMesh->UpdateMesh(contourSurface, time, false, index);
-      index++;
-    }
-    
+
     UsdRelationship viewPointRel = contour.GetContourViewPointRel();
     GfMatrix4d viewPointMatrix;
     if(viewPointRel.HasAuthoredTargets())
@@ -144,30 +134,48 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         viewPointMatrix = 
           xformCache.GetLocalToWorldTransform(
             prim.GetStage()->GetPrimAtPath(viewPointPath));
-
-        _dualMesh->SetViewPoint(GfVec3f(
-          viewPointMatrix[3][0],
-          viewPointMatrix[3][1],
-          viewPointMatrix[3][2]
-        ));
+        
         std::cout << "VIEW POINT : (" << viewPointMatrix[3][0] << "," << 
           viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
       }
     }
 
-    _dualMesh->FindSilhouettes(viewPointMatrix);
+    std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
+    size_t index = 0;
 
-    _dualMesh->ComputeOutputGeometry();
+    /*
+    WorkParallelForEach(range.begin(), range.end(),
+                        [this](UsdPrim const &desc) { _VisitPrim(desc); });
+                        */
+    
+    for(UsdGeomMesh& contourSurface: contourSurfaces)
+    {
+      char varyingBits = _dualMeshes[index]->GetMeshVaryingBits();
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+        _dualMeshes[index]->UpdateMesh(contourSurface, time, true);
+      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+        _dualMeshes[index]->UpdateMesh(contourSurface, time, false);
+
+      _dualMeshes[index]->SetViewPoint(GfVec3f(
+          viewPointMatrix[3][0],
+          viewPointMatrix[3][1],
+          viewPointMatrix[3][2]
+      ));
+
+      _dualMeshes[index]->Build();
+      _dualMeshes[index]->FindSilhouettes(viewPointMatrix);
+
+      _dualMeshes[index]->ComputeOutputGeometry();
+      index++;
+    }
 
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    valueCache->GetTopology(cachePath) = 
-      VtValue(_dualMesh->GetOutputTopology());
-    valueCache->GetPoints(cachePath) = 
-      VtValue(_dualMesh->GetOutputPoints());
+    _ComputeOutputGeometry(valueCache, cachePath);
+
   }
 }
 
@@ -212,22 +220,59 @@ UsdImagingContourAdapter::MarkDirty(UsdPrim const& prim,
   index->MarkRprimDirty(cachePath, dirty);
 }
 
-
-/*virtual*/
-/*
-VtValue
-UsdImagingContourAdapter::GetPoints(UsdPrim const& prim,
-                                 SdfPath const& cachePath,
-                                 UsdTimeCode time) const
+void
+UsdImagingContourAdapter::_ComputeOutputGeometry(UsdImagingValueCache* valueCache, 
+    SdfPath const& cachePath) const
 {
-  VtValue points(_dualMesh->GetOutputPoints());
-  UsdImagingValueCache* valueCache = _GetValueCache();
-  valueCache->GetPoints(cachePath) = points;
-  return points;
+  
+  size_t numPoints = 0;
+  size_t numCounts = 0;
+  size_t numIndices = 0;
+  for(const auto& dualMesh: _dualMeshes){
+    numPoints += dualMesh->GetNumOutputPoints();
+    numCounts += dualMesh->GetNumOutputFaceVertexCounts();
+    numIndices += dualMesh->GetNumOutputFaceVertexIndices();
+  }
+
+  VtArray<int> faceVertexCounts(numCounts);
+  VtArray<int> faceVertexIndices(numIndices);
+  VtArray<GfVec3f> points(numPoints);
+
+  size_t pointsIndex = 0;
+  size_t countsIndex = 0;
+  size_t indicesIndex = 0;
+
+  for(const auto& dualMesh: _dualMeshes) {
+    size_t numPoints =  dualMesh->GetNumOutputPoints();
+    if(numPoints) {
+      memcpy(&points[pointsIndex], &dualMesh->GetOutputPoints()[0], 
+        numPoints * sizeof(GfVec3f));
+      pointsIndex += numPoints;
+    }
+  
+    size_t numCounts =  dualMesh->GetNumOutputFaceVertexCounts();
+    if(numCounts) {
+      memcpy(&faceVertexCounts[countsIndex], &dualMesh->GetOutputFaceVertexCounts()[0], 
+        numCounts * sizeof(int));
+      countsIndex += numCounts;
+    }
+    
+    size_t numIndices =  dualMesh->GetNumOutputFaceVertexIndices();
+    if(numIndices) {
+      const VtArray<int>& src = dualMesh->GetOutputFaceVertexIndices();
+      for(int i=0;i<numIndices;++i)faceVertexIndices[indicesIndex + i] = src[i] + indicesIndex;
+      indicesIndex += numIndices;
+    }
+  }
+
+  HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
+                          UsdGeomTokens->rightHanded,
+                          faceVertexCounts,
+                          faceVertexIndices);
+  
+  valueCache->GetTopology(cachePath) = VtValue(topology);
+  valueCache->GetPoints(cachePath) = VtValue(points);
 }
-*/
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
