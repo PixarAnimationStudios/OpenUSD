@@ -115,54 +115,59 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         UsdImagingInstancerContext const* 
                                         instancerContext) const
 {
-  UsdGeomXformCache xformCache(time);
-  UsdNprContour contour(prim);
-  std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
-  size_t index = 0;
-  for(UsdGeomMesh& contourSurface: contourSurfaces)
-  {
-    char varyingBits = _dualMesh->GetMeshVaryingBits(index);
-    if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
-      _dualMesh->UpdateMesh(contourSurface, time, true, index);
-    else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
-      _dualMesh->UpdateMesh(contourSurface, time, false, index);
-    index++;
-  }
-
-  UsdRelationship viewPointRel = contour.GetContourViewPointRel();
-  if(viewPointRel.HasAuthoredTargets())
-  {
-    SdfPathVector viewPointTargets;
-    if(viewPointRel.GetTargets(&viewPointTargets))
-    {
-      SdfPath viewPointPath = viewPointTargets[0];
-
-      
-      GfMatrix4d viewPointMatrix = 
-        xformCache.GetLocalToWorldTransform(
-          prim.GetStage()->GetPrimAtPath(viewPointPath));
-
-      _dualMesh->SetViewPoint(GfVec3f(
-        viewPointMatrix[3][0],
-        viewPointMatrix[3][1],
-        viewPointMatrix[3][2]
-      ));
-      std::cout << "VIEW POINT : (" << viewPointMatrix[3][0] << "," << 
-        viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
-    }
-  }
-
-  _dualMesh->ComputeOutputGeometry();
-
-  BaseAdapter::UpdateForTime(
-      prim, cachePath, time, requestedBits, instancerContext);
-
-  UsdImagingValueCache* valueCache = _GetValueCache();
-
   if (requestedBits & HdChangeTracker::DirtyTopology) {
-    std::cout << "USD NPR GET TOPOLOGY !!!" << std::endl;
+    std::cout << "CONTOUR NEED A FUCKIN UPODATE !!! " << std::endl;
+    UsdGeomXformCache xformCache(time);
+    UsdNprContour contour(prim);
+    std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
+    size_t index = 0;
+    
+    for(UsdGeomMesh& contourSurface: contourSurfaces)
+    {
+      char varyingBits = _dualMesh->GetMeshVaryingBits(index);
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+        _dualMesh->UpdateMesh(contourSurface, time, true, index);
+      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+        _dualMesh->UpdateMesh(contourSurface, time, false, index);
+      index++;
+    }
+    
+    UsdRelationship viewPointRel = contour.GetContourViewPointRel();
+    GfMatrix4d viewPointMatrix;
+    if(viewPointRel.HasAuthoredTargets())
+    {
+      SdfPathVector viewPointTargets;
+      if(viewPointRel.GetTargets(&viewPointTargets))
+      {
+        SdfPath viewPointPath = viewPointTargets[0];
+
+        viewPointMatrix = 
+          xformCache.GetLocalToWorldTransform(
+            prim.GetStage()->GetPrimAtPath(viewPointPath));
+
+        _dualMesh->SetViewPoint(GfVec3f(
+          viewPointMatrix[3][0],
+          viewPointMatrix[3][1],
+          viewPointMatrix[3][2]
+        ));
+        std::cout << "VIEW POINT : (" << viewPointMatrix[3][0] << "," << 
+          viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
+      }
+    }
+
+    _dualMesh->FindSilhouettes(viewPointMatrix);
+
+    _dualMesh->ComputeOutputGeometry();
+
+    BaseAdapter::UpdateForTime(
+        prim, cachePath, time, requestedBits, instancerContext);
+
+    UsdImagingValueCache* valueCache = _GetValueCache();
+
     valueCache->GetTopology(cachePath) = 
       VtValue(_dualMesh->GetOutputTopology());
+    valueCache->GetPoints(cachePath) = 
+      VtValue(_dualMesh->GetOutputPoints());
   }
 }
 
@@ -204,34 +209,23 @@ UsdImagingContourAdapter::MarkDirty(UsdPrim const& prim,
                                     HdDirtyBits dirty,
                                     UsdImagingIndexProxy* index)
 {
-  UsdImagingValueCache* valueCache = _GetValueCache();
-  UsdStageRefPtr stage = prim.GetStage();
-  //UsdImagingDelegate::_GetHdPrimInfo(const SdfPath &cachePath)
-  for(const auto& surfacePrim: _surfacePrims)
-  {
-    SdfPath surfacePrimCachePath = _ResolveCachePath(surfacePrim.GetPath(), nullptr);
-    VtValue& points = valueCache->GetPoints(surfacePrimCachePath);
-    std::cout << "POINTS HASH : " << points.GetHash() << std::endl;
-
-    std::cout << "----------------------------------------------------------------" << std::endl;
-    std::cout << "CHECK DIRTY STATE FOR " << surfacePrimCachePath << " : " << cachePath.GetText() << std::endl;
-  }
   index->MarkRprimDirty(cachePath, dirty);
-  std::cout << "===================================================================" << std::endl;
 }
 
+
 /*virtual*/
+/*
 VtValue
 UsdImagingContourAdapter::GetPoints(UsdPrim const& prim,
                                  SdfPath const& cachePath,
                                  UsdTimeCode time) const
 {
-  std::cout << "USD NPR GET POINTS !!!" << std::endl;
   VtValue points(_dualMesh->GetOutputPoints());
   UsdImagingValueCache* valueCache = _GetValueCache();
   valueCache->GetPoints(cachePath) = points;
   return points;
 }
+*/
 
 
 
