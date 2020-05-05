@@ -90,13 +90,6 @@ _CreateCreaseWidthAttr(UsdNprContour &self,
     return self.CreateCreaseWidthAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
-        
-static UsdAttribute
-_CreateViewPointAttr(UsdNprContour &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateViewPointAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3f), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -172,14 +165,12 @@ void wrapUsdNprContour()
              &_CreateCreaseWidthAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-        
-        .def("GetViewPointAttr",
-             &This::GetViewPointAttr)
-        .def("CreateViewPointAttr",
-             &_CreateViewPointAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
+        
+        .def("GetContourViewPointRel",
+             &This::GetContourViewPointRel)
+        .def("CreateContourViewPointRel",
+             &This::CreateContourViewPointRel)
         
         .def("GetContourSurfacesRel",
              &This::GetContourSurfacesRel)

@@ -67,6 +67,7 @@ void wrapUsdNprTokens()
     _AddToken(cls, "boundaries", UsdNprTokens->boundaries);
     _AddToken(cls, "boundaryWidth", UsdNprTokens->boundaryWidth);
     _AddToken(cls, "contourSurfaces", UsdNprTokens->contourSurfaces);
+    _AddToken(cls, "contourViewPoint", UsdNprTokens->contourViewPoint);
     _AddToken(cls, "creases", UsdNprTokens->creases);
     _AddToken(cls, "creaseWidth", UsdNprTokens->creaseWidth);
     _AddToken(cls, "drawBoundary", UsdNprTokens->drawBoundary);
@@ -75,5 +76,4 @@ void wrapUsdNprTokens()
     _AddToken(cls, "silhouettes", UsdNprTokens->silhouettes);
     _AddToken(cls, "silhouetteWidth", UsdNprTokens->silhouetteWidth);
     _AddToken(cls, "surfaces", UsdNprTokens->surfaces);
-    _AddToken(cls, "viewPoint", UsdNprTokens->viewPoint);
 }

@@ -11,7 +11,11 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include <vector>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -126,16 +130,19 @@ protected:
   bool _TouchPlane(const GfVec3f& n, float d);
 };
 
-class UsdNprDualMesh : public UsdNprOctree{
+class UsdNprDualMesh : public UsdNprOctree {
 public:
   ~UsdNprDualMesh();
 
   // mesh
-  void AddMesh(const UsdGeomMesh& mesh);
+  void AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits);
   void UpdateMesh(const UsdGeomMesh& mesh, size_t index);
   const UsdNprHalfEdgeMesh* GetMesh(size_t index) const {
     return _meshes[index];
   };
+
+  // view point
+  void SetViewPoint(const GfVec3f& viewPoint){_viewPoint = viewPoint;};
 
   // build the tree
   void Build();
@@ -152,16 +159,25 @@ public:
   // points
   const char* GetPoints(){return (const char*)_points.cdata();};
 
+  // output
+  void ComputeOutputGeometry();
+  const VtArray<GfVec3f>& GetOutputPoints() {return _points;};
+  const HdMeshTopology& GetOutputTopology() {return _topology;}; 
+
 private:      
   // meshes
   std::vector<UsdNprHalfEdgeMesh*> _meshes;
-  VtArray<GfMatrix4d>             _meshXforms;    
+  VtArray<GfMatrix4d>              _meshXforms;    
+  GfVec3f                          _viewPoint;
 
   std::vector<const UsdNprHalfEdge*> _boundaries;
   std::vector<const UsdNprHalfEdge*> _silhouettes;
   VtArray<GfVec3f>                   _points;
+  HdMeshTopology                     _topology;
 
 };
+
+typedef std::shared_ptr<UsdNprDualMesh> UsdNprDualMeshSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -24,11 +24,12 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex)
   UsdAttribute faceVertexCountsAttr = mesh.GetFaceVertexCountsAttr();
   UsdAttribute faceVertexIndicesAttr = mesh.GetFaceVertexIndicesAttr();
 
-  pointsAttr.Get(&_positions);
+  UsdTimeCode tc = UsdTimeCode::EarliestTime();
+  pointsAttr.Get(&_positions, tc);
   VtArray<int> faceVertexCounts;
   VtArray<int> faceVertexIndices;
-  faceVertexCountsAttr.Get(&faceVertexCounts);
-  faceVertexIndicesAttr.Get(&faceVertexIndices);
+  faceVertexCountsAttr.Get(&faceVertexCounts, tc);
+  faceVertexIndicesAttr.Get(&faceVertexIndices, tc);
 
   VtArray<GfVec3i> samples;
   UsdNprTriangulateMesh(faceVertexCounts, 
@@ -108,6 +109,7 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex)
     }
     else ++boundaryCount;
   }
+  std::cout << "BOUNDARIES : " << boundaryCount << std::endl;
 }
 
 void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh)

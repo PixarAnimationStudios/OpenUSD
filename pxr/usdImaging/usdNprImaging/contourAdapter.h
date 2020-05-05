@@ -27,6 +27,9 @@
 /// \file usdImaging/contourAdapter.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdNprImaging/api.h"
@@ -49,16 +52,16 @@ public:
     UsdImagingContourAdapter()
         : UsdImagingGprimAdapter()
     {}
-    USDIMAGING_API
+    USDNPRIMAGING_API
     virtual ~UsdImagingContourAdapter();
 
-    USDIMAGING_API
+    USDNPRIMAGING_API
     SdfPath Populate(
         UsdPrim const& prim,
         UsdImagingIndexProxy* index,
         UsdImagingInstancerContext const* instancerContext = nullptr) override;
 
-    USDIMAGING_API
+    USDNPRIMAGING_API
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
@@ -66,7 +69,7 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Thread Safe.
-    USDIMAGING_API
+    USDNPRIMAGING_API
     void TrackVariability(
         UsdPrim const& prim,
         SdfPath const& cachePath,
@@ -75,7 +78,7 @@ public:
             const override;
 
     /// Thread Safe.
-    USDIMAGING_API
+    USDNPRIMAGING_API
     void UpdateForTime(
         UsdPrim const& prim,
         SdfPath const& cachePath, 
@@ -84,21 +87,38 @@ public:
         UsdImagingInstancerContext const* instancerContext = nullptr) 
             const override;
 
-    // Override the implementation in GprimAdapter since the content is procedurally generated
-    USDIMAGING_API
+    // ---------------------------------------------------------------------- //
+    /// \name Change Processing API (public)
+    // ---------------------------------------------------------------------- //
+    USDNPRIMAGING_API
+    HdDirtyBits ProcessPropertyChange(const UsdPrim& prim,
+                                      const SdfPath& cachePath,
+                                      const TfToken& propertyName) override;
+
+    USDNPRIMAGING_API
+    void ProcessPrimResync(SdfPath const& primPath,
+                           UsdImagingIndexProxy* index) override;
+
+    USDNPRIMAGING_API
+    void ProcessPrimRemoval(SdfPath const& primPath,
+                            UsdImagingIndexProxy* index) override;
+
+    USDNPRIMAGING_API
+    void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index) override;                        
+
+    // Override the implementation in since the content is procedurally generated
+    USDNPRIMAGING_API
     VtValue GetPoints(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         UsdTimeCode time) const override;
 
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim, 
-                                 UsdTimeCode time);
-    
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 private:
-
+  std::vector<UsdPrim>    _surfacePrims;
+  UsdNprDualMeshSharedPtr _dualMesh;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

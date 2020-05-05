@@ -1,6 +1,7 @@
 
 #include "pxr/usdImaging/usdNprImaging/dualMesh.h"
 #include "pxr/usdImaging/usdNprImaging/halfEdge.h"
+#include "pxr/imaging/pxOsd/tokens.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -206,16 +207,36 @@ UsdNprDualMesh::~UsdNprDualMesh()
 {
   // delete dual edges
   int sz = _dualEdges.size();
-  for (int j=0; j<sz; j++) delete _dualEdges[j];
+  for (int j=0; j<sz; ++j) delete _dualEdges[j];
+  int sm = _meshes.size();
+  for (int j=0;j<sm; ++j)delete _meshes[j];
+}
+
+static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
+{
+  char outVaryingBits = 0;
+  if(varyingBits & HdChangeTracker::DirtyTopology)
+  {
+    outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY;
+  }
+  if(varyingBits & HdChangeTracker::DirtyPoints)
+  {
+    outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM;
+  }
+  if(varyingBits & HdChangeTracker::DirtyTransform)
+  {
+    outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM;
+  }
+  return outVaryingBits;
 }
 
 // mesh
-void UsdNprDualMesh::AddMesh(const UsdGeomMesh& mesh)
+void UsdNprDualMesh::AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
 {
-  UsdNprHalfEdgeMesh* halfEdgeMesh = new UsdNprHalfEdgeMesh();
+  UsdNprHalfEdgeMesh* halfEdgeMesh = 
+    new UsdNprHalfEdgeMesh(_ConvertVaryingBits(varyingBits));
   size_t meshIndex = _meshes.size();
   halfEdgeMesh->Compute(mesh, meshIndex);
-  std::cout << "UsdNpr Add Mesh : Num Points = " << halfEdgeMesh->GetNumPoints() << std::endl;
   _meshes.push_back(halfEdgeMesh);
 }
 
@@ -418,6 +439,40 @@ void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
     _points[index++] = positions[silhouette->twin->vertex];
   }
   */
+}
+
+void UsdNprDualMesh::ComputeOutputGeometry()
+{
+  size_t numEdges = _dualEdges.size();
+  size_t numPoints = numEdges * 4;
+
+  // topology
+  VtArray<int> faceVertexCounts(numEdges);
+  for(int i=0;i<numEdges;++i)faceVertexCounts[i] = 4;
+  VtArray<int> faceVertexIndices(numPoints);
+  for(int i=0;i<numPoints;++i)faceVertexIndices[i] = i;
+
+  _topology = 
+    HdMeshTopology(
+      PxOsdOpenSubdivTokens->none,
+      UsdGeomTokens->rightHanded,
+      faceVertexCounts,
+      faceVertexIndices);
+
+  // points
+  _points.resize(numPoints);
+  size_t index = 0;
+  float width = 0.02;
+  for(const auto& dualEdge: _dualEdges)
+  {
+    const UsdNprHalfEdge* halfEdge = dualEdge->GetEdge();
+    const UsdNprHalfEdgeMesh* mesh = GetMesh(halfEdge->mesh);
+    const GfVec3f* positions = mesh->GetPositionsPtr();
+    _points[index++] = positions[halfEdge->vertex] + GfVec3f(0,-width,0);
+    _points[index++] = positions[halfEdge->twin->vertex] + GfVec3f(0,-width,0);
+    _points[index++] = positions[halfEdge->twin->vertex] + GfVec3f(0,width,0);
+    _points[index++] = positions[halfEdge->vertex] + GfVec3f(0,width,0);
+  }
 }
 
 
