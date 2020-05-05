@@ -35,7 +35,6 @@ over "GLOBAL" (
 ) {
 }
 
-
 class Contour "Contour" (
     inherits = </Mesh>
     doc = """Defines a procedurally generated contour for NPR rendering."""
@@ -62,9 +61,12 @@ class Contour "Contour" (
 		doc = """Thickness of the crease strokes"""
 	)
 	
-    vector3f viewPoint = (0.0, 0.0, 0.0) (
-        doc = """View Point"""
-    )
+  rel contour:viewPoint (
+    customData = {
+            string apiName = "contourViewPoint"
+        } 
+      doc = """View Point"""
+  )
 	
 	rel contour:surfaces (
 		customData = {

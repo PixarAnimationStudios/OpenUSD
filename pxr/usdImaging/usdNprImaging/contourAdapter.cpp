@@ -35,6 +35,7 @@
 
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdNpr/contour.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
@@ -69,62 +70,140 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-  std::cout << "UsdNpr POPULATE CONTOUR !!" << std::endl;
   UsdNprContour contour(prim);
   std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
 
-  UsdNprDualMesh* dualMesh = new UsdNprDualMesh();
+  _dualMesh.reset(new UsdNprDualMesh());
   for(UsdGeomMesh& contourSurface: contourSurfaces)
   {
-    dualMesh->AddMesh(contourSurface);
+    UsdPrim surfacePrim = contourSurface.GetPrim();
+    const UsdImagingPrimAdapterSharedPtr& adapter = 
+      _GetPrimAdapter(surfacePrim, false);
+    std::cout << "GET CONTOUR SURFACE PRIM ADAPTER : " << adapter.get() << std::endl;
+
+    SdfPath cachePath = _ResolveCachePath(surfacePrim.GetPath(), nullptr);
+    HdDirtyBits varyingBits = HdChangeTracker::Clean;
+    adapter->TrackVariability(contourSurface.GetPrim(), cachePath, &varyingBits, nullptr );
+    std::cout << "GET VARYING BITS : " << varyingBits << std::endl;
+
+    _surfacePrims.push_back(surfacePrim);
+    _dualMesh->AddMesh(contourSurface, varyingBits);
   }
-  dualMesh->Build();
-  delete dualMesh;
-  std::cout << "UsdNpr : NUM CONTOUR SURFACES = " << contourSurfaces.size() << std::endl;
-    return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialUsdPath(prim), instancerContext);
+  _dualMesh->Build();
+  _dualMesh->ComputeOutputGeometry();
+  return _AddRprim(HdPrimTypeTokens->mesh,
+                    prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
 UsdImagingContourAdapter::TrackVariability(UsdPrim const& prim,
-                                        SdfPath const& cachePath,
-                                        HdDirtyBits* timeVaryingBits,
-                                        UsdImagingInstancerContext const* 
-                                            instancerContext) const
+                                          SdfPath const& cachePath,
+                                          HdDirtyBits* timeVaryingBits,
+                                          UsdImagingInstancerContext const* 
+                                          instancerContext) const
 {
-    BaseAdapter::TrackVariability(
+  BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
-    // WARNING: This method is executed from multiple threads, the value cache
-    // has been carefully pre-populated to avoid mutating the underlying
-    // container during update.
-    
-    // The base adapter may already be setting that points dirty bit.
-    // _IsVarying will clear it, so check it isn't already marked as
-    // varying before checking for additional set cases.
-     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
-        _IsVarying(prim, UsdGeomTokens->size,
-                      HdChangeTracker::DirtyPoints,
-                      UsdImagingTokens->usdVaryingPrimvar,
-                      timeVaryingBits, /*inherited*/false);
-    }
+  *timeVaryingBits = HdChangeTracker::AllDirty;
 }
 
 void 
 UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
-                                     SdfPath const& cachePath, 
-                                     UsdTimeCode time,
-                                     HdDirtyBits requestedBits,
-                                     UsdImagingInstancerContext const* 
-                                         instancerContext) const
+                                        SdfPath const& cachePath, 
+                                        UsdTimeCode time,
+                                        HdDirtyBits requestedBits,
+                                        UsdImagingInstancerContext const* 
+                                        instancerContext) const
 {
-    BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, instancerContext);
+  _dualMesh->ComputeOutputGeometry();
+  BaseAdapter::UpdateForTime(
+      prim, cachePath, time, requestedBits, instancerContext);
 
-    UsdImagingValueCache* valueCache = _GetValueCache();
+  UsdNprContour contour(prim);
+  UsdRelationship viewPointRel = contour.GetContourViewPointRel();
+  if(viewPointRel.HasAuthoredTargets())
+  {
+    SdfPathVector viewPointTargets;
+    if(viewPointRel.GetTargets(&viewPointTargets))
+    {
+      SdfPath viewPointPath = viewPointTargets[0];
 
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath) = GetMeshTopology();
+      UsdGeomXformCache xformCache(time);
+      GfMatrix4d viewPointMatrix = 
+        xformCache.GetLocalToWorldTransform(
+          prim.GetStage()->GetPrimAtPath(viewPointPath));
+
+      _dualMesh->SetViewPoint(GfVec3f(
+        viewPointMatrix[3][0],
+        viewPointMatrix[3][1],
+        viewPointMatrix[3][2]
+      ));
+      std::cout << "VIEW POINT : (" << viewPointMatrix[3][0] << "," << 
+        viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
     }
+  }
+
+  UsdImagingValueCache* valueCache = _GetValueCache();
+
+  if (requestedBits & HdChangeTracker::DirtyTopology) {
+    std::cout << "USD NPR GET TOPOLOGY !!!" << std::endl;
+    valueCache->GetTopology(cachePath) = 
+      VtValue(_dualMesh->GetOutputTopology());
+  }
+}
+
+// ---------------------------------------------------------------------- //
+/// Change Processing
+// ---------------------------------------------------------------------- //
+HdDirtyBits
+UsdImagingContourAdapter::ProcessPropertyChange(
+  const UsdPrim& prim,
+  const SdfPath& cachePath,
+  const TfToken& propertyName)
+{
+  std::cout << "USD NPR PROCESS PROPERTY CHANGE : " << propertyName.GetText() << std::endl;
+  return HdChangeTracker::Clean;
+}
+
+void
+UsdImagingContourAdapter::ProcessPrimResync(
+  SdfPath const& primPath,
+  UsdImagingIndexProxy* index)
+{
+  std::cout << "USD NPR PROCESS PRIM RESYNC : " << primPath.GetText() << std::endl;
+}
+
+void
+UsdImagingContourAdapter::ProcessPrimRemoval(
+  SdfPath const& primPath,
+  UsdImagingIndexProxy* index)
+{
+  std::cout << "USD NPR PROCESS PRIM REMOVAL : " << primPath.GetText() << std::endl;
+  // Note: _RemovePrim removes the Hydra prim and the UsdImaging primInfo
+  // entries as well (unlike the pattern followed in PrimAdapter)
+  _RemovePrim(primPath, index);
+}
+
+void 
+UsdImagingContourAdapter::MarkDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    HdDirtyBits dirty,
+                                    UsdImagingIndexProxy* index)
+{
+  UsdImagingValueCache* valueCache = _GetValueCache();
+  UsdStageRefPtr stage = prim.GetStage();
+  //UsdImagingDelegate::_GetHdPrimInfo(const SdfPath &cachePath)
+  for(const auto& surfacePrim: _surfacePrims)
+  {
+    SdfPath surfacePrimCachePath = _ResolveCachePath(surfacePrim.GetPath(), nullptr);
+    VtValue& points = valueCache->GetPoints(surfacePrimCachePath);
+    std::cout << "POINTS HASH : " << points.GetHash() << std::endl;
+
+    std::cout << "----------------------------------------------------------------" << std::endl;
+    std::cout << "CHECK DIRTY STATE FOR " << surfacePrimCachePath << " : " << cachePath.GetText() << std::endl;
+  }
+  index->MarkRprimDirty(cachePath, dirty);
+  std::cout << "===================================================================" << std::endl;
 }
 
 /*virtual*/
@@ -133,46 +212,13 @@ UsdImagingContourAdapter::GetPoints(UsdPrim const& prim,
                                  SdfPath const& cachePath,
                                  UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
-    return GetMeshPoints(prim, time);   
+  std::cout << "USD NPR GET POINTS !!!" << std::endl;
+  VtValue points(_dualMesh->GetOutputPoints());
+  UsdImagingValueCache* valueCache = _GetValueCache();
+  valueCache->GetPoints(cachePath) = points;
+  return points;
 }
 
-static GfMatrix4d
-_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
-{
-    UsdGeomCube cube(prim);
-
-    double size = 2.0;
-    if (!cube.GetSizeAttr().Get(&size, time)) {
-        TF_WARN("Could not evaluate double-valued size attribute on prim %s",
-            prim.GetPath().GetText());
-    }
-
-    return UsdImagingGenerateSphereOrCubeTransform(size);
-}
-
-/*static*/
-VtValue
-UsdImagingContourAdapter::GetMeshPoints(UsdPrim const& prim, 
-                                     UsdTimeCode time)
-{
-    // Return scaled points (and not that of a unit geometry)
-    VtVec3fArray points = UsdImagingGetUnitCubeMeshPoints();
-    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
-    for (GfVec3f& pt : points) {
-        pt = scale.Transform(pt);
-    }
-
-    return VtValue(points);
-}
-
-/*static*/
-VtValue
-UsdImagingContourAdapter::GetMeshTopology()
-{
-    // Topology is constant and identical for all cubes.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
-}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

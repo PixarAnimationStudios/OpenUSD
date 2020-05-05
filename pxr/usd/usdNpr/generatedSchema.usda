@@ -22,6 +22,9 @@ class Contour "Contour" (
     rel contour:surfaces (
         doc = "Surfaces from which the strokes are generated"
     )
+    rel contour:viewPoint (
+        doc = "View Point"
+    )
     int[] cornerIndices = [] (
         doc = "The vertex indices of all vertices that are sharp corners."
     )
@@ -227,9 +230,6 @@ class Contour "Contour" (
         UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
         
         See also ."""
-    )
-    vector3f viewPoint = (0, 0, 0) (
-        doc = "View Point"
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]

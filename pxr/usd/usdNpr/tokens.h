@@ -74,6 +74,10 @@ struct UsdNprTokensType {
     /// 
     /// UsdNprContour
     const TfToken contourSurfaces;
+    /// \brief "contour:viewPoint"
+    /// 
+    /// UsdNprContour
+    const TfToken contourViewPoint;
     /// \brief "creases"
     /// 
     /// Boolean - Does the stroke draw creases of the surfaces.
@@ -106,10 +110,6 @@ struct UsdNprTokensType {
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent surface-linking of a UsdContour prim. 
     const TfToken surfaces;
-    /// \brief "viewPoint"
-    /// 
-    /// UsdNprContour
-    const TfToken viewPoint;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

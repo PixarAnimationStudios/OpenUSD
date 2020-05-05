@@ -29,6 +29,7 @@ UsdNprTokensType::UsdNprTokensType() :
     boundaries("boundaries", TfToken::Immortal),
     boundaryWidth("boundaryWidth", TfToken::Immortal),
     contourSurfaces("contour:surfaces", TfToken::Immortal),
+    contourViewPoint("contour:viewPoint", TfToken::Immortal),
     creases("creases", TfToken::Immortal),
     creaseWidth("creaseWidth", TfToken::Immortal),
     drawBoundary("drawBoundary", TfToken::Immortal),
@@ -37,11 +38,11 @@ UsdNprTokensType::UsdNprTokensType() :
     silhouettes("silhouettes", TfToken::Immortal),
     silhouetteWidth("silhouetteWidth", TfToken::Immortal),
     surfaces("surfaces", TfToken::Immortal),
-    viewPoint("viewPoint", TfToken::Immortal),
     allTokens({
         boundaries,
         boundaryWidth,
         contourSurfaces,
+        contourViewPoint,
         creases,
         creaseWidth,
         drawBoundary,
@@ -49,8 +50,7 @@ UsdNprTokensType::UsdNprTokensType() :
         drawSilhouette,
         silhouettes,
         silhouetteWidth,
-        surfaces,
-        viewPoint
+        surfaces
     })
 {
 }

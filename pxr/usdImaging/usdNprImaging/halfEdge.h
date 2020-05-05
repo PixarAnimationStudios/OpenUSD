@@ -17,17 +17,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+enum UsdHalfEdgeMeshVaryingBits {
+  VARYING_TOPOLOGY = 1,
+  VARYING_DEFORM = 2,
+  VARYING_TRANSFORM = 4
+};
+
 struct UsdNprHalfEdge
 {
-    uint32_t              mesh;      // mesh index
-    uint32_t              vertex;    // vertex index
-    uint32_t              sample;    // sample index
-    uint32_t              triangle;  // triangle index
-    struct UsdNprHalfEdge*  twin;      // opposite half-edge
-    struct UsdNprHalfEdge*  next;      // next half-edge
+  uint32_t              mesh;      // mesh index
+  uint32_t              vertex;    // vertex index
+  uint32_t              sample;    // sample index
+  uint32_t              triangle;  // triangle index
+  struct UsdNprHalfEdge*  twin;      // opposite half-edge
+  struct UsdNprHalfEdge*  next;      // next half-edge
 
-    UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
-    void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
+  UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
+  void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
 };
 
 /// \class UsdNprHalfEdgeMesh
@@ -35,20 +41,28 @@ struct UsdNprHalfEdge
 class UsdNprHalfEdgeMesh
 {
 public:
-    void Compute(const UsdGeomMesh& mesh, size_t meshIndex);
-    void Update(const UsdGeomMesh& mesh);
-    const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
+  UsdNprHalfEdgeMesh(char varyingBits):_varyingBits(varyingBits){};
+  void Compute(const UsdGeomMesh& mesh, size_t meshIndex);
+  void Update(const UsdGeomMesh& mesh);
+  const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 
-    const GfVec3f* GetPositionsPtr(){return &_positions[0];};
-    const GfVec3f* GetNormalsPtr(){return &_normals[0];};
-    size_t GetNumPoints(){return _positions.size();};
-    size_t GetNumTriangles(){return _numTriangles;};
+  const GfVec3f* GetPositionsPtr() const {return &_positions[0];};
+  const GfVec3f* GetNormalsPtr() const {return &_normals[0];};
+  size_t GetNumPoints() const {return _positions.size();};
+  size_t GetNumTriangles() const {return _numTriangles;};
+
+  // varying
+  bool IsVarying(){return _varyingBits != 0;};
+  bool IsTopoVarying(){return _varyingBits & VARYING_TOPOLOGY;};
+  bool IsDeformVarying(){return _varyingBits & VARYING_DEFORM;};
+  bool IsTransformVarying(){return _varyingBits & VARYING_TRANSFORM;};
 
 private:
-    std::vector<UsdNprHalfEdge> _halfEdges; 
-    VtArray<GfVec3f>            _positions;
-    VtArray<GfVec3f>            _normals;
-    size_t                      _numTriangles;
+  std::vector<UsdNprHalfEdge> _halfEdges; 
+  VtArray<GfVec3f>            _positions;
+  VtArray<GfVec3f>            _normals;
+  size_t                      _numTriangles;
+  char                        _varyingBits;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

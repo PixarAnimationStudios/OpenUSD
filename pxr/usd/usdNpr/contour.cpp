@@ -27,7 +27,6 @@
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -205,21 +204,17 @@ UsdNprContour::CreateCreaseWidthAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-UsdAttribute
-UsdNprContour::GetViewPointAttr() const
+UsdRelationship
+UsdNprContour::GetContourViewPointRel() const
 {
-    return GetPrim().GetAttribute(UsdNprTokens->viewPoint);
+    return GetPrim().GetRelationship(UsdNprTokens->contourViewPoint);
 }
 
-UsdAttribute
-UsdNprContour::CreateViewPointAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRelationship
+UsdNprContour::CreateContourViewPointRel() const
 {
-    return UsdSchemaBase::_CreateAttr(UsdNprTokens->viewPoint,
-                       SdfValueTypeNames->Vector3f,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return GetPrim().CreateRelationship(UsdNprTokens->contourViewPoint,
+                       /* custom = */ false);
 }
 
 UsdRelationship
@@ -258,7 +253,6 @@ UsdNprContour::GetSchemaAttributeNames(bool includeInherited)
         UsdNprTokens->silhouetteWidth,
         UsdNprTokens->boundaryWidth,
         UsdNprTokens->creaseWidth,
-        UsdNprTokens->viewPoint,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -294,7 +288,6 @@ UsdNprContour::GetContourSurfaces() const
   for(int i=0;i<targets.size();++i)
   {
     SdfPath primPath = targets[i].GetAbsoluteRootOrPrimPath();
-    std::cout << "CONTOUR SURFACE : " << primPath.GetText() << std::endl;
     UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(primPath);
     if(prim.IsA<UsdGeomMesh>())
       contourSurfaces.push_back(UsdGeomMesh(prim));

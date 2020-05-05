@@ -32,8 +32,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdNpr/tokens.h"
-
-
+
 #include "pxr/usd/usd/collectionAPI.h" 
 
 #include "pxr/base/vt/value.h"
@@ -285,25 +284,17 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // VIEWPOINT 
+    // CONTOURVIEWPOINT 
     // --------------------------------------------------------------------- //
     /// View Point
     ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `vector3f viewPoint = (0, 0, 0)` |
-    /// | C++ Type | GfVec3f |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3f |
     USDNPR_API
-    UsdAttribute GetViewPointAttr() const;
+    UsdRelationship GetContourViewPointRel() const;
 
-    /// See GetViewPointAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
+    /// See GetContourViewPointRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDNPR_API
-    UsdAttribute CreateViewPointAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdRelationship CreateContourViewPointRel() const;
 
 public:
     // --------------------------------------------------------------------- //
