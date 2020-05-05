@@ -109,12 +109,14 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) override;                        
 
+    /*
     // Override the implementation in since the content is procedurally generated
     USDNPRIMAGING_API
     VtValue GetPoints(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         UsdTimeCode time) const override;
+    */
 
 private:
   std::vector<UsdPrim>    _surfacePrims;

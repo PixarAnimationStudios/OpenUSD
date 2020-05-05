@@ -418,9 +418,10 @@ void UsdNprDualMesh::UncheckAllEdges()
     dualEdge->Uncheck();
 }
 
-void UsdNprDualMesh::ClearSilhouettes()
+void UsdNprDualMesh::ClearSilhouettes() 
 {
   _silhouettes.clear();
+  UncheckAllEdges();
 }
 
 // looking for silhouettes recursively
@@ -443,21 +444,11 @@ void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
 			       _silhouettes);
   _children[7]->FindSilhouettes(pos, -1, _silhouettes);
 
-  _points.resize(_silhouettes.size() * 2);
-  /*
-  const GfVec3f* positions = _mesh->GetPositionsPtr();
-  size_t index = 0;
-  for(const auto& silhouette: _silhouettes)
-  {
-    _points[index++] = positions[silhouette->vertex];
-    _points[index++] = positions[silhouette->twin->vertex];
-  }
-  */
 }
 
 void UsdNprDualMesh::ComputeOutputGeometry()
 {
-  size_t numEdges = _dualEdges.size();
+  size_t numEdges = _silhouettes.size();
   size_t numPoints = numEdges * 4;
 
   // topology
@@ -476,10 +467,10 @@ void UsdNprDualMesh::ComputeOutputGeometry()
   // points
   _points.resize(numPoints);
   size_t index = 0;
-  float width = 0.02;
-  for(const auto& dualEdge: _dualEdges)
+  float width = 0.1;
+  for(const auto& halfEdge: _silhouettes)
   {
-    const UsdNprHalfEdge* halfEdge = dualEdge->GetEdge();
+    //const UsdNprHalfEdge* halfEdge = dualEdge->GetEdge();
     const UsdNprHalfEdgeMesh* mesh = GetMesh(halfEdge->mesh);
     const GfVec3f* positions = mesh->GetPositionsPtr();
     _points[index++] = positions[halfEdge->vertex] + GfVec3f(0,-width,0);
