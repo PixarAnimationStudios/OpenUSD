@@ -136,10 +136,12 @@ public:
 
   // mesh
   void AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits);
-  void UpdateMesh(const UsdGeomMesh& mesh, size_t index);
+  void UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
+    bool recomputeAdjacencency, size_t index);
   const UsdNprHalfEdgeMesh* GetMesh(size_t index) const {
     return _meshes[index];
   };
+  char GetMeshVaryingBits(size_t index);
 
   // view point
   void SetViewPoint(const GfVec3f& viewPoint){_viewPoint = viewPoint;};

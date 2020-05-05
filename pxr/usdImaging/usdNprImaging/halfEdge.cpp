@@ -18,18 +18,17 @@ void UsdNprHalfEdge::GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal
   normal = (ab ^ ac).GetNormalized();
 }
 
-void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex)
+void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex, const UsdTimeCode& timeCode)
 {
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   UsdAttribute faceVertexCountsAttr = mesh.GetFaceVertexCountsAttr();
   UsdAttribute faceVertexIndicesAttr = mesh.GetFaceVertexIndicesAttr();
 
-  UsdTimeCode tc = UsdTimeCode::EarliestTime();
-  pointsAttr.Get(&_positions, tc);
+  pointsAttr.Get(&_positions, timeCode);
   VtArray<int> faceVertexCounts;
   VtArray<int> faceVertexIndices;
-  faceVertexCountsAttr.Get(&faceVertexCounts, tc);
-  faceVertexIndicesAttr.Get(&faceVertexIndices, tc);
+  faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
+  faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
 
   VtArray<GfVec3i> samples;
   UsdNprTriangulateMesh(faceVertexCounts, 
@@ -112,17 +111,17 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, size_t meshIndex)
   std::cout << "BOUNDARIES : " << boundaryCount << std::endl;
 }
 
-void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh)
+void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode) 
 {
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   UsdAttribute faceVertexCountsAttr = mesh.GetFaceVertexCountsAttr();
   UsdAttribute faceVertexIndicesAttr = mesh.GetFaceVertexIndicesAttr();
 
-  pointsAttr.Get(&_positions);
+  pointsAttr.Get(&_positions, timeCode);
   VtArray<int> faceVertexCounts;
   VtArray<int> faceVertexIndices;
-  faceVertexCountsAttr.Get(&faceVertexCounts);
-  faceVertexIndicesAttr.Get(&faceVertexIndices);
+  faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
+  faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
 
   VtArray<GfVec3i> samples;
   UsdNprTriangulateMesh(faceVertexCounts, 
