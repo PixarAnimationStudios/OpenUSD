@@ -26,9 +26,7 @@ enum UsdHalfEdgeMeshVaryingBits {
 
 struct UsdNprHalfEdge
 {
-  uint32_t              mesh;      // mesh index
   uint32_t              vertex;    // vertex index
-  uint32_t              sample;    // sample index
   uint32_t              triangle;  // triangle index
   struct UsdNprHalfEdge*  twin;      // opposite half-edge
   struct UsdNprHalfEdge*  next;      // next half-edge
@@ -43,7 +41,7 @@ class UsdNprHalfEdgeMesh
 {
 public:
   UsdNprHalfEdgeMesh(char varyingBits):_varyingBits(varyingBits){};
-  void Compute(const UsdGeomMesh& mesh, size_t meshIndex, const UsdTimeCode& timeCode);
+  void Compute(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   void Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 

@@ -107,20 +107,14 @@ public:
     void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;                        
-
-    /*
-    // Override the implementation in since the content is procedurally generated
-    USDNPRIMAGING_API
-    VtValue GetPoints(
-        UsdPrim const& prim,
-        SdfPath const& cachePath,
-        UsdTimeCode time) const override;
-    */
-
+                           UsdImagingIndexProxy* index) override;        
+       
 private:
-  std::vector<UsdPrim>    _surfacePrims;
-  UsdNprDualMeshSharedPtr _dualMesh;
+  void _ComputeOutputGeometry(UsdImagingValueCache* valueCache, 
+    SdfPath const& cachePath) const;
+
+  std::vector<UsdPrim>                 _surfacePrims;
+  std::vector<UsdNprDualMeshSharedPtr> _dualMeshes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

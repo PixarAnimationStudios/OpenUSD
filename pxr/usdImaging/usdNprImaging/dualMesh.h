@@ -8,6 +8,7 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -24,7 +25,7 @@ class UsdNprOctree;
 struct UsdNprHalfEdge;
 class UsdNprHalfEdgeMesh;
 
-static const int NPR_OCTREE_MAX_EDGE_NUMBER = 12;
+static const int NPR_OCTREE_MAX_EDGE_NUMBER = 256;
 
 // eight surfaces of the 4D cube
 enum { 
@@ -105,7 +106,8 @@ public:
   void Split();
 
   // silhouettes
-  void FindSilhouettes(const GfVec3f& n, float d, std::vector<const UsdNprHalfEdge*>& silhouettes);
+  void FindSilhouettes(const GfVec3f& n, float d, 
+    std::vector<const UsdNprHalfEdge*>& silhouettes);
 
   void Log();
 
@@ -132,16 +134,20 @@ protected:
 
 class UsdNprDualMesh : public UsdNprOctree {
 public:
+  UsdNprDualMesh():UsdNprOctree(){};
   ~UsdNprDualMesh();
 
+  // clear
+  void Clear();
+
   // mesh
-  void AddMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits);
+  void InitMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits);
   void UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
-    bool recomputeAdjacencency, size_t index);
-  const UsdNprHalfEdgeMesh* GetMesh(size_t index) const {
-    return _meshes[index];
+    bool recomputeAdjacencency);
+  const UsdNprHalfEdgeMesh* GetMesh() const {
+    return _halfEdgeMesh;
   };
-  char GetMeshVaryingBits(size_t index);
+  char GetMeshVaryingBits();
 
   // view point
   void SetViewPoint(const GfVec3f& viewPoint){_viewPoint = viewPoint;};
@@ -156,26 +162,32 @@ public:
   size_t GetNumSilhouettes(){return _silhouettes.size();};
 
   // project edges to dual space
-  void ProjectEdge(const UsdNprHalfEdge* halfEdge);
-
-  // points
-  const char* GetPoints(){return (const char*)_points.cdata();};
+  void ProjectEdge(const UsdNprHalfEdge* halfEdge, const GfMatrix4f& matrix);
 
   // output
   void ComputeOutputGeometry();
   const VtArray<GfVec3f>& GetOutputPoints() {return _points;};
-  const HdMeshTopology& GetOutputTopology() {return _topology;}; 
+  const VtArray<int>& GetOutputFaceVertexCounts() {return _faceVertexCounts;}; 
+  const VtArray<int>& GetOutputFaceVertexIndices() {return _faceVertexIndices;}; 
+
+  size_t GetNumOutputPoints(){return _points.size();};
+  size_t GetNumOutputFaceVertexCounts(){return _faceVertexCounts.size();};
+  size_t GetNumOutputFaceVertexIndices(){return _faceVertexIndices.size();};
 
 private:      
-  // meshes
-  std::vector<UsdNprHalfEdgeMesh*> _meshes;
-  VtArray<GfMatrix4d>              _meshXforms;    
-  GfVec3f                          _viewPoint;
+  // mesh
+  UsdNprHalfEdgeMesh*               _halfEdgeMesh;
+  GfMatrix4f                        _meshXform;    
+  GfVec3f                           _viewPoint;
 
   std::vector<const UsdNprHalfEdge*> _boundaries;
   std::vector<const UsdNprHalfEdge*> _silhouettes;
+  std::vector<const UsdNprHalfEdge*> _creases;
+
   VtArray<GfVec3f>                   _points;
-  HdMeshTopology                     _topology;
+  VtArray<int>                       _faceVertexCounts;
+  VtArray<int>                       _faceVertexIndices;
+
 
 };
 
