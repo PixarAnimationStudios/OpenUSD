@@ -61,6 +61,8 @@ void wrapMeshTopology()
     class_<This>("MeshTopology",
                  init<TfToken, TfToken, VtIntArray, VtIntArray>())
         .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray>())
+        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray, PxOsdSubdivTags>())
+        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, PxOsdSubdivTags>())
         .def(init<>())
         .def("__repr__", &::_ReprMeshTopology)
         .def(self == self)
