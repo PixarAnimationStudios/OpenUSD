@@ -167,6 +167,9 @@ HdxFullscreenShader::CreatePipeline(HgiPipelineDesc pipeDesc)
         return;
     }
 
+    // Create descriptor for vertex pos and uvs
+    _CreateVertexBufferDescriptor();
+
     if (pipeDesc.debugName.empty()) {
         pipeDesc.debugName = "HdxFullscreenShader Pipeline";
     }
@@ -178,6 +181,10 @@ HdxFullscreenShader::CreatePipeline(HgiPipelineDesc pipeDesc)
     pipeDesc.pipelineType = HgiPipelineTypeGraphics;
     pipeDesc.resourceBindings = _resourceBindings;
     pipeDesc.shaderProgram = _shaderProgram;
+
+    // Ignore user provided vertex buffers. The VBO must always match the
+    // vertex attributes we setup for the fullscreen triangle.
+    pipeDesc.vertexBuffers.clear();
     pipeDesc.vertexBuffers.push_back(_vboDesc);
 
     if (_pipeline) {
@@ -352,16 +359,6 @@ HdxFullscreenShader::_CreateVertexBufferDescriptor()
     uvAttr.offset = sizeof(float) * 4; // after posAttr
     uvAttr.shaderBindLocation = 1;
 
-// todo OpenGL and Metal both re-use slot indices between buffers and textures.
-// Vulkan does not allow this and each bound resource must have a unique index.
-// We need to clarify the Hgi API. We probably want to follow the Vulkan rules,
-// because when we do we still have both pieces of information.
-// Metal and GL can look in the 'textures' vector to find the bindIndex.
-// Vulkan can use the provided 'bindIndex' to determine the index in the
-// descriptor set.
-// However we still have a problem with the glsl.
-// In there we will have written the 'binding=xx' value and it the same glsl
-// won't be compatible between opengl and vulkan...
     size_t bindSlots = 0;
 
     _vboDesc.bindingIndex = bindSlots++;
@@ -387,6 +384,10 @@ HdxFullscreenShader::_CreateDefaultPipeline(
         _hgi->DestroyPipeline(&_pipeline);
     }
 
+    // Create descriptor for vertex pos and uvs
+    _CreateVertexBufferDescriptor();
+
+    // Setup attachments
     _attachment0.blendEnabled = _blendingEnabled;
     _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
     _attachment0.storeOp = HgiAttachmentStoreOpStore;
@@ -481,9 +482,6 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
-
-    // Create descriptor for vertex pos and uvs
-    _CreateVertexBufferDescriptor();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);

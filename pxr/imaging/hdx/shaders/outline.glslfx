@@ -284,9 +284,13 @@ fragment vec4 fragmentEntryPoint(
 {
     vec4 gl_FragColor = vec4(0, 0, 0, 1);
 
+    // The UVs provided by application are in GL-space.
+    // This would cause the selection highlight to draw up-side-down.
+    vec2 flipUV = vec2(input.uv.x, 1-input.uv.y);
+
     // Check if the current texel is not black - meaning that we are inside an
     // area of colorId that has been highlighted.
-    vec4 color = colorIn.sample(texSampler, input.uv);
+    vec4 color = colorIn.sample(texSampler, flipUV);
     bool isInside = color.r > EPSILON || color.g > EPSILON || color.b > EPSILON;
 
     if (buffer->enableOutline==0) { 
