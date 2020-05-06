@@ -58,6 +58,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingContourAdapter::~UsdImagingContourAdapter() 
 {
+  for(auto& dualMesh: _dualMeshes)delete dualMesh.second;
 }
 
 bool
@@ -71,26 +72,26 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-  UsdNprContour contour(prim);
-  std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
-  //_dualMeshes.resize(contourSurfaces.size());
+  UsdNprContour contour(prim); 
+  std::vector<UsdPrim> contourSurfaces = contour.GetContourSurfaces();
   for(int i=0;i<contourSurfaces.size();++i)
   {
-    UsdNprDualMeshSharedPtr dualMesh(new UsdNprDualMesh() );
-    UsdPrim surfacePrim = contourSurfaces[i].GetPrim();
-    const UsdImagingPrimAdapterSharedPtr& adapter = 
-      _GetPrimAdapter(surfacePrim, false);
-    std::cout << "GET CONTOUR SURFACE PRIM ADAPTER : " << adapter.get() << std::endl;
+    SdfPath contourSurfacePath = contourSurfaces[i].GetPath();
+    if(_dualMeshes.find(contourSurfacePath) == _dualMeshes.end())
+    {
+      UsdNprDualMesh* dualMesh = new UsdNprDualMesh();
 
-    SdfPath cachePath = _ResolveCachePath(surfacePrim.GetPath(), nullptr);
-    HdDirtyBits varyingBits = HdChangeTracker::Clean;
-    adapter->TrackVariability(surfacePrim, cachePath, &varyingBits, nullptr );
-    std::cout << "GET VARYING BITS : " << varyingBits << std::endl;
+      const UsdImagingPrimAdapterSharedPtr& adapter = 
+        _GetPrimAdapter(contourSurfaces[i], false);
 
-    _surfacePrims.push_back(surfacePrim);
-    dualMesh->InitMesh(contourSurfaces[i], varyingBits);
-    dualMesh->Build();
-    _dualMeshes.push_back(dualMesh);
+      SdfPath cachePath = _ResolveCachePath(contourSurfaces[i].GetPath(), nullptr);
+      HdDirtyBits varyingBits = HdChangeTracker::Clean;
+      adapter->TrackVariability(contourSurfaces[i], cachePath, &varyingBits, nullptr );
+      
+      dualMesh->InitMesh(UsdGeomMesh(contourSurfaces[i]), varyingBits);
+      dualMesh->Build();
+      _dualMeshes[contourSurfacePath] = dualMesh;
+    }
   }
 
   return _AddRprim(HdPrimTypeTokens->mesh,
@@ -118,6 +119,10 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         instancerContext) const
 {
   if (requestedBits & HdChangeTracker::DirtyTopology) {
+
+    BaseAdapter::UpdateForTime(
+        prim, cachePath, time, requestedBits, instancerContext);
+
     UsdGeomXformCache xformCache(time);
     UsdNprContour contour(prim);
     
@@ -137,48 +142,65 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       }
     }
 
-    std::vector<UsdGeomMesh> contourSurfaces = contour.GetContourSurfaces();
-    size_t index = 0;
+    std::vector<UsdPrim> contourSurfaces = contour.GetContourSurfaces();
+    UsdNprOutputBufferVector outputBuffers(contourSurfaces.size());
 
     /*
     WorkParallelForEach(range.begin(), range.end(),
                         [this](UsdPrim const &desc) { _VisitPrim(desc); });
                         */
-    
-    for(UsdGeomMesh& contourSurface: contourSurfaces)
+    size_t index = 0;
+    for(const UsdPrim& contourSurface: contourSurfaces)
     {
-      char varyingBits = _dualMeshes[index]->GetMeshVaryingBits();
-      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
-      {
-        _dualMeshes[index]->UpdateMesh(contourSurface, time, true);
-        _dualMeshes[index]->Build();
-      }
-        
-      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
-      {
-        _dualMeshes[index]->UpdateMesh(contourSurface, time, false);
-        _dualMeshes[index]->Build();
-      }
+      SdfPath contourSurfacePath = contourSurface.GetPath();
 
-      _dualMeshes[index]->SetViewPoint(GfVec3f(
-          viewPointMatrix[3][0],
-          viewPointMatrix[3][1],
-          viewPointMatrix[3][2]
-      ));
-      _dualMeshes[index]->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurface.GetPrim()));
+      UsdNprDualMeshMap::const_iterator it = _dualMeshes.find(contourSurfacePath);
+      if(it != _dualMeshes.end())
+      {
+        UsdNprDualMesh* dualMesh = it->second;
+
+        if(dualMesh->GetLastTime() != time)
+        {
+          char varyingBits = dualMesh->GetMeshVaryingBits();
+          if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+          {
+            dualMesh->UpdateMesh(UsdGeomMesh(contourSurface), time, true);
+            dualMesh->Build();
+          }
+            
+          else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+          {
+            dualMesh->UpdateMesh(UsdGeomMesh(contourSurface), time, false);
+            dualMesh->Build();
+          }
+          dualMesh->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurface));
+          dualMesh->SetLastTime(time);
+        }
+
+        std::vector<const UsdNprHalfEdge*> silhouettes;
+        dualMesh->FindSilhouettes(viewPointMatrix, silhouettes);
+
+        UsdNprOutputBuffer* outputBuffer = &outputBuffers[index];
+
+        dualMesh->ComputeOutputGeometry(
+          silhouettes,
+          GfVec3f(
+            viewPointMatrix[3][0],
+            viewPointMatrix[3][1],
+            viewPointMatrix[3][2]
+          ), 
+          outputBuffer->points, 
+          outputBuffer->faceVertexCounts,
+          outputBuffer->faceVertexIndices
+        );
+      }
       
-      _dualMeshes[index]->FindSilhouettes(viewPointMatrix);
-
-      _dualMeshes[index]->ComputeOutputGeometry();
       index++;
     }
 
-    BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, instancerContext);
-
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    _ComputeOutputGeometry(valueCache, cachePath);
+    _ComputeOutputGeometry(outputBuffers, valueCache, cachePath);
 
   }
 }
@@ -225,17 +247,17 @@ UsdImagingContourAdapter::MarkDirty(UsdPrim const& prim,
 }
 
 void
-UsdImagingContourAdapter::_ComputeOutputGeometry(UsdImagingValueCache* valueCache, 
-    SdfPath const& cachePath) const
+UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
+  UsdImagingValueCache* valueCache, SdfPath const& cachePath) const
 {
   
   size_t numPoints = 0;
   size_t numCounts = 0;
   size_t numIndices = 0;
-  for(const auto& dualMesh: _dualMeshes){
-    numPoints += dualMesh->GetNumOutputPoints();
-    numCounts += dualMesh->GetNumOutputFaceVertexCounts();
-    numIndices += dualMesh->GetNumOutputFaceVertexIndices();
+  for(const auto& buffer: buffers){
+    numPoints += buffer.points.size();
+    numCounts += buffer.faceVertexCounts.size();
+    numIndices += buffer.faceVertexIndices.size();
   }
 
   VtArray<int> faceVertexCounts(numCounts);
@@ -246,25 +268,25 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(UsdImagingValueCache* valueCach
   size_t countsIndex = 0;
   size_t indicesIndex = 0;
 
-  for(const auto& dualMesh: _dualMeshes) {
-    size_t numPoints =  dualMesh->GetNumOutputPoints();
+  for(const auto& buffer: buffers) {
+    size_t numPoints =  buffer.points.size();
     if(numPoints) {
-      memcpy(&points[pointsIndex], &dualMesh->GetOutputPoints()[0], 
+      memcpy(&points[pointsIndex], &buffer.points[0], 
         numPoints * sizeof(GfVec3f));
       pointsIndex += numPoints;
     }
   
-    size_t numCounts =  dualMesh->GetNumOutputFaceVertexCounts();
+    size_t numCounts = buffer.faceVertexCounts.size();
     if(numCounts) {
-      memcpy(&faceVertexCounts[countsIndex], &dualMesh->GetOutputFaceVertexCounts()[0], 
+      memcpy(&faceVertexCounts[countsIndex], &buffer.faceVertexCounts[0], 
         numCounts * sizeof(int));
       countsIndex += numCounts;
     }
     
-    size_t numIndices =  dualMesh->GetNumOutputFaceVertexIndices();
+    size_t numIndices = buffer.faceVertexIndices.size();
     if(numIndices) {
-      const VtArray<int>& src = dualMesh->GetOutputFaceVertexIndices();
-      for(int i=0;i<numIndices;++i)faceVertexIndices[indicesIndex + i] = src[i] + indicesIndex;
+      for(int i=0;i<numIndices;++i)
+        faceVertexIndices[indicesIndex + i] = buffer.faceVertexIndices[i] + indicesIndex;
       indicesIndex += numIndices;
     }
   }
@@ -274,6 +296,8 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(UsdImagingValueCache* valueCach
                           faceVertexCounts,
                           faceVertexIndices);
   
+  std::cout << "CACHE PATH " << cachePath << std::endl;
+  std::cout << "OUTPUT GEOMETRY POINTS : "<< points.size() << std::endl;
   valueCache->GetTopology(cachePath) = VtValue(topology);
   valueCache->GetPoints(cachePath) = VtValue(points);
 }

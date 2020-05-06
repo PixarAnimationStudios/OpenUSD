@@ -58,21 +58,21 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, const UsdTimeCode& tim
       uint64_t C = sample[0][0];sample++;
 
       // create the half-edge that goes from C to A:
-      halfEdgesMap[C | (A << 32)] = halfEdge;
+      halfEdgesMap[A | (C << 32)] = halfEdge;
       halfEdge->vertex = C;
       halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
       // create the half-edge that goes from A to B:
-      halfEdgesMap[A | (B << 32)] = halfEdge;
+      halfEdgesMap[B | (A << 32)] = halfEdge;
       halfEdge->vertex = A;
       halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
       // create the half-edge that goes from B to C:
-      halfEdgesMap[B | (C << 32)] = halfEdge;
+      halfEdgesMap[C | (B << 32)] = halfEdge;
       halfEdge->vertex = B;
       halfEdge->triangle = triIndex;
       halfEdge->next = halfEdge - 2;

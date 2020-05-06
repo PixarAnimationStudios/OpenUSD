@@ -64,6 +64,7 @@ private:
   VtArray<GfVec3f>            _normals;
   size_t                      _numTriangles;
   char                        _varyingBits;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

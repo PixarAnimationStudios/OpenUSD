@@ -63,7 +63,7 @@ public:
   // silhouette checked tag
   bool IsChecked() const { return _checked; };
   void Check()   { _checked = true;};
-  void Uncheck() { _checked = false; };
+  void Uncheck() { _checked = false;};
 
   // touch a box
   bool Touch(const GfVec3f& minp, const GfVec3f& maxp) const;
@@ -112,6 +112,7 @@ public:
   // silhouettes
   void FindSilhouettes(const GfVec3f& n, float d, 
     std::vector<const UsdNprHalfEdge*>& silhouettes);
+  void FindSilhouettes(const GfVec3f& n, float d, size_t* count);
 
   void Log();
   void CountDualEdges(size_t* count);
@@ -154,47 +155,37 @@ public:
   };
   char GetMeshVaryingBits();
 
-  // view point
-  void SetViewPoint(const GfVec3f& viewPoint){_viewPoint = viewPoint;};
+  // xform
   void SetMatrix(const GfMatrix4d& m){_meshXform = GfMatrix4f(m);};
 
   // build the tree
   void Build();
 
   // silhouettes
-  void ClearSilhouettes();
-  void FindSilhouettes(const GfMatrix4d& viewMatrix);
-  
-  size_t GetNumSilhouettes(){return _silhouettes.size();};
+  void FindSilhouettes(const GfMatrix4d& viewMatrix, std::vector<const UsdNprHalfEdge*>& silhouettes);
+
 
   // project edges to dual space
   void ProjectEdge(const UsdNprHalfEdge* halfEdge);
 
   // output
-  void ComputeOutputGeometry();
-  const VtArray<GfVec3f>& GetOutputPoints() {return _points;};
-  const VtArray<int>& GetOutputFaceVertexCounts() {return _faceVertexCounts;}; 
-  const VtArray<int>& GetOutputFaceVertexIndices() {return _faceVertexIndices;}; 
+  void ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
+    const GfVec3f& viewPoint, VtArray<GfVec3f>& points, VtArray<int>& faceVertexCounts,
+    VtArray<int>& faceVertexIndices);
 
-  size_t GetNumOutputPoints(){return _points.size();};
-  size_t GetNumOutputFaceVertexCounts(){return _faceVertexCounts.size();};
-  size_t GetNumOutputFaceVertexIndices(){return _faceVertexIndices.size();};
+  // time
+  void SetLastTime(const UsdTimeCode& timeCode){_lastTime = timeCode;};
+  const UsdTimeCode& GetLastTime(){return _lastTime;};
 
 private:      
   // mesh
   UsdNprHalfEdgeMesh*               _halfEdgeMesh;
   GfMatrix4f                        _meshXform;    
-  GfVec3f                           _viewPoint;
 
   std::vector<const UsdNprHalfEdge*> _boundaries;
-  std::vector<const UsdNprHalfEdge*> _silhouettes;
   std::vector<const UsdNprHalfEdge*> _creases;
 
-  VtArray<GfVec3f>                   _points;
-  VtArray<int>                       _faceVertexCounts;
-  VtArray<int>                       _faceVertexIndices;
-
-
+  UsdTimeCode                        _lastTime;
 };
 
 typedef std::shared_ptr<UsdNprDualMesh> UsdNprDualMeshSharedPtr;

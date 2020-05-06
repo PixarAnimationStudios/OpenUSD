@@ -277,20 +277,20 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 PXR_NAMESPACE_OPEN_SCOPE
 
-std::vector<UsdGeomMesh> 
+std::vector<UsdPrim> 
 UsdNprContour::GetContourSurfaces() const
 {
   SdfPathVector targets;
   UsdRelationship contourSurfacesRel = GetContourSurfacesRel();
   contourSurfacesRel.GetTargets(&targets);
-  std::vector<UsdGeomMesh> contourSurfaces;
+  std::vector<UsdPrim> contourSurfaces;
   if (targets.size() < 1) return contourSurfaces;
   for(int i=0;i<targets.size();++i)
   {
     SdfPath primPath = targets[i].GetAbsoluteRootOrPrimPath();
     UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(primPath);
     if(prim.IsA<UsdGeomMesh>())
-      contourSurfaces.push_back(UsdGeomMesh(prim));
+      contourSurfaces.push_back(prim);
   }
   return contourSurfaces;
   
