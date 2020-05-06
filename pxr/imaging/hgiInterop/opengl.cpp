@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const std::string _vertexFullscreen =
+static const char* _vertexFullscreen =
     "#version 120\n"
     "attribute vec4 position;\n"
     "attribute vec2 uvIn;\n"
@@ -42,7 +42,7 @@ static const std::string _vertexFullscreen =
     "    uv = uvIn;\n"
     "}\n";
 
-static const std::string _fragmentNoDepthFullscreen =
+static const char* _fragmentNoDepthFullscreen =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -51,7 +51,7 @@ static const std::string _fragmentNoDepthFullscreen =
     "    gl_FragColor = texture2D(colorIn, uv);\n"
     "}\n";
 
-static const std::string _fragmentDepthFullscreen =
+static const char* _fragmentDepthFullscreen =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -64,9 +64,8 @@ static const std::string _fragmentDepthFullscreen =
     "}\n";
 
 static uint32_t
-_CompileShader(std::string const& srcStr, GLenum stage)
+_CompileShader(const char* src, GLenum stage)
 {
-    const char* src = srcStr.c_str();
     uint32_t shaderId = glCreateShader(stage);
     glShaderSource(shaderId, 1, &src, nullptr);
     glCompileShader(shaderId);

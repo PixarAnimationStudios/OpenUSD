@@ -41,7 +41,8 @@ namespace {
 }
 
 static bool
-_ProcessGLErrors(bool silent = false) {
+_ProcessGLErrors(bool silent = false)
+{
     bool foundError = false;
     GLenum error;
     // Protect from doing infinite looping when glGetError
@@ -67,8 +68,9 @@ _ProcessGLErrors(bool silent = false) {
     return foundError;
 }
 
-static GLuint _compileShader(
-    GLchar const* const shaderSource, GLuint shaderType)
+static GLuint
+_compileShader(
+    GLchar const* const shaderSource, GLenum shaderType)
 {
     GLint status;
     
@@ -109,8 +111,8 @@ static GLuint _compileShader(
         GLchar *errorLog = (GLchar*)malloc(maxLength);
         glGetShaderInfoLog(s, maxLength, &maxLength, errorLog);
         
-        TF_FATAL_CODING_ERROR("Failed to compile Metal/GL interop shader %s",
-                              errorLog);
+        TF_CODING_ERROR("Failed to compile Metal/GL interop shader %s",
+                        errorLog);
         free(errorLog);
     }
     
@@ -118,7 +120,8 @@ static GLuint _compileShader(
 }
 
 static void
-_OutputShaderLog(GLint program) {
+_OutputShaderLog(GLuint program)
+{
     GLint maxLength = 2048;
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
     if (maxLength)
@@ -137,8 +140,9 @@ void
 HgiInteropMetal::_CreateShaderContext(
     int32_t vertexSource,
     int32_t fragmentSource,
-    ShaderContext &shader) {
-    GLint program;
+    ShaderContext &shader) 
+{
+    GLuint program;
     
     program = glCreateProgram();
     glAttachShader(program, fragmentSource);
@@ -227,7 +231,7 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
 
     // Load our common vertex shader. This is used by both the fragment shaders
     // below
-    GLchar const* const vertexShader =
+    static GLchar const* const vertexShader =
         "#if __VERSION__ >= 140\n"
         "in vec2 inPosition;\n"
         "in vec2 inTexCoord;\n"
@@ -246,7 +250,7 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
     
     GLuint vs = _compileShader(vertexShader, GL_VERTEX_SHADER);
 
-    GLchar const* const fragmentShaderColor =
+    static GLchar const* const fragmentShaderColor =
         "#if __VERSION__ >= 140\n"
         "in vec2         texCoord;\n"
         "out vec4        fragColor;\n"
@@ -272,7 +276,7 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
         "#endif\n"
         "}\n";
 
-    GLchar const* const fragmentShaderColorDepth =
+    static GLchar const* const fragmentShaderColorDepth =
         "#if __VERSION__ >= 140\n"
         "in vec2         texCoord;\n"
         "out vec4        fragColor;\n"
