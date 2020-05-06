@@ -32,15 +32,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (color)
-    (depth)
-);
 
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
- : HdxTask(id)
- , _compositor()
+    : HdxTask(id)
+    , _interopDst(HgiTokens->OpenGL)
 {
 }
 
@@ -57,15 +52,11 @@ HdxPresentTask::_Sync(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!_compositor) {
-        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "Present"));
-    }
-
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxPresentTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
-            // PresentTask has currently not params to sync.
+            _interopDst = params.interopDst;
         }
     }
     *dirtyBits = HdChangeTracker::Clean;
@@ -83,7 +74,7 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     // The color and depth aovs have the results we want to blit to the
-    // framebuffer. Depth is optional. When we are previewing a custom aov we
+    // application. Depth is optional. When we are previewing a custom aov we
     // may not have a depth buffer.
     if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
         return;
@@ -97,51 +88,10 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
         _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
     }
 
-    // XXX TODO The below GL blit code needs to be replaced by HgiInterop.
-    // HgiInterop should take the aov color and depth results, which are 
-    // hgi textures of one specific backend (HgiGL, HgiMetal, etc), and blit 
-    // those results into the viewer's framebuffer.
-    // The viewer's framebuffer may be of a different graphics api, likely
-    // opengl. So HgiInterop should do the necessary conversions.
-    // For example, it should convert from HgiMetalTexture to HgiGLTexture and
-    // then blit those HgiGLTextures to the viewer.
-
-    { // XXX HgiInterop begin
-        // Depth test must be ALWAYS instead of disabling the depth_test because
-        // we want to transfer the depth pixels. Disabling depth_test 
-        // disables depth writes and we need to copy depth to screen FB.
-        GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
-        glEnable(GL_DEPTH_TEST);
-        GLint restoreDepthFunc;
-        glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
-        glDepthFunc(GL_ALWAYS);
-
-        // Any alpha blending the client wanted should have happened into the AOV. 
-        // When copying back to client buffer disable blending.
-        GLboolean blendEnabled;
-        glGetBooleanv(GL_BLEND, &blendEnabled);
-        glDisable(GL_BLEND);
-
-        HdxFullscreenShader::TextureMap textures;
-
-        textures[_tokens->color] = aovTexture;
-
-        if (depthTexture) {
-            textures[_tokens->depth] = depthTexture;
-        }
-
-        // Draw aov textures to framebuffer
-        _compositor->DrawToFramebuffer(textures);
-
-        if (blendEnabled) {
-            glEnable(GL_BLEND);
-        }
-
-        glDepthFunc(restoreDepthFunc);
-        if (!restoreDepthEnabled) {
-            glDisable(GL_DEPTH_TEST);
-        }
-    } // XXX HgiInterop end
+    // Use HgiInterop to copy/present the Hgi textures to application.
+    // Eg. This allows us to render with HgiMetal and present the images
+    // into a opengl based application (such as usdView).
+    _interop.TransferToApp(_hgi, _interopDst, aovTexture, depthTexture);
 }
 
 
@@ -151,15 +101,15 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 
 std::ostream& operator<<(std::ostream& out, const HdxPresentTaskParams& pv)
 {
-    out << "PresentTask Params: (...) ";
+    out << "PresentTask Params: (...) "
+        << pv.interopDst;
     return out;
 }
 
 bool operator==(const HdxPresentTaskParams& lhs,
                 const HdxPresentTaskParams& rhs)
 {
-    // PresentTask currently has no params to compare
-    return true;
+    return lhs.interopDst == rhs.interopDst;
 }
 
 bool operator!=(const HdxPresentTaskParams& lhs,

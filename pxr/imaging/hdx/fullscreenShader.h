@@ -115,25 +115,11 @@ public:
     void Draw(HgiTextureHandle const& colorDst,
               HgiTextureHandle const& depthDst);
 
-protected:
-    // XXX We don't want tasks to use DrawToFramebuffer, but during hgi
-    // transition we need to make a few exceptions.
-    // This will be deprecated once HgiInterop is in place
-    friend class HdxPresentTask;
-    friend class HdxColorizeTask;
+private:
+    HdxFullscreenShader() = delete;
 
     using TextureMap = std::map<TfToken, HgiTextureHandle>;
     using BufferMap = std::map<uint32_t, HgiBufferHandle>;
-
-    /// Draw the internal textures to the global framebuffer.
-    /// This API exists to help with Hgi transition to let the PresentTask
-    /// Draw directly to the gl framebuffer. In the future this will be
-    /// handled by HgiInterop.
-    HDX_API
-    void DrawToFramebuffer(TextureMap const& textures = TextureMap());
-
-private:
-    HdxFullscreenShader() = delete;
 
     // Utility function to create buffer resources.
     void _CreateBufferResources();

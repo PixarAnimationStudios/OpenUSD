@@ -28,6 +28,7 @@ pxr_library(hdx
         hd
         hdSt
         hgi
+        hgiInterop
         cameraUtil
         sdf
         ${GLEW_LIBRARY}

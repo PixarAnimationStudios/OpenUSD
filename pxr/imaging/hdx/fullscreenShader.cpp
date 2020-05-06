@@ -451,16 +451,6 @@ HdxFullscreenShader::Draw(
 }
 
 void
-HdxFullscreenShader::DrawToFramebuffer(TextureMap const& textures)
-{
-    // Destination textures are null since we are drawing into framebuffer.
-    // depthWrite is true: we want to transfer depth from aov's to framebuffer.
-    bool depthWrite = true;
-    TextureMap const& texs = textures.empty() ? _textures : textures;
-    _Draw(texs, HgiTextureHandle(), HgiTextureHandle(), depthWrite);
-}
-
-void
 HdxFullscreenShader::_DestroyShaderProgram()
 {
     if (!_shaderProgram) return;

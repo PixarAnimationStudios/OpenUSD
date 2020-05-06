@@ -26,10 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/task.h"
+#include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdxPresentTask
 ///
@@ -59,7 +61,8 @@ protected:
                        HdDirtyBits* dirtyBits) override;
 
 private:
-    std::unique_ptr<HdxFullscreenShader> _compositor;
+    TfToken _interopDst;
+    HgiInterop _interop;
 
     HdxPresentTask() = delete;
     HdxPresentTask(const HdxPresentTask &) = delete;
@@ -73,7 +76,13 @@ private:
 ///
 struct HdxPresentTaskParams
 {
-    HdxPresentTaskParams() {}
+    HdxPresentTaskParams() 
+        : interopDst(HgiTokens->OpenGL)
+    {}
+
+    // The graphics lib that is used by the application / viewer.
+    // (The 'interopSrc' is determined by checking Hgi->GetAPIName)
+    TfToken interopDst;
 };
 
 // VtValue requirements
