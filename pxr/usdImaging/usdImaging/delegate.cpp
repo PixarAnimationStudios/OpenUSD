@@ -824,12 +824,11 @@ UsdImagingDelegate::GetTimeWithOffset(float offset) const
 
 void
 UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
-                                        SdfPathVector *affectedCachePaths,
-                                        SdfPathVector *affectedUsdPaths)
+                                        SdfPathVector *affectedCachePaths)
 {
     HD_TRACE_FUNCTION();
 
-    if (affectedCachePaths == nullptr && affectedUsdPaths == nullptr) {
+    if (affectedCachePaths == nullptr) {
         return;
     }
 
@@ -849,12 +848,15 @@ UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
                     return !rhs.first.HasPrefix(lhs);
                 });
 
+    SdfPathVector affectedPaths;
     for (_DependencyMap::const_iterator it = start; it != end; ++it) {
-        if (affectedCachePaths)
-            affectedCachePaths->push_back(it->second);
-        if (affectedUsdPaths)
-            affectedUsdPaths->push_back(it->first);
+        affectedPaths.push_back(it->second);
     }
+    // De-duplicate cache paths, in case a cache path has multiple
+    // usd dependencies within subtree.
+    std::sort(affectedPaths.begin(), affectedPaths.end());
+    std::unique_copy(affectedPaths.begin(), affectedPaths.end(),
+            std::back_inserter(*affectedCachePaths));
 }
 
 void
