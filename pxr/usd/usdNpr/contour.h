@@ -32,7 +32,8 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdNpr/tokens.h"
-
+
+
 #include "pxr/usd/usd/collectionAPI.h" 
 
 #include "pxr/base/vt/value.h"
@@ -322,7 +323,7 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
     USDNPR_API
-    std::vector<UsdGeomMesh> 
+    std::vector<UsdPrim> 
     GetContourSurfaces() const;
 };
 

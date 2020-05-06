@@ -142,8 +142,8 @@ void UsdNprOctree::Split()
   _children[7] = _CreateOctreeCell(GfVec3f(xx[1], yy[1], zz[1]), 
     GfVec3f(xx[2], yy[2], zz[2]), _depth+1, _dualEdges);
 
-  for(int i=0;i<8;++i)
-    if(_children[i])_children[i]->Split();
+  for(int j=0;j<8;++j)
+    if(_children[j])_children[j]->Split();
 
   _dualEdges.clear();
 }
@@ -175,8 +175,9 @@ bool UsdNprOctree::_TouchPlane(const GfVec3f& n, float d) {
 // looking for silhouettes recursively
 void UsdNprOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const UsdNprHalfEdge*>& silhouettes) 
 {
-  if (_isLeaf && _TouchPlane(n, d)) 
+  if (_isLeaf) 
   {
+    
     for (int j = 0; j < _dualEdges.size(); ++j)
     {
       if (!_dualEdges[j]->IsChecked()) 
@@ -193,10 +194,9 @@ void UsdNprOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const 
   } 
   else 
   {
-    for (int i = 0; i < 8; i++)
-      if (_children[i])
-        if(_children[i]->_TouchPlane(n, d))
-	        _children[i]->FindSilhouettes(n, d, silhouettes);
+    for (int j = 0; j < 8; ++j)
+      if (_children[j] && _children[j]->_TouchPlane(n, d))
+	        _children[j]->FindSilhouettes(n, d, silhouettes);
   }
 }
 
@@ -274,8 +274,7 @@ static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
 // mesh
 void UsdNprDualMesh::InitMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
 {
-  _halfEdgeMesh = 
-    new UsdNprHalfEdgeMesh(_ConvertVaryingBits(varyingBits));
+  _halfEdgeMesh = new UsdNprHalfEdgeMesh(_ConvertVaryingBits(varyingBits));
   _halfEdgeMesh->Compute(mesh, UsdTimeCode::EarliestTime());
   _meshXform = GfMatrix4f(1);
 }
@@ -283,8 +282,7 @@ void UsdNprDualMesh::InitMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits)
 void UsdNprDualMesh::UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
   bool recomputeAdjacency)
 {
-  if(recomputeAdjacency)
-    _halfEdgeMesh->Compute(mesh, timeCode);
+  if(recomputeAdjacency)_halfEdgeMesh->Compute(mesh, timeCode);
   else _halfEdgeMesh->Update(mesh, timeCode);
 }
 
@@ -298,10 +296,9 @@ void UsdNprDualMesh::Clear()
 {
   _creases.clear();
   _boundaries.clear();
-  _silhouettes.clear();
 
   for(auto& dualEdge: _dualEdges)delete dualEdge;
-    _dualEdges.clear();
+  _dualEdges.clear();
 
   for(int i=0;i<8;++i)
     if(_children[i])
@@ -325,6 +322,7 @@ void UsdNprDualMesh::Build()
     ProjectEdge(&halfEdge);
 
   // rebuilding the acceleration structure each frame is too expensive
+  // it is faster to do brute force silhouette detection
   if(!_halfEdgeMesh->IsTopoVarying() && !_halfEdgeMesh->IsDeformVarying())
     for(int j=0;j<8;++j)_children[j]->Split();
 }
@@ -424,32 +422,33 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
   }
 }
 
-void UsdNprDualMesh::ClearSilhouettes() 
-{
-  _silhouettes.clear();
-  UncheckAllEdges();
-}
-
 // looking for silhouettes recursively
-void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix)
+void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix, 
+  std::vector<const UsdNprHalfEdge*>& silhouettes)
 {
-  ClearSilhouettes();
+  UncheckAllEdges();
+
   GfVec3f pos(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
   pos = _meshXform.GetInverse().Transform(pos);
+  
   _children[0]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), pos[0],
-			       _silhouettes);
+			       silhouettes);
+  
   _children[1]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), pos[1],
-			       _silhouettes);
+			       silhouettes);
   _children[2]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), pos[2],
-			       _silhouettes);
-  _children[3]->FindSilhouettes(pos, 1, _silhouettes);
+			       silhouettes);
+  _children[3]->FindSilhouettes(pos, 1, silhouettes);
+  
   _children[4]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), -pos[0],
-			       _silhouettes);
+			       silhouettes);
+            
   _children[5]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), -pos[1],
-			       _silhouettes);
+			       silhouettes);
   _children[6]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), -pos[2],
-			       _silhouettes);
-  _children[7]->FindSilhouettes(pos, -1, _silhouettes);
+			       silhouettes);
+  _children[7]->FindSilhouettes(pos, -1, silhouettes);
+  
 }
 
 static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
@@ -471,31 +470,33 @@ static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& 
   };
 }
 
-void UsdNprDualMesh::ComputeOutputGeometry()
+void UsdNprDualMesh::ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
+  const GfVec3f& viewPoint, VtArray<GfVec3f>& points, VtArray<int>& faceVertexCounts,
+  VtArray<int>& faceVertexIndices)
 {
-  size_t numEdges = _silhouettes.size() + _creases.size() + _boundaries.size();
+  size_t numEdges = silhouettes.size() + _creases.size() + _boundaries.size();
   size_t numPoints = numEdges * 4;
 
   // topology
-  _faceVertexCounts.resize(numEdges);
-  for(int i=0;i<numEdges;++i)_faceVertexCounts[i] = 4;
-  _faceVertexIndices.resize(numPoints);
-  for(int i=0;i<numPoints;++i)_faceVertexIndices[i] = i;
+  faceVertexCounts.resize(numEdges);
+  for(int i=0;i<numEdges;++i)faceVertexCounts[i] = 4;
+  faceVertexIndices.resize(numPoints);
+  for(int i=0;i<numPoints;++i)faceVertexIndices[i] = i;
 
   // points
-  _points.resize(numPoints);
+  points.resize(numPoints);
   size_t index = 0;
   float width = 0.1;
   
-  for(const auto& halfEdge: _silhouettes)
+  for(const auto& halfEdge: silhouettes)
   {
     const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
     const GfVec3f& A = _meshXform.Transform(positions[halfEdge->vertex]);
     const GfVec3f& B = _meshXform.Transform(positions[halfEdge->twin->vertex]);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
   }
   
   for(const auto& halfEdge: _boundaries)
@@ -503,10 +504,10 @@ void UsdNprDualMesh::ComputeOutputGeometry()
     const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
     const GfVec3f& A = _meshXform.Transform(positions[halfEdge->vertex]);
     const GfVec3f& B = _meshXform.Transform(positions[halfEdge->next->vertex]);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
   }
 
   for(const auto& halfEdge: _creases)
@@ -514,13 +515,12 @@ void UsdNprDualMesh::ComputeOutputGeometry()
     const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
     const GfVec3f& A = _meshXform.Transform(positions[halfEdge->vertex]);
     const GfVec3f& B = _meshXform.Transform(positions[halfEdge->twin->vertex]);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 0);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 1);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 2);
-    _points[index++] = _ComputePoint(A, B, _viewPoint, width, 3);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
+    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
   }
   
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

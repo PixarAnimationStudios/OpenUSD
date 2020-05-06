@@ -37,9 +37,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class UsdNprContour;
 class UsdNprDualMesh;
+
+struct UsdNprOutputBuffer {
+  VtArray<GfVec3f> points;
+  VtArray<int> faceVertexCounts;
+  VtArray<int> faceVertexIndices;
+};
+
+typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
+typedef TfHashMap<SdfPath, UsdNprDualMesh*, SdfPath::Hash> UsdNprDualMeshMap;
+
 
 /// \class UsdImagingContourAdapter
 ///
@@ -110,11 +118,10 @@ public:
                            UsdImagingIndexProxy* index) override;        
        
 private:
-  void _ComputeOutputGeometry(UsdImagingValueCache* valueCache, 
-    SdfPath const& cachePath) const;
+  void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
+    UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
-  std::vector<UsdPrim>                 _surfacePrims;
-  std::vector<UsdNprDualMeshSharedPtr> _dualMeshes;
+  UsdNprDualMeshMap _dualMeshes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
