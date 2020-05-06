@@ -41,7 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cornersPlus2)               \
     (boundaries)                 \
     (bilinear)                   \
-    (catmark)                    \
     (catmullClark)               \
     (loop)                       \
     (edgeOnly)                   \

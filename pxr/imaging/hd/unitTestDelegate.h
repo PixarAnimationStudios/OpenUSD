@@ -75,7 +75,7 @@ public:
                  VtIntArray const &verts,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
-                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
@@ -93,7 +93,7 @@ public:
                  HdInterpolation opacityInterpolation,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
-                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
@@ -101,7 +101,7 @@ public:
     HD_API
     void AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
-                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark);
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark);
 
     /// Add a grid with division x*y
     HD_API

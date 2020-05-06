@@ -1094,7 +1094,7 @@ HdUnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
             _BuildArray(&verts[0], verts.size()),
             false,
             instancerId,
-            PxOsdOpenSubdivTokens->catmark,
+            PxOsdOpenSubdivTokens->catmullClark,
             rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
             doubleSided);
 }
@@ -1128,7 +1128,7 @@ HdUnitTestDelegate::AddGridWithCustomColor(SdfPath const &id, int nx, int ny,
             HdInterpolationConstant,
             false,
             instancerId,
-            PxOsdOpenSubdivTokens->catmark,
+            PxOsdOpenSubdivTokens->catmullClark,
             rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
             doubleSided);
 }
@@ -1166,7 +1166,7 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
             HdInterpolationConstant,
             false,
             instancerId,
-            PxOsdOpenSubdivTokens->catmark,
+            PxOsdOpenSubdivTokens->catmullClark,
             rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
             doubleSided);
 }
@@ -1204,7 +1204,7 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
             HdInterpolationConstant,
             false,
             instancerId,
-            PxOsdOpenSubdivTokens->catmark,
+            PxOsdOpenSubdivTokens->catmullClark,
             rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
             doubleSided);
 }
@@ -1242,7 +1242,7 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
             HdInterpolationConstant,
             false,
             instancerId,
-            PxOsdOpenSubdivTokens->catmark,
+            PxOsdOpenSubdivTokens->catmullClark,
             rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
             doubleSided);
 }
@@ -1615,7 +1615,7 @@ HdUnitTestDelegate::PopulateBasicTestSet()
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
         AddCube(SdfPath("/cube2"), GfMatrix4f(dmat), false, SdfPath(),
-                         PxOsdOpenSubdivTokens->catmark);
+                         PxOsdOpenSubdivTokens->catmullClark);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
         AddCube(SdfPath("/cube3"), GfMatrix4f(dmat), false, SdfPath(),
@@ -1628,26 +1628,26 @@ HdUnitTestDelegate::PopulateBasicTestSet()
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
         AddCube(SdfPath("/cube4"), GfMatrix4f(dmat), false, SdfPath(),
-                         PxOsdOpenSubdivTokens->catmark);
+                         PxOsdOpenSubdivTokens->catmullClark);
         SetReprSelector(SdfPath("/cube4"),
                 HdReprSelector(HdReprTokens->smoothHull));
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
         AddCube(SdfPath("/cube5"), GfMatrix4f(dmat), false, SdfPath(),
-                         PxOsdOpenSubdivTokens->catmark);
+                         PxOsdOpenSubdivTokens->catmullClark);
         SetReprSelector(SdfPath("/cube5"),
                 HdReprSelector(HdReprTokens->hull));
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
         AddCube(SdfPath("/cube6"), GfMatrix4f(dmat), false, SdfPath(),
-                         PxOsdOpenSubdivTokens->catmark);
+                         PxOsdOpenSubdivTokens->catmullClark);
         SetReprSelector(SdfPath("/cube6"),
                 HdReprSelector(HdReprTokens->refined));
         SetRefineLevel(SdfPath("/cube6"), std::max(1, _refineLevel));
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
         AddCube(SdfPath("/cube7"), GfMatrix4f(dmat), false, SdfPath(),
-                         PxOsdOpenSubdivTokens->catmark);
+                         PxOsdOpenSubdivTokens->catmullClark);
         SetReprSelector(SdfPath("/cube7"),
                 HdReprSelector(HdReprTokens->wireOnSurf));
 

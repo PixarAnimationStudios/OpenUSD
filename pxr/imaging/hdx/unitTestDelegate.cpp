@@ -731,7 +731,7 @@ Hdx_UnitTestDelegate::GetMeshTopology(SdfPath const& id)
     HdMeshTopology topology;
     const _Mesh &mesh = _meshes[id];
 
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
+    return HdMeshTopology(PxOsdOpenSubdivTokens->catmullClark,
                           HdTokens->rightHanded,
                           mesh.numVerts,
                           mesh.verts);
