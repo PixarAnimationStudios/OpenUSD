@@ -25,7 +25,7 @@ class UsdNprOctree;
 struct UsdNprHalfEdge;
 class UsdNprHalfEdgeMesh;
 
-static const int NPR_OCTREE_MAX_EDGE_NUMBER = 256;
+static const int NPR_OCTREE_MAX_EDGE_NUMBER = 64;
 
 // eight surfaces of the 4D cube
 enum { 
@@ -78,11 +78,14 @@ private:
 // octree node
 class UsdNprOctree {
 public:
-  UsdNprOctree() : _depth(0), _min(-1, -1, -1), _max(1, 1, 1), _isLeaf(true)
-    { for (int i=0; i<8; i++) _children[i] = NULL; };
-  UsdNprOctree( const GfVec3f& minp, const GfVec3f& maxp, int depth = 0) :
-    _depth(depth), _min(minp), _max(maxp), _isLeaf(true)
-    { for (int i=0; i<8; i++) _children[i] = NULL; };
+  UsdNprOctree() : _depth(0), _min(-1, -1, -1), _max(1, 1, 1), _isLeaf(true) { 
+    for (int i=0; i<8; i++) _children[i] = NULL; 
+  };
+  UsdNprOctree( const GfVec3f& minp, const GfVec3f& maxp, int depth = 0, size_t n = 0) :
+    _depth(depth), _min(minp), _max(maxp), _isLeaf(true) { 
+      for (int i=0; i<8; i++) _children[i] = NULL; 
+      _dualEdges.reserve(n);
+    };
   ~UsdNprOctree();
 
   // depth in octree
@@ -98,6 +101,7 @@ public:
   // edges
   int GetNumDualEdges() const { return _dualEdges.size(); };
   std::vector<UsdNprDualEdge*>& GetDualEdges() { return _dualEdges; };
+  void UncheckAllEdges();
 
   // insert dual edge
   void InsertEdge(UsdNprDualEdge* e) { _dualEdges.push_back(e); };
@@ -110,6 +114,7 @@ public:
     std::vector<const UsdNprHalfEdge*>& silhouettes);
 
   void Log();
+  void CountDualEdges(size_t* count);
 
 protected:
 
@@ -151,6 +156,7 @@ public:
 
   // view point
   void SetViewPoint(const GfVec3f& viewPoint){_viewPoint = viewPoint;};
+  void SetMatrix(const GfMatrix4d& m){_meshXform = GfMatrix4f(m);};
 
   // build the tree
   void Build();
@@ -158,11 +164,11 @@ public:
   // silhouettes
   void ClearSilhouettes();
   void FindSilhouettes(const GfMatrix4d& viewMatrix);
-  void UncheckAllEdges();
+  
   size_t GetNumSilhouettes(){return _silhouettes.size();};
 
   // project edges to dual space
-  void ProjectEdge(const UsdNprHalfEdge* halfEdge, const GfMatrix4f& matrix);
+  void ProjectEdge(const UsdNprHalfEdge* halfEdge);
 
   // output
   void ComputeOutputGeometry();
