@@ -89,6 +89,7 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
 
     _surfacePrims.push_back(surfacePrim);
     dualMesh->InitMesh(contourSurfaces[i], varyingBits);
+    dualMesh->Build();
     _dualMeshes.push_back(dualMesh);
   }
 
@@ -117,7 +118,6 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         instancerContext) const
 {
   if (requestedBits & HdChangeTracker::DirtyTopology) {
-    std::cout << "CONTOUR NEED A DAMNED UPDATE !!! " << std::endl;
     UsdGeomXformCache xformCache(time);
     UsdNprContour contour(prim);
     
@@ -134,9 +134,6 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         viewPointMatrix = 
           xformCache.GetLocalToWorldTransform(
             prim.GetStage()->GetPrimAtPath(viewPointPath));
-        
-        std::cout << "VIEW POINT : (" << viewPointMatrix[3][0] << "," << 
-          viewPointMatrix[3][1] << "," << viewPointMatrix[3][2] << ")" << std::endl;
       }
     }
 
@@ -152,17 +149,24 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     {
       char varyingBits = _dualMeshes[index]->GetMeshVaryingBits();
       if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+      {
         _dualMeshes[index]->UpdateMesh(contourSurface, time, true);
+        _dualMeshes[index]->Build();
+      }
+        
       else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+      {
         _dualMeshes[index]->UpdateMesh(contourSurface, time, false);
+        _dualMeshes[index]->Build();
+      }
 
       _dualMeshes[index]->SetViewPoint(GfVec3f(
           viewPointMatrix[3][0],
           viewPointMatrix[3][1],
           viewPointMatrix[3][2]
       ));
-
-      _dualMeshes[index]->Build();
+      _dualMeshes[index]->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurface.GetPrim()));
+      
       _dualMeshes[index]->FindSilhouettes(viewPointMatrix);
 
       _dualMeshes[index]->ComputeOutputGeometry();
