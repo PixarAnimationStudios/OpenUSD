@@ -26,7 +26,7 @@ from __future__ import print_function
 
 import sys, argparse, os
 
-from .qt import QtWidgets
+from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
 
@@ -303,13 +303,10 @@ class Launcher(object):
         (app, appController) = self.LaunchPreamble(arg_parse_result)
         
         if arg_parse_result.quitAfterStartup:
-            # Before we quit, process events one more time to make sure the
-            # UI is fully populated (and to capture all the timing information
-            # we'd want).
-            app.processEvents()
-            # Use closeAllWindows() to trigger shutdown of the application. 
-            app.instance().closeAllWindows()
-            return
+            # Enqueue event to shutdown application. We don't use quit() because
+            # it doesn't trigger the closeEvent() on the main window which is
+            # used to orchestrate the shutdown.
+            QtCore.QTimer.singleShot(0, app.instance().closeAllWindows)
 
         app.exec_()
 
