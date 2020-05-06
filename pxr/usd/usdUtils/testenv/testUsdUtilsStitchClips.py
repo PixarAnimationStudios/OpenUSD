@@ -101,11 +101,11 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
                            for i in self.layerFileNames]
 
         UsdUtils.StitchClips(rootLayer, localLayerNames, self.clipPath)
-        assetPaths = (
-            rootLayer.GetPrimAtPath(self.clipPath).GetInfo('clipAssetPaths'))
+        prim = rootLayer.GetPrimAtPath(self.clipPath)
+        assetPaths = prim.GetInfo('clips')['default']['assetPaths']
 
         # ensure all paths are relative
-        import itertools
+        self.assertEqual(len(assetPaths), 32)
         self.assertTrue(not any([os.path.isabs(i.path) for i in assetPaths]))
 
     # This test ensures that we are grabbing our frame data from
