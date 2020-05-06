@@ -1040,8 +1040,20 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyRepr) {
         ss << "Repr ";
     }
+    if (dirtyBits & DirtyRenderTag) {
+        ss << "RenderTag ";
+    }
+    if (dirtyBits & DirtyComputationPrimvarDesc) {
+        ss << "ComputationPrimvarDesc ";
+    }
     if (dirtyBits & DirtyCategories) {
         ss << "Categories ";
+    }
+    if (dirtyBits & DirtyVolumeField) {
+        ss << "VolumeField ";
+    }
+    if (dirtyBits & NewRepr) {
+        ss << "NewRepr ";
     }
     if (dirtyBits & ~AllSceneDirtyBits) {
         ss << "CustomBits:";
