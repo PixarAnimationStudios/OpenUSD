@@ -452,10 +452,6 @@ _MakeMaterialParamsForUnconnectedParam(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeFallback;
     param.name = paramName;
-    param.connection = SdfPath();           /*No connection*/
-    param.samplerCoords = TfTokenVector();  /*No UV*/
-    param.textureType = HdTextureType::Uv;  /*No Texture*/
-    param.swizzle = std::string();          /*No swizzle*/
 
     params->push_back(std::move(param));
 }
@@ -468,10 +464,6 @@ _MakeMaterialParamsForAdditionalPrimvar(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeAdditionalPrimvar;
     param.name = primvarName;
-    param.connection = SdfPath();           /*No connection*/
-    param.samplerCoords = TfTokenVector();  /*No UV*/
-    param.textureType = HdTextureType::Uv;  /*No Texture*/
-    param.swizzle = std::string();          /*No swizzle*/
 
     params->push_back(std::move(param));
 }
@@ -494,9 +486,6 @@ _MakeMaterialParamsForPrimvarReader(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypePrimvarRedirect;
     param.name = paramName;
-    param.connection = SdfPath("primvar." + nodePath.GetName());
-    param.textureType = HdTextureType::Uv;  /*No Texture*/
-    param.swizzle = std::string();          /*No swizzle*/
 
     // A node may require 'additional primvars' to function correctly.
     for (auto const& propName: sdrNode->GetAdditionalPrimvarProperties()) {
@@ -741,6 +730,8 @@ _MakeMaterialParamsForTexture(
     std::string filePath;
     bool askSceneDelegateForTexture = true;
     
+    SdfPath texturePrimPathForSceneDelegate;
+
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
@@ -756,7 +747,7 @@ _MakeMaterialParamsForTexture(
             // The reason for this re-direct is to support other texture uses
             // such as render-targets.
             filePath = _ResolveAssetPath(v);
-            texParam.connection = nodePath;
+            texturePrimPathForSceneDelegate = nodePath;
             
             // Use the type of the filePath attribute to determine whether
             // to use the Storm texture system (for SdfAssetPath/std::string)
@@ -848,8 +839,6 @@ _MakeMaterialParamsForTexture(
     //
     // Unfortunately, some clients depend on this exception.
     //
-    const SdfPath & texturePrimPathForSceneDelegate = texParam.connection;
-
     textureDescriptors->push_back(
         { paramName,
           HdStTextureIdentifier(
@@ -886,7 +875,6 @@ _MakeMaterialParamsForFieldReader(
     HdSt_MaterialParam param;
     param.paramType = HdSt_MaterialParam::ParamTypeFieldRedirect;
     param.name = paramName;
-    param.connection = nodePath;
 
     // XXX Why _tokens->fieldname:
     // Hard-coding the name of the attribute of HwFieldReader identifying

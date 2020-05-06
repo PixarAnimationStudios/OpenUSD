@@ -69,6 +69,8 @@ HdStSurfaceShader::HdStSurfaceShader()
  , _isEnabledPrimvarFiltering(_IsEnabledMaterialPrimvarFiltering())
  , _computedHash(0)
  , _isValidComputedHash(false)
+ , _computedTextureSourceHash(0)
+ , _isValidComputedTextureSourceHash(false)
  , _textureDescriptors()
  , _materialTag()
 {
@@ -261,41 +263,59 @@ HdStSurfaceShader::ComputeHash() const
     return _computedHash;
 }
 
+/*virtual*/
+HdStShaderCode::ID
+HdStSurfaceShader::ComputeTextureSourceHash() const
+{
+    if (!_isValidComputedTextureSourceHash) {
+        _computedTextureSourceHash = _ComputeTextureSourceHash();
+        _isValidComputedTextureSourceHash = true;
+    }
+    return _computedTextureSourceHash;
+}
+
 HdStShaderCode::ID
 HdStSurfaceShader::_ComputeHash() const
 {
-    size_t hash = 0;
-    
-    for (HdSt_MaterialParam const& param : _params) {
-        if (param.IsFallback())
-            boost::hash_combine(hash, param.name.Hash());
-    }
+    size_t hash = HdSt_MaterialParam::ComputeHash(_params);
+
     boost::hash_combine(hash, 
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
     boost::hash_combine(hash, 
         ArchHash(_geometrySource.c_str(), _geometrySource.size()));
 
-    // Add in texture format that effects shader (ignore handles)
-    boost::hash_combine(hash, _textureDescriptors.size());
-    for (TextureDescriptorVector::const_iterator
-                                        texIt  = _textureDescriptors.cbegin();
-                                        texIt != _textureDescriptors.cend();
-                                      ++texIt)
-    {
-        const TextureDescriptor &texDesc = *texIt;
+    // Codegen is inspecting the shader bar spec to generate some
+    // of the struct's, so we should probably use _paramSpec
+    // in the hash computation as well.
+    //
+    // In practise, _paramSpec is generated from the
+    // HdSt_MaterialParam's so the above is sufficient.
 
-        boost::hash_combine(hash, texDesc.name);
-        boost::hash_combine(hash, texDesc.type);
+    return hash;
+}
+
+HdStShaderCode::ID
+HdStSurfaceShader::_ComputeTextureSourceHash() const
+{
+    TRACE_FUNCTION();
+
+    size_t hash = 0;
+
+    // Old texture system
+    for (const HdStShaderCode::TextureDescriptor &desc : _textureDescriptors) {
+        boost::hash_combine(hash, desc.name);
+        boost::hash_combine(hash, desc.textureSourcePath);
     }
 
-    boost::hash_combine(hash, _namedTextureHandles.size());
-    for (auto const &namedTextureHandle : _namedTextureHandles) {
-        boost::hash_combine(hash, namedTextureHandle.name);
-        boost::hash_combine(hash, namedTextureHandle.type);
+    // New texture system
+    for (const HdStShaderCode::NamedTextureHandle &namedHandle :
+             _namedTextureHandles) {
+
+        // Use name, texture object and sampling parameters.
+        boost::hash_combine(hash, namedHandle.name);
+        boost::hash_combine(hash, namedHandle.textureSourcePath);
     }
-
-    boost::hash_combine(hash, _materialTag.Hash());
-
+    
     return hash;
 }
 
@@ -325,7 +345,7 @@ void
 HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 {
     _textureDescriptors = texDesc;
-    _isValidComputedHash = false;
+    _isValidComputedTextureSourceHash = false;
 }
 
 void
@@ -333,7 +353,7 @@ HdStSurfaceShader::SetNamedTextureHandles(
     const NamedTextureHandleVector &namedTextureHandles)
 {
     _namedTextureHandles = namedTextureHandles;
-    _isValidComputedHash = false;
+    _isValidComputedTextureSourceHash = false;
 }
 
 void
@@ -343,6 +363,10 @@ HdStSurfaceShader::SetBufferSources(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSpecs.empty()) {
+        if (!_paramSpec.empty()) {
+            _isValidComputedHash = false;
+        }
+
         _paramSpec.clear();
         _paramArray.reset();
     } else {
@@ -361,6 +385,7 @@ HdStSurfaceShader::SetBufferSources(
             } else {
                 _paramArray = range;
             }
+            _isValidComputedHash = false;
         }
 
         if (_paramArray->IsValid()) {
@@ -369,7 +394,6 @@ HdStSurfaceShader::SetBufferSources(
             }
         }
     }
-    _isValidComputedHash = false;
 }
 
 TfToken
@@ -390,15 +414,6 @@ void
 HdStSurfaceShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
-}
-
-static bool
-operator== (HdStShaderCode::TextureDescriptor const & a,
-            HdStShaderCode::TextureDescriptor const & b)
-{
-    return a.name == b.name &&
-           a.handle == b.handle &&
-           a.type == b.type;
 }
 
 /*static*/
@@ -423,30 +438,9 @@ HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    if (GlfContextCaps::GetInstance().bindlessTextureEnabled) {
-        return true;
-    }
-
-    // Without bindless textures, we can't aggregate unless
-    // textures also match.
-    if (shaderA->GetTextures() != shaderB->GetTextures()) {
-        return false;
-    }
-
-    // Without bindless textures, we can't aggregate unless the
-    // textures and their sampling parameters match.
-    for (size_t i = 0; i < shaderA->GetNamedTextureHandles().size(); ++i) {
-        HdStTextureHandleSharedPtr const &handleA =
-            shaderA->GetNamedTextureHandles()[i].handle;
-        HdStTextureHandleSharedPtr const &handleB =
-            shaderB->GetNamedTextureHandles()[i].handle;
-        
-        if (handleA->GetTextureObject() != handleB->GetTextureObject()) {
-            return false;
-        }
-        
-        if (handleA->GetSamplerParameters() !=
-                        handleB->GetSamplerParameters()) {
+    if (!GlfContextCaps::GetInstance().bindlessTextureEnabled) {
+        if (shaderA->ComputeTextureSourceHash() !=
+                shaderB->ComputeTextureSourceHash()) {
             return false;
         }
     }

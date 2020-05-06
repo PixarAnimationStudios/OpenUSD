@@ -245,7 +245,6 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
                     HdSt_MaterialParam(HdSt_MaterialParam::ParamTypeTexture,
                     _tokens->domeLightIrradiance,
                     VtValue(GfVec4f(0.0)),
-                    SdfPath(),
                     TfTokenVector(),
                     HdTextureType::Uv));
             // prefilter map
@@ -253,7 +252,6 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
                     HdSt_MaterialParam(HdSt_MaterialParam::ParamTypeTexture,
                     _tokens->domeLightPrefilter,
                     VtValue(GfVec4f(0.0)),
-                    SdfPath(),
                     TfTokenVector(),
                     HdTextureType::Uv));
             // BRDF texture
@@ -261,7 +259,6 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
                     HdSt_MaterialParam(HdSt_MaterialParam::ParamTypeTexture,
                     _tokens->domeLightBRDF,
                     VtValue(GfVec4f(0.0)),
-                    SdfPath(),
                     TfTokenVector(),
                     HdTextureType::Uv));
         }

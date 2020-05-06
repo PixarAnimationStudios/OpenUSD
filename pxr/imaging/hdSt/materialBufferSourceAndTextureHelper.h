@@ -46,6 +46,7 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
     static
     void ProcessTextureMaterialParam(
         TfToken const &name,
+        SdfPath const &texturePrim,
         HdStTextureResourceHandleSharedPtr const &handle,
         HdBufferSpecVector * specs,
         HdBufferSourceSharedPtrVector * sources,

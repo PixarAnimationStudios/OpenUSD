@@ -196,13 +196,11 @@ _MakeFallbackVolumeShader()
                 HdSt_MaterialParam::ParamTypeFieldRedirect,
                 _fallbackShaderTokens->density,
                 VtValue(GfVec3f(0.0, 0.0, 0.0)),
-                SdfPath(),
                 { _fallbackShaderTokens->density }),
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeFieldRedirect,
                 _fallbackShaderTokens->emission,
                 VtValue(GfVec3f(0.0, 0.0, 0.0)),
-                SdfPath(),
                 { _fallbackShaderTokens->emission })});
 
     return result;
@@ -367,19 +365,17 @@ _ComputeMaterialShader(
     // - a HdStShader::NamedTextureHandle initialized with a null-handle.
     //
     for (const auto & fieldName : fieldNames) {
-        {
-            // See whether we have the the field in the volume field
-            // descriptors given to us by the scene delegate.
-            const HdVolumeFieldDescriptor * const desc =
-                _nameToFieldDescriptor.GetDescriptor(fieldName);
-            if (!desc) {
-                // Invalid field prim, skip.
-                continue;
-            }
-            
-            // Record field descriptor
-            fieldDescs.push_back(*desc);
+        // See whether we have the the field in the volume field
+        // descriptors given to us by the scene delegate.
+        const HdVolumeFieldDescriptor * const desc =
+            _nameToFieldDescriptor.GetDescriptor(fieldName);
+        if (!desc) {
+            // Invalid field prim, skip.
+            continue;
         }
+        
+        // Record field descriptor
+        fieldDescs.push_back(*desc);
 
         const TfToken textureName(
             fieldName.GetString() +
@@ -392,7 +388,6 @@ _ComputeMaterialShader(
             HdSt_MaterialParam::ParamTypeTexture,
             textureName,
             VtValue(GfVec4f(0)),
-            SdfPath(),
             TfTokenVector(),
             textureType);
 
@@ -402,7 +397,7 @@ _ComputeMaterialShader(
         params.push_back(param);
 
         namedTextureHandles.push_back(
-            { textureName, textureType, nullptr });
+            { textureName, textureType, nullptr, desc->fieldId });
     }
 
     // Get buffer specs for textures (i.e., for

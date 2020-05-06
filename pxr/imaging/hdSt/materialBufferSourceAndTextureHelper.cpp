@@ -103,6 +103,7 @@ private:
 void
 HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
     TfToken const &name,
+    SdfPath const &texturePrim,
     HdStTextureResourceHandleSharedPtr const &handle,
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources,
@@ -123,6 +124,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
 
     HdStShaderCode::TextureDescriptor tex;
     tex.name = name;
+    tex.textureSourcePath = texturePrim;
     tex.handle = handle;
 
     const HdTextureType textureType = texResource->GetTextureType();
@@ -143,6 +145,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         tex.name = TfToken(
             name.GetString() +
             HdSt_ResourceBindingSuffixTokens->layout.GetString());
+        tex.textureSourcePath = texturePrim;
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
         textureDescriptors->push_back(tex);
@@ -171,6 +174,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         tex.name = TfToken(
             name.GetString() +
             HdSt_ResourceBindingSuffixTokens->layout.GetString());
+        tex.textureSourcePath = texturePrim;
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_LAYOUT;
         textureDescriptors->push_back(tex);

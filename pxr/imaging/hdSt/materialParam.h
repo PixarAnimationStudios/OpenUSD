@@ -75,7 +75,6 @@ public:
     HdSt_MaterialParam(ParamType paramType,
                     TfToken const& name, 
                     VtValue const& fallbackValue,
-                    SdfPath const& connection=SdfPath(),
                     TfTokenVector const& samplerCoords=TfTokenVector(),
                     HdTextureType textureType=HdTextureType::Uv,
                     std::string const& swizzle=std::string());
@@ -83,8 +82,8 @@ public:
     // No d'tor so that we pick up the implicitly declared default
     // move c'tor.
 
-    /// Computes a hash for all parameters. This hash also includes 
-    /// parameter connections (texture, primvar, etc).
+    /// Computes a hash for all parameters using structural information
+    /// (name, texture type, primvar names) but not the fallback value.
     HDST_API
     static ID ComputeHash(HdSt_MaterialParamVector const &shaders);
 
@@ -110,7 +109,6 @@ public:
     ParamType paramType;
     TfToken name;
     VtValue fallbackValue;
-    SdfPath connection;
     TfTokenVector samplerCoords;
     HdTextureType textureType;
     std::string swizzle;

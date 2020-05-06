@@ -108,7 +108,8 @@ HdStMaterial::_ProcessTextureDescriptors(
 
             HdSt_MaterialBufferSourceAndTextureHelper::
                 ProcessTextureMaterialParam(
-                    desc.name, textureResource,
+                    desc.name, desc.texturePrim,
+                    textureResource,
                     specs, sources, texturesFromSceneDelegate);
         } else {
         HdStTextureHandleSharedPtr const textureHandle =
@@ -122,8 +123,9 @@ HdStMaterial::_ProcessTextureDescriptors(
         
             texturesFromStorm->push_back({ desc.name,
                            desc.type,
-                           textureHandle });
-    }
+                           textureHandle,
+                           desc.texturePrim});
+        }
     }
 
     HdSt_TextureBinder::GetBufferSpecs(*texturesFromStorm, specs);

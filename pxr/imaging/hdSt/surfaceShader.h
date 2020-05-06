@@ -72,38 +72,39 @@ public:
     /// \name HdShader Virtual Interface                                      //
     // ---------------------------------------------------------------------- //
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const override;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual HdSt_MaterialParamVector const& GetParams() const override;
+    HdSt_MaterialParamVector const& GetParams() const override;
     HDST_API
     void SetEnabledPrimvarFiltering(bool enabled);
     HDST_API
-    virtual bool IsEnabledPrimvarFiltering() const override;
+    bool IsEnabledPrimvarFiltering() const override;
     HDST_API
-    virtual TfTokenVector const& GetPrimvarNames() const override;
+    TfTokenVector const& GetPrimvarNames() const override;
     HDST_API
-    virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
+    HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
     HDST_API
-    virtual TextureDescriptorVector GetTextures() const override;
+    TextureDescriptorVector GetTextures() const override;
     HDST_API
     NamedTextureHandleVector const & GetNamedTextureHandles() const override;
     HDST_API
-    virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) override;
+    void BindResources(int program,
+                       HdSt_ResourceBinder const &binder,
+                       HdRenderPassState const &state) override;
     HDST_API
-    virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 
-                                 HdRenderPassState const &state) override;
+    void UnbindResources(int program,
+                         HdSt_ResourceBinder const &binder,
+                         HdRenderPassState const &state) override;
     HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual ID ComputeHash() const override;
+    ID ComputeHash() const override;
 
     HDST_API
-    virtual TfToken GetMaterialTag() const override;
+    ID ComputeTextureSourceHash() const override;
 
+    HDST_API
+    TfToken GetMaterialTag() const override;
 
     /// Setter method for prim
     HDST_API
@@ -161,6 +162,9 @@ protected:
     HDST_API
     ID _ComputeHash() const;
 
+    HDST_API
+    ID _ComputeTextureSourceHash() const;
+
 private:
     std::string _fragmentSource;
     std::string _geometrySource;
@@ -174,6 +178,9 @@ private:
 
     mutable size_t              _computedHash;
     mutable bool                _isValidComputedHash;
+
+    mutable size_t              _computedTextureSourceHash;
+    mutable bool                _isValidComputedTextureSourceHash;
 
     // Old texture system
     TextureDescriptorVector _textureDescriptors;

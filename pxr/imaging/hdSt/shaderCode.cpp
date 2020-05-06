@@ -112,5 +112,9 @@ HdStShaderCode::ComputeBufferSourcesFromTextures() const
     return {};
 }
 
+HdStShaderCode::ID
+HdStShaderCode::ComputeTextureSourceHash() const {
+    return 0;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
