@@ -119,13 +119,11 @@ _Uniquify(const tbb::concurrent_vector<std::weak_ptr<T>> &objects,
     }
 }
 
-// Unfortunately, there are some issues with using GlfUvTextureData outside the
-// main thread. Disabling multi-threaded loading for now.
+// Variable left from a time when Glf_StbImage was not thread-safe
+// and testUsdImagingGLTextureWrapStormTextureSystem produced
+// wrong and non-deterministic results.
 //
-// In particular, testUsdImagingGLTextureWrapStormTextureSystem has
-// non-deterministic results with multi-threading.
-//
-static const bool _isGlfBaseTextureDataThreadSafe = false;
+static const bool _isGlfBaseTextureDataThreadSafe = true;
 
 std::set<HdStTextureObjectSharedPtr>
 HdSt_TextureObjectRegistry::Commit()

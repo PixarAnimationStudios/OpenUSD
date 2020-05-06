@@ -428,12 +428,9 @@ Glf_StbImage::ReadCropped(int const cropTop,
     //Read based on the storage type (8-bit, 16-bit, or float)
     void* imageData = NULL;
   
-    //If image needs to be flipped, configure stb to flip image after load
-    if (storage.flipped) {
-        stbi_set_flip_vertically_on_load(true);
-    } else {
-        stbi_set_flip_vertically_on_load(false);
-    }
+    // Calling stbi_set_flip_vertically_on_load(...) is not thread-safe,
+    // thus we explicitly call stbi__vertical_flip below - assuming
+    // that no other client called stbi_set_flip_vertically_on_load(true).
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
     if (!asset) 
@@ -449,12 +446,21 @@ Glf_StbImage::ReadCropped(int const cropTop,
             imageData = stbi_loadf_from_memory(
                 reinterpret_cast<stbi_uc const *>(buffer.get()), bufferSize,
                 &_width, &_height, &_nchannels, 0);
+            if (storage.flipped) {
+                stbi__vertical_flip(
+                    imageData, _width, _height, _nchannels * sizeof(float));
+            }
         }
         else {
             imageData = stbi_load_from_memory(
                 reinterpret_cast<stbi_uc const *>(buffer.get()), bufferSize,
                 &_width, &_height, &_nchannels, 0);
+            if (storage.flipped) {
+                stbi__vertical_flip(
+                    imageData, _width, _height, _nchannels * sizeof(stbi_uc));
+            }
         }
+
     }
 
     //// Read pixel data
