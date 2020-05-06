@@ -238,6 +238,17 @@ public:
         const std::string& path,
         const std::string& target = std::string());
 
+    /// Returns a file format instance that supports the extension for \p
+    /// path and whose target matches one of those specified by the given
+    /// \p args. If the \p args specify no target, then the file format that is
+    /// registered as the primary plugin will be returned. If a format with a
+    /// matching extension is not found, this returns a null file format
+    /// pointer.
+    SDF_API
+    static SdfFileFormatConstPtr FindByExtension(
+        const std::string& path,
+        const FileFormatArguments& args);
+
 protected:
     /// Constructor.
     SDF_API SdfFileFormat(

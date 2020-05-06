@@ -264,46 +264,14 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     return _initializationWasSuccessful.get();
 }
 
-static SdfFileFormatConstPtr
-_GetFileFormatByExtension(
-    const std::string &path, const SdfLayer::FileFormatArguments &args)
-{
-    // Find a file format that can handle this extension and the
-    // specified target (if any).
-    const std::string* targets = 
-        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
-    if (targets) {
-        for (std::string& target : TfStringTokenize(*targets, ",")) {
-            target = TfStringTrim(target);
-            if (target.empty()) {
-                continue;
-            }
-
-            if (const SdfFileFormatConstPtr format = 
-                SdfFileFormat::FindByExtension(path, target)) {
-                return format;
-            }
-        }
-        return TfNullPtr;
-    }
-
-    return SdfFileFormat::FindByExtension(path);
-}
-
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
     const string& tag, const FileFormatArguments& args)
 {
-    // XXX: 
-    // It would be nice to use the _GetFileFormatForPath helper function 
-    // below but that function expects a layer identifier and the 
-    // tag is supposed to be just a helpful debugging aid; the fact that
-    // one can specify an underlying layer file format by specifying an
-    // extension was unintended.
     SdfFileFormatConstPtr fileFormat;
     string suffix = TfStringGetSuffix(tag);
     if (!suffix.empty()) {
-        fileFormat = _GetFileFormatByExtension(suffix, args);
+        fileFormat = SdfFileFormat::FindByExtension(suffix, args);
     }
 
     if (!fileFormat) {
@@ -402,14 +370,6 @@ SdfLayer::CreateNew(
     return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
 }
 
-static inline SdfFileFormatConstPtr
-_GetFileFormatForPath(const std::string &filePath,
-                      const SdfLayer::FileFormatArguments &args)
-{
-    // Determine which file extension to use.
-    return _GetFileFormatByExtension(filePath, args);
-}
-
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
@@ -453,7 +413,7 @@ SdfLayer::_CreateNew(
     // If not explicitly supplied one, try to determine the fileFormat 
     // based on the local path suffix,
     if (!fileFormat) {
-        fileFormat = _GetFileFormatForPath(localPath, args);
+        fileFormat = SdfFileFormat::FindByExtension(localPath, args);
         // XXX: This should be a coding error, not a failed verify.
         if (!TF_VERIFY(fileFormat))
             return TfNullPtr;
@@ -703,7 +663,7 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         }
     }
 
-    info->fileFormat = _GetFileFormatForPath(
+    info->fileFormat = SdfFileFormat::FindByExtension(
         resolvedLayerPath.empty() ? layerPath : resolvedLayerPath, layerArgs);
     info->fileFormatArgs.swap(_CanonicalizeFileFormatArguments(
         layerPath, info->fileFormat, layerArgs));
