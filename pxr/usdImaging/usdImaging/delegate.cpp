@@ -117,6 +117,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _refineLevelFallback(0)
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
+    , _timeVaryingPrimCacheValid(false)
     , _xformCache(GetTime())
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
                                GetMaterialBindingPurpose())
@@ -347,6 +348,11 @@ public:
     // added tasks to this worker.
     void EnableValueCacheMutations() {
         _delegate->_valueCache.EnableMutation();
+    }
+
+    // Invalidate the time varying prim cache.
+    void InvalidateTimeVaryingPrimCache() {
+        _delegate->_timeVaryingPrimCacheValid = false;
     }
 
     // Populates prim variability and initial state.
@@ -717,6 +723,10 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         .Msg("[Repopulate] %zu variability tasks in worker\n", 
              worker->GetTaskCount());
 
+    if (worker->GetTaskCount() > 0) {
+        worker->InvalidateTimeVaryingPrimCache();
+    }
+
     worker->DisableValueCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
@@ -776,18 +786,30 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
 
     UsdImagingIndexProxy indexProxy(this, nullptr);
 
-    // Mark varying attributes as dirty and build a work queue for threads to
-    // populate caches for the new time.
-    TF_FOR_ALL(it, _hdPrimInfoMap) {
-        const SdfPath &cachePath = it->first;
-        _HdPrimInfo &primInfo    = it->second;
-
-        if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
+    // Mark varying attributes as dirty.
+    if (_timeVaryingPrimCacheValid) {
+        for (SdfPath const& path : _timeVaryingPrimCache) {
+            _HdPrimInfo &primInfo = _hdPrimInfoMap[path];
             primInfo.adapter->MarkDirty(primInfo.usdPrim,
-                                        cachePath,
+                                        path,
                                         primInfo.timeVaryingBits,
                                         &indexProxy);
         }
+    } else {
+        _timeVaryingPrimCache.clear();
+        for (auto const& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath    = pair.first;
+            const _HdPrimInfo &primInfo = pair.second;
+
+            if (primInfo.timeVaryingBits != HdChangeTracker::Clean) {
+                _timeVaryingPrimCache.push_back(cachePath);
+                primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                            cachePath,
+                                            primInfo.timeVaryingBits,
+                                            &indexProxy);
+            }
+        }
+        _timeVaryingPrimCacheValid = true;
     }
 }
 
@@ -1337,6 +1359,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 // Do nothing
             } else if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update Variability
+                _timeVaryingPrimCacheValid = false;
                 adapter->TrackVariability(primInfo->usdPrim, affectedCachePath,
                                           &primInfo->timeVaryingBits);
 

@@ -681,6 +681,10 @@ private:
     HdReprSelector _reprFallback;
     HdCullStyle _cullStyleFallback;
 
+    // Cache of which prims are time-varying.
+    SdfPathVector _timeVaryingPrimCache;
+    bool _timeVaryingPrimCacheValid;
+
     // Change processing
     TfNotice::Key _objectsChangedNoticeKey;
     SdfPathVector _usdPathsToResync;

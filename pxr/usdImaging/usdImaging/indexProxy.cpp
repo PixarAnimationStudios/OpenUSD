@@ -410,6 +410,12 @@ UsdImagingIndexProxy::_ProcessRemovals()
         _bprimsToRemove.clear();
     }
 
+    // If we're removing hdPrimInfo entries, we need to rebuild the
+    // time-varying cache.
+    if (_hdPrimInfoToRemove.size() > 0) {
+        _delegate->_timeVaryingPrimCacheValid = false;
+    }
+
     {
         TRACE_FUNCTION_SCOPE("primInfo");
         TF_FOR_ALL(it, _hdPrimInfoToRemove) {
