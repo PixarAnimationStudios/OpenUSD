@@ -183,6 +183,10 @@ if (PXR_BUILD_IMAGING)
         find_package(OpenGL REQUIRED)
         find_package(GLEW REQUIRED)
     endif()
+    # --Metal
+    if (PXR_ENABLE_METAL_SUPPORT)
+        add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
+    endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
     find_package(OpenSubdiv 3 REQUIRED)

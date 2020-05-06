@@ -74,7 +74,7 @@ private:
     HgiInterop & operator=(const HgiInterop&) = delete;
     HgiInterop(const HgiInterop&) = delete;
 
-#if defined(__APPLE__)
+#if defined(PXR_METAL_SUPPORT_ENABLED)
     std::unique_ptr<HgiInteropMetal> _metalToOpenGL;
 #else
     std::unique_ptr<HgiInteropOpenGL> _openGLToOpenGL;

@@ -26,7 +26,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 
-#if defined(__APPLE__)
+#if defined(PXR_METAL_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiMetal/hgi.h"
     #include "pxr/imaging/hgiInterop/metal.h"
 #else
@@ -52,7 +52,7 @@ void HgiInterop::TransferToApp(
 {
     TfToken const& gfxApi = hgi->GetAPIName();
 
-#if defined(__APPLE__)
+#if defined(PXR_METAL_SUPPORT_ENABLED)
     if (gfxApi==HgiTokens->Metal && interopDst==HgiTokens->OpenGL) {
         // Transfer Metal textures to OpenGL application
         if (!_metalToOpenGL) {
