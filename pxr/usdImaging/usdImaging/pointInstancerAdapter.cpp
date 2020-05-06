@@ -858,128 +858,51 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index,
                                              SdfPathVector* instancersToReload)
 {
-    // If prim data exists at this path, we'll drop it now.
-    _InstancerDataMap::iterator instIt = _instancerData.find(cachePath);
-    SdfPathVector instancersToUnload;
+    SdfPath affectedInstancer;
 
-    if (instIt != _instancerData.end()) {
-        while (instIt != _instancerData.end()) {
-            SdfPath parentInstancerCachePath =
-                instIt->second.parentInstancerCachePath;
-            instancersToUnload.push_back(instIt->first);
-
-            // Setup the next iteration.
-            if (parentInstancerCachePath.IsEmpty()) {
-                break;
-            }
-
-            // Note that the parent may be owned by a different adapter, so we
-            // might not find it here.
-            instIt = _instancerData.find(parentInstancerCachePath);
-        }
+    // cachePath is from the _dependencyInfo map in the delegate, and points to
+    // either a hydra instancer or a hydra prototype (the latter in the case of
+    // adapter forwarding).  For hydra prototypes, their name is mangled by the
+    // immediate instancer parent: if /World/PI/PI2 has cache path
+    // /World/PI/PI2{0}, then /World/PI/PI2/cube will have cache path
+    // /World/PI/PI2{0}.proto0_cube_id0 (see _PopulatePrototype). This, then,
+    // gives us an easy route to the affected instancer.
+    if (IsChildPath(cachePath)) {
+        affectedInstancer = cachePath.GetParentPath();
     } else {
-        if (!IsChildPath(cachePath)) {
-            // This is a path that is neither an instancer or a child path,
-            // which means it was only tracked for change processing at an
-            // instance root.
-            return;
-        }
+        affectedInstancer = cachePath;
     }
 
-    // Otherwise, the cachePath must be a path to one of the prototype rprims.
+    // If the affected instancer is populated, delete it by finding the
+    // top-level instancer and calling _UnloadInstancer on that.
+    // XXX: It would be nice if we could just remove *this* prim and rely on
+    // the resync code to propertly resync it with the right parent instancer.
 
-    // The prim in the Usd scenegraph could be shared among many instancers, so
-    // we search each instancer for the presence of the given cachePath. Any
-    // instancer that references this prim must be rebuilt, we don't currently
-    // support incrementally rebuilding an instancer.
+    _InstancerDataMap::iterator instIt = _instancerData.find(affectedInstancer);
 
-    // Scan all instancers for dependencies
-    if (instancersToUnload.empty()) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-
-            if (inst.parentInstancerCachePath == cachePath) {
-                instancersToUnload.push_back(instancerPath);
-                continue;
-            }
-
-            // Check if this is a new prim under an existing proto root.
-            // Once the prim is found, we know the entire instancer will be
-            // unloaded so we can stop searching.
-            bool foundPrim = false;
-            for (SdfPath const& protoPath : inst.prototypePaths) {
-                if (cachePath.HasPrefix(protoPath)) {
-                    // Append this instancer to the unload list (we can't modify
-                    // the structure while iterating).
-                    instancersToUnload.push_back(instancerPath);
-                    foundPrim = true;
-                    break;
-                }
-            }
-
-            // Check if this is a populated prototype prim with a name-mangled
-            // path...
-            if (inst.protoPrimMap.find(cachePath) != inst.protoPrimMap.end()) {
-                instancersToUnload.push_back(instancerPath);
-                foundPrim = true;
-            }
-
-            if (foundPrim) {
-                continue;
-            }
-        }
+    if (instIt == _instancerData.end()) {
+        // Invalid cache path.
+        return;
     }
 
-    // Propagate changes from the parent instancers down to the children.
-    SdfPathVector moreToUnload;
-    TF_FOR_ALL(i, instancersToUnload) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-            if (inst.parentInstancerCachePath == *i) {
-                moreToUnload.push_back(instancerPath);
-            }
-        }
-    }
-    instancersToUnload.insert(instancersToUnload.end(), moreToUnload.begin(),
-            moreToUnload.end());
-    moreToUnload.clear();
-
-    if (instancersToReload) {
-        instancersToReload->reserve(instancersToUnload.size());
-    }
-
-    TF_FOR_ALL(i, instancersToUnload) {
-        _InstancerDataMap::iterator instIt = _instancerData.find(*i);
-        // we expect duplicated instancer entries in instacersToUnload.
-        // continue if it's already removed.
-        if (instIt == _instancerData.end()) continue;
+    while (instIt != _instancerData.end()) {
+        affectedInstancer = instIt->first;
         SdfPath parentInstancerCachePath =
             instIt->second.parentInstancerCachePath;
-
-        _UnloadInstancer(*i, index);
-
-        // If the caller doesn't need to know what to reload, we're done in this
-        // loop.
-        if (!instancersToReload) {
-            continue;
+        if (parentInstancerCachePath.IsEmpty()) {
+            break;
         }
+        instIt = _instancerData.find(parentInstancerCachePath);
+    }
 
-        // Never repopulate child instancers directly, they are only repopulated
-        // by populating the parent.
-        if (!parentInstancerCachePath.IsEmpty()) {
-            continue;
-        }
-
-        // It's an error to request an invalid prim to be Repopulated, so be
-        // sure the prim still exists before requesting Repopulation.
-        if (UsdPrim p = _GetPrim(*i)) {
-            if (p.IsActive()) {
-                instancersToReload->push_back(*i);
-            }
+    // Should we reload affected instancer?
+    if (instancersToReload) {
+        UsdPrim p = _GetPrim(affectedInstancer.GetPrimPath());
+        if (p && p.IsActive()) {
+            instancersToReload->push_back(affectedInstancer);
         }
     }
+    _UnloadInstancer(affectedInstancer, index);
 }
 
 void
@@ -1132,26 +1055,19 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
 
-    // XXX: There's a nasty catch-22 where PI's ProcessPrimRemoval tries to
-    // remove that point instancer as well as any parents (since we don't have
-    // good invalidation for a parent PI when a child PI is removed/resynced,
-    // we resync the whole tree); and _UnloadInstancer tries to remove
-    // children.  This would cause an infinite loop, except that calling
-    // ProcessPrimRemoval on a child a second time is a no-op.  However,
-    // if a parent PI has multiple child PIs, the parent PI will be removed
-    // several times (usually resulting in a segfault).
-    //
-    // To guard against that, we remove instancerPath from _instancerData
-    // before traversing children, so that the parent PI is only removed once.
+    // Note: If any of the prototype children is a point instancer, their
+    // ProcessPrimRemoval will try to forward the removal call to the
+    // top-level instancer that has an entry in _instancerData.  This means,
+    // to avoid infinite loops, that we need to remove the _instancerData
+    // entry for this instancer before removing prototypes.
+
     const _ProtoPrimMap protoPrimMap = instIt->second.protoPrimMap;
     _instancerData.erase(instIt);
 
     // First, we need to make sure all proto rprims are removed.
-    TF_FOR_ALL(protoPrimIt, protoPrimMap) {
-        SdfPath     const& cachePath = protoPrimIt->first;
-        _ProtoPrim const& proto     = protoPrimIt->second;
-
-        proto.adapter->ProcessPrimRemoval(cachePath, index);
+    for (auto const& pair : protoPrimMap) {
+        // pair: <cache path, _ProtoPrim>
+        pair.second.adapter->ProcessPrimRemoval(pair.first, index);
     }
 
     // Blow away the instancer and the associated local data.
