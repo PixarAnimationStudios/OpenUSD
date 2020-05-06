@@ -211,13 +211,20 @@ HdxColorCorrectionTask::_CreateShaderResources()
     }
 
     bool useOCIO =_GetUseOcio();
-    HioGlslfx glslfx(HdxPackageColorCorrectionShader());
+    
+    // For Metal shaders we grab a different technique from the glslfx.
+    TfToken const& technique = _hgi->GetAPIName() == HgiTokens->Metal ?
+        HgiTokens->Metal : HioGlslfxTokens->defVal;
+
+    HioGlslfx glslfx(HdxPackageColorCorrectionShader(), technique);
 
     // Setup the vertex shader
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
-    vertDesc.shaderCode = "#version 450 \n";
+    if (technique != HgiTokens->Metal) {
+        vertDesc.shaderCode = "#version 450 \n";
+    }
     vertDesc.shaderCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
     HgiShaderFunctionHandle vertFn = _GetHgi()->CreateShaderFunction(vertDesc);
 
@@ -225,7 +232,10 @@ HdxColorCorrectionTask::_CreateShaderResources()
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    fragDesc.shaderCode = "#version 450 \n";
+    if (technique != HgiTokens->Metal) {
+        fragDesc.shaderCode = "#version 450 \n";
+    }
+
     if (useOCIO) {
         fragDesc.shaderCode += "#define GLSLFX_USE_OCIO\n";
         // Our current version of OCIO outputs 130 glsl and texture3D is
