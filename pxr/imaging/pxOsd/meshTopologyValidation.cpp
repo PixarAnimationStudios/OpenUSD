@@ -199,6 +199,8 @@ PxOsdMeshTopologyValidation::_ValidateCreasesAndCorners(
     }
     size_t totalCreaseIndices =
         std::accumulate(creaseLengths.cbegin(), creaseLengths.cend(), 0);
+    size_t totalCreases = creaseLengths.size();
+    size_t totalCreaseEdges = totalCreaseIndices - totalCreases;
     if (creaseIndices.size() != totalCreaseIndices) {
         _AppendInvalidation(
             {Code::InvalidCreaseIndicesSize,
@@ -206,12 +208,15 @@ PxOsdMeshTopologyValidation::_ValidateCreasesAndCorners(
                  "Crease indices size '%zu' doesn't match expected '%zu'.",
                  creaseIndices.size(), totalCreaseIndices)});
     }
-    if (creaseSharpness.size() != totalCreaseIndices) {
+    if (creaseSharpness.size() != totalCreaseEdges &&
+        creaseSharpness.size() != totalCreases) {
         _AppendInvalidation(
             {Code::InvalidCreaseWeightsSize,
              TfStringPrintf(
-                 "Crease weights size '%zu' doesn't match expected '%zu'.",
-                 creaseSharpness.size(), totalCreaseIndices)});
+                 "Crease weights size '%zu' doesn't match either per edge "
+                 "'%zu' or per crease '%zu' sizes.",
+                 creaseSharpness.size(), totalCreaseEdges,
+                 totalCreases)});
     }
 
     if (cornerIndices.size() != cornerSharpness.size()) {

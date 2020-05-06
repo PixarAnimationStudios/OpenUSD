@@ -84,7 +84,7 @@ public:
         /// vector
         InvalidCreaseIndicesElement,
         /// Encodes if crease weights is the size of the number of creases or
-        /// the number of crease end points
+        /// the number of crease edges
         InvalidCreaseWeightsSize,
         /// Encodes if crease weights are negative
         NegativeCreaseWeights,
