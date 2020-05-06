@@ -346,43 +346,61 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Mark this instancer as having a TrackVariability queued, since
             // we automatically queue it in InsertInstancer.
             instancerData.refreshVariability = true;
-        } else if (nestedInstances.empty()) {
-            // if this instance path ends up to have no prims in subtree
-            // and not an instance itself , we don't need to track this path
-            // any more.
-            instancePath = SdfPath();
         }
     }
 
-    if (!instancePath.IsEmpty()) {
-        // Add an entry to the instancer data for the given instance. Keep
-        // the vector sorted for faster lookups during change processing.
-        std::vector<SdfPath>& instancePaths = instancerData.instancePaths;
-        std::vector<SdfPath>::iterator it = std::lower_bound(
-            instancePaths.begin(), instancePaths.end(), instancePath);
+    // Add an entry to the instancer data for the given instance. Keep
+    // the vector sorted for faster lookups during change processing.
+    std::vector<SdfPath>& instancePaths = instancerData.instancePaths;
+    std::vector<SdfPath>::iterator it = std::lower_bound(
+        instancePaths.begin(), instancePaths.end(), instancePath);
 
-        // We may repopulate instances we've already seen during change
-        // processing when nested instances are involved. Rather than do
-        // some complicated filtering in ProcessPrimResync to avoid this,
-        // we just silently ignore duplicate instances here.
-        if (it == instancePaths.end() || *it != instancePath) {
-            instancePaths.insert(it, instancePath);
+    // We may repopulate instances we've already seen during change
+    // processing when nested instances are involved. Rather than do
+    // some complicated filtering in ProcessPrimResync to avoid this,
+    // we just silently ignore duplicate instances here.
+    if (it == instancePaths.end() || *it != instancePath) {
+        instancePaths.insert(it, instancePath);
 
-            TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-                "[Add Instance NI] <%s>  %s\n",
-                instancerPath.GetText(), instancePath.GetText());
+        TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+            "[Add Instance NI] <%s>  %s\n",
+            instancerPath.GetText(), instancePath.GetText());
 
-            _instanceToInstancerMap[instancePath] = instancerPath;
+        _instanceToInstancerMap[instancePath] = instancerPath;
+
+        // Add this instance's parent path to the instancerData's list of all
+        // parent native instances.
+        //
+        // Note: instead of getting the parent "instancer" path, we get the
+        // instance proxy path.  So for /World/A -> /Master_1/B -> /Master_2/C,
+        // we have instancer = /World/A, parentProxy = /;
+        // instancer = /Master_1/B, parentProxy = /World/A;
+        // instancer = /Master_2/C, parentProxy = /World/A/B.
+        // If parentProxy is an instance proxy, take the prim in master.
+        if (parentProxyPath != SdfPath::AbsoluteRootPath()) {
+            UsdPrim parent = _GetPrim(parentProxyPath);
+            if (parent.IsInstanceProxy()) {
+                parent = parent.GetPrimInMaster();
+            }
+            SdfPath parentPath = parent.GetPath();
+
+            SdfPathVector::iterator it = std::lower_bound(
+                instancerData.parentInstances.begin(),
+                instancerData.parentInstances.end(),
+                parentPath);
+            if (it == instancerData.parentInstances.end() ||
+                *it != parentPath) {
+                instancerData.parentInstances.insert(it, parentPath);
+            }
         }
     }
 
     // We're done modifying data structures for the passed in instance,
     // so now it's safe to re-enter this function to populate the
     // nested instances we discovered.
-    TF_FOR_ALL(nestedInstanceIt, nestedInstances) {
-        _Populate(*nestedInstanceIt, index, instancerContext,
-                  instancerProxyPath);
-        instancerData.nestedInstances.push_back(nestedInstanceIt->GetPath());
+    for (UsdPrim &prim : nestedInstances) {
+        _Populate(prim, index, instancerContext, instancerProxyPath);
+        instancerData.nestedInstances.push_back(prim.GetPath());
     }
 
     // Add a dependency on any associated hydra instancers (instancerPath, if
@@ -577,11 +595,11 @@ UsdImagingInstanceAdapter::_RunForAllInstancesToDrawImpl(
         return false;
     }
 
-    TF_FOR_ALL(pathIt, instancerData->instancePaths) {
-        const UsdPrim instancePrim = _GetPrim(*pathIt);
+    for (SdfPath const& path : instancerData->instancePaths) {
+        const UsdPrim instancePrim = _GetPrim(path);
         if (!TF_VERIFY(instancePrim, 
                 "Invalid instance <%s> for master <%s>",
-                pathIt->GetText(),
+                path.GetText(),
                 instancerData->masterPath.GetText())) {
             break;
         }
@@ -666,11 +684,11 @@ UsdImagingInstanceAdapter::_CountAllInstancesToDrawImpl(
     
     size_t drawCount = 0;
 
-    TF_FOR_ALL(pathIt, instancerData->instancePaths) {
-        const UsdPrim instancePrim = _GetPrim(*pathIt);
+    for (SdfPath const& path : instancerData->instancePaths) {
+        const UsdPrim instancePrim = _GetPrim(path);
         if (!TF_VERIFY(instancePrim, 
                 "Invalid instance <%s> for master <%s>",
-                pathIt->GetText(),
+                path.GetText(),
                 instancerData->masterPath.GetText())) {
             return 0;
         }
@@ -726,9 +744,9 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
         static const bool ignoreRootTransform = true;
 
         GfMatrix4d xform(1.0);
-        TF_FOR_ALL(instanceIt, instanceContext) {
-            xform = xform 
-                * adapter->GetTransform(*instanceIt, time, ignoreRootTransform);
+        for (UsdPrim const& prim : instanceContext) {
+            xform = xform *
+                adapter->GetTransform(prim, time, ignoreRootTransform);
         }
 
         // The prototype transform will have the root transform, so we need
@@ -770,8 +788,8 @@ struct UsdImagingInstanceAdapter::_GatherInstanceTransformTimeSamplesFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        TF_FOR_ALL(primIt, instanceContext) {
-             if (UsdGeomXformable xf = UsdGeomXformable(*primIt)) {
+        for (UsdPrim const& prim : instanceContext) {
+             if (UsdGeomXformable xf = UsdGeomXformable(prim)) {
                 std::vector<double> localTimeSamples;
                 xf.GetTimeSamplesInInterval(interval, &localTimeSamples);
 
@@ -882,8 +900,8 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        TF_FOR_ALL(primIt, instanceContext) {
-            if (_GetIsTransformVarying(*primIt)) {
+        for (UsdPrim const& prim : instanceContext) {
+            if (_GetIsTransformVarying(prim)) {
                 result = true;
                 break;
             }
@@ -1300,57 +1318,52 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index,
                                        bool reload)
 {
-    // Either the prim was fundamentally modified or removed.
-    // Regenerate instancer data if an instancer depends on the
-    // resync'd prim. 
-    SdfPathVector instancersToUnload;
+    // Cache path corresponds to a hydra instancer path that we want to remove
+    // or reload.  While we only create one hydra instancer per native instance
+    // group, we keep instancerData entries for each level of master.  So we
+    // need to traverse up to the top-level native instances, and then go back
+    // down through all of the nested native instances, resyncing each.
+    //
+    // We do this with a breadth first search. instancersToUnload marks where
+    // we've been already; instancersToTraverse marks where we still need to
+    // visit.  When we visit a node, add it to the unload set and also add
+    // any dependencies to the traversal list (such as parent instancers
+    // and child instancers).
 
-    TF_FOR_ALL(instIt, _instancerData) {
-        SdfPath const& instancerPath = instIt->first;
-        _InstancerData& inst = instIt->second;
+    SdfPathSet instancersToUnload;
+    SdfPathVector instancersToTraverse;
 
-        // The resync'd prim is a dependency if it is a descendent of
-        // the instancer master prim.
-        if (cachePath.HasPrefix(inst.masterPath)) {
-            instancersToUnload.push_back(instancerPath);
+    instancersToTraverse.push_back(cachePath);
+    while (!instancersToTraverse.empty()) {
+        SdfPath instancePath = instancersToTraverse.back();
+        instancersToTraverse.pop_back();
+
+        SdfPath instancerPath;
+        auto it = _instanceToInstancerMap.find(instancePath);
+        if (it == _instanceToInstancerMap.end()) {
             continue;
         }
+        instancerPath = it->second;
 
-        // The resync'd prim is a dependency if it is an instance of
-        // the instancer master prim.
-        const SdfPathVector& instances = inst.instancePaths;
-        if (std::binary_search(instances.begin(), instances.end(), cachePath)) {
-            instancersToUnload.push_back(instancerPath);
-            continue;
+        // If this is a new instancer to unload...
+        if (instancersToUnload.insert(instancerPath).second)  {
+            _InstancerDataMap::iterator instIt =
+                _instancerData.find(instancerPath);
+            TF_VERIFY(instIt != _instancerData.end());
+
+            // Make sure to visit parents/children!
+            instancersToTraverse.insert(instancersToTraverse.end(),
+                instIt->second.nestedInstances.begin(),
+                instIt->second.nestedInstances.end());
+            instancersToTraverse.insert(instancersToTraverse.end(),
+                instIt->second.parentInstances.begin(),
+                instIt->second.parentInstances.end());
         }
     }
 
-    // If there are nested instances beneath the instancer we're about to
-    // reload, we need to reload the instancers for those instances as well,
-    // and so on if those instancers also have nested instances.
-    for (size_t i = 0; i < instancersToUnload.size(); ++i) {
-        // Make sure to take a copy since we are intentionally mutating
-        // the vector as we're iterating over it.
-        const SdfPath instancerToUnload = instancersToUnload[i];
-        TF_FOR_ALL(instIt, _instancerData) {
-            const SdfPathVector& instances = instIt->second.instancePaths;
-            const SdfPathVector::const_iterator pathIt = std::lower_bound(
-                instances.begin(), instances.end(), instancerToUnload);
-            if (pathIt != instances.end() &&
-                pathIt->HasPrefix(instancerToUnload)) {
-                // Since we use one of the Usd instances as the Hydra
-                // instancer, we need to do this check to ensure we don't
-                // add the same prim to instancersToUnload and wind up
-                // in an infinite loop.
-                if (*pathIt != instancerToUnload) {
-                    instancersToUnload.push_back(instIt->first);
-                }
-            }
-        }
-    }
-
-    TF_FOR_ALL(pathIt, instancersToUnload) {
-        _ResyncInstancer(*pathIt, index, reload);
+    // Actually resync everything.
+    for (SdfPath const& instancer : instancersToUnload) {
+        _ResyncInstancer(instancer, index, reload);
     }
 }
 
@@ -1706,10 +1719,10 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     }
 
     // First, we need to make sure all proto rprims are removed.
-    TF_FOR_ALL(primIt, instIt->second.primMap) {
+    for (auto const& pair : instIt->second.primMap) {
         // Call ProcessRemoval here because we don't want them to reschedule for
         // resync, that will happen when the instancer is resync'd.
-        primIt->second.adapter->ProcessPrimRemoval(primIt->first, index);
+        pair.second.adapter->ProcessPrimRemoval(pair.first, index);
     }
 
     // Remove this instancer's entry from the master -> instancer map.
@@ -1733,8 +1746,8 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     // Remove local instancer data.
     _instancerData.erase(instIt);
 
-    TF_FOR_ALL(pathIt, instancePaths) {
-        auto it = _instanceToInstancerMap.find(*pathIt);
+    for (SdfPath const& path : instancePaths) {
+        auto it = _instanceToInstancerMap.find(path);
         _instanceToInstancerMap.erase(it);
     }
 
@@ -1742,10 +1755,10 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     // anymore will be ignored, while those that still exist will be
     // pushed back into this adapter and refreshed.
     if (repopulate) {
-        TF_FOR_ALL(pathIt, instancePaths) {
-            UsdPrim prim = _GetPrim(*pathIt);
+        for (SdfPath const &path : instancePaths) {
+            UsdPrim prim = _GetPrim(path);
             if (prim && prim.IsActive() && !prim.IsInMaster()) {
-                index->Repopulate(*pathIt);
+                index->Repopulate(path);
             }
         }
     }
@@ -1869,8 +1882,8 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
         // doesn't matter since we only call this function when visibility
         // is not variable.
         UsdTimeCode time = adapter->_GetTimeWithOffset(0.0);
-        TF_FOR_ALL(primIt, instanceContext) {
-            if (!adapter->GetVisible(*primIt, time)) {
+        for (UsdPrim const& prim : instanceContext) {
+            if (!adapter->GetVisible(prim, time)) {
                 return false;
             }
         }
@@ -1879,8 +1892,8 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
 
     bool IsVisibilityVarying(const std::vector<UsdPrim>& instanceContext)
     {
-        TF_FOR_ALL(primIt, instanceContext) {
-            if (_GetIsVisibilityVarying(*primIt)) {
+        for (UsdPrim const& prim : instanceContext) {
+            if (_GetIsVisibilityVarying(prim)) {
                 return true;
             }
         }
@@ -1973,8 +1986,8 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapFn
 
     bool GetVisible(const std::vector<UsdPrim>& instanceContext)
     {
-        TF_FOR_ALL(primIt, instanceContext) {
-            if (!adapter->GetVisible(*primIt, time)) {
+        for (UsdPrim const& prim : instanceContext) {
+            if (!adapter->GetVisible(prim, time)) {
                 return false;
             }
         }

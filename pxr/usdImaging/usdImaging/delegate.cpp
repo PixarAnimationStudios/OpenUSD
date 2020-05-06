@@ -1170,10 +1170,16 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     }
 
     // Otherwise, this is a totally new branch of the scene, so populate
-    // from the resync target path.
-    TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected new prim: <%s>\n",
-        usdPath.GetText());
-    proxy->Repopulate(usdPath);
+    // from the resync target path. Note: we need to verify that usdPath exists,
+    // since we can get resync notices for prims that were deleted.
+    if (_stage->GetPrimAtPath(usdPath)) {
+        TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected new prim: <%s>\n",
+            usdPath.GetText());
+        proxy->Repopulate(usdPath);
+    } else {
+        TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected deleted prim: <%s>\n",
+            usdPath.GetText());
+    }
 }
 
 void 

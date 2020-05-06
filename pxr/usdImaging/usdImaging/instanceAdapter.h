@@ -422,8 +422,11 @@ private:
         // instancer, the actual relationship is more like a directed graph.
         SdfPathSet childPointInstancers;
 
-        // Nested native instances.
+        // Nested (child) native instances.
         SdfPathVector nestedInstances;
+
+        // Parent native instances.
+        SdfPathVector parentInstances;
 
         // Flag indicating we've queued up the delegate to call TrackVariability
         // on this instancer.  We record this so we don't do it multiple times.
