@@ -116,7 +116,8 @@ UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
       _isInverseOp(isInverseOp)
 {
     if (!attr) {
-        TF_CODING_ERROR("UsdGeomXformOp created with invalid UsdAttribute.");
+        // Legal to construct an XformOp with invalid attr, however IsDefined()
+        // and explicit bool operator will return false.
         return;
     }
 

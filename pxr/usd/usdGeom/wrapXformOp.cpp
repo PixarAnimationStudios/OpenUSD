@@ -86,6 +86,49 @@ _GetOpName(const UsdGeomXformOp &self)
 
 } // anonymous namespace 
 
+
+// We override __getattribute__ for UsdGeomXformOp to check object validity
+// and raise an exception instead of crashing from Python.
+//
+// Store the original __getattribute__ so we can dispatch to it after verifying
+// validity
+static TfStaticData<TfPyObjWrapper> _object__getattribute__;
+
+// This function gets wrapped as __getattribute__ on UsdGeomXformOp.
+static object
+__getattribute__(object selfObj, const char *name) {
+    // Allow attribute lookups if the attribute name starts with '__', or
+    // if the object's prim and attribute are both valid, or whitelist a few
+    // methods if just the prim is valid, or an even smaller subset if neighter
+    // is valid.
+    if ((name[0] == '_' && name[1] == '_') ||
+        // prim and attr are valid, let everything through.
+        (extract<UsdGeomXformOp &>(selfObj)().GetAttr().IsValid() &&
+         extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
+        // prim is valid, but attr is invalid, let a few things through.
+        (extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid() &&
+         (strcmp(name, "IsInverseOp") == 0 ||
+          strcmp(name, "IsDefined") == 0 ||
+          strcmp(name, "GetName") == 0 ||
+          strcmp(name, "GetBaseName") == 0 ||
+          strcmp(name, "GetNamespace") == 0 ||
+          strcmp(name, "GetOpTransform") == 0 ||
+          strcmp(name, "GetOpName") == 0 ||
+          strcmp(name, "GetOpType") == 0 ||
+          strcmp(name, "SplitName") == 0)) ||
+        // prim and attr are both invalid, let almost nothing through.
+          strcmp(name, "GetAttr") == 0) {
+        // Dispatch to object's __getattribute__.
+        return (*_object__getattribute__)(selfObj, name);
+    } else {
+        // Otherwise raise a runtime error.
+        TfPyThrowRuntimeError(
+            TfStringPrintf("Accessed schema on invalid prim"));
+    }
+    // Unreachable.
+    return object();
+}
+
 void wrapUsdGeomXformOp()
 {
     typedef UsdGeomXformOp XformOp;
@@ -93,7 +136,8 @@ void wrapUsdGeomXformOp()
     TF_PY_WRAP_PUBLIC_TOKENS("XformOpTypes", UsdGeomXformOpTypes,
                              USDGEOM_XFORM_OP_TYPES);
 
-    scope s = class_<XformOp>("XformOp")
+    class_<XformOp> cls("XformOp");
+    scope s = cls
         .def(init<UsdAttribute, bool>(
                 (arg("attr"), 
                  arg("isInverseOp")=false)))
@@ -149,5 +193,9 @@ void wrapUsdGeomXformOp()
 
     TfPyContainerConversions::from_python_sequence<std::vector<XformOp >,
         TfPyContainerConversions::variable_capacity_policy >();
+
+    // Save existing __getattribute__ and replace.
+    *_object__getattribute__ = object(cls.attr("__getattribute__"));
+    cls.def("__getattribute__", __getattribute__);
 }
 
