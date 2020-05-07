@@ -3876,16 +3876,7 @@ class AppController(QtCore.QObject):
         # this.
         compKeys = [# composition related metadata
                     "references", "inheritPaths", "specializes",
-                    "payload", "subLayers",
-
-                    # non-template clip metadata
-                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
-                    "clipActive", "clipPrimPath",
-
-                    # template clip metadata
-                    "clipTemplateAssetPath",
-                    "clipTemplateStartTime", "clipTemplateEndTime",
-                    "clipTemplateStride"]
+                    "payload", "subLayers"]
 
 
         for k in compKeys:
@@ -3993,7 +3984,7 @@ class AppController(QtCore.QObject):
         for key in sortedKeys:
             if key == "clips":
                 for (clip, metadataGroup) in m[key].items():
-                    attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
+                    attrName = QtWidgets.QTableWidgetItem(str('clips:' + clip))
                     tableWidget.setItem(rowIndex, 0, attrName)
                     for metadata in metadataGroup.keys():
                         dataPair = (metadata, metadataGroup[metadata])
