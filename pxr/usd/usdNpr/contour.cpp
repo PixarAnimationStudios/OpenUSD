@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdNprContour,
-        TfType::Bases< UsdGeomMesh > >();
+        TfType::Bases< UsdGeomGprim > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -256,7 +256,7 @@ UsdNprContour::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdGeomMesh::GetSchemaAttributeNames(true),
+            UsdGeomGprim::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)
@@ -289,11 +289,25 @@ UsdNprContour::GetContourSurfaces() const
   {
     SdfPath primPath = targets[i].GetAbsoluteRootOrPrimPath();
     UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(primPath);
-    if(prim.IsA<UsdGeomMesh>())
-      contourSurfaces.push_back(prim);
+    if(prim.IsA<UsdGeomMesh>()) contourSurfaces.push_back(prim);
   }
   return contourSurfaces;
-  
+}
+
+bool
+UsdNprContour::ComputeExtent(const UsdTimeCode& timeCode, const UsdPrim& prim, VtVec3fArray* extent)
+{
+  TfTokenVector purposes = {UsdGeomTokens->default_, UsdGeomTokens->render};
+  UsdGeomBBoxCache bboxCache(timeCode, purposes, true, false);
+  std::vector<UsdPrim> contourSurfaces = UsdNprContour(prim).GetContourSurfaces();
+  GfRange3d accum;
+  for(auto& contourSurface: contourSurfaces)
+  {
+    GfBBox3d bbox = bboxCache.ComputeWorldBound(contourSurface);
+    accum.UnionWith(bbox.GetRange());
+  }
+  (*extent)[0] = GfVec3f(accum.GetMin());
+  (*extent)[1] = GfVec3f(accum.GetMax());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

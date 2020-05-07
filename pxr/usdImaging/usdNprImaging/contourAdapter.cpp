@@ -58,7 +58,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingContourAdapter::~UsdImagingContourAdapter() 
 {
-  for(auto& dualMesh: _dualMeshes)delete dualMesh.second;
 }
 
 bool
@@ -79,7 +78,7 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
     SdfPath contourSurfacePath = contourSurfaces[i].GetPath();
     if(_dualMeshes.find(contourSurfacePath) == _dualMeshes.end())
     {
-      UsdNprDualMesh* dualMesh = new UsdNprDualMesh();
+      UsdNprDualMeshSharedPtr dualMesh(new UsdNprDualMesh());
 
       const UsdImagingPrimAdapterSharedPtr& adapter = 
         _GetPrimAdapter(contourSurfaces[i], false);
@@ -157,7 +156,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       UsdNprDualMeshMap::const_iterator it = _dualMeshes.find(contourSurfacePath);
       if(it != _dualMeshes.end())
       {
-        UsdNprDualMesh* dualMesh = it->second;
+        UsdNprDualMeshSharedPtr dualMesh = it->second;
 
         if(dualMesh->GetLastTime() != time)
         {
@@ -296,8 +295,6 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
                           faceVertexCounts,
                           faceVertexIndices);
   
-  std::cout << "CACHE PATH " << cachePath << std::endl;
-  std::cout << "OUTPUT GEOMETRY POINTS : "<< points.size() << std::endl;
   valueCache->GetTopology(cachePath) = VtValue(topology);
   valueCache->GetPoints(cachePath) = VtValue(points);
 }

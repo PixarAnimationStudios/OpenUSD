@@ -398,8 +398,9 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
       drawItem->SetVertexArray(_vertexArray.get());
     }
   }
-  _UpdateVisibility(sceneDelegate, dirtyBits);
+  
   _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
+  _UpdateVisibility(sceneDelegate, dirtyBits);
 
   // instances
   if (!GetInstancerId().IsEmpty())

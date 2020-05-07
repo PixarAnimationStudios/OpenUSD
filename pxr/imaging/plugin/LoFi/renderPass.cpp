@@ -148,8 +148,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     const LoFiDrawItem* lofiDrawItem = 
       reinterpret_cast<const LoFiDrawItem*>(drawItem);
 
-    if(!lofiDrawItem->GetVisible()) continue;
-
     const LoFiBinder* binder = lofiDrawItem->GetBinder();
     TfToken programName = binder->GetProgramName();
   
@@ -206,6 +204,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
     LoFiDrawItemPtrSet drawItemSet = _programDrawItemsMap[programName];
     for(auto drawItem: drawItemSet)
     {
+      if(!drawItem->GetVisible()) continue;
       const LoFiBinder* binder = drawItem->GetBinder();
 
       const LoFiVertexArray* vertexArray = drawItem->GetVertexArray();

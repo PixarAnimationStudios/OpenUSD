@@ -28,13 +28,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdNpr/api.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdNpr/tokens.h"
 
 
 #include "pxr/usd/usd/collectionAPI.h" 
+
+#include "pxr/usd/usdGeom/mesh.h"
+
+#include "pxr/usd/usdGeom/bboxCache.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -57,7 +61,7 @@ class SdfAssetPath;
 ///
 /// Defines a procedurally generated contour for NPR rendering.
 ///
-class UsdNprContour : public UsdGeomMesh
+class UsdNprContour : public UsdGeomGprim
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -70,7 +74,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdNprContour(const UsdPrim& prim=UsdPrim())
-        : UsdGeomMesh(prim)
+        : UsdGeomGprim(prim)
     {
     }
 
@@ -78,7 +82,7 @@ public:
     /// Should be preferred over UsdNprContour(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdNprContour(const UsdSchemaBase& schemaObj)
-        : UsdGeomMesh(schemaObj)
+        : UsdGeomGprim(schemaObj)
     {
     }
 
@@ -323,8 +327,22 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
     USDNPR_API
-    std::vector<UsdPrim> 
-    GetContourSurfaces() const;
+    std::vector<UsdPrim> GetContourSurfaces() const;
+
+    /// Compute the extent for the contour. 
+    ///
+    /// \return true on success, false if extents was unable to be calculated.
+    /// 
+    /// On success, extent will contain the axis-aligned bounding box of the
+    /// aggregated surfaces.
+    ///
+    /// This function is to provide easy authoring of extent for usd authoring
+    /// tools, hence it is static and acts outside a specific prim (as in 
+    /// attribute based methods).
+    USDNPR_API
+    static bool ComputeExtent(const UsdTimeCode& timeCode, const UsdPrim& prim,
+      VtVec3fArray* extent);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

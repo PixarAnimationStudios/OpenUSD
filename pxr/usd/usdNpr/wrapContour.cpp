@@ -97,7 +97,7 @@ void wrapUsdNprContour()
 {
     typedef UsdNprContour This;
 
-    class_<This, bases<UsdGeomMesh> >
+    class_<This, bases<UsdGeomGprim> >
         cls("Contour");
 
     cls
