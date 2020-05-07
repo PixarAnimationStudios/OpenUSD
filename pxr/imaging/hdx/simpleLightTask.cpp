@@ -42,8 +42,6 @@
 
 #include "pxr/base/gf/frustum.h"
 
-#include <boost/bind.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
