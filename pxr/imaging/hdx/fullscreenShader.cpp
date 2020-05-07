@@ -68,6 +68,9 @@ HdxFullscreenShader::HdxFullscreenShader(
     if (_debugName.empty()) {
         _debugName = "HdxFullscreenShader";
     }
+
+    // Create descriptor for vertex pos and uvs.
+    _CreateVertexBufferDescriptor();
 }
 
 HdxFullscreenShader::~HdxFullscreenShader()
@@ -166,9 +169,6 @@ HdxFullscreenShader::CreatePipeline(HgiPipelineDesc pipeDesc)
     if (_pipeline && _pipeline.Get()->GetDescriptor() == pipeDesc) {
         return;
     }
-
-    // Create descriptor for vertex pos and uvs
-    _CreateVertexBufferDescriptor();
 
     if (pipeDesc.debugName.empty()) {
         pipeDesc.debugName = "HdxFullscreenShader Pipeline";
@@ -344,10 +344,6 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
 void
 HdxFullscreenShader::_CreateVertexBufferDescriptor()
 {
-    if (!_vboDesc.vertexAttributes.empty()) {
-        return;
-    }
-
     // Describe the vertex buffer
     HgiVertexAttributeDesc posAttr;
     posAttr.format = HgiFormatFloat32Vec3;
@@ -363,6 +359,7 @@ HdxFullscreenShader::_CreateVertexBufferDescriptor()
 
     _vboDesc.bindingIndex = bindSlots++;
     _vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
+    _vboDesc.vertexAttributes.clear();
     _vboDesc.vertexAttributes.push_back(posAttr);
     _vboDesc.vertexAttributes.push_back(uvAttr);
 }
@@ -383,9 +380,6 @@ HdxFullscreenShader::_CreateDefaultPipeline(
 
         _hgi->DestroyPipeline(&_pipeline);
     }
-
-    // Create descriptor for vertex pos and uvs
-    _CreateVertexBufferDescriptor();
 
     // Setup attachments
     _attachment0.blendEnabled = _blendingEnabled;
