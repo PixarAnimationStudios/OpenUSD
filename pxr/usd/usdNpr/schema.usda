@@ -36,12 +36,14 @@ over "GLOBAL" (
 }
 
 class Contour "Contour" (
-    inherits = </Mesh>
+    inherits = </Gprim>
     doc = """Defines a procedurally generated contour for NPR rendering."""
     customData = {
         string className = "Contour"
         string extraIncludes = """
-#include "pxr/usd/usd/collectionAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" 
+#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/bboxCache.h" """
     }
     prepend apiSchemas = ["CollectionAPI:surfaces"]
 ) {

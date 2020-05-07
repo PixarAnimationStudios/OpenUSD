@@ -46,7 +46,7 @@ struct UsdNprOutputBuffer {
 };
 
 typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
-typedef TfHashMap<SdfPath, UsdNprDualMesh*, SdfPath::Hash> UsdNprDualMeshMap;
+typedef TfHashMap<SdfPath, UsdNprDualMeshSharedPtr, SdfPath::Hash> UsdNprDualMeshMap;
 
 
 /// \class UsdImagingContourAdapter
