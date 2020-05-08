@@ -1885,16 +1885,16 @@ _ComputeTimeSamples(
 
     // Extend the time samples of each skel adapter with the time samples
     // of each skinning adapter.
-    WorkParallelForN(
-        skinningAdapters.size(),
-        [&](size_t start, size_t end) {   
-            for (size_t i = start; i < end; ++i) {
-                skinningAdapters[i]->ExtendTimeSamples(
-                    interval,
-                    &skelTimesMap[skinningAdapters[i]->GetSkelAdapter()]);
-            }
-        });
-    
+    // NOTE: multiple skinning adapters may share the same skel adapter, so in
+    // order for this work to be done in parallel the skinning adapters would
+    // need to be grouped such that that the same skel adapter isn't modified
+    // by multiple threads.
+    for (const _SkinningAdapterRefPtr &adapter : skinningAdapters) {
+        adapter->ExtendTimeSamples(
+            interval,
+            &skelTimesMap[adapter->GetSkelAdapter()]);
+    }
+
     // Each times array may now hold duplicate entries. 
     // Sort and remove dupes from each array.
     WorkParallelForN(
