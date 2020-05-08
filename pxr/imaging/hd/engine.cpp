@@ -51,7 +51,7 @@ HdEngine::~HdEngine()
 }
 
 void 
-HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
+HdEngine::SetTaskContextData(const TfToken &id, const VtValue &data)
 {
     // See if the token exists in the context and if not add it.
     std::pair<HdTaskContext::iterator, bool> result =
