@@ -25,16 +25,16 @@ pxr_library(hgiMetal
         diagnostic.h
         hgi.h
         texture.h
-
-    PRIVATE_HEADERS
         blitCmds.h
         buffer.h
-        conversions.h
         graphicsCmds.h
         pipeline.h
         resourceBindings.h
         shaderFunction.h
         shaderProgram.h
+
+    PRIVATE_HEADERS
+        conversions.h
 
     CPPFILES
         blitCmds.mm
