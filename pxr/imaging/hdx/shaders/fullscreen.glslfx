@@ -87,7 +87,7 @@ layout (binding = 0) uniform sampler2D color;
 
 void main(void)
 {
-    gl_FragColor = texture2D(color, uv);
+    gl_FragColor = texture(color, uv);
 }
 
 -- glsl Composite.FragmentWithDepth
@@ -101,8 +101,8 @@ layout (binding = 1) uniform sampler2D depth;
 
 void main(void)
 {
-    float depth = texture2D(depth, uv).r;
-    gl_FragColor = texture2D(color, uv);
+    float depth = texture(depth, uv).r;
+    gl_FragColor = texture(color, uv);
     gl_FragDepth = depth;
 }
 
