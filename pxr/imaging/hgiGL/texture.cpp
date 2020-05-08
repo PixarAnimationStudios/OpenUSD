@@ -93,6 +93,73 @@ _GlTextureSubImageND(
     }
 }
 
+static
+void
+_GlCompressedTextureSubImageND(
+    const HgiTextureType textureType,
+    const GLuint texture,
+    const GLint level,
+    const GfVec3i &offsets,
+    const GfVec3i &dimensions,
+    const GLenum format,
+    const GLsizei imageSize,
+    const void * pixels)
+{
+    switch(textureType) {
+    case HgiTextureType2D:
+        glCompressedTextureSubImage2D(
+            texture,
+            level,
+            offsets[0], offsets[1],
+            dimensions[0], dimensions[1],
+            format,
+            imageSize,
+            pixels);
+        break;
+    case HgiTextureType3D:
+        glCompressedTextureSubImage3D(
+            texture,
+            level,
+            offsets[0], offsets[1], offsets[2],
+            dimensions[0], dimensions[1], dimensions[2],
+            format,
+            imageSize,
+            pixels);
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+        break;
+    }
+}
+
+static
+bool _IsValidCompression(HgiTextureDesc const & desc)
+{
+    switch(desc.type) {
+    case HgiTextureType2D:
+        if ( desc.dimensions[0] % 4 != 0 ||
+             desc.dimensions[1] % 4 != 0) {
+            TF_CODING_ERROR("Compressed texture with width or height "
+                            "not a multiple of 4");
+            return false;
+        }
+        return true;
+    case HgiTextureType3D:
+        if ( desc.dimensions[0] % 4 != 0 ||
+             desc.dimensions[1] % 4 != 0 ||
+             desc.dimensions[2] % 4 != 0) {
+            TF_CODING_ERROR("Compressed texture with width, height or depth"
+                            "not a multiple of 4");
+            return false;
+        }
+        return true;
+    default:
+        TF_CODING_ERROR("Compression not supported for given texture "
+                        "type");
+        return false;
+    }
+}
+
 HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     : HgiTexture(desc)
     , _textureId(0)
@@ -105,6 +172,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     GLenum glInternalFormat = 0;
     GLenum glFormat = 0;
     GLenum glPixelType = 0;
+    const bool isCompressed = HgiIsCompressed(desc.format);
 
     if (desc.usage & HgiTextureUsageBitsDepthTarget) {
         TF_VERIFY(desc.format == HgiFormatFloat32);
@@ -117,6 +185,10 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             &glFormat, 
             &glPixelType,
             &glInternalFormat);
+    }
+
+    if (isCompressed && !_IsValidCompression(desc)) {
+        return;
     }
 
     if (desc.sampleCount == HgiSampleCount1) {
@@ -159,15 +231,34 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             desc.dimensions);
 
         if (desc.initialData && desc.pixelsByteSize > 0) {
-            _GlTextureSubImageND(
-                desc.type,
-                _textureId,
-                /*mip*/0,
-                /*offsets*/GfVec3i(0),
-                desc.dimensions,
-                glFormat,
-                glPixelType,
-                desc.initialData);
+            if (isCompressed) {
+
+                const GLsizei imageSize =
+                    desc.dimensions[0] *
+                    desc.dimensions[1] *
+                    desc.dimensions[2] *
+                    desc.pixelsByteSize;
+
+                _GlCompressedTextureSubImageND(
+                    desc.type,
+                    _textureId,
+                    /*mip*/0,
+                    /*offsets*/GfVec3i(0),
+                    desc.dimensions,
+                    glInternalFormat,
+                    imageSize,
+                    desc.initialData);
+            } else {
+                _GlTextureSubImageND(
+                    desc.type,
+                    _textureId,
+                    /*mip*/0,
+                    /*offsets*/GfVec3i(0),
+                    desc.dimensions,
+                    glFormat,
+                    glPixelType,
+                    desc.initialData);
+            }
         }
     } else {
         // Note: Setting sampler state values on multi-sample texture is invalid

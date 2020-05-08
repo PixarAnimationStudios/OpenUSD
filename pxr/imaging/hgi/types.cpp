@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-size_t HgiGetComponentCount(HgiFormat f)
+size_t HgiGetComponentCount(const HgiFormat f)
 {
     switch (f) {
     case HgiFormatUNorm8:
@@ -47,6 +47,8 @@ size_t HgiGetComponentCount(HgiFormat f)
     case HgiFormatFloat16Vec3:
     case HgiFormatFloat32Vec3:
     case HgiFormatInt32Vec3:
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
         return 3;
     case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8Vec4:
@@ -55,13 +57,16 @@ size_t HgiGetComponentCount(HgiFormat f)
     case HgiFormatInt32Vec4:
     case HgiFormatUNorm8Vec4srgb:
         return 4;
-    default:
-        TF_CODING_ERROR("Missing Format");
+    case HgiFormatCount:
+    case HgiFormatInvalid:
+        TF_CODING_ERROR("Invalid Format");
         return 0;
     }
+    TF_CODING_ERROR("Missing Format");
+    return 0;
 }
 
-size_t HgiDataSizeOfFormat(HgiFormat f)
+size_t HgiDataSizeOfFormat(const HgiFormat f)
 {
     switch(f) {
     case HgiFormatUNorm8:
@@ -97,9 +102,26 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     case HgiFormatFloat32Vec4:
     case HgiFormatInt32Vec4:
         return 16;
-    default:
-        TF_CODING_ERROR("Missing Format");
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
+        return 1;
+    case HgiFormatCount:
+    case HgiFormatInvalid:
+        TF_CODING_ERROR("Invalid Format");
         return 0;
+    }
+    TF_CODING_ERROR("Missing Format");
+    return 0;
+}
+
+bool HgiIsCompressed(const HgiFormat f)
+{
+    switch(f) {
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
+        return true;
+    default:
+        return false;
     }
 }
 

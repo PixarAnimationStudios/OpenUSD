@@ -69,6 +69,9 @@ static const _FormatDesc FORMAT_DESC[] =
 
     // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8,     3}, // Unsupported by HgiFormat
     {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8, 4}, // UNorm8Vec4sRGB,
+
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, 3},  //BC6FloatVec3
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, 3},//BC6UFloatVec3
 };
 
 // A few random format validations to make sure out GL table stays aligned

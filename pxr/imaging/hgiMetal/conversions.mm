@@ -59,8 +59,11 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatInvalid,      // Unsupported by Metal
     MTLPixelFormatRGBA32Sint,   // HgiFormatInt32Vec4,
     
-    //MTLPixelFormatRGB8Unorm_sRGB,       // Unsupported by HgiFormat
-    MTLPixelFormatRGBA8Unorm_sRGB, // HgiFormatUNorm8Vec4sRGB,
+    //MTLPixelFormatRGB8Unorm_sRGB, // Unsupported by HgiFormat
+    MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4sRGB,
+
+    MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
+    MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
 };
 
 // A few random format validations to make sure out GL table stays aligned
@@ -107,8 +110,11 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
     MTLVertexFormatInt3,                // HgiFormatInt32Vec3,
     MTLVertexFormatInt4,                // HgiFormatInt32Vec4,
     
-    //MTLVertexFormatUChar4Normalized,       // Unsupported by HgiFormat
-    MTLVertexFormatUChar4Normalized, // HgiFormatUNorm8Vec4sRGB,
+    //MTLVertexFormatUChar4Normalized,  // Unsupported by HgiFormat
+    MTLVertexFormatUChar4Normalized,    // HgiFormatUNorm8Vec4sRGB,
+
+    MTLVertexFormatInvalid,             // HgiFormatBC6FloatVec3
+    MTLVertexFormatInvalid,             // HgiFormatBC6UFloatVec3
 };
 
 constexpr bool _CompileTimeValidateHgiVertexFormatTable() {

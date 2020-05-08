@@ -83,6 +83,12 @@ enum HgiFormat
     /* HgiFormatUNorm8Vec3srgb */ // Unsupported Metal (MTLPixelFormat)
     HgiFormatUNorm8Vec4srgb,
 
+    // BPTC compressed. 3-component, 4x4 blocks, signed floating-point
+    HgiFormatBC6FloatVec3,
+
+    // BPTC compressed. 3-component, 4x4 blocks, unsigned floating-point
+    HgiFormatBC6UFloatVec3,
+
     HgiFormatCount
 };
 
@@ -91,9 +97,16 @@ HGI_API
 size_t HgiGetComponentCount(HgiFormat f);
 
 /// Return the size of a single element of the given format.
-/// For block formats, this will return 0.
+///
+/// Returns the bytes-per-pixel even for blocked formats such as
+/// BC6 since - luckily - the number still happens to be integral for supported
+/// compression formats.
 HGI_API
 size_t HgiDataSizeOfFormat(HgiFormat f);
+
+/// Return whether the given format uses compression.
+HGI_API
+bool HgiIsCompressed(HgiFormat f);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

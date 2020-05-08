@@ -102,6 +102,12 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
                 &glInternalFormat);
         }
 
+        if (HgiIsCompressed(texDesc.format)) {
+            TF_CODING_ERROR(
+                "Copying from compressed GPU texture not supported.");
+            return;
+        }
+        
         // Make sure writes are finished before we read from the texture
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
