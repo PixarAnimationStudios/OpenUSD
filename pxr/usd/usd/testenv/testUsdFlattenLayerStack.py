@@ -94,10 +94,6 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
                 self.assertTrue(stage.GetPrimAtPath(childPath))
 
             # Confirm time samples coming from (offset) clips.
-            p = stage.GetPrimAtPath('/SphereUsingClip_LegacyForm')
-            a = p.GetAttribute('xformOp:translate')
-            self.assertEqual( a.GetResolveInfo(5).GetSource(),
-                    Usd.ResolveInfoSourceValueClips )
             p = stage.GetPrimAtPath('/SphereUsingClip')
             a = p.GetAttribute('xformOp:translate')
             self.assertEqual( a.GetResolveInfo(5).GetSource(),
@@ -178,15 +174,10 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
                 ['/Del_sub', '/Del_root'])
 
         # Confirm offsets have been folded into value clips.
-        p1 = layer.GetPrimAtPath('/SphereUsingClip_LegacyForm')
-        p2 = layer.GetPrimAtPath('/SphereUsingClip')
-        self.assertEqual( p1.GetInfo('clipActive'),
-           Vt.Vec2dArray(1, [(-9.0, 0.0)]) )
-        self.assertEqual( p1.GetInfo('clipTimes'),
-           Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
-        self.assertEqual( p2.GetInfo('clips')['default']['active'],
+        p = layer.GetPrimAtPath('/SphereUsingClip')
+        self.assertEqual( p.GetInfo('clips')['default']['active'],
            Vt.Vec2dArray(1, [(-9.0, 0)]) )
-        self.assertEqual( p2.GetInfo('clips')['default']['times'],
+        self.assertEqual( p.GetInfo('clips')['default']['times'],
            Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
 
         # Confirm nested variant sets still exist

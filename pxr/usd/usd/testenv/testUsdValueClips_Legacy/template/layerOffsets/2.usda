@@ -1,8 +1,0 @@
-#usda 1.0
-
-def "Clip"
-{
-    double a.timeSamples = {
-        2: 2.0,
-    }
-}

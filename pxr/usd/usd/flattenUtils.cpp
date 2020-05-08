@@ -246,24 +246,7 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
         return;
     }
 
-    if (field == UsdTokens->clipActive ||
-        field == UsdTokens->clipTimes) {
-        if (val->IsHolding<VtVec2dArray>()) {
-            VtVec2dArray entries = val->UncheckedGet<VtVec2dArray>();
-            for (auto &entry: entries) {
-                entry[0] = offset * entry[0];
-            }
-            val->Swap(entries);
-        }
-    }
-    else if (field == UsdTokens->clipTemplateStartTime ||
-             field == UsdTokens->clipTemplateEndTime) {
-        if (val->IsHolding<double>()) {
-            double time = offset * val->UncheckedGet<double>();
-            val->Swap(time);
-        }
-    }
-    else if (field == UsdTokens->clips) {
+    if (field == UsdTokens->clips) {
         if (val->IsHolding<VtDictionary>()) {
             VtDictionary clips = val->UncheckedGet<VtDictionary>();
             for (auto &entry: clips) {
