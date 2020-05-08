@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -44,7 +45,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((compositeFragmentNoDepth,      "CompositeFragmentNoDepth"))
     ((compositeFragmentWithDepth,    "CompositeFragmentWithDepth"))
     (fullscreenShader)
-    (color)
 );
 
 HdxFullscreenShader::HdxFullscreenShader(
@@ -476,7 +476,7 @@ HdxFullscreenShader::_Draw(
 {
     // If the user has not set a custom shader program, pick default program.
     if (!_shaderProgram) {
-        auto const& it = textures.find(TfToken("depth"));
+        auto const& it = textures.find(HdAovTokens->depth);
         bool depthAware = it != textures.end();
         SetProgram(HdxPackageFullscreenShader(),
             depthAware ? _tokens->compositeFragmentWithDepth :
@@ -502,7 +502,7 @@ HdxFullscreenShader::_Draw(
     // error out if 'colorDst' is not provided.
     HgiTextureHandle dimensionSrc = colorDst;
     if (!dimensionSrc) {
-        auto const& it = textures.find(_tokens->color);
+        auto const& it = textures.find(HdAovTokens->color);
         if (it != textures.end()) {
             dimensionSrc = it->second;
         }

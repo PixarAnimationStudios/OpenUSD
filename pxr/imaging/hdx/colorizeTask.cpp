@@ -548,7 +548,7 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     bool depthAware = false;
     if (_depthBuffer && _depthBuffer->GetFormat() == HdFormatFloat32) {
         uint8_t* db = reinterpret_cast<uint8_t*>(_depthBuffer->Map());
-        _compositor.SetTexture(TfToken("depth"),
+        _compositor.SetTexture(HdAovTokens->depth,
                                _depthBuffer->GetWidth(),
                                _depthBuffer->GetHeight(),
                                HdFormatFloat32, db);
@@ -556,14 +556,14 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         depthAware = true;
     } else {
         // If no depth buffer is bound, don't draw with depth.
-        _compositor.SetTexture(TfToken("depth"),
+        _compositor.SetTexture(HdAovTokens->depth,
                                0, 0, HdFormatInvalid, nullptr);
     }
 
     if (!_applyColorQuantization && _aovName == HdAovTokens->color) {
         // Special handling for color: to avoid a copy, just read the data
         // from the render buffer if no quantization is requested.
-        _compositor.SetTexture(TfToken("color"),
+        _compositor.SetTexture(HdAovTokens->color,
                                _aovBuffer->GetWidth(),
                                _aovBuffer->GetHeight(),
                                _aovBuffer->GetFormat(),
@@ -600,7 +600,7 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
 
         // Upload the scratch buffer.
         if (colorized) {
-            _compositor.SetTexture(TfToken("color"),
+            _compositor.SetTexture(HdAovTokens->color,
                                    _aovBuffer->GetWidth(),
                                    _aovBuffer->GetHeight(),
                                    HdFormatUNorm8Vec4,
