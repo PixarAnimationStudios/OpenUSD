@@ -62,6 +62,22 @@ HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
     }
 }
 
+bool
+HdEngine::GetTaskContextData(const TfToken &id, VtValue *data)
+{
+    if (!TF_VERIFY(data)) {
+        return false;
+    }
+
+    auto const& it = _taskContext.find(id);
+    if (it != _taskContext.end()) {
+        *data = it->second;
+        return true;
+    }
+
+    return false;
+}
+
 void
 HdEngine::RemoveTaskContextData(const TfToken &id)
 {
