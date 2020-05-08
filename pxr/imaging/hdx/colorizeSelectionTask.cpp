@@ -228,13 +228,12 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     // scene color. This gives us the blend func:
     // GL_ONE, GL_SRC_ALPHA, GL_ZERO, GL_ONE.
     if (!_pipelineCreated) {
-        HgiPipelineDesc desc;
-        desc.depthState.depthTestEnabled = false;
-        desc.depthState.depthWriteEnabled = false;
-        desc.depthState.stencilTestEnabled = false;
-        desc.multiSampleState.alphaToCoverageEnable = false;
+        HgiDepthStencilState depthState;
+        depthState.depthTestEnabled = false;
+        depthState.depthWriteEnabled = false;
+        depthState.stencilTestEnabled = false;
 
-        _compositor->CreatePipeline(desc);
+        _compositor->SetDepthState(depthState);
         _pipelineCreated = true;
 
         _compositor->SetBlendState(

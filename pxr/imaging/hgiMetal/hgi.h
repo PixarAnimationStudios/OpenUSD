@@ -135,8 +135,10 @@ public:
     }
     
     HGIMETAL_API
-    id<MTLCommandBuffer> GetCommandBuffer() {
-        _workToFlush = true;
+    id<MTLCommandBuffer> GetCommandBuffer(bool flush = true) {
+        if (flush) {
+            _workToFlush = true;
+        }
         return _commandBuffer;
     }
     

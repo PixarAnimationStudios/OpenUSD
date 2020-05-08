@@ -90,15 +90,12 @@ public:
 
     /// By default HdxFullscreenShader creates a pipeline object that enables
     /// depth testing and enables depth write if there is a depth texture.
-    /// This function allows you to override the pipeline state by providing
-    /// a custom pipeline descriptor.
-    /// Note that the ShaderProgram and ResourceBindings in the provided 
-    /// descriptor are ignored. Those are set via SetProgram, BindBuffer and
-    /// BindTextures.
+    /// This function allows you to override the depth and stencil state.
     HDX_API
-    void CreatePipeline(HgiPipelineDesc pipeDesc);
+    void SetDepthState(HgiDepthStencilState const& state);
 
-    /// Customize the blend state that is used during draw.
+    /// By default HdxFullscreenShader uses no blending (opaque).
+    /// This function allows you to override blend state (e.g. alpha blending)
     HDX_API
     void SetBlendState(
         bool enableBlending,
@@ -134,7 +131,7 @@ private:
     void _CreateVertexBufferDescriptor();
 
     // Utility to create a pipeline
-    bool _CreateDefaultPipeline(
+    bool _CreatePipeline(
         HgiTextureHandle const& colorDst,
         HgiTextureHandle const& depthDst,
         bool depthWrite);
@@ -164,6 +161,8 @@ private:
     HgiResourceBindingsHandle _resourceBindings;
     HgiPipelineHandle _pipeline;
     HgiVertexBufferDesc _vboDesc;
+
+    HgiDepthStencilState _depthState;
 
     bool _blendingEnabled;
     HgiBlendFactor _srcColorBlendFactor;

@@ -126,9 +126,13 @@ HgiMetal::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
         HgiCmds* w = cmdsptr + i;
 
         if (HgiMetalGraphicsCmds* gw = dynamic_cast<HgiMetalGraphicsCmds*>(w)) {
-            gw->Commit();
+            if (gw->Commit()) {
+                _workToFlush = true;
+            }
         } else if (HgiMetalBlitCmds* bw = dynamic_cast<HgiMetalBlitCmds*>(w)) {
-            bw->Commit();
+            if (gw->Commit()) {
+                _workToFlush = true;
+            }
         }
     }
     
@@ -146,7 +150,6 @@ HgiMetal::CreateGraphicsCmds(
         return nullptr;
     }
 
-    _workToFlush = true;
     HgiMetalGraphicsCmds* encoder(
         new HgiMetalGraphicsCmds(this, desc));
 
@@ -156,7 +159,6 @@ HgiMetal::CreateGraphicsCmds(
 HgiBlitCmdsUniquePtr
 HgiMetal::CreateBlitCmds()
 {
-    _workToFlush = true;
     return HgiBlitCmdsUniquePtr(new HgiMetalBlitCmds(this));
 }
 

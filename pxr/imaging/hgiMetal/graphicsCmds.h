@@ -89,7 +89,7 @@ protected:
         HgiGraphicsCmdsDesc const& desc);
     
     HGIMETAL_API
-    void Commit();
+    bool Commit();
     
 private:
     HgiMetalGraphicsCmds() = delete;
@@ -99,6 +99,7 @@ private:
     HgiMetal* _hgi;
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
+    bool _hasWork;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

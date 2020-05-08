@@ -69,8 +69,17 @@ HdxFullscreenShader::HdxFullscreenShader(
         _debugName = "HdxFullscreenShader";
     }
 
-    // Create descriptor for vertex pos and uvs.
+    // Create descriptor for vertex pos and uvs
     _CreateVertexBufferDescriptor();
+
+    // Depth test and write must be on since we may want to transfer depth.
+    // Depth test must be on because when off it also disables depth writes.
+    // Instead we set the compare function to always.
+    _depthState.depthTestEnabled = true;
+    _depthState.depthCompareFn = HgiCompareFunctionAlways;
+
+    // We don't use the stencil mask in this task.
+    _depthState.stencilTestEnabled = false;
 }
 
 HdxFullscreenShader::~HdxFullscreenShader()
@@ -163,35 +172,17 @@ HdxFullscreenShader::BindBuffer(
 }
 
 void
-HdxFullscreenShader::CreatePipeline(HgiPipelineDesc pipeDesc)
+HdxFullscreenShader::SetDepthState(HgiDepthStencilState const& state)
 {
-    // Pipeline not changed, abort.
-    if (_pipeline && _pipeline.Get()->GetDescriptor() == pipeDesc) {
+    if (_depthState == state) {
         return;
     }
-
-    if (pipeDesc.debugName.empty()) {
-        pipeDesc.debugName = "HdxFullscreenShader Pipeline";
-    }
-
-    // CreatePipeline call lets the caller set blend and raster state, but
-    // we always override resources, shader program and vertex descriptor since
-    // those either use the internal shader and textures or are already set
-    // via other functions on this class.
-    pipeDesc.pipelineType = HgiPipelineTypeGraphics;
-    pipeDesc.resourceBindings = _resourceBindings;
-    pipeDesc.shaderProgram = _shaderProgram;
-
-    // Ignore user provided vertex buffers. The VBO must always match the
-    // vertex attributes we setup for the fullscreen triangle.
-    pipeDesc.vertexBuffers.clear();
-    pipeDesc.vertexBuffers.push_back(_vboDesc);
 
     if (_pipeline) {
         _hgi->DestroyPipeline(&_pipeline);
     }
 
-    _pipeline = _hgi->CreatePipeline(pipeDesc);
+    _depthState = state;
 }
 
 void
@@ -204,6 +195,21 @@ HdxFullscreenShader::SetBlendState(
     HgiBlendFactor dstAlphaBlendFactor,
     HgiBlendOp alphaBlendOp)
 {
+    if (_blendingEnabled == enableBlending &&
+        _srcColorBlendFactor == srcColorBlendFactor &&
+        _dstColorBlendFactor == dstColorBlendFactor &&
+        _colorBlendOp == colorBlendOp &&
+        _srcAlphaBlendFactor == srcAlphaBlendFactor &&
+        _dstAlphaBlendFactor == dstAlphaBlendFactor &&
+        _alphaBlendOp == alphaBlendOp) 
+    {
+        return;
+    }
+
+    if (_pipeline) {
+        _hgi->DestroyPipeline(&_pipeline);
+    }
+
     _blendingEnabled = enableBlending;
     _srcColorBlendFactor = srcColorBlendFactor;
     _dstColorBlendFactor = dstColorBlendFactor;
@@ -365,7 +371,7 @@ HdxFullscreenShader::_CreateVertexBufferDescriptor()
 }
 
 bool
-HdxFullscreenShader::_CreateDefaultPipeline(
+HdxFullscreenShader::_CreatePipeline(
     HgiTextureHandle const& colorDst,
     HgiTextureHandle const& depthDst,
     bool depthWrite)
@@ -402,24 +408,19 @@ HdxFullscreenShader::_CreateDefaultPipeline(
     }
 
     HgiPipelineDesc desc;
-    desc.debugName = "HdxFullscreenShader Pipeline";
+    desc.debugName = _debugName + " Pipeline";
     desc.pipelineType = HgiPipelineTypeGraphics;
     desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
-    desc.colorAttachmentDescs.emplace_back(_attachment0);
+    desc.colorAttachmentDescs.push_back(_attachment0);
     desc.depthAttachmentDesc = _depthAttachment;
 
     desc.vertexBuffers.push_back(_vboDesc);
 
-    // Depth test and write must be on since we may want to transfer depth.
-    // Depth test must be on because when off it also disables depth writes.
-    // Instead we set the compare function to always.
-    desc.depthState.depthTestEnabled = true;
+    // User can provide custom depth state, but DepthWrite is controlled by the
+    // presence of the depth attachment.
+    desc.depthState = _depthState;
     desc.depthState.depthWriteEnabled = depthWrite;
-    desc.depthState.depthCompareFn = HgiCompareFunctionAlways;
-
-    // We don't use the stencil mask in this task.
-    desc.depthState.stencilTestEnabled = false;
 
     // Alpha to coverage would prevent any pixels that have an alpha of 0.0 from
     // being written. We want to transfer all pixels. Even background
@@ -431,7 +432,17 @@ HdxFullscreenShader::_CreateDefaultPipeline(
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
-    CreatePipeline(desc);
+    // Set resource bindings (texture, buffers) and shader
+    desc.pipelineType = HgiPipelineTypeGraphics;
+    desc.resourceBindings = _resourceBindings;
+    desc.shaderProgram = _shaderProgram;
+
+    // Ignore user provided vertex buffers. The VBO must always match the
+    // vertex attributes we setup for the fullscreen triangle.
+    desc.vertexBuffers.clear();
+    desc.vertexBuffers.push_back(_vboDesc);
+
+    _pipeline = _hgi->CreatePipeline(desc);
 
     return true;
 }
@@ -481,7 +492,7 @@ HdxFullscreenShader::_Draw(
     _CreateResourceBindings(textures);
 
     // create pipeline (first time)
-    _CreateDefaultPipeline(colorDst, depthDst, writeDepth);
+    _CreatePipeline(colorDst, depthDst, writeDepth);
 
     // If a destination color target is provided we can use it as the
     // dimensions of the backbuffer. If not destination textures are provided

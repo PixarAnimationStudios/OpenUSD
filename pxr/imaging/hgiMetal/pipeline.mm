@@ -159,10 +159,6 @@ HgiMetalPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
 
     stateDesc.depthAttachmentPixelFormat =
         HgiMetalConversions::GetPixelFormat(hgiDepthAttachment.format);
-    
-    if (stateDesc.depthAttachmentPixelFormat == MTLPixelFormatInvalid) {
-        stateDesc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
-    }
 
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         stateDesc.alphaToCoverageEnabled = YES;

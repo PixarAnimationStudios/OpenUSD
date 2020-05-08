@@ -94,10 +94,18 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     
     if (desc.initialData && desc.pixelsByteSize > 0) {
         TF_VERIFY(desc.mipLevels == 1, "Mipmap upload not implemented");
-        [_textureId replaceRegion:MTLRegionMake2D(0, 0, width, height)
-                        mipmapLevel:0
-                          withBytes:desc.initialData
-                        bytesPerRow:desc.pixelsByteSize / height];
+        if(depth <= 1) {
+            [_textureId replaceRegion:MTLRegionMake2D(0, 0, width, height)
+                            mipmapLevel:0
+                              withBytes:desc.initialData
+                            bytesPerRow:desc.pixelsByteSize / height];
+        }
+        else {
+            [_textureId replaceRegion:MTLRegionMake3D(0, 0, 0, width, height, depth)
+                            mipmapLevel:0 slice:0 withBytes:desc.initialData
+                          bytesPerRow:desc.pixelsByteSize / height / width
+                        bytesPerImage:desc.pixelsByteSize / depth];
+        }
     }
     
     HGIMETAL_DEBUG_LABEL(_textureId, _descriptor.debugName.c_str());
