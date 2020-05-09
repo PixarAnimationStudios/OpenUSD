@@ -283,6 +283,24 @@ std::vector<UsdPrim>
 UsdNprContour::GetContourSurfaces() const
 {
   
+  SdfPathVector targets;
+  UsdRelationship contourSurfacesRel = GetContourSurfacesRel();
+  contourSurfacesRel.GetTargets(&targets);
+  std::vector<UsdPrim> contourSurfaces;
+  if (targets.size())
+  {
+    for(int i=0;i<targets.size();++i)
+    {
+      SdfPath primPath = targets[i].GetAbsoluteRootOrPrimPath();
+      UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(primPath);
+      if(TF_VERIFY(prim))
+        if(prim.IsA<UsdGeomMesh>()) contourSurfaces.push_back(prim);
+    }
+  }
+  
+  if(contourSurfaces.size()) return contourSurfaces;
+  
+  // there was no contour surfaces authored, use the collection
   UsdCollectionAPI surfacesCollectionAPI = 
     GetContourSurfacesCollectionAPI() ;
   UsdCollectionAPI::MembershipQuery query = 
@@ -292,20 +310,12 @@ UsdNprContour::GetContourSurfaces() const
     UsdCollectionAPI::ComputeIncludedPaths(query, GetPrim().GetStage());
   
   for(const auto& includedPath: includedPaths)
-    std::cout << includedPath << std::endl;
-    
-
-  SdfPathVector targets;
-  UsdRelationship contourSurfacesRel = GetContourSurfacesRel();
-  contourSurfacesRel.GetTargets(&targets);
-  std::vector<UsdPrim> contourSurfaces;
-  if (targets.size() < 1) return contourSurfaces;
-  for(int i=0;i<targets.size();++i)
   {
-    SdfPath primPath = targets[i].GetAbsoluteRootOrPrimPath();
-    UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(primPath);
-    if(prim.IsA<UsdGeomMesh>()) contourSurfaces.push_back(prim);
+    UsdPrim prim = GetPrim().GetStage()->GetPrimAtPath(includedPath);
+      if(TF_VERIFY(prim))
+        if(prim.IsA<UsdGeomMesh>()) contourSurfaces.push_back(prim);
   }
+
   return contourSurfaces;
 }
 

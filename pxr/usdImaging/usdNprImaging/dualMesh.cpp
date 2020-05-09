@@ -452,22 +452,23 @@ size_t UsdNprDualMesh::GetNumHalfEdges() const
   return _halfEdgeMesh->GetNumHalfEdges(); 
 };
 
-static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
+inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
   float width, short index)
 {
+
   const GfVec3f tangent = (B-A).GetNormalized();
   const GfVec3f dir = ((A+B)*0.5 - V).GetNormalized();
   const GfVec3f normal = (tangent ^ dir).GetNormalized();
 
   switch(index) {
     case 0:
-      return A - normal * width;
+      return (A * 0.99 + V * 0.01) - normal * width;
     case 1:
-      return B - normal * width;
+      return (B * 0.99 + V * 0.01) - normal * width;
     case 2:
-      return B + normal * width;
+      return (B * 0.99 + V * 0.01) + normal * width;
     case 3:
-      return A + normal * width;
+      return (A * 0.99 + V * 0.01) + normal * width;
   };
 }
 
@@ -487,7 +488,7 @@ void UsdNprDualMesh::ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& s
   // points
   points.resize(numPoints);
   size_t index = 0;
-  float width = 0.1;
+  float width = 0.04;
   
   for(const auto& halfEdge: silhouettes)
   {

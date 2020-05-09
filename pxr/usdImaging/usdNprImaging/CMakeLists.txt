@@ -6,6 +6,7 @@ pxr_library(usdNprImaging
         usd
         usdImaging
         usdNpr
+        work
 
     PUBLIC_CLASSES
         utils
