@@ -3,6 +3,7 @@ set(PXR_PACKAGE usdNprImaging)
 
 pxr_library(usdNprImaging
     LIBRARIES
+        usd
         usdImaging
         usdNpr
 

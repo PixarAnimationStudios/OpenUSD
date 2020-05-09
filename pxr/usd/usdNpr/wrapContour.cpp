@@ -203,6 +203,10 @@ void wrapUsdNprContour()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetContourSurfacesCollectionAPI",
+             &UsdNprContour::GetContourSurfacesCollectionAPI)
+        ;
 }
 
 }

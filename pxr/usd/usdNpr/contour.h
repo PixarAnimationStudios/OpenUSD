@@ -48,6 +48,7 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -328,6 +329,9 @@ public:
     // --(BEGIN CUSTOM CODE)--
     USDNPR_API
     std::vector<UsdPrim> GetContourSurfaces() const;
+
+    USDNPR_API
+    UsdCollectionAPI GetContourSurfacesCollectionAPI() const;
 
     /// Compute the extent for the contour. 
     ///

@@ -276,10 +276,25 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 PXR_NAMESPACE_OPEN_SCOPE
+#include "pxr/usd/usdNpr/tokens.h"
 
+USDNPR_API
 std::vector<UsdPrim> 
 UsdNprContour::GetContourSurfaces() const
 {
+  
+  UsdCollectionAPI surfacesCollectionAPI = 
+    GetContourSurfacesCollectionAPI() ;
+  UsdCollectionAPI::MembershipQuery query = 
+    surfacesCollectionAPI.ComputeMembershipQuery();
+
+  SdfPathSet includedPaths = 
+    UsdCollectionAPI::ComputeIncludedPaths(query, GetPrim().GetStage());
+  
+  for(const auto& includedPath: includedPaths)
+    std::cout << includedPath << std::endl;
+    
+
   SdfPathVector targets;
   UsdRelationship contourSurfacesRel = GetContourSurfacesRel();
   contourSurfacesRel.GetTargets(&targets);
@@ -294,6 +309,14 @@ UsdNprContour::GetContourSurfaces() const
   return contourSurfaces;
 }
 
+USDNPR_API
+UsdCollectionAPI
+UsdNprContour::GetContourSurfacesCollectionAPI() const
+{
+    return UsdCollectionAPI(GetPrim(), UsdNprTokens->surfaces);
+}
+
+USDNPR_API
 bool
 UsdNprContour::ComputeExtent(const UsdTimeCode& timeCode, const UsdPrim& prim, VtVec3fArray* extent)
 {

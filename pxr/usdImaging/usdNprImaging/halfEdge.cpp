@@ -99,7 +99,6 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, const UsdTimeCode& tim
     }
     else ++boundaryCount;
   }
-  std::cout << "BOUNDARIES : " << boundaryCount << std::endl;
 }
 
 void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode) 

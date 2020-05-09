@@ -24,7 +24,6 @@
 #include "pxr/usdImaging/usdNprImaging/contourAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -177,7 +176,11 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         std::vector<const UsdNprHalfEdge*> silhouettes;
-        dualMesh->FindSilhouettes(viewPointMatrix, silhouettes);
+        size_t numDualEdges = dualMesh->GetNumDualEdges();
+        std::vector<bool> checked(numDualEdges);
+        memset(&checked[0], 0, numDualEdges * sizeof(bool));
+
+        dualMesh->FindSilhouettes(viewPointMatrix, silhouettes, checked);
 
         UsdNprOutputBuffer* outputBuffer = &outputBuffers[index];
 
