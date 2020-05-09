@@ -108,7 +108,8 @@ struct UsdNprTokensType {
     const TfToken silhouetteWidth;
     /// \brief "surfaces"
     /// 
-    ///  This token represents the collection name to use with UsdCollectionAPI to represent surface-linking of a UsdContour prim. 
+    ///  This token represents the collection name to use with UsdCollectionAPI
+    /// to represent surface-linking of a UsdContour prim.
     const TfToken surfaces;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

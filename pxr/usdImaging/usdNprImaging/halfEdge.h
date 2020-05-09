@@ -26,8 +26,8 @@ enum UsdHalfEdgeMeshVaryingBits {
 
 struct UsdNprHalfEdge
 {
-  uint32_t              vertex;    // vertex index
-  uint32_t              triangle;  // triangle index
+  uint32_t                vertex;    // vertex index
+  uint32_t                triangle;  // triangle index
   struct UsdNprHalfEdge*  twin;      // opposite half-edge
   struct UsdNprHalfEdge*  next;      // next half-edge
 
@@ -49,6 +49,7 @@ public:
   const GfVec3f* GetNormalsPtr() const {return &_normals[0];};
   size_t GetNumPoints() const {return _positions.size();};
   size_t GetNumTriangles() const {return _numTriangles;};
+  size_t GetNumHalfEdges() const {return _halfEdges.size();};
 
   // varying
   bool IsVarying(){return _varyingBits != 0;};

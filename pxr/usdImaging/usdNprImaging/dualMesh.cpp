@@ -23,53 +23,53 @@ int32_t UsdNprDualEdge::GetPoint(short i) const
 }
 
 UsdNprDualEdge::UsdNprDualEdge(const UsdNprHalfEdge* halfEdge, bool facing,
-		   int tp, const GfVec4f& pos1, const GfVec4f& pos2)
+		   int tp, const GfVec4d& pos1, const GfVec4d& pos2, int32_t index)
   : _halfEdge(halfEdge)
   , _facing(facing)
-  , _checked(false)
+  , _index(index)
 {
 
   float d1, d2;
   switch (tp) {
   case PX:
   case NX:
-    d1 = GfMax(FLT_EPSILON, fabs(pos1[0]));
-    d2 = GfMax(FLT_EPSILON, fabs(pos2[0]));
-    _points[0] = GfVec3f(pos1[1]/d1, pos1[2]/d1, pos1[3]/d1);
-    _points[1] = GfVec3f(pos2[1]/d2, pos2[2]/d2, pos2[3]/d2);
+    d1 = GfMax(DBL_EPSILON, GfAbs(pos1[0]));
+    d2 = GfMax(DBL_EPSILON, GfAbs(pos2[0]));
+    _points[0] = GfVec3d(pos1[1]/d1, pos1[2]/d1, pos1[3]/d1);
+    _points[1] = GfVec3d(pos2[1]/d2, pos2[2]/d2, pos2[3]/d2);
     break;
   case PY:
   case NY:
-    d1 = GfMax(FLT_EPSILON, fabs(pos1[1]));
-    d2 = GfMax(FLT_EPSILON, fabs(pos2[1]));
-    _points[0] = GfVec3f(pos1[2]/d1, pos1[3]/d1, pos1[0]/d1);
-    _points[1] = GfVec3f(pos2[2]/d2, pos2[3]/d2, pos2[0]/d2);
+    d1 = GfMax(DBL_EPSILON, GfAbs(pos1[1]));
+    d2 = GfMax(DBL_EPSILON, GfAbs(pos2[1]));
+    _points[0] = GfVec3d(pos1[2]/d1, pos1[3]/d1, pos1[0]/d1);
+    _points[1] = GfVec3d(pos2[2]/d2, pos2[3]/d2, pos2[0]/d2);
     break;
   case PZ:
   case NZ:
-    d1 = GfMax(FLT_EPSILON, fabs(pos1[2]));
-    d2 = GfMax(FLT_EPSILON, fabs(pos2[2]));
-    _points[0] = GfVec3f(pos1[3]/d1, pos1[0]/d1, pos1[1]/d1);
-    _points[1] = GfVec3f(pos2[3]/d2, pos2[0]/d2, pos2[1]/d2);
+    d1 = GfMax(DBL_EPSILON, GfAbs(pos1[2]));
+    d2 = GfMax(DBL_EPSILON, GfAbs(pos2[2]));
+    _points[0] = GfVec3d(pos1[3]/d1, pos1[0]/d1, pos1[1]/d1);
+    _points[1] = GfVec3d(pos2[3]/d2, pos2[0]/d2, pos2[1]/d2);
     break;
   case PW:
   case NW:
-    d1 = GfMax(FLT_EPSILON, fabs(pos1[3]));
-    d2 = GfMax(FLT_EPSILON, fabs(pos2[3]));
-    _points[0] = GfVec3f(pos1[0]/d1, pos1[1]/d1, pos1[2]/d1);
-    _points[1] = GfVec3f(pos2[0]/d2, pos2[1]/d2, pos2[2]/d2);
+    d1 = GfMax(DBL_EPSILON, GfAbs(pos1[3]));
+    d2 = GfMax(DBL_EPSILON, GfAbs(pos2[3]));
+    _points[0] = GfVec3d(pos1[0]/d1, pos1[1]/d1, pos1[2]/d1);
+    _points[1] = GfVec3d(pos2[0]/d2, pos2[1]/d2, pos2[2]/d2);
   }
 }
 
 // intersect a box
-bool UsdNprDualEdge::Touch(const GfVec3f& minp, const GfVec3f& maxp) const {
+bool UsdNprDualEdge::Touch(const GfVec3d& minp, const GfVec3d& maxp) const {
   int m = 4;
-  GfVec3f step = (_points[1] - _points[0]) / m;
-  GfVec3f A = _points[0], B = _points[0] + step;
+  GfVec3d step = (_points[1] - _points[0]) / m;
+  GfVec3d A = _points[0], B = _points[0] + step;
   for (int i = 0; i < m; i++) 
   {
-    GfVec3f bmin(GfMin(A[0], B[0]), GfMin(A[1], B[1]), GfMin(A[2], B[2]));
-    GfVec3f bmax(GfMax(A[0], B[0]), GfMax(A[1], B[1]), GfMax(A[2], B[2]));
+    GfVec3d bmin(GfMin(A[0], B[0]), GfMin(A[1], B[1]), GfMin(A[2], B[2]));
+    GfVec3d bmax(GfMax(A[0], B[0]), GfMax(A[1], B[1]), GfMax(A[2], B[2]));
     if (bmin[0] <= maxp[0] && minp[0] <= bmax[0] &&
         bmin[1] <= maxp[1] && minp[1] <= bmax[1] &&
         bmin[2] <= maxp[2] && minp[2] <= bmax[2]) return true;
@@ -90,7 +90,7 @@ UsdNprOctree::~UsdNprOctree()
   _dualEdges.clear();
 }
 
-static UsdNprOctree* _CreateOctreeCell(const GfVec3f& bmin, const GfVec3f& bmax,
+static UsdNprOctree* _CreateOctreeCell(const GfVec3d& bmin, const GfVec3d& bmax,
   size_t depth, const std::vector<UsdNprDualEdge*>& dualEdges)
 {
   UsdNprOctree* cell = new UsdNprOctree( bmin, bmax, depth, dualEdges.size());
@@ -121,26 +121,26 @@ void UsdNprOctree::Split()
 
   _isLeaf = false;
 
-  float xx[] = {_min[0], 0.5f*(_min[0]+_max[0]), _max[0]};
-  float yy[] = {_min[1], 0.5f*(_min[1]+_max[1]), _max[1]};
-  float zz[] = {_min[2], 0.5f*(_min[2]+_max[2]), _max[2]};
+  double xx[] = {_min[0], 0.5f*(_min[0]+_max[0]), _max[0]};
+  double yy[] = {_min[1], 0.5f*(_min[1]+_max[1]), _max[1]};
+  double zz[] = {_min[2], 0.5f*(_min[2]+_max[2]), _max[2]};
 
-  _children[0] = _CreateOctreeCell(GfVec3f(xx[0], yy[0], zz[0]), 
-    GfVec3f(xx[1], yy[1], zz[1]), _depth+1, _dualEdges);
-  _children[1] = _CreateOctreeCell(GfVec3f(xx[0], yy[0], zz[1]), 
-    GfVec3f(xx[1], yy[1], zz[2]), _depth+1, _dualEdges);
-  _children[2] = _CreateOctreeCell(GfVec3f(xx[0], yy[1], zz[0]), 
-    GfVec3f(xx[1], yy[2], zz[1]), _depth+1, _dualEdges);
-  _children[3] = _CreateOctreeCell(GfVec3f(xx[0], yy[1], zz[1]), 
-    GfVec3f(xx[1], yy[2], zz[2]), _depth+1, _dualEdges);
-  _children[4] = _CreateOctreeCell(GfVec3f(xx[1], yy[0], zz[0]), 
-    GfVec3f(xx[2], yy[1], zz[1]), _depth+1, _dualEdges);
-  _children[5] = _CreateOctreeCell(GfVec3f(xx[1], yy[0], zz[1]), 
-    GfVec3f(xx[2], yy[1], zz[2]), _depth+1, _dualEdges);
-  _children[6] = _CreateOctreeCell(GfVec3f(xx[1], yy[1], zz[0]), 
-    GfVec3f(xx[2], yy[2], zz[1]), _depth+1, _dualEdges);
-  _children[7] = _CreateOctreeCell(GfVec3f(xx[1], yy[1], zz[1]), 
-    GfVec3f(xx[2], yy[2], zz[2]), _depth+1, _dualEdges);
+  _children[0] = _CreateOctreeCell(GfVec3d(xx[0], yy[0], zz[0]), 
+    GfVec3d(xx[1], yy[1], zz[1]), _depth+1, _dualEdges);
+  _children[1] = _CreateOctreeCell(GfVec3d(xx[0], yy[0], zz[1]), 
+    GfVec3d(xx[1], yy[1], zz[2]), _depth+1, _dualEdges);
+  _children[2] = _CreateOctreeCell(GfVec3d(xx[0], yy[1], zz[0]), 
+    GfVec3d(xx[1], yy[2], zz[1]), _depth+1, _dualEdges);
+  _children[3] = _CreateOctreeCell(GfVec3d(xx[0], yy[1], zz[1]), 
+    GfVec3d(xx[1], yy[2], zz[2]), _depth+1, _dualEdges);
+  _children[4] = _CreateOctreeCell(GfVec3d(xx[1], yy[0], zz[0]), 
+    GfVec3d(xx[2], yy[1], zz[1]), _depth+1, _dualEdges);
+  _children[5] = _CreateOctreeCell(GfVec3d(xx[1], yy[0], zz[1]), 
+    GfVec3d(xx[2], yy[1], zz[2]), _depth+1, _dualEdges);
+  _children[6] = _CreateOctreeCell(GfVec3d(xx[1], yy[1], zz[0]), 
+    GfVec3d(xx[2], yy[2], zz[1]), _depth+1, _dualEdges);
+  _children[7] = _CreateOctreeCell(GfVec3d(xx[1], yy[1], zz[1]), 
+    GfVec3d(xx[2], yy[2], zz[2]), _depth+1, _dualEdges);
 
   for(int j=0;j<8;++j)
     if(_children[j])_children[j]->Split();
@@ -149,9 +149,9 @@ void UsdNprOctree::Split()
 }
 
 // intersect a plane
-bool UsdNprOctree::_TouchPlane(const GfVec3f& n, float d) {
+bool UsdNprOctree::_TouchPlane(const GfVec3d& n, double d) {
   bool sa = n[0]>=0, sb = n[1]>=0, sc = n[2]>=0;
-  float p1x = _min[0], p1y, p1z, p2x = _max[0], p2y, p2z;
+  double p1x = _min[0], p1y, p1z, p2x = _max[0], p2y, p2z;
 
   if (sb == sa) {
     p1y = _min[1]; p2y = _max[1];
@@ -165,24 +165,26 @@ bool UsdNprOctree::_TouchPlane(const GfVec3f& n, float d) {
     p1z = _max[2]; p2z = _min[2];
   }
 
-  float dot1 = n[0]*p1x + n[1]*p1y + n[2]*p1z + d ;
-  float dot2 = n[0]*p2x + n[1]*p2y + n[2]*p2z + d ;
+  double dot1 = n[0]*p1x + n[1]*p1y + n[2]*p1z + d ;
+  double dot2 = n[0]*p2x + n[1]*p2y + n[2]*p2z + d ;
   bool sd1 = dot1 >= 0;
   bool sd2 = dot2 >= 0;
   return (sd1 != sd2);
 }
 
 // looking for silhouettes recursively
-void UsdNprOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const UsdNprHalfEdge*>& silhouettes) 
+void UsdNprOctree::FindSilhouettes(const GfVec3d& n, double d, 
+  std::vector<const UsdNprHalfEdge*>& silhouettes,
+  std::vector<bool>& checked) 
 {
   if (_isLeaf) 
   {
-    
     for (int j = 0; j < _dualEdges.size(); ++j)
     {
-      if (!_dualEdges[j]->IsChecked()) 
+      size_t dualEdgeIndex = _dualEdges[j]->GetIndex();
+      if (!checked[dualEdgeIndex]) 
       {
-        _dualEdges[j]->Check();
+        checked[dualEdgeIndex] = true;
         bool b1 = (n * _dualEdges[j]->GetDualPoint(0) + d )> 0;
         bool b2 = (n * _dualEdges[j]->GetDualPoint(1) + d )> 0;
         if (b1 != b2) 
@@ -196,14 +198,8 @@ void UsdNprOctree::FindSilhouettes(const GfVec3f& n, float d, std::vector<const 
   {
     for (int j = 0; j < 8; ++j)
       if (_children[j] && _children[j]->_TouchPlane(n, d))
-	        _children[j]->FindSilhouettes(n, d, silhouettes);
+	        _children[j]->FindSilhouettes(n, d, silhouettes, checked);
   }
-}
-
-void UsdNprOctree::UncheckAllEdges()
-{
-  for(auto& dualEdge: _dualEdges)
-    dualEdge->Uncheck();
 }
 
 
@@ -317,7 +313,7 @@ void UsdNprDualMesh::Build()
   for(int j=0;j<8;++j)_children[j] = new UsdNprOctree();
 
   const std::vector<UsdNprHalfEdge>& halfEdges = _halfEdgeMesh->GetHalfEdges();
-
+  _dualEdgeIndex = 0;
   for(const auto& halfEdge: halfEdges) 
     ProjectEdge(&halfEdge);
 
@@ -352,24 +348,24 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
     positions[halfEdge->next->vertex]);
 
 #ifndef NDEBUG
-  if (fabs(ff) < FLT_EPSILON)
+  if (fabs(ff) < DBL_EPSILON)
     std::cerr << "WARNING : potential facing precision problem " << ff << std::endl;
 #endif
 
   bool facing = (ff > 0);
 
-  GfVec4f n1( trn1[0], trn1[1], trn1[2], 
+  GfVec4d n1( trn1[0], trn1[1], trn1[2], 
     - (trn1 * positions[halfEdge->vertex])); 
 
   twinEdge->GetTriangleNormal(positions, trn2);
-  GfVec4f n2( trn2[0], trn2[1], trn2[2], 
+  GfVec4d n2( trn2[0], trn2[1], trn2[2], 
     - (trn2 * positions[twinEdge->vertex]));
 
   if(GfAbs(trn1 * trn2) < 0.25)_creases.push_back(halfEdge);
 
-  GfVec4f n = n2 - n1;
+  GfVec4d n = n2 - n1;
 
-  float t[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+  double t[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
   
   // if the edge should be projected on two surfaces, it will intersect
   // the plane passing orig and the intersection line of the two surfaces
@@ -397,10 +393,10 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
     }
 
     // the part that is projected on one of the surfaces
-    GfVec4f pos1 = n1 + t[p1]*n, pos2 = n1 + t[p2]*n;
-    GfVec4f mid = 0.5*(pos1+pos2);
+    GfVec4d pos1 = n1 + t[p1]*n, pos2 = n1 + t[p2]*n;
+    GfVec4d mid = 0.5*(pos1+pos2);
 
-    GfVec4f MID = GfVec4f(GfAbs(mid[0]), GfAbs(mid[1]), GfAbs(mid[2]), GfAbs(mid[3]));
+    GfVec4d MID = GfVec4d(GfAbs(mid[0]), GfAbs(mid[1]), GfAbs(mid[2]), GfAbs(mid[3]));
     p1 = p2;
 
     // the surface projected on
@@ -416,7 +412,7 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
 
     // project this part on the surface
     UsdNprDualEdge* dualEdge = 
-      new UsdNprDualEdge(halfEdge, facing, tp, pos1, pos2);
+      new UsdNprDualEdge(halfEdge, facing, tp, pos1, pos2, _dualEdgeIndex++);
     _children[tp]->InsertEdge(dualEdge);
     _dualEdges.push_back(dualEdge);
   }
@@ -424,32 +420,37 @@ void UsdNprDualMesh::ProjectEdge(const UsdNprHalfEdge* halfEdge)
 
 // looking for silhouettes recursively
 void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix, 
-  std::vector<const UsdNprHalfEdge*>& silhouettes)
+  std::vector<const UsdNprHalfEdge*>& silhouettes,
+  std::vector<bool>& checked)
 {
-  UncheckAllEdges();
 
-  GfVec3f pos(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
+  GfVec3d pos(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
   pos = _meshXform.GetInverse().Transform(pos);
   
-  _children[0]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), pos[0],
-			       silhouettes);
+  _children[0]->FindSilhouettes(GfVec3d(pos[1], pos[2], 1), pos[0],
+			       silhouettes, checked);
   
-  _children[1]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), pos[1],
-			       silhouettes);
-  _children[2]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), pos[2],
-			       silhouettes);
-  _children[3]->FindSilhouettes(pos, 1, silhouettes);
+  _children[1]->FindSilhouettes(GfVec3d(pos[2], 1, pos[0]), pos[1],
+			       silhouettes, checked);
+  _children[2]->FindSilhouettes(GfVec3d(1, pos[0], pos[1]), pos[2],
+			       silhouettes, checked);
+  _children[3]->FindSilhouettes(pos, 1, silhouettes, checked);
   
-  _children[4]->FindSilhouettes(GfVec3f(pos[1], pos[2], 1), -pos[0],
-			       silhouettes);
+  _children[4]->FindSilhouettes(GfVec3d(pos[1], pos[2], 1), -pos[0],
+			       silhouettes, checked);
             
-  _children[5]->FindSilhouettes(GfVec3f(pos[2], 1, pos[0]), -pos[1],
-			       silhouettes);
-  _children[6]->FindSilhouettes(GfVec3f(1, pos[0], pos[1]), -pos[2],
-			       silhouettes);
-  _children[7]->FindSilhouettes(pos, -1, silhouettes);
+  _children[5]->FindSilhouettes(GfVec3d(pos[2], 1, pos[0]), -pos[1],
+			       silhouettes, checked);
+  _children[6]->FindSilhouettes(GfVec3d(1, pos[0], pos[1]), -pos[2],
+			       silhouettes, checked);
+  _children[7]->FindSilhouettes(pos, -1, silhouettes, checked);
   
 }
+
+size_t UsdNprDualMesh::GetNumHalfEdges() const 
+{ 
+  return _halfEdgeMesh->GetNumHalfEdges(); 
+};
 
 static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
   float width, short index)
