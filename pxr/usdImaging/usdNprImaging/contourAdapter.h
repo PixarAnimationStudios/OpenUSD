@@ -34,6 +34,7 @@
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdNprImaging/api.h"
 #include "pxr/usdImaging/usdNprImaging/dualMesh.h"
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -121,7 +122,8 @@ private:
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
-  UsdNprDualMeshMap _dualMeshes;
+  UsdNprDualMeshMap       _dualMeshes;
+  mutable std::mutex      _mutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

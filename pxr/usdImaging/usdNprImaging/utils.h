@@ -17,27 +17,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 int 
 UsdNprTriangulateMesh(const VtArray<int>& counts, 
                     const VtArray<int>& indices, 
-                    VtArray<GfVec3i>& samples);
+                    VtArray<int>& samples);
 
 /// Compute smooth vertex normals on a triangulated polymesh
 void 
 UsdNprComputeVertexNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
-                          const VtArray<GfVec3i>& samples,
+                          const VtArray<int>& samples,
                           VtArray<GfVec3f>& normals);
                           
 /// Triangulate data
 template<typename T>
 void
-UsdNprTriangulateDatas( const VtArray<GfVec3i>& samples,
+UsdNprTriangulateDatas( const VtArray<int>& samples,
                       const VtArray<T>& datas,
                       VtArray<T>& result)
 {
   result.resize(samples.size());
   for(int i=0;i<samples.size();++i)
   {
-    result[i] = datas[samples[i][0]];
+    result[i] = datas[samples[i]];
   }
 };
 

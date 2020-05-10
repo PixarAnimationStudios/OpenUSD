@@ -139,12 +139,15 @@ protected:
 
 class UsdNprDualMesh : public UsdNprOctree {
 public:
-  UsdNprDualMesh():UsdNprOctree(){};
+  UsdNprDualMesh(const SdfPath& path):UsdNprOctree(),_sdfPath(path){};
   ~UsdNprDualMesh();
 
   // clear
   void Clear();
 
+  // object
+  const SdfPath& GetPath(){return _sdfPath;};
+  
   // mesh
   void InitMesh(const UsdGeomMesh& mesh, HdDirtyBits varyingBits);
   void UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode, 
@@ -153,6 +156,7 @@ public:
     return _halfEdgeMesh;
   };
   char GetMeshVaryingBits();
+  bool IsVarying();
 
   // half edges
   size_t GetNumHalfEdges() const;
@@ -167,6 +171,8 @@ public:
   void FindSilhouettes(const GfMatrix4d& viewMatrix, 
     std::vector<const UsdNprHalfEdge*>& silhouettes, std::vector<bool>& checked);
 
+  void FindSilhouettesBruteForce(const GfMatrix4d& viewMatrix, 
+    std::vector<const UsdNprHalfEdge*>& silhouettes);
 
   // project edges to dual space
   void ProjectEdge(const UsdNprHalfEdge* halfEdge);
@@ -182,6 +188,7 @@ public:
 
 private:      
   // mesh
+  SdfPath                           _sdfPath;
   UsdNprHalfEdgeMesh*               _halfEdgeMesh;
   GfMatrix4f                        _meshXform;    
 
@@ -189,6 +196,7 @@ private:
   std::vector<const UsdNprHalfEdge*> _creases;
 
   UsdTimeCode                        _lastTime;
+
 };
 
 typedef std::shared_ptr<UsdNprDualMesh> UsdNprDualMeshSharedPtr;

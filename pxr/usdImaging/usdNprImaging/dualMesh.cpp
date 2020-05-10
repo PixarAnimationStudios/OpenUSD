@@ -93,6 +93,7 @@ UsdNprOctree::~UsdNprOctree()
 static UsdNprOctree* _CreateOctreeCell(const GfVec3d& bmin, const GfVec3d& bmax,
   size_t depth, const std::vector<UsdNprDualEdge*>& dualEdges)
 {
+
   UsdNprOctree* cell = new UsdNprOctree( bmin, bmax, depth, dualEdges.size());
 
   for(const auto& dualEdge: dualEdges)
@@ -202,7 +203,6 @@ void UsdNprOctree::FindSilhouettes(const GfVec3d& n, double d,
   }
 }
 
-
 void UsdNprOctree::Log()
 {
   if(_isLeaf)
@@ -285,6 +285,11 @@ void UsdNprDualMesh::UpdateMesh(const UsdGeomMesh& mesh, const UsdTimeCode& time
 char UsdNprDualMesh::GetMeshVaryingBits()
 {
   return _halfEdgeMesh->GetVaryingBits();
+}
+
+bool UsdNprDualMesh::IsVarying()
+{
+  return _halfEdgeMesh->IsVarying();
 }
 
 // clear octree
@@ -445,6 +450,26 @@ void UsdNprDualMesh::FindSilhouettes(const GfMatrix4d& viewMatrix,
 			       silhouettes, checked);
   _children[7]->FindSilhouettes(pos, -1, silhouettes, checked);
   
+}
+
+// looking for silhouettes brute force
+void UsdNprDualMesh::FindSilhouettesBruteForce(const GfMatrix4d& viewMatrix, 
+  std::vector<const UsdNprHalfEdge*>& silhouettes) 
+{
+  const UsdNprHalfEdgeMesh* halfEdgeMesh = GetMesh();
+  const std::vector<UsdNprHalfEdge>& halfEdges = halfEdgeMesh->GetHalfEdges();
+  const GfVec3f v(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2]);
+  const GfVec3f* positions = halfEdgeMesh->GetPositionsPtr();
+  for(const auto& halfEdge: halfEdges)
+  {
+    if(!halfEdge.twin) continue;
+    if(halfEdge.twin->triangle < halfEdge.triangle) continue;
+    bool s1 = halfEdge.GetFacing(positions, v);
+    bool s2 = halfEdge.twin->GetFacing(positions, v);
+    if(s1!=s2) {
+      silhouettes.push_back(&halfEdge);
+    }
+  }
 }
 
 size_t UsdNprDualMesh::GetNumHalfEdges() const 
