@@ -112,17 +112,46 @@ UsdImagingContourAdapter::TrackVariability(UsdPrim const& prim,
   *timeVaryingBits |= HdChangeTracker::DirtyTopology;
 }
 
-struct UsdImagingContourAdapterComputeDatas {
+struct _ContourAdapterComputeDatas {
+  const UsdPrim* prim;
   UsdNprHalfEdgeMesh* halfEdgeMesh;
   GfMatrix4d viewPointMatrix;
+  GfMatrix4d meshMatrix;
+  UsdTimeCode timeCode;
   UsdNprOutputBuffer* outputBuffer;
 };
 
 static void
-_FindSilhouettesAndBuildGeometry(UsdImagingContourAdapterComputeDatas& datas)
+_FindSilhouettesAndBuildGeometry(_ContourAdapterComputeDatas& datas)
 {
   UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
   if(!halfEdgeMesh)return;
+
+  const std::lock_guard<std::mutex> lock(halfEdgeMesh->GetMutex());
+  if(halfEdgeMesh->IsVarying()) {
+    
+    if(halfEdgeMesh->GetLastTime() != datas.timeCode)
+    {
+      char varyingBits = halfEdgeMesh->GetVaryingBits();
+
+      const UsdPrim& contourSurface = *(datas.prim);
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+      {
+        halfEdgeMesh->Init(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+        
+      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+      {
+        halfEdgeMesh->Update(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
+      {
+        halfEdgeMesh->SetMatrix(datas.meshMatrix);
+      }
+      halfEdgeMesh->SetLastTime(datas.timeCode);
+    }
+  }
   
   std::vector<const UsdNprHalfEdge*> silhouettes;
 
@@ -176,6 +205,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       }
     }
 
+    /*
     const std::lock_guard<std::mutex> lock(_mutex);
 
     for(auto& it: _halfEdgeMeshes)
@@ -189,27 +219,25 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         UsdPrim contourSurface = prim.GetStage()->GetPrimAtPath(halfEdgeMesh->GetPath());
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
         {
-          std::cout << "UPDATE TOPOLOGY " << halfEdgeMesh->GetPath() << std::endl;
           halfEdgeMesh->Init(UsdGeomMesh(contourSurface), time);
         }
           
         else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
         {
-          std::cout << "UPDATE POINTS " << halfEdgeMesh->GetPath() << std::endl;
           halfEdgeMesh->Update(UsdGeomMesh(contourSurface), time);
         }
 
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
         {
-          std::cout << "UPDATE MATRIX " << halfEdgeMesh->GetPath() << std::endl;
           halfEdgeMesh->SetMatrix(
             xformCache.GetLocalToWorldTransform(contourSurface));
         }
         halfEdgeMesh->SetLastTime(time);
       }
     }
+    */
 
-    std::vector<UsdImagingContourAdapterComputeDatas> datas(contourSurfaces.size());
+    std::vector<_ContourAdapterComputeDatas> datas(contourSurfaces.size());
     UsdNprOutputBufferVector outputBuffers(contourSurfaces.size());
 
     size_t index = 0;
@@ -221,11 +249,16 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       if(it != _halfEdgeMeshes.end())
       {
         const UsdNprHalfEdgeMeshSharedPtr& halfEdgeMesh = it->second;
+        char varyingBits = halfEdgeMesh->GetVaryingBits();
 
-        UsdImagingContourAdapterComputeDatas* threadData = &datas[index];
+        _ContourAdapterComputeDatas* threadData = &datas[index];
+        threadData->prim = &contourSurface;
         threadData->halfEdgeMesh = halfEdgeMesh.get();
         threadData->outputBuffer = &outputBuffers[index];
         threadData->viewPointMatrix = viewPointMatrix;
+        threadData->timeCode = time;
+        if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
+          threadData->meshMatrix = xformCache.GetLocalToWorldTransform(contourSurface);
       }
       
       index++;

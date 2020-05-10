@@ -98,6 +98,9 @@ public:
   void SetLastTime(const UsdTimeCode& timeCode){_lastTime = timeCode;};
   const UsdTimeCode& GetLastTime(){return _lastTime;};
 
+  // mutex
+  std::mutex& GetMutex(){return _mutex;};
+
 private:
   SdfPath                     _sdfPath;
   GfMatrix4f                  _xform;
@@ -108,7 +111,7 @@ private:
   size_t                      _numTriangles;
   char                        _varyingBits;
   UsdTimeCode                 _lastTime;
-  std::mutex                  _mutex;
+  mutable std::mutex                  _mutex;
 
 };
 
