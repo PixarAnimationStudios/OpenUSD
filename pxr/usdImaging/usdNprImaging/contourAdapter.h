@@ -33,7 +33,7 @@
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdNprImaging/api.h"
-#include "pxr/usdImaging/usdNprImaging/dualMesh.h"
+#include "pxr/usdImaging/usdNprImaging/mesh.h"
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,7 +47,7 @@ struct UsdNprOutputBuffer {
 };
 
 typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
-typedef TfHashMap<SdfPath, UsdNprDualMeshSharedPtr, SdfPath::Hash> UsdNprDualMeshMap;
+typedef TfHashMap<SdfPath, UsdNprHalfEdgeMeshSharedPtr, SdfPath::Hash> UsdNprHalfEdgeMeshMap;
 
 
 /// \class UsdImagingContourAdapter
@@ -122,7 +122,7 @@ private:
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
-  UsdNprDualMeshMap       _dualMeshes;
+  UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
   mutable std::mutex      _mutex;
 };
 
