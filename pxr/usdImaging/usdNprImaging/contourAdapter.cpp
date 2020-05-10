@@ -78,21 +78,21 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
   for(int i=0;i<contourSurfaces.size();++i)
   {
     SdfPath contourSurfacePath = contourSurfaces[i].GetPath();
-    if(_dualMeshes.find(contourSurfacePath) == _dualMeshes.end())
+    if(_halfEdgeMeshes.find(contourSurfacePath) == _halfEdgeMeshes.end())
     {
-      UsdNprDualMeshSharedPtr dualMesh(new UsdNprDualMesh(contourSurfacePath));
-
       const UsdImagingPrimAdapterSharedPtr& adapter = 
         _GetPrimAdapter(contourSurfaces[i], false);
 
       SdfPath cachePath = _ResolveCachePath(contourSurfaces[i].GetPath(), nullptr);
       HdDirtyBits varyingBits = HdChangeTracker::Clean;
       adapter->TrackVariability(contourSurfaces[i], cachePath, &varyingBits, nullptr );
-      
-      dualMesh->InitMesh(UsdGeomMesh(contourSurfaces[i]), varyingBits);
-      dualMesh->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurfaces[i]));
-      //dualMesh->Build();
-      _dualMeshes[contourSurfacePath] = dualMesh;
+
+      UsdNprHalfEdgeMeshSharedPtr halfEdgeMesh(
+        new UsdNprHalfEdgeMesh(contourSurfacePath, varyingBits));
+
+      halfEdgeMesh->Init(UsdGeomMesh(contourSurfaces[i]), UsdTimeCode::EarliestTime());
+      halfEdgeMesh->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurfaces[i]));
+      _halfEdgeMeshes[contourSurfacePath] = halfEdgeMesh;
     }
   }
 
@@ -113,7 +113,7 @@ UsdImagingContourAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 struct UsdImagingContourAdapterComputeDatas {
-  UsdNprDualMesh* dualMesh;
+  UsdNprHalfEdgeMesh* halfEdgeMesh;
   GfMatrix4d viewPointMatrix;
   UsdNprOutputBuffer* outputBuffer;
 };
@@ -121,19 +121,16 @@ struct UsdImagingContourAdapterComputeDatas {
 static void
 _FindSilhouettesAndBuildGeometry(UsdImagingContourAdapterComputeDatas& datas)
 {
-  UsdNprDualMesh* dualMesh = datas.dualMesh;
-  if(!dualMesh)return;
+  UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
+  if(!halfEdgeMesh)return;
   
   std::vector<const UsdNprHalfEdge*> silhouettes;
-  size_t numDualEdges = dualMesh->GetNumDualEdges();
-  std::vector<bool> checked(numDualEdges);
-  memset(&checked[0], 0, numDualEdges * sizeof(bool));
 
-  dualMesh->FindSilhouettes(datas.viewPointMatrix, silhouettes, checked);
+  halfEdgeMesh->FindSilhouettes(datas.viewPointMatrix, silhouettes);
 
   UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
 
-  dualMesh->ComputeOutputGeometry(
+  halfEdgeMesh->ComputeOutputGeometry(
     silhouettes,
     GfVec3f(
       datas.viewPointMatrix[3][0],
@@ -145,32 +142,6 @@ _FindSilhouettesAndBuildGeometry(UsdImagingContourAdapterComputeDatas& datas)
     outputBuffer->faceVertexIndices
   );
 }
-
-static void
-_FindSilhouettesBruteForceAndBuildGeometry(UsdImagingContourAdapterComputeDatas& datas)
-{
-  UsdNprDualMesh* dualMesh = datas.dualMesh;
-  if(!dualMesh)return;
-  
-  std::vector<const UsdNprHalfEdge*> silhouettes;
-
-  dualMesh->FindSilhouettesBruteForce(datas.viewPointMatrix, silhouettes);
-
-  UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
-
-  dualMesh->ComputeOutputGeometry(
-    silhouettes,
-    GfVec3f(
-      datas.viewPointMatrix[3][0],
-      datas.viewPointMatrix[3][1],
-      datas.viewPointMatrix[3][2]
-    ), 
-    outputBuffer->points, 
-    outputBuffer->faceVertexCounts,
-    outputBuffer->faceVertexIndices
-  );
-}
-
 
 void 
 UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
@@ -207,33 +178,34 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
 
     const std::lock_guard<std::mutex> lock(_mutex);
 
-    for(auto& it: _dualMeshes)
+    for(auto& it: _halfEdgeMeshes)
     {
-      const UsdNprDualMeshSharedPtr& dualMesh = it.second;
-      if(!dualMesh->IsVarying()) continue;
-      if(dualMesh->GetLastTime() != time)
+      const UsdNprHalfEdgeMeshSharedPtr& halfEdgeMesh = it.second;
+      if(!halfEdgeMesh->IsVarying()) continue;
+      if(halfEdgeMesh->GetLastTime() != time)
       {
-        char varyingBits = dualMesh->GetMeshVaryingBits();
+        char varyingBits = halfEdgeMesh->GetVaryingBits();
 
-        UsdPrim contourSurface = prim.GetStage()->GetPrimAtPath(dualMesh->GetPath());
+        UsdPrim contourSurface = prim.GetStage()->GetPrimAtPath(halfEdgeMesh->GetPath());
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
         {
-          dualMesh->UpdateMesh(UsdGeomMesh(contourSurface), time, true);
-          //dualMesh->Build();
+          std::cout << "UPDATE TOPOLOGY " << halfEdgeMesh->GetPath() << std::endl;
+          halfEdgeMesh->Init(UsdGeomMesh(contourSurface), time);
         }
           
         else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
         {
-          dualMesh->UpdateMesh(UsdGeomMesh(contourSurface), time, false);
-          //dualMesh->Build();
+          std::cout << "UPDATE POINTS " << halfEdgeMesh->GetPath() << std::endl;
+          halfEdgeMesh->Update(UsdGeomMesh(contourSurface), time);
         }
 
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
         {
-          dualMesh->SetMatrix(
+          std::cout << "UPDATE MATRIX " << halfEdgeMesh->GetPath() << std::endl;
+          halfEdgeMesh->SetMatrix(
             xformCache.GetLocalToWorldTransform(contourSurface));
         }
-        dualMesh->SetLastTime(time);
+        halfEdgeMesh->SetLastTime(time);
       }
     }
 
@@ -244,14 +216,14 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     for(const UsdPrim& contourSurface: contourSurfaces)
     {
       SdfPath contourSurfacePath = contourSurface.GetPath();
-      UsdNprDualMeshMap::const_iterator it = _dualMeshes.find(contourSurfacePath);
+      UsdNprHalfEdgeMeshMap::const_iterator it = _halfEdgeMeshes.find(contourSurfacePath);
 
-      if(it != _dualMeshes.end())
+      if(it != _halfEdgeMeshes.end())
       {
-        const UsdNprDualMeshSharedPtr& dualMesh = it->second;
+        const UsdNprHalfEdgeMeshSharedPtr& halfEdgeMesh = it->second;
 
         UsdImagingContourAdapterComputeDatas* threadData = &datas[index];
-        threadData->dualMesh = dualMesh.get();
+        threadData->halfEdgeMesh = halfEdgeMesh.get();
         threadData->outputBuffer = &outputBuffers[index];
         threadData->viewPointMatrix = viewPointMatrix;
       }
@@ -260,9 +232,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     WorkParallelForEach(datas.begin(), datas.end(),
-                        _FindSilhouettesBruteForceAndBuildGeometry);
-                        
-    //for(auto& data: datas)_FindSilhouettesAndBuildGeometry(data);
+                        _FindSilhouettesAndBuildGeometry);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
     _ComputeOutputGeometry(outputBuffers, valueCache, cachePath);

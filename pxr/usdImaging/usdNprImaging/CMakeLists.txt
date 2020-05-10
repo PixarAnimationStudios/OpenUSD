@@ -10,8 +10,7 @@ pxr_library(usdNprImaging
 
     PUBLIC_CLASSES
         utils
-        halfEdge
-        dualMesh
+        mesh
         contourAdapter
         tokens
 
