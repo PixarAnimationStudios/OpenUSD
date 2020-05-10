@@ -33,6 +33,7 @@ struct UsdNprHalfEdge
 
   UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
   void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
+  bool GetFacing(const GfVec3f* positions, const GfVec3f& v) const;
 };
 
 /// \class UsdNprHalfEdgeMesh
@@ -52,15 +53,16 @@ public:
   size_t GetNumHalfEdges() const {return _halfEdges.size();};
 
   // varying
-  bool IsVarying(){return _varyingBits != 0;};
-  bool IsTopoVarying(){return _varyingBits & VARYING_TOPOLOGY;};
-  bool IsDeformVarying(){return _varyingBits & VARYING_DEFORM;};
-  bool IsTransformVarying(){return _varyingBits & VARYING_TRANSFORM;};
-  bool IsVisibilityVarying(){return _varyingBits & VARYING_VISIBILITY;};
-  char GetVaryingBits(){return _varyingBits;};
+  bool IsVarying() const {return _varyingBits != 0;};
+  bool IsTopoVarying() const {return _varyingBits & VARYING_TOPOLOGY;};
+  bool IsDeformVarying() const {return _varyingBits & VARYING_DEFORM;};
+  bool IsTransformVarying() const {return _varyingBits & VARYING_TRANSFORM;};
+  bool IsVisibilityVarying() const {return _varyingBits & VARYING_VISIBILITY;};
+  char GetVaryingBits() const {return _varyingBits;};
 
 private:
   std::vector<UsdNprHalfEdge> _halfEdges; 
+  VtArray<int>                _samples;
   VtArray<GfVec3f>            _positions;
   VtArray<GfVec3f>            _normals;
   size_t                      _numTriangles;

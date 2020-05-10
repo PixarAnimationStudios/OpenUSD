@@ -6,7 +6,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 int 
 UsdNprTriangulateMesh(const VtArray<int>& counts, 
                     const VtArray<int>& indices, 
-                    VtArray<GfVec3i>& samples)
+                    VtArray<int>& samples)
 {
   int num_triangles = 0;
   for(auto count : counts)
@@ -23,9 +23,9 @@ UsdNprTriangulateMesh(const VtArray<int>& counts,
   {
     for(int i = 1; i < count - 1; ++i)
     {
-      samples[cnt++] = GfVec3i(indices[base], prim, base);
-      samples[cnt++] = GfVec3i(indices[base+i], prim, base + i);
-      samples[cnt++] = GfVec3i(indices[base+i+1], prim, base + i + 1);
+      samples[cnt++] = indices[base];
+      samples[cnt++] = indices[base+i];
+      samples[cnt++] = indices[base+i+1];
     }
     prim++;
     base += count;
@@ -37,7 +37,7 @@ void
 UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
-                          const VtArray<GfVec3i>& samples,
+                          const VtArray<int>& samples,
                           VtArray<GfVec3f>& normals)
 {
   // we want smooth vertex normals
@@ -51,8 +51,8 @@ UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
 
   for(int i = 0; i < totalNumTriangles; ++i)
   {
-    GfVec3f ab = positions[samples[i*3+1][0]] - positions[samples[i*3][0]];
-    GfVec3f ac = positions[samples[i*3+2][0]] - positions[samples[i*3][0]];
+    GfVec3f ab = positions[samples[i*3+1]] - positions[samples[i*3]];
+    GfVec3f ac = positions[samples[i*3+2]] - positions[samples[i*3]];
     triangleNormals[i] = (ab ^ ac).GetNormalized();
   }
 

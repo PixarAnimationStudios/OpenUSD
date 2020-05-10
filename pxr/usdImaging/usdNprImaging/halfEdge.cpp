@@ -18,6 +18,14 @@ void UsdNprHalfEdge::GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal
   normal = (ab ^ ac).GetNormalized();
 }
 
+bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f& v) const
+{
+  GfVec3f tn;
+  GetTriangleNormal(positions, tn);
+  GfVec3f dir = (positions[vertex] - v).GetNormalized();
+  return GfDot(tn, dir) > 0.0;
+}
+
 void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode)
 {
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
@@ -30,32 +38,31 @@ void UsdNprHalfEdgeMesh::Compute(const UsdGeomMesh& mesh, const UsdTimeCode& tim
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
 
-  VtArray<GfVec3i> samples;
   UsdNprTriangulateMesh(faceVertexCounts, 
                         faceVertexIndices, 
-                        samples);
+                        _samples);
 
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    samples,
+    _samples,
     _normals
   );
 
-  _numTriangles = samples.size() / 3;
+  _numTriangles = _samples.size() / 3;
   
   _halfEdges.resize(_numTriangles * 3);
 
   TfHashMap<uint64_t, UsdNprHalfEdge*, TfHash> halfEdgesMap;
 
-  const GfVec3i* sample = &samples[0];
+  const int* sample = &_samples[0];
   UsdNprHalfEdge* halfEdge = &_halfEdges[0];
   for (int triIndex = 0; triIndex < _numTriangles; ++triIndex)
   {
-      uint64_t A = sample[0][0];sample++;
-      uint64_t B = sample[0][0];sample++;
-      uint64_t C = sample[0][0];sample++;
+      uint64_t A = sample[0];sample++;
+      uint64_t B = sample[0];sample++;
+      uint64_t C = sample[0];sample++;
 
       // create the half-edge that goes from C to A:
       halfEdgesMap[A | (C << 32)] = halfEdge;
@@ -113,16 +120,11 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
 
-  VtArray<GfVec3i> samples;
-  UsdNprTriangulateMesh(faceVertexCounts, 
-                        faceVertexIndices, 
-                        samples);
-
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    samples,
+    _samples,
     _normals
   );
 }
