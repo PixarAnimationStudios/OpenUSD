@@ -699,6 +699,7 @@ static void
 _MakeMaterialParamsForTexture(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
+    HdSt_MaterialNode const& downstreamNode, // needed to determine def value
     SdfPath const& nodePath,
     TfToken const& outputName,
     TfToken const& paramName,
@@ -849,7 +850,8 @@ _MakeMaterialParamsForTexture(
           memoryRequest,
           askSceneDelegateForTexture,
           texturePrimPathForSceneDelegate,
-          _GetNodeFallbackValue(node, outputName) });
+          // Default value for the old texture system
+          _GetParamFallbackValue(network, downstreamNode, paramName) });
 
     params->push_back(std::move(texParam));
 }
@@ -940,6 +942,7 @@ _MakeParamsForInputParameter(
                         _MakeMaterialParamsForTexture(
                             network,
                             upstreamNode,
+                            node,
                             upstreamPath,
                             upstreamOutputName,
                             paramName,
