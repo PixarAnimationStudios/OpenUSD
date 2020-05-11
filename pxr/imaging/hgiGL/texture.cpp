@@ -232,13 +232,6 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
 
         if (desc.initialData && desc.pixelsByteSize > 0) {
             if (isCompressed) {
-
-                const GLsizei imageSize =
-                    desc.dimensions[0] *
-                    desc.dimensions[1] *
-                    desc.dimensions[2] *
-                    desc.pixelsByteSize;
-
                 _GlCompressedTextureSubImageND(
                     desc.type,
                     _textureId,
@@ -246,7 +239,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
                     /*offsets*/GfVec3i(0),
                     desc.dimensions,
                     glInternalFormat,
-                    imageSize,
+                    desc.pixelsByteSize,
                     desc.initialData);
             } else {
                 _GlTextureSubImageND(

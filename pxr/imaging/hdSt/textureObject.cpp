@@ -251,7 +251,13 @@ HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
         textureData->GLType(),
         textureData->GLInternalFormat());
 
-    _textureDesc.pixelsByteSize = HgiDataSizeOfFormat(_textureDesc.format);
+    // Size of initial data (note that textureData->ComputeBytesUSed()
+    // includes the mip maps).
+    _textureDesc.pixelsByteSize =
+        textureData->ResizedWidth() *
+        textureData->ResizedHeight() *
+        textureData->ResizedDepth() *
+        HgiDataSizeOfFormat(_textureDesc.format);
 }
 
 template<typename T>

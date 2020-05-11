@@ -59,7 +59,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>sampleCount:
 ///   samples per texel (multi-sampling).</li>
 /// <li>pixelsByteSize:
-///   Byte size (length) of pixel data.</li>
+///   Byte size (length) of pixel data (i.e., initialData).</li>
 /// <li>initialData:
 ///   CPU pointer to initialization pixels of the texture.
 ///   The memory is consumed immediately during the creation of the HgiTexture.
