@@ -57,6 +57,9 @@ class HdExtComputationContext;
 /// A shared pointer to a vector of id's.
 typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
 
+/// Instancer context: a pair of instancer paths and instance indices.
+typedef std::vector<std::pair<SdfPath, int>> HdInstancerContext;
+
 /// \class HdSyncRequestVector
 ///
 /// The SceneDelegate is requested to synchronize prims as the result of
@@ -578,7 +581,8 @@ public:
     /// rather than hydra namespace, so it always strips the delegate ID.
     HD_API
     virtual SdfPath GetScenePrimPath(SdfPath const& rprimId,
-                                     int instanceIndex);
+                                     int instanceIndex,
+                                     HdInstancerContext *instancerContext = nullptr);
 
     // -----------------------------------------------------------------------//
     /// \name Material Aspects

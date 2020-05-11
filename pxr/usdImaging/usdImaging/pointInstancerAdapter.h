@@ -166,7 +166,8 @@ public:
 
     virtual SdfPath GetScenePrimPath(
         SdfPath const& cachePath,
-        int instanceIndex) const override;
+        int instanceIndex,
+        HdInstancerContext *instancerContext) const override;
 
     virtual bool PopulateSelection(
         HdSelection::HighlightMode const& highlightMode,

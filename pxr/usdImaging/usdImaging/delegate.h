@@ -389,11 +389,19 @@ public:
 
     // Picking path resolution
     // Resolves a \p rprimId and \p instanceIndex back to the original USD
-    // gprim and instance index.
+    // gprim and instance index.  For point-instanced prims, \p instanceContext
+    // returns extra information about which instance this is of which level of
+    // point-instancer.  For example:
+    //   /World/PI instances /World/PI/proto/PI
+    //   /World/PI/proto/PI instances /World/PI/proto/PI/proto/Gprim
+    //   instancerContext = [/World/PI, 0], [/World/PI/proto/PI, 1] means that
+    //   this instance represents "protoIndex = 0" of /World/PI, etc.
+
     USDIMAGING_API
     virtual SdfPath
     GetScenePrimPath(SdfPath const& rprimId,
-                     int instanceIndex) override;
+                     int instanceIndex,
+                     HdInstancerContext *instancerContext = nullptr) override;
 
     // ExtComputation support
     USDIMAGING_API

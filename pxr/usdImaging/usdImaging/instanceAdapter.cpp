@@ -2059,7 +2059,8 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
 SdfPath
 UsdImagingInstanceAdapter::GetScenePrimPath(
     SdfPath const& cachePath,
-    int instanceIndex) const
+    int instanceIndex,
+    HdInstancerContext *instancerContext) const
 {
     HD_TRACE_FUNCTION();
 

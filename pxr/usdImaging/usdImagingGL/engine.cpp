@@ -583,7 +583,8 @@ UsdImagingGLEngine::TestIntersection(
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    HdInstancerContext *outInstancerContext)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return _legacyImpl->TestIntersection(
@@ -644,9 +645,10 @@ UsdImagingGLEngine::TestIntersection(
                                hit.worldSpaceHitPoint[2]);
     }
 
-    hit.objectId = _delegate->GetScenePrimPath(hit.objectId, hit.instanceIndex);
+    hit.objectId = _delegate->GetScenePrimPath(hit.objectId, hit.instanceIndex,
+                   outInstancerContext);
     hit.instancerId = _delegate->ConvertIndexPathToCachePath(hit.instancerId)
-                        .GetAbsoluteRootOrPrimPath();
+                      .GetAbsoluteRootOrPrimPath();
 
     if (outHitPrimPath) {
         *outHitPrimPath = hit.objectId;
@@ -667,7 +669,8 @@ UsdImagingGLEngine::DecodeIntersection(
     unsigned char const instanceIdColor[4],
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    HdInstancerContext *outInstancerContext)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
@@ -683,9 +686,10 @@ UsdImagingGLEngine::DecodeIntersection(
     _delegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(primPath,
         &delegateId, &instancerId);
 
-    primPath = _delegate->GetScenePrimPath(primPath, instanceIdx);
+    primPath = _delegate->GetScenePrimPath(primPath, instanceIdx,
+               outInstancerContext);
     instancerId = _delegate->ConvertIndexPathToCachePath(instancerId)
-                    .GetAbsoluteRootOrPrimPath();
+                  .GetAbsoluteRootOrPrimPath();
 
     if (outHitPrimPath) {
         *outHitPrimPath = primPath;

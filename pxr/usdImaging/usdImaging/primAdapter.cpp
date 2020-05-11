@@ -375,7 +375,8 @@ UsdImagingPrimAdapter::SamplePrimvar(
 SdfPath 
 UsdImagingPrimAdapter::GetScenePrimPath(
     SdfPath const& cachePath,
-    int instanceIndex) const
+    int instanceIndex,
+    HdInstancerContext *instancerCtx) const
 {
     // Note: if we end up here, we're not instanced, since primInfo
     // holds the instance adapter for instanced gprims.

@@ -2079,7 +2079,8 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
 
 SdfPath 
 UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
-                                            int instanceIndex)
+                                     int instanceIndex,
+                                     HdInstancerContext *instancerContext)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(rprimId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
@@ -2090,11 +2091,22 @@ UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
     }
 
     SdfPath protoPath = primInfo->adapter->GetScenePrimPath(
-        cachePath, instanceIndex);
+        cachePath, instanceIndex, instancerContext);
 
-    TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "GetScenePrimPath(%s, %d) = %s\n",
-        cachePath.GetText(), instanceIndex, protoPath.GetText());
+    if (TfDebug::IsEnabled(USDIMAGING_SELECTION)) {
+        std::stringstream ic;
+        if (instancerContext) {
+            for (auto const& pair : *instancerContext) {
+                ic << pair.first << ": " << pair.second << ",";
+            }
+        } else {
+            ic << "no instancerContext";
+        }
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "GetScenePrimPath(%s, %d) = %s [%s]\n",
+            cachePath.GetText(), instanceIndex, protoPath.GetText(),
+            ic.str().c_str());
+    }
 
     return protoPath;
 }

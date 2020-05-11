@@ -277,7 +277,8 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        HdInstancerContext *outInstancerContext = NULL);
 
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).
@@ -287,7 +288,8 @@ public:
         unsigned char const instanceIdColor[4],
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        HdInstancerContext *outInstancerContext = NULL);
 
     /// @}
     

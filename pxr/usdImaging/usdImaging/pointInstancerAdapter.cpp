@@ -1349,8 +1349,11 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
 SdfPath
 UsdImagingPointInstancerAdapter::GetScenePrimPath(
     SdfPath const& cachePath,
-    int instanceIndex) const
+    int instanceIndex,
+    HdInstancerContext *instancerContext) const
 {
+    HD_TRACE_FUNCTION();
+
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "GetScenePrimPath: proto = %s\n", cachePath.GetText());
 
@@ -1412,6 +1415,44 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     // Finally:
     // - fqPrimPath = instancePath + primPath
     //   = /World/Bar/Instance/Instancer/protos/A
+    //
+    // We also recurse here to fill in instancerContext.
+
+    // Look up the parent instancer of this instancer.
+    _InstancerDataMap::const_iterator it =
+        _instancerData.find(instancerPath);
+    if (it == _instancerData.end()) {
+        return SdfPath();
+    }
+    SdfPath parentPath = it->second.parentInstancerCachePath;
+
+    // Compute the local & parent instance index.
+    _InstanceMap instanceMap = _ComputeInstanceMap(
+            instancerPath, it->second, _GetTimeWithOffset(0.0));
+    VtIntArray const& indices = instanceMap[proto.protoRootPath];
+    // instanceIndex = parentIndex * indices.size() + i.
+    int parentIndex = instanceIndex / indices.size();
+    // indices[i] gives the offset into the index buffers (i.e. protoIndices).
+    int localIndex = indices[instanceIndex % indices.size()];
+
+    // Find out the fully-qualified parent path. If there is none, the
+    // one we have is fully qualified.
+    SdfPath fqInstancerPath = instancerPath;
+    UsdPrim parentInstancerUsdPrim =
+        _GetPrim(parentPath.GetAbsoluteRootOrPrimPath());
+    if (parentInstancerUsdPrim) {
+        UsdImagingPrimAdapterSharedPtr parentAdapter =
+            _GetPrimAdapter(parentInstancerUsdPrim);
+        fqInstancerPath =
+            parentAdapter->GetScenePrimPath(instancerPath, parentIndex,
+                                            instancerContext);
+    }
+
+    // Append to the instancer context.
+    if (instancerContext != nullptr) {
+        instancerContext->push_back(
+            std::make_pair(fqInstancerPath, localIndex));
+    }
 
     // Check if primPath is in master, and if so check if the instancer
     // is in the same master...
@@ -1427,30 +1468,6 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
                         instancerPath.GetText());
         return SdfPath();
     }
-
-    // Look up the parent instancer of this instancer.
-    _InstancerDataMap::const_iterator it =
-        _instancerData.find(instancerPath);
-    if (it == _instancerData.end()) {
-        return SdfPath();
-    }
-    SdfPath parentPath = it->second.parentInstancerCachePath;
-
-    // Compute the parent instance index.
-    _InstanceMap instanceMap = _ComputeInstanceMap(
-            cachePath, it->second, _GetTimeWithOffset(0.0));
-    VtIntArray const& indices = instanceMap[proto.protoRootPath];
-    // instanceIndex = parentIndex * indices.size() + i,
-    // so parentIndex = instanceIndex / indices.size().
-    int parentIndex = instanceIndex / indices.size();
-
-    // Find out the fully-qualified parent path.
-    UsdPrim parentInstancerUsdPrim =
-        _GetPrim(parentPath.GetAbsoluteRootOrPrimPath());
-    UsdImagingPrimAdapterSharedPtr parentAdapter =
-        _GetPrimAdapter(parentInstancerUsdPrim);
-    SdfPath fqInstancerPath =
-        parentAdapter->GetScenePrimPath(instancerPath, parentIndex);
 
     // Stitch the paths together.
     UsdPrim fqInstancer = _GetPrim(fqInstancerPath);

@@ -255,7 +255,8 @@ HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
 /*virtual*/
 SdfPath
 HdSceneDelegate::GetScenePrimPath(SdfPath const& rprimId,
-                                  int instanceIndex)
+                                  int instanceIndex,
+                                  HdInstancerContext *instancerContext)
 {
     return rprimId.ReplacePrefix(_delegateID, SdfPath::AbsoluteRootPath());
 }
