@@ -36,42 +36,41 @@ struct _FormatDesc {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
-    uint8_t channelCount;
 };
 
 static const _FormatDesc FORMAT_DESC[] =
 {
-    // format,  type,        internal format  elements
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8,           1}, // UNorm8
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8,          2}, // UNorm8Vec2
-    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8,      3}, // Unsupported by HgiFormat
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8,        4}, // UNorm8Vec4
+    // format,  type,             internal format
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8          }, // UNorm8
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8         }, // UNorm8Vec2
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8       }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8       }, // UNorm8Vec4
 
-    {GL_RED,  GL_BYTE,          GL_R8_SNORM,     1}, // SNorm8
-    {GL_RG,   GL_BYTE,          GL_RG8_SNORM,    2}, // SNorm8Vec2
-    // {GL_RGB,  GL_BYTE,       GL_RGB8_SNORM,   3}, // Unsupported by HgiFormat
-    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM,  4}, // SNorm8Vec4
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM    }, // SNorm8
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM   }, // SNorm8Vec2
+    // {GL_RGB,  GL_BYTE,         GL_RGB8_SNORM  }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM }, // SNorm8Vec4
 
-    {GL_RED,  GL_HALF_FLOAT,    GL_R16F,         1}, // Float16
-    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F,        2}, // Float16Vec2
-    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F,       3}, // Float16Vec3
-    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F,      4}, // Float16Vec4
+    {GL_RED,  GL_HALF_FLOAT,    GL_R16F        }, // Float16
+    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F       }, // Float16Vec2
+    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F      }, // Float16Vec3
+    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F     }, // Float16Vec4
 
-    {GL_RED,  GL_FLOAT,         GL_R32F,         1}, // Float32
-    {GL_RG,   GL_FLOAT,         GL_RG32F,        2}, // Float32Vec2
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F,       3}, // Float32Vec3
-    {GL_RGBA, GL_FLOAT,         GL_RGBA32F,      4}, // Float32Vec4
+    {GL_RED,  GL_FLOAT,         GL_R32F        }, // Float32
+    {GL_RG,   GL_FLOAT,         GL_RG32F       }, // Float32Vec2
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F      }, // Float32Vec3
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F     }, // Float32Vec4
 
-    {GL_RED,  GL_INT,           GL_R32I,         1}, // Int32
-    {GL_RG,   GL_INT,           GL_RG32I,        2}, // Int32Vec2
-    {GL_RGB,  GL_INT,           GL_RGB32I,       3}, // Int32Vec3
-    {GL_RGBA, GL_INT,           GL_RGBA32I,      4}, // Int32Vec4
+    {GL_RED,  GL_INT,           GL_R32I        }, // Int32
+    {GL_RG,   GL_INT,           GL_RG32I       }, // Int32Vec2
+    {GL_RGB,  GL_INT,           GL_RGB32I      }, // Int32Vec3
+    {GL_RGBA, GL_INT,           GL_RGBA32I     }, // Int32Vec4
 
-    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8,     3}, // Unsupported by HgiFormat
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8, 4}, // UNorm8Vec4sRGB,
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8      }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8}, // UNorm8Vec4sRGB,
 
-    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, 3},  //BC6FloatVec3
-    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, 3},//BC6UFloatVec3
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT  }, // BC6FloatVec3
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT}, // BC6UFloatVec3
 };
 
 // A few random format validations to make sure out GL table stays aligned
@@ -194,13 +193,6 @@ HgiGLConversions::GetFormatType(HgiFormat inFormat)
 {
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
     return desc.type;
-}
-
-int8_t
-HgiGLConversions::GetElementCount(HgiFormat inFormat)
-{
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
-    return desc.channelCount;
 }
 
 std::vector<GLenum>

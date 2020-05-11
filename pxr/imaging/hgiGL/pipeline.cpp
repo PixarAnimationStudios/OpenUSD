@@ -55,7 +55,7 @@ HgiGLPipeline::HgiGLPipeline(
             glVertexArrayAttribFormat(
                 _vao,
                 idx,
-                HgiGLConversions::GetElementCount(va.format),
+                HgiGetComponentCount(va.format),
                 HgiGLConversions::GetFormatType(va.format),
                 GL_FALSE,
                 va.offset);

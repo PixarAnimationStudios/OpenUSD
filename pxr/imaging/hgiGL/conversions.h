@@ -53,9 +53,6 @@ public:
     static GLenum GetFormatType(HgiFormat inFormat);
 
     HGIGL_API
-    static int8_t GetElementCount(HgiFormat inFormat);
-
-    HGIGL_API
     static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
 
     HGIGL_API
