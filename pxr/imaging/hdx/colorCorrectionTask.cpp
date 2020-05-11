@@ -62,7 +62,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
     , _shaderProgram()
     , _resourceBindings()
     , _pipeline()
-    , _lut3dSizeOCIO(0)
+    , _lut3dSizeOCIO(65)
 {
 }
 
@@ -107,6 +107,8 @@ HdxColorCorrectionTask::_GetUseOcio() const
         if (TfGetenv("OCIO") == "") {
             useOCIO = false;
         }
+
+        return useOCIO;
     #else
         bool useOCIO = false;
     #endif
@@ -152,18 +154,6 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         }
 
         OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
-
-        // If 3D lut size is 0 then use a reasonable default size.
-        // We use 65 (0-64) samples which works well with OCIO resampling.
-        if (_lut3dSizeOCIO == 0) {
-            _lut3dSizeOCIO = 65;
-        }
-
-        // Optionally override similar to KATANA_OCIO_LUT3D_EDGE_SIZE
-        int size = TfGetenvInt("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0);
-        if (size > 0) {
-            _lut3dSizeOCIO = size;
-        }
 
         // Create a GPU Shader Description
         OCIO::GpuShaderDesc shaderDesc;
@@ -450,6 +440,11 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
             _looksOCIO = params.looksOCIO;
             _lut3dSizeOCIO = params.lut3dSizeOCIO;
             _aovName = params.aovName;
+
+            if (_lut3dSizeOCIO <= 0) {
+                TF_CODING_ERROR("Invalid OCIO LUT size.");
+                _lut3dSizeOCIO = 65;
+            }
 
             // Rebuild Hgi objects when ColorCorrection params change
             _DestroyShaderProgram();

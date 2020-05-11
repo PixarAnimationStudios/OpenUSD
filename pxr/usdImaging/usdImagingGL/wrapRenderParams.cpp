@@ -85,6 +85,6 @@ wrapRenderParams()
         .def_readwrite("enableUsdDrawModes", &Params::enableUsdDrawModes)
         .def_readwrite("colorCorrectionMode", &Params::colorCorrectionMode)
         .def_readwrite("clearColor", &Params::clearColor)
-        .def_readwrite("renderResolution", &Params::renderResolution)
+        .def_readwrite("lut3dSizeOCIO", &Params::lut3dSizeOCIO)
         ;
 }

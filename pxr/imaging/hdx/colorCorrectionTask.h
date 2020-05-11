@@ -116,7 +116,7 @@ private:
     std::string _viewOCIO;
     std::string _colorspaceOCIO;
     std::string _looksOCIO;
-    int _lut3dSizeOCIO = 0;
+    int _lut3dSizeOCIO;
 
     TfToken _aovName;
 };
@@ -126,9 +126,14 @@ private:
 ///
 /// ColorCorrectionTask parameters.
 ///
+/// `lut3dSizeOCIO`: We default to 65 (0-64) samples which works well with
+//                   OCIO resampling.
+///
 struct HdxColorCorrectionTaskParams
 {
-    HdxColorCorrectionTaskParams() {}
+    HdxColorCorrectionTaskParams()
+        : lut3dSizeOCIO(65)
+    {}
     
     // Switch between HdColorCorrectionTokens.
     // We default to 'disabled' to be backwards compatible with clients that are
@@ -150,8 +155,7 @@ struct HdxColorCorrectionTaskParams
     std::string looksOCIO;
 
     // The width, height and depth used for the GPU LUT 3d texture.
-    // A value of 0 indicates we should use an appropriate default size.
-    int lut3dSizeOCIO = 0;
+    int lut3dSizeOCIO;
 
     // The name of the aov to color correct
     TfToken aovName;

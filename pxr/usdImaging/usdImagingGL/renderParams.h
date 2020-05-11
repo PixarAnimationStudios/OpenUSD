@@ -99,7 +99,7 @@ public:
     bool enableUsdDrawModes;
     GfVec4f clearColor;
     TfToken colorCorrectionMode;
-    GfVec2i renderResolution;
+    int lut3dSizeOCIO;
 
     inline UsdImagingGLRenderParams();
 
@@ -134,7 +134,7 @@ UsdImagingGLRenderParams::UsdImagingGLRenderParams() :
     enableSceneMaterials(true),
     enableUsdDrawModes(true),
     clearColor(0,0,0,1),
-    renderResolution(100,100)
+    lut3dSizeOCIO(65)
 {
 }
 
@@ -165,7 +165,7 @@ UsdImagingGLRenderParams::operator==(const UsdImagingGLRenderParams &other)
         && enableUsdDrawModes          == other.enableUsdDrawModes
         && clearColor                  == other.clearColor
         && colorCorrectionMode         == other.colorCorrectionMode
-        && renderResolution            == other.renderResolution;
+        && lut3dSizeOCIO               == other.lut3dSizeOCIO;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

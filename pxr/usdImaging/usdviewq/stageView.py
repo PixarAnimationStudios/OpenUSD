@@ -873,6 +873,13 @@ class StageView(QtOpenGL.QGLWidget):
         }
 
         self._renderParams = UsdImagingGL.RenderParams()
+
+        # Optionally override OCIO lut size. Similar env var available for
+        # other apps: ***_OCIO_LUT3D_EDGE_SIZE
+        ocioLutSize = os.getenv("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0)
+        if ocioLutSize > 0:
+            self._renderParams.lut3dSizeOCIO = ocioLutSize
+
         self._dist = 50 
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
@@ -1390,8 +1397,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
         self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
-        self._renderParams.renderResolution[0] = self.width()
-        self._renderParams.renderResolution[1] = self.height()
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
