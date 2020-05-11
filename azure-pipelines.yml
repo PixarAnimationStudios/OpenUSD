@@ -4,6 +4,7 @@ trigger:
 
 jobs:
 - job: Linux
+  timeoutInMinutes: 90
   pool:
     vmImage: 'Ubuntu-18.04'
   steps:
@@ -22,6 +23,7 @@ jobs:
       targetPath: "/home/vsts/USDinst"
 
 - job: macOS
+  timeoutInMinutes: 90
   pool:
     vmImage: 'macOS-10.14'
   steps:
