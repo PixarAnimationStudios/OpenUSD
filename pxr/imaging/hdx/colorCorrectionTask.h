@@ -131,14 +131,13 @@ private:
 ///
 struct HdxColorCorrectionTaskParams
 {
-    HdxColorCorrectionTaskParams()
-        : lut3dSizeOCIO(65)
-    {}
+    HDX_API
+    HdxColorCorrectionTaskParams();
     
     // Switch between HdColorCorrectionTokens.
     // We default to 'disabled' to be backwards compatible with clients that are
     // still running with sRGB buffers.
-    TfToken colorCorrectionMode = HdxColorCorrectionTokens->disabled;
+    TfToken colorCorrectionMode;
 
     // 'display', 'view', 'colorspace' and 'look' are options the client may 
     // supply to configure OCIO. If one is not provided the default values

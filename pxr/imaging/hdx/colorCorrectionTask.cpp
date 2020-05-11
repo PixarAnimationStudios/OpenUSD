@@ -52,6 +52,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorCorrectionShader)
 );
 
+static const int HDX_DEFAULT_LUT3D_SIZE_OCIO = 65;
+
+HdxColorCorrectionTaskParams::HdxColorCorrectionTaskParams()
+    : colorCorrectionMode(HdxColorCorrectionTokens->disabled)
+    , lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+{
+}
+
 HdxColorCorrectionTask::HdxColorCorrectionTask(
     HdSceneDelegate* delegate, 
     SdfPath const& id)
@@ -62,7 +70,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
     , _shaderProgram()
     , _resourceBindings()
     , _pipeline()
-    , _lut3dSizeOCIO(65)
+    , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
 {
 }
 
@@ -99,21 +107,16 @@ HdxColorCorrectionTask::_GetUseOcio() const
     // Client can choose to use Hydra's build-in sRGB color correction or use
     // OpenColorIO for color correction in which case we insert extra OCIO code.
     #ifdef PXR_OCIO_PLUGIN_ENABLED
-        bool useOCIO = 
-            _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
-
         // Only use if $OCIO environment variable is set.
         // (Otherwise this option should be disabled.)
         if (TfGetenv("OCIO") == "") {
-            useOCIO = false;
+            return false;
         }
 
-        return useOCIO;
+        return _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
     #else
-        bool useOCIO = false;
+        return false;
     #endif
-
-    return useOCIO;
 }
 
 std::string
@@ -162,10 +165,10 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         shaderDesc.setLut3DEdgeLen(_lut3dSizeOCIO);
 
         // Compute and the 3D LUT
-        int num3Dentries = 3 * _lut3dSizeOCIO*_lut3dSizeOCIO*_lut3dSizeOCIO;
-        std::vector<float> lut3d;
-        lut3d.resize(num3Dentries);
-        processor->getGpuLut3D(&lut3d[0], shaderDesc);
+        const int num3Dentries =
+            3 * _lut3dSizeOCIO * _lut3dSizeOCIO * _lut3dSizeOCIO;
+        std::vector<float> lut3d(num3Dentries);
+        processor->getGpuLut3D(lut3d.data(), shaderDesc);
 
         // Load the data into an OpenGL 3D Texture
         if (_texture3dLUT) {
