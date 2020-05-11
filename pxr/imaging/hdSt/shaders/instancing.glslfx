@@ -178,6 +178,12 @@ bool IsFlipped()
     }
 #endif
 
+#ifdef HD_HAS_INSTANCE_instanceTransform
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
+        flip = flip ^^ (determinant(m) < 0.0);
+    }
+#endif
+
     return flip;
 }
-
