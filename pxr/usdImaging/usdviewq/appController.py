@@ -2651,7 +2651,8 @@ class AppController(QtCore.QObject):
 
         try:
             # Pause the stage view while we update
-            self._stageView.setUpdatesEnabled(False)
+            if self._stageView:
+                self._stageView.setUpdatesEnabled(False)
 
             # Clear out any Usd objects that may become invalid.
             self._dataModel.selection.clear()
@@ -2675,8 +2676,8 @@ class AppController(QtCore.QObject):
             self._resetView()
 
             self._stepSizeChanged()
-            self._stepSizeChanged()
-            self._stageView.setUpdatesEnabled(True)
+            if self._stageView:
+                self._stageView.setUpdatesEnabled(True)
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
             traceback.print_exc()
