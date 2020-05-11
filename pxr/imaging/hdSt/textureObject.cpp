@@ -307,10 +307,12 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
         switch(glType) {
         case GL_UNSIGNED_BYTE:
             return _CheckValid<HgiFormatUNorm8>();
+        case GL_HALF_FLOAT:
+            return _CheckValid<HgiFormatFloat16>();
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
@@ -318,10 +320,12 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
         switch(glType) {
         case GL_UNSIGNED_BYTE:
             return _CheckValid<HgiFormatUNorm8Vec2>();
+        case GL_HALF_FLOAT:
+            return _CheckValid<HgiFormatFloat16Vec2>();
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32Vec2>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
@@ -345,10 +349,12 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
             } else {
                 return _CheckValid<HgiFormatUNorm8Vec4>();
             }
+        case GL_HALF_FLOAT:
+            return _CheckValid<HgiFormatFloat16Vec3>();
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32Vec3>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
@@ -360,15 +366,39 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
             } else {
                 return _CheckValid<HgiFormatUNorm8Vec4>();
             }
+        case GL_HALF_FLOAT:
+            return _CheckValid<HgiFormatFloat16Vec4>();
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32Vec4>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA %d",
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
+    case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT:
+        switch(glType) {
+        case GL_FLOAT:
+            return _CheckValid<HgiFormatBC6UFloatVec3>();
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x%04x",
+                glType);
+            return HgiFormatInvalid;
+        }
+    case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT:
+        switch(glType) {
+        case GL_FLOAT:
+            return _CheckValid<HgiFormatBC6FloatVec3>();
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT 0x%04x",
+                glType);
+            return HgiFormatInvalid;
+        }
     default:
-        TF_CODING_ERROR("Unsupported texture format %d %d",
+        TF_CODING_ERROR("Unsupported texture format 0x%04x 0x%04x",
                         glFormat, glType);
         return HgiFormatInvalid;
     }
@@ -396,7 +426,7 @@ _GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
         //
         case GL_CLAMP: return HdWrapLegacyClamp;
         default:
-            TF_CODING_ERROR("Unsupported GL wrap mode %d", wrapMode);
+            TF_CODING_ERROR("Unsupported GL wrap mode 0x%04x", wrapMode);
         }
     }
 
