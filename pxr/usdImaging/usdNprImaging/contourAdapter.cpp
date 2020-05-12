@@ -41,6 +41,7 @@
 #include "pxr/base/tf/stopwatch.h"
 
 #include "pxr/usdImaging/usdNprImaging/halfEdge.h"
+#include "pxr/usdImaging/usdNprImaging/stroke.h"
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
@@ -114,15 +115,51 @@ UsdImagingContourAdapter::TrackVariability(UsdPrim const& prim,
 
 struct _ContourAdapterComputeDatas {
   const UsdPrim* prim;
+  const UsdNprStrokeParams* strokeParams;
   UsdNprHalfEdgeMesh* halfEdgeMesh;
   GfMatrix4d viewPointMatrix;
   GfMatrix4d meshMatrix;
   UsdTimeCode timeCode;
   UsdNprOutputBuffer* outputBuffer;
+  UsdNprStrokeClassification classification;
+  
 };
 
-static void
-_FindSilhouettesAndBuildGeometry(_ContourAdapterComputeDatas& datas)
+static void 
+_UpdateSurfaces(_ContourAdapterComputeDatas& datas)
+{
+  UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
+  if(!halfEdgeMesh)return;
+
+  const std::lock_guard<std::mutex> lock(halfEdgeMesh->GetMutex());
+  if(halfEdgeMesh->IsVarying()) {
+    
+    if(halfEdgeMesh->GetLastTime() != datas.timeCode)
+    {
+      char varyingBits = halfEdgeMesh->GetVaryingBits();
+
+      const UsdPrim& contourSurface = *(datas.prim);
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+      {
+        halfEdgeMesh->Init(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+        
+      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+      {
+        halfEdgeMesh->Update(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
+      {
+        halfEdgeMesh->SetMatrix(datas.meshMatrix);
+      }
+      halfEdgeMesh->SetLastTime(datas.timeCode);
+    }
+  }
+}
+
+static void 
+_ClassifyEdgesAndBuildGeometry(_ContourAdapterComputeDatas& datas)
 {
   UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
   if(!halfEdgeMesh)return;
@@ -153,12 +190,99 @@ _FindSilhouettesAndBuildGeometry(_ContourAdapterComputeDatas& datas)
     }
   }
   
-  std::vector<const UsdNprHalfEdge*> silhouettes;
+  size_t numHalfEdges = halfEdgeMesh->GetNumHalfEdges();
+  datas.classification.allFlags.resize(numHalfEdges);
+  memset(&datas.classification.allFlags[0], 0, numHalfEdges * sizeof(short));
 
-  halfEdgeMesh->FindSilhouettes(datas.viewPointMatrix, silhouettes);
+  halfEdgeMesh->ClassifyEdges(datas.viewPointMatrix, datas.classification, 
+    *(datas.strokeParams));
 
   UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
+  /*
+  std::vector<const UsdNprHalfEdge*> silhouettes;
+  short* edgeClassification = &datas.edgeClassification[0];
+  const UsdNprHalfEdge* halfEdges = halfEdgeMesh->GetHalfEdgesPtr();
+  size_t numHalfEdges = halfEdgeMesh->GetNumHalfEdges();
 
+  for(int i=0;i<numHalfEdges;++i) {
+    if(edgeClassification[i] & STROKE_SILHOUETTE)
+      silhouettes.push_back(&halfEdges[i]);
+  }
+  */
+  halfEdgeMesh->ComputeOutputGeometry(
+    datas.classification.silhouettes,
+    GfVec3f(
+      datas.viewPointMatrix[3][0],
+      datas.viewPointMatrix[3][1],
+      datas.viewPointMatrix[3][2]
+    ), 
+    outputBuffer->points, 
+    outputBuffer->faceVertexCounts,
+    outputBuffer->faceVertexIndices
+  );
+}
+
+static void 
+_ClassifyEdgesAndBuildStrokes(_ContourAdapterComputeDatas& datas)
+{
+  UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
+  if(!halfEdgeMesh)return;
+
+  const std::lock_guard<std::mutex> lock(halfEdgeMesh->GetMutex());
+  if(halfEdgeMesh->IsVarying()) {
+    
+    if(halfEdgeMesh->GetLastTime() != datas.timeCode)
+    {
+      char varyingBits = halfEdgeMesh->GetVaryingBits();
+
+      const UsdPrim& contourSurface = *(datas.prim);
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
+      {
+        halfEdgeMesh->Init(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+        
+      else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
+      {
+        halfEdgeMesh->Update(UsdGeomMesh(contourSurface), datas.timeCode);
+      }
+
+      if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
+      {
+        halfEdgeMesh->SetMatrix(datas.meshMatrix);
+      }
+      halfEdgeMesh->SetLastTime(datas.timeCode);
+    }
+  }
+  
+  size_t numHalfEdges = halfEdgeMesh->GetNumHalfEdges();
+  datas.classification.allFlags.resize(numHalfEdges);
+  memset(&datas.classification.allFlags[0], 0, numHalfEdges * sizeof(short));
+
+  halfEdgeMesh->ClassifyEdges(datas.viewPointMatrix, datas.classification, 
+    *(datas.strokeParams));
+
+  UsdNprStrokeChain stroke;
+  std::vector<bool> visited(numHalfEdges);
+  memset(&visited[0], 0, numHalfEdges * sizeof(bool));
+
+  if(datas.classification.silhouettes.size()) {
+    stroke.Init(
+      (UsdNprHalfEdge*)datas.classification.silhouettes[0],
+      STROKE_SILHOUETTE, 
+      datas.strokeParams->silhouetteWidth);
+
+    stroke.Build(
+      datas.classification.allFlags,
+      STROKE_SILHOUETTE,
+      visited);
+  }
+
+  std::vector<const UsdNprHalfEdge*> silhouettes;
+  for(const auto& node: stroke.GetNodes())
+    silhouettes.push_back(node.edge);
+
+  UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
+  
   halfEdgeMesh->ComputeOutputGeometry(
     silhouettes,
     GfVec3f(
@@ -171,6 +295,7 @@ _FindSilhouettesAndBuildGeometry(_ContourAdapterComputeDatas& datas)
     outputBuffer->faceVertexIndices
   );
 }
+
 
 void 
 UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
@@ -189,7 +314,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         prim, cachePath, time, requestedBits, instancerContext);
     
     UsdGeomXformCache xformCache(time);
-    
+
     UsdRelationship viewPointRel = contour.GetContourViewPointRel();
     GfMatrix4d viewPointMatrix;
     if(viewPointRel.HasAuthoredTargets())
@@ -205,40 +330,9 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       }
     }
 
-    /*
-    const std::lock_guard<std::mutex> lock(_mutex);
-
-    for(auto& it: _halfEdgeMeshes)
-    {
-      const UsdNprHalfEdgeMeshSharedPtr& halfEdgeMesh = it.second;
-      if(!halfEdgeMesh->IsVarying()) continue;
-      if(halfEdgeMesh->GetLastTime() != time)
-      {
-        char varyingBits = halfEdgeMesh->GetVaryingBits();
-
-        UsdPrim contourSurface = prim.GetStage()->GetPrimAtPath(halfEdgeMesh->GetPath());
-        if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
-        {
-          halfEdgeMesh->Init(UsdGeomMesh(contourSurface), time);
-        }
-          
-        else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
-        {
-          halfEdgeMesh->Update(UsdGeomMesh(contourSurface), time);
-        }
-
-        if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
-        {
-          halfEdgeMesh->SetMatrix(
-            xformCache.GetLocalToWorldTransform(contourSurface));
-        }
-        halfEdgeMesh->SetLastTime(time);
-      }
-    }
-    */
-
     std::vector<_ContourAdapterComputeDatas> datas(contourSurfaces.size());
     UsdNprOutputBufferVector outputBuffers(contourSurfaces.size());
+    UsdNprStrokeParams strokeParams;
 
     size_t index = 0;
     for(const UsdPrim& contourSurface: contourSurfaces)
@@ -257,6 +351,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         threadData->outputBuffer = &outputBuffers[index];
         threadData->viewPointMatrix = viewPointMatrix;
         threadData->timeCode = time;
+        threadData->strokeParams = &strokeParams;
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
           threadData->meshMatrix = xformCache.GetLocalToWorldTransform(contourSurface);
       }
@@ -264,8 +359,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       index++;
     }
 
-    WorkParallelForEach(datas.begin(), datas.end(),
-                        _FindSilhouettesAndBuildGeometry);
+    WorkParallelForEach(datas.begin(), datas.end(), _ClassifyEdgesAndBuildStrokes);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
     _ComputeOutputGeometry(outputBuffers, valueCache, cachePath);
@@ -366,6 +460,64 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
   valueCache->GetTopology(cachePath) = VtValue(topology);
   valueCache->GetPoints(cachePath) = VtValue(points);
 }
+
+void
+UsdImagingContourAdapter::_ComputeOutputGeometry(const std::vector<UsdNprStrokeChain>& strokes,
+  UsdImagingValueCache* valueCache, SdfPath const& cachePath) const
+{
+  
+  size_t numPoints = 0;
+  size_t numCounts = 0;
+  size_t numIndices = 0;
+  for(const auto& stroke: strokes) {
+    size_t n = stroke.GetNumPoints();
+    numPoints += n * 2;
+    numCounts += n - 1;
+    numIndices += (n-1) * 4;
+  }
+
+  /*
+  VtArray<int> faceVertexCounts(numCounts);
+  VtArray<int> faceVertexIndices(numIndices);
+  VtArray<GfVec3f> points(numPoints);
+
+  size_t pointsIndex = 0;
+  size_t countsIndex = 0;
+  size_t indicesIndex = 0;
+
+  for(const auto& buffer: buffers) {
+    size_t numPoints =  buffer.points.size();
+    if(numPoints) {
+      memcpy(&points[pointsIndex], &buffer.points[0], 
+        numPoints * sizeof(GfVec3f));
+      pointsIndex += numPoints;
+    }
+  
+    size_t numCounts = buffer.faceVertexCounts.size();
+    if(numCounts) {
+      memcpy(&faceVertexCounts[countsIndex], &buffer.faceVertexCounts[0], 
+        numCounts * sizeof(int));
+      countsIndex += numCounts;
+    }
+    
+    size_t numIndices = buffer.faceVertexIndices.size();
+    if(numIndices) {
+      for(int i=0;i<numIndices;++i)
+        faceVertexIndices[indicesIndex + i] = buffer.faceVertexIndices[i] + indicesIndex;
+      indicesIndex += numIndices;
+    }
+  }
+
+  HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
+                          UsdGeomTokens->rightHanded,
+                          faceVertexCounts,
+                          faceVertexIndices);
+  
+  valueCache->GetTopology(cachePath) = VtValue(topology);
+  valueCache->GetPoints(cachePath) = VtValue(points);
+  */
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

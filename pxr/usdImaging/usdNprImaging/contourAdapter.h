@@ -39,6 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdNprDualMesh;
+class UsdNprStrokeChain;
 
 struct UsdNprOutputBuffer {
   VtArray<GfVec3f> points;
@@ -122,8 +123,10 @@ private:
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
+  void _ComputeOutputGeometry(const std::vector<UsdNprStrokeChain>& strokes,
+    UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
+
   UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
-  mutable std::mutex      _mutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
