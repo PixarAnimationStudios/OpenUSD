@@ -7,6 +7,7 @@
 //
 #include "pxr/usdImaging/usdNprImaging/mesh.h"
 #include "pxr/usdImaging/usdNprImaging/utils.h"
+#include "pxr/usdImaging/usdNprImaging/stroke.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -61,19 +62,23 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
   const GfVec3f& v, float creaseValue) const
 {
   short flags = 0;
-  if(!twin)return flags | EDGE_BOUNDARY;
+  if(!twin)return flags | STROKE_BOUNDARY;
+
+  if(twin->triangle < triangle) return flags | STROKE_TWIN;
 
   bool s1 = GetFacing(positions, v);
   bool s2 = twin->GetFacing(positions, v);
-  if(s1 != s2) flags |= EDGE_SILHOUETTE;
+  if(s1 != s2) flags |= STROKE_SILHOUETTE;
 
+/*
   if(creaseValue >= 0.0) {
     GfVec3f tn1, tn2;
     GetTriangleNormal(positions, tn1);
     twin->GetTriangleNormal(positions, tn2);
     if(GfAbs(GfDot(tn1, tn2)) < creaseValue)
-      flags |= EDGE_CREASE;
+      flags |= STROKE_CREASE;
   }
+  */
   return flags;
 
 }
@@ -125,6 +130,7 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
 
       // create the half-edge that goes from C to A:
       halfEdgesMap[A | (C << 32)] = halfEdge;
+      halfEdge->index = triIndex * 3;
       halfEdge->vertex = C;
       halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
@@ -132,6 +138,7 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
 
       // create the half-edge that goes from A to B:
       halfEdgesMap[B | (A << 32)] = halfEdge;
+      halfEdge->index = triIndex * 3 + 1;
       halfEdge->vertex = A;
       halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
@@ -139,6 +146,7 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
 
       // create the half-edge that goes from B to C:
       halfEdgesMap[C | (B << 32)] = halfEdge;
+      halfEdge->index = triIndex * 3 + 2;
       halfEdge->vertex = B;
       halfEdge->triangle = triIndex;
       halfEdge->next = halfEdge - 2;
@@ -210,6 +218,60 @@ void UsdNprHalfEdgeMesh::FindSilhouettes(const GfMatrix4d& viewMatrix,
   }
 }
 
+void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix, 
+  std::vector<short>& classificationFlags, const UsdNprStrokeParams& params)
+{
+  const GfVec3f v = _xform.GetInverse().Transform(
+    GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
+  );
+  const GfVec3f* positions = &_positions[0];
+  const GfVec3f* normals = &_normals[0];
+  size_t edgeIndex = 0;
+  for(const auto& halfEdge: _halfEdges)
+  {
+    classificationFlags[edgeIndex++] = 
+      halfEdge.GetFlags(positions, normals, v, 0.25);
+  }
+}
+
+void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix, 
+  UsdNprStrokeClassification& classification, const UsdNprStrokeParams& params)
+{
+  const GfVec3f v = _xform.GetInverse().Transform(
+    GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
+  );
+  const GfVec3f* positions = &_positions[0];
+  const GfVec3f* normals = &_normals[0];
+
+  size_t numVertices = _positions.size();
+  std::vector<float> dots(numVertices);
+  for(int i=0;i<numVertices;++i)
+    dots[i] = GfDot((positions[i] - v).GetNormalized(), normals[i]);
+
+  size_t edgeIndex = 0;
+  for(const auto& halfEdge: _halfEdges)
+  {
+    short flags = halfEdge.GetFlags(positions, normals, v, 0.25);
+    classification.allFlags[edgeIndex++] = flags;
+    if(flags & STROKE_BOUNDARY)classification.boundaries.push_back(&halfEdge);
+    else
+    {
+      if(flags & STROKE_TWIN) continue;
+      if(flags & STROKE_CREASE)classification.creases.push_back(&halfEdge);
+      if(flags & STROKE_SILHOUETTE)classification.silhouettes.push_back(&halfEdge);
+    }
+  }
+}
+
+
+static GfVec3f _RandomOffset(float x)
+{
+  return GfVec3f(
+    (float)rand()/(float)RAND_MAX * x,
+    (float)rand()/(float)RAND_MAX * x,
+    (float)rand()/(float)RAND_MAX * x
+  );
+}
 inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
   float width, short index)
 {
@@ -220,13 +282,13 @@ inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const Gf
 
   switch(index) {
     case 0:
-      return (A * 0.99 + V * 0.01) - normal * width;
+      return (A * 0.99 + V * 0.01) - normal * width + _RandomOffset(0.2);
     case 1:
-      return (B * 0.99 + V * 0.01) - normal * width;
+      return (B * 0.99 + V * 0.01) - normal * width + _RandomOffset(0.2);
     case 2:
-      return (B * 0.99 + V * 0.01) + normal * width;
+      return (B * 0.99 + V * 0.01) + normal * width + _RandomOffset(0.2);
     case 3:
-      return (A * 0.99 + V * 0.01) + normal * width;
+      return (A * 0.99 + V * 0.01) + normal * width + _RandomOffset(0.2);
   };
 }
 

@@ -26,11 +26,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum UsdHalfEdgeFlags {
-  EDGE_BOUNDARY = 1,
-  EDGE_CREASE = 2,
-  EDGE_SILHOUETTE = 4
-};
+struct UsdNprStrokeNode;
+struct UsdNprStrokeParams;
+struct UsdNprStrokeClassification;
+  
 
 enum UsdHalfEdgeMeshVaryingBits {
   VARYING_TOPOLOGY = 1,
@@ -41,6 +40,7 @@ enum UsdHalfEdgeMeshVaryingBits {
 
 struct UsdNprHalfEdge
 {
+  uint32_t                index;     // half edge index
   uint32_t                vertex;    // vertex index
   uint32_t                triangle;  // triangle index
   struct UsdNprHalfEdge*  twin;      // opposite half-edge
@@ -65,6 +65,7 @@ public:
   void Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 
+  const UsdNprHalfEdge* GetHalfEdgesPtr() const {return &_halfEdges[0];};
   const GfVec3f* GetPositionsPtr() const {return &_positions[0];};
   const GfVec3f* GetNormalsPtr() const {return &_normals[0];};
   size_t GetNumPoints() const {return _positions.size();};
@@ -88,6 +89,12 @@ public:
   // silhouettes
   void FindSilhouettes(const GfMatrix4d& viewMatrix, 
     std::vector<const UsdNprHalfEdge*>& silhouettes);
+
+  // silhouettes
+  void ClassifyEdges(const GfMatrix4d& viewMatrix, 
+  std::vector<short>& classificationFlags, const UsdNprStrokeParams& params);
+  void ClassifyEdges(const GfMatrix4d& viewMatrix, 
+  UsdNprStrokeClassification& classification, const UsdNprStrokeParams& params);
 
   // output
   void ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
@@ -116,6 +123,15 @@ private:
 };
 
 typedef std::shared_ptr<UsdNprHalfEdgeMesh> UsdNprHalfEdgeMeshSharedPtr;
+
+/*
+class UsdNprEdgeBuffer {
+public:
+  void Init()
+private:
+  TfHashMap<size_t, uint64_t, TfHash> buffer;
+};
+*/
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

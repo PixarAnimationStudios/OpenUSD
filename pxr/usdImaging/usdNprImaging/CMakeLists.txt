@@ -11,6 +11,7 @@ pxr_library(usdNprImaging
     PUBLIC_CLASSES
         utils
         mesh
+        stroke
         contourAdapter
         tokens
 
