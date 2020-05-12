@@ -65,6 +65,12 @@ SdfReference::SetCustomData(const std::string &name, const VtValue &value)
 }
 
 bool
+SdfReference::IsInternal() const
+{
+    return _assetPath.empty() ? true : false;
+}
+
+bool
 SdfReference::operator==(const SdfReference &rhs) const
 {
     return _assetPath   == rhs._assetPath   &&

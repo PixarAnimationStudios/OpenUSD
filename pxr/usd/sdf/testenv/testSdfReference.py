@@ -94,5 +94,8 @@ class TestSdfReferences(unittest.TestCase):
         self.assertTrue(r1 < r2)
         self.assertFalse(r2 < r1)
 
+        # r2 can not be an internal reference since it's assetPath is not empty
+        self.assertFalse(r2.IsInternal())
+
 if __name__ == "__main__":
     unittest.main()

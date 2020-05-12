@@ -77,7 +77,7 @@ _Repr(const SdfReference &self)
 
 void wrapReference()
 {    
-    typedef SdfReference This;
+    using This = SdfReference;
 
     // Register conversion for python list <-> vector<SdfReference>
     to_python_converter<
@@ -118,6 +118,8 @@ void wrapReference()
             make_function(
                 &This::GetCustomData, return_value_policy<return_by_value>()))
 
+        .def("IsInternal", &This::IsInternal)
+
         .def(self == self)
         .def(self != self)
         .def(self < self)
@@ -128,5 +130,4 @@ void wrapReference()
         .def("__repr__", _Repr)
 
         ;
-
 }

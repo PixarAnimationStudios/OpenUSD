@@ -148,6 +148,10 @@ public:
         _customData.swap(customData);
     }
 
+    /// Returns true in the case of an internal reference.
+    ///
+    SDF_API bool IsInternal() const;
+
     friend inline size_t hash_value(const SdfReference &r) {
         size_t h = 0;
         boost::hash_combine(h, r._assetPath);
