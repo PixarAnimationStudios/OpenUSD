@@ -281,10 +281,9 @@ _ComputePoints(const GfBBox3d &bbox)
 
 }  // end anonymous namespace
 
-std::vector<HdStShaderCode::BarAndSources>
-HdSt_VolumeShader::ComputeBufferSourcesFromTextures() const
+void
+HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
-    HdBufferSourceSharedPtrVector pointsBarSources;
     HdBufferSourceSharedPtrVector shaderBarSources;
 
     // Fills in sampling transforms for textures and also texture
@@ -297,7 +296,8 @@ HdSt_VolumeShader::ComputeBufferSourcesFromTextures() const
         const GfBBox3d bbox = _ComputeBBox(GetNamedTextureHandles());
 
         // Use as points
-        pointsBarSources.push_back(
+        ctx.AddSource(
+            _pointsBar,
             std::make_shared<HdVtBufferSource>(
                 HdTokens->points,
                 _ComputePoints(bbox)));
@@ -306,18 +306,9 @@ HdSt_VolumeShader::ComputeBufferSourcesFromTextures() const
         GetBufferSourcesForBBox(bbox, &shaderBarSources);
     }
 
-    std::vector<HdStShaderCode::BarAndSources> result;
-    result.reserve(2);
-
-    if (!pointsBarSources.empty()) {
-        result.emplace_back(_pointsBar, std::move(pointsBarSources));
-    }
-
     if (!shaderBarSources.empty()) {
-        result.emplace_back(GetShaderData(), std::move(shaderBarSources));
+        ctx.AddSources(GetShaderData(), shaderBarSources);
     }
-
-    return result;
 }
 
 void

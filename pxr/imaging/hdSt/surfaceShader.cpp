@@ -529,8 +529,8 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
     return primvarNames;
 }
 
-std::vector<HdStShaderCode::BarAndSources>
-HdStSurfaceShader::ComputeBufferSourcesFromTextures() const
+void
+HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
@@ -539,10 +539,8 @@ HdStSurfaceShader::ComputeBufferSourcesFromTextures() const
     HdSt_TextureBinder::ComputeBufferSources(
         GetNamedTextureHandles(), &result);
 
-    if (result.empty()) {
-        return { };
-    } else {
-        return { { GetShaderData(), std::move(result) } };
+    if (!result.empty()) {
+        ctx.AddSources(GetShaderData(), result);
     }
 }
 

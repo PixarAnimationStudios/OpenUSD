@@ -817,6 +817,11 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureResource, 
             _defaultDomeLightTextureResource);
+        _delegate.SetParameter(pathName, HdLightTokens->textureFile,
+                               SdfAssetPath(
+                                   HdxPackageDefaultDomeLightTexture(),
+                                   HdxPackageDefaultDomeLightTexture()));
+        
     }
 }
 
@@ -1593,6 +1598,11 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
                 _delegate.SetParameter(_lightIds[i], 
                                     HdLightTokens->textureResource, 
                                     _defaultDomeLightTextureResource);
+                _delegate.SetParameter(
+                    _lightIds[i], HdLightTokens->textureFile,
+                    SdfAssetPath(
+                        HdxPackageDefaultDomeLightTexture(),
+                        HdxPackageDefaultDomeLightTexture()));
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                 _lightIds[i], HdLight::DirtyParams);

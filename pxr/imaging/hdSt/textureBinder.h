@@ -66,7 +66,7 @@ public:
     /// GetBufferSpecs is extracting information from the texture
     /// handles and thus can only be called after the textures have
     /// been committed in
-    /// HdStShaderCode::ComputeBufferSourcesFromTextures.
+    /// HdStShaderCode::AddResourcesFromTextures().
     ///
     static void
     ComputeBufferSources(

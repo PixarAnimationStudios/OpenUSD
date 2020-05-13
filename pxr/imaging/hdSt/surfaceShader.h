@@ -131,8 +131,7 @@ public:
     /// commit.
     ///
     HDST_API
-    std::vector<BarAndSources>
-    ComputeBufferSourcesFromTextures() const override;
+    void AddResourcesFromTextures(ResourceContext &ctx) const override;
 
     HDST_API
     void SetMaterialTag(TfToken const &materialTag);

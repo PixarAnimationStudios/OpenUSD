@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
@@ -106,15 +107,44 @@ HdStShaderCode::GetNamedTextureHandles() const
 }
 
 /*virtual*/
-std::vector<HdStShaderCode::BarAndSources>
-HdStShaderCode::ComputeBufferSourcesFromTextures() const
+void
+HdStShaderCode::AddResourcesFromTextures(ResourceContext &ctx) const
 {
-    return {};
 }
 
 HdStShaderCode::ID
 HdStShaderCode::ComputeTextureSourceHash() const {
     return 0;
+}
+
+void
+HdStShaderCode::ResourceContext::AddSource(
+    HdBufferArrayRangeSharedPtr const &range,
+    HdBufferSourceSharedPtr const &source)
+{
+    _registry->AddSource(range, source);
+}
+
+void
+HdStShaderCode::ResourceContext::AddSources(
+    HdBufferArrayRangeSharedPtr const &range,
+    HdBufferSourceSharedPtrVector &sources)
+{
+    _registry->AddSources(range, sources);
+}
+
+void
+HdStShaderCode::ResourceContext::AddComputation(
+    HdBufferArrayRangeSharedPtr const &range,
+    HdComputationSharedPtr const &computation)
+{
+    _registry->AddComputation(range, computation);
+}
+
+HdStShaderCode::ResourceContext::ResourceContext(
+    HdStResourceRegistry * const registry)
+  : _registry(registry)
+{
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

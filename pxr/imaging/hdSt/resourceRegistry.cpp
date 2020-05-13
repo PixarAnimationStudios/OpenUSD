@@ -637,6 +637,8 @@ std::ostream &operator <<(
 void
 HdStResourceRegistry::_CommitTextures()
 {
+    HdStShaderCode::ResourceContext ctx(this);
+
     const std::set<HdStShaderCodeSharedPtr> shaderCodes =
         _textureHandleRegistry->Commit();
 
@@ -644,10 +646,7 @@ HdStResourceRegistry::_CommitTextures()
     // sources that rely on texture sampler handles (bindless) or
     // texture metadata (e.g., sampling transform for volume fields).
     for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
-        for (HdStShaderCode::BarAndSources & barAndSources :
-                 shaderCode->ComputeBufferSourcesFromTextures()) {
-            AddSources(barAndSources.first, barAndSources.second);
-        }
+        shaderCode->AddResourcesFromTextures(ctx);
     }
 }
 

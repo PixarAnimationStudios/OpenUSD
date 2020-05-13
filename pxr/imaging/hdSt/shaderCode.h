@@ -59,10 +59,12 @@ using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
 using HdStTextureHandleSharedPtr =
     std::shared_ptr<class HdStTextureHandle>;
+using HdComputationSharedPtr =
+    std::shared_ptr<class HdComputation>;
 
 class HdRenderPassState;
 class HdSt_ResourceBinder;
-
+class HdStResourceRegistry;
 
 /// \class HdStShaderCode
 ///
@@ -219,26 +221,39 @@ public:
     HDST_API
     virtual TfToken GetMaterialTag() const;
 
-    using BarAndSources = std::pair<HdBufferArrayRangeSharedPtr,
-                                    HdBufferSourceSharedPtrVector>;
+    /// \class ResourceContext
+    ///
+    /// The context available in implementations of
+    /// AddResourcesFromTextures.
+    class ResourceContext {
+    public:
+        HDST_API
+        void AddSource(HdBufferArrayRangeSharedPtr const &range,
+                       HdBufferSourceSharedPtr const &source);
 
-    /// This function is called after textures have been allocated and loaded
-    /// to return buffer sources that require texture meta data not
-    /// available until the texture is allocated or loaded. For example, the
-    /// OpenGl texture sampler handle (in the bindless case) is not available
+        HDST_API
+        void AddSources(HdBufferArrayRangeSharedPtr const &range,
+                        HdBufferSourceSharedPtrVector &sources);
+
+        HDST_API
+        void AddComputation(HdBufferArrayRangeSharedPtr const &range,
+                            HdComputationSharedPtr const &computation);
+
+    private:
+        friend class HdStResourceRegistry;
+        ResourceContext(HdStResourceRegistry *);
+        HdStResourceRegistry *_registry;
+    };
+
+    /// This function is called after textures have been allocated and
+    /// loaded to add buffer sources and computations to the resource
+    /// registry that require texture meta data not available until
+    /// the texture is allocated or loaded. For example, the OpenGl
+    /// texture sampler handle (in the bindless case) is not available
     /// until after the texture commit phase.
     ///
-    /// Note: this can be simplified and just return an
-    /// HdBufferSourceSharedPtrVector intended for the shader bar
-    /// instead of returning buffer sources that are intended for
-    /// other bars as well.  The impediment is that the points of a
-    /// volume are in a different bar and dependent on the loading the
-    /// textures. This could be overcome if the vertex shader could
-    /// access the shader parameters and compute the points from the
-    /// bounding box corners and transform.
     HDST_API
-    virtual std::vector<BarAndSources>
-    ComputeBufferSourcesFromTextures() const;
+    virtual void AddResourcesFromTextures(ResourceContext &ctx) const;
 
 private:
 

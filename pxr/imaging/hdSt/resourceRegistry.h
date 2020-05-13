@@ -129,8 +129,8 @@ public:
         bool createBindlessHandle,
         /// After the texture is committed (or after it has been
         /// changed) the given shader code can add additional buffer
-        /// sources using the texture metadata with
-        /// ComputeBufferSourcesFromTextures.
+        /// sources and computations using the texture metadata with
+        /// AddResourcesFromTextures.
         HdStShaderCodePtr const &shaderCode);
 
     /// ------------------------------------------------------------------------

@@ -75,8 +75,7 @@ public:
     /// box) and points bar if requested (besides calling
     /// HdSt_TextureBinder::ComputeBufferSources).
     ///
-    std::vector<BarAndSources>
-    ComputeBufferSourcesFromTextures() const override;
+    void AddResourcesFromTextures(ResourceContext &ctx) const override;
 
     /// Whether the volume shader is responsible for filling buffer
     /// sources from the volume bounding box computation.

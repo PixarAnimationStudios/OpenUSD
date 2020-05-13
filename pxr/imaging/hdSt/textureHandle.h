@@ -51,7 +51,7 @@ class HdSt_TextureHandleRegistry;
 /// Represents a texture and sampler that will be allocated and loaded
 /// from a texture file during commit, possibly a texture sampler
 /// handle and a memory request. It is intended for HdStShaderCode and
-/// HdStShaderCode::ComputeBufferSourcesFromTexture is called whenever
+/// HdStShaderCode::AddResourcesFromTextures() is called whenever
 /// the underlying texture and sampler gets allocated and (re-)loaded
 /// so that the shader code can react to, e.g., changing texture
 /// sampler handle for bindless or changing texture metadata such as a

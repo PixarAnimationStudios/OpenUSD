@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/domeLightComputations.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/package.h"
@@ -38,49 +39,112 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdSt_DomeLightComputationGPU::HdSt_DomeLightComputationGPU(
-    TfToken token, unsigned int sourceId, unsigned int destId, 
-    int width, int height, unsigned int numLevels, unsigned int level, 
-    float roughness) 
-    : _shaderToken(token), 
-    _sourceTextureId(sourceId), 
-    _destTextureId(destId), 
-    _textureWidth(width), 
-    _textureHeight(height), 
+    const TfToken &shaderToken,
+    const unsigned int sourceGLTextureName,
+    HdStSimpleLightingShaderPtr const &lightingShader,
+    const bool wrapRepeat,
+    const unsigned int numLevels,
+    const unsigned int level, 
+    const float roughness) 
+  : _shaderToken(shaderToken), 
+    _sourceGLTextureName(sourceGLTextureName),
+    _lightingShader(lightingShader),
+    _wrapRepeat(wrapRepeat),
     _numLevels(numLevels), 
     _level(level), 
-    _layered(GL_FALSE), 
-    _layer(0), 
     _roughness(roughness)
 {
 }
 
+uint32_t
+HdSt_DomeLightComputationGPU::_CreateGLTexture(
+    const int32_t width, const int32_t height) const
+{
+    uint32_t result;
+    glGenTextures(1, &result);
+
+    glBindTexture(GL_TEXTURE_2D, result);
+
+    const GLenum wrapMode = _wrapRepeat ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    (_numLevels > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexStorage2D(GL_TEXTURE_2D, _numLevels, GL_RGBA16F, width, height);
+    
+    return result;
+}
 
 void
 HdSt_DomeLightComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
-                                        HdResourceRegistry *resourceRegistry)
+                                      HdResourceRegistry * const resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!glDispatchCompute)
+    if (!glDispatchCompute) {
         return;
+    }
 
-    HdStGLSLProgramSharedPtr computeProgram = 
-            HdStGLSLProgram::GetComputeProgram(HdStPackageDomeLightShader(), 
+    HdStGLSLProgramSharedPtr const computeProgram = 
+        HdStGLSLProgram::GetComputeProgram(
+            HdStPackageDomeLightShader(), 
             _shaderToken,
             static_cast<HdStResourceRegistry*>(resourceRegistry));
-    if (!TF_VERIFY(computeProgram)) return;
+    if (!TF_VERIFY(computeProgram)) {
+        return;
+    }
 
-    GLuint programId = computeProgram->GetProgram().GetId();
+    const GLuint programId = computeProgram->GetProgram().GetId();
 
-    // bind the input and output textures
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _sourceTextureId);
+    HdStSimpleLightingShaderSharedPtr const shader = _lightingShader.lock();
+    if (!TF_VERIFY(shader)) {
+        return;
+    }
     
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _sourceGLTextureName);
+
+    // Get size of source texture
+    GLint srcWidth  = 0;
+    GLint srcHeight = 0;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &srcWidth );
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &srcHeight);
+
+    // Size of texture to be created.
+    const GLint width  = srcWidth  / 2;
+    const GLint height = srcHeight / 2;
+
+    // Get texture name from lighting shader.
+    uint32_t dstGLTextureName = shader->GetGLTextureName(_shaderToken);
+
+    // Computation for level 0 is responsible for freeing/allocating
+    // the texture.
+    if (_level == 0) {
+        if (dstGLTextureName) {
+            // Free previously allocated texture.
+            glDeleteTextures(1, &dstGLTextureName);
+        }
+
+        // Create new texture.
+        dstGLTextureName = _CreateGLTexture(width, height);
+        // And set on shader.
+        shader->SetGLTextureName(_shaderToken, dstGLTextureName);
+    }
+
+    // Now bind the textures and launch GPU computation
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _sourceGLTextureName);
+
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, _destTextureId);
-    glBindImageTexture(1, _destTextureId, _level, _layered, _layer, 
-                        GL_WRITE_ONLY, GL_RGBA16F);
+    glBindTexture(GL_TEXTURE_2D, dstGLTextureName);
+    glBindImageTexture(1, dstGLTextureName,
+                       _level,
+                       /* layered = */ GL_FALSE,
+                       /* layer = */ 0,
+                       GL_WRITE_ONLY, GL_RGBA16F);
 
     glUseProgram(programId);
 
@@ -92,8 +156,7 @@ HdSt_DomeLightComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
     }
 
     // dispatch compute kernel
-    glDispatchCompute(  (GLuint)_textureWidth / 32, 
-                        (GLuint)_textureHeight / 32, 1);
+    glDispatchCompute( (GLuint)width / 32, (GLuint)height / 32, 1);
 
     glUseProgram(0);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

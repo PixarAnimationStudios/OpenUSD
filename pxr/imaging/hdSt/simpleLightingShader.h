@@ -46,6 +46,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdSceneDelegate;
 using HdStSimpleLightingShaderSharedPtr =
     std::shared_ptr<class HdStSimpleLightingShader>;
 
@@ -77,6 +78,11 @@ public:
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
 
+    /// Adds computations to create the dome light textures that
+    /// are pre-calculated from the environment map texture.
+    HDST_API
+    void AddResourcesFromTextures(ResourceContext &ctx) const override;
+
     /// HdStShaderCode overrides
     HDST_API
     HdSt_MaterialParamVector const& GetParams() const override;
@@ -95,11 +101,39 @@ public:
         return _lightingContext;
     };
 
+    /// Allocates texture handles (texture loading happens later during commit)
+    /// needed for lights.
+    ///
+    /// Call after lighting context has been set or updated in Sync-phase.
+    ///
+    HDST_API
+    void AllocateTextureHandles(HdSceneDelegate *delegate);
+
+    /// Get GL texture name for a dome light texture of given time.
+    HDST_API
+    uint32_t GetGLTextureName(const TfToken &token) const;
+
+    /// Set GL texture name for a dome light texture of given time.
+    HDST_API
+    void SetGLTextureName(const TfToken &token, const uint32_t glName);
+
 private:
     GlfSimpleLightingContextRefPtr _lightingContext; 
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
     std::unique_ptr<HioGlslfx> _glslfx;
+
+    // The environment map used as source for the dome light textures.
+    //
+    // Handle is allocated in AllocateTextureHandles. Actual loading
+    // happens during commit.
+    HdStTextureHandleSharedPtr _domeLightTextureHandle;
+
+    // The pre-calculated dome light textures.
+    // Created by HdSt_DomelightComputationGPU.
+    uint32_t _domeLightIrradianceGLName;
+    uint32_t _domeLightPrefilterGLName;
+    uint32_t _domeLightBrdfGLName;
 
     HdSt_MaterialParamVector _lightTextureParams;
 };
