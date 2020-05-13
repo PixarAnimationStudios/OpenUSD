@@ -44,6 +44,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_XFORM_OP_TYPES);
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     // Type
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeInvalid,   "");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeTranslate, "translate");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeScale,     "scale");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeRotateX,   "rotateX");
@@ -303,6 +304,8 @@ UsdGeomXformOp::GetOpTypeEnum(TfToken const &opTypeToken)
         return TypeRotateZYX;
     else if (opTypeToken == UsdGeomXformOpTypes->orient)
         return TypeOrient;
+    else if (opTypeToken == "")
+        return TypeInvalid;
     
     TF_CODING_ERROR("Invalid xform opType token '%s'.", opTypeToken.GetText());
     return TypeInvalid;
@@ -342,6 +345,8 @@ UsdGeomXformOp::_GetOpTypeEnumFromCString(char const *str, size_t len)
         return TypeRotateZYX;
     else if (check("orient"))
         return TypeOrient;
+    else if (check(""))
+        return TypeInvalid;
     else
         return TypeInvalid;
 }
