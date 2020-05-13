@@ -34,17 +34,26 @@
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdNprImaging/api.h"
 #include "pxr/usdImaging/usdNprImaging/mesh.h"
+#include "pxr/usdImaging/usdNprImaging/stroke.h"
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdNprDualMesh;
-class UsdNprStrokeChain;
 
 struct UsdNprOutputBuffer {
   VtArray<GfVec3f> points;
   VtArray<int> faceVertexCounts;
   VtArray<int> faceVertexIndices;
+};
+
+struct _ContourAdapterComputeDatas {
+  const UsdPrim* prim;
+  const UsdNprStrokeParams* strokeParams;
+  UsdNprHalfEdgeMesh* halfEdgeMesh;
+  GfMatrix4d viewPointMatrix;
+  UsdTimeCode timeCode;
+  UsdNprOutputBuffer* outputBuffer;
+  UsdNprEdgeClassification classification;
 };
 
 typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
@@ -117,9 +126,10 @@ public:
     void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;        
+                           UsdImagingIndexProxy* index) override;          
        
 private:
+  void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
@@ -128,6 +138,12 @@ private:
 
   UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
 };
+
+// ---------------------------------------------------------------------- //
+/// \name Computation
+// ---------------------------------------------------------------------- //
+static void 
+_ClassifyEdgesAndBuildStrokes(_ContourAdapterComputeDatas& datas);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
