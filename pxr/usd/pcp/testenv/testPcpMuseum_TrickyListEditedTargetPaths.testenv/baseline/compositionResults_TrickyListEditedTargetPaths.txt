@@ -56,13 +56,19 @@ Child names:
      ['PrivateChild', 'PublicChild']
 
 Property names:
-     ['PrivateProp', 'relToPrivateProp', 'relToPrivateProp2', 'relToPrivatePrim', 'relToPrivatePrim2', 'PublicProp']
+     ['PrivateProp', 'relToPrivateProp', 'relToPrivateProp2', 'relToPrivatePrim', 'relToPrivatePrim2', 'attrToPrivateProp', 'attrToPrivateProp2', 'PublicProp']
 
 Property stacks:
 /Permissions.PrivateProp:
     ref2.sdf             /PermissionsRef_2.PrivateProp
 /Permissions.PublicProp:
     root.sdf             /Permissions.PublicProp
+/Permissions.attrToPrivateProp:
+    root.sdf             /Permissions.attrToPrivateProp
+    ref.sdf              /PermissionsRef_1.attrToPrivateProp
+/Permissions.attrToPrivateProp2:
+    root.sdf             /Permissions.attrToPrivateProp2
+    ref.sdf              /PermissionsRef_1.attrToPrivateProp2
 /Permissions.relToPrivatePrim:
     root.sdf             /Permissions.relToPrivatePrim
     ref.sdf              /PermissionsRef_1.relToPrivatePrim
@@ -81,6 +87,18 @@ Relationship targets:
     /Permissions/PublicChild
 /Permissions.relToPrivateProp2:
     /Permissions.PublicProp
+
+Attribute connections:
+/Permissions.attrToPrivateProp2:
+    /Permissions.PublicProp
+
+Deleted target paths:
+/Permissions.attrToPrivateProp:
+    /Permissions.PrivateProp
+/Permissions.relToPrivatePrim:
+    /Permissions/PrivateChild
+/Permissions.relToPrivateProp:
+    /Permissions.PrivateProp
 
 ------------------------------------------------------------------------
 Results for composing </Permissions/PrivateChild>

@@ -82,6 +82,10 @@ PcpBuildTargetIndex(
 /// passed in, but doing so will disable validation that relies on
 /// this cache, which includes permissions checks.
 ///
+/// \p deletedPaths, if not \c NULL, will be populated with target
+/// paths whose deletion contributed to the computed value of
+/// \c targetIndex->paths.
+///
 /// \p allErrors will contain any errors encountered while
 /// performing this operation.
 PCP_API
@@ -95,6 +99,7 @@ PcpBuildFilteredTargetIndex(
     const bool includeStopProperty,
     PcpCache *cacheForValidation,
     PcpTargetIndex *targetIndex,
+    SdfPathVector *deletedPaths,
     PcpErrorVector *allErrors);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -405,6 +405,7 @@ PcpCache::ComputeRelationshipTargetPaths(const SdfPath & relPath,
                                          bool localOnly,
                                          const SdfSpecHandle &stopProperty,
                                          bool includeStopProperty,
+                                         SdfPathVector *deletedPaths,
                                          PcpErrorVector *allErrors)
 {
     TRACE_FUNCTION();
@@ -420,7 +421,8 @@ PcpCache::ComputeRelationshipTargetPaths(const SdfPath & relPath,
                                  ComputePropertyIndex(relPath, allErrors),
                                  SdfSpecTypeRelationship,
                                  localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex, allErrors );
+                                 this, &targetIndex, deletedPaths,
+                                 allErrors );
     paths->swap(targetIndex.paths);
 }
 
@@ -430,6 +432,7 @@ PcpCache::ComputeAttributeConnectionPaths(const SdfPath & attrPath,
                                           bool localOnly,
                                           const SdfSpecHandle &stopProperty,
                                           bool includeStopProperty,
+                                          SdfPathVector *deletedPaths,
                                           PcpErrorVector *allErrors)
 {
     TRACE_FUNCTION();
@@ -445,7 +448,8 @@ PcpCache::ComputeAttributeConnectionPaths(const SdfPath & attrPath,
                                  ComputePropertyIndex(attrPath, allErrors),
                                  SdfSpecTypeAttribute,
                                  localOnly, stopProperty, includeStopProperty,
-                                 this, &targetIndex, allErrors );
+                                 this, &targetIndex,  deletedPaths,
+                                 allErrors );
     paths->swap(targetIndex.paths);
 }
 

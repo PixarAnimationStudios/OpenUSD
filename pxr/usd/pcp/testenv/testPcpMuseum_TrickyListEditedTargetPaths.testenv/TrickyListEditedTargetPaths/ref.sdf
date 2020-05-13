@@ -24,4 +24,8 @@ def "PermissionsRef_1" (
     rel relToPrivateProp2 = </PermissionsRef_1.PrivateProp>
     rel relToPrivatePrim = </PermissionsRef_1/PrivateChild>
     rel relToPrivatePrim2 = </PermissionsRef_1/PrivateChild>
+    double attrToPrivateProp = 0
+    double attrToPrivateProp.connect = </PermissionsRef_1.PrivateProp>
+    double attrToPrivateProp2 = 0
+    double attrToPrivateProp2.connect = </PermissionsRef_1.PrivateProp>
 }
