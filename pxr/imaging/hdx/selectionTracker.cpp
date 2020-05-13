@@ -44,7 +44,7 @@ HdxSelectionTracker::HdxSelectionTracker()
 
 /*virtual*/
 void
-HdxSelectionTracker::Prepare(HdRenderIndex* index)
+HdxSelectionTracker::UpdateSelection(HdRenderIndex* index)
 {
 }
 

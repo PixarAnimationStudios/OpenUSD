@@ -104,10 +104,10 @@ public:
     HdxSelectionTracker();
     virtual ~HdxSelectionTracker() = default;
 
-    /// Update dirty bits in the ChangeTracker and compute required primvars for
-    /// later consumption.
+    /// Optional override to update the HdSelection during
+    /// HdxSelectionTask::Sync.
     HDX_API
-    virtual void Prepare(HdRenderIndex *index);
+    virtual void UpdateSelection(HdRenderIndex *index);
 
     /// Encodes the selection state (HdxSelection) as an integer array. This is
     /// uploaded to the GPU and decoded in the fragment shader to provide
