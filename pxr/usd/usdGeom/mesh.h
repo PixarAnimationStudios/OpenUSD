@@ -514,6 +514,15 @@ public:
                                  std::string* reason=nullptr);
 
 public:
+
+    /// Returns whether or not \p sharpness is considered infinite.
+    ///
+    /// The \p sharpness value is usually intended for 'creaseSharpness' or
+    /// 'cornerSharpness' arrays and a return value of \c true indicates that
+    /// the crease or corner is perfectly sharp.
+    USDGEOM_API
+    static bool IsSharpnessInfinite(const float sharpness);
+
     /// \var const float SHARPNESS_INFINITE
     /// As an element of a 'creaseSharpness' or 'cornerSharpness' array,
     /// indicates that the crease or corner is perfectly sharp.

@@ -398,7 +398,13 @@ UsdGeomMesh::ValidateTopology(const VtIntArray& faceVertexIndices,
     return true;
 }
 
+bool 
+UsdGeomMesh::IsSharpnessInfinite(const float sharpness)
+{
+    return sharpness >= UsdGeomMesh::SHARPNESS_INFINITE;
+}
 
-const float UsdGeomMesh::SHARPNESS_INFINITE = 1e38;
+
+const float UsdGeomMesh::SHARPNESS_INFINITE = 10.0f;
 
 PXR_NAMESPACE_CLOSE_SCOPE
