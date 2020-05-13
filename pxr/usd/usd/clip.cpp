@@ -791,14 +791,14 @@ _GetBracketingTimeSegment(
 }
 
 static 
-double
-_GetTime(const double& d)
+Usd_Clip::ExternalTime
+_GetTime(Usd_Clip::ExternalTime d)
 {
     return d;
 }
 
 static 
-double
+Usd_Clip::ExternalTime
 _GetTime(const Usd_Clip::TimeMapping& t) 
 {
     return t.externalTime;    
@@ -806,54 +806,55 @@ _GetTime(const Usd_Clip::TimeMapping& t)
 
 static
 Usd_Clip::TimeMappings::const_iterator
-_GetLowerBound(const Usd_Clip::TimeMappings& authoredClipTimes,
-               double time)
+_GetLowerBound(
+    Usd_Clip::TimeMappings::const_iterator begin,
+    Usd_Clip::TimeMappings::const_iterator end,
+    Usd_Clip::ExternalTime time)
 {
     return std::lower_bound( 
-            authoredClipTimes.begin(), authoredClipTimes.end(),
-            time, [](const Usd_Clip::TimeMapping& t, 
-                     const Usd_Clip::ExternalTime e) {
-                return t.externalTime < e;     
-            }        
+            begin, end, time, 
+            [](const Usd_Clip::TimeMapping& t, 
+               const Usd_Clip::ExternalTime e) {
+                return t.externalTime < e;
+            }     
     ); 
 }
 
-
+template <typename Iterator>
 static
-std::vector<Usd_Clip::ExternalTime>::const_iterator
-_GetLowerBound(const std::vector<Usd_Clip::ExternalTime>& authoredClipTimes, 
-               double time)
+Iterator
+_GetLowerBound(
+    Iterator begin, Iterator end, Usd_Clip::ExternalTime time)
 {
-    return std::lower_bound(authoredClipTimes.begin(), 
-                            authoredClipTimes.end(),
-                            time);        
+    return std::lower_bound(begin, end, time);
 }
 
 // XXX: This is taken from sdf/data.cpp with slight modification.
 // We should provide a free function in sdf to expose this behavior.
 // This function is different in that it works on time mappings instead
 // of raw doubles.
-template <typename Container>
+template <typename Iterator>
 static
 void
-_GetBracketingTimeSamples(const Container& authoredClipTimes,
-                          const double time, 
-                          double* tLower, 
-                          double* tUpper) 
+_GetBracketingTimeSamples(
+    Iterator begin, Iterator end,
+    const Usd_Clip::ExternalTime time, 
+    Usd_Clip::ExternalTime* tLower, 
+    Usd_Clip::ExternalTime* tUpper) 
 {
-   if (time <= _GetTime(*authoredClipTimes.begin())) {
+    if (time <= _GetTime(*begin)) {
         // Time is at-or-before the first sample.
-        *tLower = *tUpper = _GetTime(*authoredClipTimes.begin());
-    } else if (time >= _GetTime(*authoredClipTimes.rbegin())) {
+        *tLower = *tUpper = _GetTime(*begin);
+    } else if (time >= _GetTime(*(end - 1))) {
         // Time is at-or-after the last sample.
-        *tLower = *tUpper = _GetTime(*authoredClipTimes.rbegin());
+        *tLower = *tUpper = _GetTime(*(end - 1));
     } else {
-        auto iter = _GetLowerBound(authoredClipTimes, time);
+        auto iter = _GetLowerBound(begin, end, time);
         if (_GetTime(*iter) == time) {
             // Time is exactly on a sample.
             *tLower = *tUpper = _GetTime(*iter);
         } else {
-            // Time is in-between authoredClipTimes; return the bracketing times.
+            // Time is in-between two samples; return the bracketing times.
             *tUpper = _GetTime(*iter);
             --iter;
             *tLower = _GetTime(*iter);
@@ -925,11 +926,14 @@ Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
                                             const TimeMapping& map1, 
                                             const TimeMapping& map2, 
                                             const bool translatingLower) {
-        const double timeInClip = translatingLower ? lowerInClip : upperInClip;
+        const InternalTime timeInClip = 
+            translatingLower ? lowerInClip : upperInClip;
         auto& translated = translatingLower ? translatedLower : translatedUpper;
 
-        const double lower = std::min(map1.internalTime, map2.internalTime);
-        const double upper = std::max(map1.internalTime, map2.internalTime);
+        const InternalTime lower = 
+            std::min(map1.internalTime, map2.internalTime);
+        const InternalTime upper = 
+            std::max(map1.internalTime, map2.internalTime);
 
         if (lower <= timeInClip && timeInClip <= upper) {
             if (map1.internalTime != map2.internalTime) {
@@ -1004,28 +1008,28 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
-    double lowerInClipLayer, upperInClipLayer;
+    ExternalTime lowerInClipLayer, upperInClipLayer;
     bool fetchFromClip = _GetBracketingTimeSamplesForPathInternal(
         path, time, &lowerInClipLayer, &upperInClipLayer);
 
     bool fetchFromAuthoredClipTimes = false;
-    double lowerInClipTimes, upperInClipTimes;
+    ExternalTime lowerInClipTimes, upperInClipTimes;
     if (!times.empty()) {
         fetchFromAuthoredClipTimes = true;
-        _GetBracketingTimeSamples(times, time, 
+        _GetBracketingTimeSamples(times.cbegin(), times.cend(), time, 
                                   &lowerInClipTimes, &upperInClipTimes);
     }
 
     if (fetchFromClip && fetchFromAuthoredClipTimes) {
-        std::vector<Usd_Clip::ExternalTime> authoredClipTimes = {
+        std::array<Usd_Clip::ExternalTime, 4> authoredClipTimes = {
              lowerInClipLayer, upperInClipLayer, 
              lowerInClipTimes, upperInClipTimes
         };
         std::sort(authoredClipTimes.begin(), authoredClipTimes.end());
-        authoredClipTimes.erase(
-           std::unique(authoredClipTimes.begin(), authoredClipTimes.end()),
-           authoredClipTimes.end());
-        _GetBracketingTimeSamples(authoredClipTimes, time, tLower, tUpper);
+        auto uniqueIt = 
+            std::unique(authoredClipTimes.begin(), authoredClipTimes.end());
+        _GetBracketingTimeSamples(
+            authoredClipTimes.begin(), uniqueIt, time, tLower, tUpper);
     } else if (fetchFromAuthoredClipTimes) {
         *tLower = lowerInClipTimes;
         *tUpper = upperInClipTimes;
