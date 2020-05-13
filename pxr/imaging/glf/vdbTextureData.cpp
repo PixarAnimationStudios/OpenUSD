@@ -27,7 +27,6 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/vdbTextureData.h"
-#include "pxr/imaging/glf/vdbTextureContainer.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"

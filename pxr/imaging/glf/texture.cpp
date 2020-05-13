@@ -145,12 +145,5 @@ GlfTexture::IsOriginLowerLeft() const
     return _originLocation == GlfImage::OriginLowerLeft;
 }
 
-void
-GlfTexture::GarbageCollect()
-{
-    // Nothing to do here.
-    // Only needed for containers of textures.
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
