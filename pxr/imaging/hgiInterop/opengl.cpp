@@ -142,6 +142,12 @@ HgiInteropOpenGL::CopyToInterop(
         return;
     }
 
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Interop");
+    }
+#endif
+
     // Verify there were no gl errors coming in.
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 
@@ -194,6 +200,11 @@ HgiInteropOpenGL::CopyToInterop(
     glGetBooleanv(GL_BLEND, &blendEnabled);
     glDisable(GL_BLEND);
 
+    // Disable alpha to coverage (we want to transfer all pixels as-is)
+    GLboolean restoreAlphaToCoverage;
+    glGetBooleanv(GL_SAMPLE_ALPHA_TO_COVERAGE, &restoreAlphaToCoverage);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
     // The application may have set a custom glViewport (e.g. camera mask), we 
     // instead want to blit the entire aov texture to the screen, because the 
     // aov already contains the masked result.
@@ -215,9 +226,18 @@ HgiInteropOpenGL::CopyToInterop(
     if (!restoreDepthEnabled) {
         glDisable(GL_DEPTH_TEST);
     }
+    if (restoreAlphaToCoverage) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    }
     glViewport(restoreVp[0], restoreVp[1], restoreVp[2], restoreVp[3]);
 
     glUseProgram(0);
+
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPopDebugGroup();
+    }
+#endif
 
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }
