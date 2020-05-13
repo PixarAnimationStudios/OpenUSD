@@ -24,14 +24,24 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdNprHalfEdge;
+class UsdNprHalfEdgeMesh;
 
-enum UsdNprStrokeType : short {
-  STROKE_BOUNDARY = 1,
-  STROKE_CREASE = 2,
-  STROKE_SILHOUETTE = 4,
-  STROKE_TWIN = 8
+enum UsdNprEdgeType : short {
+  EDGE_BOUNDARY = 1,
+  EDGE_CREASE = 2,
+  EDGE_SILHOUETTE = 4,
+  EDGE_TWIN = 8,
+  EDGE_VISITED = 16,
+  EDGE_CHAINED = 32
 };
 
+struct UsdNprEdgeClassification {
+  std::vector<const UsdNprHalfEdge*> silhouettes;
+  std::vector<float>                 weights;
+  std::vector<const UsdNprHalfEdge*> creases;
+  std::vector<const UsdNprHalfEdge*> boundaries;
+  std::vector<short>                 allFlags;
+};
 
 struct UsdNprStrokeParams {
   bool findSilhouettes;
@@ -63,27 +73,35 @@ struct UsdNprStrokeNode {
 
 typedef std::vector<UsdNprStrokeNode> UsdNprStrokeNodeList;
 
-struct UsdNprStrokeClassification {
-  std::vector<const UsdNprHalfEdge*> silhouettes;
-  std::vector<const UsdNprHalfEdge*> creases;
-  std::vector<const UsdNprHalfEdge*> boundaries;
-  std::vector<short>                 allFlags;
-};
-
 class UsdNprStrokeChain {
 public:
   void Init(UsdNprHalfEdge* edge, short type, float width);
-  void Build(const std::vector<short>& edgeClassification, short type, std::vector<bool>& visited);
+  void Build(std::vector<short>& edgeClassification, short type);
+  
+  void ComputeOutputPoints( const UsdNprHalfEdgeMesh* mesh, 
+    const GfMatrix4f& xform, const GfVec3f& viewPoint, VtArray<GfVec3f>& points);
 
-  size_t GetNumPoints() const {return _nodes.size();};
-  const UsdNprStrokeNodeList GetNodes(){return _nodes;};
-  //void FindPreviousNode();
+  size_t GetNumNodes() const {return _nodes.size();};
+  const UsdNprStrokeNodeList GetNodes() const {return _nodes;};
+
 private:
+  void _ComputePoint(const GfVec3f* positions, const GfMatrix4f& xform,
+    size_t index, const GfVec3f& V, float width, GfVec3f* p1, GfVec3f* p2);
+
   UsdNprHalfEdge* _start;
   UsdNprStrokeNodeList _nodes;
   float _width;
   short _type;
 };
+
+static void
+_ResetChainedFlag(const std::vector<UsdNprHalfEdge*>& edges, 
+  std::vector<short>& flags);
+
+static void 
+_BuildStrokeChains(const std::vector<UsdNprHalfEdge*>& edges, 
+std::vector<short>& flags, float width, short type,
+std::vector<UsdNprStrokeChain>* strokes);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

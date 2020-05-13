@@ -62,13 +62,13 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
   const GfVec3f& v, float creaseValue) const
 {
   short flags = 0;
-  if(!twin)return flags | STROKE_BOUNDARY;
+  if(!twin)return flags | EDGE_BOUNDARY;
 
-  if(twin->triangle < triangle) return flags | STROKE_TWIN;
+  if(twin->triangle < triangle) return flags | EDGE_TWIN;
 
   bool s1 = GetFacing(positions, v);
   bool s2 = twin->GetFacing(positions, v);
-  if(s1 != s2) flags |= STROKE_SILHOUETTE;
+  if(s1 != s2) flags |= EDGE_SILHOUETTE;
 
 /*
   if(creaseValue >= 0.0) {
@@ -76,7 +76,7 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
     GetTriangleNormal(positions, tn1);
     twin->GetTriangleNormal(positions, tn2);
     if(GfAbs(GfDot(tn1, tn2)) < creaseValue)
-      flags |= STROKE_CREASE;
+      flags |= EDGE_CREASE;
   }
   */
   return flags;
@@ -101,26 +101,27 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
   VtArray<int> faceVertexIndices;
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
+  VtArray<int> samples;
 
   UsdNprTriangulateMesh(faceVertexCounts, 
                         faceVertexIndices, 
-                        _samples);
+                        samples);
 
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    _samples,
+    samples,
     _normals
   );
 
-  _numTriangles = _samples.size() / 3;
+  _numTriangles = samples.size() / 3;
   
   _halfEdges.resize(_numTriangles * 3);
 
   TfHashMap<uint64_t, UsdNprHalfEdge*, TfHash> halfEdgesMap;
 
-  const int* sample = &_samples[0];
+  const int* sample = &samples[0];
   UsdNprHalfEdge* halfEdge = &_halfEdges[0];
   for (int triIndex = 0; triIndex < _numTriangles; ++triIndex)
   {
@@ -186,12 +187,17 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
   VtArray<int> faceVertexIndices;
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
+  VtArray<int> samples;
+
+  UsdNprTriangulateMesh(faceVertexCounts, 
+                        faceVertexIndices, 
+                        samples);
 
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    _samples,
+    samples,
     _normals
   );
 }
@@ -235,7 +241,7 @@ void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix,
 }
 
 void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  UsdNprStrokeClassification& classification, const UsdNprStrokeParams& params)
+  UsdNprEdgeClassification& classification, const UsdNprStrokeParams& params)
 {
   const GfVec3f v = _xform.GetInverse().Transform(
     GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
@@ -253,16 +259,18 @@ void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix,
   {
     short flags = halfEdge.GetFlags(positions, normals, v, 0.25);
     classification.allFlags[edgeIndex++] = flags;
-    if(flags & STROKE_BOUNDARY)classification.boundaries.push_back(&halfEdge);
+    if(flags & EDGE_BOUNDARY)
+      classification.boundaries.push_back(&halfEdge);
     else
     {
-      if(flags & STROKE_TWIN) continue;
-      if(flags & STROKE_CREASE)classification.creases.push_back(&halfEdge);
-      if(flags & STROKE_SILHOUETTE)classification.silhouettes.push_back(&halfEdge);
+      if(flags & EDGE_TWIN) continue;
+      if(flags & EDGE_CREASE) 
+        classification.creases.push_back(&halfEdge);
+      if(flags & EDGE_SILHOUETTE)
+        classification.silhouettes.push_back(&halfEdge);
     }
   }
 }
-
 
 static GfVec3f _RandomOffset(float x)
 {
@@ -272,6 +280,7 @@ static GfVec3f _RandomOffset(float x)
     (float)rand()/(float)RAND_MAX * x
   );
 }
+
 inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const GfVec3f& V,
   float width, short index)
 {
@@ -282,13 +291,13 @@ inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const Gf
 
   switch(index) {
     case 0:
-      return (A * 0.99 + V * 0.01) - normal * width + _RandomOffset(0.2);
+      return (A * 0.99 + V * 0.01) - normal * width;
     case 1:
-      return (B * 0.99 + V * 0.01) - normal * width + _RandomOffset(0.2);
+      return (B * 0.99 + V * 0.01) - normal * width;
     case 2:
-      return (B * 0.99 + V * 0.01) + normal * width + _RandomOffset(0.2);
+      return (B * 0.99 + V * 0.01) + normal * width;
     case 3:
-      return (A * 0.99 + V * 0.01) + normal * width + _RandomOffset(0.2);
+      return (A * 0.99 + V * 0.01) + normal * width;
   };
 }
 

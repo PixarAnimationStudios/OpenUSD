@@ -28,7 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdNprStrokeNode;
 struct UsdNprStrokeParams;
-struct UsdNprStrokeClassification;
+struct UsdNprEdgeClassification;
   
 
 enum UsdHalfEdgeMeshVaryingBits {
@@ -94,7 +94,7 @@ public:
   void ClassifyEdges(const GfMatrix4d& viewMatrix, 
   std::vector<short>& classificationFlags, const UsdNprStrokeParams& params);
   void ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  UsdNprStrokeClassification& classification, const UsdNprStrokeParams& params);
+  UsdNprEdgeClassification& classification, const UsdNprStrokeParams& params);
 
   // output
   void ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
@@ -112,13 +112,12 @@ private:
   SdfPath                     _sdfPath;
   GfMatrix4f                  _xform;
   std::vector<UsdNprHalfEdge> _halfEdges; 
-  VtArray<int>                _samples;
   VtArray<GfVec3f>            _positions;
   VtArray<GfVec3f>            _normals;
   size_t                      _numTriangles;
   char                        _varyingBits;
   UsdTimeCode                 _lastTime;
-  mutable std::mutex                  _mutex;
+  mutable std::mutex          _mutex;
 
 };
 
