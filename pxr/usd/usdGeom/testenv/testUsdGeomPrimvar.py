@@ -517,6 +517,10 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # We can't even call GetName, because there is no attribute.
         with self.assertRaises(RuntimeError):
             p.BlockIndices()
+        # UsdGeomPrimvar should be invalid and not defined when attr/prim are
+        # not valid
+        self.assertFalse(p.IsDefined())
+        self.assertFalse(bool(p))
 
         # Now do some tests with a valid prim, but invalid attribute.
         stage = Usd.Stage.CreateInMemory('myTest.usda')
