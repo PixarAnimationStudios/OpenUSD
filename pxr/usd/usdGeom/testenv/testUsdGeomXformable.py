@@ -566,6 +566,11 @@ class TestUsdGeomXformable(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             xformOp = x.AddTransformOp(precision=UsdGeom.XformOp.PrecisionFloat)
 
+        # Test Validity of XformOp with no attr
+        xformOp = UsdGeom.XformOp(Usd.Attribute())
+        self.assertFalse(xformOp.IsDefined())
+        self.assertFalse(bool(xformOp))
+
     # Test TypeToken to TypeEnum mapping
     def test_XformOpTypes(self):
         typeEnums = [
@@ -605,7 +610,6 @@ class TestUsdGeomXformable(unittest.TestCase):
             self.assertEqual(testEnum, typeEnums[index])
             testToken = UsdGeom.XformOp.GetOpTypeToken(typeEnums[index])
             self.assertEqual(testToken, typeTokens[index])
-
 
     def test_MightBeTimeVarying(self):
         s = Usd.Stage.CreateInMemory()

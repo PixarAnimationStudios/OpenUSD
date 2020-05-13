@@ -119,16 +119,12 @@ __getattribute__(object selfObj, const char *name) {
          extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
         // prim is valid, but attr is invalid, let a few things through.
         (extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid() &&
-         (strcmp(name, "IsInverseOp") == 0 ||
-          strcmp(name, "IsDefined") == 0 ||
-          strcmp(name, "GetName") == 0 ||
+         (strcmp(name, "GetName") == 0 ||
           strcmp(name, "GetBaseName") == 0 ||
           strcmp(name, "GetNamespace") == 0 ||
-          strcmp(name, "GetOpTransform") == 0 ||
-          strcmp(name, "GetOpName") == 0 ||
-          strcmp(name, "GetOpType") == 0 ||
           strcmp(name, "SplitName") == 0)) ||
         // prim and attr are both invalid, let almost nothing through.
+          strcmp(name, "IsDefined") == 0 ||
           strcmp(name, "GetOpTypeToken") == 0 ||
           strcmp(name, "GetOpTypeEnum") == 0 ||
           strcmp(name, "GetAttr") == 0) {
