@@ -118,6 +118,10 @@ public:
     void SetGLTextureName(const TfToken &token, const uint32_t glName);
 
 private:
+    // Create samplers for dome light textures if not previously created.
+    void _CreateSamplersIfNecessary();
+
+private:
     GlfSimpleLightingContextRefPtr _lightingContext; 
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
@@ -134,6 +138,10 @@ private:
     uint32_t _domeLightIrradianceGLName;
     uint32_t _domeLightPrefilterGLName;
     uint32_t _domeLightBrdfGLName;
+
+    uint32_t _domeLightIrradianceGLSampler;
+    uint32_t _domeLightPrefilterGLSampler;
+    uint32_t _domeLightBrdfGLSampler;
 
     HdSt_MaterialParamVector _lightTextureParams;
 };

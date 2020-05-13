@@ -71,10 +71,12 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     , _domeLightIrradianceGLName(0)
     , _domeLightPrefilterGLName(0)
     , _domeLightBrdfGLName(0)
+    , _domeLightIrradianceGLSampler(0)
+    , _domeLightPrefilterGLSampler(0)
+    , _domeLightBrdfGLSampler(0)
 {
     _lightingContext->InitUniformBlockBindings(_bindingMap);
     _lightingContext->InitSamplerUnitBindings(_bindingMap);
-
 }
 
 HdStSimpleLightingShader::~HdStSimpleLightingShader()
@@ -87,6 +89,16 @@ HdStSimpleLightingShader::~HdStSimpleLightingShader()
     }
     if (_domeLightBrdfGLName) {
         glDeleteTextures(1, &_domeLightBrdfGLName);
+    }
+
+    if (_domeLightIrradianceGLSampler) {
+        glDeleteSamplers(1, &_domeLightIrradianceGLSampler);
+    }
+    if (_domeLightPrefilterGLSampler) {
+        glDeleteSamplers(1, &_domeLightPrefilterGLSampler);
+    }
+    if (_domeLightBrdfGLSampler) {
+        glDeleteSamplers(1, &_domeLightBrdfGLSampler);
     }
 }
 
@@ -165,9 +177,10 @@ _HasDomeLight(GlfSimpleLightingContextRefPtr const &ctx)
 
 static
 void
-_BindTexture(HdSt_ResourceBinder const &binder,
-             TfToken const &token,
-             const uint32_t glName)
+_BindTextureAndSampler(HdSt_ResourceBinder const &binder,
+                       TfToken const &token,
+                       const uint32_t glName,
+                       const uint32_t glSampler)
 {
     const HdBinding binding = binder.GetBinding(token);
     if (binding.GetType() != HdBinding::TEXTURE_2D) {
@@ -177,7 +190,7 @@ _BindTexture(HdSt_ResourceBinder const &binder,
     const int samplerUnit = binding.GetTextureUnit();
     glActiveTexture(GL_TEXTURE0 + samplerUnit);
     glBindTexture(GL_TEXTURE_2D, glName);
-    glBindSampler(samplerUnit, 0);
+    glBindSampler(samplerUnit, glSampler);
 }
 
 /* virtual */
@@ -195,15 +208,18 @@ HdStSimpleLightingShader::BindResources(const int program,
     _lightingContext->BindSamplers(_bindingMap);
 
     if(_HasDomeLight(_lightingContext)) {
-        _BindTexture(binder,
-                     _tokens->domeLightIrradiance,
-                     _domeLightIrradianceGLName);
-        _BindTexture(binder,
-                     _tokens->domeLightPrefilter,
-                     _domeLightPrefilterGLName);
-        _BindTexture(binder,
-                     _tokens->domeLightBRDF,
-                     _domeLightBrdfGLName);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightIrradiance,
+                               _domeLightIrradianceGLName,
+                               _domeLightIrradianceGLSampler);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightPrefilter,
+                               _domeLightPrefilterGLName,
+                               _domeLightPrefilterGLSampler);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightBRDF,
+                               _domeLightBrdfGLName,
+                               _domeLightBrdfGLSampler);
     }
     glActiveTexture(GL_TEXTURE0);
     binder.BindShaderResources(this);
@@ -220,15 +236,18 @@ HdStSimpleLightingShader::UnbindResources(const int program,
     _lightingContext->UnbindSamplers(_bindingMap);
 
     if(_HasDomeLight(_lightingContext)) {
-        _BindTexture(binder,
-                     _tokens->domeLightIrradiance,
-                     0);
-        _BindTexture(binder,
-                     _tokens->domeLightPrefilter,
-                     0);
-        _BindTexture(binder,
-                     _tokens->domeLightBRDF,
-                     0);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightIrradiance,
+                               0,
+                               0);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightPrefilter,
+                               0,
+                               0);
+        _BindTextureAndSampler(binder,
+                               _tokens->domeLightBRDF,
+                               0,
+                               0);
     }
 
     glActiveTexture(GL_TEXTURE0);
@@ -388,8 +407,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightIrradiance,
             glTextureName,
-            thisShader,
-            /* wrapRepeat = */ true));
+            thisShader));
     
     static const GLuint numPrefilterLevels = 5;
 
@@ -404,7 +422,6 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
                 _tokens->domeLightPrefilter, 
                 glTextureName,
                 thisShader,
-                /* wrapRepeat = */ true,
                 numPrefilterLevels,
                 mipLevel,
                 roughness));
@@ -416,14 +433,45 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightBRDF,
             glTextureName,
-            thisShader,
-            /* wrapRepeat = */ false));
+            thisShader));
+}
+
+static
+void
+_CreateSampler(uint32_t * const samplerName,
+               const GLenum wrapMode,
+               const GLenum minFilter)
+{
+    if (*samplerName) {
+        return;
+    }
+    glGenSamplers(1, samplerName);
+    glSamplerParameteri(*samplerName, GL_TEXTURE_WRAP_S, wrapMode);
+    glSamplerParameteri(*samplerName, GL_TEXTURE_WRAP_T, wrapMode);
+    glSamplerParameteri(*samplerName, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(*samplerName, GL_TEXTURE_MIN_FILTER, minFilter);
+}
+
+void
+HdStSimpleLightingShader::_CreateSamplersIfNecessary()
+{
+    _CreateSampler(&_domeLightIrradianceGLSampler,
+                   GL_REPEAT,
+                   GL_LINEAR);
+    _CreateSampler(&_domeLightPrefilterGLSampler,
+                   GL_REPEAT,
+                   GL_LINEAR_MIPMAP_LINEAR);
+    _CreateSampler(&_domeLightBrdfGLSampler,
+                   GL_CLAMP_TO_EDGE,
+                   GL_LINEAR);
 }
 
 void
 HdStSimpleLightingShader::SetGLTextureName(
     const TfToken &token, const uint32_t glName)
 {
+    _CreateSamplersIfNecessary();
+
     if (token == _tokens->domeLightIrradiance) {
         _domeLightIrradianceGLName = glName;
     } else if (token == _tokens->domeLightPrefilter) {

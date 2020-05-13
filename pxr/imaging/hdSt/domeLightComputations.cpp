@@ -42,14 +42,12 @@ HdSt_DomeLightComputationGPU::HdSt_DomeLightComputationGPU(
     const TfToken &shaderToken,
     const unsigned int sourceGLTextureName,
     HdStSimpleLightingShaderPtr const &lightingShader,
-    const bool wrapRepeat,
     const unsigned int numLevels,
     const unsigned int level, 
     const float roughness) 
   : _shaderToken(shaderToken), 
     _sourceGLTextureName(sourceGLTextureName),
     _lightingShader(lightingShader),
-    _wrapRepeat(wrapRepeat),
     _numLevels(numLevels), 
     _level(level), 
     _roughness(roughness)
@@ -64,13 +62,6 @@ HdSt_DomeLightComputationGPU::_CreateGLTexture(
     glGenTextures(1, &result);
 
     glBindTexture(GL_TEXTURE_2D, result);
-
-    const GLenum wrapMode = _wrapRepeat ? GL_REPEAT : GL_CLAMP_TO_EDGE;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    (_numLevels > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glTexStorage2D(GL_TEXTURE_2D, _numLevels, GL_RGBA16F, width, height);
     
