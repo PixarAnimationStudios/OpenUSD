@@ -286,7 +286,6 @@ HdxTaskController::_CreateRenderGraph()
             _CreateOitResolveTask();
             _CreateSelectionTask();
             _CreateColorCorrectionTask();
-            _CreateColorChannelTask();
             _CreatePresentTask();
         }
 
@@ -306,7 +305,6 @@ HdxTaskController::_CreateRenderGraph()
             _CreateColorizeSelectionTask();
             _CreatePickFromRenderBufferTask();
             _CreateColorCorrectionTask();
-            _CreateColorChannelTask();
             _CreatePresentTask();
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
