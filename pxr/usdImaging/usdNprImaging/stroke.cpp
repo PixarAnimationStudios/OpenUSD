@@ -71,14 +71,14 @@ void UsdNprStrokeChain::Build(std::vector<short>& classifications, short type)
 };
 
 void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f& xform,
-  size_t index, const GfVec3f& V, float width, GfVec3f* p1, GfVec3f* p2)
+  size_t index, const GfVec3f& V, float width, GfVec3f* p1, GfVec3f* p2) const
 {
   size_t lastNode = _nodes.size() - 1;
   GfVec3f A, B, C, N;
   if(index == 0)
   {
-    UsdNprStrokeNode* node1 = &_nodes[0];
-    UsdNprStrokeNode* node2 = &_nodes[1];
+    const UsdNprStrokeNode* node1 = &_nodes[0];
+    const UsdNprStrokeNode* node2 = &_nodes[1];
 
     A = xform.Transform(
       positions[node1->edge->vertex] * node1->weight +
@@ -98,8 +98,8 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 
   else if(index == lastNode)
   {
-    UsdNprStrokeNode* node1 = &_nodes[lastNode-1];
-    UsdNprStrokeNode* node2 = &_nodes[lastNode];
+    const UsdNprStrokeNode* node1 = &_nodes[lastNode-1];
+    const UsdNprStrokeNode* node2 = &_nodes[lastNode];
 
     A = xform.Transform(
       positions[node1->edge->vertex] * node1->weight +
@@ -119,9 +119,9 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 
   else
   {
-    UsdNprStrokeNode* node1 = &_nodes[index-1];
-    UsdNprStrokeNode* node2 = &_nodes[index];
-    UsdNprStrokeNode* node3 = &_nodes[index+1];
+    const UsdNprStrokeNode* node1 = &_nodes[index-1];
+    const UsdNprStrokeNode* node2 = &_nodes[index];
+    const UsdNprStrokeNode* node3 = &_nodes[index+1];
 
     A = xform.Transform(
       positions[node1->edge->vertex] * node1->weight +
@@ -145,54 +145,125 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 }
 
 void UsdNprStrokeChain::ComputeOutputPoints( const UsdNprHalfEdgeMesh* mesh, 
-  const GfMatrix4f& xform, const GfVec3f& viewPoint, VtArray<GfVec3f>& points)
+  const GfVec3f& viewPoint, GfVec3f* points) const
 {
-  size_t numSegments = _nodes.size() - 1;
-  size_t numPoints = numSegments * 2 + 2;
+  size_t numPoints = _nodes.size()  * 2;
 
   // points
-  points.resize(numPoints);
   size_t index = 0;
   float width = 0.04;
 
   const GfVec3f* positions = mesh->GetPositionsPtr();
+  const GfMatrix4f& xform = mesh->GetMatrix();
   
   for(size_t i=0;i<_nodes.size();++i)
-  {
     _ComputePoint(positions, xform, i, viewPoint, _width, &points[i*2], &points[i*2+1]);
+}
+
+void
+UsdNprStrokeGraph::Init(UsdNprHalfEdgeMesh* mesh, const GfMatrix4f& view, const GfMatrix4f& proj)
+{
+  _mesh = mesh;
+  _viewMatrix = view;
+  _projectionMatrix = proj;
+
+  size_t numHalfEdges = _mesh->GetNumHalfEdges();
+  _allFlags.resize(numHalfEdges);
+  memset(&_allFlags[0], 0, numHalfEdges * sizeof(short));
+
+}
+
+void
+UsdNprStrokeGraph::Prepare(const UsdNprStrokeParams& params)
+{
+  // classify edges
+  const GfVec3f v = _mesh->GetMatrix().GetInverse().Transform(
+    GfVec3f(_viewMatrix[3][0],_viewMatrix[3][1],_viewMatrix[3][2])
+  );
+  const GfVec3f* positions = _mesh->GetPositionsPtr();
+  const GfVec3f* normals = _mesh->GetNormalsPtr();
+
+  size_t numVertices = _mesh->GetNumPoints();
+  std::vector<float> dots(numVertices);
+  for(int i=0;i<numVertices;++i)
+    dots[i] = GfDot((positions[i] - v).GetNormalized(), normals[i]);
+
+  size_t edgeIndex = 0;
+  const std::vector<UsdNprHalfEdge>& halfEdges = _mesh->GetHalfEdges();
+  for(const auto& halfEdge: halfEdges)
+  {
+    short flags = halfEdge.GetFlags(positions, normals, v, 0.25);
+    _allFlags[edgeIndex++] = flags;
+    if(flags & EDGE_BOUNDARY)
+      _boundaries.push_back(&halfEdge);
+    else
+    {
+      if(flags & EDGE_TWIN) continue;
+      if(flags & EDGE_CREASE) 
+        _creases.push_back(&halfEdge);
+      if(flags & EDGE_SILHOUETTE)
+        _silhouettes.push_back(&halfEdge);
+    }
   }
 }
 
-static void
-_ResetChainedFlag(const std::vector<UsdNprHalfEdge*>& edges, 
-  std::vector<short>& flags)
+void
+UsdNprStrokeGraph::ResetChainedFlag(const std::vector<const UsdNprHalfEdge*>& edges)
 {
   for(const auto& edge: edges)
-    flags[edge->index] &= ~EDGE_CHAINED;
+    _allFlags[edge->index] &= ~EDGE_CHAINED;
 }
 
-static void 
-_BuildStrokeChains(const std::vector<UsdNprHalfEdge*>& edges, 
-  std::vector<short>& flags, float width, short type,
-  std::vector<UsdNprStrokeChain>* strokes)
+void 
+UsdNprStrokeGraph::ClearStrokeChains()
 {
-  _ResetChainedFlag(edges, flags);
-  size_t numEdges = edges.size();
+  _strokes.clear();
+}
+
+void 
+UsdNprStrokeGraph::BuildStrokeChains(short edgeType)
+{
+  std::vector<const UsdNprHalfEdge*>* edges;
+  if(edgeType == EDGE_SILHOUETTE)edges = &_silhouettes;
+  else if(edgeType == EDGE_BOUNDARY)edges = &_boundaries;
+  else if(edgeType == EDGE_CREASE)edges = &_creases;
+
+  ResetChainedFlag(*edges);
+  size_t numEdges = (*edges).size();
   
   if(numEdges) {
     size_t startId = 0;
     while(startId < numEdges)
     {
-      if(!(flags[edges[startId]->index] & EDGE_CHAINED)) {
+      if(!(_allFlags[(*edges)[startId]->index] & EDGE_CHAINED)) {
         UsdNprStrokeChain stroke;
-        stroke.Init((UsdNprHalfEdge*)edges[startId], type, width);
+        stroke.Init((UsdNprHalfEdge*)(*edges)[startId], edgeType, 0.04);
 
-        stroke.Build(flags, type);
-        strokes->push_back(stroke);
+        stroke.Build(_allFlags, edgeType);
+        if(stroke.GetNumNodes()>1)
+          _strokes.push_back(stroke);
       }
       else startId++;
     }
   }
+}
+
+size_t 
+UsdNprStrokeGraph::GetNumNodes() const
+{
+  size_t numNodes = 0;
+  for(const auto& stroke: _strokes)
+      numNodes += stroke.GetNumNodes();
+  return numNodes;
+}
+
+GfVec3f
+UsdNprStrokeGraph::GetViewPoint() const
+{
+  return GfVec3f(
+    _viewMatrix[3][0],
+    _viewMatrix[3][1],
+    _viewMatrix[3][2]);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

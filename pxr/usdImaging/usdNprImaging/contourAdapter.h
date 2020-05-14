@@ -48,12 +48,15 @@ struct UsdNprOutputBuffer {
 
 struct _ContourAdapterComputeDatas {
   const UsdPrim* prim;
+  double time;
   const UsdNprStrokeParams* strokeParams;
+  UsdNprStrokeGraph* graph;
+
   UsdNprHalfEdgeMesh* halfEdgeMesh;
   GfMatrix4d viewPointMatrix;
-  UsdTimeCode timeCode;
   UsdNprOutputBuffer* outputBuffer;
   UsdNprEdgeClassification classification;
+
 };
 
 typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
@@ -133,7 +136,7 @@ private:
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
-  void _ComputeOutputGeometry(const std::vector<UsdNprStrokeChain>& strokes,
+  void _ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
     UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
 
   UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
@@ -143,7 +146,7 @@ private:
 /// \name Computation
 // ---------------------------------------------------------------------- //
 static void 
-_ClassifyEdgesAndBuildStrokes(_ContourAdapterComputeDatas& datas);
+_BuildStrokes(_ContourAdapterComputeDatas& datas);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -42,11 +42,11 @@ struct UsdNprHalfEdge
 {
   uint32_t                index;     // half edge index
   uint32_t                vertex;    // vertex index
-  uint32_t                triangle;  // triangle index
   struct UsdNprHalfEdge*  twin;      // opposite half-edge
   struct UsdNprHalfEdge*  next;      // next half-edge
 
   UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
+  inline size_t GetTriangleIndex() const {return index / 3;};
   void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
   bool GetFacing(const GfVec3f* positions, const GfVec3f& v) const;
   bool GetFacing(const GfVec3f* positions, const GfVec3f* normals,
@@ -65,6 +65,7 @@ public:
   void Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
 
+  const std::vector<UsdNprHalfEdge>& GetHalfEdges(){return _halfEdges;};
   const UsdNprHalfEdge* GetHalfEdgesPtr() const {return &_halfEdges[0];};
   const GfVec3f* GetPositionsPtr() const {return &_positions[0];};
   const GfVec3f* GetNormalsPtr() const {return &_normals[0];};
@@ -77,6 +78,7 @@ public:
 
   // xform
   void SetMatrix(const GfMatrix4d& m){_xform = GfMatrix4f(m);};
+  const GfMatrix4f& GetMatrix() const {return _xform;};
 
   // varying
   bool IsVarying() const {return _varyingBits != 0;};
@@ -92,18 +94,16 @@ public:
 
   // silhouettes
   void ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  std::vector<short>& classificationFlags, const UsdNprStrokeParams& params);
-  void ClassifyEdges(const GfMatrix4d& viewMatrix, 
   UsdNprEdgeClassification& classification, const UsdNprStrokeParams& params);
 
   // output
-  void ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
+  void ComputeOutputGeometry(const std::vector<const UsdNprHalfEdge*>& silhouettes,
     const GfVec3f& viewPoint, VtArray<GfVec3f>& points, 
     VtArray<int>& faceVertexCounts, VtArray<int>& faceVertexIndices);
 
   // time
-  void SetLastTime(const UsdTimeCode& timeCode){_lastTime = timeCode;};
-  const UsdTimeCode& GetLastTime(){return _lastTime;};
+  void SetLastTime(double time){_lastTime = time;};
+  double GetLastTime(){return _lastTime;};
 
   // mutex
   std::mutex& GetMutex(){return _mutex;};
@@ -111,12 +111,12 @@ public:
 private:
   SdfPath                     _sdfPath;
   GfMatrix4f                  _xform;
+  size_t                      _numTriangles;
   std::vector<UsdNprHalfEdge> _halfEdges; 
   VtArray<GfVec3f>            _positions;
   VtArray<GfVec3f>            _normals;
-  size_t                      _numTriangles;
   char                        _varyingBits;
-  UsdTimeCode                 _lastTime;
+  double                      _lastTime;
   mutable std::mutex          _mutex;
 
 };

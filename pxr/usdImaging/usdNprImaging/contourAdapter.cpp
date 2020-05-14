@@ -112,75 +112,42 @@ UsdImagingContourAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 static void 
-_ClassifyEdgesAndBuildStrokes(_ContourAdapterComputeDatas& datas)
+_BuildStrokes(_ContourAdapterComputeDatas& datas)
 {
-  UsdNprHalfEdgeMesh* halfEdgeMesh = datas.halfEdgeMesh;
+  UsdNprStrokeGraph* graph = datas.graph;
+  UsdNprHalfEdgeMesh* halfEdgeMesh = graph->GetMesh();
   if(!halfEdgeMesh)return;
   
   const std::lock_guard<std::mutex> lock(halfEdgeMesh->GetMutex());
   if(halfEdgeMesh->IsVarying()) {
     
-    if(halfEdgeMesh->GetLastTime() != datas.timeCode)
+    if(halfEdgeMesh->GetLastTime() != datas.time)
     {
       char varyingBits = halfEdgeMesh->GetVaryingBits();
 
       const UsdPrim& contourSurface = *(datas.prim);
       if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TOPOLOGY)
       {
-        halfEdgeMesh->Init(UsdGeomMesh(contourSurface), datas.timeCode);
+        halfEdgeMesh->Init(UsdGeomMesh(contourSurface), UsdTimeCode(datas.time));
       }
         
       else if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_DEFORM)
       {
-        halfEdgeMesh->Update(UsdGeomMesh(contourSurface), datas.timeCode);
+        halfEdgeMesh->Update(UsdGeomMesh(contourSurface), UsdTimeCode(datas.time));
       }
 
-      halfEdgeMesh->SetLastTime(datas.timeCode);
+      halfEdgeMesh->SetLastTime(datas.time);
     }
   }
-  
-  size_t numHalfEdges = halfEdgeMesh->GetNumHalfEdges();
-  datas.classification.allFlags.resize(numHalfEdges);
-  memset(&datas.classification.allFlags[0], 0, numHalfEdges * sizeof(short));
 
-  halfEdgeMesh->ClassifyEdges(datas.viewPointMatrix, datas.classification, 
-    *(datas.strokeParams));
-
-  std::vector<const UsdNprHalfEdge*> silhouettes;
-  std::vector<UsdNprStrokeChain> strokes;
-
-  size_t numSilhouettes = datas.classification.silhouettes.size();
-  
-  if(numSilhouettes) {
-    size_t startId = 0;
-    while(startId < numSilhouettes)
-    {
-      if(!(datas.classification.allFlags[datas.classification.silhouettes[startId]->index] & EDGE_CHAINED)) {
-        UsdNprStrokeChain stroke;
-        stroke.Init(
-          (UsdNprHalfEdge*)datas.classification.silhouettes[startId],
-          EDGE_SILHOUETTE, 
-          datas.strokeParams->silhouetteWidth);
-
-        stroke.Build(
-          datas.classification.allFlags,
-          EDGE_SILHOUETTE);
-        strokes.push_back(stroke);
-      }
-      else startId++;
-    }
-  }
- 
-  if(strokes.size()) {
-    for(const auto& stroke: strokes)
-      for(const auto& node: stroke.GetNodes())
-        silhouettes.push_back(node.edge);
-  }
+  graph->Prepare(*datas.strokeParams);
+  graph->ClearStrokeChains();
+  graph->BuildStrokeChains(EDGE_SILHOUETTE);
 
   UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
   
   halfEdgeMesh->ComputeOutputGeometry(
-    silhouettes,
+    graph->GetSilhouettes(),
     GfVec3f(
       datas.viewPointMatrix[3][0],
       datas.viewPointMatrix[3][1],
@@ -211,7 +178,8 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     UsdGeomXformCache xformCache(time);
 
     UsdRelationship viewPointRel = contour.GetContourViewPointRel();
-    GfMatrix4d viewPointMatrix;
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projMatrix(1);
     if(viewPointRel.HasAuthoredTargets())
     {
       SdfPathVector viewPointTargets;
@@ -219,7 +187,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       {
         SdfPath viewPointPath = viewPointTargets[0];
 
-        viewPointMatrix = 
+        viewMatrix = 
           xformCache.GetLocalToWorldTransform(
             prim.GetStage()->GetPrimAtPath(viewPointPath));
       }
@@ -227,6 +195,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
 
     std::vector<_ContourAdapterComputeDatas> datas(contourSurfaces.size());
     UsdNprOutputBufferVector outputBuffers(contourSurfaces.size());
+    UsdNprStrokeGraphList strokeGraphs(contourSurfaces.size());
     UsdNprStrokeParams strokeParams;
 
     size_t index = 0;
@@ -245,21 +214,29 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
 
         _ContourAdapterComputeDatas* threadData = &datas[index];
         threadData->prim = &contourSurface;
+        threadData->time = time.GetValue();
+        threadData->strokeParams = &strokeParams;
+
+        strokeGraphs[index].Init(
+          halfEdgeMesh.get(), 
+          GfMatrix4f(viewMatrix), 
+          GfMatrix4f(projMatrix));
+        threadData->graph = &strokeGraphs[index];
+        
+
         threadData->halfEdgeMesh = halfEdgeMesh.get();
         threadData->outputBuffer = &outputBuffers[index];
-        threadData->viewPointMatrix = viewPointMatrix;
-        threadData->timeCode = time;
-        threadData->strokeParams = &strokeParams;
-        
+        threadData->viewPointMatrix = viewMatrix;
       }
       
       index++;
     }
 
-    WorkParallelForEach(datas.begin(), datas.end(), _ClassifyEdgesAndBuildStrokes);
+    WorkParallelForEach(datas.begin(), datas.end(), _BuildStrokes);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
-    _ComputeOutputGeometry(outputBuffers, valueCache, cachePath);
+    //_ComputeOutputGeometry(outputBuffers, valueCache, cachePath);
+    _ComputeOutputGeometry(strokeGraphs, valueCache, cachePath);
   }
 }
 
@@ -366,52 +343,61 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
 }
 
 void
-UsdImagingContourAdapter::_ComputeOutputGeometry(const std::vector<UsdNprStrokeChain>& strokes,
+UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
   UsdImagingValueCache* valueCache, SdfPath const& cachePath) const
 {
   
   size_t numPoints = 0;
   size_t numCounts = 0;
   size_t numIndices = 0;
-  for(const auto& stroke: strokes) {
-    size_t n = stroke.GetNumNodes();
-    numPoints += n * 2;
-    numCounts += n - 1;
-    numIndices += (n-1) * 4;
+  for(const auto& strokeGraph: strokeGraphs) {
+    size_t s = strokeGraph.GetNumStrokes();
+    size_t n = strokeGraph.GetNumNodes();
+    if(n>1) {
+      numPoints += n * 2;
+      numCounts += n - s;
+      numIndices += (n-s) * 4;
+    }
   }
 
-  /*
   VtArray<int> faceVertexCounts(numCounts);
+  for(int i=0;i<numCounts;++i)faceVertexCounts[i] = 4;
+
   VtArray<int> faceVertexIndices(numIndices);
   VtArray<GfVec3f> points(numPoints);
 
   size_t pointsIndex = 0;
-  size_t countsIndex = 0;
   size_t indicesIndex = 0;
+  size_t offsetIndex = 0;
 
-  for(const auto& buffer: buffers) {
-    size_t numPoints =  buffer.points.size();
-    if(numPoints) {
-      memcpy(&points[pointsIndex], &buffer.points[0], 
-        numPoints * sizeof(GfVec3f));
-      pointsIndex += numPoints;
-    }
-  
-    size_t numCounts = buffer.faceVertexCounts.size();
-    if(numCounts) {
-      memcpy(&faceVertexCounts[countsIndex], &buffer.faceVertexCounts[0], 
-        numCounts * sizeof(int));
-      countsIndex += numCounts;
-    }
-    
-    size_t numIndices = buffer.faceVertexIndices.size();
-    if(numIndices) {
-      for(int i=0;i<numIndices;++i)
-        faceVertexIndices[indicesIndex + i] = buffer.faceVertexIndices[i] + indicesIndex;
-      indicesIndex += numIndices;
+  for(const auto& strokeGraph: strokeGraphs) {
+    const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
+    GfVec3f viewPoint = strokeGraph.GetViewPoint();
+    for(const auto& stroke: strokeGraph.GetStrokes()) {
+      size_t numNodes = stroke.GetNumNodes();
+      if(numNodes >1) {
+        size_t numPoints =  numNodes * 2;
+        if(numPoints) {
+          stroke.ComputeOutputPoints( mesh, viewPoint, &points[pointsIndex]);
+        }
+        pointsIndex += numPoints;
+        
+        size_t numIndices = (numNodes - 1) * 4;
+        if(numIndices) {
+          for(int i=0; i < numNodes - 1; ++i) {
+            faceVertexIndices[indicesIndex + i * 4 + 0] = offsetIndex + i * 2;
+            faceVertexIndices[indicesIndex + i * 4 + 1] = offsetIndex + i * 2 + 1;
+            faceVertexIndices[indicesIndex + i * 4 + 2] = offsetIndex + i * 2 + 3;
+            faceVertexIndices[indicesIndex + i * 4 + 3] = offsetIndex + i * 2 + 2;
+          }
+        }
+        indicesIndex += numIndices;
+        offsetIndex += numNodes * 2;
+      }
     }
   }
 
+  
   HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
                           UsdGeomTokens->rightHanded,
                           faceVertexCounts,
@@ -419,7 +405,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const std::vector<UsdNprStrokeC
   
   valueCache->GetTopology(cachePath) = VtValue(topology);
   valueCache->GetPoints(cachePath) = VtValue(points);
-  */
+  
 }
 
 
