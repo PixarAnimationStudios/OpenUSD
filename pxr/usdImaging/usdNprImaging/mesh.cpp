@@ -64,13 +64,12 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
   short flags = 0;
   if(!twin)return flags | EDGE_BOUNDARY;
 
-  if(twin->triangle < triangle) return flags | EDGE_TWIN;
+  if(twin->GetTriangleIndex() < GetTriangleIndex()) return flags | EDGE_TWIN;
 
   bool s1 = GetFacing(positions, v);
   bool s2 = twin->GetFacing(positions, v);
   if(s1 != s2) flags |= EDGE_SILHOUETTE;
 
-/*
   if(creaseValue >= 0.0) {
     GfVec3f tn1, tn2;
     GetTriangleNormal(positions, tn1);
@@ -78,7 +77,7 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
     if(GfAbs(GfDot(tn1, tn2)) < creaseValue)
       flags |= EDGE_CREASE;
   }
-  */
+
   return flags;
 
 }
@@ -133,7 +132,6 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
       halfEdgesMap[A | (C << 32)] = halfEdge;
       halfEdge->index = triIndex * 3;
       halfEdge->vertex = C;
-      halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
@@ -141,7 +139,6 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
       halfEdgesMap[B | (A << 32)] = halfEdge;
       halfEdge->index = triIndex * 3 + 1;
       halfEdge->vertex = A;
-      halfEdge->triangle = triIndex;
       halfEdge->next = 1 + halfEdge;
       ++halfEdge;
 
@@ -149,7 +146,6 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
       halfEdgesMap[C | (B << 32)] = halfEdge;
       halfEdge->index = triIndex * 3 + 2;
       halfEdge->vertex = B;
-      halfEdge->triangle = triIndex;
       halfEdge->next = halfEdge - 2;
       ++halfEdge;
   }
@@ -215,28 +211,12 @@ void UsdNprHalfEdgeMesh::FindSilhouettes(const GfMatrix4d& viewMatrix,
   for(const auto& halfEdge: _halfEdges)
   {
     if(!halfEdge.twin) continue;
-    if(halfEdge.twin->triangle < halfEdge.triangle) continue;
+    if(halfEdge.twin->GetTriangleIndex() < halfEdge.GetTriangleIndex()) continue;
     bool s1 = halfEdge.GetFacing(positions, normals, v);
     bool s2 = halfEdge.twin->GetFacing(positions, normals, v);
     if(s1!=s2) {
       silhouettes.push_back(&halfEdge);
     }
-  }
-}
-
-void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  std::vector<short>& classificationFlags, const UsdNprStrokeParams& params)
-{
-  const GfVec3f v = _xform.GetInverse().Transform(
-    GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
-  );
-  const GfVec3f* positions = &_positions[0];
-  const GfVec3f* normals = &_normals[0];
-  size_t edgeIndex = 0;
-  for(const auto& halfEdge: _halfEdges)
-  {
-    classificationFlags[edgeIndex++] = 
-      halfEdge.GetFlags(positions, normals, v, 0.25);
   }
 }
 
@@ -301,7 +281,7 @@ inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const Gf
   };
 }
 
-void UsdNprHalfEdgeMesh::ComputeOutputGeometry(std::vector<const UsdNprHalfEdge*>& silhouettes,
+void UsdNprHalfEdgeMesh::ComputeOutputGeometry(const std::vector<const UsdNprHalfEdge*>& silhouettes,
   const GfVec3f& viewPoint, VtArray<GfVec3f>& points, VtArray<int>& faceVertexCounts,
   VtArray<int>& faceVertexIndices)
 {
