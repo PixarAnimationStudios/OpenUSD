@@ -60,7 +60,6 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 
 namespace {
 
-static
 bool
 _GetHydraEnabledEnvVar()
 {
@@ -71,7 +70,6 @@ _GetHydraEnabledEnvVar()
     return TfGetenv("HD_ENABLED", "1") == "1";
 }
 
-static
 SdfPath const&
 _GetUsdImagingDelegateId()
 {
@@ -81,7 +79,6 @@ _GetUsdImagingDelegateId()
     return delegateId;
 }
 
-static
 void _InitGL()
 {
     static std::once_flag initFlag;
@@ -100,7 +97,6 @@ void _InitGL()
     });
 }
 
-static
 bool
 _IsHydraEnabled()
 {
@@ -142,38 +138,12 @@ UsdImagingGLEngine::IsHydraEnabled()
 //----------------------------------------------------------------------------
 
 UsdImagingGLEngine::UsdImagingGLEngine()
-    : _hgi(Hgi::GetPlatformDefaultHgi())
-    , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
-    ,  _renderIndex(nullptr)
-    , _selTracker(new HdxSelectionTracker)
-    , _delegateID(_GetUsdImagingDelegateId())
-    , _delegate(nullptr)
-    , _rendererPlugin(nullptr)
-    , _taskController(nullptr)
-    , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
-    , _rootPath(SdfPath::AbsoluteRootPath())
-    , _excludedPrimPaths()
-    , _invisedPrimPaths()
-    , _isPopulated(false)
+    : UsdImagingGLEngine(SdfPath::AbsoluteRootPath(),
+                         {},
+                         {},
+                         _GetUsdImagingDelegateId())
 {
-    _InitGL();
-
-    if (IsHydraEnabled()) {
-
-        // _renderIndex, _taskController, and _delegate are initialized
-        // by the plugin system.
-        if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
-            TF_CODING_ERROR("No renderer plugins found! "
-                            "Check before creation.");
-        }
-
-    } else {
-
-        SdfPathVector excluded;
-        _legacyImpl.reset(new UsdImagingGLLegacyEngine(excluded));
-
-    }
-}
+}      
 
 UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPath& rootPath,
@@ -212,7 +182,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
         SdfPathVector pathsToExclude = excludedPaths;
         pathsToExclude.insert(pathsToExclude.end(), 
             invisedPaths.begin(), invisedPaths.end());
-        _legacyImpl.reset(new UsdImagingGLLegacyEngine(pathsToExclude));
+        _legacyImpl =std::make_unique<UsdImagingGLLegacyEngine>(pathsToExclude);
     }
 }
 
