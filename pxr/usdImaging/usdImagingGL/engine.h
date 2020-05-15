@@ -463,12 +463,15 @@ protected:
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
 
+    // _hgi is first field so that it is guaranteed to
+    // be destructed last and thus available while any other
+    // Hydra objects have a pointer to Hgi.
+    std::unique_ptr<class Hgi> _hgi;
+    // Similar for HdDriver.
+    HdDriver _hgiDriver;
     HdEngine _engine;
 
     HdRenderIndex *_renderIndex;
-
-    std::unique_ptr<class Hgi> _hgi;
-    HdDriver _hgiDriver;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;

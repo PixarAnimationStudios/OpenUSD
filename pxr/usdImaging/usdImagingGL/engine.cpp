@@ -142,9 +142,9 @@ UsdImagingGLEngine::IsHydraEnabled()
 //----------------------------------------------------------------------------
 
 UsdImagingGLEngine::UsdImagingGLEngine()
-    : _renderIndex(nullptr)
-    , _hgi(Hgi::GetPlatformDefaultHgi())
+    : _hgi(Hgi::GetPlatformDefaultHgi())
     , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+    ,  _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(_GetUsdImagingDelegateId())
     , _delegate(nullptr)
@@ -180,9 +180,9 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPathVector& excludedPaths,
     const SdfPathVector& invisedPaths,
     const SdfPath& delegateID)
-    : _renderIndex(nullptr)
-    , _hgi(Hgi::GetPlatformDefaultHgi())
+    : _hgi(Hgi::GetPlatformDefaultHgi())
     , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+    , _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(delegateID)
     , _delegate(nullptr)
