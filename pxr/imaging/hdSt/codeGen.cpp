@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
@@ -1364,11 +1365,23 @@ static void _EmitTextureAccessors(
     std::string const &swizzle,
     int const dim,
     bool const hasTextureTransform,
+    bool const hasTextureScaleAndBias,
     bool const isBindless)
 {
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     TfToken const &name = acc.name;
+
+    // Forward declare texture scale and bias
+    if (hasTextureScaleAndBias) {
+        accessors 
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
+            << "vec4 HdGet_" << name << "_" << HdStTokens->scale  << "();\n"
+            << "#endif\n"
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias  << "\n"
+            << "vec4 HdGet_" << name << "_" << HdStTokens->bias  << "();\n"
+            << "#endif\n";
+    }
 
     if (!isBindless) {
         // a function returning sampler requires bindless_texture
@@ -1411,15 +1424,30 @@ static void _EmitTextureAccessors(
             << "   vec3 sampleCoord = c.xyz / c.w;\n";
     } else {
         accessors
-            << "   vec" << dim << " sampleCoord = coord;\n";
+            << "  vec" << dim << " sampleCoord = coord;\n";
     }
 
-    accessors
-        << "  " << _GetUnpackedType(dataType, false)
-        << " result = "
-        << _GetPackedTypeAccessor(dataType, false)
-        << "(texture(HdGetSampler_" << name << "(), sampleCoord)"
-        << swizzle << ");\n";
+    if (hasTextureScaleAndBias) {
+        accessors
+            << "  " << _GetUnpackedType(dataType, false)
+            << " result = "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "((texture(HdGetSampler_" << name << "(), sampleCoord)\n"
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
+            << "    * HdGet_" << name << "_" << HdStTokens->scale << "()\n"
+            << "#endif\n" 
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias << "\n"
+            << "    + HdGet_" << name << "_" << HdStTokens->bias  << "()\n"
+            << "#endif\n"
+            << ")" << swizzle << ");\n";
+    } else {
+        accessors
+            << "  " << _GetUnpackedType(dataType, false)
+            << " result = "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "(texture(HdGetSampler_" << name << "(), sampleCoord)"
+            << swizzle << ");\n";
+    }
 
     if (acc.processTextureFallbackValue) {
         // Check whether texture is valid (using NAME_valid)
@@ -1442,15 +1470,36 @@ static void _EmitTextureAccessors(
                 << ") {\n";
         }
 
-        accessors
-            << "    return result;\n"
-            << "  } else {\n"
-            << "    return "
-            << _GetPackedTypeAccessor(dataType, false)
-            << "(shaderData[shaderCoord]."
-            << name
-            << HdSt_ResourceBindingSuffixTokens->fallback << ");\n"
-            << "  }\n";
+        if (hasTextureScaleAndBias) {
+            accessors
+                << "    return result;\n"
+                << "  } else {\n"
+                << "    return ("
+                << _GetPackedTypeAccessor(dataType, false)
+                << "(shaderData[shaderCoord]."
+                << name
+                << HdSt_ResourceBindingSuffixTokens->fallback << ")\n"
+                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
+                << "        * HdGet_" << name << "_" << HdStTokens->scale 
+                << "()" << swizzle << "\n"
+                << "#endif\n" 
+                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias << "\n"
+                << "        + HdGet_" << name << "_" << HdStTokens->bias 
+                << "()" << swizzle << "\n"
+                << "#endif\n"
+                << ");\n"
+                << "  }\n";
+        } else {
+            accessors
+                << "    return result;\n"
+                << "  } else {\n"
+                << "    return "
+                << _GetPackedTypeAccessor(dataType, false)
+                << "(shaderData[shaderCoord]."
+                << name
+                << HdSt_ResourceBindingSuffixTokens->fallback << ");\n"
+                << "  }\n";
+        }
     } else {
         accessors
             << "  return result;\n";
@@ -1480,7 +1529,7 @@ static void _EmitTextureAccessors(
             << "vec" << dim << "(0.0)";
     }
     accessors << "); }\n";
-    
+
     // vec4 HdGet_name()
     accessors
         << _GetUnpackedType(dataType, false)
@@ -2831,6 +2880,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors, it->second, swizzle,
                 /* dim = */ 2,
                 /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ true,
                 /* isBindless = */ true);
 
         } else if (bindingType == HdBinding::TEXTURE_2D) {
@@ -2843,6 +2893,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors, it->second, swizzle,
                 /* dim = */ 2,
                 /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ true,
                 /* isBindless = */ false);
 
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_FIELD) {
@@ -2851,6 +2902,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors, it->second, swizzle,
                 /* dim = */ 3,
                 /* hasTextureTransform = */ true,
+                /* hasTextureScaleAndBias = */ false,
                 /* isBindless = */ true);
 
         } else if (bindingType == HdBinding::TEXTURE_FIELD) {
@@ -2863,6 +2915,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors, it->second, swizzle,
                 /* dim = */ 3,
                 /* hasTextureTransform = */ true,
+                /* hasTextureScaleAndBias = */ false,
                 /* isBindless = */ false);
 
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {

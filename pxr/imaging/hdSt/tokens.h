@@ -50,7 +50,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (packedSmoothNormals)                       \
     (smoothNormals)                             \
     (packedFlatNormals)                         \
-    (flatNormals)
+    (flatNormals)                               \
+    (scale)                                     \
+    (bias)
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

@@ -828,6 +828,27 @@ _MakeMaterialParamsForTexture(
         }
     }
 
+    // Handle texture scale and bias
+    HdSt_MaterialParam texScaleParam;
+    texScaleParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
+    texScaleParam.name = TfToken(paramName.GetString() + "_" + 
+                                 HdStTokens->scale.GetString());
+    texScaleParam.fallbackValue = VtValue(_ResolveParameter(node, 
+                                                            sdrNode, 
+                                                            HdStTokens->scale, 
+                                                            GfVec4f(1.0f)));
+    params->push_back(std::move(texScaleParam));
+
+    HdSt_MaterialParam texBiasParam;
+    texBiasParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
+    texBiasParam.name = TfToken(paramName.GetString() + "_" + 
+                                HdStTokens->bias.GetString());
+    texBiasParam.fallbackValue = VtValue(_ResolveParameter(node, 
+                                                           sdrNode, 
+                                                           HdStTokens->bias, 
+                                                           GfVec4f(0.0f)));
+    params->push_back(std::move(texBiasParam));
+
     // Note that the memory request is apparently authored as
     // float even though it is in bytes and thus should be an integral
     // type.
@@ -1024,7 +1045,9 @@ _GatherMaterialParams(
 
     // Set fallback values for the inputs on the terminal
     for (HdSt_MaterialParam& p : *params) {
-        p.fallbackValue= _GetParamFallbackValue(network, node, p.name);
+        if (p.fallbackValue.IsEmpty()) {
+            p.fallbackValue = _GetParamFallbackValue(network, node, p.name);
+        }
     }
 
     // Create HdSt_MaterialParams for each primvar the terminal says it needs.
