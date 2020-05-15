@@ -16,6 +16,7 @@ pxr_library(hgi
         hgi
         pipeline
         resourceBindings
+        sampler
         shaderFunction
         shaderProgram
         texture

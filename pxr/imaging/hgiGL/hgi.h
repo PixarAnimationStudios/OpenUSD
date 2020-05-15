@@ -74,6 +74,12 @@ public:
     void DestroyTexture(HgiTextureHandle* texHandle) override;
 
     HGIGL_API
+    HgiSamplerHandle CreateSampler(HgiSamplerDesc const & desc) override;
+
+    HGIGL_API
+    void DestroySampler(HgiSamplerHandle* smpHandle) override;
+
+    HGIGL_API
     HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) override;
 
     HGIGL_API

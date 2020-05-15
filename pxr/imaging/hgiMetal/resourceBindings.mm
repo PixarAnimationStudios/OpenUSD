@@ -25,6 +25,7 @@
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
+#include "pxr/imaging/hgiMetal/sampler.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +45,7 @@ HgiMetalResourceBindings::BindResources(
     id<MTLRenderCommandEncoder> renderEncoder)
 {
     //
-    // Bind Textures
+    // Bind Textures and Samplers
     //
 
     for (HgiTextureBindDesc const& texDesc : _descriptor.textures) {
@@ -54,13 +55,27 @@ HgiMetalResourceBindings::BindResources(
         HgiMetalTexture* metalTexture =
             static_cast<HgiMetalTexture*>(texHandle.Get());
 
+        HgiMetalSampler* metalSmp = nullptr;
+        if (!texDesc.samplers.empty()) {
+            HgiSamplerHandle const& smpHandle = texDesc.samplers.front();
+            metalSmp = static_cast<HgiMetalSampler*>(smpHandle.Get());
+        }
+
         if (texDesc.stageUsage & HgiShaderStageVertex) {
             [renderEncoder setVertexTexture:metalTexture->GetTextureId()
                                     atIndex:texDesc.bindingIndex];
+            if (metalSmp) {
+                [renderEncoder setVertexSamplerState:metalSmp->GetSamplerId()
+                                        atIndex:texDesc.bindingIndex];
+            }
         }
         if (texDesc.stageUsage & HgiShaderStageFragment) {
             [renderEncoder setFragmentTexture:metalTexture->GetTextureId()
                                       atIndex:texDesc.bindingIndex];
+            if (metalSmp) {
+                [renderEncoder setFragmentSamplerState:metalSmp->GetSamplerId()
+                                        atIndex:texDesc.bindingIndex];
+            }
         }
     }
 

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
 #include "pxr/imaging/hgiMetal/pipeline.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
+#include "pxr/imaging/hgiMetal/sampler.h"
 #include "pxr/imaging/hgiMetal/shaderFunction.h"
 #include "pxr/imaging/hgiMetal/shaderProgram.h"
 #include "pxr/imaging/hgiMetal/texture.h"
@@ -130,7 +131,7 @@ HgiMetal::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
                 _workToFlush = true;
             }
         } else if (HgiMetalBlitCmds* bw = dynamic_cast<HgiMetalBlitCmds*>(w)) {
-            if (gw->Commit()) {
+            if (bw->Commit()) {
                 _workToFlush = true;
             }
         }
@@ -172,6 +173,18 @@ void
 HgiMetal::DestroyTexture(HgiTextureHandle* texHandle)
 {
     DestroyObject(texHandle);
+}
+
+HgiSamplerHandle
+HgiMetal::CreateSampler(HgiSamplerDesc const & desc)
+{
+    return HgiSamplerHandle(new HgiMetalSampler(this, desc), GetUniqueId());
+}
+
+void
+HgiMetal::DestroySampler(HgiSamplerHandle* smpHandle)
+{
+    DestroyObject(smpHandle);
 }
 
 HgiBufferHandle

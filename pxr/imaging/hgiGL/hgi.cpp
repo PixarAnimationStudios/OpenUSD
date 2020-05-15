@@ -34,6 +34,7 @@
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/scopedStateHolder.h"
+#include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -132,6 +133,18 @@ HgiTextureHandle
 HgiGL::CreateTexture(HgiTextureDesc const & desc)
 {
     return HgiTextureHandle(new HgiGLTexture(desc), GetUniqueId());
+}
+
+HgiSamplerHandle
+HgiGL::CreateSampler(HgiSamplerDesc const & desc)
+{
+    return HgiSamplerHandle(new HgiGLSampler(desc), GetUniqueId());
+}
+
+void
+HgiGL::DestroySampler(HgiSamplerHandle* smpHandle)
+{
+    DestroyObject(smpHandle);
 }
 
 void

@@ -35,6 +35,7 @@
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/sampler.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -101,6 +102,14 @@ public:
     /// Destroy a texture in rendering backend.
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
+
+    /// Create a sampler in rendering backend.
+    HGI_API
+    virtual HgiSamplerHandle CreateSampler(HgiSamplerDesc const & desc) = 0;
+
+    /// Destroy a sampler in rendering backend.
+    HGI_API
+    virtual void DestroySampler(HgiSamplerHandle* smpHandle) = 0;
 
     /// Create a buffer in rendering backend.
     HGI_API

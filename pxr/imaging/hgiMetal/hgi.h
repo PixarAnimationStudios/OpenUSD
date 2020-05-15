@@ -81,6 +81,12 @@ public:
     void DestroyTexture(HgiTextureHandle* texHandle) override;
 
     HGIMETAL_API
+    HgiSamplerHandle CreateSampler(HgiSamplerDesc const & desc) override;
+
+    HGIMETAL_API
+    void DestroySampler(HgiSamplerHandle* smpHandle) override;
+
+    HGIMETAL_API
     HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) override;
 
     HGIMETAL_API

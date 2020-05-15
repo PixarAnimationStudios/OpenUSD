@@ -77,6 +77,14 @@ public:
     HGIMETAL_API
     static MTLTextureType GetTextureType(HgiTextureType tt);
 
+    HGIMETAL_API
+    static MTLSamplerAddressMode GetSamplerAddressMode(HgiSamplerAddressMode a);
+
+    HGIMETAL_API
+    static MTLSamplerMinMagFilter GetMinMagFilter(HgiSamplerFilter mf);
+
+    HGIMETAL_API
+    static MTLSamplerMipFilter GetMipFilter(HgiMipFilter mf);
 };
 
 

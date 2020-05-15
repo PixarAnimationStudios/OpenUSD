@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/handle.h"
+#include "pxr/imaging/hgi/sampler.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
 
@@ -44,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct HgiBufferBindDesc
 ///
-/// Describes the binding information of one buffer (or array of buffers).
+/// Describes the binding information of a buffer (or array of buffers).
 ///
 /// <ul>
 /// <li>buffers:
@@ -89,10 +90,9 @@ inline bool operator!=(
     const HgiBufferBindDesc& lhs,
     const HgiBufferBindDesc& rhs);
 
-
 /// \struct HgiTextureBindDesc
 ///
-/// Describes the binding information of one texture.
+/// Describes the binding information of a texture (or array of textures).
 ///
 /// <ul>
 /// <li>textures:
@@ -100,13 +100,16 @@ inline bool operator!=(
 ///   If there are more than one texture, the textures will be put in an
 ///   array-of-textures (not texture-array). Please note that different
 ///   platforms have varying limits to max textures in an array.</li>
+/// <li>samplers:
+///   (optional) The sampler(s) to be bound for each texture in `textures`.
+///   If empty a default sampler (clamp_to_edge, linear) should be used. </li>
 /// <li>resourceType:
 ///    The type of the texture(s) that is to be bound.
 ///    All textures in the array must have the same type.</li>
 /// <li>bindingIndex:
 ///    Binding location for the texture</li>
 /// <li>stageUsage:
-///    What shader stage(s) the buffer will be used in.</li>
+///    What shader stage(s) the texture will be used in.</li>
 /// </ul>
 ///
 struct HgiTextureBindDesc
@@ -115,6 +118,7 @@ struct HgiTextureBindDesc
     HgiTextureBindDesc();
 
     HgiTextureHandleVector textures;
+    HgiSamplerHandleVector samplers;
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;

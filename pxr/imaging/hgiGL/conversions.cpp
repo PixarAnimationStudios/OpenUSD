@@ -160,9 +160,19 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
 static uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
-    {HgiTextureType1D,           GL_TEXTURE_1D},
-    {HgiTextureType2D,           GL_TEXTURE_2D},
-    {HgiTextureType3D,           GL_TEXTURE_3D}
+    {HgiTextureType1D, GL_TEXTURE_1D},
+    {HgiTextureType2D, GL_TEXTURE_2D},
+    {HgiTextureType3D, GL_TEXTURE_3D}
+};
+
+static uint32_t
+_samplerAddressModeTable[HgiSamplerAddressModeCount][2] =
+{
+    {HgiSamplerAddressModeClampToEdge,        GL_CLAMP_TO_EDGE},
+    {HgiSamplerAddressModeMirrorClampToEdge,  GL_MIRROR_CLAMP_TO_EDGE},
+    {HgiSamplerAddressModeRepeat,             GL_REPEAT},
+    {HgiSamplerAddressModeMirrorRepeat,       GL_MIRRORED_REPEAT},
+    {HgiSamplerAddressModeClampToBorderColor, GL_CLAMP_TO_BORDER}
 };
 
 void
@@ -243,6 +253,62 @@ GLenum
 HgiGLConversions::GetTextureType(HgiTextureType tt)
 {
     return _textureTypeTable[tt][1];
+}
+
+GLenum
+HgiGLConversions::GetSamplerAddressMode(HgiSamplerAddressMode am)
+{
+    return _samplerAddressModeTable[am][1];
+}
+
+GLenum
+HgiGLConversions::GetMagFilter(HgiSamplerFilter sf)
+{
+    switch(sf) {
+        case HgiSamplerFilterNearest: return GL_NEAREST;
+        case HgiSamplerFilterLinear: return GL_LINEAR;
+        default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GL_NONE;
+}
+
+GLenum
+HgiGLConversions::GetMinFilter(
+    HgiSamplerFilter minFilter, 
+    HgiMipFilter mipFilter)
+{
+    switch(mipFilter) {
+    // No mip-filter supplied (no mipmapping), return min-filter
+    case HgiMipFilterNotMipmapped : 
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST;
+            case HgiSamplerFilterLinear: return GL_LINEAR;
+            default: TF_CODING_ERROR("Unsupported type"); break;
+        }
+
+    // Mip filter is nearest, combine min and mip filter into one enum
+    case HgiMipFilterNearest:
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST_MIPMAP_NEAREST;
+            case HgiSamplerFilterLinear: return GL_LINEAR_MIPMAP_NEAREST;
+            default: TF_CODING_ERROR("Unsupported typr"); break;
+        }
+
+    // Mip filter is linear, combine min and mip filter into one enum
+    case HgiMipFilterLinear:
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST_MIPMAP_LINEAR;
+            case HgiSamplerFilterLinear: return GL_LINEAR_MIPMAP_LINEAR;
+            default: TF_CODING_ERROR("Unsupported typr"); break;
+        }
+
+    default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GL_NONE;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

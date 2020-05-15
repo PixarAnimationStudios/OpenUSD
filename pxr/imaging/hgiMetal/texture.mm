@@ -23,10 +23,10 @@
 //
 #include <Metal/Metal.h>
 
-#include "pxr/imaging/hgiMetal/hgi.h"
-#include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
+#include "pxr/imaging/hgiMetal/diagnostic.h"
+#include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
 
@@ -39,7 +39,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     MTLPixelFormat mtlFormat;
     MTLResourceOptions resourceOptions = MTLResourceStorageModePrivate;
     MTLTextureUsage usage = MTLTextureUsageUnknown;
-    
+
     if (desc.initialData && desc.pixelsByteSize > 0) {
         resourceOptions = hgi->GetCapabilities().defaultStorageMode;
     }
@@ -53,7 +53,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
         mtlFormat = MTLPixelFormatDepth32Float;
         usage = MTLTextureUsageRenderTarget;
     }
-    
+
 //    if (desc.usage & HgiTextureUsageBitsShaderRead) {
         usage |= MTLTextureUsageShaderRead;
 //    }
@@ -64,9 +64,9 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     const size_t width = desc.dimensions[0];
     const size_t height = desc.dimensions[1];
     const size_t depth = desc.dimensions[2];
-    
+
     MTLTextureDescriptor* texDesc;
-    
+
     texDesc =
         [MTLTextureDescriptor
          texture2DDescriptorWithPixelFormat:mtlFormat
@@ -91,7 +91,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     }
 
     _textureId = [hgi->GetPrimaryDevice() newTextureWithDescriptor:texDesc];
-    
+
     if (desc.initialData && desc.pixelsByteSize > 0) {
         TF_VERIFY(desc.mipLevels == 1, "Mipmap upload not implemented");
         if(depth <= 1) {
@@ -107,7 +107,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
                         bytesPerImage:desc.pixelsByteSize / depth];
         }
     }
-    
+
     HGIMETAL_DEBUG_LABEL(_textureId, _descriptor.debugName.c_str());
 }
 
@@ -119,5 +119,10 @@ HgiMetalTexture::~HgiMetalTexture()
     }
 }
 
+id<MTLTexture>
+HgiMetalTexture::GetTextureId() const
+{
+    return _textureId;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

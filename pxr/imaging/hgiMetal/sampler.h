@@ -21,42 +21,44 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_TEXTURE_H
-#define PXR_IMAGING_HGI_METAL_TEXTURE_H
+#ifndef PXR_IMAGING_HGI_METAL_SAMPLER_H
+#define PXR_IMAGING_HGI_METAL_SAMPLER_H
 
-#include <Metal/Metal.h>
+#include "pxr/imaging/hgi/sampler.h"
 
-#include "pxr/pxr.h"
 #include "pxr/imaging/hgiMetal/api.h"
-#include "pxr/imaging/hgi/texture.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiMetal;
 
-/// \class HgiMetalTexture
 ///
-/// Represents a Metal GPU texture resource.
+/// \class HgiMetalSampler
 ///
-class HgiMetalTexture final : public HgiTexture {
+/// Metal implementation of HgiSampler
+///
+class HgiMetalSampler final : public HgiSampler
+{
 public:
     HGIMETAL_API
-    HgiMetalTexture(HgiMetal *hgi,
-                    HgiTextureDesc const & desc);
+    HgiMetalSampler(HgiMetal *hgi,
+                    HgiSamplerDesc const & desc);
 
     HGIMETAL_API
-    ~HgiMetalTexture() override;
+    ~HgiMetalSampler() override;
 
     HGIMETAL_API
-    id<MTLTexture> GetTextureId() const;
+    id<MTLSamplerState> GetSamplerId() const;
 
 private:
-    HgiMetalTexture() = delete;
-    HgiMetalTexture & operator=(const HgiMetalTexture&) = delete;
-    HgiMetalTexture(const HgiMetalTexture&) = delete;
+    HgiMetalSampler() = delete;
+    HgiMetalSampler & operator=(const HgiMetalSampler&) = delete;
+    HgiMetalSampler(const HgiMetalSampler&) = delete;
 
-    id<MTLTexture> _textureId;
+private:
+    id<MTLSamplerState> _samplerId;
+    NSString* _label;
 };
 
 

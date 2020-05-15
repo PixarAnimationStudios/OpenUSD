@@ -65,7 +65,8 @@ bool operator!=(
 }
 
 HgiTextureBindDesc::HgiTextureBindDesc()
-    : bindingIndex(0)
+    : resourceType(HgiBindResourceTypeCombinedImageSampler)
+    , bindingIndex(0)
     , stageUsage(HgiShaderStageFragment)
 {
 }
@@ -77,7 +78,8 @@ bool operator==(
     return lhs.textures == rhs.textures &&
            lhs.resourceType == rhs.resourceType &&
            lhs.bindingIndex == rhs.bindingIndex &&
-           lhs.stageUsage == rhs.stageUsage;
+           lhs.stageUsage == rhs.stageUsage &&
+           lhs.samplers == rhs.samplers;
 }
 
 bool operator!=(

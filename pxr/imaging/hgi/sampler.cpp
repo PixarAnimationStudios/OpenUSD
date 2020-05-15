@@ -21,45 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_TEXTURE_H
-#define PXR_IMAGING_HGI_METAL_TEXTURE_H
-
-#include <Metal/Metal.h>
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgiMetal/api.h"
-#include "pxr/imaging/hgi/texture.h"
-
+#include "pxr/imaging/hgi/sampler.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiMetal;
+HgiSampler::HgiSampler(HgiSamplerDesc const& desc)
+    : _descriptor(desc)
+{
+}
 
-/// \class HgiMetalTexture
-///
-/// Represents a Metal GPU texture resource.
-///
-class HgiMetalTexture final : public HgiTexture {
-public:
-    HGIMETAL_API
-    HgiMetalTexture(HgiMetal *hgi,
-                    HgiTextureDesc const & desc);
+HgiSampler::~HgiSampler()
+{
+}
 
-    HGIMETAL_API
-    ~HgiMetalTexture() override;
+HgiSamplerDesc const&
+HgiSampler::GetDescriptor() const
+{
+    return _descriptor;
+}
 
-    HGIMETAL_API
-    id<MTLTexture> GetTextureId() const;
+bool operator==(const HgiSamplerDesc& lhs,
+    const HgiSamplerDesc& rhs)
+{
+    return  lhs.debugName == rhs.debugName &&
+            lhs.magFilter == rhs.magFilter &&
+            lhs.minFilter == rhs.minFilter &&
+            lhs.mipFilter == rhs.mipFilter &&
+            lhs.addressModeU == rhs.addressModeU &&
+            lhs.addressModeV == rhs.addressModeV &&
+            lhs.addressModeW == rhs.addressModeW
+    ;
+}
 
-private:
-    HgiMetalTexture() = delete;
-    HgiMetalTexture & operator=(const HgiMetalTexture&) = delete;
-    HgiMetalTexture(const HgiMetalTexture&) = delete;
-
-    id<MTLTexture> _textureId;
-};
+bool operator!=(const HgiSamplerDesc& lhs,
+    const HgiSamplerDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

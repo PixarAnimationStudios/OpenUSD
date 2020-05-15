@@ -24,6 +24,7 @@
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
@@ -44,9 +45,10 @@ void
 HgiGLResourceBindings::BindResources()
 {
     std::vector<uint32_t> textures(_descriptor.textures.size(), 0);
+    std::vector<uint32_t> samplers(textures.size(), 0);
 
     //
-    // Bind Textures
+    // Bind Textures and samplers
     //
     for (HgiTextureBindDesc const& texDesc : _descriptor.textures) {
         // OpenGL does not support arrays-of-textures bound to a unit.
@@ -56,16 +58,26 @@ HgiGLResourceBindings::BindResources()
         uint32_t unit = texDesc.bindingIndex;
         if (textures.size() <= unit) {
             textures.resize(unit+1, 0);
+            samplers.resize(unit+1, 0);
         }
 
         HgiTextureHandle const& texHandle = texDesc.textures.front();
         HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(texHandle.Get());
-
         textures[texDesc.bindingIndex] = glTexture->GetTextureId();
+
+        if (!texDesc.samplers.empty()) {
+            HgiSamplerHandle const& smpHandle = texDesc.samplers.front();
+            HgiGLSampler* glSmp = static_cast<HgiGLSampler*>(smpHandle.Get());
+            samplers[texDesc.bindingIndex] = glSmp->GetSamplerId();
+        }
     }
 
     if (!textures.empty()) {
         glBindTextures(0, textures.size(), textures.data());
+    }
+
+    if (!samplers.empty()) {
+        glBindSamplers(0, samplers.size(), samplers.data());
     }
 
     //
