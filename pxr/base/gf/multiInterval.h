@@ -53,9 +53,7 @@ public:
     /// \name Constructors
     /// @{
     /// Constructs an empty multi-interval.
-    GF_API GfMultiInterval() {}
-    /// Constructs an multi-interval by copying the given set.
-    GF_API GfMultiInterval(const GfMultiInterval &s) : _set(s._set) {}
+    GfMultiInterval() = default;
     /// Constructs an multi-interval with the single given interval.
     GF_API explicit GfMultiInterval(const GfInterval &i);
     /// Constructs an multi-interval containing the given input intervals.
