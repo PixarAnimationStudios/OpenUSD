@@ -26,38 +26,23 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/trace/aggregateTree.h"
-#include "pxr/base/trace/collection.h"
-#include "pxr/base/trace/collectionNotice.h"
-#include "pxr/base/trace/eventNode.h"
-#include "pxr/base/trace/eventTreeBuilder.h"
+#include "pxr/base/trace/eventTree.h"
 #include "pxr/base/trace/reporterDataSourceCollector.h"
 #include "pxr/base/trace/threads.h"
-#include "pxr/base/trace/trace.h"
 
-#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/arch/demangle.h"
-#include "pxr/base/arch/symbols.h"
-#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/timing.h"
 #include "pxr/base/js/json.h"
 
-#include <math.h>
-#include <iostream>
-#include <numeric>
+#include <algorithm>
 #include <map>
-#include <stack>
+#include <ostream>
 #include <vector>
 
-using std::map;
-using std::multimap;
 using std::ostream;
-using std::pair;
 using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -219,7 +204,7 @@ TraceReporter::_PrintLineCalls(ostream &s, int count, int exclusiveCount,
 void
 TraceReporter::_PrintTimes(ostream &s)
 {
-    using SortedTimes = multimap<TimeStamp, TfToken>;
+    using SortedTimes = std::multimap<TimeStamp, TfToken>;
 
     SortedTimes sortedTimes;
     for (const TraceAggregateTree::EventTimes::value_type& it
