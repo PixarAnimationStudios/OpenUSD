@@ -310,16 +310,35 @@ Usd_ClipCache::PopulateClipsForPrim(
             lock.acquire(_concurrentPopulationContext->_mutex);
         }
 
-        const std::vector<Clips>& ancestralClips = 
-            _GetClipsForPrim_NoLock(path.GetParentPath());
-        allClips.insert(
-            allClips.end(), ancestralClips.begin(), ancestralClips.end());
+        // Find nearest ancestor with clips specified.
+        const std::vector<Clips>* ancestralClips = nullptr;
+        SdfPath ancestralClipsPath(path.GetParentPath());
+        for (; !ancestralClipsPath.IsAbsoluteRootPath() && !ancestralClips; 
+             ancestralClipsPath = ancestralClipsPath.GetParentPath()) {
+            ancestralClips = TfMapLookupPtr(_table, ancestralClipsPath);
+        }
+        
+        if (ancestralClips) {
+            // SdfPathTable will create entries for all ancestor paths when
+            // inserting a new path. So if there were clips on prim /A and
+            // we're inserting clips on prim /A/B/C, we need to make sure
+            // we copy the ancestral clips from /A down to /A/B as well.
+            for (SdfPath p = path.GetParentPath(); p != ancestralClipsPath;
+                 p = p.GetParentPath()) {
+                _table[p] = *ancestralClips;
+            }
+
+            // Append ancestral clips since they are weaker than clips
+            // authored on this prim.
+            allClips.insert(
+                allClips.end(), ancestralClips->begin(), ancestralClips->end());
+        }
+
+        _table[path] = std::move(allClips);
 
         TF_DEBUG(USD_CLIPS).Msg(
             "Populated clips for prim <%s>\n", 
             path.GetString().c_str());
-
-        _table[path].swap(allClips);
     }
 
     return primHasClips;

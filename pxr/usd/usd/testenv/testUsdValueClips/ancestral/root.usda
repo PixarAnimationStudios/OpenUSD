@@ -12,15 +12,18 @@ def "ModelGroup" (
     }
 )
 {
-    over "Model" (
-        clips = {
-            dictionary default = {
-                asset[] assetPaths = [@./clip-model.usda@]
-                string primPath = "/Model"
-                double2[] active = [(0.0, 0)]
-            }
-        }
-    )
+    over "Subgroup"
     {
+        over "Model" (
+            clips = {
+                dictionary default = {
+                    asset[] assetPaths = [@./clip-model.usda@]
+                    string primPath = "/Model"
+                    double2[] active = [(0.0, 0)]
+                }
+            }
+        )
+        {
+        }
     }
 }

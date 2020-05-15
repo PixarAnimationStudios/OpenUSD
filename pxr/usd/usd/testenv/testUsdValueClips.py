@@ -891,7 +891,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(101, 102)), 
                          [101.0, 101.5, 101.75, 102.0])
 
-    def test_OverrideOfAncestralClips(self):
+    def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
         clips specified on an ancestral model"""
         stage = Usd.Stage.Open('ancestral/root.usda')
@@ -906,7 +906,21 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(ancestorAttr, time=10, expected=-10)
         self.CheckValue(ancestorAttr, time=15, expected=-15)
 
-        descendant = stage.GetPrimAtPath('/ModelGroup/Model')
+        # Tests that attributes on prims will receive values from clips specified
+        # on ancestors.
+        descendant = stage.GetPrimAtPath('/ModelGroup/Subgroup')
+        descendantAttr = descendant.GetAttribute('attr')
+
+        self.assertEqual(descendantAttr.GetTimeSamples(), [5, 10, 15])
+        self.assertEqual(descendantAttr.GetTimeSamplesInInterval(Gf.Interval(0, 15)), 
+                [5, 10, 15])
+        self.CheckValue(descendantAttr, time=5, expected=-5)
+        self.CheckValue(descendantAttr, time=10, expected=-10)
+        self.CheckValue(descendantAttr, time=15, expected=-15)
+
+        # Tests that clips specified on a descendant model will override
+        # clips specified on an ancestral model
+        descendant = stage.GetPrimAtPath('/ModelGroup/Subgroup/Model')
         descendantAttr = descendant.GetAttribute('attr')
 
         self.assertEqual(descendantAttr.GetTimeSamples(), [1, 2, 3])
@@ -1405,6 +1419,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=1, expected=200.0)
         self.CheckValue(attr, time=2, expected=300.0)
         self.CheckTimeSamples(attr)
+
 
     def test_InterpolateSamplesInClip(self):
         """Tests that time samples in clips are interpolated

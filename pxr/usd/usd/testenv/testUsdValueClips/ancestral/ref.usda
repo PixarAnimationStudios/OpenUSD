@@ -1,8 +1,6 @@
 #usda 1.0
 
-def "ModelGroup" (
-    kind = "group"
-)
+def "ModelGroup" 
 {
     float attr = 1.0
     float attr.timeSamples = {
@@ -11,15 +9,23 @@ def "ModelGroup" (
         15: 15.0
     }
 
-    def "Model" (
-        kind = "model"
-    )
+    def "Subgroup"
     {
         float attr = 1.0
         float attr.timeSamples = {
             5: 5.0,
             10: 10.0,
             15: 15.0
+        }
+
+        def "Model"
+        {
+            float attr = 1.0
+            float attr.timeSamples = {
+                5: 5.0,
+                10: 10.0,
+                15: 15.0
+            }
         }
     }
 }
