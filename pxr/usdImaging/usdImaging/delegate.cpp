@@ -84,7 +84,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (instance)
     (Material)
     (DomeLight)
-    (PreviewDomeLight)
     (MaterialTexture)
     (lightFilterType)
     (textureMemory)
@@ -227,8 +226,6 @@ UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
 UsdImagingPrimAdapterSharedPtr const& 
 UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
 {
-    static UsdImagingPrimAdapterSharedPtr const NULL_ADAPTER;
-
     // Future Work:
     //  * Only enable plugins on demand.
     //
@@ -258,10 +255,6 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         if (bindingPurpose == HdTokens->preview &&
             adapterKey == _tokens->Material) {
             adapterKey = _tokens->MaterialTexture;
-        }
-        if (bindingPurpose == HdTokens->preview &&
-            adapterKey == _tokens->DomeLight) {
-            adapterKey = _tokens->PreviewDomeLight;
         }
     }
 
