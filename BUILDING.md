@@ -113,7 +113,7 @@ that depend on GL, including:
 
 ##### Metal
 
-To build USD with Metal enabled requires MacOS Mojave (10.14) or newer.
+To build USD with Metal enabled requires macOS Mojave (10.14) or newer.
 Support for Metal can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_METAL_SUPPORT=FALSE```.  This will skip components and libraries
 that depend on Metal, including:
