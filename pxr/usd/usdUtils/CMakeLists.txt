@@ -55,6 +55,7 @@ pxr_library(usdUtils
     PYMODULE_FILES
         __init__.py
         complianceChecker.py
+        expandedUSDZ.py
 )
 
 pxr_test_scripts(

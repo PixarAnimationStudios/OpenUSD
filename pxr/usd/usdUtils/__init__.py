@@ -35,3 +35,4 @@ except Exception:
 
 
 from .complianceChecker import ComplianceChecker
+from .expandedUSDZ import ExpandedUSDZ
