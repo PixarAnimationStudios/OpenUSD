@@ -369,7 +369,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
   size_t pointsIndex = 0;
   size_t indicesIndex = 0;
   size_t offsetIndex = 0;
-
+  
   for(const auto& strokeGraph: strokeGraphs) {
     const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
     GfVec3f viewPoint = strokeGraph.GetViewPoint();
@@ -385,19 +385,19 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
         size_t numIndices = (numNodes - 1) * 4;
         if(numIndices) {
           for(int i=0; i < numNodes - 1; ++i) {
-            faceVertexIndices[indicesIndex + i * 4 + 0] = offsetIndex + i * 2;
-            faceVertexIndices[indicesIndex + i * 4 + 1] = offsetIndex + i * 2 + 1;
-            faceVertexIndices[indicesIndex + i * 4 + 2] = offsetIndex + i * 2 + 3;
-            faceVertexIndices[indicesIndex + i * 4 + 3] = offsetIndex + i * 2 + 2;
+            faceVertexIndices[indicesIndex++] = offsetIndex + i * 2;
+            faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 1;
+            faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 3;
+            faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 2;
           }
         }
-        indicesIndex += numIndices;
+        //indicesIndex += numIndices;
         offsetIndex += numNodes * 2;
+        
       }
     }
   }
 
-  
   HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
                           UsdGeomTokens->rightHanded,
                           faceVertexCounts,

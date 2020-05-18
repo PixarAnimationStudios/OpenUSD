@@ -72,6 +72,9 @@ struct UsdNprStrokeNode {
 
   UsdNprStrokeNode(UsdNprHalfEdge* e, float w):
     edge(e), width(w), weight(0.5){};
+
+  UsdNprStrokeNode(UsdNprHalfEdge* e, float w, const GfVec3f& p):
+    edge(e), width(w), position(p){};
 };
 
 typedef std::vector<UsdNprStrokeNode> UsdNprStrokeNodeList;
@@ -95,6 +98,7 @@ private:
   UsdNprStrokeNodeList _nodes;
   float _width;
   short _type;
+  bool _closed;
 };
 
 typedef std::vector<UsdNprStrokeChain> UsdNprStrokeChainList;
@@ -106,6 +110,7 @@ public:
   void ResetChainedFlag(const std::vector<const UsdNprHalfEdge*>& edges);
   void ClearStrokeChains();
   void BuildStrokeChains(short edgeType);
+  void ConnectChains(short edgeType);
 
   const UsdNprStrokeChainList& GetStrokes() const {return _strokes;};
   UsdNprHalfEdgeMesh* GetMesh() {return _mesh;};

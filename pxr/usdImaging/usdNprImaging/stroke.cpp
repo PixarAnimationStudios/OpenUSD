@@ -53,6 +53,7 @@ void UsdNprStrokeChain::Build(std::vector<short>& classifications, short type)
   UsdNprHalfEdge* edge = node->edge;
   classifications[edge->index] |= EDGE_CHAINED;
   UsdNprHalfEdge* current = edge;
+  //_nodes.push_back(UsdNprStrokeNode(edge, 1.0));
   while(true)
   {
     UsdNprHalfEdge* next = _GetNextEdge(current, classifications, type);
@@ -246,6 +247,12 @@ UsdNprStrokeGraph::BuildStrokeChains(short edgeType)
       else startId++;
     }
   }
+}
+
+void
+UsdNprStrokeGraph::ConnectChains(short edgeType)
+{
+
 }
 
 size_t 

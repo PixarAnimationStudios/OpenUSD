@@ -90,4 +90,20 @@ UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
   
 }
 
+void 
+UsdNprComputeTriangleNormals( const VtArray<GfVec3f>& positions,
+                              const VtArray<int>& samples,
+                              VtArray<GfVec3f>& normals)
+{
+  int totalNumTriangles = samples.size()/3;
+  normals.resize(totalNumTriangles);
+
+  for(int i = 0; i < totalNumTriangles; ++i)
+  {
+    GfVec3f ab = positions[samples[i*3+1]] - positions[samples[i*3]];
+    GfVec3f ac = positions[samples[i*3+2]] - positions[samples[i*3]];
+    normals[i] = (ab ^ ac).GetNormalized();
+  }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
