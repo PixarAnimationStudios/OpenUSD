@@ -48,8 +48,11 @@ struct UsdNprHalfEdge
   UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
   inline size_t GetTriangleIndex() const {return index / 3;};
   void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
+  void GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) const;
   bool GetFacing(const GfVec3f* positions, const GfVec3f& v) const;
   bool GetFacing(const GfVec3f* positions, const GfVec3f* normals,
+    const GfVec3f& v) const;
+  float GetDot(const GfVec3f* positions, const GfVec3f* normals,
     const GfVec3f& v) const;
   short GetFlags(const GfVec3f* positions, const GfVec3f* normals, 
     const GfVec3f& v, float creaseValue) const;
@@ -87,14 +90,6 @@ public:
   bool IsTransformVarying() const {return _varyingBits & VARYING_TRANSFORM;};
   bool IsVisibilityVarying() const {return _varyingBits & VARYING_VISIBILITY;};
   char GetVaryingBits() const {return _varyingBits;};
-
-  // silhouettes
-  void FindSilhouettes(const GfMatrix4d& viewMatrix, 
-    std::vector<const UsdNprHalfEdge*>& silhouettes);
-
-  // silhouettes
-  void ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  UsdNprEdgeClassification& classification, const UsdNprStrokeParams& params);
 
   // output
   void ComputeOutputGeometry(const std::vector<const UsdNprHalfEdge*>& silhouettes,

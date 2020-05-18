@@ -26,6 +26,12 @@ UsdNprComputeVertexNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& indices,
                           const VtArray<int>& samples,
                           VtArray<GfVec3f>& normals);
+
+/// Compute triangle normals
+void 
+UsdNprComputeTriangleNormals( const VtArray<GfVec3f>& positions,
+                              const VtArray<int>& samples,
+                              VtArray<GfVec3f>& normals);
                           
 /// Triangulate data
 template<typename T>

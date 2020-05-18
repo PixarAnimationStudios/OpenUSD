@@ -43,6 +43,37 @@ void UsdNprHalfEdge::GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal
   normal = (ab ^ ac).GetNormalized();
 }
 
+void UsdNprHalfEdge::GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) const
+{
+  bool closed = false;
+  normal = normals[GetTriangleIndex()];
+  size_t numTriangles = 1;
+  UsdNprHalfEdge* current = (UsdNprHalfEdge*)this;
+  while(current->next->twin) {
+    current = current->next->twin;
+    if(current == this) {
+      closed = true;
+      break;
+    }
+    else {
+      normal += normals[current->GetTriangleIndex()];
+      numTriangles++;
+    }
+  }
+
+  if(!closed && this->twin) {
+    current = this->twin;
+    normal += normals[current->GetTriangleIndex()];
+    numTriangles++;
+    while(current->next->next->twin) {
+      current = current->next->next->twin;
+      normal += normals[current->GetTriangleIndex()];
+      numTriangles++;
+    }
+  }
+  normal *= 1.f/(float)numTriangles;
+}
+
 bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f& v) const
 {
   GfVec3f tn;
@@ -51,12 +82,28 @@ bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f& v) const
   return GfDot(tn, dir) > 0.0;
 }
 
+bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f* normals, 
+  const GfVec3f& v) const
+{
+  GfVec3f dir = (positions[vertex] - v).GetNormalized();
+  return GfDot(normals[GetTriangleIndex()], dir) > 0.0;
+}
+
+float UsdNprHalfEdge::GetDot(const GfVec3f* positions, const GfVec3f* normals,
+  const GfVec3f& v) const
+{
+  GfVec3f dir = (positions[vertex] - v).GetNormalized();
+  return GfDot(normals[GetTriangleIndex()], dir);
+}
+
+/*
 bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f* normals,
   const GfVec3f& v) const
 {
   GfVec3f dir = (positions[vertex] - v).GetNormalized();
   return GfDot(normals[vertex], dir) > 0.0;
 }
+*/
 
 short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals, 
   const GfVec3f& v, float creaseValue) const
@@ -66,20 +113,21 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
 
   if(twin->GetTriangleIndex() < GetTriangleIndex()) return flags | EDGE_TWIN;
 
-  bool s1 = GetFacing(positions, v);
-  bool s2 = twin->GetFacing(positions, v);
+  bool s1 = GetFacing(positions, normals, v);
+  bool s2 = twin->GetFacing(positions, normals, v);
   if(s1 != s2) flags |= EDGE_SILHOUETTE;
 
   if(creaseValue >= 0.0) {
     GfVec3f tn1, tn2;
+    /*
     GetTriangleNormal(positions, tn1);
     twin->GetTriangleNormal(positions, tn2);
-    if(GfAbs(GfDot(tn1, tn2)) < creaseValue)
+    */
+    if(GfAbs(GfDot(normals[GetTriangleIndex()], normals[twin->GetTriangleIndex()])) < creaseValue)
       flags |= EDGE_CREASE;
   }
 
   return flags;
-
 }
 
 UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, char varyingBits)
@@ -106,6 +154,8 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
                         faceVertexIndices, 
                         samples);
 
+  UsdNprComputeTriangleNormals(_positions, samples, _normals);
+  /*
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
@@ -113,6 +163,7 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
     samples,
     _normals
   );
+  */
 
   _numTriangles = samples.size() / 3;
   
@@ -189,6 +240,8 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
                         faceVertexIndices, 
                         samples);
 
+  UsdNprComputeTriangleNormals(_positions, samples, _normals);
+  /*
   UsdNprComputeVertexNormals(
     _positions,
     faceVertexCounts,
@@ -196,61 +249,9 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
     samples,
     _normals
   );
+  */
 }
 
-// looking for silhouettes brute force
-void UsdNprHalfEdgeMesh::FindSilhouettes(const GfMatrix4d& viewMatrix, 
-  std::vector<const UsdNprHalfEdge*>& silhouettes) 
-{
-
-  const GfVec3f v = _xform.GetInverse().Transform(
-    GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
-  );
-  const GfVec3f* positions = &_positions[0];
-  const GfVec3f* normals = &_normals[0];
-  for(const auto& halfEdge: _halfEdges)
-  {
-    if(!halfEdge.twin) continue;
-    if(halfEdge.twin->GetTriangleIndex() < halfEdge.GetTriangleIndex()) continue;
-    bool s1 = halfEdge.GetFacing(positions, normals, v);
-    bool s2 = halfEdge.twin->GetFacing(positions, normals, v);
-    if(s1!=s2) {
-      silhouettes.push_back(&halfEdge);
-    }
-  }
-}
-
-void UsdNprHalfEdgeMesh::ClassifyEdges(const GfMatrix4d& viewMatrix, 
-  UsdNprEdgeClassification& classification, const UsdNprStrokeParams& params)
-{
-  const GfVec3f v = _xform.GetInverse().Transform(
-    GfVec3f(viewMatrix[3][0],viewMatrix[3][1],viewMatrix[3][2])
-  );
-  const GfVec3f* positions = &_positions[0];
-  const GfVec3f* normals = &_normals[0];
-
-  size_t numVertices = _positions.size();
-  std::vector<float> dots(numVertices);
-  for(int i=0;i<numVertices;++i)
-    dots[i] = GfDot((positions[i] - v).GetNormalized(), normals[i]);
-
-  size_t edgeIndex = 0;
-  for(const auto& halfEdge: _halfEdges)
-  {
-    short flags = halfEdge.GetFlags(positions, normals, v, 0.25);
-    classification.allFlags[edgeIndex++] = flags;
-    if(flags & EDGE_BOUNDARY)
-      classification.boundaries.push_back(&halfEdge);
-    else
-    {
-      if(flags & EDGE_TWIN) continue;
-      if(flags & EDGE_CREASE) 
-        classification.creases.push_back(&halfEdge);
-      if(flags & EDGE_SILHOUETTE)
-        classification.silhouettes.push_back(&halfEdge);
-    }
-  }
-}
 
 static GfVec3f _RandomOffset(float x)
 {
