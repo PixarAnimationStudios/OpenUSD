@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/types.h"
 
@@ -34,10 +35,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 class HdStUvTextureObject;
 class HdStFieldTextureObject;
 class HdStPtexTextureObject;
 class HdStUdimTextureObject;
+class HdSt_SamplerObjectRegistry;
+using HgiSamplerHandle = HgiHandle<class HgiSampler>;
 
 using HdStSamplerObjectSharedPtr =
     std::shared_ptr<class HdStSamplerObject>;
@@ -63,6 +67,13 @@ class HdStSamplerObject
 {
 public:
     virtual ~HdStSamplerObject() = 0;
+
+protected:
+    explicit HdStSamplerObject(
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
+
+    Hgi* _GetHgi() const;
+    HdSt_SamplerObjectRegistry * const _samplerObjectRegistry;
 };
 
 /// \class HdStUvSamplerObject
@@ -75,15 +86,16 @@ public:
     HdStUvSamplerObject(
         HdStUvTextureObject const &uvTexture,
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle);
+        bool createBindlessHandle,
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     HDST_API 
     ~HdStUvSamplerObject() override;
 
-    /// The GL sampler (as understood by glBindSampler)
+    /// The sampler.
     ///
-    uint32_t GetGLSamplerName() const {
-        return _glSamplerName;
+    const HgiSamplerHandle &GetSampler() const {
+        return _sampler;
     }
 
     /// The GL sampler texture handle for bindless textures (as returned by
@@ -96,7 +108,7 @@ public:
     }
 
 private:
-    const uint32_t _glSamplerName;
+    HgiSamplerHandle _sampler;
     const uint64_t _glTextureSamplerHandle;
 };
 
@@ -109,14 +121,15 @@ public:
     HdStFieldSamplerObject(
         HdStFieldTextureObject const &uvTexture,
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle);
+        bool createBindlessHandle,
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStFieldSamplerObject() override;
 
-    /// The GL sampler (as understood by glBindSampler)
+    /// The sampler.
     ///
-    uint32_t GetGLSamplerName() const {
-        return _glSamplerName;
+    const HgiSamplerHandle &GetSampler() const {
+        return _sampler;
     }
 
     /// The GL sampler texture handle for bindless textures (as returned by
@@ -129,7 +142,7 @@ public:
     }
 
 private:
-    const uint32_t _glSamplerName;
+    HgiSamplerHandle _sampler;
     const uint64_t _glTextureSamplerHandle;
 };
 
@@ -144,7 +157,8 @@ public:
         HdStPtexTextureObject const &ptexTexture,
         // samplerParameters are ignored by ptex
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle);
+        bool createBindlessHandle,
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStPtexSamplerObject() override;
 
@@ -178,15 +192,16 @@ public:
         HdStUdimTextureObject const &ptexTexture,
         // samplerParameters are ignored by udim (at least for now)
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle);
+        bool createBindlessHandle,
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStUdimSamplerObject() override;
 
     /// The GL sampler (as understood by glBindSampler) for the
     /// texels texture.
     ///
-    uint32_t GetTexelsGLSamplerName() const {
-        return _glTexelsSamplerName;
+    const HgiSamplerHandle &GetTexelsSampler() const {
+        return _texelsSampler;
     }
 
     /// The GL texture handle for bindless textures (as returned by
@@ -205,7 +220,7 @@ public:
     }
 
 private:
-    const uint32_t _glTexelsSamplerName;
+    HgiSamplerHandle _texelsSampler;
 
     const uint64_t _texelsGLTextureHandle;
     const uint64_t _layoutGLTextureHandle;

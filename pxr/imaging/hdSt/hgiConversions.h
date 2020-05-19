@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/imaging/hgi/enums.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +42,20 @@ public:
 
     HDST_API
     static HgiFormat GetHgiFormat(HdFormat hdFormat);
+
+    HDST_API
+    static HgiSamplerAddressMode GetHgiSamplerAddressMode(HdWrap hdWrap);
+
+    HDST_API
+    static HgiSamplerFilter GetHgiMagFilter(HdMagFilter hdMagFilter);
+
+    /// The HdMinFilter translates into two Hgi enums for
+    /// HgiSamplerDesc::minFilter and HgiSamplerDesc::mipFilter.
+    ///
+    HDST_API
+    static void GetHgiMinAndMipFilter(
+        HdMinFilter hdMinFilter,
+        HgiSamplerFilter *hgiSamplerFilter, HgiMipFilter *hgiMipFilter);
 };
 
 

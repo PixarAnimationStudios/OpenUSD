@@ -150,6 +150,7 @@ void
 HdSt_TextureHandleRegistry::SetHgi(Hgi * const hgi)
 {
     _textureObjectRegistry->SetHgi(hgi);
+    _samplerObjectRegistry->SetHgi(hgi);
 }
 
 HdStTextureHandleSharedPtr

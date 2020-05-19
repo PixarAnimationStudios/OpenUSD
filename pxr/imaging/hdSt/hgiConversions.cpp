@@ -26,12 +26,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
 struct _FormatDesc {
     HdFormat hdFormat;
     HgiFormat hgiFormat;
 };
 
-static const _FormatDesc FORMAT_DESC[] =
+const _FormatDesc FORMAT_DESC[] =
 {
     {HdFormatUNorm8,     HgiFormatUNorm8}, 
     {HdFormatUNorm8Vec2, HgiFormatUNorm8Vec2}, 
@@ -62,18 +64,99 @@ static const _FormatDesc FORMAT_DESC[] =
 // A few random format validations to make sure that the format conversion
 // table stays up-to-date with changes to HdFormat and HgiFormat.
 constexpr bool _CompileTimeValidateFormatTable() {
-    return (HdFormatCount == 20 &&
-            HdFormatUNorm8 == 0 && HgiFormatUNorm8 == 0 &&
-            HdFormatFloat16Vec4 == 11 && HgiFormatFloat16Vec4 == 9 &&
-            HdFormatFloat32Vec4 == 15 && HgiFormatFloat32Vec4 == 13 &&
-            HdFormatInt32Vec4 == 19 && HgiFormatInt32Vec4 == 17) ? true : false;
+    return
+        HdFormatCount == 20 &&
+        HdFormatUNorm8 == 0 && HgiFormatUNorm8 == 0 &&
+        HdFormatFloat16Vec4 == 11 && HgiFormatFloat16Vec4 == 9 &&
+        HdFormatFloat32Vec4 == 15 && HgiFormatFloat32Vec4 == 13 &&
+        HdFormatInt32Vec4 == 19 && HgiFormatInt32Vec4 == 17;
 }
 
 static_assert(_CompileTimeValidateFormatTable(), 
               "_FormatDesc array out of sync with HdFormat/HgiFormat enum");
 
+struct _WrapDesc {
+    HdWrap hdWrap;
+    HgiSamplerAddressMode hgiSamplerAddressMode;
+};
+
+const _WrapDesc WRAP_DESC[] =
+{
+    {HdWrapClamp,           HgiSamplerAddressModeClampToEdge},
+    {HdWrapRepeat,          HgiSamplerAddressModeRepeat},
+    {HdWrapBlack,           HgiSamplerAddressModeClampToBorderColor},
+    {HdWrapMirror,          HgiSamplerAddressModeMirrorRepeat},
+    {HdWrapLegacyClamp,     HgiSamplerAddressModeClampToEdge},
+    {HdWrapNoOpinion,       HgiSamplerAddressModeClampToBorderColor},
+    {HdWrapLegacyNoOpinionFallbackRepeat, HgiSamplerAddressModeRepeat}
+};
+
+constexpr bool _CompileTimeValidateWrapTable() {
+    return
+        HdWrapClamp == 0 &&
+        HdWrapLegacyNoOpinionFallbackRepeat == 6;
+}
+
+static_assert(_CompileTimeValidateWrapTable(),
+              "_WrapDesc array out of sync with HdWrap/HgiSamplerAddressMode");
+
+struct _MagDesc {
+    HdMagFilter hdMagFilter;
+    HgiSamplerFilter hgiSamplerFilter;
+};
+
+const _MagDesc MAG_DESC[] =
+{
+    {HdMagFilterNearest, HgiSamplerFilterNearest},
+    {HdMagFilterLinear,  HgiSamplerFilterLinear}
+};
+
+constexpr bool _CompileTimeValidateMagTable() {
+    return
+        HdMagFilterNearest == 0 &&
+        HdMagFilterLinear == 1;
+}
+
+static_assert(_CompileTimeValidateMagTable(),
+              "_MagDesc array out of sync with HdMagFilter");
+
+struct _MinDesc {
+    HdMinFilter hdMinFilter;
+    HgiSamplerFilter hgiSamplerFilter;
+    HgiMipFilter hgiMipFilter;
+};
+
+const _MinDesc MIN_DESC[] =
+{
+    {HdMinFilterNearest,
+     HgiSamplerFilterNearest, HgiMipFilterNotMipmapped},
+    {HdMinFilterLinear,
+     HgiSamplerFilterLinear,  HgiMipFilterNotMipmapped},
+    {HdMinFilterNearestMipmapNearest,
+     HgiSamplerFilterNearest, HgiMipFilterNearest},
+    {HdMinFilterLinearMipmapNearest,
+     HgiSamplerFilterLinear,  HgiMipFilterNearest},
+    {HdMinFilterNearestMipmapLinear,
+     HgiSamplerFilterNearest, HgiMipFilterLinear},
+    {HdMinFilterLinearMipmapLinear,
+     HgiSamplerFilterLinear,  HgiMipFilterLinear}
+};
+
+constexpr bool _CompileTimeValidateMinTable() {
+    return
+        HdMinFilterNearest == 0 &&
+        HdMinFilterLinear == 1 &&
+        HdMinFilterNearestMipmapNearest == 2 &&
+        HdMinFilterLinearMipmapLinear == 5;
+}
+
+static_assert(_CompileTimeValidateMinTable(),
+              "_MinDesc array out of sync with HdMinFilter");
+
+}
+
 HgiFormat
-HdStHgiConversions::GetHgiFormat(HdFormat hdFormat)
+HdStHgiConversions::GetHgiFormat(const HdFormat hdFormat)
 {
     if ((hdFormat < 0) || (hdFormat >= HdFormatCount))
     {
@@ -87,6 +170,43 @@ HdStHgiConversions::GetHgiFormat(HdFormat hdFormat)
     }
 
     return hgiFormat;
+}
+
+HgiSamplerAddressMode
+HdStHgiConversions::GetHgiSamplerAddressMode(const HdWrap hdWrap)
+{
+    if ((hdWrap < 0) || (hdWrap > HdWrapLegacyNoOpinionFallbackRepeat))
+    {
+        TF_CODING_ERROR("Unexpected HdWrap %d", hdWrap);
+        return HgiSamplerAddressModeClampToBorderColor;
+    }
+
+    return WRAP_DESC[hdWrap].hgiSamplerAddressMode;
+}
+
+HgiSamplerFilter
+HdStHgiConversions::GetHgiMagFilter(const HdMagFilter hdMagFilter)
+{
+    if ((hdMagFilter < 0) || (hdMagFilter > HdMagFilterLinear)) {
+        TF_CODING_ERROR("Unexpected HdMagFilter %d", hdMagFilter);
+        return HgiSamplerFilterLinear;
+    }
+    return MAG_DESC[hdMagFilter].hgiSamplerFilter;
+}
+
+void
+HdStHgiConversions::GetHgiMinAndMipFilter(
+    const HdMinFilter hdMinFilter,
+    HgiSamplerFilter * const hgiSamplerFilter,
+    HgiMipFilter * const hgiMipFilter)
+{
+    if ((hdMinFilter < 0) || (hdMinFilter > HdMinFilterLinearMipmapLinear)) {
+        TF_CODING_ERROR("Unexpected HdMinFilter %d", hdMinFilter);
+        *hgiSamplerFilter = HgiSamplerFilterLinear;
+        *hgiMipFilter = HgiMipFilterNotMipmapped;
+    }
+    *hgiSamplerFilter = MIN_DESC[hdMinFilter].hgiSamplerFilter;
+    *hgiMipFilter     = MIN_DESC[hdMinFilter].hgiMipFilter;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

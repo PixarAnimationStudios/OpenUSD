@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hgiGL/texture.h"
+#include "pxr/imaging/hgiGL/sampler.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
 
@@ -266,7 +267,7 @@ public:
 void
 _BindTexture(const GLenum target,
              HgiTextureHandle const &textureHandle,
-             GLuint glSamplerName,
+             HgiSamplerHandle const &samplerHandle,
              const TfToken &name,
              HdSt_ResourceBinder const &binder,
              const bool bind)
@@ -276,16 +277,29 @@ _BindTexture(const GLenum target,
 
     glActiveTexture(GL_TEXTURE0 + samplerUnit);
 
+    const HgiTexture * const tex = textureHandle.Get();
     const HgiGLTexture * const glTex =
-        bind ? dynamic_cast<HgiGLTexture*>(textureHandle.Get()) : nullptr;
+        dynamic_cast<const HgiGLTexture*>(tex);
 
-    if (glTex) {
-        glBindTexture(target, glTex->GetTextureId());
-    } else {
-        glBindTexture(target, 0);
+    if (tex && !glTex) {
+        TF_CODING_ERROR("Storm texture binder only supports OpenGL");
     }
 
-    glBindSampler(samplerUnit, bind ? glSamplerName : 0);
+    const GLuint texName =
+        (bind && glTex) ? glTex->GetTextureId() : 0;
+    glBindTexture(target, texName);
+
+    const HgiSampler * const sampler = samplerHandle.Get();
+    const HgiGLSampler * const glSampler =
+        dynamic_cast<const HgiGLSampler*>(sampler);
+
+    if (sampler && !glSampler) {
+        TF_CODING_ERROR("Storm texture binder only supports OpenGL");
+    }
+
+    const GLuint samplerName =
+        (bind && glSampler) ? glSampler->GetSamplerId() : 0;
+    glBindSampler(samplerUnit, samplerName);
 }
 
 class _BindFunctor {
@@ -300,7 +314,7 @@ public:
         _BindTexture(
             GL_TEXTURE_2D,
             texture.GetTexture(),
-            sampler.GetGLSamplerName(),
+            sampler.GetSampler(),
             name,
             binder,
             bind);
@@ -316,7 +330,7 @@ public:
         _BindTexture(
             GL_TEXTURE_3D,
             texture.GetTexture(),
-            sampler.GetGLSamplerName(),
+            sampler.GetSampler(),
             name,
             binder,
             bind);
@@ -358,8 +372,17 @@ public:
         glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
         glBindTexture(GL_TEXTURE_2D_ARRAY,
                       bind ? texture.GetTexelGLTextureName() : 0);
-        glBindSampler(texelSamplerUnit,
-                      bind ? sampler.GetTexelsGLSamplerName() : 0);
+
+        HgiSampler * const texelSampler = sampler.GetTexelsSampler().Get();
+
+        const HgiGLSampler * const glSampler =
+            bind ? dynamic_cast<HgiGLSampler*>(texelSampler) : nullptr;
+
+        if (glSampler) {
+            glBindSampler(texelSamplerUnit, glSampler->GetSamplerId());
+        } else {
+            glBindSampler(texelSamplerUnit, 0);
+        }
 
         const HdBinding layoutBinding = binder.GetBinding(
             _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
