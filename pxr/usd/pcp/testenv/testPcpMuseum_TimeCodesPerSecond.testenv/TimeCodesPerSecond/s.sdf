@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./ss.sdf@ (offset = 10; scale = 2.0),
+        @./ss_48tcps.sdf@ (offset = 10; scale = 2.0),
+        @./ss_24tcps_12fps.sdf@ (offset = 10; scale = 2.0),
+        @./ss_12fps.sdf@ (offset = 10; scale = 2.0)
+    ]
+)
+
+def "S1" 
+{
+}
