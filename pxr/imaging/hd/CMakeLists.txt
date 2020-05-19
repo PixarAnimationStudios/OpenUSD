@@ -68,6 +68,7 @@ pxr_library(hd
         renderPass
         renderPassState
         rendererPlugin
+        rendererPluginHandle
         rendererPluginRegistry
         renderThread
         repr

@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/rendererPluginHandle.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
@@ -68,7 +69,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 class HdRenderIndex;
-class HdRendererPlugin;
 class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
@@ -478,6 +478,8 @@ protected:
     HdDriver _hgiDriver;
     HdEngine _engine;
 
+    HdRendererPluginHandle _rendererPluginHandle;
+
     HdRenderIndex *_renderIndex;
 
     HdxSelectionTrackerSharedPtr _selTracker;
@@ -487,8 +489,6 @@ protected:
     SdfPath const _delegateID;
     UsdImagingDelegate *_delegate;
 
-    HdRendererPlugin *_rendererPlugin;
-    TfToken _rendererId;
     HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;

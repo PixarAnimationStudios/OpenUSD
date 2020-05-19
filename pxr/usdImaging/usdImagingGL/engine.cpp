@@ -159,7 +159,6 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(delegateID)
     , _delegate(nullptr)
-    , _rendererPlugin(nullptr)
     , _taskController(nullptr)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
@@ -728,7 +727,7 @@ UsdImagingGLEngine::GetCurrentRendererId() const
         return TfToken();
     }
 
-    return _rendererId;
+    return _rendererPluginHandle.GetPluginId();
 }
 
 bool
@@ -749,7 +748,6 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         _hgiDriver.driver = VtValue(_hgi.get());
     }
 
-    HdRendererPlugin *plugin = nullptr;
     TfToken actualId = id;
 
     // Special case: TfToken() selects the first plugin in the list.
@@ -757,26 +755,24 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         actualId = HdRendererPluginRegistry::GetInstance().
             GetDefaultPluginId();
     }
-    plugin = HdRendererPluginRegistry::GetInstance().
-        GetRendererPlugin(actualId);
 
-    if (plugin == nullptr) {
+    HdRendererPluginHandle const plugin =
+        HdRendererPluginRegistry::GetInstance().GetRendererPluginHandle(
+            actualId);
+
+    if (!plugin) {
         TF_CODING_ERROR("Couldn't find plugin for id %s", actualId.GetText());
         return false;
-    } else if (plugin == _rendererPlugin) {
-        // It's a no-op to load the same plugin twice.
-        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+    } 
+    if (plugin == _rendererPluginHandle) {
         return true;
-    } else if (!plugin->IsSupported()) {
-        // Don't do anything if the plugin isn't supported on the running
-        // system, just return that we're not able to set it.
-        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+    }
+    if (!plugin->IsSupported()) {
         return false;
     }
 
-    HdRenderDelegate *renderDelegate = plugin->CreateRenderDelegate();
+    HdRenderDelegate * const renderDelegate = plugin->CreateRenderDelegate();
     if(!renderDelegate) {
-        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
         return false;
     }
 
@@ -796,8 +792,7 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
     _DeleteHydraResources();
 
     // Recreate the render index.
-    _rendererPlugin = plugin;
-    _rendererId = actualId;
+    _rendererPluginHandle = plugin;
 
     _renderIndex = HdRenderIndex::New(renderDelegate, {&_hgiDriver});
 
@@ -1390,13 +1385,11 @@ UsdImagingGLEngine::_DeleteHydraResources()
         delete _renderIndex;
         _renderIndex = nullptr;
     }
-    if (_rendererPlugin != nullptr) {
+    if (_rendererPluginHandle) {
         if (renderDelegate != nullptr) {
-            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
+            _rendererPluginHandle->DeleteRenderDelegate(renderDelegate);
         }
-        HdRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
-        _rendererPlugin = nullptr;
-        _rendererId = TfToken();
+        _rendererPluginHandle = nullptr;
     }
 }
 

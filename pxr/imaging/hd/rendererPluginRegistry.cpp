@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPluginHandle.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -84,6 +85,11 @@ HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
     return static_cast<HdRendererPlugin *>(GetPlugin(pluginId));
 }
 
+HdRendererPluginHandle
+HdRendererPluginRegistry::GetRendererPluginHandle(const TfToken &pluginId)
+{
+    return HdRendererPluginHandle(pluginId, GetRendererPlugin(pluginId));
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

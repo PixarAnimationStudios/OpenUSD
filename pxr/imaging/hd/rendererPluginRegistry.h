@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdRendererPlugin;
+class HdRendererPluginHandle;
 
 class HdRendererPluginRegistry final  : public HfPluginRegistry
 {
@@ -62,6 +63,15 @@ public:
     ///
     HD_API
     HdRendererPlugin *GetRendererPlugin(const TfToken &pluginId);
+
+    ///
+    /// Returns the renderer plugin for the given id or a null handle
+    /// if not found. The plugin is wrapped in a handle that automatically
+    /// increments and decrements the reference count and also stores the
+    /// plugin id.
+    ///
+    HD_API
+    HdRendererPluginHandle GetRendererPluginHandle(const TfToken &pluginId);
 
 private:
     // Friend required by TfSingleton to access constructor (as it is private).
