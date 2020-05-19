@@ -69,7 +69,7 @@ struct _Colorizer {
 static void _colorizeNdcDepth(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
-    // depth is in clip space, so remap (-1, 1) to (0,1) and clamp.
+    // depth is in clip space which is now 0=near, 1=far
     float *depthBuffer = reinterpret_cast<float*>(src);
 
     WorkParallelForN(nPixels,
@@ -77,17 +77,26 @@ static void _colorizeNdcDepth(
         (size_t begin, size_t end) 
     {
         for (size_t i=begin; i<end; ++i) {
-            float valuef =
-                std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
-            uint8_t value = (uint8_t)(255.0f * valuef);
-            // special case 1.0 (far plane) as all black.
-            if (depthBuffer[i] >= 1.0f) {
-                value = 0;
+            float v = depthBuffer[i];
+            if (v >= 0.0f) {
+                uint8_t value;
+                if (v < 1.0f) {
+                    value = (uint8_t)(v * 255.0);
+                } else {
+                    // special case 1.0 (far plane) as all black.
+                    value = 0;
+                }
+                dest[i*4+0] = value;
+                dest[i*4+1] = value;
+                dest[i*4+2] = value;
+                dest[i*4+3] = 255;
+            } else {
+                // negative and Nan turn red
+                dest[i*4+0] = (uint8_t)(-v);
+                dest[i*4+1] = 0;
+                dest[i*4+2] = 0;
+                dest[i*4+3] = 255;
             }
-            dest[i*4+0] = value;
-            dest[i*4+1] = value;
-            dest[i*4+2] = value;
-            dest[i*4+3] = 255;
         }
     });
 }
@@ -97,30 +106,36 @@ static void _colorizeCameraDepth(
 {
     // cameraDepth is depth from the camera, in world units. Its range is
     // [0, N] for some maximum N; to display it, rescale to [0, 1] and
-    // splat that across RGB.
-    float maxDepth = 0.0f;
+    // splat that across RGB. Don't scale up if maximum is less than 1
+    float maxDepth = 1.0f;
     float *depthBuffer = reinterpret_cast<float*>(src);
     for (size_t i = 0; i < nPixels; ++i) {
-        maxDepth = std::max(depthBuffer[i], maxDepth);
+        if (std::isfinite(depthBuffer[i]))
+            maxDepth = std::max(depthBuffer[i], maxDepth);
     }
+    float m = 1.0f/maxDepth;
 
-    if (maxDepth != 0.0f) {
-        WorkParallelForN(nPixels,
-            [&dest, &src, &nPixels, &imageWidth, &depthBuffer, &maxDepth]
-            (size_t begin, size_t end)
-        {
-            for (size_t i=begin; i<end; ++i) {
-                float valuef =
-                    std::min(std::max((depthBuffer[i] / maxDepth), 0.0f), 1.0f);
-                uint8_t value =
-                    (uint8_t)(255.0f * valuef);
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &depthBuffer, &m]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            float v = depthBuffer[i];
+            if (v >= 0.0f) {
+                uint8_t value = (uint8_t)(255.0f * v * m);
                 dest[i*4+0] = value;
                 dest[i*4+1] = value;
                 dest[i*4+2] = value;
                 dest[i*4+3] = 255;
+            } else {
+                // negative and Nan turn red
+                dest[i*4+0] = (uint8_t)(-v);
+                dest[i*4+1] = 0;
+                dest[i*4+2] = 0;
+                dest[i*4+3] = 255;
             }
-        });
-    }
+        }
+    });
 }
 
 static void _colorizeST(
@@ -361,6 +376,36 @@ static void _float32ToDisplay(
     });
 }
 
+static void _float32Vec3ToDisplay(
+    uint8_t* dest,
+    uint8_t* src,
+    size_t nPixels,
+    uint32_t imageWidth)
+{
+    float *colorBuffer = reinterpret_cast<float*>(src);
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &colorBuffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec3f n(colorBuffer[i*3+0], colorBuffer[i*3+1], colorBuffer[i*3+2]);
+
+            int x = i % imageWidth;
+            int y = i / imageWidth;
+
+            dest[i*4+0] = DspyQuantize(
+                DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
+            dest[i*4+1] = DspyQuantize(
+                DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
+            dest[i*4+2] = DspyQuantize(
+                DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+
+            dest[i*4+3] = 255;
+        }
+    });
+}
+
 static void _float16ToDisplay(
     uint8_t* dest, 
     uint8_t* src, 
@@ -441,7 +486,7 @@ static _Colorizer _colorizerTable[] = {
     // fallback converters
     { HdPrimvarRoleTokens->none, HdFormatFloat32, _colorizeCameraDepth },
     { HdPrimvarRoleTokens->none, HdFormatFloat32Vec2, _colorizeST },
-    { HdPrimvarRoleTokens->none, HdFormatFloat32Vec3, _colorizeNormal },
+    { HdPrimvarRoleTokens->none, HdFormatFloat32Vec3, _float32Vec3ToDisplay },
     { HdPrimvarRoleTokens->none, HdFormatFloat32Vec4, _float32ToDisplay },
     { HdPrimvarRoleTokens->none, HdFormatUNorm8Vec4, _uint8ToDisplay },
     { HdPrimvarRoleTokens->none, HdFormatFloat16Vec4, _float16ToDisplay },
