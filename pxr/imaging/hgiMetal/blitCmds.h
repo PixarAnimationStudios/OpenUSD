@@ -78,7 +78,7 @@ private:
     id<MTLBlitCommandEncoder> _blitEncoder;
     NSString* _label;
 
-    // BlitCmds is used only one frame so storing multi-frame state on encoder
+    // BlitCmds is used only one frame so storing multi-frame state on BlitCmds
     // will not survive.
 };
 

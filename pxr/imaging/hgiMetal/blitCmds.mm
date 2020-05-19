@@ -37,10 +37,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalBlitCmds::HgiMetalBlitCmds(
-    HgiMetal *hgi)
-    : HgiBlitCmds()
-    , _hgi(hgi)
+HgiMetalBlitCmds::HgiMetalBlitCmds(HgiMetal *hgi)
+    : _hgi(hgi)
     , _blitEncoder(nil)
     , _label(nil)
 {
