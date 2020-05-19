@@ -464,6 +464,23 @@ private:
     typedef std::vector<_SyncQueueEntry> _SyncQueue;
     _SyncQueue _syncQueue;
 
+    /// With the removal of task-based collection include/exclude path
+    /// filtering, HdDirtyLists were generating their lists of dirty rprim IDs
+    /// by looking through every rprim in the render index. When the number of
+    /// tasks/render passes/dirty lists grew large, this resulted in
+    /// significant overhead and lots of duplication of work.
+    /// Instead, the render index itself now takes care of generating the
+    /// complete list of dirty rprim IDs when requested by the HdDirtyList.
+    /// During SyncAll(), the first HdDirtyList to request the list of dirty
+    /// IDs for a given HdDirtyBits mask triggers the render index to produce
+    /// that list and cache it in a map. Subsequent requests reuse the cached
+    /// list. At the end of SyncAll(), the map is cleared in preparation for
+    /// the next sync.
+    std::unordered_map<HdDirtyBits, const SdfPathVector> _dirtyRprimIdsMap;
+
+    friend class HdDirtyList;
+    const SdfPathVector& _GetDirtyRprimIds(HdDirtyBits mask);
+
     HdRenderDelegate *_renderDelegate;
     HdDriverVector _drivers;
 

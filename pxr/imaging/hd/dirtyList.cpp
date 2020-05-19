@@ -31,46 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct _FilterParam {
-    const HdRenderIndex &renderIndex;
-    const TfTokenVector &renderTags;
-    HdDirtyBits mask;
-};
-
-static bool
-_DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
-{
-    const _FilterParam *filterParam =
-                              static_cast<const _FilterParam *>(predicateParam);
-
-    const HdRenderIndex &renderIndex    = filterParam->renderIndex;
-    HdDirtyBits mask                    = filterParam->mask;
-
-    HdChangeTracker const &tracker = renderIndex.GetChangeTracker();
-
-   if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
-       // An empty render tag set means everything passes the filter
-       // Primary user is tests, but some single task render delegates
-       // that don't support render tags yet also use it.
-       if (filterParam->renderTags.empty()) {
-           return true;
-       }
-
-       // As the number of tags is expected to be low (<10)
-       // use a simple linear search.
-       TfToken primRenderTag = renderIndex.GetRenderTag(rprimID);
-       size_t numRenderTags = filterParam->renderTags.size();
-       for (size_t tagNum = 0; tagNum < numRenderTags; ++tagNum) {
-           if (filterParam->renderTags[tagNum] == primRenderTag) {
-               return true;
-           }
-       }
-   }
-
-   return false;
-}
-
-
 
 HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
                   HdRenderIndex & index)
@@ -97,42 +57,6 @@ HdDirtyList::~HdDirtyList()
     HD_PERF_COUNTER_DECR(HdPerfTokens->dirtyLists);
 }
 
-void
-HdDirtyList::_BuildDirtyList(const TfTokenVector& renderTags,
-                             HdDirtyBits mask)
-{
-    HD_TRACE_FUNCTION();
-    HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
-
-    // After exploration, it was determined that the vast majority of cases
-    // if we calculated the union of all the collections used in generating
-    // a frame, the entire render index got Sync'ed.
-    //
-    // With the issue of some tasks needing Sprims to be Sync'ed before they
-    // can know the include/exclude paths.  It be was decided to remove
-    // the task based include/exclude filter.
-    //
-    // We still use the prim gather system to obtain the path list and
-    // run the predicate filter.  As the include path is root and an empty
-    // exclude path.  This should hit the filter's fast path.
-    static const SdfPathVector includePaths = {SdfPath::AbsoluteRootPath()};
-    static const SdfPathVector excludePaths;
-    
-    const SdfPathVector &paths = _renderIndex.GetRprimIds();
-
-
-    _FilterParam filterParam = {_renderIndex, renderTags, mask};
-
-    HdPrimGather gather;
-
-    gather.PredicatedFilter(paths,
-                            includePaths,
-                            excludePaths,
-                            _DirtyListFilterPredicate,
-                            &filterParam,
-                            &_dirtyIds);
-}
-
 bool
 HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 {
@@ -155,7 +79,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 }
 
 SdfPathVector const&
-HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
+HdDirtyList::GetDirtyRprims()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -244,17 +168,8 @@ HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
         _rprimIndexVersion = currentRprimIndexVersion;
         _renderTagVersion  = currentRenderTagVersion;
 
-        // Build list including all dirty prims
-        _BuildDirtyList(renderTags, 0);
-
-       // There maybe new prims in the list, that might have repr's they've not
-       // seen before.  To flag these up as needing re-evaluating.
-
-        size_t rprimListSize = _dirtyIds.size();
-        for (size_t primNum = 0; primNum < rprimListSize; ++primNum) {
-            changeTracker.MarkRprimDirty(_dirtyIds[primNum],
-                                         HdChangeTracker::InitRepr);
-        }
+        // Get list including all dirty prims
+        _dirtyIds = _renderIndex._GetDirtyRprimIds(0);
 
         // Need to invalidate the cache varying state
         _varyingStateVersion = currentVaryingStateVersion - 1;
@@ -267,17 +182,10 @@ HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
 
         _varyingStateVersion = currentVaryingStateVersion;
 
-        // Build list only with prims in varying state
-        _BuildDirtyList(renderTags, HdChangeTracker::Varying);
+        // Get list only with prims in varying state
+        _dirtyIds = _renderIndex._GetDirtyRprimIds(HdChangeTracker::Varying);
     }
     // If not either of the above, we can used the cached results.
-
-    if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        TF_DEBUG(HD_DIRTY_LIST).Msg("  _dirtyIds: \n");
-        for (SdfPath const& id : _dirtyIds) {
-            TF_DEBUG(HD_DIRTY_LIST).Msg("    %s\n", id.GetText());
-        }
-    }
 
     return _dirtyIds;
 }
