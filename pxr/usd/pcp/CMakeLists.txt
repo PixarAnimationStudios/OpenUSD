@@ -1395,6 +1395,8 @@ pxr_register_test(testPcpChanges
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpChanges"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS=0
 )
 
 pxr_register_test(testPcpDependencies

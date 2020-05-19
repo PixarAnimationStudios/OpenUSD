@@ -172,14 +172,72 @@ Pcp_EntryRequiresLayerStackChange(const SdfChangeList::Entry& entry)
 
 static
 bool
-Pcp_EntryRequiresLayerStackOffsetsChange(const SdfChangeList::Entry& entry)
+Pcp_EntryRequiresLayerStackOffsetsChange(
+    const SdfLayerHandle &layer,
+    const SdfChangeList::Entry& entry,
+    bool *rootLayerStacksMayNeedTcpsRecompute)
 {
-    TF_FOR_ALL(i, entry.subLayerChanges) {
-        if (i->second == SdfChangeList::SubLayerOffset) {
+    // Check any changes to actual sublayer offsets.
+    for (const auto &it : entry.subLayerChanges) {
+        if (it.second == SdfChangeList::SubLayerOffset) {
             return true;
         }
     }
 
+    // Check if the TCPS metadata field changed. Note that this encapsulates
+    // both changes to timeCodesPerSecond and framesPerSecond as the 
+    // SdfChangeManager will send a send a FPS change as a change to TCPS as 
+    // well when the FPS is relevant as a fallback for an unspecified TCPS. 
+    auto it = entry.FindInfoChange(SdfFieldKeys->TimeCodesPerSecond);
+    if (it != entry.infoChanged.end()) {
+        // The old and new values in the entry already account for the 
+        // "computed TCPS" when the FPS is used as a fallback. So we still have
+        // to check if the computed TCPS changed.
+        // 
+        // We also have to account here for the case where both the FPS and 
+        // TCPS are unspecified, either before or after the change, as the old
+        // or new entry value will be empty which is equivalent to specifying 
+        // the TCPS fallback value from the SdfSchema.
+        const VtValue &oldComputedTcps = it->second.first;
+        const VtValue &newComputedTcps = it->second.second;
+        auto _MatchesFallback = [&layer](const VtValue &val) {
+            return layer->GetSchema().GetFallback(
+                SdfFieldKeys->TimeCodesPerSecond) == val;
+        };
+
+        // If the old and new TCPS values are the same, this indicates that
+        // either the old or new TCPS field is actually unauthored and is 
+        // falling back to an authored FPS value. This is not a computed TCPS 
+        // change for the layer itself and doesn't directly affect the offset
+        // for the layer relative to other layers.
+        // 
+        // However, if this layer is the session or root layer of a cache's 
+        // root layer stack, this change could still have an effect on the
+        // computed overall TCPS of that layer stack. That's why we still flag
+        // this change so we can check for this case after layer changes are
+        // processed.
+        // 
+        // XXX: Note this requires an interpretation of the change information
+        // coming out of Sdf involving knowledge of specific implementation 
+        // details of Sdf change management. Ideally Sdf should provide a
+        // notification differentiation between "authored TCPS" changed vs
+        // "computed TCPS" changed.
+        if (oldComputedTcps == newComputedTcps) {
+            if (rootLayerStacksMayNeedTcpsRecompute) {
+                *rootLayerStacksMayNeedTcpsRecompute = true;
+            }
+            return false;
+        }
+
+        // If either old or new value is empty, and the other value matches the
+        // fallback, then we don't have an effective TCPS change.
+        if ((oldComputedTcps.IsEmpty() && _MatchesFallback(newComputedTcps)) ||
+            (newComputedTcps.IsEmpty() && _MatchesFallback(oldComputedTcps))) {
+            return false;
+        }
+        return true;
+    }
+    
     return false;
 }
 
@@ -546,6 +604,7 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
 
         // Reset state.
         LayerStackChangeBitmask layerStackChangeMask = 0;
+        bool rootLayerStacksMayNeedTcpsRecompute = false;
         pathsWithSignificantChanges.clear();
         pathsWithSpecChanges.clear();
         pathsWithSpecChangesTypes.clear();
@@ -669,7 +728,8 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
                 case Pcp_ChangesLayerStackChangeNone:
                     // Layer stack is okay.   Handle changes that require
                     // blowing the layer stack offsets.
-                    if (Pcp_EntryRequiresLayerStackOffsetsChange(entry)) {
+                    if (Pcp_EntryRequiresLayerStackOffsetsChange(layer, entry, 
+                            &rootLayerStacksMayNeedTcpsRecompute)) {
                         layerStackChangeMask |= LayerStackOffsetsChange;
 
                         // Layer offsets are folded into the map functions
@@ -791,6 +851,32 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
                 }
             }
         } // end for all entries in changelist
+
+        // If we processed a change that may affect the TCPS of root layer 
+        // stacks, we check that here.
+        if (rootLayerStacksMayNeedTcpsRecompute) {
+            for (const auto &i : cacheLayerStacks) {
+                const PcpCache *cache = i.first;
+                // We only need to check the root layer stacks of caches 
+                // using this layer.
+                if (const PcpLayerStackPtr& layerStack = 
+                        cache->GetLayerStack()) {
+                    // If the layer stack will need to recompute its TCPS 
+                    // because this layer changed, then mark that layer stack
+                    // will have its layer offsets change.
+                    if (Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
+                            layerStack, layer)) {
+                        PCP_APPEND_DEBUG("  Layer @%s@ changed:  "
+                                         "root layer stack TCPS (significant)\n",
+                                         layer->GetIdentifier().c_str());
+                        layerStackChangesMap[layerStack] |= 
+                            LayerStackOffsetsChange;
+                        // This is a significant change to all prim indexes.
+                        DidChangeSignificantly(cache, SdfPath::AbsoluteRootPath());
+                    }
+                }
+            }
+        }
 
         // Push layer stack changes to all layer stacks using this layer.
         if (layerStackChangeMask != 0) {
