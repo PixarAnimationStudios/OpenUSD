@@ -60,10 +60,6 @@ public:
     HGIMETAL_API
     ~HgiMetal() override;
 
-    /// Returns the Metal device.
-    HGIMETAL_API
-    id<MTLDevice> GetPrimaryDevice() const;
-
     HGIMETAL_API
     void SubmitCmds(HgiCmds* cmds, uint32_t count=1) override;
 
@@ -134,7 +130,11 @@ public:
     //
     // HgiMetal specific
     //
-        
+
+    /// Returns the primary Metal device.
+    HGIMETAL_API
+    id<MTLDevice> GetPrimaryDevice() const;
+
     HGIMETAL_API
     id<MTLCommandQueue> GetQueue() const {
         return _commandQueue;
