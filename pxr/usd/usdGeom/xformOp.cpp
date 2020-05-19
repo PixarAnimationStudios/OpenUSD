@@ -114,6 +114,7 @@ _IsInverseOp(TfToken const &opName)
 
 UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
     : _attr(attr),
+      _opType(TypeInvalid),
       _isInverseOp(isInverseOp)
 {
     if (!attr) {
