@@ -64,7 +64,9 @@ int main(int argc, char *argv[])
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
     GlfContextCaps::InitInstance();
 
-    std::unique_ptr<Hgi> hgi(Hgi::GetPlatformDefaultHgi());
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
     HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
 
     HdEngine engine;

@@ -92,9 +92,10 @@ protected:
     HdSelectionSharedPtr _Pick(GfVec2i const& startPos, GfVec2i const& endPos);
 
 private:
-    std::unique_ptr<Hgi> _hgi;
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
     std::unique_ptr<HdDriver> _driver;
-
     HdEngine _engine;
     HdStRenderDelegate _renderDelegate;
     HdRenderIndex *_renderIndex;
@@ -127,9 +128,8 @@ My_TestGLDrawing::~My_TestGLDrawing()
 void
 My_TestGLDrawing::InitTest()
 {
-    _hgi.reset(Hgi::GetPlatformDefaultHgi());
+    _hgi = Hgi::CreatePlatformDefaultHgi();
     _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
-
     _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));

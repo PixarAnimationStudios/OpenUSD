@@ -43,6 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
 /// \class HdSt_TestDriver
 ///
@@ -93,7 +94,9 @@ private:
 
     void _Init(HdReprSelector const &reprToken);
 
-    std::unique_ptr<class Hgi> _hgi;
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
     HdDriver _hgiDriver;
 
     HdEngine _engine;

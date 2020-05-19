@@ -137,21 +137,24 @@ UsdImagingGLEngine::IsHydraEnabled()
 // Construction
 //----------------------------------------------------------------------------
 
-UsdImagingGLEngine::UsdImagingGLEngine()
+UsdImagingGLEngine::UsdImagingGLEngine(const HdDriver& driver)
     : UsdImagingGLEngine(SdfPath::AbsoluteRootPath(),
-                         {},
-                         {},
-                         _GetUsdImagingDelegateId())
+            {},
+            {},
+            _GetUsdImagingDelegateId(),
+            driver
+        )
 {
-}      
+}
 
 UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPath& rootPath,
     const SdfPathVector& excludedPaths,
     const SdfPathVector& invisedPaths,
-    const SdfPath& delegateID)
-    : _hgi(Hgi::GetPlatformDefaultHgi())
-    , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+    const SdfPath& delegateID,
+    const HdDriver& driver)
+    : _hgi()
+    , _hgiDriver(driver)
     , _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
     , _delegateID(delegateID)
@@ -733,6 +736,17 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
+    }
+
+    // If the client of UsdImagingGLEngine does not provide a HdDriver, we
+    // construct a default one that is owned by UsdImagingGLEngine.
+    // The cleanest pattern is for the client app to provide this since you
+    // may have multiple UsdImagingGLEngines in one app that ideally all use
+    // the same HdDriver and Hgi to share GPU resources.
+    if (_hgiDriver.driver.IsEmpty()) {
+        _hgi = Hgi::CreatePlatformDefaultHgi();
+        _hgiDriver.name = HgiTokens->renderDriver;
+        _hgiDriver.driver = VtValue(_hgi.get());
     }
 
     HdRendererPlugin *plugin = nullptr;

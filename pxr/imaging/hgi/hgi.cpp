@@ -42,8 +42,8 @@ Hgi::~Hgi()
 {
 }
 
-Hgi*
-Hgi::GetPlatformDefaultHgi()
+static Hgi*
+_MakeNewPlatformDefaultHgi()
 {
     // We use the plugin system to construct derived Hgi classes to avoid any
     // linker complications.
@@ -84,6 +84,21 @@ Hgi::GetPlatformDefaultHgi()
     }
 
     return instance;
+}
+
+Hgi*
+Hgi::GetPlatformDefaultHgi()
+{
+    TF_WARN("GetPlatformDefaultHgi is deprecated. "
+            "Please use CreatePlatformDefaultHgi");
+
+    return _MakeNewPlatformDefaultHgi();
+}
+
+HgiUniquePtr
+Hgi::CreatePlatformDefaultHgi()
+{
+    return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
 }
 
 uint64_t

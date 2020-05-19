@@ -45,6 +45,8 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/pickTask.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -96,14 +98,19 @@ public:
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
+
+    /// A HdDriver, containing the Hgi of your choice, can be optionally passed
+    /// in during construction. This can be helpful if you application creates
+    /// multiple UsdImagingGLEngine that wish to use the same HdDriver / Hgi.
     USDIMAGINGGL_API
-    UsdImagingGLEngine();
+    UsdImagingGLEngine(const HdDriver& driver = HdDriver());
 
     USDIMAGINGGL_API
     UsdImagingGLEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath(),
+                       const HdDriver& driver = HdDriver());
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -466,7 +473,7 @@ protected:
     // _hgi is first field so that it is guaranteed to
     // be destructed last and thus available while any other
     // Hydra objects have a pointer to Hgi.
-    std::unique_ptr<class Hgi> _hgi;
+    HgiUniquePtr _hgi;
     // Similar for HdDriver.
     HdDriver _hgiDriver;
     HdEngine _engine;

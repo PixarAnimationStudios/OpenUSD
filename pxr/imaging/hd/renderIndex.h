@@ -124,7 +124,7 @@ public:
     /// The render delegate and render tasks may require access to a renderer's
     /// device provided by the application. The objects can be
     /// passed in as 'drivers'. Hgi is an example of a HdDriver.
-    //    hgi = Hgi::GetPlatformDefaultHgi()
+    //    hgi = Hgi::CreatePlatformDefaultHgi()
     //    hgiDriver = new HdDriver<Hgi*>(HgiTokens→renderDriver, hgi)
     //    HdRenderIndex::New(_renderDelegate, {_hgiDriver})
     HD_API

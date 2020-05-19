@@ -85,9 +85,10 @@ protected:
     void ParseArgs(int argc, char *argv[]) override;
 
 private:
-    std::unique_ptr<Hgi> _hgi;
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
     std::unique_ptr<HdDriver> _driver;
-
     HdEngine              _engine;
     HdStRenderDelegate    _renderDelegate;
     HdRenderIndex        *_renderIndex;
@@ -112,7 +113,7 @@ _GetTranslate(float tx, float ty, float tz)
 void
 My_TestGLDrawing::InitTest()
 {
-    _hgi.reset(Hgi::GetPlatformDefaultHgi());
+    _hgi = Hgi::CreatePlatformDefaultHgi();
     _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
 
     _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
