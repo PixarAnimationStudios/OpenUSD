@@ -32,20 +32,15 @@
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/optional.hpp>
-
 #include <iosfwd>
-#include <map>
 #include <memory>
 #include <mutex>
-#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
-class PcpPrimIndex;
 class Usd_InterpolatorBase;
 
 /// Returns true if the given scene description metadata \p fieldName is
@@ -56,84 +51,6 @@ UsdIsClipRelatedField(const TfToken& fieldName);
 /// Returns list of all field names associated with value clip functionality.
 std::vector<TfToken>
 UsdGetClipRelatedFields();
-
-/// \class Usd_ResolvedClipInfo
-///
-/// Object containing resolved clip metadata for a prim in a LayerStack.
-///
-struct Usd_ResolvedClipInfo
-{
-    Usd_ResolvedClipInfo() : indexOfLayerWhereAssetPathsFound(0) { }
-
-    bool operator==(const Usd_ResolvedClipInfo& rhs) const
-    {
-        return (clipAssetPaths == rhs.clipAssetPaths
-            && clipManifestAssetPath == rhs.clipManifestAssetPath
-            && clipPrimPath == rhs.clipPrimPath
-            && clipActive == rhs.clipActive
-            && clipTimes == rhs.clipTimes
-            && sourceLayerStack == rhs.sourceLayerStack
-            && sourcePrimPath == rhs.sourcePrimPath
-            && indexOfLayerWhereAssetPathsFound 
-                    == rhs.indexOfLayerWhereAssetPathsFound);
-    }
-
-    bool operator!=(const Usd_ResolvedClipInfo& rhs) const
-    {
-        return !(*this == rhs);
-    }
-
-    size_t GetHash() const
-    {
-        size_t hash = indexOfLayerWhereAssetPathsFound;
-        boost::hash_combine(hash, sourceLayerStack);
-        boost::hash_combine(hash, sourcePrimPath);
-
-        if (clipAssetPaths) {
-            for (const auto& assetPath : *clipAssetPaths) {
-                boost::hash_combine(hash, assetPath.GetHash());
-            }
-        }
-        if (clipManifestAssetPath) {
-            boost::hash_combine(hash, clipManifestAssetPath->GetHash());
-        }
-        if (clipPrimPath) {
-            boost::hash_combine(hash, *clipPrimPath);
-        }               
-        if (clipActive) {
-            for (const auto& active : *clipActive) {
-                boost::hash_combine(hash, active[0]);
-                boost::hash_combine(hash, active[1]);
-            }
-        }
-        if (clipTimes) {
-            for (const auto& time : *clipTimes) {
-                boost::hash_combine(hash, time[0]);
-                boost::hash_combine(hash, time[1]);
-            }
-        }
-
-        return hash;
-    }
-
-    boost::optional<VtArray<SdfAssetPath> > clipAssetPaths;
-    boost::optional<SdfAssetPath> clipManifestAssetPath;
-    boost::optional<std::string> clipPrimPath;
-    boost::optional<VtVec2dArray> clipActive;
-    boost::optional<VtVec2dArray> clipTimes;
-
-    PcpLayerStackPtr sourceLayerStack;
-    SdfPath sourcePrimPath;
-    size_t indexOfLayerWhereAssetPathsFound;
-};
-
-/// Resolves clip metadata values for the prim index \p primIndex.
-/// Returns true if clip info was found and \p clipInfo was populated,
-/// false otherwise.
-bool
-Usd_ResolveClipInfo(
-    const PcpPrimIndex& primIndex,
-    std::vector<Usd_ResolvedClipInfo>* clipInfo);
 
 /// Sentinel values authored on the edges of a clipTimes range.
 constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();

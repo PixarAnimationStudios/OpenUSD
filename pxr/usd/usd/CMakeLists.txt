@@ -77,6 +77,8 @@ pxr_library(usd
     PRIVATE_CLASSES
         clip
         clipCache
+        clipSet
+        clipSetDefinition
         crateData
         crateFile
         instanceCache

@@ -104,10 +104,8 @@ Usd_InstanceKey::Usd_InstanceKey(const PcpPrimIndex& instance,
                                  const UsdStageLoadRules &loadRules)
     : _pcpInstanceKey(instance)
 {
-    std::vector<Usd_ResolvedClipInfo> clipInfo;
-    if (Usd_ResolveClipInfo(instance, &clipInfo)) {
-        _clipInfo.swap(clipInfo);
-    }
+    Usd_ComputeClipSetDefinitionsForPrimIndex(instance, &_clipDefs);
+
     // Make the population mask "relative" to this prim index by removing the
     // index's path prefix from all paths in the mask that it prefixes.  So for
     // example, if the mask is [/World/set/prop1, /World/set/tableGroup/table,
@@ -134,7 +132,7 @@ Usd_InstanceKey::operator==(const Usd_InstanceKey& rhs) const
 {
     return _hash == rhs._hash &&
         _pcpInstanceKey == rhs._pcpInstanceKey &&
-        _clipInfo == rhs._clipInfo &&
+        _clipDefs == rhs._clipDefs &&
         _mask == rhs._mask &&
         _loadRules == rhs._loadRules;
 }
@@ -143,8 +141,8 @@ size_t
 Usd_InstanceKey::_ComputeHash() const
 {
     size_t hash = hash_value(_pcpInstanceKey);
-    for (const Usd_ResolvedClipInfo& clipInfo: _clipInfo) {
-        boost::hash_combine(hash, clipInfo.GetHash());
+    for (const Usd_ClipSetDefinition& clipDefs: _clipDefs) {
+        boost::hash_combine(hash, clipDefs.GetHash());
     }
     boost::hash_combine(hash, _mask);
     boost::hash_combine(hash, _loadRules);
