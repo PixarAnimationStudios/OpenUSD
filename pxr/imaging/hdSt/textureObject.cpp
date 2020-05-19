@@ -430,7 +430,9 @@ _GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
         // Note that some graphics drivers produce results for GL_CLAMP
         // that match neither GL_CLAMP_TO_BORDER not GL_CLAMP_TO_EDGE.
         //
-        case GL_CLAMP: return HdWrapLegacyClamp;
+        // We pick GL_CLAMP_TO_EDGE here - breaking backwards compatibility.
+        //
+        case GL_CLAMP: return HdWrapClamp;
         default:
             TF_CODING_ERROR("Unsupported GL wrap mode 0x%04x", wrapMode);
         }

@@ -44,7 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
 ///     <li>\b HdWrapBlack               Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
 ///     <li>\b HdWrapMirror              Creates a mirrored repeating pattern.</li>
-///     <li>\b HdWrapLegacyClamp         (deprecated) For clients needing to translate GLenum to HdWrap, this corresponds to obsolete GL_CLAMP.</li>
 ///     <li>\b HdWrapNoOpinion           No opinion. The data texture can define its own wrap mode that we can use instead. Fallback to HdWrapBlack</li>
 ///     <li>\b HdWrapLegacyNoOpinionFallbackRepeat  (deprecated) Similar to HdWrapNoOpinon but fallback to HdWrapRepeat</li>
 ///     <li>\b HdWrapUseMetadata         (deprecated) Alias for HdWrapNoOpinion</li>
@@ -57,7 +56,6 @@ enum HdWrap
     HdWrapRepeat,
     HdWrapBlack,
     HdWrapMirror,
-    HdWrapLegacyClamp, // deprecated
 
     HdWrapNoOpinion,
     HdWrapLegacyNoOpinionFallbackRepeat, // deprecated

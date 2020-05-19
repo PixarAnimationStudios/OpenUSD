@@ -86,7 +86,6 @@ const _WrapDesc WRAP_DESC[] =
     {HdWrapRepeat,          HgiSamplerAddressModeRepeat},
     {HdWrapBlack,           HgiSamplerAddressModeClampToBorderColor},
     {HdWrapMirror,          HgiSamplerAddressModeMirrorRepeat},
-    {HdWrapLegacyClamp,     HgiSamplerAddressModeClampToEdge},
     {HdWrapNoOpinion,       HgiSamplerAddressModeClampToBorderColor},
     {HdWrapLegacyNoOpinionFallbackRepeat, HgiSamplerAddressModeRepeat}
 };
@@ -94,7 +93,7 @@ const _WrapDesc WRAP_DESC[] =
 constexpr bool _CompileTimeValidateWrapTable() {
     return
         HdWrapClamp == 0 &&
-        HdWrapLegacyNoOpinionFallbackRepeat == 6;
+        HdWrapLegacyNoOpinionFallbackRepeat == 5;
 }
 
 static_assert(_CompileTimeValidateWrapTable(),

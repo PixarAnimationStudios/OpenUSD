@@ -275,8 +275,6 @@ HdStGLConversions::GetWrap(HdWrap wrap)
             return GL_CLAMP_TO_BORDER;
         case HdWrapMirror:
             return GL_MIRRORED_REPEAT;
-        case HdWrapLegacyClamp:
-            return GL_CLAMP;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);
