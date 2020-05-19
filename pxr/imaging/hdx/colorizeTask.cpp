@@ -123,6 +123,25 @@ static void _colorizeCameraDepth(
     }
 }
 
+static void _colorizeST(
+    uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
+{
+    float *buffer = reinterpret_cast<float*>(src);
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &buffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            float s = buffer[i*2+0];
+            float t = buffer[i*2+1];
+            dest[i*4+0] = (uint8_t)(s * 255.0f);
+            dest[i*4+1] = (uint8_t)(t * 255.0f);
+            dest[i*4+2] = (uint8_t)(floorf(s)+floorf(t)*10); // put udim tile in blue
+        }
+    });
+}
+
 static void _colorizeNormal(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
@@ -419,6 +438,14 @@ static _Colorizer _colorizerTable[] = {
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },
     { HdAovTokens->elementId, HdFormatInt32, _colorizeId },
     { HdAovTokens->instanceId, HdFormatInt32, _colorizeId },
+    // fallback converters
+    { HdPrimvarRoleTokens->none, HdFormatFloat32, _colorizeCameraDepth },
+    { HdPrimvarRoleTokens->none, HdFormatFloat32Vec2, _colorizeST },
+    { HdPrimvarRoleTokens->none, HdFormatFloat32Vec3, _colorizeNormal },
+    { HdPrimvarRoleTokens->none, HdFormatFloat32Vec4, _float32ToDisplay },
+    { HdPrimvarRoleTokens->none, HdFormatUNorm8Vec4, _uint8ToDisplay },
+    { HdPrimvarRoleTokens->none, HdFormatFloat16Vec4, _float16ToDisplay },
+    { HdPrimvarRoleTokens->none, HdFormatInt32, _colorizeId },
 };
 
 void
@@ -483,14 +510,10 @@ HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
             return;
         }
         for (auto& colorizer : _colorizerTable) {
-            if (_aovName == colorizer.aovName &&
+            if ((_aovName == colorizer.aovName || colorizer.aovName == HdPrimvarRoleTokens->none) &&
                 _aovBuffer->GetFormat() == colorizer.aovFormat) {
                 return;
             }
-        }
-        if (HdParsedAovToken(_aovName).isPrimvar &&
-            _aovBuffer->GetFormat() == HdFormatFloat32Vec3) {
-            return;
         }
         TF_WARN("Unsupported AOV input %s with format %s",
                 _aovName.GetText(),
@@ -580,7 +603,7 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
 
         // Check the colorizer callbacks.
         for (auto& colorizer : _colorizerTable) {
-            if (_aovName == colorizer.aovName &&
+            if ((_aovName == colorizer.aovName || colorizer.aovName == HdPrimvarRoleTokens->none) &&
                 _aovBuffer->GetFormat() == colorizer.aovFormat) {
                 uint32_t width = _aovBuffer->GetWidth();
                 uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
@@ -589,17 +612,6 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
                 colorized = true;
                 break;
             }
-        }
-
-        // Special handling for primvar tokens: they all go through the same
-        // function...
-        if (!colorized && HdParsedAovToken(_aovName).isPrimvar &&
-            _aovBuffer->GetFormat() == HdFormatFloat32Vec3) {
-            uint32_t width = _aovBuffer->GetWidth();
-            uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
-            _colorizePrimvar(_outputBuffer, ab, _outputBufferSize, width);
-            _aovBuffer->Unmap();
-            colorized = true;
         }
 
         // Upload the scratch buffer.
