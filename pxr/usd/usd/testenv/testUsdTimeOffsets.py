@@ -164,6 +164,14 @@ def BuildReferenceOffsets(rootLyr, testLyr, makePayloads=False):
                          makePayload=makePayloads)
                 for c in cases]
 
+    # If the layers have different tcps values, this will be factored in as an
+    # additional scale in the composed layer offset.
+    if rootLyr.timeCodesPerSecond != testLyr.timeCodesPerSecond:
+        tcpsScale = Sdf.LayerOffset(
+            scale=rootLyr.timeCodesPerSecond / testLyr.timeCodesPerSecond)
+        for p in adjPrims:
+            p.layerOffset = p.layerOffset * tcpsScale
+
     rootLyr.Save()
     testLyr.Save()
 
@@ -186,7 +194,11 @@ def BuildNestedReferenceOffsets(adjustedPrims, rootLyr, refLyr, makePayloads=Fal
         # ours so the verification code works. We're assuming that
         # SdLayerOffset operators are tested elsewhere.
         #
-        adjPrim.layerOffset = adjPrim.layerOffset * p.layerOffset
+        # If the layers have different tcps values, this will be factored in as
+        # an additional scale in the composed layer offset.
+        tcpsScale = Sdf.LayerOffset(
+            scale=rootLyr.timeCodesPerSecond / refLyr.timeCodesPerSecond)
+        adjPrim.layerOffset = adjPrim.layerOffset * tcpsScale * p.layerOffset
         adjPrims += [adjPrim]
 
     rootLyr.Save()
@@ -204,6 +216,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
             testLyr = GenTestLayer("TestReferenceOffsets", fmt)
             rootLyr = Sdf.Layer.CreateNew("TestReferenceOffsets."+fmt)
             nestedRootLyr = Sdf.Layer.CreateNew("TestReferenceOffsetsNested."+fmt)
+            nestedRootLyr.timeCodesPerSecond = 48.0
 
             print("-"*80)
             print("Testing flat offsets:")
@@ -225,6 +238,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
             testLyr = GenTestLayer("TestPayloadOffsets", fmt)
             rootLyr = Sdf.Layer.CreateNew("TestPayloadOffsets."+fmt)
             nestedRootLyr = Sdf.Layer.CreateNew("TestPayloadOffsetsNested."+fmt)
+            rootLyr.timeCodesPerSecond = 48.0
 
             print("-"*80)
             print("Testing flat offsets:")
@@ -274,9 +288,14 @@ class TestUsdTimeOffsets(unittest.TestCase):
             bazPayload = Sdf.PrimSpec(payloadLayer, 'Baz', Sdf.SpecifierDef)
 
             # make Foo reference Baz.
-            payloadOffset = Sdf.LayerOffset(scale=0.5, offset=-1.0)
+            payloadOffset = Sdf.LayerOffset(offset=-1.0)
             fooRoot.payloadList.Add(Sdf.Payload(payloadLayer.identifier,
                                                 bazPayload.path, payloadOffset))
+            # Set the payload layer to have a different tcps. The effective
+            # payloadOffset for verification below will have the effective scale
+            # from the tcps difference between layers.
+            payloadLayer.timeCodesPerSecond = 48.0
+            payloadOffset = payloadOffset * Sdf.LayerOffset(scale = 24.0 / 48.0)
 
             # Create a UsdStage, get 'Foo'.
             stage = Usd.Stage.Open(rootLayer)

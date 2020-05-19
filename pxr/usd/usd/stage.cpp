@@ -8437,17 +8437,12 @@ UsdStage::HasAuthoredTimeCodeRange() const
 double 
 UsdStage::GetTimeCodesPerSecond() const
 {
-    // Imitate what SdfLayer does: prefer TCPS, but if it isn't set, fall back
-    // dynamically to FPS.  Adapt that rule to include the session layer.  In
-    // order of priority, use: session TCPS, root layer TCPS, session FPS, root
-    // layer FPS.
-    if (HasAuthoredMetadata(SdfFieldKeys->TimeCodesPerSecond)) {
-        double result = 0;
-        GetMetadata(SdfFieldKeys->TimeCodesPerSecond, &result);
-        return result;
-    }
-
-    return GetFramesPerSecond();
+    // PcpLayerStack computes timeCodesPerSecond for its map function layer 
+    // offsets. The root layer stack will always have the stage's fully
+    // computed timeCodesPerSecond value accounting for the unique interaction
+    // between the root and session layer.
+    const PcpLayerStackPtr localLayerStack = _GetPcpCache()->GetLayerStack();
+    return localLayerStack->GetTimeCodesPerSecond();
 }
 
 void 
