@@ -194,7 +194,11 @@ HdStSurfaceShader::BindResources(const int program,
         }
     }
 
-    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
+    const bool bindlessTextureEnabled =
+        GlfContextCaps::GetInstance().bindlessTextureEnabled;
+
+    HdSt_TextureBinder::BindResources(
+        binder, bindlessTextureEnabled, _namedTextureHandles);
 
     glActiveTexture(GL_TEXTURE0);
 
@@ -241,7 +245,11 @@ HdStSurfaceShader::UnbindResources(const int program,
         }
     }
 
-    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
+    const bool bindlessTextureEnabled =
+        GlfContextCaps::GetInstance().bindlessTextureEnabled;
+
+    HdSt_TextureBinder::UnbindResources(
+        binder, bindlessTextureEnabled, _namedTextureHandles);
 
     glActiveTexture(GL_TEXTURE0);
 }
@@ -532,12 +540,15 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 void
 HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
+    const bool bindlessTextureEnabled =
+        GlfContextCaps::GetInstance().bindlessTextureEnabled;
+
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
     // a field texture).
     HdBufferSourceSharedPtrVector result;
     HdSt_TextureBinder::ComputeBufferSources(
-        GetNamedTextureHandles(), &result);
+        GetNamedTextureHandles(), bindlessTextureEnabled, &result);
 
     if (!result.empty()) {
         ctx.AddSources(GetShaderData(), result);

@@ -48,16 +48,16 @@ public:
     using NamedTextureHandleVector =
         HdStShaderCode::NamedTextureHandleVector;
 
-    /// Whether to use bindless textures.
-    static bool
-    UsesBindlessTextures();
-
     /// Add buffer specs necessary for the textures (e.g., for
     /// bindless texture sampler handles or sampling transform).
+    ///
+    /// Specify whether to use the texture by binding it or by
+    /// using bindless handles with useBindlessHandles.
     ///
     static void
     GetBufferSpecs(
         const NamedTextureHandleVector &textures,
+        bool useBindlessHandles,
         HdBufferSpecVector * specs);
 
     /// Compute buffer sources for shader bar.
@@ -68,23 +68,35 @@ public:
     /// been committed in
     /// HdStShaderCode::AddResourcesFromTextures().
     ///
+    /// Specify whether to use the texture by binding it or by
+    /// using bindless handles with useBindlessHandles.
+    ///
     static void
     ComputeBufferSources(
         const NamedTextureHandleVector &textures,
+        bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * sources);
 
-    /// Bind non-bindless textures.
+    /// Bind textures.
+    ///
+    /// Specify whether to use the texture by binding it or by
+    /// using bindless handles with useBindlessHandles.
     ///
     static void
     BindResources(
         HdSt_ResourceBinder const &binder,
+        bool useBindlessHandles,
         const NamedTextureHandleVector &textures);
 
-    /// Unbind non-bindless textures.
+    /// Unbind textures.
+    ///
+    /// Specify whether to use the texture by binding it or by
+    /// using bindless handles with useBindlessHandles.
     ///
     static void
     UnbindResources(
         HdSt_ResourceBinder const &binder,
+        bool useBindlessHandles,
         const NamedTextureHandleVector &textures);
 };
 

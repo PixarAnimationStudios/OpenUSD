@@ -33,15 +33,7 @@
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hgiGL/sampler.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool
-HdSt_TextureBinder::UsesBindlessTextures()
-{
-    return GlfContextCaps::GetInstance().bindlessTextureEnabled;
-}
 
 static const HdTupleType _bindlessHandleTupleType{ HdTypeUInt32Vec2, 1 };
 
@@ -55,12 +47,13 @@ _Concat(const TfToken &a, const TfToken &b)
 void
 HdSt_TextureBinder::GetBufferSpecs(
     const NamedTextureHandleVector &textures,
+    const bool useBindlessHandles,
     HdBufferSpecVector * const specs)
 {
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
         case HdTextureType::Uv:
-            if (UsesBindlessTextures()) {
+            if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
@@ -73,7 +66,7 @@ HdSt_TextureBinder::GetBufferSpecs(
             }
             break;
         case HdTextureType::Field:
-            if (UsesBindlessTextures()) {
+            if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
@@ -91,7 +84,7 @@ HdSt_TextureBinder::GetBufferSpecs(
                 HdTupleType{HdTypeDoubleMat4, 1});
             break;
         case HdTextureType::Ptex:
-            if (UsesBindlessTextures()) {
+            if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
@@ -103,7 +96,7 @@ HdSt_TextureBinder::GetBufferSpecs(
             }
             break;
         case HdTextureType::Udim:
-            if (UsesBindlessTextures()) {
+            if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
                     _bindlessHandleTupleType);
@@ -172,9 +165,10 @@ public:
         TfToken const &name,
         HdStUvTextureObject const &texture,
         HdStUvSamplerObject const &sampler,
+        const bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * const sources)
     {
-        if (HdSt_TextureBinder::UsesBindlessTextures()) {
+        if (useBindlessHandles) {
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
@@ -193,6 +187,7 @@ public:
         TfToken const &name,
         HdStFieldTextureObject const &texture,
         HdStFieldSamplerObject const &sampler,
+        const bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * const sources)
     {
         sources->push_back(
@@ -202,7 +197,7 @@ public:
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
                 VtValue(texture.GetSamplingTransform())));
 
-        if (HdSt_TextureBinder::UsesBindlessTextures()) {
+        if (useBindlessHandles) {
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
@@ -221,9 +216,10 @@ public:
         TfToken const &name,
         HdStPtexTextureObject const &texture,
         HdStPtexSamplerObject const &sampler,
+        const bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * const sources)
     {
-        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
+        if (!useBindlessHandles) {
             return;
         }
 
@@ -244,9 +240,10 @@ public:
         TfToken const &name,
         HdStUdimTextureObject const &texture,
         HdStUdimSamplerObject const &sampler,
+        const bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * const sources)
     {
-        if (!HdSt_TextureBinder::UsesBindlessTextures()) {
+        if (!useBindlessHandles) {
             return;
         }
 
@@ -464,17 +461,20 @@ void _Dispatch(
 void
 HdSt_TextureBinder::ComputeBufferSources(
     const NamedTextureHandleVector &textures,
+    const bool useBindlessHandles,
     HdBufferSourceSharedPtrVector * const sources)
 {
-    _Dispatch<_ComputeBufferSourcesFunctor>(textures, sources);
+    _Dispatch<_ComputeBufferSourcesFunctor>(
+        textures, useBindlessHandles, sources);
 }
 
 void
 HdSt_TextureBinder::BindResources(
     HdSt_ResourceBinder const &binder,
+    const bool useBindlessHandles,
     const NamedTextureHandleVector &textures)
 {
-    if (UsesBindlessTextures()) {
+    if (useBindlessHandles) {
         return;
     }
 
@@ -484,9 +484,10 @@ HdSt_TextureBinder::BindResources(
 void
 HdSt_TextureBinder::UnbindResources(
     HdSt_ResourceBinder const &binder,
+    const bool useBindlessHandles,
     const NamedTextureHandleVector &textures)
 {
-    if (UsesBindlessTextures()) {
+    if (useBindlessHandles) {
         return;
     }
 
