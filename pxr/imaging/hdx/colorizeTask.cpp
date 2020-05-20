@@ -149,10 +149,15 @@ static void _colorizeST(
     {
         for (size_t i=begin; i<end; ++i) {
             float s = buffer[i*2+0];
+            float fs = floorf(s);
+            if (s == fs && fs > 0) --fs;
+            dest[i*4+0] = (uint8_t)((s - fs) * 255.0f);
             float t = buffer[i*2+1];
-            dest[i*4+0] = (uint8_t)(s * 255.0f);
-            dest[i*4+1] = (uint8_t)(t * 255.0f);
-            dest[i*4+2] = (uint8_t)(floorf(s)+floorf(t)*10); // put udim tile in blue
+            float ft = floorf(t);
+            if (t == ft && ft > 0) --ft;
+            dest[i*4+1] = (uint8_t)((t - ft) * 255.0f);
+            dest[i*4+2] = (uint8_t)((unsigned)(10 * ft + fs) * 177u); // put udim tile in blue
+            dest[i*4+3] = 255;
         }
     });
 }
@@ -483,6 +488,7 @@ static _Colorizer _colorizerTable[] = {
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },
     { HdAovTokens->elementId, HdFormatInt32, _colorizeId },
     { HdAovTokens->instanceId, HdFormatInt32, _colorizeId },
+    { pxr::TfToken("primvars:st"), HdFormatFloat32Vec3, _colorizePrimvar }, // match _colorizeST for 3-channel st
     // fallback converters
     { HdPrimvarRoleTokens->none, HdFormatFloat32, _colorizeCameraDepth },
     { HdPrimvarRoleTokens->none, HdFormatFloat32Vec2, _colorizeST },
