@@ -186,7 +186,6 @@ static void _colorizeNormal(
 static void _colorizeId(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
-    // XXX: this is legacy ID-display behavior, but an alternative is to
     // hash the ID to 3 bytes and use those as color. Even fancier,
     // hash to hue and stratified (saturation, value) levels, etc.
     int32_t *idBuffer = reinterpret_cast<int32_t*>(src);
@@ -195,8 +194,8 @@ static void _colorizeId(
         [&dest, &src, &nPixels, &imageWidth, &idBuffer]
         (size_t begin, size_t end)
     {
-            for (size_t i=begin; i<end; ++i) {
-            int32_t id = idBuffer[i];
+        for (size_t i=begin; i<end; ++i) {
+            int32_t id = (idBuffer[i] + 1) * 0xb17223; // prime number near ln(2)*2^24
             dest[i*4+0] = (uint8_t)(id & 0xff);
             dest[i*4+1] = (uint8_t)((id >> 8) & 0xff);
             dest[i*4+2] = (uint8_t)((id >> 16) & 0xff);
