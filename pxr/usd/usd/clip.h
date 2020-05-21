@@ -181,9 +181,6 @@ public:
 private:
     friend class UsdStage;
 
-    std::set<InternalTime>
-    _GetMergedTimeSamplesForPath(const SdfPath& path) const;
-
     bool 
     _GetBracketingTimeSamplesForPathInternal(const SdfPath& path, 
                                              ExternalTime time, 

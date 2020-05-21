@@ -289,6 +289,18 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(attr)
         self.CheckTimeSamples(attr2)
 
+    def test_ClipTimeSamples(self):
+        """Test that each stage time in a clips time mapping is treated as
+        a time sample."""
+        stage = Usd.Stage.Open('timeSamples/root.usda')
+
+        model = stage.GetPrimAtPath('/Model')
+        attr = model.GetAttribute('size')
+
+        self.assertEqual(attr.GetTimeSamples(),
+                         [0.0, 2.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
+        self.CheckTimeSamples(attr)
+
     def test_ClipTimingOutsideRange(self):
         """Tests clip retiming behavior when the mapped clip times are outside
         the range of time samples in the clip"""

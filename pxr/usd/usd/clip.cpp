@@ -457,28 +457,21 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     return fetchFromClip || fetchFromAuthoredClipTimes;
 }
 
-std::set<Usd_Clip::InternalTime>
-Usd_Clip::_GetMergedTimeSamplesForPath(const SdfPath& path) const
-{
-    std::set<Usd_Clip::InternalTime> timeSamplesInClip = 
-        _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
-    for (const TimeMapping& t : times) {
-        timeSamplesInClip.insert(t.internalTime);
-    }
-
-    return timeSamplesInClip;
-}
-
 size_t
 Usd_Clip::GetNumTimeSamplesForPath(const SdfPath& path) const
 {
-    return _GetMergedTimeSamplesForPath(path).size();
+    // XXX: This is simple but inefficient. However, this function is
+    // currently only used in one corner case in UsdStage, see
+    // _ValueFromClipsMightBeTimeVarying. So for now, we can just
+    // go with this until it becomes a bigger performance concern.
+    return ListTimeSamplesForPath(path).size();
 }
 
 std::set<Usd_Clip::ExternalTime>
 Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(path);
+    std::set<InternalTime> timeSamplesInClip = 
+        _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
     if (times.empty()) {
         return timeSamplesInClip;
     }
@@ -520,19 +513,10 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
         }
     }
 
-    // If none of the time samples have been mapped, it's because they're
-    // all outside the range of the clip time mappings. In that case, we
-    // apply the same clamping behavior as GetBracketingTimeSamples to
-    // maintain consistency.
-    if (timeSamples.empty()) {
-        for (InternalTime t: timeSamplesInClip) {
-            if (t < times.front().internalTime) {
-                timeSamples.insert(times.front().externalTime);
-            }
-            else if (t > times.back().internalTime) {
-                timeSamples.insert(times.back().externalTime);
-            }
-        }
+    // Each entry in the clip's time mapping is considered a time sample,
+    // so add them in here.
+    for (const TimeMapping& t : times) {
+        timeSamples.insert(t.externalTime);
     }
 
     return timeSamples;
