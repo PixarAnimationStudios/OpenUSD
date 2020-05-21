@@ -368,9 +368,10 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                 continue;
             }
 
-            HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            HdRepr::DrawItemUniquePtr drawItem =
+                std::make_unique<HdStDrawItem>(&_sharedData);
             HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-            repr->AddDrawItem(drawItem);
+            repr->AddDrawItem(std::move(drawItem));
             if (desc.geomStyle == HdBasisCurvesGeomStyleWire) {
                 // Why does geom style require this change?
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);

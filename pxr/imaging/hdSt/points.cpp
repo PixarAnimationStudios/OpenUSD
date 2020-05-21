@@ -346,9 +346,10 @@ HdStPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
             const HdPointsReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
-                HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                HdRepr::DrawItemUniquePtr drawItem =
+                    std::make_unique<HdStDrawItem>(&_sharedData);
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-                _smoothHullRepr->AddDrawItem(drawItem);
+                _smoothHullRepr->AddDrawItem(std::move(drawItem));
 
                 // Set up drawing coord instance primvars.
                 drawingCoord->SetInstancePrimvarBaseIndex(

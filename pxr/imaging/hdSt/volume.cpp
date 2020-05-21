@@ -106,9 +106,9 @@ HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
 {
     // All representations point to _volumeRepr.
     if (!_volumeRepr) {
-        _volumeRepr = HdReprSharedPtr(new HdRepr());
-        HdDrawItem * const drawItem = new HdStDrawItem(&_sharedData);
-        _volumeRepr->AddDrawItem(drawItem);
+        _volumeRepr = std::make_shared<HdRepr>();
+        _volumeRepr->AddDrawItem(
+            std::make_unique<HdStDrawItem>(&_sharedData));
         *dirtyBits |= HdChangeTracker::NewRepr;
     }
     

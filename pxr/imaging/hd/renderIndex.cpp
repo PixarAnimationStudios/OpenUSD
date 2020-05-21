@@ -1844,13 +1844,9 @@ HdRenderIndex::_AppendDrawItems(
                 if (reprSelector.IsActiveRepr(i)) {
                     TfToken const& reprToken = reprSelector[i];
 
-                    const HdRprim::HdDrawItemPtrVector* rprimDrawItems =
-                        rprim->GetDrawItems(reprToken);
-
-                    if (TF_VERIFY(rprimDrawItems)) {
-                        drawItems.insert(drawItems.end(),
-                                         rprimDrawItems->begin(),
-                                         rprimDrawItems->end() );
+                    for (const HdRepr::DrawItemUniquePtr &rprimDrawItem
+                             : rprim->GetDrawItems(reprToken)) {
+                        drawItems.push_back(rprimDrawItem.get());
                     }
                 }
             }

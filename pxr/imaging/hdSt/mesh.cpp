@@ -1915,9 +1915,10 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
             if (numDrawItems == 0) continue;
 
             for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-                HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
-                repr->AddDrawItem(drawItem);
+                HdRepr::DrawItemUniquePtr drawItem =
+                    std::make_unique<HdStDrawItem>(&_sharedData);
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
+                repr->AddDrawItem(std::move(drawItem));
 
                 switch (desc.geomStyle) {
                 case HdMeshGeomStyleHull:
