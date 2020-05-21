@@ -151,12 +151,12 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPath& rootPath,
     const SdfPathVector& excludedPaths,
     const SdfPathVector& invisedPaths,
-    const SdfPath& delegateID,
+    const SdfPath& sceneDelegateID,
     const HdDriver& driver)
     : _hgi()
     , _hgiDriver(driver)
+    , _sceneDelegateId(sceneDelegateID)
     , _selTracker(std::make_shared<HdxSelectionTracker>())
-    , _delegateID(delegateID)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPaths)
@@ -167,7 +167,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
 
     if (IsHydraEnabled()) {
 
-        // _renderIndex, _taskController, and _delegate are initialized
+        // _renderIndex, _taskController, and _sceneDelegate are initialized
         // by the plugin system.
         if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
             TF_CODING_ERROR("No renderer plugins found! "
@@ -202,20 +202,21 @@ UsdImagingGLEngine::PrepareBatch(
 
     HD_TRACE_FUNCTION();
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
 
     if (_CanPrepareBatch(root, params)) {
         if (!_isPopulated) {
-            _delegate->SetUsdDrawModesEnabled(params.enableUsdDrawModes);
-            _delegate->Populate(root.GetStage()->GetPrimAtPath(_rootPath),
-                               _excludedPrimPaths);
-            _delegate->SetInvisedPrimPaths(_invisedPrimPaths);
+            _sceneDelegate->SetUsdDrawModesEnabled(params.enableUsdDrawModes);
+            _sceneDelegate->Populate(
+                root.GetStage()->GetPrimAtPath(_rootPath),
+                _excludedPrimPaths);
+            _sceneDelegate->SetInvisedPrimPaths(_invisedPrimPaths);
             _isPopulated = true;
         }
 
         _PreSetTime(root, params);
         // SetTime will only react if time actually changes.
-        _delegate->SetTime(params.frame);
+        _sceneDelegate->SetTime(params.frame);
         _PostSetTime(root, params);
     }
 }
@@ -258,7 +259,7 @@ UsdImagingGLEngine::RenderBatch(
     }
 
     // Forward scene materials enable option to delegate
-    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+    _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
     VtValue selectionValue(_selTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
@@ -282,7 +283,7 @@ UsdImagingGLEngine::Render(
     // to the cachePath here?
     const SdfPath cachePath = root.GetPath();
     const SdfPathVector paths = {
-        _delegate->ConvertCachePathToIndexPath(cachePath) };
+        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
 
     RenderBatch(paths, params);
 }
@@ -317,8 +318,8 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
         return;
     }
 
-    TF_VERIFY(_delegate);
-    _delegate->SetRootTransform(xf);
+    TF_VERIFY(_sceneDelegate);
+    _sceneDelegate->SetRootTransform(xf);
 }
 
 void
@@ -328,8 +329,8 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
         return;
     }
 
-    TF_VERIFY(_delegate);
-    _delegate->SetRootVisibility(isVisible);
+    TF_VERIFY(_sceneDelegate);
+    _sceneDelegate->SetRootVisibility(isVisible);
 }
 
 //----------------------------------------------------------------------------
@@ -361,7 +362,7 @@ UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
     // pre-adjusted for the viewport size.
     
     // The usdImagingDelegate manages the window policy for scene cameras.
-    _delegate->SetWindowPolicy(policy);
+    _sceneDelegate->SetWindowPolicy(policy);
 }
 
 void
@@ -377,7 +378,7 @@ UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
 
     // The camera that is set for viewing will also be used for
     // time sampling.
-    _delegate->SetCameraForSampling(id);
+    _sceneDelegate->SetCameraForSampling(id);
 }
 
 void 
@@ -471,7 +472,7 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
         return;
     }
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
 
     // populate new selection
     HdSelectionSharedPtr const selection = std::make_shared<HdSelection>();
@@ -480,10 +481,10 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
     static const HdSelection::HighlightMode mode =
         HdSelection::HighlightModeSelect;
     for (SdfPath const& path : paths) {
-        _delegate->PopulateSelection(mode,
-                                     path,
-                                     UsdImagingDelegate::ALL_INSTANCES,
-                                     selection);
+        _sceneDelegate->PopulateSelection(mode,
+                                          path,
+                                          UsdImagingDelegate::ALL_INSTANCES,
+                                          selection);
     }
 
     // set the result back to selection tracker
@@ -519,7 +520,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
         return;
     }
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
 
     HdSelectionSharedPtr const selection = _GetSelection();
 
@@ -527,7 +528,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
     // rollover (locate) selection, we need to pass that mode here.
     static const HdSelection::HighlightMode mode =
         HdSelection::HighlightModeSelect;
-    _delegate->PopulateSelection(mode, path, instanceIndex, selection);
+    _sceneDelegate->PopulateSelection(mode, path, instanceIndex, selection);
 
     // set the result back to selection tracker
     _selTracker->SetSelection(selection);
@@ -574,7 +575,7 @@ UsdImagingGLEngine::TestIntersection(
             outHitInstanceIndex);
     }
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
     TF_VERIFY(_taskController);
 
     // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
@@ -582,7 +583,7 @@ UsdImagingGLEngine::TestIntersection(
     // (e.g. for native instancing).  We need a translation step.
     const SdfPath cachePath = root.GetPath();
     const SdfPathVector roots = {
-        _delegate->ConvertCachePathToIndexPath(cachePath) };
+        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
     _UpdateHydraCollection(&_intersectCollection, roots, params);
 
     TfTokenVector renderTags;
@@ -593,7 +594,7 @@ UsdImagingGLEngine::TestIntersection(
         _MakeHydraUsdImagingGLRenderParams(params));
 
     // Forward scene materials enable option to delegate
-    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+    _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
     HdxPickHitVector allHits;
     HdxPickTaskContextParams pickParams;
@@ -622,10 +623,10 @@ UsdImagingGLEngine::TestIntersection(
                                hit.worldSpaceHitPoint[2]);
     }
 
-    hit.objectId = _delegate->GetScenePrimPath(hit.objectId, hit.instanceIndex,
-                   outInstancerContext);
-    hit.instancerId = _delegate->ConvertIndexPathToCachePath(hit.instancerId)
-                      .GetAbsoluteRootOrPrimPath();
+    hit.objectId = _sceneDelegate->GetScenePrimPath(
+        hit.objectId, hit.instanceIndex, outInstancerContext);
+    hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+        hit.instancerId).GetAbsoluteRootOrPrimPath();
 
     if (outHitPrimPath) {
         *outHitPrimPath = hit.objectId;
@@ -653,19 +654,19 @@ UsdImagingGLEngine::DecodeIntersection(
         return false;
     }
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
 
     const int primId = HdxPickTask::DecodeIDRenderColor(primIdColor);
     const int instanceIdx = HdxPickTask::DecodeIDRenderColor(instanceIdColor);
     SdfPath primPath =
-        _delegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
+        _sceneDelegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
     SdfPath delegateId, instancerId;
-    _delegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(primPath,
-        &delegateId, &instancerId);
+    _sceneDelegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(
+        primPath, &delegateId, &instancerId);
 
-    primPath = _delegate->GetScenePrimPath(primPath, instanceIdx,
-               outInstancerContext);
-    instancerId = _delegate->ConvertIndexPathToCachePath(instancerId)
+    primPath = _sceneDelegate->GetScenePrimPath(
+        primPath, instanceIdx, outInstancerContext);
+    instancerId = _sceneDelegate->ConvertIndexPathToCachePath(instancerId)
                   .GetAbsoluteRootOrPrimPath();
 
     if (outHitPrimPath) {
@@ -788,16 +789,16 @@ UsdImagingGLEngine::_SetRenderDelegateAndRestoreState(
     // Pull old delegate/task controller state.
 
     const GfMatrix4d rootTransform =
-        _delegate ? _delegate->GetRootTransform() : GfMatrix4d(1.0);
+        _sceneDelegate ? _sceneDelegate->GetRootTransform() : GfMatrix4d(1.0);
     const bool isVisible =
-        _delegate ? _delegate->GetRootVisibility() : true;
+        _sceneDelegate ? _sceneDelegate->GetRootVisibility() : true;
     HdSelectionSharedPtr const selection = _GetSelection();
 
     _SetRenderDelegate(std::move(renderDelegate));
 
     // Rebuild state in the new delegate/task controller.
-    _delegate->SetRootVisibility(isVisible);
-    _delegate->SetRootTransform(rootTransform);
+    _sceneDelegate->SetRootVisibility(isVisible);
+    _sceneDelegate->SetRootTransform(rootTransform);
     _selTracker->SetSelection(selection);
     _taskController->SetSelectionColor(_selectionColor);
 }
@@ -811,7 +812,7 @@ UsdImagingGLEngine::_ComputeControllerPath(
     const TfToken rendererName(
         TfStringPrintf("_UsdImaging_%s_%p", pluginId.c_str(), this));
 
-    return _delegateID.AppendChild(rendererName);
+    return _sceneDelegateId.AppendChild(rendererName);
 }
 
 void
@@ -822,7 +823,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Destroy objects in opposite order of construction.
     _taskController = nullptr;
-    _delegate = nullptr;
+    _sceneDelegate = nullptr;
     _renderIndex = nullptr;
     _renderDelegate = nullptr;
 
@@ -839,8 +840,8 @@ UsdImagingGLEngine::_SetRenderDelegate(
             _renderDelegate.Get(), {&_hgiDriver}));
 
     // Create the new delegate
-    _delegate = std::make_unique<UsdImagingDelegate>(
-        _renderIndex.get(), _delegateID);
+    _sceneDelegate = std::make_unique<UsdImagingDelegate>(
+        _renderIndex.get(), _sceneDelegateId);
 
     // Create the new task controller
     _taskController = std::make_unique<HdxTaskController>(
@@ -1097,7 +1098,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         return;
     }
 
-    TF_VERIFY(_delegate);
+    TF_VERIFY(_sceneDelegate);
 
     // User is responsible for initializing GL context and glew
     const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
@@ -1228,10 +1229,10 @@ UsdImagingGLEngine::_PreSetTime(const UsdPrim& root,
     // Set the fallback refine level, if this changes from the existing value,
     // all prim refine levels will be dirtied.
     const int refineLevel = _GetRefineLevel(params.complexity);
-    _delegate->SetRefineLevelFallback(refineLevel);
+    _sceneDelegate->SetRefineLevelFallback(refineLevel);
 
     // Apply any queued up scene edits.
-    _delegate->ApplyPendingUpdates();
+    _sceneDelegate->ApplyPendingUpdates();
 }
 
 void
@@ -1421,6 +1422,12 @@ UsdImagingGLEngine::_GetDefaultRendererPluginId()
             defaultRendererDisplayName.c_str());
 
     return TfToken();
+}
+
+UsdImagingDelegate *
+UsdImagingGLEngine::_GetSceneDelegate() const
+{
+    return _sceneDelegate.get();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

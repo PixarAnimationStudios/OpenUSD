@@ -109,7 +109,8 @@ public:
     UsdImagingGLEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath(),
+                       const SdfPath& sceneDelegateID =
+                                        SdfPath::AbsoluteRootPath(),
                        const HdDriver& driver = HdDriver());
 
     // Disallow copies
@@ -479,6 +480,9 @@ protected:
     static TfToken _GetDefaultRendererPluginId();
 
     USDIMAGINGGL_API
+    UsdImagingDelegate *_GetSceneDelegate() const;
+
+    USDIMAGINGGL_API
     HdSelectionSharedPtr _GetSelection() const;
 
     // _hgi is first field so that it is guaranteed to
@@ -492,14 +496,21 @@ protected:
     // ... and the other Hydra resources
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
-    std::unique_ptr<UsdImagingDelegate> _delegate;
+
+    SdfPath const _sceneDelegateId;
+
+private:
+    // Note that the order of construction/destruction matters,
+    // thus the switches between protected and private are necessary
+    // until we have created getters for _taskController, ... as well.
+    std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+
+protected:
     std::unique_ptr<HdxTaskController> _taskController;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;
     HdRprimCollection _intersectCollection;
-
-    SdfPath const _delegateID;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
 

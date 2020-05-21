@@ -28,7 +28,8 @@
 // 1 -> 2: added RenderParams::enableUsdDrawModes
 // 2 -> 3: refactor picking API.
 // 3 -> 4: Add "instancerContext" to new picking API.
-#define USDIMAGINGGL_API_VERSION 4
+// 4 -> 5: Use UsdImagingGLEngine::_GetSceneDelegate() instead of _delegate.
+#define USDIMAGINGGL_API_VERSION 5
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 
