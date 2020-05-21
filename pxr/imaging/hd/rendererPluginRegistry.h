@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginRegistry.h"
 
@@ -34,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRendererPlugin;
 class HdRendererPluginHandle;
+class HdPluginRenderDelegateUniqueHandle;
 
 class HdRendererPluginRegistry final  : public HfPluginRegistry
 {
@@ -57,6 +59,8 @@ public:
     TfToken GetDefaultPluginId();
 
     ///
+    /// \deprecated Use GetOrCreateRendererPlugin instead.
+    ///
     /// Returns the renderer plugin for the given id or null
     /// if not found.  The reference count on the returned
     /// delegate is incremented.
@@ -71,7 +75,30 @@ public:
     /// plugin id.
     ///
     HD_API
-    HdRendererPluginHandle GetRendererPluginHandle(const TfToken &pluginId);
+    HdRendererPluginHandle GetOrCreateRendererPlugin(const TfToken &pluginId);
+
+    ///
+    /// Returns a render delegate created by the plugin with the given name
+    /// if the plugin is supported, otherwise null.
+    /// The render delegate is wrapped in a movable handle that
+    /// keeps the plugin alive until the render delegate is destroyed by
+    /// dropping the handle.
+    /// 
+    HD_API
+    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
+        const TfToken &pluginId);
+
+    ///
+    /// Returns a render delegate created by the plugin with the given name
+    /// if the plugin is supported using given initial settings.
+    /// The render delegate is wrapped in a movable handle that
+    /// keeps the plugin alive until the render delegate is destroyed by
+    /// dropping the handle.
+    /// 
+    HD_API
+    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
+        const TfToken &pluginId,
+        const HdRenderSettingsMap &settingsMap);
 
 private:
     // Friend required by TfSingleton to access constructor (as it is private).

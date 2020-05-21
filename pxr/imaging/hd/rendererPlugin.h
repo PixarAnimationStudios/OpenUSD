@@ -49,11 +49,15 @@ class HdRendererPlugin : public HfPluginBase {
 public:
 
     ///
+    /// \deprecated Use HdRendererPluginHandle::CreateRenderDelegate() instead.
+    ///
     /// Factory a Render Delegate object, that Hydra can use to
     /// factory prims and communicate with a renderer.
     ///
     virtual HdRenderDelegate *CreateRenderDelegate() = 0;
 
+    ///
+    /// \deprecated Use HdRendererPluginHandle::CreateRenderDelegate() instead.
     ///
     /// Factory a Render Delegate object, that Hydra can use to
     /// factory prims and communicate with a renderer.  Pass in initial
@@ -63,6 +67,8 @@ public:
     virtual HdRenderDelegate *CreateRenderDelegate(
         HdRenderSettingsMap const& settingsMap);
 
+    ///
+    /// \deprecated Use HdRendererPlugin::CreateRenderDelegate() instead.
     ///
     /// Release the object factoried by CreateRenderDelegate().
     ///
@@ -80,8 +86,7 @@ public:
 protected:
     HdRendererPlugin() = default;
     HD_API
-    virtual ~HdRendererPlugin();
-
+    ~HdRendererPlugin() override;
 
 private:
     // This class doesn't require copy support.

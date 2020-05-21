@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,18 +64,29 @@ HdRendererPluginHandle::operator=(const std::nullptr_t &)
     return *this;
 }
 
-bool
-HdRendererPluginHandle::operator==(const HdRendererPluginHandle &other) const
+HdPluginRenderDelegateUniqueHandle
+HdRendererPluginHandle::CreateRenderDelegate() const
 {
-    return
-        (_pluginId == other._pluginId) &&
-        (_plugin == other._plugin);
+    if (!_plugin) {
+        return nullptr;
+    }
+
+    return HdPluginRenderDelegateUniqueHandle(
+        *this, _plugin->CreateRenderDelegate());
 }
 
-bool
-HdRendererPluginHandle::operator!=(const HdRendererPluginHandle &other) const
+
+HdPluginRenderDelegateUniqueHandle
+HdRendererPluginHandle::CreateRenderDelegate(
+    HdRenderSettingsMap const& settingsMap) const
 {
-    return !(*this == other);
+    if (!_plugin) {
+        return nullptr;
+    }
+
+    return HdPluginRenderDelegateUniqueHandle(
+        *this, _plugin->CreateRenderDelegate(settingsMap));
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

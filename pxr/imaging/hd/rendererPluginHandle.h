@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -34,6 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRendererPlugin;
+class HdPluginRenderDelegateUniqueHandle;
 
 ///
 /// A handle for HdRendererPlugin also storing the plugin id.
@@ -46,27 +48,45 @@ class HdRendererPluginHandle final
 {
 public:
     HdRendererPluginHandle() : _plugin(nullptr) { }
-    HD_API HdRendererPluginHandle(const HdRendererPluginHandle &);
-    HD_API ~HdRendererPluginHandle();
+    HdRendererPluginHandle(const std::nullptr_t &) : _plugin(nullptr) { }
 
-    HD_API HdRendererPluginHandle & operator=(const HdRendererPluginHandle &);
-    HD_API HdRendererPluginHandle & operator=(const std::nullptr_t &);
+    HD_API
+    HdRendererPluginHandle(const HdRendererPluginHandle &);
+
+    HD_API
+    ~HdRendererPluginHandle();
+
+    HD_API
+    HdRendererPluginHandle &operator=(const HdRendererPluginHandle &);
+
+    HD_API
+    HdRendererPluginHandle &operator=(const std::nullptr_t &);
     
-    HD_API bool operator==(const HdRendererPluginHandle &) const;
-    HD_API bool operator!=(const HdRendererPluginHandle &) const;
-
     /// Get the wrapped HdRendererPlugin
-    HdRendererPlugin * Get() const { return _plugin; }
+    HdRendererPlugin *Get() const { return _plugin; }
 
     /// Get the plugin id for the wrapped HdRendererPlugin
-    const TfToken GetPluginId() const { return _pluginId; }
+    const TfToken &GetPluginId() const { return _pluginId; }
 
-    HdRendererPlugin* operator->() const { return _plugin; }
+    HdRendererPlugin *operator->() const { return _plugin; }
     HdRendererPlugin &operator*() const { return *_plugin; }
 
     /// Is the wrapped HdRendererPlugin valid?
     explicit operator bool() const { return _plugin; }
 
+    /// Create a render delegate through the plugin and wrap
+    /// it in a handle.
+    ///
+    HD_API
+    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate() const;
+
+    /// Create a render delegate through the plugin and wrap
+    /// it in a handle. Pass in initial settings.
+    ///
+    HD_API
+    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
+        HdRenderSettingsMap const &settingsMap) const;
+    
 private:
     friend class HdRendererPluginRegistry;
     

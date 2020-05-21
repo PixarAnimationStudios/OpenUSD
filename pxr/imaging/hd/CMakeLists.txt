@@ -59,6 +59,7 @@ pxr_library(hd
         meshTopology
         meshUtil
         perfLog
+        pluginRenderDelegateUniqueHandle
         points
         primGather
         primTypeIndex

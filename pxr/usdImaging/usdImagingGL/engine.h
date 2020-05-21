@@ -40,7 +40,7 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/rendererPluginHandle.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
@@ -462,13 +462,24 @@ protected:
     static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
                           TfTokenVector *renderTags);
 
-    // This function disposes of: the render index, the render plugin,
-    // the task controller, and the usd imaging delegate.
     USDIMAGINGGL_API
-    void _DeleteHydraResources();
+    void _InitializeHgiIfNecessary();
+
+    USDIMAGINGGL_API
+    void _SetRenderDelegateAndRestoreState(
+        HdPluginRenderDelegateUniqueHandle &&);
+
+    USDIMAGINGGL_API
+    void _SetRenderDelegate(HdPluginRenderDelegateUniqueHandle &&);
+
+    USDIMAGINGGL_API
+    SdfPath _ComputeControllerPath(const HdPluginRenderDelegateUniqueHandle &);
 
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
+
+    USDIMAGINGGL_API
+    HdSelectionSharedPtr _GetSelection() const;
 
     // _hgi is first field so that it is guaranteed to
     // be destructed last and thus available while any other
@@ -478,7 +489,8 @@ protected:
     HdDriver _hgiDriver;
     HdEngine _engine;
 
-    HdRendererPluginHandle _rendererPluginHandle;
+    // ... and the other Hydra resources
+    HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
     std::unique_ptr<UsdImagingDelegate> _delegate;
     std::unique_ptr<HdxTaskController> _taskController;

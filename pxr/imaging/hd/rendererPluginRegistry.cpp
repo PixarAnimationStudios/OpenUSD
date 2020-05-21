@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginHandle.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -45,9 +46,7 @@ HdRendererPluginRegistry::HdRendererPluginRegistry()
 }
 
 
-HdRendererPluginRegistry::~HdRendererPluginRegistry()
-{
-}
+HdRendererPluginRegistry::~HdRendererPluginRegistry() = default;
 
 TfToken 
 HdRendererPluginRegistry::GetDefaultPluginId()
@@ -86,9 +85,43 @@ HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 }
 
 HdRendererPluginHandle
-HdRendererPluginRegistry::GetRendererPluginHandle(const TfToken &pluginId)
+HdRendererPluginRegistry::GetOrCreateRendererPlugin(const TfToken &pluginId)
 {
     return HdRendererPluginHandle(pluginId, GetRendererPlugin(pluginId));
+}
+
+HdPluginRenderDelegateUniqueHandle
+HdRendererPluginRegistry::CreateRenderDelegate(const TfToken &pluginId)
+{
+    HdRendererPluginHandle plugin = GetOrCreateRendererPlugin(pluginId);
+    if (!plugin) {
+        TF_CODING_ERROR("Couldn't find plugin for id %s", pluginId.GetText());
+        return nullptr;
+    }
+    
+    if (!plugin->IsSupported()) {
+        return nullptr;
+    }
+
+    return plugin.CreateRenderDelegate();
+}
+
+HdPluginRenderDelegateUniqueHandle
+HdRendererPluginRegistry::CreateRenderDelegate(
+    const TfToken &pluginId,
+    HdRenderSettingsMap const & settingsMap)
+{
+    HdRendererPluginHandle plugin = GetOrCreateRendererPlugin(pluginId);
+    if (!plugin) {
+        TF_CODING_ERROR("Couldn't find plugin for id %s", pluginId.GetText());
+        return nullptr;
+    }
+    
+    if (!plugin->IsSupported()) {
+        return nullptr;
+    }
+
+    return plugin.CreateRenderDelegate(settingsMap);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
