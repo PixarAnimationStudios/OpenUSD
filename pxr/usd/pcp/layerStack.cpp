@@ -59,7 +59,7 @@ TF_DEFINE_ENV_SETTING(
     "Enables parallel, threaded pre-fetch of sublayers.");
 
 TF_DEFINE_ENV_SETTING(
-    PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS, true,
+    PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS, false,
     "Disables automatic layer offset scaling from time codes per second "
     "metadata in layers.");
 
