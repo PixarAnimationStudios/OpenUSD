@@ -173,6 +173,10 @@ HgiInteropOpenGL::CopyToInterop(
         glUniform1i(loc, 1);
     }
 
+    // Get the current array buffer binding state
+    GLint restoreArrayBuffer = 0;
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &restoreArrayBuffer);
+
     // Vertex attributes
     GLint locPosition = glGetAttribLocation(prg, "position");
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
@@ -219,6 +223,8 @@ HgiInteropOpenGL::CopyToInterop(
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // Restore state and verify gl errors
+    glBindBuffer(GL_ARRAY_BUFFER, restoreArrayBuffer);
+    
     if (blendEnabled) {
         glEnable(GL_BLEND);
     }
