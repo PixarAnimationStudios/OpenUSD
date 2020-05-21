@@ -479,17 +479,15 @@ protected:
     HdEngine _engine;
 
     HdRendererPluginHandle _rendererPluginHandle;
-
-    HdRenderIndex *_renderIndex;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
+    std::unique_ptr<UsdImagingDelegate> _delegate;
+    std::unique_ptr<HdxTaskController> _taskController;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;
     HdRprimCollection _intersectCollection;
 
     SdfPath const _delegateID;
-    UsdImagingDelegate *_delegate;
-
-    HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
 

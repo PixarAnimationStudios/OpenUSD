@@ -155,11 +155,8 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const HdDriver& driver)
     : _hgi()
     , _hgiDriver(driver)
-    , _renderIndex(nullptr)
-    , _selTracker(new HdxSelectionTracker)
+    , _selTracker(std::make_shared<HdxSelectionTracker>())
     , _delegateID(delegateID)
-    , _delegate(nullptr)
-    , _taskController(nullptr)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPaths)
@@ -189,7 +186,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
 }
 
 UsdImagingGLEngine::~UsdImagingGLEngine()
-{ 
+{
     _DeleteHydraResources();
 }
 
@@ -794,13 +791,14 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
     // Recreate the render index.
     _rendererPluginHandle = plugin;
 
-    _renderIndex = HdRenderIndex::New(renderDelegate, {&_hgiDriver});
+    _renderIndex.reset(HdRenderIndex::New(renderDelegate, {&_hgiDriver}));
 
     // Create the new delegate & task controller.
-    _delegate = new UsdImagingDelegate(_renderIndex, _delegateID);
+    _delegate = std::make_unique<UsdImagingDelegate>(_renderIndex.get(), _delegateID);
     _isPopulated = false;
 
-    _taskController = new HdxTaskController(_renderIndex,
+    _taskController = std::make_unique<HdxTaskController>(
+        _renderIndex.get(),
         _delegateID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(actualId.GetText()).c_str(),
@@ -1054,7 +1052,7 @@ UsdImagingGLEngine::_GetRenderIndex() const
         return nullptr;
     }
 
-    return _renderIndex;
+    return _renderIndex.get();
 }
 
 void 
@@ -1115,7 +1113,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
-    _engine.Execute(_renderIndex, &tasks);
+    _engine.Execute(_renderIndex.get(), &tasks);
 
     if (isCoreProfileContext) {
 
@@ -1371,18 +1369,12 @@ UsdImagingGLEngine::_DeleteHydraResources()
     // delegate); then render index; then render delegate; finally the
     // renderer plugin used to manage the render delegate.
     
-    if (_taskController != nullptr) {
-        delete _taskController;
-        _taskController = nullptr;
-    }
-    if (_delegate != nullptr) {
-        delete _delegate;
-        _delegate = nullptr;
-    }
+    _taskController = nullptr;
+    _delegate = nullptr;
+
     HdRenderDelegate *renderDelegate = nullptr;
     if (_renderIndex != nullptr) {
         renderDelegate = _renderIndex->GetRenderDelegate();
-        delete _renderIndex;
         _renderIndex = nullptr;
     }
     if (_rendererPluginHandle) {
