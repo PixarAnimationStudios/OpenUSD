@@ -31,11 +31,13 @@
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/vec2i.h"
 
+#include "pxr/imaging/hgi/shaderProgram.h"
+
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
+class Hgi;
 
 /// ----------------------------------------------------------------------------
 /// *** DEPRECATED *** ///
@@ -53,7 +55,7 @@ public:
     /// Create a new fullscreen shader object. Creation of GL resources is
     /// deferred...
     HDX_API
-    HdxFullscreenShaderGL();
+    HdxFullscreenShaderGL(Hgi* hgi);
 
     /// Destroy the fullscreen shader object, releasing GL resources.
     HDX_API
@@ -121,12 +123,17 @@ private:
     void _SetUniform(GLuint programId,
                      TfToken const& name, VtValue const& value);
 
+    // Destroy shader program and the shader functions it holds.
+    void _DestroyShaderProgram();
+
     typedef std::map<TfToken, VtValue> UniformMap;
+
+    Hgi* _hgi;
 
     UniformMap _uniforms;
     TextureMap _textures;
 
-    HdStGLSLProgramSharedPtr _program;
+    HgiShaderProgramHandle _program;
     TfToken _glslfx;
     TfToken _technique;
     GLuint _vertexBuffer;

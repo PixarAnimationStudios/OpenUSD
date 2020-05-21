@@ -32,6 +32,9 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgiGL/shaderProgram.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -42,8 +45,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fullscreenShader)
 );
 
-HdxFullscreenShaderGL::HdxFullscreenShaderGL()
-    : _program(), _vertexBuffer(0)
+HdxFullscreenShaderGL::HdxFullscreenShaderGL(Hgi* hgi)
+    : _hgi(hgi)
+    , _vertexBuffer(0)
 {
 }
 
@@ -55,9 +59,11 @@ HdxFullscreenShaderGL::~HdxFullscreenShaderGL()
     if (_vertexBuffer != 0) {
         glDeleteBuffers(1, &_vertexBuffer);
     }
+
     if (_program) {
-        _program.reset();
+        _DestroyShaderProgram();
     }
+
     GLF_POST_PENDING_GL_ERRORS();
 }
 
@@ -69,26 +75,41 @@ HdxFullscreenShaderGL::SetProgramToCompositor(bool depthAware) {
 }
 
 void
-HdxFullscreenShaderGL::SetProgram(TfToken const& glslfx, TfToken const& technique) {
+HdxFullscreenShaderGL::SetProgram(
+    TfToken const& glslfx,
+    TfToken const& technique) 
+{
     if (_glslfx == glslfx && _technique == technique) {
         return;
     }
 
-    _program.reset(new HdStGLSLProgram(_tokens->fullscreenShader));
+    _DestroyShaderProgram();
 
     HioGlslfx vsGlslfx(HdxPackageFullscreenShader());
     HioGlslfx fsGlslfx(glslfx);
 
-    if (!_program->CompileShader(GL_VERTEX_SHADER,
-            vsGlslfx.GetSource(_tokens->fullscreenVertex)) ||
-        !_program->CompileShader(GL_FRAGMENT_SHADER,
-            fsGlslfx.GetSource(technique)) ||
-        !_program->Link()) {
-        TF_CODING_ERROR("Failed to load shader: %s (%s)",
-                glslfx.GetText(), technique.GetText());
-        _program.reset();
-        return;
-    }
+    // Setup the vertex shader
+    HgiShaderFunctionDesc vertDesc;
+    vertDesc.debugName = _tokens->fullscreenVertex.GetString();
+    vertDesc.shaderStage = HgiShaderStageVertex;
+    vertDesc.shaderCode = vsGlslfx.GetSource(_tokens->fullscreenVertex);
+    TF_VERIFY(!vertDesc.shaderCode.empty());
+    HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
+
+    // Setup the fragment shader
+    HgiShaderFunctionDesc fragDesc;
+    fragDesc.debugName = technique.GetString();
+    fragDesc.shaderStage = HgiShaderStageFragment;
+    fragDesc.shaderCode = fsGlslfx.GetSource(technique);
+    TF_VERIFY(!fragDesc.shaderCode.empty());
+    HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
+
+    // Setup the shader program
+    HgiShaderProgramDesc programDesc;
+    programDesc.debugName = _tokens->fullscreenShader.GetString();
+    programDesc.shaderFunctions.emplace_back(std::move(vertFn));
+    programDesc.shaderFunctions.emplace_back(std::move(fragFn));
+    _program = _hgi->CreateShaderProgram(programDesc);
 }
 
 void
@@ -263,7 +284,14 @@ HdxFullscreenShaderGL::Draw(TextureMap const& textures)
     // GL 2.1 API, slightly restricting our choice of API and heavily
     // restricting our shader syntax.
 
-    GLuint programId = _program->GetProgram().GetId();
+    HgiGLShaderProgram* glProgram = 
+        dynamic_cast<HgiGLShaderProgram*>(_program.Get());
+    if (!glProgram) {
+        TF_CODING_ERROR("FullscreenShaderGL only works with OpenGL");
+        return;
+    }
+
+    GLuint programId = glProgram->GetProgramId();
     glUseProgram(programId);
 
     // Setup textures
@@ -325,6 +353,17 @@ void
 HdxFullscreenShaderGL::Draw()
 {
     Draw(_textures);
+}
+
+void
+HdxFullscreenShaderGL::_DestroyShaderProgram()
+{
+    if (!_program) return;
+
+    for (HgiShaderFunctionHandle fn : _program->GetShaderFunctions()) {
+        _hgi->DestroyShaderFunction(&fn);
+    }
+    _hgi->DestroyShaderProgram(&_program);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

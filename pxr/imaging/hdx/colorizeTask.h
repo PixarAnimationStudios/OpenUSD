@@ -82,7 +82,7 @@ private:
     size_t _outputBufferSize;
     bool _converged;
 
-    HdxFullscreenShaderGL _compositor;
+    std::unique_ptr<HdxFullscreenShaderGL> _compositor;
     bool _needsValidation;
 
     HdxColorizeTask() = delete;
