@@ -45,7 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdReprSelector allows these opinions to compose/merge into a final composite
 /// representation to be used for rendering.
 ///
-class HdReprSelector {
+class HdReprSelector
+{
 public:
     explicit HdReprSelector()
     : refinedToken()
@@ -144,7 +145,8 @@ private:
 /// When multiple topological representations are required for an rprim, we use
 /// HdReprSelector to compose the individual representations.
 ///
-class HdRepr final {
+class HdRepr final
+{
 public:
     typedef std::vector<HdDrawItem*> DrawItems;
 
