@@ -144,14 +144,14 @@ private:
 /// When multiple topological representations are required for an rprim, we use
 /// HdReprSelector to compose the individual representations.
 ///
-class HdRepr {
+class HdRepr final {
 public:
     typedef std::vector<HdDrawItem*> DrawItems;
 
     HD_API
     HdRepr();
     HD_API
-    virtual ~HdRepr();
+    ~HdRepr();
 
     /// Returns the draw items for this representation.
     const DrawItems& GetDrawItems() {

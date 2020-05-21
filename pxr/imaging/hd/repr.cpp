@@ -130,10 +130,7 @@ HdReprSelector::operator[](size_t topologyIndex) const
     }
 }
 
-HdRepr::HdRepr()
-{
-    /*NOTHING*/
-}
+HdRepr::HdRepr() = default;
 
 HdRepr::~HdRepr()
 {
