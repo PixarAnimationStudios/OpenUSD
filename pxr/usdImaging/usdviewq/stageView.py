@@ -816,6 +816,7 @@ class StageView(QtOpenGL.QGLWidget):
         # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
         super(StageView, self).__init__(glFormat, parent)
 
+        self._parent = parent
         self._dataModel = dataModel or StageView.DefaultDataModel()
         self._printTiming = printTiming
 
@@ -1463,8 +1464,12 @@ class StageView(QtOpenGL.QGLWidget):
         return windowPolicy
     
     def computeWindowSize(self):
-         size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
-         return (int(size.width()), int(size.height()))
+        if self._parent:
+            devicePixelRatio = self._parent.devicePixelRatio()
+        else:
+            devicePixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
+        size = self.size() * devicePixelRatio
+        return (int(size.width()), int(size.height()))
 
     def computeWindowViewport(self):
         return (0, 0) + self.computeWindowSize()
