@@ -777,8 +777,15 @@ HdxTaskController::GetPickingTasks() const
 SdfPath
 HdxTaskController::_GetAovPath(TfToken const& aov) const
 {
-    std::string str = TfStringPrintf("aov_%s", aov.GetText());
-    std::replace(str.begin(), str.end(), ':', '_');
+    std::string str = "aov_";
+    str.reserve(4 + aov.GetString().length());
+    for (char c : aov.GetString()) {
+        if (std::isalnum(c) || (c&0x80 /*assume UTF-8 is ok*/)) {
+            str.push_back(c);
+        } else {
+            str.push_back('_');
+        }
+    }
     return GetControllerId().AppendChild(TfToken(str));
 }
 
