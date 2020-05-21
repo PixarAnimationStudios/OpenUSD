@@ -180,8 +180,8 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         drawMode == UsdGeomTokens->bounds) {
         // Origin and bounds both draw as basis curves
         if (!index->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves)) {
-            TF_WARN("Unable to load cards for model %s, "
-                    "basis curves not supported", cachePath.GetText());
+            TF_WARN("Unable to display origin or bounds draw mode for model "
+                    "%s, basis curves not supported", cachePath.GetText());
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
@@ -190,7 +190,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
         if (!index->IsRprimTypeSupported(HdPrimTypeTokens->mesh)) {
-            TF_WARN("Unable to load cards for model %s, "
+            TF_WARN("Unable to display cards draw mode for model %s, "
                     "meshes not supported", cachePath.GetText());
             return SdfPath();
         }
