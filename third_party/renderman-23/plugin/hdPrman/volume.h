@@ -56,6 +56,36 @@ public:
     HdPrman_Volume(SdfPath const& id,
                 SdfPath const& instancerId = SdfPath());
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+    /// The types of volumes that can be emitted to Prman are extensible, since
+    /// volumes are emitted via blobbydsos, which themselves are plugins to
+    /// Prman. So we allow the registration of handlers for volumes of different
+    /// types. The volumes are identified by the prim type of their fields.
+    /// Currently Hydra knows of two such types:
+    ///
+    ///    UsdVolImagingTokens->openvdbAsset
+    ///    UsdVolImagingTokens->field3dAsset
+    ///
+    /// Note, since a Volume prim can have multiple fields associated with it,
+    /// we require that all associated Fields are of the same type. The code
+    /// rejects a volume if that is not the case and issues a warning.
+    ///
+    /// The emitter functions that can be registered are responsible to fill in
+    /// the RtParamList list with the k_Ri_type (name of the blobbydso) and any
+    /// parameters to this plugin (k_blobbydso_stringargs).
+    using HdPrman_VolumeTypeEmitter =
+                        void (*)(HdSceneDelegate *sceneDelegate,
+                                 SdfPath const& id,
+                                 HdVolumeFieldDescriptorVector const& fields,
+                                 RtParamList* primvars);
+
+    /// Registers a new volume emitter. Returns true if the handler was
+    /// registered as the new handler. When \p overrideExisting is false, then
+    /// a new handler for a previously registered emitter will not be accepted.
+    static bool AddVolumeTypeEmitter(TfToken const& fieldPrimType,
+                                     HdPrman_VolumeTypeEmitter emitterFunc,
+                                     bool overrideExisting = false);
+
 protected:
     virtual RtParamList
     _ConvertGeometry(HdPrman_Context *context,
@@ -68,6 +98,9 @@ protected:
     _GetFallbackMaterial(HdPrman_Context *context) override {
         return context->fallbackVolumeMaterial;
     }
+
+    using _VolumeEmitterMap = std::map<TfToken, HdPrman_VolumeTypeEmitter>;
+    static _VolumeEmitterMap& _GetVolumeEmitterMap();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

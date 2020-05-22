@@ -27,6 +27,8 @@ pxr_shared_library(${PXR_PACKAGE}
         gf
         hd
         usdRi
+        usdVol
+        usdVolImaging
         ${optionalLibs}
 
     INCLUDE_DIRS

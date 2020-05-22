@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
+    (field3dAsset)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
@@ -81,6 +82,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
     _tokens->openvdbAsset,
+    _tokens->field3dAsset
 };
 
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
@@ -327,7 +329,8 @@ HdBprim *
 HdPrmanRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
-    if (typeId == _tokens->openvdbAsset) {
+    if (typeId == _tokens->openvdbAsset ||
+        typeId == _tokens->field3dAsset) {
         return new HdPrman_Field(typeId, bprimId);
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
@@ -338,7 +341,8 @@ HdPrmanRenderDelegate::CreateBprim(TfToken const& typeId,
 HdBprim *
 HdPrmanRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    if (typeId == _tokens->openvdbAsset) {
+    if (typeId == _tokens->openvdbAsset ||
+        typeId == _tokens->field3dAsset) {
         return new HdPrman_Field(typeId, SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
