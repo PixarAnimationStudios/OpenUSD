@@ -43,10 +43,8 @@ class TestUsdValueClips(unittest.TestCase):
         the time sample API"""
         allTimeSamples = attr.GetTimeSamples()
         self.assertEqual(attr.GetNumTimeSamples(), len(allTimeSamples))
-
         for i in range(0, len(allTimeSamples) - 1):
-            (lowerSample, upperSample) = \
-                (int(allTimeSamples[i]), int(allTimeSamples[i+1]))
+            (lowerSample, upperSample) = allTimeSamples[i], allTimeSamples[i+1]
         
             # The attribute's bracketing time samples at each time returned
             # by GetTimeSamples() should be equal to the time.
@@ -57,7 +55,7 @@ class TestUsdValueClips(unittest.TestCase):
 
             # The attribute's bracketing time samples should be the same
             # at every time in the interval (lowerSample, upperSample)
-            for t in range(lowerSample + 1, upperSample - 1):
+            for t in range(int(lowerSample) + 1, int(upperSample)):
                 self.assertEqual(attr.GetBracketingTimeSamples(t), 
                                  (lowerSample, upperSample))
 
@@ -557,6 +555,38 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(attr1)
         self.CheckTimeSamples(attr2)
         self.CheckTimeSamples(attr3)
+
+    def test_ClipTimingDiscontinuities(self):
+        """Tests behavior of clip timing with discontinuities to control
+        looping"""
+        stage = Usd.Stage.Open('timingDiscontinuity/root.usda')
+        attr = stage.GetAttributeAtPath('/World.value')
+
+        # Test that values interpolate up to the discontinuity at
+        # time 10, then loop back to the start of the clip at time 10.
+        self.CheckValue(attr, time=6, expected=6)
+        self.CheckValue(attr, time=7, expected=7)
+        self.CheckValue(attr, time=8, expected=8)
+        self.CheckValue(attr, time=9, expected=9)
+        self.CheckValue(attr, time=9.5, expected=9.5)
+        self.CheckValue(attr, 
+                        time=10 - Usd.TimeCode.SafeStep(), 
+                        expected=10 - Usd.TimeCode.SafeStep())
+        self.CheckValue(attr, time=10, expected=0)
+        self.CheckValue(attr, time=11, expected=1)
+        self.CheckValue(attr, time=12, expected=2)
+        self.CheckValue(attr, time=13, expected=3)
+
+        # The list of time samples includes an entry at each discontinuity.
+        # If there's a discontinuity at time t, there will be time samples
+        # at t and t - Usd.TimeCode.SafeStep(). This allows us to represent
+        # the discontinuity consistently when flattening the attribute.
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0, 3, 6, 10 - Usd.TimeCode.SafeStep(), 10, 
+             13, 16, 20 - Usd.TimeCode.SafeStep(), 20])
+
+        self.CheckTimeSamples(attr)
 
     def test_ClipStrengthOrdering(self):
         '''Tests strength of clips during resolution'''

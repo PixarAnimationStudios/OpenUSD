@@ -93,11 +93,13 @@ public:
     struct TimeMapping {
         ExternalTime externalTime;
         InternalTime internalTime;
+        bool isJumpDiscontinuity;
 
         TimeMapping() {}
         TimeMapping(const ExternalTime e, const InternalTime i) 
-            : externalTime(e),
-              internalTime(i)
+            : externalTime(e)
+            , internalTime(i)
+            , isJumpDiscontinuity(false)
         {}
     };
 
@@ -193,7 +195,7 @@ private:
     InternalTime _TranslateTimeToInternal(
         ExternalTime extTime) const;
     ExternalTime _TranslateTimeToExternal(
-        InternalTime clipTime, TimeMapping m1, TimeMapping m2) const;
+        InternalTime clipTime, size_t i1, size_t i2) const;
 
     SdfLayerRefPtr _GetLayerForClip() const;
 

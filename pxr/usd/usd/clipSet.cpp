@@ -37,6 +37,7 @@ _ValidateClipFields(
     const VtArray<SdfAssetPath>& clipAssetPaths,
     const std::string& clipPrimPath,
     const VtVec2dArray& clipActive,
+    const VtVec2dArray* clipTimes,
     std::string* errMsg)
 {
     // Note that we do allow empty clipAssetPath and clipActive data; 
@@ -111,6 +112,27 @@ _ValidateClipFields(
         }
     }
 
+    // Ensure there are at most two (stage time, clip time) entries in
+    // clip times that have the same stage time.
+    if (clipTimes) {
+        typedef std::unordered_map<double, int> _StageTimesMap;
+        _StageTimesMap stageTimesMap;
+        for (const auto& stageTimeAndClipTime : *clipTimes) {
+            int& numSeen = stageTimesMap.emplace(
+                stageTimeAndClipTime[0], 0).first->second;
+            numSeen += 1;
+
+            if (numSeen > 2) {
+                *errMsg = TfStringPrintf(
+                    "Cannot have more than two entries in '%s' with the same "
+                    "stage time (%.3f).",
+                    UsdClipsAPIInfoKeys->times.GetText(),
+                    stageTimeAndClipTime[0]);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -134,7 +156,8 @@ Usd_ClipSet::New(
     //      message..
     if (!_ValidateClipFields(
             *clipDef.clipAssetPaths, *clipDef.clipPrimPath, 
-            *clipDef.clipActive, status)) {
+            *clipDef.clipActive, clipDef.clipTimes.get_ptr(), 
+            status)) {
         return nullptr;
     }
 

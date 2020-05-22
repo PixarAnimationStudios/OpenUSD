@@ -101,8 +101,10 @@ takes, there are also a set of "universal" metadata common to both.
     - \em times 
         - A list of pairs of the form (stageTime, clipTime) representing
           the mapping from stage time to clip time, for whichever clip is 
-          active at the given stage time. Note that every authored pair will 
-          be represented in a call to \ref UsdAttribute::GetTimeSamples() .
+          active at the given stage time. Note that every unique stageTime
+          in this list will be in the list of time samples obtained by
+          calling \ref UsdAttribute::GetTimeSamples() .
+          See \ref Usd_ValueClips_TimeMapping for more details.
 
 - Template Clip Metadata
     - \em templateAssetPath
@@ -146,8 +148,8 @@ takes, there are also a set of "universal" metadata common to both.
         when calculating the clipActive value.
         - Given a start time of 101, an endTime of 103, 
         a stride of 1, and an offset of 0.5, USD will generate the following:
-            - clipTimes  = [(100.5,100.5), (101,101), (102,102), (103,103), (103.5,103.5)]
-            - clipActive = [(101.5, 0), (102.5, 1), (103.5, 2)]
+            - times  = [(100.5,100.5), (101,101), (102,102), (103,103), (103.5,103.5)]
+            - active = [(101.5, 0), (102.5, 1), (103.5, 2)]
         - Note that USD generates two additional clip time 'knots' on the ends
         of the clipTime array. This allows users to query time samples outside
         the start/end range based on the absolute value of their offset.
@@ -160,6 +162,69 @@ are authored, USD will prefer the explicit metadata for composition.
 USD provides schema level support for authoring this metadata via \ref UsdClipsAPI. 
 This gives a typesafe way to interact with the relevant metadata as well as 
 various helper functions.
+
+\section Usd_ValueClips_TimeMapping Stage Times and Clip Times
+
+Conceptually, the (stageTime, clipTime) entries in the \em times metadata
+define a timing curve that specifies the time in the active clip to retrieve 
+samples from when requesting an attribute's value at a given stage time. This
+timing curve is made up of linear segments whose endpoints are specified by
+the entries in \em times, sorted by stageTime. (see \ref Usd_ValueClips_TimeOrdering)
+
+For example, given this \em times metadata:
+
+\code
+double2[] times = [(0, 5), (10, 15)]
+\endcode
+
+When an attribute value at time 0 is requested, UsdStage will retrieve the
+time sample value authored at time 5 in the active clip, and at time 10
+UsdStage will ask for the value authored at time 15. As mentioned above,
+these entries are the endpoints for a linear segment in the timing curve, so
+times between these entries will be linearly interpolated. For example,
+requesting an attribute value at time 3 will cause UsdStage to ask for the
+value authored at time 8 in the clip.
+
+The \em times metadata can be used to offset and scale animation from clips,
+providing flexibility in how they are applied to the stage.
+
+\subsection Usd_ValueClips_Discontinuities Jump Discontinuities
+
+Jump discontinuities in the timing curve can be represented in the \em times
+metadata by authoring two entries with the same stage time, but different
+clip times. The clip time in the left-most entry is used for time mappings up 
+to the specified stage time, while the clip time in the right-most entry is
+used for time mappings at that stage time and afterwards.
+
+For example, let's say you had two clips and wanted to use animation from
+times 0 to 10 in the first clip followed by times 25 to 35 in the second
+clip. This could be specified with the \em active and \em times metadata 
+like this:
+
+\code
+double2[] active = [(0, 0), (10, 1)]
+double2[] times = [(0, 0), (10, 10), (10, 25), (20, 35)]
+\endcode
+
+A jump discontinuity has been specified at stage time 10. For times in the 
+range [0, 10), UsdStage will retrieve values from the first clip at times 
+[0, 10). For times in the range [10, 20], UsdStage will retrieve values from
+the second clip at times [25, 35].
+
+See \ref Usd_ValueClips_ClipBehaviorsLooping for a common use-case for this
+functionality.
+
+\subsection Usd_ValueClips_TimeOrdering Ordering
+
+A given stageTime may appear at most twice in the \em times metadata. In the
+typical case, a stageTime will only appear once; the only time it may appear
+twice is to specify a jump discontinuity (see \ref Usd_ValueClips_Discontinuities).
+
+USD will perform a stable sort of the \em times metadata by stageTime to
+establish the timing curve described above. This means the order of the entries
+authored in \em times does not matter, except for jump discontinuities: the
+left-most entry with a given stageTime represents the left side of the
+discontinuity and the right-most entry represents the right side. 
 
 \section Usd_ValueClips_ClipSets Clip Sets
 
@@ -253,6 +318,7 @@ following extra computation:
 
 - From the relevant value clip, USD will do any necessary mapping from the
   "external time" of the stage, to the "internal time" of the clip.
+  (See \ref Usd_ValueClips_TimeMapping for more details.)
 
 - Once the mapping has been determined, the value resolution proceeds as a normal
   Get() call for a timeSamples-based query, as if the active clip were the
@@ -563,35 +629,35 @@ def "World"
 
 \subsection Usd_ValueClips_ClipBehaviorsLooping Looping
 
-It is often desirable to create a looping effect over a set of clips. This is
-very simple to achieve with the usdstitchclips tool. Given a set of value clips,
-say clip1.usd, clip2.usd and clip3.usd. We could loop them three times with the
-following encoding: 
+A common use case is to loop over animation authored in a clip or set of clips.
+For example, at Pixar clips containing a handful of frames of keep-alive 
+animation are applied to background characters with looping so they remain
+in motion throughout an entire shot.
+
+Looping can be specified using the \em times metadata and jump discontinuities
+(see \ref Usd_ValueClips_TimeMapping) This example shows 25 frames of animation
+from a clip being looped on the UsdStage from time 0 to 25, then 25 to 50.
 
 \code
 #usda 1.0
 (
-    endTimeCode = 9
+    endTimeCode = 50
     startTimeCode = 1
     subLayers = [
-        @./result.topology.usda@
+        @./shot.topology.usd@
     ]
 )
 
-def "World" 
+over "World" 
 {
-    over "model" (
+    over "Model" (
         clips = {
             dictionary default = {
-                asset manifestAssetPath = @./result.topology.usda@
-                string primPath = "/World/model"
-                asset[] assetPaths = [@clip1.usd@, @clip2.usd@, @clip3.usd@]
-                double2[] active = [(1, 0), (2, 1), (3, 2),
-                                    (4, 0), (5, 1), (6, 2),
-                                    (7, 0), (8, 1), (9, 2)]
-                double2[] times = [(1, 1), (2, 2), (3, 3),
-                                   (4, 1), (5, 2), (6, 3),
-                                   (7, 1), (8, 2), (9, 3)]
+                asset manifestAssetPath = @./shot.manifest.usd@
+                string primPath = "/World/Model"
+                asset[] assetPaths = [@./clip1.usd@]
+                double2[] active = [(0, 0]
+                double2[] times = [(0, 0), (25, 25), (25, 0), (50, 25)]
             }
         }
     )
@@ -600,10 +666,16 @@ def "World"
 }
 \endcode
 
+For proper looping, we want the UsdStage to retrieve animation at all times
+in the range [0, 25) from the clip at times [0, 25). However, at exactly 
+time 25 we want the UsdStage to jump back to using animation in the clip
+at time 0. This is represented by a jump discontinuity at time 25. (See 
+\ref Usd_ValueClips_Discontinuities for more details.)
+
 Note that we were able to achieve this solely through the metadata. No
 additional asset loads or restructuring needed to happen.
 
 \warning Note that this supposes that the final frame and the first frame of the
-set of clips transition smoothly.
+clip transitions smoothly.
 
 */
