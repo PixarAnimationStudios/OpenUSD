@@ -322,7 +322,8 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                 resourceRegistry->RegisterGLSLProgram(hash);
 
         if (programInstance.IsFirstInstance()) {
-            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile();
+            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile(
+                resourceRegistry.get());
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);

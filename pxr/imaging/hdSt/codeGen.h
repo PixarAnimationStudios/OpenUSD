@@ -67,7 +67,8 @@ public:
 
     /// Generate shader source and compile it.
     HDST_API
-    HdStGLSLProgramSharedPtr Compile();
+    HdStGLSLProgramSharedPtr Compile(
+        HdStResourceRegistry*const registry);
 
     /// Generate compute shader source and compile it.
     /// It uses the compute information in the meta data to determine
@@ -85,7 +86,8 @@ public:
     /// \see GetComputeShaderSource
     /// \see HdSt_ResourceBinder::ResolveBindings
     HDST_API
-    HdStGLSLProgramSharedPtr CompileComputeProgram();
+    HdStGLSLProgramSharedPtr CompileComputeProgram(
+        HdStResourceRegistry*const registry);
     
     /// Return the generated vertex shader source
     const std::string &GetVertexShaderSource() const { return _vsSource; }

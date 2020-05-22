@@ -45,7 +45,7 @@ public:
     typedef size_t ID;
 
     HDST_API
-    HdStGLSLProgram(TfToken const &role);
+    HdStGLSLProgram(TfToken const &role, HdStResourceRegistry*const registry);
     HDST_API
     ~HdStGLSLProgram();
 
@@ -86,6 +86,7 @@ public:
         HdStResourceRegistry *resourceRegistry);
 
 private:
+    HdStResourceRegistry *const _registry;
     HdStResourceGL _program;
     HdStResourceGL _uniformBuffer;
     // An identifier for uniquely identifying the program, for debugging

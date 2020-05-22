@@ -110,7 +110,7 @@ HdStExtCompGpuComputationResource::Resolve()
 
             if (programInstance.IsFirstInstance()) {
                 HdStGLSLProgramSharedPtr glslProgram =
-                                                codeGen.CompileComputeProgram();
+                    codeGen.CompileComputeProgram(_registry.get());
                 if (!TF_VERIFY(glslProgram)) {
                     return false;
                 }

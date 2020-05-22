@@ -139,8 +139,12 @@ _DumpShaderSource(const char *shaderType, std::string const &shaderSource)
     std::cout << std::flush;
 }
 
-HdStGLSLProgram::HdStGLSLProgram(TfToken const &role)
-    : _program(role), _uniformBuffer(role)
+HdStGLSLProgram::HdStGLSLProgram(
+    TfToken const &role,
+    HdStResourceRegistry *const registry)
+    :_registry(registry)
+    , _program(role),
+    _uniformBuffer(role)
 {
     static size_t globalDebugID = 0;
     _debugID = globalDebugID++;
@@ -465,7 +469,7 @@ HdStGLSLProgram::GetComputeProgram(
     if (programInstance.IsFirstInstance()) {
         // if not exists, create new one
         HdStGLSLProgramSharedPtr newProgram(
-            new HdStGLSLProgram(HdTokens->computeShader));
+            new HdStGLSLProgram(HdTokens->computeShader, resourceRegistry));
 
         HioGlslfx glslfx(shaderFileName);
         std::string errorString;
