@@ -170,7 +170,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _counterBar->Resize(newBufferSize + 1);
         _indexBar->Resize(newBufferSize * numSamples);
         _dataBar->Resize(newBufferSize * numSamples);
-        _depthBar->Resize(newBufferSize * numSamples);;
+        _depthBar->Resize(newBufferSize * numSamples);
 
         // Update the values in the uniform buffer
         hdStResourceRegistry->AddSource(
