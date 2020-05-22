@@ -258,6 +258,19 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         d = prim.GetAttribute('d')
         self.assertEqual(d.Get(1), 789)
 
+    def test_ValueTypeMismatch(self):
+        src_stage = Usd.Stage.Open('valueTypeMismatch_root.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='valueBlocks')
+        print(layer.ExportToString())
+        result_stage = Usd.Stage.Open(layer)
+
+        # Verify that the strongest value type prevailed
+        prim = result_stage.GetPrimAtPath('/p')
+        a = prim.GetAttribute('x')
+        self.assertEqual(a.Get(), Vt.IntArray(1, (0,)))
+
+
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.
     testDir = os.path.abspath(os.getcwd())

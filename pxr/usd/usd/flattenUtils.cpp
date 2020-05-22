@@ -162,16 +162,10 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
         // if the weaker value is a block, return the stronger value.
         return lhs;
     }
-    // The remaining cases handle type-specific behavior and require
-    // that the types match.
     if (lhs.GetType() != rhs.GetType()) {
-        // As long as the caller observes the SdfLayer schema, this
-        // should never happen.
-        TF_CODING_ERROR("UsdFlattenLayerStack: Cannot reduce "
-                        "type '%s' with type '%s'",
-                        lhs.GetType().GetTypeName().c_str(),
-                        rhs.GetType().GetTypeName().c_str());
-        return VtValue();
+        // If the types do not match, there is no reduction rule for
+        // combining them, so just use the stronger value.
+        return lhs;
     }
 
     // Dispatch to type-specific reduce / compose rules.
