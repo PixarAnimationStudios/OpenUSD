@@ -91,35 +91,25 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
 HdStResourceRegistry::HdStResourceRegistry()
     : _hgi(nullptr)
     , _numBufferSourcesToResolve(0)
-    , _nonUniformAggregationStrategy()
-    , _nonUniformImmutableAggregationStrategy()
-    , _uniformUboAggregationStrategy()
-    , _uniformSsboAggregationStrategy()
-    , _singleAggregationStrategy()
+    // default aggregation strategies for varying (vertex, varying) primvars
+    , _nonUniformAggregationStrategy(
+        std::make_unique<HdStVBOMemoryManager>())
+    , _nonUniformImmutableAggregationStrategy(
+        std::make_unique<HdStVBOMemoryManager>())
+    // default aggregation strategy for uniform on UBO (for globals)
+    , _uniformUboAggregationStrategy(
+        std::make_unique<HdStInterleavedUBOMemoryManager>())
+    // default aggregation strategy for uniform on SSBO (for primvars)
+    , _uniformSsboAggregationStrategy(
+        std::make_unique<HdStInterleavedSSBOMemoryManager>())
+    // default aggregation strategy for single buffers (for nested instancer)
+    , _singleAggregationStrategy(
+        std::make_unique<HdStVBOSimpleMemoryManager>())
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>())
 {
-    // default aggregation strategies for varying (vertex, varying) primvars
-    SetNonUniformAggregationStrategy(
-        new HdStVBOMemoryManager());
-    SetNonUniformImmutableAggregationStrategy(
-        new HdStVBOMemoryManager());
-
-    // default aggregation strategy for uniform on SSBO (for primvars)
-    SetShaderStorageAggregationStrategy(
-        new HdStInterleavedSSBOMemoryManager());
-
-    // default aggregation strategy for uniform on UBO (for globals)
-    SetUniformAggregationStrategy(
-        new HdStInterleavedUBOMemoryManager());
-
-    // default aggregation strategy for single buffers (for nested instancer)
-    SetSingleStorageAggregationStrategy(
-        new HdStVBOSimpleMemoryManager());
 }
 
-HdStResourceRegistry::~HdStResourceRegistry()
-{
-}
+HdStResourceRegistry::~HdStResourceRegistry() = default;
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
@@ -135,18 +125,18 @@ HdStResourceRegistry::GetResourceAllocation() const
 
     // buffer array allocation
 
-    size_t nonUniformSize   = 
+    const size_t nonUniformSize   = 
         _nonUniformBufferArrayRegistry.GetResourceAllocation(
             _nonUniformAggregationStrategy.get(), result) +
         _nonUniformImmutableBufferArrayRegistry.GetResourceAllocation(
             _nonUniformImmutableAggregationStrategy.get(), result);
-    size_t uboSize          = 
+    const size_t uboSize          = 
         _uniformUboBufferArrayRegistry.GetResourceAllocation(
             _uniformUboAggregationStrategy.get(), result);
-    size_t ssboSize         = 
+    const size_t ssboSize         = 
         _uniformSsboBufferArrayRegistry.GetResourceAllocation(
             _uniformSsboAggregationStrategy.get(), result);
-    size_t singleBufferSize = 
+    const size_t singleBufferSize = 
         _singleBufferArrayRegistry.GetResourceAllocation(
             _singleAggregationStrategy.get(), result);
 
@@ -472,8 +462,9 @@ HdStDispatchBufferSharedPtr
 HdStResourceRegistry::RegisterDispatchBuffer(
     TfToken const &role, int count, int commandNumUints)
 {
-    HdStDispatchBufferSharedPtr result(
-        new HdStDispatchBuffer(role, count, commandNumUints));
+    HdStDispatchBufferSharedPtr const result =
+        std::make_shared<HdStDispatchBuffer>(
+            role, count, commandNumUints);
 
     _dispatchBufferRegistry.push_back(result);
 
@@ -484,8 +475,9 @@ HdStPersistentBufferSharedPtr
 HdStResourceRegistry::RegisterPersistentBuffer(
         TfToken const &role, size_t dataSize, void *data)
 {
-    HdStPersistentBufferSharedPtr result(
-            new HdStPersistentBuffer(role, dataSize, data));
+    HdStPersistentBufferSharedPtr const result =
+        std::make_shared<HdStPersistentBuffer>(
+            role, dataSize, data);
 
     _persistentBufferRegistry.push_back(result);
 
@@ -972,8 +964,8 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         newBufferSpecs, updatedOrAddedSpecs);
     for (const auto& spec : migrateSpecs) {
         AddComputation(/*dstRange*/newRange,
-                       HdComputationSharedPtr(new HdStCopyComputationGPU(
-                           /*src=*/curRange, spec.name)) );
+                       std::make_shared<HdStCopyComputationGPU>(
+                           /*src=*/curRange, spec.name));
     }
 
     // Increment version of the underlying bufferArray to notify

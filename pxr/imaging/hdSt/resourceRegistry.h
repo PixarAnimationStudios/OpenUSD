@@ -81,7 +81,8 @@ class HdSamplerParameters;
 ///
 /// A central registry of all GPU resources.
 ///
-class HdStResourceRegistry : public HdResourceRegistry  {
+class HdStResourceRegistry final : public HdResourceRegistry 
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStResourceRegistry");
 
@@ -89,7 +90,7 @@ public:
     HdStResourceRegistry();
 
     HDST_API
-    virtual ~HdStResourceRegistry();
+    ~HdStResourceRegistry() override;
 
     HDST_API
     void InvalidateShaderRegistry() override;
@@ -378,34 +379,38 @@ public:
     /// Set the aggregation strategy for non uniform parameters
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.
-    void SetNonUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _nonUniformAggregationStrategy.reset(strategy);
+    void SetNonUniformAggregationStrategy(
+                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+        _nonUniformAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for non uniform immutable parameters
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.
     void SetNonUniformImmutableAggregationStrategy(
-        HdAggregationStrategy *strategy) {
-        _nonUniformImmutableAggregationStrategy.reset(strategy);
+                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+        _nonUniformImmutableAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for uniform (shader globals)
     /// Takes ownership of the passed in strategy object.
-    void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformUboAggregationStrategy.reset(strategy);
+    void SetUniformAggregationStrategy(
+                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+        _uniformUboAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for SSBO (uniform primvars)
     /// Takes ownership of the passed in strategy object.
-    void SetShaderStorageAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformSsboAggregationStrategy.reset(strategy);
+    void SetShaderStorageAggregationStrategy(
+                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+        _uniformSsboAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for single buffers (for nested instancer).
     /// Takes ownership of the passed in strategy object.
-    void SetSingleStorageAggregationStrategy(HdAggregationStrategy *strategy) {
-        _singleAggregationStrategy.reset(strategy);
+    void SetSingleStorageAggregationStrategy(
+                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+        _singleAggregationStrategy = std::move(strategy);
     }
 
     /// Debug dump
