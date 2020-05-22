@@ -29,9 +29,6 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 
-// Needed just for HdSamplerParameters
-#include "pxr/imaging/hdSt/samplerObject.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HioGlslfxUniquePtr =
@@ -43,7 +40,8 @@ using HdSt_MaterialParamVector =
 ///
 /// Helps HdStMaterial process a Hydra material network into shader source code
 /// and parameters values.
-class HdStMaterialNetwork final {
+class HdStMaterialNetwork final
+{
 public:
     HDST_API
     HdStMaterialNetwork();
@@ -74,7 +72,8 @@ public:
     HdSt_MaterialParamVector const& GetMaterialParams() const;
 
     // Information necessary to allocate a texture.
-    struct TextureDescriptor {
+    struct TextureDescriptor
+    {
         // Name by which the texture will be accessed, i.e., the name
         // of the accesor for thexture will be HdGet_name(...).
         // It is generated from the input name the corresponding texture
