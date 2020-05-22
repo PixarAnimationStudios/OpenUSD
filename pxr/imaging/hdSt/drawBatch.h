@@ -58,7 +58,8 @@ using HdStResourceRegistrySharedPtr =
 /// aggregated drawing resources dispatched with a minimal number of draw
 /// calls.
 ///
-class HdSt_DrawBatch {
+class HdSt_DrawBatch
+{
 public:
     HDST_API
     HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance);

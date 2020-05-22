@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdSt_GeometricShaderSharedPtr = std::shared_ptr<class HdSt_GeometricShader>;
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 
-class HdStDrawItem : public HdDrawItem {
+class HdStDrawItem : public HdDrawItem
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStDrawItem");
 
@@ -41,7 +42,7 @@ public:
     HdStDrawItem(HdRprimSharedData const *sharedData);
 
     HDST_API
-    ~HdStDrawItem();
+    ~HdStDrawItem() override;
 
     void SetGeometricShader(HdSt_GeometricShaderSharedPtr const &shader) {
         _geometricShader = shader;
