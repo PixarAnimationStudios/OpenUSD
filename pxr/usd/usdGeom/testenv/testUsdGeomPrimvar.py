@@ -321,6 +321,39 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         handleid_array = gp_pv.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
         self.assertTrue(handleid_array.SetIdTarget(gp.GetPath()))
 
+        # Remove a few valid primvar names
+        # without namespace
+        p = gp.GetPrim()
+        self.assertTrue(u1.IsIndexed())
+        u1Name = u1.GetName()
+        u1IndicesAttrName = u1.GetIndicesAttr().GetName()
+
+        # can not remove a primvar across a reference arc
+        weakLayer = Sdf.Layer.CreateAnonymous()
+        stageWeak = Usd.Stage.Open(weakLayer)
+        ovrMesh = stageWeak.OverridePrim('/myMesh')
+        ovrMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(ovrMesh)
+        self.assertTrue(gp_pv_ovr.HasPrimvar(u1Name))
+        self.assertFalse(gp_pv_ovr.RemovePrimvar(u1Name))
+        self.assertTrue(gp_pv_ovr.GetPrim().HasAttribute(u1Name))
+        # remove indexed primvar
+        self.assertTrue(gp_pv.RemovePrimvar(u1Name))
+        self.assertFalse(p.HasAttribute(u1Name))
+        self.assertFalse(p.HasAttribute(u1IndicesAttrName))
+        # with primvars namespace
+        v1Name = v1.GetName()
+        self.assertTrue(gp_pv.RemovePrimvar(v1Name))
+        self.assertFalse(p.HasAttribute(v1Name))
+        # primvar does not exists
+        self.assertFalse(gp_pv.RemovePrimvar('does_not_exist'))
+        self.assertFalse(gp_pv.RemovePrimvar('does_not_exist:does_not_exist'))
+        # try to remove an invalid primvar with restricted tokens, "indices"
+        with self.assertRaises(Tf.ErrorException):
+            gp_pv.RemovePrimvar('indices')
+        with self.assertRaises(Tf.ErrorException):
+            gp_pv.RemovePrimvar('multi:aggregate:indices')
+
     def test_Bug124579(self):
         from pxr import Usd
         from pxr import UsdGeom

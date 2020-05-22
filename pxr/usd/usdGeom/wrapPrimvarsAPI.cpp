@@ -110,6 +110,8 @@ WRAP_CUSTOM {
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
              (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
               arg("elementSize")=-1))
+        .def("RemovePrimvar", &UsdGeomPrimvarsAPI::RemovePrimvar,
+             arg("attrName"))
         .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, arg("name"))
         .def("GetPrimvars", &UsdGeomPrimvarsAPI::GetPrimvars,
              return_value_policy<TfPySequenceToList>())

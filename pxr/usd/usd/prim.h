@@ -434,6 +434,11 @@ public:
     /// Remove all scene description for the property with the
     /// given \p propName <em>in the current UsdEditTarget</em>.
     /// Return true if the property is removed, false otherwise.
+    ///
+    /// Because this method can only remove opinions about the property from
+    /// the current EditTarget, you may generally find it more useful to use
+    /// UsdAttribute::Block(), which will ensure that all values from the 
+    /// EditTarget and weaker layers for the property will be ignored.
     USD_API
     bool RemoveProperty(const TfToken &propName);
 

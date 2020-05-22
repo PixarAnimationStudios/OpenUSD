@@ -193,6 +193,29 @@ public:
                                  const TfToken& interpolation = TfToken(),
                                  int elementSize = -1) const;
 
+    /// Author scene description to delete an attribute on this prim that
+    /// was recognized as Primvar (i.e. will present as a valid UsdGeomPrimvar),
+    /// <em>in the current UsdEditTarget</em>.
+    ///
+    /// Because this method can only remove opinions about the primvar 
+    /// from the current EditTarget, you may generally find it more useful to 
+    /// use UsdAttribute::Block() and UsdGeomPrimvar::BlockIndices() which will 
+    ///  ensure that all values from the EditTarget and weaker layers for the 
+    /// primvar and its indices will be ignored.
+    ///
+    /// Removal may fail and return false if \p attrName contains a reserved 
+    /// keyword, such as the "indices" suffix we use for indexed primvars.
+    ///
+    /// Note this will also remove the indices attribute associated with an
+    /// indiced primvar. 
+    ///
+    /// \return true if UsdGeomPrimvar and indices attribute was successfully 
+    /// removed, false otherwise.
+    ///
+    /// \sa UsdPrim::RemoveProperty())
+    USDGEOM_API
+    bool RemovePrimvar(const TfToken& attrName);
+
     /// Return the Primvar object named by \p name, which will
     /// be valid if a Primvar attribute definition already exists.
     ///

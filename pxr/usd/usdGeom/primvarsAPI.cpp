@@ -136,6 +136,34 @@ UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& attrName,
     return primvar;
 }
 
+bool
+UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& attrName)
+{
+    const TfToken& name = UsdGeomPrimvar::_MakeNamespaced(attrName);
+    if (name.IsEmpty()) {
+        return false;
+    }
+
+    UsdPrim prim = GetPrim();
+    if (!prim) {
+        TF_CODING_ERROR("RemovePrimvar called on invalid prim: %s", 
+                        UsdDescribe(prim).c_str());
+        return false;
+    }
+
+    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(name));
+    if (!primvar) {
+        return false;
+    }
+
+    const UsdAttribute& indexAttr = primvar.GetIndicesAttr();
+    bool success = true;
+    // If the Primvar is an indexed primvar, also remove the indexAttr
+    if (indexAttr) {
+        success = prim.RemoveProperty(indexAttr.GetName());
+    }
+    return prim.RemoveProperty(name) && success;
+}
 
 UsdGeomPrimvar
 UsdGeomPrimvarsAPI::GetPrimvar(const TfToken &name) const
