@@ -120,7 +120,7 @@ public:
     HDST_API
     void SetBufferSources(
         HdBufferSpecVector const &bufferSpecs,
-        HdBufferSourceSharedPtrVector &bufferSources, 
+        HdBufferSourceSharedPtrVector &&bufferSources, 
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Called after textures have been committed.

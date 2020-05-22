@@ -384,8 +384,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // create triangle indices, primitiveParam and edgeIndices
                 source = _topology->GetTriangleIndexBuilderComputation(GetId());
             }
-            HdBufferSourceSharedPtrVector sources;
-            sources.push_back(source);
+            HdBufferSourceSharedPtrVector sources = { source };
 
             // initialize buffer array
             //   * indices
@@ -406,7 +405,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     HdTokens->topology, bufferSpecs, usageHint);
 
             // add sources to update queue
-            resourceRegistry->AddSources(range, sources);
+            resourceRegistry->AddSources(range, std::move(sources));
 
             // save new range to registry
             rangeInstance.SetValue(range);
@@ -1073,7 +1072,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     if (!sources.empty()) {
         // add sources to update queue
         resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
-                                     sources);
+                                     std::move(sources));
     }
     if (!computations.empty()) {
         // add gpu computations to queue.
@@ -1196,7 +1195,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
     if (!sources.empty()) {
         resourceRegistry->AddSources(
-            drawItem->GetFaceVaryingPrimvarRange(), sources);
+            drawItem->GetFaceVaryingPrimvarRange(), std::move(sources));
     }
 }
 
@@ -1336,7 +1335,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     if (!sources.empty()) {
         resourceRegistry->AddSources(
-            drawItem->GetElementPrimvarRange(), sources);
+            drawItem->GetElementPrimvarRange(), std::move(sources));
     }
     if (!computations.empty()) {
         // add gpu computations to queue.

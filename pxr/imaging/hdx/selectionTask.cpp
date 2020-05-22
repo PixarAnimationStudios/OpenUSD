@@ -153,14 +153,16 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         //
         // Uniforms
         //
-        HdBufferSourceSharedPtrVector uniformSources;
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->selColor,
-                                     VtValue(_params.selectionColor))));
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->selLocateColor,
-                                     VtValue(_params.locateColor))));
-        hdStResourceRegistry->AddSources(_selUniformBar, uniformSources);
+        hdStResourceRegistry->AddSources(
+            _selUniformBar,
+            {
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->selColor,
+                    VtValue(_params.selectionColor)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->selLocateColor,
+                    VtValue(_params.locateColor))
+            });
 
         //
         // Offsets
@@ -168,19 +170,21 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         VtIntArray offsets;
         _hasSelection = sel->GetSelectionOffsetBuffer(renderIndex,
                 _params.enableSelection, &offsets);
-        HdBufferSourceSharedPtr offsetSource(
-                new HdVtBufferSource(HdxTokens->hdxSelectionBuffer,
-                                     VtValue(offsets)));
-        hdStResourceRegistry->AddSource(_selOffsetBar, offsetSource);
+        hdStResourceRegistry->AddSource(
+            _selOffsetBar,
+            std::make_shared<HdVtBufferSource>(
+                HdxTokens->hdxSelectionBuffer,
+                VtValue(offsets)));
 
         //
         // Point Colors
         //
-        VtVec4fArray ptColors = sel->GetSelectedPointColors();
-        HdBufferSourceSharedPtr ptColorSource(
-                new HdVtBufferSource(HdxTokens->selectionPointColors,
-                                     VtValue(ptColors)));
-        hdStResourceRegistry->AddSource(_selPointColorsBar, ptColorSource);
+        const VtVec4fArray ptColors = sel->GetSelectedPointColors();
+        hdStResourceRegistry->AddSource(
+            _selPointColorsBar,
+            std::make_shared<HdVtBufferSource>(
+                HdxTokens->selectionPointColors,
+                VtValue(ptColors)));
     }
 
     (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;

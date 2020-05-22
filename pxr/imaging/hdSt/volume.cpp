@@ -430,7 +430,7 @@ _ComputeMaterialShader(
     result->SetFillsPointsBar(hasField);
     result->SetParams(params);
     result->SetBufferSources(
-        bufferSpecs, bufferSources, resourceRegistry);
+        bufferSpecs, std::move(bufferSources), resourceRegistry);
     result->SetNamedTextureHandles(namedTextureHandles);
     result->SetFieldDescriptors(fieldDescs);
 
@@ -630,7 +630,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             }
             
             resourceRegistry->AddSources(drawItem->GetTopologyRange(),
-                                         sources);
+                                         std::move(sources));
         }
     }
 }

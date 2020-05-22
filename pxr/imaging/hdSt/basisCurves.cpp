@@ -66,10 +66,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
 }
 
 
-HdStBasisCurves::~HdStBasisCurves()
-{
-    /*NOTHING*/
-}
+HdStBasisCurves::~HdStBasisCurves() = default;
 
 void
 HdStBasisCurves::Sync(HdSceneDelegate *delegate,
@@ -595,7 +592,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
             // add sources to update queue
-            resourceRegistry->AddSources(range, sources);
+            resourceRegistry->AddSources(range, std::move(sources));
             rangeInstance.SetValue(range);
         }
 
@@ -764,7 +761,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // add sources to update queue
     if (!sources.empty()) {
         resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
-                                     sources);
+                                     std::move(sources));
     }
     if (!computations.empty()) {
         TF_FOR_ALL(it, computations) {
@@ -844,7 +841,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     if (!sources.empty()) {
         resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
-                                 sources);
+                                     std::move(sources));
     }
 }
 

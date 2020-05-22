@@ -225,7 +225,7 @@ public:
     /// Append source data for given range to be committed later.
     HDST_API
     void AddSources(HdBufferArrayRangeSharedPtr const &range,
-                    HdBufferSourceSharedPtrVector &sources);
+                    HdBufferSourceSharedPtrVector &&sources);
 
     /// Append a source data for given range to be committed later.
     HDST_API
@@ -456,6 +456,13 @@ private:
                        HdBufferSourceSharedPtr     const &source)
             : range(range)
             , sources(1, source)
+        {
+        }
+
+        _PendingSource(HdBufferArrayRangeSharedPtr const &range,
+                       HdBufferSourceSharedPtrVector     && sources)
+            : range(range)
+            , sources(std::move(sources))
         {
         }
 

@@ -285,7 +285,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // add sources to update queue
     if (!sources.empty()) {
         resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
-                                 sources);
+                                     std::move(sources));
     }
     
     if (!computations.empty()) {

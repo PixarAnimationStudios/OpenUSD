@@ -329,7 +329,7 @@ HdStResourceRegistry::UpdateShaderStorageBufferArrayRange(
 /// ------------------------------------------------------------------------
 void
 HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
-                                 HdBufferSourceSharedPtrVector &sources)
+                                 HdBufferSourceSharedPtrVector &&sources)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -376,12 +376,11 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
 
     // Check for no-valid buffer case
     if (!sources.empty()) {
-        _PendingSourceList::iterator it = _pendingSources.emplace_back(range);
-        TF_VERIFY(range.use_count() >=2);
+        _numBufferSourcesToResolve += sources.size();
+        const _PendingSourceList::iterator it = _pendingSources.emplace_back(
+            range, std::move(sources));
 
-        std::swap(it->sources, sources);
-        
-        _numBufferSourcesToResolve += it->sources.size(); // Atomic
+        TF_VERIFY(range.use_count() >=2);
     }
 }
 

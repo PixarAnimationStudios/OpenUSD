@@ -80,13 +80,13 @@ HdxOitResolveTask::_PrepareOitBuffers(
     HdRenderIndex* renderIndex,
     GfVec2i const& screenSize)
 {
-    const int numSamples = 8; // Should match glslfx files
+    static const int numSamples = 8; // Should match glslfx files
 
      HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
-    bool createOitBuffers = !_counterBar;
+    const bool createOitBuffers = !_counterBar;
     if (createOitBuffers) { 
         //
         // Counter Buffer
@@ -158,12 +158,12 @@ HdxOitResolveTask::_PrepareOitBuffers(
     // The OIT buffer are sized based on the size of the screen and use 
     // fragCoord to index into the buffers.
     // We must update uniform screenSize when either X or Y increases in size.
-    bool resizeOitBuffers = (screenSize[0] > _screenSize[0] ||
-                             screenSize[1] > _screenSize[1]);
+    const bool resizeOitBuffers = (screenSize[0] > _screenSize[0] ||
+                                   screenSize[1] > _screenSize[1]);
 
     if (resizeOitBuffers) {
         _screenSize = screenSize;
-        int newBufferSize = screenSize[0] * screenSize[1];
+        const int newBufferSize = screenSize[0] * screenSize[1];
 
         // +1 because element 0 of the counter buffer is used as an atomic
         // counter in the shader to give each fragment a unique index.
@@ -173,11 +173,11 @@ HdxOitResolveTask::_PrepareOitBuffers(
         _depthBar->Resize(newBufferSize * numSamples);;
 
         // Update the values in the uniform buffer
-        HdBufferSourceSharedPtrVector uniformSources;
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(HdxTokens->oitScreenSize,
-                                                   VtValue(screenSize))));
-        hdStResourceRegistry->AddSources(_uniformBar, uniformSources);
+        hdStResourceRegistry->AddSource(
+            _uniformBar,
+            std::make_shared<HdVtBufferSource>(
+                HdxTokens->oitScreenSize,
+                VtValue(screenSize)));
     }
 }
 

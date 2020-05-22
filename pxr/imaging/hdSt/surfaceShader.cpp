@@ -367,7 +367,7 @@ HdStSurfaceShader::SetNamedTextureHandles(
 void
 HdStSurfaceShader::SetBufferSources(
     HdBufferSpecVector const &bufferSpecs,
-    HdBufferSourceSharedPtrVector &bufferSources,
+    HdBufferSourceSharedPtrVector &&bufferSources,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSpecs.empty()) {
@@ -398,7 +398,8 @@ HdStSurfaceShader::SetBufferSources(
 
         if (_paramArray->IsValid()) {
             if (!bufferSources.empty()) {
-                resourceRegistry->AddSources(_paramArray, bufferSources);
+                resourceRegistry->AddSources(_paramArray,
+                                             std::move(bufferSources));
             }
         }
     }
@@ -551,7 +552,7 @@ HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
         GetNamedTextureHandles(), bindlessTextureEnabled, &result);
 
     if (!result.empty()) {
-        ctx.AddSources(GetShaderData(), result);
+        ctx.AddSources(GetShaderData(), std::move(result));
     }
 }
 

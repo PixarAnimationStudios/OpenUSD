@@ -233,7 +233,7 @@ public:
 
         HDST_API
         void AddSources(HdBufferArrayRangeSharedPtr const &range,
-                        HdBufferSourceSharedPtrVector &sources);
+                        HdBufferSourceSharedPtrVector &&sources);
 
         HDST_API
         void AddComputation(HdBufferArrayRangeSharedPtr const &range,

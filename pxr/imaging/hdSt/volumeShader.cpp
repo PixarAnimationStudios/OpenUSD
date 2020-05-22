@@ -311,7 +311,7 @@ HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
     }
 
     if (!shaderBarSources.empty()) {
-        ctx.AddSources(GetShaderData(), shaderBarSources);
+        ctx.AddSources(GetShaderData(), std::move(shaderBarSources));
     }
 }
 

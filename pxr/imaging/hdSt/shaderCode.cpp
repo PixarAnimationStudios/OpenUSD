@@ -128,9 +128,9 @@ HdStShaderCode::ResourceContext::AddSource(
 void
 HdStShaderCode::ResourceContext::AddSources(
     HdBufferArrayRangeSharedPtr const &range,
-    HdBufferSourceSharedPtrVector &sources)
+    HdBufferSourceSharedPtrVector && sources)
 {
-    _registry->AddSources(range, sources);
+    _registry->AddSources(range, std::move(sources));
 }
 
 void

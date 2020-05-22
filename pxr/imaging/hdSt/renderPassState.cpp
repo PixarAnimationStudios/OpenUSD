@@ -199,66 +199,69 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
-    HdBufferSourceSharedPtrVector sources;
-    sources.push_back(HdBufferSourceSharedPtr(
-                         new HdVtBufferSource(HdShaderTokens->worldToViewMatrix,
-                                              worldToViewMatrix)));
-    sources.push_back(HdBufferSourceSharedPtr(
-                  new HdVtBufferSource(HdShaderTokens->worldToViewInverseMatrix,
-                                       worldToViewMatrix.GetInverse() )));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->projectionMatrix,
-                                               projMatrix)));
-    // Override color alpha component is used as the amount to blend in the
-    // override color over the top of the regular fragment color.
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->overrideColor,
-                                               VtValue(_overrideColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->wireframeColor,
-                                               VtValue(_wireframeColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->maskColor,
-                                               VtValue(_maskColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->indicatorColor,
-                                               VtValue(_indicatorColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->pointColor,
-                                               VtValue(_pointColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->pointSize,
-                                               VtValue(_pointSize))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->pointSelectedSize,
-                                               VtValue(_pointSelectedSize))));
-
-    sources.push_back(HdBufferSourceSharedPtr(
-                       new HdVtBufferSource(HdShaderTokens->lightingBlendAmount,
-                                            VtValue(lightingBlendAmount))));
+    HdBufferSourceSharedPtrVector sources = {
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->worldToViewMatrix,
+            worldToViewMatrix),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->worldToViewInverseMatrix,
+            worldToViewMatrix.GetInverse()),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->projectionMatrix,
+            projMatrix),
+        // Override color alpha component is used as the amount to blend in the
+        // override color over the top of the regular fragment color.
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->overrideColor,
+            VtValue(_overrideColor)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->wireframeColor,
+            VtValue(_wireframeColor)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->maskColor,
+            VtValue(_maskColor)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->indicatorColor,
+            VtValue(_indicatorColor)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->pointColor,
+            VtValue(_pointColor)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->pointSize,
+            VtValue(_pointSize)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->pointSelectedSize,
+            VtValue(_pointSelectedSize)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->lightingBlendAmount,
+            VtValue(lightingBlendAmount))
+    };
 
     if (_UseAlphaMask()) {
-        sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(HdShaderTokens->alphaThreshold,
-                                                   VtValue(_alphaThreshold))));
+        sources.push_back(
+            std::make_shared<HdVtBufferSource>(
+                HdShaderTokens->alphaThreshold,
+                VtValue(_alphaThreshold)));
     }
 
-    sources.push_back(HdBufferSourceSharedPtr(
-                       new HdVtBufferSource(HdShaderTokens->tessLevel,
-                                            VtValue(_tessLevel))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->viewport,
-                                               VtValue(_viewport))));
+    sources.push_back(
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->tessLevel,
+            VtValue(_tessLevel)));
+    sources.push_back(
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->viewport,
+            VtValue(_viewport)));
 
     if (clipPlanes.size() > 0) {
-        sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(
-                                  HdShaderTokens->clipPlanes,
-                                  VtValue(clipPlanes),
-                                  clipPlanes.size())));
+        sources.push_back(
+            std::make_shared<HdVtBufferSource>(
+                HdShaderTokens->clipPlanes,
+                VtValue(clipPlanes),
+                clipPlanes.size()));
     }
 
-    hdStResourceRegistry->AddSources(_renderPassStateBar, sources);
+    hdStResourceRegistry->AddSources(_renderPassStateBar, std::move(sources));
 
     // notify view-transform to the lighting shader to update its uniform block
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);

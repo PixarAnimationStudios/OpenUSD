@@ -92,20 +92,18 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
     // index buffer, We setup the BAR to meet this requirement to draw our
     // full-screen triangle for post-process shaders.
 
-    HdBufferSourceSharedPtrVector sources;
+    HdBufferSourceSharedPtrVector sources = {
+        std::make_shared<HdVtBufferSource>(
+            HdTokens->points, VtValue(VtVec3fArray(3))) };
+
     HdBufferSpecVector bufferSpecs;
-
-    HdBufferSourceSharedPtr pointsSource(
-        new HdVtBufferSource(HdTokens->points, VtValue(VtVec3fArray(3))));
-
-    sources.push_back(pointsSource);
-    pointsSource->GetBufferSpecs(&bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr vertexPrimvarRange =
         registry->AllocateNonUniformBufferArrayRange(
             HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
 
-    registry->AddSources(vertexPrimvarRange, sources);
+    registry->AddSources(vertexPrimvarRange, std::move(sources));
 
     HdDrawingCoord* drawingCoord = _drawItem.GetDrawingCoord();
     _sharedData.barContainer.Set(
