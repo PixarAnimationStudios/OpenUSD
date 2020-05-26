@@ -78,6 +78,11 @@ protected:
         HdTaskContext* ctx,
         HdDirtyBits* dirtyBits) = 0;
 
+    // Swaps the color target and colorIntermediate target.
+    // This is used when a task wishes to read from the color and also write
+    // to it. We use two color targets and ping-pong between them.
+    void _ToggleRenderTarget(HdTaskContext* ctx);
+
     // Return pointer to Hydra Graphics Interface.
     HDX_API
     Hgi* _GetHgi() const;

@@ -74,6 +74,10 @@ private:
         HdTaskContext* ctx,
         HgiTextureHandle& texture,
         HdRenderBuffer* buffer);
+    
+    void _UpdateIntermediateTexture(
+        HgiTextureHandle& texture,
+        HdRenderBuffer* buffer);
 
     bool _converged;
 
@@ -85,6 +89,7 @@ private:
 
     HgiTextureHandle _aovTexture;
     HgiTextureHandle _depthTexture;
+    HgiTextureHandle _aovTextureIntermediate;
 
     HdxAovInputTask() = delete;
     HdxAovInputTask(const HdxAovInputTask &) = delete;

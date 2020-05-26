@@ -24,6 +24,8 @@
 #include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdx/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,6 +64,24 @@ HdxTask::Sync(
 
     // Proceeed with the Sync Phase
     _Sync(delegate, ctx, dirtyBits);
+}
+
+void
+HdxTask::_ToggleRenderTarget(HdTaskContext* ctx)
+{
+    if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
+        return;
+    }
+
+    HgiTextureHandle aovTexture, aovTextureIntermediate;
+    
+    if (_HasTaskContextData(ctx, HdxAovTokens->colorIntermediate)) {
+        _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
+        _GetTaskContextData(
+            ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
+        (*ctx)[HdAovTokens->color] = VtValue(aovTextureIntermediate);
+        (*ctx)[HdxAovTokens->colorIntermediate] = VtValue(aovTexture);
+    }
 }
 
 Hgi*

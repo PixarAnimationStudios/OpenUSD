@@ -480,13 +480,18 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    // The color aov has the rendered results and we wish to color correct it.
-    if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
+    // The color aov has the rendered results and we wish to
+    // color correct it into colorIntermediate aov to ensure we do not
+    // read from the same color target that we write into.
+    if (!_HasTaskContextData(ctx, HdAovTokens->color) ||
+        !_HasTaskContextData(ctx, HdxAovTokens->colorIntermediate)) {
         return;
     }
 
-    HgiTextureHandle aovTexture;
+    HgiTextureHandle aovTexture, aovTextureIntermediate;
     _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
+    _GetTaskContextData(
+        ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
 
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
@@ -497,11 +502,14 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     if (!TF_VERIFY(_CreateResourceBindings(aovTexture))) {
         return;
     }
-    if (!TF_VERIFY(_CreatePipeline(aovTexture))) {
+    if (!TF_VERIFY(_CreatePipeline(aovTextureIntermediate))) {
         return;
     }
 
-    _ApplyColorCorrection(aovTexture);
+    _ApplyColorCorrection(aovTextureIntermediate);
+    
+    // Toggle color and colorIntermediate
+    _ToggleRenderTarget(ctx);
 }
 
 void
