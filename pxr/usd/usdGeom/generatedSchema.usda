@@ -1388,25 +1388,27 @@ class "PointBased" (
 }
 
 class Mesh "Mesh" (
-    doc = """Encodes a mesh surface whose definition and feature-set
+    doc = '''Encodes a mesh surface whose definition and feature-set
     will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html.
-    Certain interpolation (\"tag\") parameters are not yet supported.
+    Certain interpolation ("tag") parameters are not yet supported.
     
     A key property of this mesh schema is that it encodes both subdivision
-    surfaces, and non-subdived \"polygonal meshes\", by varying the
+    surfaces, and non-subdivided "polygonal meshes", by varying the
     subdivisionScheme attribute.
     
     A Note About Normals
 
     Normals should not be authored on a subdivided mesh, since subdivision
     algorithms define their own normals. They should only be authored for
-    polygonal meshes.
+    polygonal meshes (_subdivisionScheme_ = "None").
 
-    The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+    The _normals_ attribute inherited from UsdGeomPointBased is not a generic
     primvar, but the number of elements in this attribute will be determined by
-    its 'interpolation'.  See .
-    If 'normals' and 'primvars:normals' are both specified, the latter has
-    precedence."""
+    its _interpolation_.  See .
+    If _normals_ and _primvars:normals_ are both specified, the latter has
+    precedence.  If a polygonal Mesh specifies __neither__ _normals_ nor
+    _primvars:normals_, then it should be treated and rendered as faceted,
+    with no attempt to compute smooth normals.'''
 )
 {
     vector3f[] accelerations (
@@ -1589,9 +1591,11 @@ class Mesh "Mesh" (
         between schemes "bilinear" and "none" is that bilinearly subdivided
         meshes can be considered watertight, whereas there is no such guarantee
         for un-subdivided polymeshes, and more mesh features (e.g. holes) may
-        apply to bilinear meshes but not polymeshes.  Polymeshes may be
-        lighterweight and faster to render, depending on renderer and render
-        mode.)'''
+        apply to bilinear meshes but not polymeshes.   Further, if a polymesh 
+        does not provide normals, then it should be treated and rendered as 
+        faceted, whereas a "bilinear" Mesh should compute smooth normals. 
+        For primarily this latter reason, polymeshes may be lighterweight 
+        and faster to render, depending on renderer and render mode.)'''
     )
     token triangleSubdivisionRule = "catmullClark" (
         allowedTokens = ["catmullClark", "smooth"]
