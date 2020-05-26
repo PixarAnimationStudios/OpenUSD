@@ -590,6 +590,32 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.CheckTimeSamples(attr)
 
+    def test_ClipReverseTiming(self):
+        '''Tests behavior when reversing time samples in clips'''
+        stage = Usd.Stage.Open('reversing/root.usda')
+        attr = stage.GetAttributeAtPath('/Model.size')
+
+        # From time [0, 4] we retrieve values from the clip at times [0, 4]
+        self.CheckValue(attr, time=0, expected=0)
+        self.CheckValue(attr, time=1, expected=2)
+        self.CheckValue(attr, time=2, expected=4)
+        self.CheckValue(attr, time=3, expected=6)
+        self.CheckValue(attr, time=4, expected=8)
+
+        # From time (4, 8] the times metadata reverse the clip times, so at
+        # time = 5 we get the value in the clip at time 3, at time = 6 we get
+        # the value in the clip at time 2, etc.
+        self.CheckValue(attr, time=5, expected=6)
+        self.CheckValue(attr, time=6, expected=4)
+        self.CheckValue(attr, time=7, expected=2)
+        self.CheckValue(attr, time=8, expected=0)
+
+        self.assertEqual(
+            attr.GetTimeSamples(),
+            [0, 2, 4, 6, 8])
+
+        self.CheckTimeSamples(attr)
+
     def test_ClipStrengthOrdering(self):
         '''Tests strength of clips during resolution'''
 

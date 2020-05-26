@@ -515,7 +515,8 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
                 continue;
             }
 
-            if (m1.internalTime <= t && t <= m2.internalTime) {
+            if (std::min(m1.internalTime, m2.internalTime) <= t
+                && t <= std::max(m1.internalTime, m2.internalTime)) {
                 if (m1.internalTime == m2.internalTime) {
                     timeSamples.insert(m1.externalTime);
                     timeSamples.insert(m2.externalTime);
