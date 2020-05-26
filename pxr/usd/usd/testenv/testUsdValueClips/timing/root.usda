@@ -8,7 +8,7 @@ def "Model" (
             asset[] assetPaths = [@./clip.usda@]
             string primPath = "/Model"
             double2[] active = [(-10.0, 0)]
-            double2[] times = [(0, 10), (20, 20), (21, 10), (41, 20)]
+            double2[] times = [(0, 10), (20, 20), (20, 10), (40, 20)]
         }
     }
 )

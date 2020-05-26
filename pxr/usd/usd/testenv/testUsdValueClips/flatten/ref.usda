@@ -1,8 +1,6 @@
 #usda 1.0
 
-def "Model" (
-    kind = "model"
-)
+def "Model"
 {
     float size = 1.0
     float size.timeSamples = {

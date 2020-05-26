@@ -231,17 +231,16 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=5, expected=10.0)
             self.CheckValue(attr, time=10, expected=15.0)
             self.CheckValue(attr, time=15, expected=15.0)
-            self.CheckValue(attr, time=20, expected=20.0)
-            self.CheckValue(attr, time=21, expected=10.0)
-            self.CheckValue(attr, time=26, expected=10.0)
-            self.CheckValue(attr, time=31, expected=15.0)
-            self.CheckValue(attr, time=36, expected=15.0)
-            self.CheckValue(attr, time=41, expected=20.0)
+            self.CheckValue(attr, time=20, expected=10.0)
+            self.CheckValue(attr, time=25, expected=10.0)
+            self.CheckValue(attr, time=30, expected=15.0)
+            self.CheckValue(attr, time=35, expected=15.0)
+            self.CheckValue(attr, time=40, expected=20.0)
 
             # Requests for samples before and after the mapping specified in
             # 'clipTimes' just pick up the first or last time sample.
             self.CheckValue(attr, time=-1, expected=10.0)
-            self.CheckValue(attr, time=42, expected=20.0)
+            self.CheckValue(attr, time=41, expected=20.0)
 
         # Repeat the test with linear interpolation
         with InterpolationType(stage, Usd.InterpolationTypeLinear):
@@ -249,22 +248,24 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=5, expected=12.5)
             self.CheckValue(attr, time=10, expected=15.0)
             self.CheckValue(attr, time=15, expected=17.5)
-            self.CheckValue(attr, time=20, expected=20.0)
-            self.CheckValue(attr, time=21, expected=10.0)
-            self.CheckValue(attr, time=26, expected=12.5)
-            self.CheckValue(attr, time=31, expected=15.0)
-            self.CheckValue(attr, time=36, expected=17.5)
-            self.CheckValue(attr, time=41, expected=20.0)
+            self.CheckValue(attr, time=20, expected=10.0)
+            self.CheckValue(attr, time=25, expected=12.5)
+            self.CheckValue(attr, time=30, expected=15.0)
+            self.CheckValue(attr, time=35, expected=17.5)
+            self.CheckValue(attr, time=40, expected=20.0)
 
             self.CheckValue(attr, time=-1, expected=10.0)
-            self.CheckValue(attr, time=42, expected=20.0)
+            self.CheckValue(attr, time=41, expected=20.0)
 
         # The clip has time samples authored every 5 frames, but
         # since we've scaled everything by 50%, we should have samples
         # every 10 frames.
-        self.assertEqual(attr.GetTimeSamples(), [0, 10, 20, 21, 31, 41])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
-                [0, 10, 20, 21])
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 30, 40])
+        self.assertEqual(
+            attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 30])
 
         # Test trickier cases where time samples in the clip fall outside
         # of the time domain specified by the 'clipTimes' metadata.
@@ -295,8 +296,10 @@ class TestUsdValueClips(unittest.TestCase):
         model = stage.GetPrimAtPath('/Model')
         attr = model.GetAttribute('size')
 
-        self.assertEqual(attr.GetTimeSamples(),
-                         [0.0, 2.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
+        self.assertEqual(
+            attr.GetTimeSamples(),
+            [0.0, 2.0, 4.0, 5.0 - Usd.TimeCode.SafeStep(), 5.0, 6.0, 7.0, 8.0, 
+             9.0])
         self.CheckTimeSamples(attr)
 
     def test_ClipTimingOutsideRange(self):
@@ -348,17 +351,16 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=5.0)
         self.CheckValue(attr, time=10, expected=5.0)
         self.CheckValue(attr, time=15, expected=5.0)
-        self.CheckValue(attr, time=20, expected=5.0)
-        self.CheckValue(attr, time=21, expected=46.0)
-        self.CheckValue(attr, time=26, expected=41.0)
-        self.CheckValue(attr, time=31, expected=36.0)
-        self.CheckValue(attr, time=36, expected=31.0)
-        self.CheckValue(attr, time=41, expected=26.0)
+        self.CheckValue(attr, time=20, expected=45.0)
+        self.CheckValue(attr, time=25, expected=40.0)
+        self.CheckValue(attr, time=30, expected=35.0)
+        self.CheckValue(attr, time=35, expected=30.0)
+        self.CheckValue(attr, time=40, expected=25.0)
 
         # Requests for samples before and after the mapping specified in
         # 'clipTimes' just pick up the first or last time sample.
         self.CheckValue(attr, time=-1, expected=5.0)
-        self.CheckValue(attr, time=42, expected=26.0)
+        self.CheckValue(attr, time=41, expected=25.0)
 
         # Repeat getting values at the same times for the SdfTimeCodeArray 
         # valued attribute.
@@ -366,15 +368,14 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr2, time=5, expected=Sdf.TimeCodeArray([5.0, 5.0]))
         self.CheckValue(attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
         self.CheckValue(attr2, time=15, expected=Sdf.TimeCodeArray([15.0, 5.0]))
-        self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 5.0]))
-        self.CheckValue(attr2, time=21, expected=Sdf.TimeCodeArray([21.0, 46.0]))
-        self.CheckValue(attr2, time=26, expected=Sdf.TimeCodeArray([26.0, 41.0]))
-        self.CheckValue(attr2, time=31, expected=Sdf.TimeCodeArray([31.0, 36.0]))
-        self.CheckValue(attr2, time=36, expected=Sdf.TimeCodeArray([36.0, 31.0]))
-        self.CheckValue(attr2, time=41, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+        self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 45.0]))
+        self.CheckValue(attr2, time=25, expected=Sdf.TimeCodeArray([25.0, 40.0]))
+        self.CheckValue(attr2, time=30, expected=Sdf.TimeCodeArray([30.0, 35.0]))
+        self.CheckValue(attr2, time=35, expected=Sdf.TimeCodeArray([35.0, 30.0]))
+        self.CheckValue(attr2, time=40, expected=Sdf.TimeCodeArray([40.0, 25.0]))
 
         self.CheckValue(attr2, time=-1, expected=Sdf.TimeCodeArray([0.0, 5.0]))
-        self.CheckValue(attr2, time=42, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+        self.CheckValue(attr2, time=41, expected=Sdf.TimeCodeArray([40.0, 25.0]))
 
         # Repeat the test over again with held interpolation.
         stage.SetInterpolationType(Usd.InterpolationTypeHeld)
@@ -387,17 +388,16 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=5.0)
         self.CheckValue(attr, time=10, expected=5.0)
         self.CheckValue(attr, time=15, expected=5.0)
-        self.CheckValue(attr, time=20, expected=5.0)
-        self.CheckValue(attr, time=21, expected=46.0)
-        self.CheckValue(attr, time=26, expected=41.0)
-        self.CheckValue(attr, time=31, expected=36.0)
-        self.CheckValue(attr, time=36, expected=31.0)
-        self.CheckValue(attr, time=41, expected=26.0)
+        self.CheckValue(attr, time=20, expected=45.0)
+        self.CheckValue(attr, time=25, expected=40.0)
+        self.CheckValue(attr, time=30, expected=35.0)
+        self.CheckValue(attr, time=35, expected=30.0)
+        self.CheckValue(attr, time=40, expected=25.0)
 
         # Requests for samples before and after the mapping specified in
         # 'clipTimes' just pick up the first or last time sample.
         self.CheckValue(attr, time=-1, expected=5.0)
-        self.CheckValue(attr, time=42, expected=26.0)
+        self.CheckValue(attr, time=41, expected=25.0)
 
         # Repeat getting values at the same times for the SdfTimeCodeArray 
         # valued attribute.
@@ -405,22 +405,24 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr2, time=5, expected=Sdf.TimeCodeArray([0.0, 5.0]))
         self.CheckValue(attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
         self.CheckValue(attr2, time=15, expected=Sdf.TimeCodeArray([10.0, 5.0]))
-        self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 5.0]))
-        self.CheckValue(attr2, time=21, expected=Sdf.TimeCodeArray([21.0, 46.0]))
-        self.CheckValue(attr2, time=26, expected=Sdf.TimeCodeArray([26.0, 41.0]))
-        self.CheckValue(attr2, time=31, expected=Sdf.TimeCodeArray([31.0, 36.0]))
-        self.CheckValue(attr2, time=36, expected=Sdf.TimeCodeArray([36.0, 31.0]))
-        self.CheckValue(attr2, time=41, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+        self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 45.0]))
+        self.CheckValue(attr2, time=25, expected=Sdf.TimeCodeArray([25.0, 40.0]))
+        self.CheckValue(attr2, time=30, expected=Sdf.TimeCodeArray([30.0, 35.0]))
+        self.CheckValue(attr2, time=35, expected=Sdf.TimeCodeArray([35.0, 30.0]))
+        self.CheckValue(attr2, time=40, expected=Sdf.TimeCodeArray([40.0, 25.0]))
 
         self.CheckValue(attr2, time=-1, expected=Sdf.TimeCodeArray([0.0, 5.0]))
-        self.CheckValue(attr2, time=42, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+        self.CheckValue(attr2, time=41, expected=Sdf.TimeCodeArray([40.0, 25.0]))
 
         # The clip has time samples authored every 5 frames, but
         # since we've scaled everything by 50%, we should have samples
         # every 10 frames.
-        self.assertEqual(attr.GetTimeSamples(), [0, 10, 20, 21, 26, 31, 36, 41])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
-                [0, 10, 20, 21, 26])
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30, 35, 40])
+        self.assertEqual(
+            attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30])
 
         self.CheckTimeSamples(attr)
         self.CheckTimeSamples(attr2)
@@ -697,6 +699,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=-5)
         self.CheckValue(attr, time=10, expected=-10)
         self.CheckValue(attr, time=15, expected=-15)
+        self.CheckValue(attr, time=16, expected=-23)
         self.CheckValue(attr, time=19, expected=-23)
         self.CheckValue(attr, time=22, expected=-26)
         self.CheckValue(attr, time=25, expected=-29)
@@ -709,10 +712,14 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetBracketingTimeSamples(16), (16, 16))
 
         # Verify that GetTimeSamples() returns time samples from both clips.
-        self.assertEqual(attr.GetTimeSamples(), 
-            [0.0, 5.0, 10.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)), 
-            [0.0, 5.0, 10.0, 15.0, 16.0, 19.0, 22.0, 25.0])
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0.0, 5.0, 10.0, 15.0, 16.0 - Usd.TimeCode.SafeStep(), 16.0, 19.0, 
+             22.0, 25.0, 32.0])
+        self.assertEqual(
+            attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)), 
+            [0.0, 5.0, 10.0, 15.0, 16.0 - Usd.TimeCode.SafeStep(), 16.0, 19.0,
+             22.0, 25.0])
         self.CheckTimeSamples(attr)
 
     def test_MultipleClipsWithNoTimeSamples(self):
@@ -817,10 +824,12 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=30, expected=-29.0)
             self.CheckValue(attr, time=31, expected=-29.0)
 
-        self.assertEqual(attr.GetTimeSamples(), 
-            [0.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(-5, 50)), 
-            [0.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0.0, 16.0 - Usd.TimeCode.SafeStep(), 16.0, 19.0, 22.0, 25.0, 32.0])
+        self.assertEqual(
+            attr.GetTimeSamplesInInterval(Gf.Interval(-5, 50)), 
+            [0.0, 16.0 - Usd.TimeCode.SafeStep(), 16.0, 19.0, 22.0, 25.0, 32.0])
 
         self.CheckTimeSamples(attr)
 
@@ -886,9 +895,12 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=11, expected=-29.0)
             self.CheckValue(attr, time=12, expected=-29.0)
 
-        self.assertEqual(attr.GetTimeSamples(), [0.0, 3.0, 4.0, 7.0, 8.0, 11.0])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 10)), 
-                [0.0, 3.0, 4.0, 7.0, 8.0])
+        self.assertEqual(
+            attr.GetTimeSamples(), 
+            [0.0, 3.0, 4.0 - Usd.TimeCode.SafeStep(), 4.0, 7.0, 8.0, 11.0])
+        self.assertEqual(
+            attr.GetTimeSamplesInInterval(Gf.Interval(0, 10)), 
+            [0.0, 3.0, 4.0 - Usd.TimeCode.SafeStep(), 4.0, 7.0, 8.0])
 
         self.CheckTimeSamples(attr)
 
