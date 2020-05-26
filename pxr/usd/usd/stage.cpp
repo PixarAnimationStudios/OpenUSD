@@ -3047,9 +3047,10 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
 
     for (const auto& path : paths) {
         Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
-        // XXX: This should be converted to a TF_VERIFY once
-        // bug 141575 is fixed.
-        if (prim) {
+        // We *expect* every prim in paths to be valid as we iterate, but at
+        // one time had issues with deactivated master prims, so we preserve
+        // a guard for resiliency.  See testUsdBug141491.py
+        if (TF_VERIFY(prim)) {
             _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
         }
     }
