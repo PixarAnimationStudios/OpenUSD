@@ -513,8 +513,8 @@ public:
     /// <b>Using HasAPI in C++</b>
     /// \code 
     /// UsdPrim prim = stage->OverridePrim("/path/to/prim");
-    /// UsdModelAPI modelAPI = UsdModelAPI::Apply(prim);
-    /// assert(prim.HasAPI<UsdModelAPI>());
+    /// MyDomainBozAPI = MyDomainBozAPI::Apply(prim);
+    /// assert(prim.HasAPI<MyDomainBozAPI>());
     /// 
     /// UsdCollectionAPI collAPI = UsdCollectionAPI::Apply(prim, 
     ///         /*instanceName*/ TfToken("geom"))
@@ -530,8 +530,8 @@ public:
     /// <b>Using HasAPI in Python</b>
     /// \code{.py}
     /// prim = stage.OverridePrim("/path/to/prim")
-    /// modelAPI = Usd.ModelAPI.Apply(prim)
-    /// assert prim.HasAPI(Usd.ModelAPI)
+    /// bozAPI = MyDomain.BozAPI.Apply(prim)
+    /// assert prim.HasAPI(MyDomain.BozAPI)
     /// 
     /// collAPI = Usd.CollectionAPI.Apply(prim, "geom")
     /// assert(prim.HasAPI(Usd.CollectionAPI))
