@@ -108,10 +108,12 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
-             (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
+             (arg("name"), arg("typeName"), arg("interpolation")=TfToken(),
               arg("elementSize")=-1))
         .def("RemovePrimvar", &UsdGeomPrimvarsAPI::RemovePrimvar,
-             arg("attrName"))
+             arg("name"))
+        .def("BlockPrimvar", &UsdGeomPrimvarsAPI::BlockPrimvar,
+             arg("name"))
         .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, arg("name"))
         .def("GetPrimvars", &UsdGeomPrimvarsAPI::GetPrimvars,
              return_value_policy<TfPySequenceToList>())

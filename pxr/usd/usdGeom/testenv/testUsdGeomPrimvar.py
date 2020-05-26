@@ -321,6 +321,59 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         handleid_array = gp_pv.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
         self.assertTrue(handleid_array.SetIdTarget(gp.GetPath()))
 
+        # Test BlockPrimvar API
+        pv_blocking = gp_pv.CreatePrimvar('pvb', Sdf.ValueTypeNames.FloatArray)
+        pvName = pv_blocking.GetName()
+        pv_blocking.SetInterpolation(UsdGeom.Tokens.vertex)
+        pv_val = Vt.FloatArray([1.1,2.1,3.1])
+        pv_blocking.Set(pv_val)
+        # Block a non-indexed primvar should also construct and block indices attr
+        self.assertFalse(pv_blocking.IsIndexed())
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        gp_pv.BlockPrimvar(pvName)
+        self.assertFalse(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking.IsIndexed())
+        self.assertTrue(pv_blocking.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
+        # re-set pv_blocking
+        pv_blocking.Set(pv_val)
+        pv_indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        pv_blocking.SetIndices(pv_indices)
+
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking.IsIndexed())
+        # Block primvar as well as indices Attr
+        gp_pv.BlockPrimvar(pvName)
+        self.assertFalse(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking.IsIndexed())
+        # re-set pv_blocking for further testing
+        pv_blocking.Set(pv_val)
+        pv_indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        pv_blocking.SetIndices(pv_indices)
+        # test BlockPrimvar on a referenced prim
+        weakLayer = Sdf.Layer.CreateAnonymous()
+        stageWeak = Usd.Stage.Open(weakLayer)
+        ovrMesh = stageWeak.OverridePrim('/myMesh')
+        ovrMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(ovrMesh)
+        pv_blocking_ovr = gp_pv_ovr.GetPrimvar(pvName)
+        self.assertTrue(pv_blocking_ovr.HasAuthoredValue())
+        self.assertTrue(pv_blocking_ovr.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking_ovr.IsIndexed())
+        # should only block primvar and indices attr in the referenced prim
+        gp_pv_ovr.BlockPrimvar(pvName)
+        # ovr primvar will be blocked!
+        self.assertFalse(pv_blocking_ovr.HasAuthoredValue())
+        self.assertTrue(pv_blocking_ovr.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking_ovr.IsIndexed())
+        # stronger layer wont get affected and original prim should not be blocked
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking.IsIndexed())
+
         # Remove a few valid primvar names
         # without namespace
         p = gp.GetPrim()

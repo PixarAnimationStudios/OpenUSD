@@ -165,10 +165,10 @@ public:
     /// UsdGeomPrimvar).
     ///
     /// The name of the created attribute may or may not be the specified
-    /// \p attrName, due to the possible need to apply property namespacing
+    /// \p name, due to the possible need to apply property namespacing
     /// for primvars.  See \ref Usd_Creating_and_Accessing_Primvars
     /// for more information.  Creation may fail and return an invalid
-    /// Primvar if \p attrName contains a reserved keyword, such as the 
+    /// Primvar if \p name contains a reserved keyword, such as the 
     /// "indices" suffix we use for indexed primvars.
     ///
     /// The behavior with respect to the provided \p typeName
@@ -188,7 +188,7 @@ public:
     ///
     /// \sa UsdPrim::CreateAttribute(), UsdGeomPrimvar::IsPrimvar()
     USDGEOM_API
-    UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
+    UsdGeomPrimvar CreatePrimvar(const TfToken& name,
                                  const SdfValueTypeName &typeName,
                                  const TfToken& interpolation = TfToken(),
                                  int elementSize = -1) const;
@@ -199,11 +199,10 @@ public:
     ///
     /// Because this method can only remove opinions about the primvar 
     /// from the current EditTarget, you may generally find it more useful to 
-    /// use UsdAttribute::Block() and UsdGeomPrimvar::BlockIndices() which will 
-    ///  ensure that all values from the EditTarget and weaker layers for the 
-    /// primvar and its indices will be ignored.
+    /// use BlockPrimvar() which will ensure that all values from the EditTarget 
+    /// and weaker layers for the primvar and its indices will be ignored.
     ///
-    /// Removal may fail and return false if \p attrName contains a reserved 
+    /// Removal may fail and return false if \p name contains a reserved 
     /// keyword, such as the "indices" suffix we use for indexed primvars.
     ///
     /// Note this will also remove the indices attribute associated with an
@@ -214,7 +213,15 @@ public:
     ///
     /// \sa UsdPrim::RemoveProperty())
     USDGEOM_API
-    bool RemovePrimvar(const TfToken& attrName);
+    bool RemovePrimvar(const TfToken& name);
+
+    /// Remove all time samples on the primvar and its associated indices attr, 
+    /// and author a *block* \c default value. This will cause authored opinions
+    /// in weaker layers to be ignored.
+    ///
+    /// \sa UsdAttribute::Block(), UsdGeomPrimvar::BlockIndices
+    USDGEOM_API
+    void BlockPrimvar(const TfToken& name);
 
     /// Return the Primvar object named by \p name, which will
     /// be valid if a Primvar attribute definition already exists.

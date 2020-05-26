@@ -117,14 +117,14 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdGeomPrimvar 
-UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& attrName,
+UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& name,
                                 const SdfValueTypeName &typeName,
                                 const TfToken& interpolation,
                                 int elementSize) const
 {
     const UsdPrim &prim = GetPrim();
 
-    UsdGeomPrimvar primvar(prim, attrName, typeName);
+    UsdGeomPrimvar primvar(prim, name, typeName);
 
     if (primvar){
         if (!interpolation.IsEmpty())
@@ -137,10 +137,10 @@ UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& attrName,
 }
 
 bool
-UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& attrName)
+UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& name)
 {
-    const TfToken& name = UsdGeomPrimvar::_MakeNamespaced(attrName);
-    if (name.IsEmpty()) {
+    const TfToken& attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    if (attrName.IsEmpty()) {
         return false;
     }
 
@@ -151,7 +151,7 @@ UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& attrName)
         return false;
     }
 
-    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(name));
+    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(attrName));
     if (!primvar) {
         return false;
     }
@@ -162,8 +162,38 @@ UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& attrName)
     if (indexAttr) {
         success = prim.RemoveProperty(indexAttr.GetName());
     }
-    return prim.RemoveProperty(name) && success;
+    return prim.RemoveProperty(attrName) && success;
 }
+
+void
+UsdGeomPrimvarsAPI::BlockPrimvar(const TfToken& name)
+{
+    const TfToken& attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    if (attrName.IsEmpty()) {
+        return;
+    }
+
+    const UsdPrim& prim = GetPrim();
+    if (!prim) {
+        TF_CODING_ERROR("RemovePrimvar called on invalid prim: %s", 
+                        UsdDescribe(prim).c_str());
+        return;
+    }
+
+    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(name));
+    if (!primvar) {
+        return;
+    }
+
+    // Always block indices attr irrespective of primvar is indexed or not
+    // This prevents leak of indices attr in a composed stage when a stronger
+    // layer has blocked the primvar and at a later time weaker layer adds
+    // indices to the primvar
+    primvar.BlockIndices();
+
+    primvar.GetAttr().Block();
+}
+
 
 UsdGeomPrimvar
 UsdGeomPrimvarsAPI::GetPrimvar(const TfToken &name) const
