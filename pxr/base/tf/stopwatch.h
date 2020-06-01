@@ -62,7 +62,7 @@ public:
     /// provision is made for multiple stopwatches with the same name.  So if
     /// you want to retrieve it, make sure you name it uniquely.
     TF_API TfStopwatch(const std::string& name = std::string(),
-                bool share = false);
+                       bool share = false);
 
     /// Copy constructor.
     ///
@@ -70,7 +70,7 @@ public:
     TF_API TfStopwatch(const TfStopwatch& other);
 
     /// Destroy a stopwatch.
-    TF_API virtual ~TfStopwatch();
+    TF_API ~TfStopwatch();
 
     /// Record the current time for use by the next \c Stop() call.
     ///

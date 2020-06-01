@@ -97,7 +97,6 @@ TfStopwatch& TfStopwatch::operator=(const TfStopwatch& other)
     return *this;
 }
 
-/*virtual*/
 TfStopwatch::~TfStopwatch()
 {
     if (_shared) {
