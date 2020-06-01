@@ -65,36 +65,19 @@ public:
     /// Get the wrapped HdRendererPlugin
     HdRendererPlugin *Get() const { return _plugin; }
 
-    /// Get the plugin id for the wrapped HdRendererPlugin
-    const TfToken &GetPluginId() const { return _pluginId; }
-
     HdRendererPlugin *operator->() const { return _plugin; }
     HdRendererPlugin &operator*() const { return *_plugin; }
 
     /// Is the wrapped HdRendererPlugin valid?
     explicit operator bool() const { return _plugin; }
 
-    /// Create a render delegate through the plugin and wrap
-    /// it in a handle.
-    ///
-    HD_API
-    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate() const;
-
-    /// Create a render delegate through the plugin and wrap
-    /// it in a handle. Pass in initial settings.
-    ///
-    HD_API
-    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
-        HdRenderSettingsMap const &settingsMap) const;
-    
 private:
     friend class HdRendererPluginRegistry;
+    friend class HdRendererPlugin;
     
-    HdRendererPluginHandle(
-        const TfToken &pluginId, HdRendererPlugin * const plugin)
-      : _pluginId(pluginId), _plugin(plugin) { }
+    HdRendererPluginHandle(HdRendererPlugin * const plugin)
+      : _plugin(plugin) { }
 
-    TfToken _pluginId;
     HdRendererPlugin *_plugin;
 };
 

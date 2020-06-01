@@ -32,8 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdRendererPluginHandle::HdRendererPluginHandle(
     const HdRendererPluginHandle &other)
-  : _pluginId(other._pluginId)
-  , _plugin(other._plugin)
+  : _plugin(other._plugin)
 {
     if (_plugin) {
         HdRendererPluginRegistry::GetInstance().AddPluginReference(_plugin);
@@ -49,7 +48,6 @@ HdRendererPluginHandle &
 HdRendererPluginHandle::operator=(const HdRendererPluginHandle &other)
 {
     HdRendererPluginRegistry::GetInstance().ReleasePlugin(_plugin);
-    _pluginId = other._pluginId;
     _plugin = other._plugin;
     if (_plugin) {
         HdRendererPluginRegistry::GetInstance().AddPluginReference(_plugin);
@@ -63,30 +61,5 @@ HdRendererPluginHandle::operator=(const std::nullptr_t &)
     *this = HdRendererPluginHandle();
     return *this;
 }
-
-HdPluginRenderDelegateUniqueHandle
-HdRendererPluginHandle::CreateRenderDelegate() const
-{
-    if (!_plugin) {
-        return nullptr;
-    }
-
-    return HdPluginRenderDelegateUniqueHandle(
-        *this, _plugin->CreateRenderDelegate());
-}
-
-
-HdPluginRenderDelegateUniqueHandle
-HdRendererPluginHandle::CreateRenderDelegate(
-    HdRenderSettingsMap const& settingsMap) const
-{
-    if (!_plugin) {
-        return nullptr;
-    }
-
-    return HdPluginRenderDelegateUniqueHandle(
-        *this, _plugin->CreateRenderDelegate(settingsMap));
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

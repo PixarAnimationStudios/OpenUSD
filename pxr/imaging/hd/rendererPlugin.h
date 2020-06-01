@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
 class HdRenderIndex;
+class HdPluginRenderDelegateUniqueHandle;
 
 ///
 /// This class defines a renderer plugin interface for Hydra.
@@ -49,7 +50,24 @@ class HdRendererPlugin : public HfPluginBase {
 public:
 
     ///
-    /// \deprecated Use HdRendererPluginHandle::CreateRenderDelegate() instead.
+    /// Create a render delegate through the plugin and wrap it in a
+    /// handle that keeps this plugin alive until render delegate is
+    /// destroyed. Initial settings can be passed in.
+    ///
+    HD_API
+    HdPluginRenderDelegateUniqueHandle CreateDelegate(
+        HdRenderSettingsMap const &settingsMap = {});
+
+    ///
+    /// Look-up plugin id in plugin registry.
+    ///
+    HD_API
+    TfToken GetPluginId() const;
+
+    ///
+    /// Clients should use CreateDelegate since this method
+    /// will eventually become protected, use CreateRenderDelegateHandle
+    /// instead.
     ///
     /// Factory a Render Delegate object, that Hydra can use to
     /// factory prims and communicate with a renderer.
@@ -57,7 +75,8 @@ public:
     virtual HdRenderDelegate *CreateRenderDelegate() = 0;
 
     ///
-    /// \deprecated Use HdRendererPluginHandle::CreateRenderDelegate() instead.
+    /// Clients should use CreateDelegate since this method
+    /// will eventually become protected.
     ///
     /// Factory a Render Delegate object, that Hydra can use to
     /// factory prims and communicate with a renderer.  Pass in initial
@@ -68,7 +87,8 @@ public:
         HdRenderSettingsMap const& settingsMap);
 
     ///
-    /// \deprecated Use HdRendererPlugin::CreateRenderDelegate() instead.
+    /// Clients should use CreateDelegate since this method
+    /// will eventually become protected.
     ///
     /// Release the object factoried by CreateRenderDelegate().
     ///

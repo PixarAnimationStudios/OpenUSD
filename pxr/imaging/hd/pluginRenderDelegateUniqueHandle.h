@@ -39,7 +39,7 @@ class HdRenderDelegate;
 /// a plugin.
 ///
 /// The handle owns the render delegate (render delegate is destroyed
-/// when handle is dropped). The handle also can be querried what
+/// when handle is dropped). The handle also can be queried what
 /// plugin was used to create the render delegate and ensures the
 /// plugin is kept alive until the render delegate is destroyed.
 /// In other words, the handle can be used just like a std::unique_ptr.
@@ -78,10 +78,10 @@ public:
 
     /// Get the id of the plugin used to create render delegate
     HD_API
-    const TfToken &GetPluginId() const;
+    TfToken GetPluginId() const;
 
 private:
-    friend class HdRendererPluginHandle;
+    friend class HdRendererPlugin;
 
     HdPluginRenderDelegateUniqueHandle(
         const HdRendererPluginHandle &plugin, HdRenderDelegate * delegate)

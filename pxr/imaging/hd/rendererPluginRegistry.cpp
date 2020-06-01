@@ -87,23 +87,7 @@ HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 HdRendererPluginHandle
 HdRendererPluginRegistry::GetOrCreateRendererPlugin(const TfToken &pluginId)
 {
-    return HdRendererPluginHandle(pluginId, GetRendererPlugin(pluginId));
-}
-
-HdPluginRenderDelegateUniqueHandle
-HdRendererPluginRegistry::CreateRenderDelegate(const TfToken &pluginId)
-{
-    HdRendererPluginHandle plugin = GetOrCreateRendererPlugin(pluginId);
-    if (!plugin) {
-        TF_CODING_ERROR("Couldn't find plugin for id %s", pluginId.GetText());
-        return nullptr;
-    }
-    
-    if (!plugin->IsSupported()) {
-        return nullptr;
-    }
-
-    return plugin.CreateRenderDelegate();
+    return HdRendererPluginHandle(GetRendererPlugin(pluginId));
 }
 
 HdPluginRenderDelegateUniqueHandle
@@ -117,11 +101,7 @@ HdRendererPluginRegistry::CreateRenderDelegate(
         return nullptr;
     }
     
-    if (!plugin->IsSupported()) {
-        return nullptr;
-    }
-
-    return plugin.CreateRenderDelegate(settingsMap);
+    return plugin->CreateDelegate(settingsMap);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

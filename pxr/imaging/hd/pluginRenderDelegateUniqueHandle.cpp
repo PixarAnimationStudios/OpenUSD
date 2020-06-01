@@ -69,15 +69,14 @@ HdPluginRenderDelegateUniqueHandle::operator=(
     return *this;
 }
 
-const TfToken &
+TfToken
 HdPluginRenderDelegateUniqueHandle::GetPluginId() const
 {
     if (_plugin) {
-        return _plugin.GetPluginId();
+        return _plugin->GetPluginId();
     }
     
-    static TfToken empty;
-    return empty;
+    return TfToken();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

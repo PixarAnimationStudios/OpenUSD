@@ -79,17 +79,6 @@ public:
 
     ///
     /// Returns a render delegate created by the plugin with the given name
-    /// if the plugin is supported, otherwise null.
-    /// The render delegate is wrapped in a movable handle that
-    /// keeps the plugin alive until the render delegate is destroyed by
-    /// dropping the handle.
-    /// 
-    HD_API
-    HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
-        const TfToken &pluginId);
-
-    ///
-    /// Returns a render delegate created by the plugin with the given name
     /// if the plugin is supported using given initial settings.
     /// The render delegate is wrapped in a movable handle that
     /// keeps the plugin alive until the render delegate is destroyed by
@@ -98,7 +87,7 @@ public:
     HD_API
     HdPluginRenderDelegateUniqueHandle CreateRenderDelegate(
         const TfToken &pluginId,
-        const HdRenderSettingsMap &settingsMap);
+        const HdRenderSettingsMap &settingsMap = {});
 
 private:
     // Friend required by TfSingleton to access constructor (as it is private).
@@ -106,7 +95,7 @@ private:
 
     // Singleton gets private constructed
     HdRendererPluginRegistry();
-    virtual ~HdRendererPluginRegistry();
+    ~HdRendererPluginRegistry() override;
 
     //
     /// This class is not intended to be copied.
