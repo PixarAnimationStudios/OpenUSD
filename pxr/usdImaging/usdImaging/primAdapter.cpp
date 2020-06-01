@@ -855,18 +855,22 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
     bool primvarOnPrim = false;
     UsdAttribute attr;
     TfToken interpOnPrim;
+    HdInterpolation hdInterpOnPrim = HdInterpolationConstant;
     UsdGeomPrimvarsAPI api(prim);
     if (inherited) {
         UsdGeomPrimvar pv = api.FindPrimvarWithInheritance(propertyName);
         attr = pv;
-        interpOnPrim = pv.GetInterpolation();
+        if (pv)
+            interpOnPrim = pv.GetInterpolation();
     } else {
         UsdGeomPrimvar localPv = api.GetPrimvar(propertyName);
         attr = localPv;
-        interpOnPrim = localPv.GetInterpolation();
+        if (localPv)
+            interpOnPrim = localPv.GetInterpolation();
     }
     if (attr && attr.HasValue()) {
         primvarOnPrim = true;
+        hdInterpOnPrim = _UsdToHdInterpolation(interpOnPrim);
     }
 
     // Determine if primvar is in the value cache.
@@ -875,7 +879,7 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
         _GetValueCache()->GetPrimvars(cachePath);  
     
     PrimvarChange changeType = _ProcessPrimvarChange(primvarOnPrim,
-                                 _UsdToHdInterpolation(interpOnPrim),
+                                 hdInterpOnPrim,
                                  primvarName, &primvarDescs, cachePath);
 
     return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
