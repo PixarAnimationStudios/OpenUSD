@@ -214,28 +214,50 @@ def PrintWarning(title, description):
     print(description, file=msg)
     print("------------------------------------------------------------", file=msg)
 
-def GetValueAtFrame(prop, frame):
-    if isinstance(prop, Usd.Relationship):
-        return prop.GetTargets()
-    elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
-        return prop.Get(frame)
-    elif isinstance(prop, Sdf.AttributeSpec):
-        if frame == Usd.TimeCode.Default():
-            return prop.default
-        else:
-            numTimeSamples = -1
-            if prop.HasInfo('timeSamples'):
-                numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
-            if numTimeSamples == -1:
-                return prop.default
-            elif numTimeSamples == 1:
-                return "1 time sample"
-            else:
-                return str(numTimeSamples) + " time samples"
-    elif isinstance(prop, Sdf.RelationshipSpec):
-        return prop.targetPathList
+def GetValueAndDisplayString(prop, time):
+    """If `prop` is a timeSampled Sdf.AttributeSpec, compute a string specifying
+    how many timeSamples it possesses.  Otherwise, compute the single default
+    value, or targets for a relationship, or value at 'time' for a
+    Usd.Attribute.  Return a tuple of a parameterless function that returns the
+    resolved value at 'time', and the computed brief string for display.  We
+    return a value-producing function rather than the value itself because for
+    an Sdf.AttributeSpec with multiple timeSamples, the resolved value is
+    *all* of the timeSamples, which can be expensive to compute, and is
+    rarely needed.
+    """
+    def _ValAndStr(val): 
+        return (lambda: val, GetShortStringForValue(prop, val))
 
-    return val
+    if isinstance(prop, Usd.Relationship):
+        return _ValAndStr(prop.GetTargets())
+    elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
+        return _ValAndStr(prop.Get(time))
+    elif isinstance(prop, Sdf.AttributeSpec):
+        if time == Usd.TimeCode.Default():
+            return _ValAndStr(prop.default)
+        else:
+            numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
+            if numTimeSamples == 0:
+                return _ValAndStr(prop.default)
+            else:
+                def _GetAllTimeSamples(attrSpec):
+                    l = attrSpec.layer
+                    p = attrSpec.path
+                    ordinates = l.ListTimeSamplesForPath(p)
+                    return [(o, l.QueryTimeSample(p, o)) for o in ordinates]
+
+                if numTimeSamples == 1:
+                    valStr = "1 time sample"
+                else:
+                    valStr = str(numTimeSamples) + " time samples"
+                    
+                return (lambda prop=prop: _GetAllTimeSamples(prop), valStr)
+
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return _ValAndStr(prop.targetPathList)
+    
+    return (lambda: None, "unrecognized property type")
+
 
 def GetShortStringForValue(prop, val):
     if isinstance(prop, Usd.Relationship):
