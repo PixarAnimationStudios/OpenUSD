@@ -36,7 +36,10 @@ HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
     , _programId(0)
 {
     _programId = glCreateProgram();
-    glObjectLabel(GL_PROGRAM, _programId, -1, _descriptor.debugName.c_str());
+
+    if (!_descriptor.debugName.empty()) {
+        glObjectLabel(GL_PROGRAM, _programId,-1, _descriptor.debugName.c_str());
+    }
 
     for (HgiShaderFunctionHandle const& shd : desc.shaderFunctions) {
         HgiGLShaderFunction* glShader = 

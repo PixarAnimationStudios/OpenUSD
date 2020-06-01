@@ -42,7 +42,10 @@ HgiGLShaderFunction::HgiGLShaderFunction(
     if (!TF_VERIFY(stages.size()==1)) return;
 
     _shaderId = glCreateShader(stages[0]);
-    glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
+
+    if (!_descriptor.debugName.empty()) {
+        glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
+    }
 
     const char* src = desc.shaderCode.c_str();
     glShaderSource(_shaderId, 1, &src, nullptr);

@@ -39,7 +39,10 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     }
 
     glCreateBuffers(1, &_bufferId);
-    glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+
+    if (!_descriptor.debugName.empty()) {
+        glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+    }
 
     if ((_descriptor.usage & HgiBufferUsageVertex)  ||
         (_descriptor.usage & HgiBufferUsageIndex32) ||
