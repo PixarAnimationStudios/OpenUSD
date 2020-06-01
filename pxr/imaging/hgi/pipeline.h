@@ -149,6 +149,8 @@ bool operator!=(
 ///   Determines the culling rules for primitives (triangles).</li>
 /// <li>winding:
 ///   The rule that determines what makes a front-facing primitive.</li>
+/// <li>rasterizationEnabled:
+///   When false all primitives are discarded before rasterization stage.</li>
 /// </ul>
 ///
 struct HgiRasterizationState
@@ -160,6 +162,7 @@ struct HgiRasterizationState
     float lineWidth;
     HgiCullMode cullMode;
     HgiWinding winding;
+    bool rasterizerEnabled;
 };
 
 HGI_API

@@ -64,6 +64,7 @@ HgiRasterizationState::HgiRasterizationState()
     , lineWidth(1.0f)
     , cullMode(HgiCullModeBack)
     , winding(HgiWindingCounterClockwise)
+    , rasterizerEnabled(true)
 {
 }
 
@@ -74,7 +75,8 @@ bool operator==(
     return lhs.polygonMode == rhs.polygonMode &&
            lhs.lineWidth == rhs.lineWidth &&
            lhs.cullMode == rhs.cullMode &&
-           lhs.winding == rhs.winding;
+           lhs.winding == rhs.winding &&
+           lhs.rasterizerEnabled == rhs.rasterizerEnabled;
 }
 
 bool operator!=(

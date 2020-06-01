@@ -136,6 +136,12 @@ HgiGLPipeline::BindPipeline()
         glLineWidth(_descriptor.rasterizationState.lineWidth);
     }
 
+    if (_descriptor.rasterizationState.rasterizerEnabled) {
+        glDisable(GL_RASTERIZER_DISCARD);
+    } else {
+        glEnable(GL_RASTERIZER_DISCARD);
+    }
+
     //
     // Shader program
     //

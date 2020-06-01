@@ -106,9 +106,9 @@ HgiMetalPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
     
     stateDesc.vertexFunction = metalProgram->GetVertexFunction();
-    id<MTLFunction> fragmentFunction = metalProgram->GetFragmentFunction();
-    if (fragmentFunction) {
-        stateDesc.fragmentFunction = fragmentFunction;
+    id<MTLFunction> fragFunction = metalProgram->GetFragmentFunction();
+    if (fragFunction && _descriptor.rasterizationState.rasterizerEnabled) {
+        stateDesc.fragmentFunction = fragFunction;
         stateDesc.rasterizationEnabled = YES;
     }
     else {
