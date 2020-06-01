@@ -1375,6 +1375,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_TUTORIALS=ON')
         else:
             extraArgs.append('-DPXR_BUILD_TUTORIALS=OFF')
+
+        if context.buildTools:
+            extraArgs.append('-DPXR_BUILD_USD_TOOLS=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_USD_TOOLS=OFF')
             
         if context.buildImaging:
             extraArgs.append('-DPXR_BUILD_IMAGING=ON')
@@ -1593,6 +1598,11 @@ subgroup.add_argument("--tutorials", dest="build_tutorials", action="store_true"
 subgroup.add_argument("--no-tutorials", dest="build_tutorials", action="store_false",
                       help="Do not build tutorials")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--tools", dest="build_tools", action="store_true",
+                     default=True, help="Build USD tools (default)")
+subgroup.add_argument("--no-tools", dest="build_tools", action="store_false",
+                      help="Do not build USD tools")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--docs", dest="build_docs", action="store_true",
                       default=False, help="Build documentation")
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
@@ -1772,6 +1782,7 @@ class InstallContext:
         self.buildPython = args.build_python
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
+        self.buildTools = args.build_tools
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -2032,6 +2043,7 @@ Building with settings:
     Tests                       {buildTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
+    Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
@@ -2083,6 +2095,7 @@ summaryMsg = summaryMsg.format(
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
+    buildTools=("On" if context.buildTools else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
