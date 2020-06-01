@@ -64,7 +64,8 @@ class TestParser(unittest.TestCase):
             'integer': 'int',
             'string': 'string',
             'surface': 'string',
-            'vector': 'vector',
+            'vector': 'float',   # vector actually becomes a float[3], but the
+                                 # array size is not represented in the Type
         }
         for node in nodes:
             # Strip leading nd_ from name.

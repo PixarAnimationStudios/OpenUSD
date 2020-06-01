@@ -140,7 +140,7 @@ ShaderBuilder::AddProperty(
     else {
         // Get the sdr type.
         type = converted.shaderPropertyType;
-        if (converted.valueTypeName.IsArray()) {
+        if (converted.valueTypeName.IsArray() && converted.arraySize == 0) {
             metadata.emplace(SdrPropertyMetadata->IsDynamicArray, "");
         }
 
@@ -210,7 +210,7 @@ ShaderBuilder::AddProperty(
                                   type,
                                   defaultValue,
                                   isOutput,
-                                  0,
+                                  converted.arraySize,
                                   metadata,
                                   hints,
                                   options)));

@@ -204,7 +204,7 @@ def "MaterialX"
             def Shader "n9"
             {
                 uniform token info:id = "ND_noise2d_color3"
-                vector3f inputs:amplitude = (0.03, 0.04, 0.06) (
+                float3 inputs:amplitude = (0.03, 0.04, 0.06) (
                     connectability = "interfaceOnly"
                 )
                 float2 inputs:texcoord

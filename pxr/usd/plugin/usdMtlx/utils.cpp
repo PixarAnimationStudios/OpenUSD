@@ -357,6 +357,8 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
 {
 #define TUPLE3(sdf, exact, sdr) \
     UsdMtlxUsdTypeInfo(SdfValueTypeNames->sdf, exact, SdrPropertyTypes->sdr)
+#define TUPLEN(sdf, exact, sdr, sz) \
+    UsdMtlxUsdTypeInfo(SdfValueTypeNames->sdf, exact, SdrPropertyTypes->sdr, sz)
 #define TUPLEX(sdf, exact, sdr) \
     UsdMtlxUsdTypeInfo(SdfValueTypeNames->sdf, exact, sdr)
 
@@ -368,11 +370,11 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
         std::unordered_map<std::string, UsdMtlxUsdTypeInfo>{
            { "boolean",       TUPLEX(Bool,          true,  noMatch) },
            { "color2array",   TUPLEX(Float2Array,   false, noMatch) },
-           { "color2",        TUPLEX(Float2,        false, noMatch) },
+           { "color2",        TUPLEN(Float2,        false, Float, 2)},
            { "color3array",   TUPLE3(Color3fArray,  true,  Color)   },
            { "color3",        TUPLE3(Color3f,       true,  Color)   },
            { "color4array",   TUPLEX(Color4fArray,  true,  noMatch) },
-           { "color4",        TUPLEX(Color4f,       true,  noMatch) },
+           { "color4",        TUPLEN(Color4f,       true,  Float, 4)},
            { "filename",      TUPLE3(Asset,         true,  String)  },
            { "floatarray",    TUPLE3(FloatArray,    true,  Float)   },
            { "float",         TUPLE3(Float,         true,  Float)   },
@@ -384,12 +386,12 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
            { "matrix44",      TUPLE3(Matrix4d,      true,  Matrix)  },
            { "stringarray",   TUPLE3(StringArray,   true,  String)  },
            { "string",        TUPLE3(String,        true,  String)  },
-           { "vector2array",  TUPLEX(Float2Array,   false, noMatch) },
-           { "vector2",       TUPLEX(Float2,        false, noMatch) },
-           { "vector3array",  TUPLE3(Vector3fArray, true,  Vector)  },
-           { "vector3",       TUPLE3(Vector3f,      true,  Vector)  },
-           { "vector4array",  TUPLEX(Float4Array,   false, noMatch) },
-           { "vector4",       TUPLEX(Float4,        false, noMatch) },
+           { "vector2array",  TUPLEX(Float2Array,   true,  noMatch) },
+           { "vector2",       TUPLEN(Float2,        true,  Float, 2)},
+           { "vector3array",  TUPLEX(Float3Array,   true,  noMatch) },
+           { "vector3",       TUPLEN(Float3,        true,  Float, 3)},
+           { "vector4array",  TUPLEX(Float4Array,   true,  noMatch) },
+           { "vector4",       TUPLEN(Float4,        true,  Float, 4)},
         };
 #undef TUPLE3
 #undef TUPLEX
