@@ -2026,16 +2026,11 @@ private:
                             Composer *composer) const;
 
     template <class Composer>
-    void _GetPrimTypeNameImpl(const UsdPrim &prim,
-                              bool useFallbacks,
-                              Composer *composer) const;
-
-    template <class Composer>
-    bool _GetSpecialMetadataImpl(const UsdObject &obj,
-                                 const TfToken &fieldName,
-                                 const TfToken &keyPath,
-                                 bool useFallbacks,
-                                 Composer *composer) const;
+    bool _GetSpecialPropMetadataImpl(const UsdObject &obj,
+                                     const TfToken &fieldName,
+                                     const TfToken &keyPath,
+                                     bool useFallbacks,
+                                     Composer *composer) const;
     template <class Composer>
     bool _GetMetadataImpl(const UsdObject &obj,
                           const TfToken& fieldName,

@@ -6235,12 +6235,12 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
 }
 
 template <class Composer>
-void
-UsdStage::_GetPrimTypeNameImpl(const UsdPrim &prim, bool useFallbacks,
-                               Composer *composer) const
+static void
+_GetPrimTypeNameImpl(Usd_PrimDataConstPtr primData, 
+                     bool useFallbacks, Composer *composer)
 {
     TRACE_FUNCTION();
-    for (Usd_Resolver res(&prim.GetPrimIndex());
+    for (Usd_Resolver res(&primData->GetPrimIndex());
          res.IsValid(); res.NextLayer()) {
         TfToken tok;
         if (res.GetLayer()->HasField(
@@ -6437,53 +6437,60 @@ _GetListOpMetadataImpl(Usd_PrimDataConstPtr primData,
 
 template <class Composer>
 bool
-UsdStage::_GetSpecialMetadataImpl(const UsdObject &obj,
-                                  const TfToken &fieldName,
-                                  const TfToken &keyPath,
-                                  bool useFallbacks,
-                                  Composer *composer) const
+UsdStage::_GetSpecialPropMetadataImpl(const UsdObject &obj,
+                                      const TfToken &fieldName,
+                                      const TfToken &keyPath,
+                                      bool useFallbacks,
+                                      Composer *composer) const
 {
     // Dispatch to special-case composition rules based on type and field.
     // Return true if the given field was handled, false otherwise.
-    if (obj.Is<UsdProperty>()) {
-        if (obj.Is<UsdAttribute>()) {
-            if (fieldName == SdfFieldKeys->TypeName) {
-                _GetAttrTypeImpl(
-                    obj.As<UsdAttribute>(), fieldName, useFallbacks, composer);
-                return true;
-            } else if (fieldName == SdfFieldKeys->Variability) {
-                _GetAttrVariabilityImpl(
-                    obj.As<UsdAttribute>(), useFallbacks, composer);
-                return true;
-            }
-        }
-        if (fieldName == SdfFieldKeys->Custom) {
-            _GetPropCustomImpl(obj.As<UsdProperty>(), useFallbacks, composer);
-            return true;
-        }
-    } else if (obj.Is<UsdPrim>()) {
+    if (obj.Is<UsdAttribute>()) {
         if (fieldName == SdfFieldKeys->TypeName) {
-            _GetPrimTypeNameImpl(obj.As<UsdPrim>(), useFallbacks, composer);
+            _GetAttrTypeImpl(
+                obj.As<UsdAttribute>(), fieldName, useFallbacks, composer);
             return true;
-        } else if (fieldName == SdfFieldKeys->Specifier) {
-            _GetPrimSpecifierImpl(
-                get_pointer(obj._Prim()), useFallbacks, composer);
-            return true;
-        } else if (fieldName == SdfFieldKeys->Kind) {
-            // XXX: We do not not respect fallback kind values during
-            // Usd_PrimData composition (see _GetKind), but we do allow
-            // fallback values here to maintain existing behavior. However,
-            // we may want to force the useFallbacks flag to false here for
-            // consistency.
-            _GetPrimKindImpl(
-                get_pointer(obj._Prim()), useFallbacks, composer);
-            return true;
-        } else if (fieldName == SdfFieldKeys->Active) {
-            // XXX: See comment in the handling of 'kind' re: fallback values.
-            _GetPrimActiveImpl(
-                get_pointer(obj._Prim()), useFallbacks, composer);
+        } else if (fieldName == SdfFieldKeys->Variability) {
+            _GetAttrVariabilityImpl(
+                obj.As<UsdAttribute>(), useFallbacks, composer);
             return true;
         }
+    }
+    if (fieldName == SdfFieldKeys->Custom) {
+        _GetPropCustomImpl(obj.As<UsdProperty>(), useFallbacks, composer);
+        return true;
+    }
+    return false;
+}
+
+template <class Composer>
+static bool
+_GetSpecialPrimMetadataImpl(Usd_PrimDataConstPtr primData,
+                            const TfToken &fieldName,
+                            const TfToken &keyPath,
+                            bool useFallbacks,
+                            Composer *composer)
+{
+    // Dispatch to special-case composition rules based on type and field.
+    // Return true if the given field was handled, false otherwise.
+    if (fieldName == SdfFieldKeys->TypeName) {
+        _GetPrimTypeNameImpl(primData, useFallbacks, composer);
+        return true;
+    } else if (fieldName == SdfFieldKeys->Specifier) {
+        _GetPrimSpecifierImpl(primData, useFallbacks, composer);
+        return true;
+    } else if (fieldName == SdfFieldKeys->Kind) {
+        // XXX: We do not not respect fallback kind values during
+        // Usd_PrimData composition (see _GetKind), but we do allow
+        // fallback values here to maintain existing behavior. However,
+        // we may want to force the useFallbacks flag to false here for
+        // consistency.
+        _GetPrimKindImpl(primData, useFallbacks, composer);
+        return true;
+    } else if (fieldName == SdfFieldKeys->Active) {
+        // XXX: See comment in the handling of 'kind' re: fallback values.
+        _GetPrimActiveImpl(primData, useFallbacks, composer);
+        return true;
     }
 
     return false;
@@ -6502,9 +6509,17 @@ UsdStage::_GetMetadataImpl(
     TfErrorMark m;
 
     // Handle special cases.
-    if (_GetSpecialMetadataImpl(
-            obj, fieldName, keyPath, useFallbacks, composer)) {
-        return composer->IsDone() && m.IsClean();
+    if (obj.Is<UsdProperty>()) {
+        if (_GetSpecialPropMetadataImpl(
+                obj, fieldName, keyPath, useFallbacks, composer)) {
+            return composer->IsDone() && m.IsClean();
+        }
+    } else if (obj.Is<UsdPrim>()) {
+        if (_GetSpecialPrimMetadataImpl(
+            get_pointer(obj._Prim()), fieldName, keyPath, useFallbacks, 
+            composer)) {
+            return composer->IsDone() && m.IsClean();
+        }
     }
 
     return _GetGeneralMetadataImpl(
@@ -6582,25 +6597,24 @@ UsdStage::_HasMetadata(const UsdObject &obj, const TfToken& fieldName,
     return composer.IsDone();
 }
 
-TfTokenVector
-UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
+static
+SdfSpecType
+_ListMetadataFieldsImpl(Usd_PrimDataConstPtr primData,
+                        const TfToken &propName,
+                        bool useFallbacks,
+                        TfTokenVector *result)
 {
     TRACE_FUNCTION();
 
-    TfTokenVector result;
-
-    static TfToken empty;
-    const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
-
-    Usd_Resolver res(&obj.GetPrim().GetPrimIndex());
+    Usd_Resolver res(&primData->GetPrimIndex());
     SdfPath specPath = res.GetLocalPath(propName);
     PcpNodeRef lastNode = res.GetNode();
     SdfSpecType specType = SdfSpecTypeUnknown;
 
-    const UsdPrimDefinition &primDef = obj.GetPrim().GetPrimDefinition();
+    const UsdPrimDefinition &primDef = primData->GetPrimDefinition();
 
     // If this is a builtin property, determine specType from the definition.
-    if (obj.Is<UsdProperty>()) {
+    if (!propName.IsEmpty()) {
         specType = primDef.GetSpecType(propName);
     }
 
@@ -6616,8 +6630,40 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
 
         for (const auto& fieldName : layer->ListFields(specPath)) {
             if (!_IsPrivateFieldKey(fieldName))
-                result.push_back(fieldName);
+                result->push_back(fieldName);
         }
+    }
+
+    // If including fallbacks, add any defined metadata fields from the prim
+    // definition for the property (or the prim if the prop name is empty). 
+    if (useFallbacks) {
+        const TfTokenVector fallbackFields = propName.IsEmpty() ?
+            primDef.ListMetadataFields() : 
+            primDef.ListPropertyMetadataFields(propName);
+        result->insert(result->end(), 
+                       fallbackFields.begin(), fallbackFields.end());
+    }
+
+    return specType;
+}
+
+TfTokenVector
+UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
+{
+    TRACE_FUNCTION();
+
+    TfTokenVector result;
+
+    SdfSpecType specType = SdfSpecTypeUnknown;
+    Usd_PrimDataConstPtr primData = get_pointer(obj._Prim());
+    if (obj.Is<UsdProperty>()) {
+        // List metadata fields for property
+        specType = _ListMetadataFieldsImpl(
+            primData, obj.GetName(), useFallbacks, &result);
+    } else {
+        // List metadata fields for non pseudo root prims.
+        specType = _ListMetadataFieldsImpl(
+            primData, TfToken(), useFallbacks, &result);
     }
 
     // Insert required fields for spec type.
@@ -6628,15 +6674,6 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
             if (!_IsPrivateFieldKey(fieldName))
                 result.push_back(fieldName);
         }
-    }
-
-    // If including fallbacks, add any defined metadata fields from the prim
-    // definition for the property (or the prim if the prop name is empty). 
-    if (useFallbacks) {
-        const TfTokenVector fallbackFields = propName.IsEmpty() ?
-            primDef.ListMetadataFields() : 
-            primDef.ListPropertyMetadataFields(propName);
-        result.insert(result.end(), fallbackFields.begin(), fallbackFields.end());
     }
 
     // Sort & remove duplicate fields.
