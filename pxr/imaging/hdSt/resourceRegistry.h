@@ -90,6 +90,9 @@ public:
     HdStResourceRegistry();
 
     HDST_API
+    HdStResourceRegistry(Hgi* hgi);
+
+    HDST_API
     ~HdStResourceRegistry() override;
 
     HDST_API
@@ -98,6 +101,11 @@ public:
     HDST_API
     VtDictionary GetResourceAllocation() const override;
 
+    /// Returns Hgi used to create/destroy GPU resources.
+    HDST_API
+    Hgi* GetHgi();
+
+    /// Set Hgi
     HDST_API
     void SetHgi(Hgi* hgi);
 

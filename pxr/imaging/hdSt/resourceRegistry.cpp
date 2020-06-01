@@ -109,6 +109,12 @@ HdStResourceRegistry::HdStResourceRegistry()
 {
 }
 
+HdStResourceRegistry::HdStResourceRegistry(Hgi* hgi)
+    : HdStResourceRegistry()
+{
+    SetHgi(hgi);
+}
+
 HdStResourceRegistry::~HdStResourceRegistry() = default;
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
@@ -161,6 +167,12 @@ HdStResourceRegistry::GetResourceAllocation() const
     HD_PERF_COUNTER_SET(HdPerfTokens->gpuMemoryUsed, gpuMemoryUsed);
 
     return result;
+}
+
+Hgi*
+HdStResourceRegistry::GetHgi()
+{
+    return _hgi;
 }
 
 void
