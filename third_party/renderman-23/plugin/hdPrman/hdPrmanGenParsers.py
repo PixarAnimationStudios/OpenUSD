@@ -25,13 +25,12 @@
 
 from __future__ import print_function
 
-from distutils.spawn import find_executable
 from tempfile import mkdtemp
 from argparse import ArgumentParser
 from sys import exit, stdout 
 from os import listdir, mkdir, getcwd, chdir, rename, access, W_OK
 from os.path import abspath, basename, join, splitext, isfile, dirname, exists
-from subprocess import call, Popen, PIPE
+from subprocess import call
 from shutil import rmtree, copyfile
 from difflib import unified_diff
 
@@ -249,9 +248,9 @@ def _parseArguments():
     parser = ArgumentParser(description='Generate Ascii File Parsers for HdPrman')
     parser.add_argument('--srcDir', required=False, default=getcwd(),
                         help='The source directory.')
-    parser.add_argument('--bison', required=False, 
+    parser.add_argument('--bison', required=True, 
                         help='The location of the bison executable to be used.')
-    parser.add_argument('--flex', required=False,                         
+    parser.add_argument('--flex', required=True,                         
                         help='The location of the flex executable to be used.')
     parser.add_argument('--validate', action='store_true',
                         help='Verify that the source files are unchanged.')
@@ -278,12 +277,6 @@ def _getConfiguration():
                BASES     : arguments.bases }
                
     # Ensure all optional arguments get properly populated
-    if not arguments.flex:
-        config[FLEX_EXE] = _getFlex(config) 
-
-    if not arguments.bison:
-        config[BISON_EXE] = _getBison(config)
-
     if not arguments.bases:
         allFiles = listdir(arguments.srcDir)
         validExts = ['.yy', '.ll']
@@ -298,83 +291,6 @@ def _getConfiguration():
         config[BASES] = bases 
 
     return config
-
-# -----------------------------------------------------------------------------
-# Build system info. 
-# This is needed for discerning which flex/bison to use.
-# This works in the context of either a SCons build configuration or a CMake 
-# build configuration.
-# -----------------------------------------------------------------------------
-SCONS = 0
-CMAKE = 1
-
-def _determineBuildSystem(configuration):
-    srcDir = configuration[SRC_DIR]
-    if isfile(join(srcDir, 'SConscript')):
-        return SCONS
-    elif isfile(join(srcDir, 'CMakeLists.txt')):
-        return CMAKE
-    else:
-        exit('*** Unable to determine build system.')
-
-def _getSconsBuildEnvSetting(environmentVariable, configuration):
-    command = [find_executable('scons'), '-u', 
-               '-Qq', '--echo=' + environmentVariable]
-    line, _ = Popen(command, stdout=PIPE).communicate()
-    _, envSettingValue = line.decode('UTF-8').strip().split(' = ')
-
-    if not envSettingValue:
-        exit('*** Unable to determine ' + environmentVariable + 'from '
-             'SCons build system. Try supplying it through the command line '
-             'options.')
-
-    return envSettingValue
-
-
-def _getCMakeBuildEnvSetting(environmentVariable, configuration):
-    # Gather the root of our source directory, we'll need to 
-    # point CMake to it to find the cached variables.
-    srcRootDir = configuration[SRC_DIR]
-
-    foundPxr = lambda d: 'pxr' in map(basename, listdir(d))
-    while exists(srcRootDir) and (not foundPxr(srcRootDir)):
-        srcRootDir = dirname(srcRootDir)
-
-        if srcRootDir is None:
-            exit('*** Unable to find root of this source tree, '
-                 'this information is needed for obtaining build environment '
-                 'information from CMake.')
-
-    envSettingValue = None
-    command = [find_executable('cmake'), '-LA', '-N', srcRootDir]
-    output, _ = Popen(command, stdout=PIPE).communicate()
-    for line in output.decode('UTF-8').split('\n'):
-        if environmentVariable in line:
-            _, envSettingValue = line.strip().split('=')
-            break
-
-    if not envSettingValue:
-        exit('*** Unable to determine ' + environmentVariable + ' from '
-             'CMake build system. Try supplying it through the command line '
-             'options.')
-
-    return envSettingValue
-
-def _getFlex(configuration):
-    buildSystem = _determineBuildSystem(configuration)    
-
-    if buildSystem == SCONS:
-        return _getSconsBuildEnvSetting('LEX', configuration)
-    elif buildSystem == CMAKE:
-        return _getCMakeBuildEnvSetting('FLEX_EXECUTABLE', configuration)
-
-def _getBison(configuration):
-    buildSystem = _determineBuildSystem(configuration)    
-
-    if buildSystem == SCONS:
-        return _getSconsBuildEnvSetting('YACC', configuration)
-    elif buildSystem == CMAKE:
-        return _getCMakeBuildEnvSetting('BISON_EXECUTABLE', configuration) 
 
 # -----------------------------------------------------------------------------
 
