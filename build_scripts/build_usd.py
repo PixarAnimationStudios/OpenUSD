@@ -631,7 +631,7 @@ elif Windows():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
 
-def InstallBoost(context, force, buildArgs):
+def InstallBoost_Helper(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
     # since paths are limited to 260 characters by default on that platform.
@@ -741,6 +741,20 @@ def InstallBoost(context, force, buildArgs):
         b2 = "b2" if Windows() else "./b2"
         Run('{b2} {options} install'
             .format(b2=b2, options=" ".join(b2_settings)))
+
+def InstallBoost(context, force, buildArgs):
+    # Boost's build system will install the version.hpp header before
+    # building its libraries. We make sure to remove it in case of
+    # any failure to ensure that the build script detects boost as a 
+    # dependency to build the next time it's run.
+    try:
+        InstallBoost_Helper(context, force, buildArgs)
+    except:
+        versionHeader = os.path.join(context.instDir, BOOST_VERSION_FILE)
+        if os.path.isfile(versionHeader):
+            try: os.path.remove(versionHeader)
+            except: pass
+        raise
 
 BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 
