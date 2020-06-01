@@ -38,10 +38,15 @@
 
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HDST_USE_TRANSLUCENT_MATERIAL_TAG, false,
+                      "Use translucent material tag instead of additive for"
+                      "translucent materials with no given material tag.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -221,8 +226,12 @@ _GetMaterialTag(
     }
 
     if (isTranslucent) {
-        // Default to our cheapest blending: unsorted additive
-        return HdStMaterialTagTokens->additive;
+        // Default to our cheapest blending: unsorted additive unless env var
+        // is set
+        const bool useTranslucentMaterialTag =
+            TfGetEnvSetting(HDST_USE_TRANSLUCENT_MATERIAL_TAG);
+        return useTranslucentMaterialTag ? HdStMaterialTagTokens->translucent : 
+                                           HdStMaterialTagTokens->additive;
     }
 
     // An empty materialTag on the HdRprimCollection level means: 'ignore all
