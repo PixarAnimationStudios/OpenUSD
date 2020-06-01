@@ -227,6 +227,7 @@ _MakePrimvars(std::vector<UsdProperty> const &props,
 std::vector<UsdGeomPrimvar>
 UsdGeomPrimvarsAPI::GetPrimvars() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvars on invalid prim: %s", 
@@ -241,6 +242,7 @@ UsdGeomPrimvarsAPI::GetPrimvars() const
 std::vector<UsdGeomPrimvar>
 UsdGeomPrimvarsAPI::GetAuthoredPrimvars() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetAuthoredPrimvars on invalid prim: %s", 
@@ -256,6 +258,7 @@ UsdGeomPrimvarsAPI::GetAuthoredPrimvars() const
 std::vector<UsdGeomPrimvar> 
 UsdGeomPrimvarsAPI::GetPrimvarsWithValues() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvarsWithValues on invalid prim: %s", 
@@ -271,6 +274,7 @@ UsdGeomPrimvarsAPI::GetPrimvarsWithValues() const
 std::vector<UsdGeomPrimvar> 
 UsdGeomPrimvarsAPI::GetPrimvarsWithAuthoredValues() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvarsWithAuthoredValues on invalid prim: %s", 
