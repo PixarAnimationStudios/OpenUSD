@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    timeCodesPerSecond = 48.0
+    startTimeCode = 24
+    endTimeCode = 48
+    defaultPrim = "TimeSamples"
+)
+
+def "TimeSamples"
+{
+    double subAttr.timeSamples = {
+        24: 200,
+        48: 201,
+    }
+}

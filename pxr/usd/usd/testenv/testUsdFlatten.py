@@ -340,6 +340,63 @@ class TestUsdFlatten(unittest.TestCase):
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
 
+    def test_FlattenStageMetadata(self):
+        testFile = "stage_metadata/root.usda"
+        sublayerFile = "stage_metadata/sub.usda"
+        resultFile = "stage_metadata/result.usda"
+
+        stage = Usd.Stage.Open(testFile)
+
+        # Sanity check that the stage we opened has a sublayer with layer
+        # metadata that we don't expect to show up in the flattened layer and 
+        # that it has a TCPS of 48
+        sublayer = Sdf.Layer.Find(sublayerFile)
+        self.assertTrue(sublayer)
+        self.assertIn(sublayer, stage.GetUsedLayers())
+        self.assertEqual(sorted(sublayer.GetPrimAtPath('/').ListInfoKeys()),
+            ['defaultPrim', 'endTimeCode', 'startTimeCode', 'timeCodesPerSecond'])
+        self.assertEqual(sublayer.timeCodesPerSecond, 48)
+
+        # Flatten the layer.
+        resultLayer = stage.Flatten()
+
+        # Verify that the flattened layer only contains layer metadata from
+        # the root layer (and documentation written by the flatten operation
+        # itself)
+        resultPseudoRoot = resultLayer.GetPrimAtPath('/')
+        print(str(resultPseudoRoot.ListInfoKeys()))
+        self.assertEqual(sorted(resultPseudoRoot.ListInfoKeys()),
+                         ['documentation', 'endTimeCode', 'startTimeCode'])
+        self.assertEqual(resultPseudoRoot.GetInfo('startTimeCode'), 0)
+        self.assertEqual(resultPseudoRoot.GetInfo('endTimeCode'), 24)
+
+        # In particular verify that the timeCodesPerSecond from the sublayer
+        # was not transferred over to the flattened layer.
+        self.assertFalse(resultPseudoRoot.HasInfo('timeCodesPerSecond'))
+        self.assertEqual(resultLayer.timeCodesPerSecond, 24)
+
+        # Verify the time samples from the root layer were transferred to 
+        # the flattened layer as is, no time mapping.
+        resultRootAttrSpec = \
+            resultLayer.GetAttributeAtPath("/TimeSamples.rootAttr")
+        self.assertEqual(
+            resultLayer.ListTimeSamplesForPath(resultRootAttrSpec.path), [0.0, 24.0])
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultRootAttrSpec.path, 0.0), 100.0)
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultRootAttrSpec.path, 24.0), 101.0)
+
+        # Verify the time samples from the sublayer were transferred to the 
+        # flattened layer and were mapped from the sublayer's 48 TCPS to the
+        # root's 24 TCPS
+        resultSubAttrSpec = \
+            resultLayer.GetAttributeAtPath("/TimeSamples.subAttr")
+        self.assertEqual(
+            resultLayer.ListTimeSamplesForPath(resultSubAttrSpec.path), [12.0, 24.0])
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultSubAttrSpec.path, 12.0), 200.0)
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultSubAttrSpec.path, 24.0), 201.0)
 
 if __name__ == "__main__":
     unittest.main()

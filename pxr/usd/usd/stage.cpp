@@ -5914,6 +5914,45 @@ _ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
     return gotOpinion || composer->IsDone();
 }
 
+// Special composing for just the pseudoroot. The pseudoroot only composes
+// metadata opinions on the absolute root path from the session and root layers.
+// Note that the pseudoroot itself doesn't provide fallbacks.
+// Returns true if an opinion was found.
+template <class Composer>
+static bool
+_ComposePseudoRootMetadataImpl(Usd_PrimDataConstPtr primData,
+                               const TfToken& fieldName,
+                               const TfToken& keyPath,
+                               const SdfLayerRefPtr &rootLayer,
+                               const SdfLayerRefPtr &sessionLayer,
+                               Composer *composer)
+{
+    const SdfPath &specPath = SdfPath::AbsoluteRootPath();
+    bool gotOpinion = false;
+
+    PcpNodeRef node = primData->GetPrimIndex().GetRootNode();
+
+    // If we a have a session layer and it isn't muted, we try to consume its
+    // opinion first. The session layer will be the first layer in the 
+    // layer stack unless it is muted.
+    if (sessionLayer && 
+        node.GetLayerStack()->GetLayers().front() == sessionLayer) {
+        // Consume an authored opinion here, if one exists.
+        gotOpinion = composer->ConsumeAuthored(
+            node, sessionLayer, specPath, fieldName, keyPath);
+        if (composer->IsDone()) {
+            return true;
+        }
+    }
+
+    // Consume an authored opinion from the root layer (which cannot be muted).
+    gotOpinion |= composer->ConsumeAuthored(
+        node, rootLayer, specPath, fieldName, keyPath);
+
+    // Return whether we got an opinion from either layer.
+    return gotOpinion;
+}
+
 // --------------------------------------------------------------------- //
 // Specialized Metadata Resolution
 // --------------------------------------------------------------------- //
@@ -6515,7 +6554,18 @@ UsdStage::_GetMetadataImpl(
             return composer->IsDone() && m.IsClean();
         }
     } else if (obj.Is<UsdPrim>()) {
-        if (_GetSpecialPrimMetadataImpl(
+        // If the prim is the pseudo root, we have a special metadata 
+        // composition to perform as the pseudoroot only composes metadata
+        // opinions from the session layer and root layer.
+        if (obj._Prim()->IsPseudoRoot()) {
+            // Note that this function returns true if an opinion was found so
+            // we don't need to check composer->IsDone(). IsDone will always
+            // return false for dictionary metadata on the pseudo root since
+            // we don't have fallbacks.
+            return _ComposePseudoRootMetadataImpl(
+                get_pointer(obj._Prim()), fieldName, keyPath,
+                _rootLayer, _sessionLayer, composer) && m.IsClean();
+        } else if (_GetSpecialPrimMetadataImpl(
             get_pointer(obj._Prim()), fieldName, keyPath, useFallbacks, 
             composer)) {
             return composer->IsDone() && m.IsClean();
@@ -6647,6 +6697,41 @@ _ListMetadataFieldsImpl(Usd_PrimDataConstPtr primData,
     return specType;
 }
 
+static
+SdfSpecType
+_ListPseudoRootMetadataFieldsImpl(Usd_PrimDataConstPtr primData, 
+                                  const SdfLayerRefPtr &rootLayer,
+                                  const SdfLayerRefPtr &sessionLayer,
+                                  TfTokenVector *result)
+{
+    TRACE_FUNCTION();
+
+    const SdfPath &specPath = SdfPath::AbsoluteRootPath();
+    PcpNodeRef node = primData->GetPrimIndex().GetRootNode();
+
+    // If we a have a session layer and it isn't muted, get its authored layer
+    // metadata fields. The session layer will be the first layer in the 
+    // layer stack unless it is muted.
+    if (sessionLayer && 
+        node.GetLayerStack()->GetLayers().front() == sessionLayer) {
+        for (const auto& fieldName : sessionLayer->ListFields(specPath)) {
+            if (!_IsPrivateFieldKey(fieldName)) {
+                result->push_back(fieldName);
+            }
+        }
+    }
+
+    // Get all authored layer metadata fields from the root layer (which can't
+    // be muted).
+    for (const auto& fieldName : rootLayer->ListFields(specPath)) {
+        if (!_IsPrivateFieldKey(fieldName)) {
+            result->push_back(fieldName);
+        }
+    }
+
+    return SdfSpecTypePseudoRoot;
+}
+
 TfTokenVector
 UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
 {
@@ -6660,6 +6745,10 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
         // List metadata fields for property
         specType = _ListMetadataFieldsImpl(
             primData, obj.GetName(), useFallbacks, &result);
+    } else if (obj._Prim()->IsPseudoRoot()) {
+        // Custom implementation for listing metadata for the pseudo root.
+        specType = _ListPseudoRootMetadataFieldsImpl(
+            primData, _rootLayer, _sessionLayer, &result);
     } else {
         // List metadata fields for non pseudo root prims.
         specType = _ListMetadataFieldsImpl(

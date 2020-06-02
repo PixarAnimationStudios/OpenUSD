@@ -994,6 +994,138 @@ class TestUsdMetadata(unittest.TestCase):
                 stronger_attr.GetMetadata('timeSamples'),
                 stronger_expectedTimeSamples)
 
+    def test_UsdStageMetadata(self):
+        for fmt in allFormats:
+            f = lambda base: base + '.' + fmt
+
+            # Create a stage with a root layer and session layer, each of which
+            # has its own sublayer.
+            rootLayer = Sdf.Layer.CreateAnonymous('root.' + fmt)
+            rootSublayer = Sdf.Layer.CreateAnonymous('root_sub.' + fmt)
+            rootLayer.subLayerPaths = [rootSublayer.identifier]
+
+            sessionLayer = Sdf.Layer.CreateAnonymous('session.' + fmt)
+            sessionSublayer = Sdf.Layer.CreateAnonymous('session_sub.' + fmt)
+            sessionLayer.subLayerPaths = [sessionSublayer.identifier]
+
+            stage = Usd.Stage.Open(rootLayer, sessionLayer)
+            self.assertTrue(stage)
+            self.assertEqual(len(stage.GetUsedLayers()), 4)
+                        
+            # Helper function for verifying the relationship between stage
+            # metadata and the pseudoroot metadata when metadata is authored 
+            # on the layer.
+            def _AssertHasAuthoredStageMetadata(key, expectedValue):
+                pr = stage.GetPseudoRoot()
+                # Both have metadata
+                self.assertTrue(stage.HasMetadata(key))
+                self.assertTrue(pr.HasMetadata(key))
+
+                # Both have authored metadata
+                self.assertTrue(stage.HasAuthoredMetadata(key))
+                self.assertTrue(pr.HasAuthoredMetadata(key))
+
+                # Both return the same expected metadata value.
+                self.assertEqual(stage.GetMetadata(key), expectedValue)
+                self.assertEqual(pr.GetMetadata(key), expectedValue)
+ 
+            # Helper function for verifying the relationship between stage
+            # metadata and the pseudoroot metadata when the metadata is NOT 
+            # authored on the layer.
+            def _AssertNotHasAuthoredStageMetadata(key, fallbackValue):
+                pr = stage.GetPseudoRoot()
+                # The stage has the metadata, but the pseudoroot does not.
+                self.assertTrue(stage.HasMetadata(key))
+                self.assertFalse(pr.HasMetadata(key))
+
+                # Neither has authored metadata.
+                self.assertFalse(stage.HasAuthoredMetadata(key))
+                self.assertFalse(pr.HasAuthoredMetadata(key))
+
+                # The stage returns the fallback metadata value, but the 
+                # pseudoroot doesn't return metadata.
+                self.assertEqual(stage.GetMetadata(key), fallbackValue)
+                self.assertIsNone(pr.GetMetadata(key))
+
+            # Helper function for verifying the relationship between stage
+            # metadata and the pseudoroot metadata by dict key when metadata 
+            # dict key is authored on the layer.
+            def _AssertHasAuthoredStageMetadataByDictKey(key, keyPath, 
+                                                         expectedValue):
+                pr = stage.GetPseudoRoot()
+                # Both have metadata dict key
+                self.assertTrue(stage.HasMetadataDictKey(key, keyPath))
+                self.assertTrue(pr.HasMetadataDictKey(key, keyPath))
+
+                # Both have authored metadata dict key
+                self.assertTrue(stage.HasAuthoredMetadataDictKey(key, keyPath))
+                self.assertTrue(pr.HasAuthoredMetadataDictKey(key, keyPath))
+
+                # Both return the same expected metadata dict key value.
+                self.assertEqual(stage.GetMetadataByDictKey(key, keyPath), 
+                                 expectedValue)
+                self.assertEqual(pr.GetMetadataByDictKey(key, keyPath), 
+                                 expectedValue)
+
+            # Helper function for verifying the relationship between stage
+            # metadata and the pseudoroot metadata by dict key when the metadata
+            # dict key is NOT authored on the layer.
+            def _AssertNotHasAuthoredStageMetadataByDictKey(key, keyPath):
+                pr = stage.GetPseudoRoot()
+                # Neither have metadata dict key
+                self.assertFalse(stage.HasMetadataDictKey(key, keyPath))
+                self.assertFalse(pr.HasMetadataDictKey(key, keyPath))
+
+                # Neither have authored metadata dict key
+                self.assertFalse(stage.HasAuthoredMetadataDictKey(key, keyPath))
+                self.assertFalse(pr.HasAuthoredMetadataDictKey(key, keyPath))
+
+                # Both return do not return values for the metadata dict key
+                self.assertIsNone(stage.GetMetadataByDictKey(key, keyPath))
+                self.assertIsNone(pr.GetMetadataByDictKey(key, keyPath))
+
+            # Nothing authored for 'timeCodesPerSecond', fallback from schema 
+            # is 24
+            _AssertNotHasAuthoredStageMetadata('timeCodesPerSecond', 24.0)
+            
+            # Authoring 'timeCodesPerSecond' on either sublayer has no effect
+            # on stage and pseudoroot metadata.
+            rootSublayer.timeCodesPerSecond = 30.0            
+            _AssertNotHasAuthoredStageMetadata('timeCodesPerSecond', 24.0)
+            sessionSublayer.timeCodesPerSecond = 30.0            
+            _AssertNotHasAuthoredStageMetadata('timeCodesPerSecond', 24.0)
+                                                
+            # Authoring 'timeCodesPerSecond' on root layer, we now have authored
+            # stage and pseudoroot metadata.
+            rootLayer.timeCodesPerSecond = 24.0
+            _AssertHasAuthoredStageMetadata('timeCodesPerSecond', 24.0)
+
+            # Authoring 'timeCodesPerSecond' on session layer overrides metadata
+            # from root layer.
+            sessionLayer.timeCodesPerSecond = 48.0
+            _AssertHasAuthoredStageMetadata('timeCodesPerSecond', 48.0)
+                        
+            # Test with dictionary valued metadata. Unauthored 'customLayerData'
+            # has a fallback empty dictionary.
+            _AssertNotHasAuthoredStageMetadata('customLayerData', {})
+
+            # Set 'customLayerData' on each layer. Dictionaries are composed
+            # over each other. Sublayers do not contribute to stage and 
+            # pseudoroot metadata so the authored stage metadata is session 
+            # layer dict composed over the root layer dict.
+            rootLayer.customLayerData = {'shared' : 1, 'root' : True}
+            rootSublayer.customLayerData = {'shared' : 2, 'root_sub' : True}
+            sessionLayer.customLayerData = {'shared' : 3, 'session' : True}
+            sessionSublayer.customLayerData = {'shared' : 4, 'session_sub' : True}
+            _AssertHasAuthoredStageMetadata('customLayerData', 
+                {'shared' : 3, 'root' : True, 'session' : True})
+            _AssertHasAuthoredStageMetadataByDictKey(
+                'customLayerData', 'shared', 3)
+            _AssertHasAuthoredStageMetadataByDictKey(
+                'customLayerData', 'root', True)
+            _AssertNotHasAuthoredStageMetadataByDictKey(
+                'customLayerData', 'root_sub')
+
 if __name__ == '__main__':
     # Register test plugin defining list op metadata fields.
     testDir = os.path.abspath(os.getcwd())
