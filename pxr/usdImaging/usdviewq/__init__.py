@@ -30,7 +30,7 @@ from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
 
-from pxr import UsdAppUtils
+from pxr import UsdAppUtils, Tf
 
 
 class InvalidUsdviewOption(Exception):
@@ -85,8 +85,17 @@ class Launcher(object):
             totalTimer.PrintTime('open and close usdview')
 
         if traceCollector:
-            Trace.Reporter.globalReporter.ReportChromeTracingToFile(
-                arg_parse_result.traceToFile)
+            if arg_parse_result.traceFormat == 'trace':
+                Trace.Reporter.globalReporter.Report(
+                    arg_parse_result.traceToFile)
+            elif arg_parse_result.traceFormat == 'chrome':
+                Trace.Reporter.globalReporter.ReportChromeTracingToFile(
+                    arg_parse_result.traceToFile)
+            else:
+                Tf.RaiseCodingError("Invalid trace format option provided: %s -"
+                        "trace/chrome are the valid options" %
+                        arg_parse_result.traceFormat)
+
 
     def GetHelpDescription(self):
         '''return the help description'''
@@ -165,7 +174,19 @@ class Launcher(object):
                             type=str,
                             dest='traceToFile',
                             default=None,
-                            help='Start tracing at application startup and write chrome-compatible output to the specified trace file when the application quits')
+                            help='Start tracing at application startup and '
+                            'write --traceFormat specified format output to the '
+                            'specified trace file when the application quits')
+
+        parser.add_argument('--traceFormat', action='store',
+                            type=str,
+                            dest='traceFormat',
+                            default='chrome',
+                            choices=['chrome', 'trace'],
+                            help='Output format for trace file specified by '
+                            '--traceToFile. \'chrome\' files can be read in '
+                            'chrome, \'trace\' files are simple text reports. '
+                            '(default=%(default)s)')
 
         parser.add_argument('--memstats', action='store', default='none',
                             dest='mallocTagStats', type=str,
