@@ -105,11 +105,26 @@ void wrapUsdGeomPrimvarsAPI()
 
 namespace {
 
+static UsdGeomPrimvar
+_CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
+        const SdfValueTypeName &typeName, const object &pyVal, 
+        const VtIntArray &indices, const TfToken &interpolation, 
+        int elementSize, UsdTimeCode time)
+{
+    VtValue val = UsdPythonToSdfType(pyVal, typeName);
+    return self.CreateIndexedPrimvar(name, typeName, val, indices, 
+            interpolation, elementSize, time);
+}
+
 WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
              (arg("name"), arg("typeName"), arg("interpolation")=TfToken(),
               arg("elementSize")=-1))
+        .def("CreateIndexedPrimvar", _CreateIndexedPrimvar,
+             (arg("name"), arg("typeName"), arg("value"), arg("indices"),
+              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
+              arg("time")=UsdTimeCode::Default()))
         .def("RemovePrimvar", &UsdGeomPrimvarsAPI::RemovePrimvar,
              arg("name"))
         .def("BlockPrimvar", &UsdGeomPrimvarsAPI::BlockPrimvar,

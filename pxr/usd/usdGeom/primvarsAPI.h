@@ -193,6 +193,35 @@ public:
                                  const TfToken& interpolation = TfToken(),
                                  int elementSize = -1) const;
 
+    /// Author scene description to create an attribute and authoring a \p value
+    /// on this prim that will be recognized as an indexed Primvar with \p
+    /// indices appropriately set (i.e. will present as a valid UsdGeomPrimvar).
+    ///
+    /// \return an invalid UsdGeomPrimvar on error, a valid UsdGeomPrimvar 
+    /// otherwise. It is fine to call this method multiple times, and in
+    /// different UsdEditTargets, even if there is an existing primvar of the
+    /// same name, indexed or not.
+    ///
+    /// \sa CreatePrimvar(), UsdPrim::CreateAttribute(), 
+    /// UsdGeomPrimvar::IsPrimvar()
+    template <typename T>
+    UsdGeomPrimvar CreateIndexedPrimvar(
+            const TfToken& name,
+            const SdfValueTypeName &typeName,
+            const T &value,
+            const VtIntArray &indices,
+            const TfToken &interpolation = TfToken(),
+            int elementSize = -1,
+            UsdTimeCode time = UsdTimeCode::Default()) const
+    {
+        UsdGeomPrimvar primvar = 
+            CreatePrimvar(name, typeName, interpolation, elementSize);
+
+        primvar.GetAttr().Set(value, time);
+        primvar.SetIndices(indices, time);
+        return primvar;
+    }
+
     /// Author scene description to delete an attribute on this prim that
     /// was recognized as Primvar (i.e. will present as a valid UsdGeomPrimvar),
     /// <em>in the current UsdEditTarget</em>.

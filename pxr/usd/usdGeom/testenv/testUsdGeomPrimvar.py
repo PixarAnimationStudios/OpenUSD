@@ -407,6 +407,17 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             gp_pv.RemovePrimvar('multi:aggregate:indices')
 
+        # create Indices primvar using CreateIndexedPrimvar API
+        uVal = Vt.FloatArray([1.1,2.1,3.1])
+        indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        indexedPrimvar = gp_pv.CreateIndexedPrimvar('indexedPrimvar', 
+                Sdf.ValueTypeNames.FloatArray, uVal, indices, 
+                UsdGeom.Tokens.vertex)
+        self.assertTrue(indexedPrimvar.IsIndexed())
+        self.assertTrue(indexedPrimvar.HasAuthoredValue());
+        self.assertTrue(indexedPrimvar.HasAuthoredInterpolation());
+
+
     def test_Bug124579(self):
         from pxr import Usd
         from pxr import UsdGeom
