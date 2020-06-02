@@ -8148,62 +8148,6 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
     return _GetNumTimeSamplesFromResolveInfo(info, attr) > 1;
 }
 
-static
-bool 
-_HasLayerFieldOrDictKey(const SdfLayerHandle &layer, 
-                        const ArResolverContext &context,
-                        const TfToken &key, const TfToken &keyPath, VtValue *val)
-{
-    bool hasVal =  keyPath.IsEmpty() ?
-        layer->HasField(SdfPath::AbsoluteRootPath(), key, val) :
-        layer->HasFieldDictKey(SdfPath::AbsoluteRootPath(), key, keyPath, val);
-
-    if (hasVal && val){
-        // Resolve asset paths. Note that we don't need to resolve time 
-        // codes as this function is only used to get layer level metadata
-        // on the stage's root or session layer. There is no mapping that
-        // applies to time codes in this context.
-        _TryResolveValuesInDictionary(val, layer, context, 
-            /* layerOffsetGetter = */ nullptr, 
-            /* anchorAssetPathsOnly = */ false) ||
-        _TryResolveAssetPaths(val, context, layer,
-                              /* anchorAssetPathsOnly = */ false);
-    }
-
-    return hasVal;
-}
-
-static
-bool
-_HasStageMetadataOrDictKey(const UsdStage &stage, 
-                           const TfToken &key, const TfToken &keyPath,
-                           VtValue *value)
-{
-    SdfLayerHandle sessionLayer = stage.GetSessionLayer();
-    const ArResolverContext &context = stage.GetPathResolverContext();
-    
-    if (sessionLayer && 
-        _HasLayerFieldOrDictKey(sessionLayer, context, key, keyPath, value)){
-        VtValue rootValue;
-        if (value && 
-            value->IsHolding<VtDictionary>() &&
-            _HasLayerFieldOrDictKey(stage.GetRootLayer(), context, key, keyPath, 
-                                    &rootValue) && 
-            rootValue.IsHolding<VtDictionary>() ){
-            const VtDictionary &rootDict = rootValue.UncheckedGet<VtDictionary>();
-            VtDictionary dict;
-            value->UncheckedSwap<VtDictionary>(dict);
-            VtDictionaryOverRecursive(&dict, rootDict);
-            value->UncheckedSwap<VtDictionary>(dict);
-        }
-
-        return true;
-    }
-     
-    return _HasLayerFieldOrDictKey(stage.GetRootLayer(), context, 
-                                   key, keyPath, value);
-}
-
 bool
 UsdStage::GetMetadata(const TfToken &key, VtValue *value) const
 {
@@ -8220,10 +8164,9 @@ UsdStage::GetMetadata(const TfToken &key, VtValue *value) const
         return false;
     }
     
-    if (!_HasStageMetadataOrDictKey(*this, key, TfToken(), value)){
+    if (!GetPseudoRoot().GetMetadata(key, value)) {
         *value = SdfSchema::GetInstance().GetFallback(key);
-    } 
-    else if (value->IsHolding<VtDictionary>()){
+    } else if (value->IsHolding<VtDictionary>()){
         const VtDictionary &fallback = SdfSchema::GetInstance().GetFallback(key).Get<VtDictionary>();
         
         VtDictionary dict;
@@ -8242,7 +8185,7 @@ UsdStage::HasMetadata(const TfToken &key) const
     if (!schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    return (HasAuthoredMetadata(key) ||
+    return (GetPseudoRoot().HasAuthoredMetadata(key) ||
             !schema.GetFallback(key).IsEmpty());
 }
 
@@ -8254,7 +8197,7 @@ UsdStage::HasAuthoredMetadata(const TfToken& key) const
     if (!schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, TfToken(), nullptr);
+    return GetPseudoRoot().HasAuthoredMetadata(key);
 }
 
 static
@@ -8382,7 +8325,7 @@ UsdStage::GetMetadataByDictKey(const TfToken& key, const TfToken &keyPath,
     if (!schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    if (!_HasStageMetadataOrDictKey(*this, key, keyPath, value)){
+    if (!GetPseudoRoot().GetMetadataByDictKey(key, keyPath, value)) {
         const VtValue &fallback =  SdfSchema::GetInstance().GetFallback(key);
         if (!fallback.IsEmpty()){
             const VtValue *elt = fallback.Get<VtDictionary>().
@@ -8417,8 +8360,9 @@ UsdStage::HasMetadataDictKey(const TfToken& key, const TfToken &keyPath) const
         !schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    if (HasAuthoredMetadataDictKey(key, keyPath))
+    if (GetPseudoRoot().HasAuthoredMetadataDictKey(key, keyPath)) {
         return true;
+    }
 
     const VtValue &fallback =  schema.GetFallback(key);
     
@@ -8433,7 +8377,7 @@ UsdStage::HasAuthoredMetadataDictKey(
     if (keyPath.IsEmpty())
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, keyPath, nullptr);
+    return GetPseudoRoot().HasAuthoredMetadataDictKey(key, keyPath);
 }
 
 bool

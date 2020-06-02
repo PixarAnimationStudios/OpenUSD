@@ -1126,6 +1126,55 @@ class TestUsdMetadata(unittest.TestCase):
             _AssertNotHasAuthoredStageMetadataByDictKey(
                 'customLayerData', 'root_sub')
 
+            # Test session layer muting with stage metadata.
+            # We author the 'comment' metadata on the session layer and the
+            # root sublayer. Stage and pseudoroot metadata comes from the 
+            # session layer.
+            sessionLayer.comment = 'session comment'
+            rootSublayer.comment = 'root sub'
+            _AssertHasAuthoredStageMetadata('comment', 'session comment')
+
+            self.assertEqual(stage.GetPseudoRoot().GetAllMetadata(), 
+                             {'comment' : 'session comment', 
+                              'customLayerData' : 
+                                {'shared' : 3, 'root' : True, 'session' : True}, 
+                              'timeCodesPerSecond' : 48.0})
+
+            # Mute the session layer
+            stage.MuteLayer(sessionLayer.identifier)
+            # 'timeCodesPerSecond' now comes from the root layer instead of 
+            # session
+            _AssertHasAuthoredStageMetadata('timeCodesPerSecond', 24.0)
+            # 'customLayerData' is only composed from the root layer.
+            _AssertHasAuthoredStageMetadata('customLayerData', 
+                {'shared' : 1, 'root' : True})
+            _AssertNotHasAuthoredStageMetadataByDictKey(
+                'customLayerData', 'session')
+            # There is no authored metadata for 'comment' since the session is
+            # muted and sublayers don't contribute to stage/pseudoroot metadata.
+            _AssertNotHasAuthoredStageMetadata('comment', '')
+            self.assertEqual(stage.GetPseudoRoot().GetAllMetadata(), 
+                             {'customLayerData' : 
+                                {'shared' : 1, 'root' : True}, 
+                              'timeCodesPerSecond' : 24.0})
+
+                                                                        
+            # Unmute the session layer and verify that the session layer
+            # metadata opinions returned.
+            stage.UnmuteLayer(sessionLayer.identifier)
+            _AssertHasAuthoredStageMetadata('timeCodesPerSecond', 48.0)
+            _AssertHasAuthoredStageMetadata('customLayerData', 
+                {'shared' : 3, 'root' : True, 'session' : True})
+            _AssertHasAuthoredStageMetadataByDictKey(
+                'customLayerData', 'session', True)
+            _AssertHasAuthoredStageMetadata('comment', 'session comment')
+            self.assertEqual(stage.GetPseudoRoot().GetAllMetadata(), 
+                             {'comment' : 'session comment', 
+                              'customLayerData' : 
+                                {'shared' : 3, 'root' : True, 'session' : True}, 
+                              'timeCodesPerSecond' : 48.0})
+
+
 if __name__ == '__main__':
     # Register test plugin defining list op metadata fields.
     testDir = os.path.abspath(os.getcwd())
