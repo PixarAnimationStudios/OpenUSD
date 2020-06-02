@@ -64,44 +64,45 @@ TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
     _ioProxySupportedExtensions->push_back("exr");
 }
 
-class GlfOIIO_Image : public GlfImage {
+class GlfOIIO_Image : public GlfImage 
+{
 public:
-    typedef GlfImage Base;
+    using Base = GlfImage;
 
-     GlfOIIO_Image();
+    GlfOIIO_Image();
 
-     virtual ~GlfOIIO_Image();
+    ~GlfOIIO_Image() override;
 
     // GlfImage overrides
-    virtual std::string const & GetFilename() const;
-    virtual int GetWidth() const;
-    virtual int GetHeight() const;
-    virtual GLenum GetFormat() const;
-    virtual GLenum GetType() const;
-    virtual int GetBytesPerPixel() const;
-    virtual int GetNumMipLevels() const;
+    std::string const & GetFilename() const override;
+    int GetWidth() const override;
+    int GetHeight() const override;
+    GLenum GetFormat() const override;
+    GLenum GetType() const override;
+    int GetBytesPerPixel() const override;
+    int GetNumMipLevels() const override;
 
-    virtual bool IsColorSpaceSRGB() const;
+    bool IsColorSpaceSRGB() const override;
 
-    virtual bool GetMetadata(TfToken const & key, 
-                             VtValue * value) const;
-    virtual bool GetSamplerMetadata(GLenum pname, 
-                                    VtValue * param) const;
+    bool GetMetadata(TfToken const & key, 
+                             VtValue * value) const override;
+    bool GetSamplerMetadata(GLenum pname, 
+                                    VtValue * param) const override;
 
-    virtual bool Read(StorageSpec const & storage);
-    virtual bool ReadCropped(int const cropTop,
-                             int const cropBottom,
-                             int const cropLeft,
-                             int const cropRight,
-                             StorageSpec const & storage);
+    bool Read(StorageSpec const & storage) override;
+    bool ReadCropped(int const cropTop,
+                     int const cropBottom,
+                     int const cropLeft,
+                     int const cropRight,
+                     StorageSpec const & storage) override;
 
-    virtual bool Write(StorageSpec const & storage,
-                       VtDictionary const & metadata);
+    bool Write(StorageSpec const & storage,
+               VtDictionary const & metadata) override;
 
 protected:
-    virtual bool _OpenForReading(std::string const & filename, 
-                                 int subimage, int mip, bool suppressErrors);
-    virtual bool _OpenForWriting(std::string const & filename);
+    bool _OpenForReading(std::string const & filename, 
+                         int subimage, int mip, bool suppressErrors) override;
+    bool _OpenForWriting(std::string const & filename) override;
 
 private:
     std::string _GetFilenameExtension() const;
@@ -120,7 +121,7 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef GlfOIIO_Image Image;
+    using Image = GlfOIIO_Image;
     TfType t = TfType::Define<Image, TfType::Bases<Image::Base> >();
     t.SetFactory< GlfImageFactory<Image> >();
 }
