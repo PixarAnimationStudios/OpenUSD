@@ -64,13 +64,13 @@ TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
     _ioProxySupportedExtensions->push_back("exr");
 }
 
-class Glf_OIIOImage : public GlfImage {
+class GlfOIIO_Image : public GlfImage {
 public:
     typedef GlfImage Base;
 
-    Glf_OIIOImage();
+     GlfOIIO_Image();
 
-    virtual ~Glf_OIIOImage();
+     virtual ~GlfOIIO_Image();
 
     // GlfImage overrides
     virtual std::string const & GetFilename() const;
@@ -83,8 +83,10 @@ public:
 
     virtual bool IsColorSpaceSRGB() const;
 
-    virtual bool GetMetadata(TfToken const & key, VtValue * value) const;
-    virtual bool GetSamplerMetadata(GLenum pname, VtValue * param) const;
+    virtual bool GetMetadata(TfToken const & key, 
+                             VtValue * value) const;
+    virtual bool GetSamplerMetadata(GLenum pname, 
+                                    VtValue * param) const;
 
     virtual bool Read(StorageSpec const & storage);
     virtual bool ReadCropped(int const cropTop,
@@ -97,8 +99,8 @@ public:
                        VtDictionary const & metadata);
 
 protected:
-    virtual bool _OpenForReading(std::string const & filename, int subimage,
-                                 int mip, bool suppressErrors);
+    virtual bool _OpenForReading(std::string const & filename, 
+                                 int subimage, int mip, bool suppressErrors);
     virtual bool _OpenForWriting(std::string const & filename);
 
 private:
@@ -118,7 +120,7 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef Glf_OIIOImage Image;
+    typedef GlfOIIO_Image Image;
     TfType t = TfType::Define<Image, TfType::Bases<Image::Base> >();
     t.SetFactory< GlfImageFactory<Image> >();
 }
@@ -296,61 +298,61 @@ _SetAttribute(ImageSpec * spec,
     }
 }
 
-Glf_OIIOImage::Glf_OIIOImage()
+GlfOIIO_Image::GlfOIIO_Image()
     : _subimage(0), _miplevel(0)
 {
 }
 
 /* virtual */
-Glf_OIIOImage::~Glf_OIIOImage()
+GlfOIIO_Image::~GlfOIIO_Image()
 {
 }
 
 /* virtual */
 std::string const &
-Glf_OIIOImage::GetFilename() const
+GlfOIIO_Image::GetFilename() const
 {
     return _filename;
 }
 
 /* virtual */
 int
-Glf_OIIOImage::GetWidth() const
+GlfOIIO_Image::GetWidth() const
 {
     return _imagespec.width;
 }
 
 /* virtual */
 int
-Glf_OIIOImage::GetHeight() const
+GlfOIIO_Image::GetHeight() const
 {
     return _imagespec.height;
 }
 
 /* virtual */
 GLenum
-Glf_OIIOImage::GetFormat() const
+GlfOIIO_Image::GetFormat() const
 {
     return _GLFormatFromImageData(_imagespec.nchannels);
 }
 
 /* virtual */
 GLenum
-Glf_OIIOImage::GetType() const
+GlfOIIO_Image::GetType() const
 {
     return _GLTypeFromImageData(_imagespec.format);
 }
 
 /* virtual */
 int
-Glf_OIIOImage::GetBytesPerPixel() const
+GlfOIIO_Image::GetBytesPerPixel() const
 {
     return _imagespec.pixel_bytes();
 }
 
 /* virtual */
 bool
-Glf_OIIOImage::IsColorSpaceSRGB() const
+GlfOIIO_Image::IsColorSpaceSRGB() const
 {
     return ((_imagespec.nchannels == 3  ||
              _imagespec.nchannels == 4) &&
@@ -359,7 +361,7 @@ Glf_OIIOImage::IsColorSpaceSRGB() const
 
 /* virtual */
 bool
-Glf_OIIOImage::GetMetadata(TfToken const & key, VtValue * value) const
+GlfOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
 {
     VtValue result = _FindAttribute(_imagespec, key.GetString());
     if (!result.IsEmpty()) {
@@ -386,7 +388,7 @@ _TranslateWrap(std::string const & wrapMode)
 
 /* virtual */
 bool
-Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
+GlfOIIO_Image::GetSamplerMetadata(GLenum pname, VtValue * param) const
 {
     switch (pname) {
         case GL_TEXTURE_WRAP_S: {
@@ -410,14 +412,14 @@ Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
 
 /* virtual */
 int
-Glf_OIIOImage::GetNumMipLevels() const
+GlfOIIO_Image::GetNumMipLevels() const
 {
     // XXX Add support for mip counting
     return 1;
 }
 
 std::string 
-Glf_OIIOImage::_GetFilenameExtension() const
+GlfOIIO_Image::_GetFilenameExtension() const
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
     return TfStringToLower(fileExtension);
@@ -425,7 +427,7 @@ Glf_OIIOImage::_GetFilenameExtension() const
 
 #if OIIO_VERSION >= 20003
 cspan<unsigned char>
-Glf_OIIOImage::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer, 
+GlfOIIO_Image::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer, 
                                     int bufferSize) const
 {
     const char* bufferPtr = buffer.get(); 
@@ -436,7 +438,7 @@ Glf_OIIOImage::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer,
 #endif
 
 bool
-Glf_OIIOImage::_CanUseIOProxyForExtension(std::string extension, 
+GlfOIIO_Image::_CanUseIOProxyForExtension(std::string extension, 
                                           const ImageSpec & config) const
 {
     if (std::find(_ioProxySupportedExtensions->begin(), 
@@ -461,7 +463,7 @@ Glf_OIIOImage::_CanUseIOProxyForExtension(std::string extension,
 
 /* virtual */
 bool
-Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
+GlfOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
                                int mip, bool suppressErrors)
 {
     _filename = filename;
@@ -516,14 +518,14 @@ Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
 
 /* virtual */
 bool
-Glf_OIIOImage::Read(StorageSpec const & storage)
+GlfOIIO_Image::Read(StorageSpec const & storage)
 {
     return ReadCropped(0, 0, 0, 0, storage);
 }
 
 /* virtual */
 bool
-Glf_OIIOImage::ReadCropped(int const cropTop,
+GlfOIIO_Image::ReadCropped(int const cropTop,
                            int const cropBottom,
                            int const cropLeft,
                            int const cropRight,
@@ -652,7 +654,7 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 
 /* virtual */
 bool
-Glf_OIIOImage::_OpenForWriting(std::string const & filename)
+GlfOIIO_Image::_OpenForWriting(std::string const & filename)
 {
     _filename = filename;
     _imagespec = ImageSpec();
@@ -660,7 +662,7 @@ Glf_OIIOImage::_OpenForWriting(std::string const & filename)
 }
 
 bool
-Glf_OIIOImage::Write(StorageSpec const & storage,
+GlfOIIO_Image::Write(StorageSpec const & storage,
                      VtDictionary const & metadata)
 {
     int nchannels = GlfGetNumElements(storage.format);

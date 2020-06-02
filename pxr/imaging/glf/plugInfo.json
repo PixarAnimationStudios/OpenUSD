@@ -3,12 +3,7 @@
         {
             "Info": {
                 "ShaderResources": "shaders",
-                "Types": {                                                                  
-                    "Glf_OIIOImage" : {
-                        "bases": ["GlfImage"],
-                        "imageTypes": ["exr", "tif", "zfile", "tx"],
-                        "precedence": 0 
-                    },
+                "Types": {
                     "Glf_StbImage" : {
                         "bases": ["GlfImage"],
                         "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
