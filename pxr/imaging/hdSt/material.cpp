@@ -50,9 +50,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HDST_USE_NEW_TEXTURE_SYSTEM, true,
-                      "Use new texture system for Storm.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (limitSurfaceEvaluation)
@@ -92,14 +89,11 @@ HdStMaterial::_ProcessTextureDescriptors(
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources)
 {
-    const bool useNewTextureSystem =
-        TfGetEnvSetting(HDST_USE_NEW_TEXTURE_SYSTEM);
-
     const bool bindlessTextureEnabled
         = GlfContextCaps::GetInstance().bindlessTextureEnabled;
 
     for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
-        if (desc.askSceneDelegateForTexture || !useNewTextureSystem) {
+        if (desc.askSceneDelegateForTexture) {
             HdStTextureResourceHandleSharedPtr const textureResource =
                 _GetTextureResourceHandleFromSceneDelegate(
                     sceneDelegate,

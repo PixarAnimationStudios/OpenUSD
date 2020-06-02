@@ -942,11 +942,8 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
         GfVec3f(-1, -1,  0), GfVec3f(-1,  1,  0),
         GfVec3f( 1,  1,  0), GfVec3f( 1, -1,  0) };
     static const std::array<GfVec2f, 4> std_uvs = 
-        TfGetEnvSetting(HDST_USE_NEW_TEXTURE_SYSTEM)
-        ? std::array<GfVec2f, 4>(
-            {GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1) })
-        : std::array<GfVec2f, 4>(
-            {GfVec2f(0,0), GfVec2f(0,1), GfVec2f(1,1), GfVec2f(1,0) });
+        std::array<GfVec2f, 4>(
+            {GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1) });
 
     for(size_t i = 0; i < faces.size(); ++i) {
         GfMatrix4d screenToWorld = faces[i].first.GetInverse();
@@ -1060,8 +1057,6 @@ static
 std::array<GfVec2f, 4>
 _GetUVsForQuad(const bool flipU, bool flipV)
 {
-    flipV ^= !TfGetEnvSetting(HDST_USE_NEW_TEXTURE_SYSTEM);
-
     return {
         GfVec2f(flipU ? 0.0 : 1.0, flipV ? 0.0 : 1.0),
         GfVec2f(flipU ? 1.0 : 0.0, flipV ? 0.0 : 1.0),
