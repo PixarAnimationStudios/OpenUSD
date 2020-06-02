@@ -107,6 +107,9 @@ public:
         return *_primTypeInfo;
     }
 
+    /// Returns true if this prim is the pseudoroot.
+    bool IsPseudoRoot() const { return _flags[Usd_PrimPseudoRootFlag]; }
+
     /// Return true if this prim is active, meaning neither it nor any of its
     /// ancestors have active=false.  Return false otherwise.
     bool IsActive() const { return _flags[Usd_PrimActiveFlag]; }

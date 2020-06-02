@@ -103,6 +103,7 @@ enum Usd_PrimFlags {
     Usd_PrimDeadFlag,
     Usd_PrimMasterFlag,
     Usd_PrimInstanceProxyFlag,
+    Usd_PrimPseudoRootFlag,
 
     Usd_PrimNumFlags
 };

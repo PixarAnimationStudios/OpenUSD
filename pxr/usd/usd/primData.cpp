@@ -115,7 +115,8 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
 {
     // We do not have to clear _flags here since in the pseudo root or instance
     // master case the values never change, and in the ordinary prim case we set
-    // every flag.
+    // every flag (with the exception of the pseudo root flag which is only set
+    // true for the pseudo root and always remains false for every other prim)
 
     // Special-case the root (the only prim which has no parent) and
     // instancing masters.
@@ -126,6 +127,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimGroupFlag] = true;
         _flags[Usd_PrimDefinedFlag] = true;
         _flags[Usd_PrimMasterFlag] = isMasterPrim;
+        _flags[Usd_PrimPseudoRootFlag] = !parent;
     } 
     else {
         // Compose and cache 'active'.
