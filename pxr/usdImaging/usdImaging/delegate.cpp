@@ -2336,8 +2336,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             // but should do the proper transformation.  Maybe we can use
             // the primInfo.usdPrim?
             UsdPrim prim = _GetUsdPrim(cachePath);
-            UsdAttribute attr = prim ? prim.GetAttribute(key) : UsdAttribute();
-            TF_VERIFY(attr && attr.Get(&value, _time),
+            TF_VERIFY(prim && prim.GetAttribute(key).Get(&value, _time),
                       "%s, %s\n", id.GetText(), key.GetText());
         }
     }
