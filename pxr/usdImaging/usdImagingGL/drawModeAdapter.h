@@ -116,17 +116,6 @@ public:
                            SdfPath const& cachePath,
                            UsdImagingIndexProxy* index) override;
 
-
-    // ---------------------------------------------------------------------- //
-    /// \name Texture resources
-    // ---------------------------------------------------------------------- //
-
-    HdTextureResource::ID
-    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time, size_t salt) const override;
-
-    HdTextureResourceSharedPtr
-    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time) const override;
-
 protected:
     USDIMAGINGGL_API
     void _RemovePrim(SdfPath const& cachePath,

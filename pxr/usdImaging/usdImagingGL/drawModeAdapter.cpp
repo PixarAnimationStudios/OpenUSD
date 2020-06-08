@@ -23,7 +23,6 @@
 //
 #include "pxr/usdImaging/usdImagingGL/drawModeAdapter.h"
 #include "pxr/usdImaging/usdImagingGL/package.h"
-#include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -1179,35 +1178,6 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         }
         return extent;
     }
-}
-
-HdTextureResource::ID
-UsdImagingGLDrawModeAdapter::GetTextureResourceID(UsdPrim const& usdPrim,
-                                                       SdfPath const &id,
-                                                       UsdTimeCode time,
-                                                       size_t salt) const
-{
-    return UsdImagingGL_GetTextureResourceID(usdPrim, id, time, salt);
-}
-
-HdTextureResourceSharedPtr
-UsdImagingGLDrawModeAdapter::GetTextureResource(UsdPrim const& usdPrim,
-                                                     SdfPath const &id,
-                                                     UsdTimeCode time) const
-{
-    // When we inserted the material network, the texture node used a path
-    // that inserted the material Sprim path so we can find the primInfo.
-    //    /World/MyPIXform/PI/Protos/P1/material.model:cardTextureXPos
-    // The actual textures are authored on the prim, so convert path to:
-    //    /World/MyPIXform/PI/Protos/P1.model:cardTextureXPos
-
-    SdfPath materialPath = id.GetParentPath();
-    SdfPath primPath = materialPath.GetParentPath();
-    SdfPath textureAttrPath = primPath.AppendProperty(id.GetNameToken());
-
-    UsdPrim texturePrim = _GetPrim(primPath);
-
-    return UsdImagingGL_GetTextureResource(texturePrim, textureAttrPath, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
