@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiRisIntegrator
 ///
+/// 
+/// \deprecated RIS integrator settings will be replaced
+/// with a new schema in a future release.
+/// 
 /// Integrator. Only one can be declared in a rib scene.
 ///
 class UsdRiRisIntegrator : public UsdTyped

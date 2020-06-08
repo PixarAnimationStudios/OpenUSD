@@ -52,7 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiPxrIntMultLightFilter
 ///
+/// 
+/// \deprecated This schema will be replaced in a future release.
 /// Multiplies the intensity of a given light.
+/// 
 ///
 class UsdRiPxrIntMultLightFilter : public UsdLuxLightFilter
 {

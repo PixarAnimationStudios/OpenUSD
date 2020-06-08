@@ -26,7 +26,12 @@ class "StatementsAPI" (
 {
 }
 
-class RslShader "RslShader"
+class RslShader "RslShader" (
+    doc = """
+    \\deprecated RSL shaders have been deprecated in RenderMan.  This
+    schema will be removed in a future release.
+    """
+)
 {
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
@@ -60,8 +65,11 @@ class RslShader "RslShader"
 }
 
 class RisObject "RisObject" (
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris object with connectable parameters. """
 )
 {
@@ -98,8 +106,11 @@ class RisObject "RisObject" (
 }
 
 class RisPattern "RisPattern" (
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris pattern object. Multiple of these can be assigned."""
 )
 {
@@ -136,8 +147,11 @@ class RisPattern "RisPattern" (
 }
 
 class RisOslPattern "RisOslPattern" (
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris osl pattern object."""
 )
 {
@@ -177,9 +191,13 @@ class RisOslPattern "RisOslPattern" (
 }
 
 class RisBxdf "RisBxdf" (
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
-    Represents a ris bxdf object. One of these is assigned at one time."""
+    This schema will be removed in a future release.
+
+    Represents a ris bxdf object. One of these is assigned at one time.
+    """
 )
 {
     asset info:argsPath
@@ -215,7 +233,11 @@ class RisBxdf "RisBxdf" (
 }
 
 class RisIntegrator "RisIntegrator" (
-    doc = "Integrator. Only one can be declared in a rib scene."
+    doc = """
+    \\deprecated RIS integrator settings will be replaced
+    with a new schema in a future release.
+
+    Integrator. Only one can be declared in a rib scene."""
 )
 {
     asset argsPath
@@ -223,7 +245,11 @@ class RisIntegrator "RisIntegrator" (
 }
 
 class "RiMaterialAPI" (
-    doc = """This API provides outputs that connect a material prim to prman 
+    doc = """
+    \\deprecated Materials should use UsdShadeMaterial instead.
+    This schema will be removed in a future release.
+
+    This API provides outputs that connect a material prim to prman 
     shaders and RIS objects."""
 )
 {
@@ -239,7 +265,11 @@ class "RiMaterialAPI" (
 }
 
 class "RiLightAPI" (
-    doc = """RiLightAPI is an API schema that provides an interface
+    doc = """
+    \\deprecated RenderMan-specific light settings will move to a
+    new schema in a future release.
+
+    RiLightAPI is an API schema that provides an interface
     to add Renderman-specific attributes to lights."""
 )
 {
@@ -294,7 +324,11 @@ class "RiLightAPI" (
 }
 
 class "RiLightFilterAPI" (
-    doc = "Renderman-specific attributes for light filters."
+    doc = """
+    \\deprecated RenderMan-specific light filter settings will move to a
+    new schema in a future release.
+
+    Renderman-specific attributes for light filters."""
 )
 {
     token ri:combineMode = "multiply" (
@@ -342,7 +376,11 @@ class "RiLightFilterAPI" (
 }
 
 class "RiLightPortalAPI" (
-    doc = "Renderman-specific attributes for light portals."
+    doc = """
+    \\deprecated RenderMan-specific light portal settings will move to a
+    new schema in a future release.
+
+    Renderman-specific attributes for light portals."""
 )
 {
     float ri:portal:intensity (
@@ -358,7 +396,10 @@ class "RiLightPortalAPI" (
 }
 
 class "RiSplineAPI" (
-    doc = '''RiSplineAPI is a general purpose API schema used to describe
+    doc = '''
+    \\deprecated This API schema will be removed in a future release.
+
+    RiSplineAPI is a general purpose API schema used to describe
     a named spline stored as a set of attributes on a prim.
     
     It is an add-on schema that can be applied many times to a prim with
@@ -379,7 +420,10 @@ class "RiSplineAPI" (
 }
 
 class "RiTextureAPI" (
-    doc = """RiTextureAPI is an API schema that provides an interface
+    doc = """
+    \\deprecated This API schema will be removed in a future release.
+
+    RiTextureAPI is an API schema that provides an interface
     to add Renderman-specific attributes to adjust textures."""
 )
 {
@@ -393,6 +437,7 @@ class "RiTextureAPI" (
 
 class PxrEnvDayLight "PxrEnvDayLight" (
     apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    doc = "\\deprecated This schema will be replaced in a future release."
 )
 {
     uniform bool collection:lightLink:includeRoot = 1
@@ -581,6 +626,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
 
 class PxrAovLight "PxrAovLight" (
     apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    doc = "\\deprecated This schema will be replaced in a future release."
 )
 {
     string aovName = "" (
@@ -737,7 +783,10 @@ class PxrAovLight "PxrAovLight" (
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
-    doc = "Multiplies the intensity of a given light."
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Multiplies the intensity of a given light.
+    """
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -804,7 +853,10 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
-    doc = "Simulated geometric barn doors that control the spread of light."
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Simulated geometric barn doors that control the spread of light.
+    """
 )
 {
     float analytic:apex = 25 (
@@ -953,7 +1005,10 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 
 class PxrCookieLightFilter "PxrCookieLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
-    doc = "A textured surface that filters light."
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    A textured surface that filters light.
+    """
 )
 {
     float analytic:apex = 25 (
@@ -1166,7 +1221,10 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 
 class PxrRampLightFilter "PxrRampLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
-    doc = "A ramp to modulate how a light falls off with distance."
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    A ramp to modulate how a light falls off with distance.
+    """
 )
 {
     float beginDistance = 0 (
@@ -1261,7 +1319,10 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 
 class PxrRodLightFilter "PxrRodLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
-    doc = "Simulates a rod or capsule-shaped region to modulate light."
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Simulates a rod or capsule-shaped region to modulate light.
+    """
 )
 {
     uniform bool collection:filterLink:includeRoot = 1

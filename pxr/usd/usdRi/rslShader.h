@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiRslShader
 ///
+/// 
+/// \deprecated RSL shaders have been deprecated in RenderMan.  This
+/// schema will be removed in a future release.
+/// 
 ///
 class UsdRiRslShader : public UsdShadeShader
 {

@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightPortalAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light portal settings will move to a
+/// new schema in a future release.
+/// 
 /// Renderman-specific attributes for light portals.
 ///
 class UsdRiLightPortalAPI : public UsdAPISchemaBase

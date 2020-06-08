@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightFilterAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light filter settings will move to a
+/// new schema in a future release.
+/// 
 /// Renderman-specific attributes for light filters.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

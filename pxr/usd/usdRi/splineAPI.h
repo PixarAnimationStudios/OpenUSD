@@ -51,6 +51,9 @@ class SdfAssetPath;
 
 /// \class UsdRiSplineAPI
 ///
+/// 
+/// \deprecated This API schema will be removed in a future release.
+/// 
 /// RiSplineAPI is a general purpose API schema used to describe
 /// a named spline stored as a set of attributes on a prim.
 /// 

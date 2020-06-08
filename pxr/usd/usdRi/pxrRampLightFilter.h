@@ -55,7 +55,10 @@ class SdfAssetPath;
 
 /// \class UsdRiPxrRampLightFilter
 ///
+/// 
+/// \deprecated This schema will be replaced in a future release.
 /// A ramp to modulate how a light falls off with distance.
+/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdRiTokens.

@@ -52,7 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiPxrBarnLightFilter
 ///
+/// 
+/// \deprecated This schema will be replaced in a future release.
 /// Simulated geometric barn doors that control the spread of light.
+/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdRiTokens.

@@ -52,6 +52,9 @@ class SdfAssetPath;
 
 /// \class UsdRiTextureAPI
 ///
+/// 
+/// \deprecated This API schema will be removed in a future release.
+/// 
 /// RiTextureAPI is an API schema that provides an interface
 /// to add Renderman-specific attributes to adjust textures.
 ///

@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light settings will move to a
+/// new schema in a future release.
+/// 
 /// RiLightAPI is an API schema that provides an interface
 /// to add Renderman-specific attributes to lights.
 ///
