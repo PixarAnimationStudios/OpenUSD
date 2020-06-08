@@ -25,13 +25,9 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/stopwatch.h"
-#include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
 
-#include <string>
-
-using std::string;
 
 using namespace boost::python;
 
@@ -41,29 +37,17 @@ void wrapStopwatch() {
 
     typedef TfStopwatch This;
 
-    class_<This>("Stopwatch",
-                 init<optional<string const &, bool> >())
+    class_<This>("Stopwatch")
 
-        .def("GetNamedStopwatch", This::GetNamedStopwatch)
-        .staticmethod("GetNamedStopwatch")
-
-        .def("GetStopwatchNames", This::GetStopwatchNames,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetStopwatchNames")
-        
         .def("Start", &This::Start)
         .def("Stop", &This::Stop)
         .def("Reset", &This::Reset)
         .def("AddFrom", &This::AddFrom)
-        .add_property("name",
-                      make_function(&This::GetName,
-                                    return_value_policy<return_by_value>()))
 
         .add_property("nanoseconds", &This::GetNanoseconds)
         .add_property("microseconds", &This::GetMicroseconds)
         .add_property("milliseconds", &This::GetMilliseconds)
         .add_property("sampleCount", &This::GetSampleCount)
         .add_property("seconds", &This::GetSeconds)
-        .add_property("isShared", &This::IsShared)
         ;
 }

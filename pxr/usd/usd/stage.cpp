@@ -624,13 +624,12 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     }
 
     // Debug timing info
-    boost::optional<TfStopwatch> stopwatch;
+    TfStopwatch stopwatch;
     const bool usdInstantiationTimeDebugCodeActive = 
         TfDebug::IsEnabled(USD_STAGE_INSTANTIATION_TIME);
 
     if (usdInstantiationTimeDebugCodeActive) {
-        stopwatch = TfStopwatch();
-        stopwatch->Start();
+        stopwatch.Start();
     }
 
     if (!rootLayer)
@@ -685,10 +684,10 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 
     // Debug timing info
     if (usdInstantiationTimeDebugCodeActive) {
-        stopwatch->Stop();
+        stopwatch.Stop();
         TF_DEBUG(USD_STAGE_INSTANTIATION_TIME)
             .Msg("UsdStage::_InstantiateStage: Time elapsed (s): %f\n",
-                 stopwatch->GetSeconds());
+                 stopwatch.GetSeconds());
     }
     
     return stage;
