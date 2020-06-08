@@ -194,6 +194,36 @@ public:
                                  int elementSize = -1) const;
 
     /// Author scene description to create an attribute and authoring a \p value
+    /// on this prim that will be recognized as a Primvar (i.e. will present as 
+    /// a valid UsdGeomPrimvar). Note that unlike CreatePrimvar using this API 
+    /// explicitly authors a block for the indices attr associated with the
+    /// primvar, thereby blocking any indices set in any weaker layers.
+    ///
+    /// \return an invalid UsdGeomPrimvar on error, a valid UsdGeomPrimvar 
+    /// otherwise. It is fine to call this method multiple times, and in
+    /// different UsdEditTargets, even if there is an existing primvar of the
+    /// same name, indexed or not.
+    ///
+    /// \sa CreatePrimvar(), CreateIndexedPrimvar(), UsdPrim::CreateAttribute(), 
+    /// UsdGeomPrimvar::IsPrimvar()
+    template <typename T>
+    UsdGeomPrimvar CreateNonIndexedPrimvar(
+            const TfToken& name,
+            const SdfValueTypeName &typeName,
+            const T &value,
+            const TfToken &interpolation = TfToken(),
+            int elementSize = -1,
+            UsdTimeCode time = UsdTimeCode::Default()) const
+    {
+        UsdGeomPrimvar primvar = 
+            CreatePrimvar(name, typeName, interpolation, elementSize);
+
+        primvar.GetAttr().Set(value, time);
+        primvar.BlockIndices();
+        return primvar;
+    }
+
+    /// Author scene description to create an attribute and authoring a \p value
     /// on this prim that will be recognized as an indexed Primvar with \p
     /// indices appropriately set (i.e. will present as a valid UsdGeomPrimvar).
     ///
@@ -202,8 +232,8 @@ public:
     /// different UsdEditTargets, even if there is an existing primvar of the
     /// same name, indexed or not.
     ///
-    /// \sa CreatePrimvar(), UsdPrim::CreateAttribute(), 
-    /// UsdGeomPrimvar::IsPrimvar()
+    /// \sa CreatePrimvar(), CreateNonIndexedPrimvar(), 
+    /// UsdPrim::CreateAttribute(), UsdGeomPrimvar::IsPrimvar()
     template <typename T>
     UsdGeomPrimvar CreateIndexedPrimvar(
             const TfToken& name,

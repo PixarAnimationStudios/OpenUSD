@@ -106,6 +106,16 @@ void wrapUsdGeomPrimvarsAPI()
 namespace {
 
 static UsdGeomPrimvar
+_CreateNonIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
+        const SdfValueTypeName &typeName, const object &pyVal, 
+        const TfToken &interpolation, int elementSize, UsdTimeCode time)
+{
+    VtValue val = UsdPythonToSdfType(pyVal, typeName);
+    return self.CreateNonIndexedPrimvar(name, typeName, val, interpolation, 
+            elementSize, time);
+}
+
+static UsdGeomPrimvar
 _CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
         const SdfValueTypeName &typeName, const object &pyVal, 
         const VtIntArray &indices, const TfToken &interpolation, 
@@ -121,6 +131,10 @@ WRAP_CUSTOM {
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
              (arg("name"), arg("typeName"), arg("interpolation")=TfToken(),
               arg("elementSize")=-1))
+        .def("CreateNonIndexedPrimvar", _CreateNonIndexedPrimvar,
+             (arg("name"), arg("typeName"), arg("value"),
+              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
+              arg("time")=UsdTimeCode::Default()))
         .def("CreateIndexedPrimvar", _CreateIndexedPrimvar,
              (arg("name"), arg("typeName"), arg("value"), arg("indices"),
               arg("interpolation")=TfToken(), arg("elementSize")=-1, 

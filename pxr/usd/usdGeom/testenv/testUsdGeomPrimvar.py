@@ -225,10 +225,8 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertNotEqual(u1.ComputeFlattened(2.0), u1.Get(2.0))
 
         # Ensure that primvars with indices only authored at timeSamples
-        # (i.e. no default) are recognized as such.  Manual name-munging
-        # necessitated by UsdGeomPrimvar's lack of API for accessing
-        # the indices attribute directly!
-        u1Indices = p.GetAttribute(u1.GetName() + ":indices")
+        # (i.e. no default) are recognized as such.
+        u1Indices = u1.GetIndicesAttr()
         self.assertTrue(u1Indices)
         u1Indices.ClearDefault()
         self.assertTrue(u1.IsIndexed())
@@ -417,6 +415,48 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertTrue(indexedPrimvar.HasAuthoredValue());
         self.assertTrue(indexedPrimvar.HasAuthoredInterpolation());
 
+        # mimic a Pixar production workflow of creating primvars
+        # 1. show usage with CreatePrimvar
+        # 2. show usage with CreateNonIndexedPrimvar
+        # - create a primvar in base layer
+        # - override this primvar in a stronger layer
+        # - update primvar in base layer to use indices
+        # - test if primvar has indices blocked in strong layer or not!
+
+        # Create primvar in base layer using CreatePrimvar api and set value
+        basePrimvar1 = gp_pv.CreatePrimvar('pv1', Sdf.ValueTypeNames.FloatArray)
+        basePrimvar1.Set(uVal)
+        # Create primvar in base layer using CreatePrimvar api and set value
+        basePrimvar2 = gp_pv.CreatePrimvar('pv2', Sdf.ValueTypeNames.FloatArray)
+        basePrimvar2.Set(uVal)
+        # stronger layer
+        strongLayer = Sdf.Layer.CreateAnonymous()
+        strongStage = Usd.Stage.Open(strongLayer)
+        # over Mesh prim and add reference
+        oMesh = strongStage.OverridePrim('/myMesh')
+        oMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        # over primvarsApi instance
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(oMesh)
+        # override value for primvar
+        oVal = Vt.FloatArray([2.2,3.2,4.2])
+        # override pv1 using CreatePrimvar api
+        oBasePrimvar1 = gp_pv_ovr.CreatePrimvar('pv1', Sdf.ValueTypeNames.FloatArray)
+        oBasePrimvar1.Set(oVal)
+        # override pv2 using CreateNonIndexedPrimvar api
+        oBasePrimvar2 = gp_pv_ovr.CreateNonIndexedPrimvar('pv2', Sdf.ValueTypeNames.FloatArray, oVal)
+        # test indices attr missing on oBasePrimvar1
+        self.assertFalse(oBasePrimvar1.GetIndicesAttr().IsValid())
+        # test oBasePrimvar2's indices attribute has a block authored
+        self.assertFalse(oBasePrimvar2.IsIndexed())
+        self.assertTrue(oBasePrimvar2.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
+        # update base (weaker) layer primvars to have an indices
+        basePrimvar1.SetIndices(indices)
+        basePrimvar2.SetIndices(indices)
+        # ovr pv1 should now get indices 
+        self.assertTrue(oBasePrimvar1.IsIndexed())
+        # ovr pv2 should still have the block for indices
+        self.assertFalse(oBasePrimvar2.IsIndexed())
+        self.assertTrue(oBasePrimvar2.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
 
     def test_Bug124579(self):
         from pxr import Usd
