@@ -96,6 +96,71 @@ class TestSdfTypes(unittest.TestCase):
                 self.assertEqual(Sdf.GetValueTypeNameForValue(value), typeName)
     
             self._TestRoundTrippingValue(typeName, value)
+
+    def test_ConvertToValidMetadataDictionary(self):
+        # Test that Sdf.ConvertToValidMetadataDictionary works as expected.
+        def assertEqualish(s, x, y):
+            "First elements identical, last (diagnostic) just a subset"
+            s.assertEqual(x[:-1], y[:-1])
+            for msg in y[-1]:
+                s.assertIn(msg, x[-1])
+            
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({}),
+            (True, {}, ''))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':123}),
+            (True, {'a': 123}, ''))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':[]}),
+            (False, {'a': None},
+             "cannot infer type from empty vector/list under key 'a' -- "
+             "use an empty typed array like VtIntArray/VtStringArray instead"))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':[1]}),
+            (True, {'a': Vt.IntArray(1, (1,))}, ''))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':['hello']}),
+            (True, {'a': Vt.StringArray(1, ('hello',))}, ''))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':['hello', 1]}),
+            (False, {'a': None},
+             "failed to cast array element 1: <int> '1' under key 'a' "
+             "to <string>"))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':[{}, {}]}),
+            (False, {'a': None},
+             "first vector/list element <VtDictionary> '{}' under key 'a' "
+             "is not a valid scene description datatype"))
+        assertEqualish(
+            self,
+            Sdf.ConvertToValidMetadataDictionary({'a':[[1,2,3], [2,3,4]]}),
+            (False, {'a': None},
+             ("first vector/list element",
+              "'[1, 2, 3]' under key 'a' is not a valid scene description "
+              "datatype")))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'a':'abc', 'b':234}),
+            (True, {'a': 'abc', 'b': 234}, ''))
+        assertEqualish(
+            self,
+            Sdf.ConvertToValidMetadataDictionary({'a': ['a', 123, 'b', 234]}),
+            (False, {'a': None},
+             ("failed to cast array element 1: <int> '123' under key 'a' "
+             "to ", "failed to cast array element 3: <int> '234' "
+             "under key 'a' to")))
+        assertEqualish(
+            self,
+            Sdf.ConvertToValidMetadataDictionary(
+                {'subdict':{'a': ['a', 123, 'b', 234]}}),
+            (False, {'subdict': {'a': None}},
+             ("failed to cast array element 1: <int> '123' under key "
+              "'subdict:a' to", "failed to cast array element 3: <int> '234' "
+              "under key 'subdict:a' to")))
+        self.assertEqual(
+            Sdf.ConvertToValidMetadataDictionary({'foo':['a', 'b']}),
+            (True, {'foo': Vt.StringArray(2, ('a', 'b'))}, ''))
+        
     
     # Test types like color3f which correspond to a basic type.
     #

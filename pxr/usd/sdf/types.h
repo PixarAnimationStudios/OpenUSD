@@ -386,6 +386,31 @@ struct SdfValueTypeTraits<SDF_VALUE_CPP_ARRAY_TYPE(elem)> {                 \
 
 BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_TRAITS, ~, SDF_VALUE_TYPES);
 
+/// Convert \p dict to a valid metadata dictionary for scene description.  Valid
+/// metadata dictionaries have values that are any of SDF_VALUE_TYPES (or
+/// VtArrays of those), plus VtDictionary with values of those types (or
+/// similarly nested VtDictionaries).
+///
+/// Certain conversions are performed in an attempt to produce a valid metadata
+/// dictionary.  For example:
+///
+/// Convert std::vector<VtValue> to VtArray<T> where T is the type of the first
+/// element in the vector.  Fail conversion for empty vectors where a concrete
+/// type cannot be inferred.
+///
+/// Convert python sequences to VtArray<T> where T is the type of the first
+/// element in the python sequence, when converted to VtValue, if that T is an
+/// SDF_VALUE_TYPE).  Fail conversion for empty sequences where a concrete type
+/// cannot be inferred.
+///
+/// If any values cannot be converted to valid SDF_VALUE_TYPES, omit those
+/// elements and add a message to \p errMsg indicating which values were
+/// omitted.
+///
+SDF_API
+bool
+SdfConvertToValidMetadataDictionary(VtDictionary *dict, std::string *errMsg);
+
 #define SDF_VALUE_ROLE_NAME_TOKENS              \
     (Point)                                     \
     (Normal)                                    \

@@ -298,6 +298,14 @@ _FindType(const std::string& typeName)
     return SdfSchema::GetInstance().FindType(typeName);
 }
 
+boost::python::tuple
+_ConvertToValidMetadataDictionary(VtDictionary dict)
+{
+    std::string errMsg;
+    bool success = SdfConvertToValidMetadataDictionary(&dict, &errMsg);
+    return boost::python::make_tuple(success, dict, errMsg);
+}
+
 } // anonymous namespace 
 
 void wrapTypes()
@@ -321,6 +329,9 @@ void wrapTypes()
     def( "ValueHasValidType", &SdfValueHasValidType );
     def( "GetTypeForValueTypeName", &SdfGetTypeForValueTypeName );
     def( "GetValueTypeNameForValue", &SdfGetValueTypeNameForValue );
+
+    def( "ConvertToValidMetadataDictionary",
+         &_ConvertToValidMetadataDictionary );
 
     def( "GetUnitFromName", &SdfGetUnitFromName,
          return_value_policy<return_by_value>() );
