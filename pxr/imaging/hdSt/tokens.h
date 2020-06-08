@@ -52,7 +52,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (packedFlatNormals)                         \
     (flatNormals)                               \
     (scale)                                     \
-    (bias)
+    (bias)                                      \
+    (rotation)                                  \
+    (translation)                               \
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

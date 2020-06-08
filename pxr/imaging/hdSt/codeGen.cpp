@@ -1510,6 +1510,14 @@ static void _EmitTextureAccessors(
     
     TfTokenVector const &inPrimvars = acc.inPrimvars;
 
+    // Forward declare getter for inPrimvars in case it's a transform2d
+    if (!inPrimvars.empty()) {
+        accessors
+            << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
+            << "vec" << dim << " HdGet_" << inPrimvars[0] << "(int localIndex);\n"
+            << "#endif\n";
+    }
+
     // vec4 HdGet_name(int localIndex)
     accessors
         << _GetUnpackedType(dataType, false)
@@ -2810,6 +2818,21 @@ HdSt_CodeGen::_GenerateShaderParameters()
               patchCoord).xxx;
       }
 
+      * transform2d
+      vec2 HdGet_<name>(int localIndex=0) {
+          float angleRad = HdGet_<name>_rotation() * 3.1415926f / 180.f;
+          mat2 rotMat = mat2(cos(angleRad), sin(angleRad), 
+                             -sin(angleRad), cos(angleRad)); 
+      #if defined(HD_HAS_<primvarName>)
+          return vec2(HdGet_<name>_translation() + rotMat * 
+            (HdGet_<name>_scale() * HdGet_<primvarName>(localIndex)));
+      #else
+          int shaderCoord = GetDrawingCoord().shaderCoord;
+          return vec2(HdGet_<name>_translation() + rotMat * 
+           (HdGet_<name>_scale() * shaderData[shaderCoord].<name>_fallback.xy));
+      #endif
+      }
+
     */
 
     std::stringstream declarations;
@@ -3117,6 +3140,55 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 accessors
                     << "#endif\n";
             }
+        } else if (bindingType == HdBinding::TRANSFORM_2D) {
+            // Forward declare rotation, scale, and translation
+            accessors 
+                << "float HdGet_" << it->second.name << "_" 
+                << HdStTokens->rotation  << "();\n"
+                << "vec2 HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale  << "();\n"
+                << "vec2 HdGet_" << it->second.name << "_" 
+                << HdStTokens->translation  << "();\n";
+
+            // vec2 HdGet_name(int localIndex)
+            accessors
+                << _GetUnpackedType(it->second.dataType, false)
+                << " HdGet_" << it->second.name << "(int localIndex) {\n"
+                << "  float angleRad = HdGet_" << it->second.name << "_" 
+                << HdStTokens->rotation  << "()"
+                << " * 3.1415926f / 180.f;\n"
+                << "  mat2 rotMat = mat2(cos(angleRad), sin(angleRad), "
+                << "-sin(angleRad), cos(angleRad)); \n";
+            // If primvar exists, use it
+            if (!it->second.inPrimvars.empty()) {
+                accessors
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
+                    << "  return vec2(HdGet_" << it->second.name << "_" 
+                    << HdStTokens->translation << "() + rotMat * (HdGet_" 
+                    << it->second.name << "_" << HdStTokens->scale << "() * "
+                    << "HdGet_" << it->second.inPrimvars[0] << "(localIndex)));\n"
+                    << "#else\n";
+            }
+            // Otherwise use default value.
+            accessors
+                << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
+                << "  return vec2(HdGet_" << it->second.name << "_" 
+                << HdStTokens->translation << "() + rotMat * (HdGet_" 
+                << it->second.name << "_" << HdStTokens->scale << "() * "
+                << "shaderData[shaderCoord]." << it->second.name 
+                << HdSt_ResourceBindingSuffixTokens->fallback << swizzle 
+                << "));\n";
+            if (!it->second.inPrimvars.empty()) {
+                accessors << "#endif\n"; 
+            }
+            accessors << "}\n";
+
+            // vec2 HdGet_name()
+            accessors
+                << _GetUnpackedType(it->second.dataType, false)
+                << " HdGet_" << it->second.name << "() {\n"
+                << "  return HdGet_" << it->second.name << "(0);\n"
+                << "}\n";
         }
     }
 

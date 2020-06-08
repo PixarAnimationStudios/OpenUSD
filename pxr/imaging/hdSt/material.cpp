@@ -386,7 +386,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     bool hasPtex = false;
     for (HdSt_MaterialParam const & param: params) {
-        if (param.IsPrimvarRedirect() || param.IsFallback()) {
+        if (param.IsPrimvarRedirect() || param.IsFallback() || 
+            param.IsTransform2d()) {
             HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
         } else if (param.IsTexture()) {

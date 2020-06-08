@@ -81,9 +81,10 @@ public:
                 BINDLESS_TEXTURE_PTEX_TEXEL,  // bindless ptex texels
                 BINDLESS_TEXTURE_PTEX_LAYOUT, // bindless ptex layout
                 PRIMVAR_REDIRECT,    // primvar redirection
-                FIELD_REDIRECT  // accesses a field texture by name and
+                FIELD_REDIRECT, // accesses a field texture by name and
                                 // uses fallbackValue if no accessor for
                                 // the texture exists.
+                TRANSFORM_2D    // transform2d          
     };
     enum Location {
                 // NOT_EXIST is a special value of location for a uniform

@@ -64,6 +64,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (wrapR)
     (minFilter)
     (magFilter)
+
+    (in)
 );
 
 // These are the same as the UsdHydraTokens.
@@ -509,6 +511,102 @@ _MakeMaterialParamsForPrimvarReader(
     params->push_back(std::move(param));
 }
 
+static void
+_MakeMaterialParamsForTransform2d(
+    HdSt_MaterialNetwork const& network,
+    HdSt_MaterialNode const& node,
+    SdfPath const& nodePath,
+    TfToken const& paramName,
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector *params)
+{
+    if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
+
+    SdrRegistry& shaderReg = SdrRegistry::GetInstance();
+
+    HdSt_MaterialParam transform2dParam;
+    transform2dParam.paramType = HdSt_MaterialParam::ParamTypeTransform2d;
+    transform2dParam.name = paramName;
+    transform2dParam.fallbackValue = _GetParamFallbackValue(network, node,
+                                                            _tokens->in);
+
+    // Find the input connection to the transform2d node
+    auto inIt = node.inputConnections.find(_tokens->in);
+    if (inIt != node.inputConnections.end()) {
+        if (!inIt->second.empty()) {
+            HdSt_MaterialConnection const& con = inIt->second.front();
+            SdfPath const& upstreamNodePath = con.upstreamNode;
+            
+            auto const& pnIt = network.nodes.find(upstreamNodePath);
+            HdSt_MaterialNode const& primvarNode = pnIt->second;
+            SdrShaderNodeConstPtr primvarSdr = 
+                shaderReg.GetShaderNodeByIdentifierAndType(
+                    primvarNode.nodeTypeId, HioGlslfxTokens->glslfx);
+
+            if (primvarSdr) {
+                HdSt_MaterialParamVector primvarParams;
+
+                _MakeMaterialParamsForPrimvarReader(
+                    network,
+                    primvarNode,
+                    upstreamNodePath,
+                    inIt->first,
+                    visitedNodes,
+                    &primvarParams);
+
+                if (!primvarParams.empty()) {
+                    HdSt_MaterialParam const& primvarParam = 
+                        primvarParams.front();
+                    // We do not put the primvar connected to the transform2d 
+                    // into the material params. We only wanted to extract the 
+                    // primvar name and put it into the transform2d's 
+                    // samplerCoords.
+                    transform2dParam.samplerCoords = primvarParam.samplerCoords;
+                }
+            }
+        }
+    } else {
+        // See if input value was directly authored as value.
+        auto iter = node.parameters.find(_tokens->in);
+
+        if (iter != node.parameters.end()) {
+            if (iter->second.IsHolding<TfToken>()) {
+                TfToken const& samplerCoord = 
+                    iter->second.UncheckedGet<TfToken>();
+                transform2dParam.samplerCoords.push_back(samplerCoord);
+            }
+        }
+    }
+
+    params->push_back(std::move(transform2dParam));
+
+    // Make materials params for each component of transform2d
+    // (rotation, scale, translation)
+    HdSt_MaterialParam rotParam;
+    rotParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
+    rotParam.name = TfToken(paramName.GetString() + "_" + 
+                            HdStTokens->rotation.GetString());
+    rotParam.fallbackValue = _GetParamFallbackValue(network, node,
+                                                    HdStTokens->rotation);
+    params->push_back(std::move(rotParam));
+
+    HdSt_MaterialParam scaleParam;
+    scaleParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
+    scaleParam.name = TfToken(paramName.GetString() + "_" + 
+                              HdStTokens->scale.GetString());
+    scaleParam.fallbackValue = _GetParamFallbackValue(network, node,
+                                                      HdStTokens->scale);
+    params->push_back(std::move(scaleParam));
+
+    HdSt_MaterialParam transParam;
+    transParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
+    transParam.name = TfToken(paramName.GetString() + "_" + 
+                              HdStTokens->translation.GetString());
+    transParam.fallbackValue = _GetParamFallbackValue(network, node,
+                                                      HdStTokens->translation);
+    params->push_back(std::move(transParam));
+}
+
 static std::string
 _ResolveAssetPath(VtValue const& value)
 {
@@ -782,11 +880,12 @@ _MakeMaterialParamsForTexture(
     }
     texParam.textureType = textureType;
 
-    // Check to see if a primvar node is connected to 'st' or 'uv'.
+    // Check to see if a primvar or transform2d node is connected to 'st' or 
+    // 'uv'.
     // Instead of looking for a st inputs by name we could traverse all
-    // connections to inputs and pick one that has a 'primvar' node attached.
-    // That could also be problematic if you connect a primvar to one of the
-    // other inputs of the texture node.
+    // connections to inputs and pick one that has a 'primvar' or 'transform2d' 
+    // node attached. That could also be problematic if you connect a primvar or 
+    // transform2d to one of the other inputs of the texture node.
     auto stIt = node.inputConnections.find(_tokens->st);
     if (stIt == node.inputConnections.end()) {
         stIt = node.inputConnections.find(_tokens->uv);
@@ -795,28 +894,62 @@ _MakeMaterialParamsForTexture(
     if (stIt != node.inputConnections.end()) {
         if (!stIt->second.empty()) {
             HdSt_MaterialConnection const& con = stIt->second.front();
-            SdfPath const& primvarNodePath = con.upstreamNode;
+            SdfPath const& upstreamNodePath = con.upstreamNode;
             
-            auto const& pnIt = network.nodes.find(primvarNodePath);
-            HdSt_MaterialNode const& primvarNode = pnIt->second;
+            auto const& upIt = network.nodes.find(upstreamNodePath);
+            HdSt_MaterialNode const& upstreamNode = upIt->second;
 
-            HdSt_MaterialParamVector primvarParams;
+            SdrShaderNodeConstPtr upstreamSdr = 
+                shaderReg.GetShaderNodeByIdentifierAndType(
+                    upstreamNode.nodeTypeId, HioGlslfxTokens->glslfx);
 
-            _MakeMaterialParamsForPrimvarReader(
-                network,
-                primvarNode,
-                primvarNodePath,
-                stIt->first,
-                visitedNodes,
-                &primvarParams);
+            if (upstreamSdr) {
+                TfToken sdrRole(upstreamSdr->GetRole());
+                if (sdrRole == SdrNodeRole->Primvar) {
+                    HdSt_MaterialParamVector primvarParams;
 
-            if (!primvarParams.empty()) {
-                HdSt_MaterialParam const& primvarParam = primvarParams.front();
-                // We do not put the primvar connected to the texture into the
-                // material params. We only wanted to extract the primvar name
-                // and put it into the texture's samplerCoords.
-                //    params.push_back(std::move(primvarParam));
-                texParam.samplerCoords = primvarParam.samplerCoords;
+                    _MakeMaterialParamsForPrimvarReader(
+                        network,
+                        upstreamNode,
+                        upstreamNodePath,
+                        stIt->first,
+                        visitedNodes,
+                        &primvarParams);
+
+                    if (!primvarParams.empty()) {
+                        HdSt_MaterialParam const& primvarParam = primvarParams.front();
+                        // We do not put the primvar connected to the texture into the
+                        // material params. We only wanted to extract the primvar name
+                        // and put it into the texture's samplerCoords.
+                        //    params.push_back(std::move(primvarParam));
+                        texParam.samplerCoords = primvarParam.samplerCoords;
+                    }
+
+                } else if (sdrRole == SdrNodeRole->Math) {
+                    HdSt_MaterialParamVector transform2dParams;
+
+                    _MakeMaterialParamsForTransform2d(
+                        network,
+                        upstreamNode,
+                        upstreamNodePath,
+                        TfToken(paramName.GetString() + "_" + 
+                                stIt->first.GetString() + "_transform2d"),
+                        visitedNodes,
+                        &transform2dParams);
+
+                     if (!transform2dParams.empty()) {
+                        HdSt_MaterialParam const& transform2dParam = 
+                            transform2dParams.front();
+                        // The texure's sampler coords should come from the
+                        // output of the transform2d
+                        texParam.samplerCoords.push_back(transform2dParam.name);
+                    }
+
+                    // Copy params created for tranform2d node to param list
+ 		            params->insert(params->end(), 
+                                   transform2dParams.begin(), 
+ 		                           transform2dParams.end());
+                }
             }
         }
     } else {
@@ -994,6 +1127,15 @@ _MakeParamsForInputParameter(
 
                     } else if (sdrRole == SdrNodeRole->Field) {
                         _MakeMaterialParamsForFieldReader(
+                            network,
+                            upstreamNode,
+                            upstreamPath,
+                            paramName,
+                            visitedNodes,
+                            params);
+                        return;
+                    } else if (sdrRole == SdrNodeRole->Math) {
+                        _MakeMaterialParamsForTransform2d(
                             network,
                             upstreamNode,
                             upstreamPath,

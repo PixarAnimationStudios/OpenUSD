@@ -65,7 +65,9 @@ public:
         ParamTypeFieldRedirect,
         // Additional primvar needed by material. One that is not connected to
         // a input parameter (ParamTypePrimvar).
-        ParamTypeAdditionalPrimvar
+        ParamTypeAdditionalPrimvar,
+        // This is a parameter that is connected to a transform2d node
+        ParamTypeTransform2d
     };
 
     HDST_API
@@ -104,6 +106,9 @@ public:
     }
     bool IsAdditionalPrimvar() const {
         return paramType == ParamTypeAdditionalPrimvar;
+    }
+    bool IsTransform2d() const {
+        return paramType == ParamTypeTransform2d;
     }
 
     ParamType paramType;
