@@ -41,6 +41,9 @@ public:
 
     HDX_API
     static HgiFormat GetHgiFormat(HdFormat hdFormat);
+
+    HDX_API
+    static HdFormat GetHdFormat(HgiFormat hgiFormat);
 };
 
 

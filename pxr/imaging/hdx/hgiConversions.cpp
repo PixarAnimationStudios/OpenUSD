@@ -84,4 +84,23 @@ HdxHgiConversions::GetHgiFormat(HdFormat hdFormat)
     return FORMAT_DESC[hdFormat].hgiFormat;
 }
 
+HdFormat
+HdxHgiConversions::GetHdFormat(HgiFormat hgiFormat)
+{
+    if ((hgiFormat < 0) || (hgiFormat >= HgiFormatCount))
+    {
+        TF_CODING_ERROR("Unexpected HgiFormat %d", hgiFormat);
+        return HdFormatInvalid;
+    }
+
+    for (size_t i = 0; i < HdFormatCount; i++) {
+        if (FORMAT_DESC[i].hgiFormat == hgiFormat) {
+            return HdFormat(i);
+        }
+    }
+    
+    TF_CODING_ERROR("Unmapped HgiFormat %d", hgiFormat);
+    return HdFormatInvalid;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
