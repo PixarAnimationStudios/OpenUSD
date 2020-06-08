@@ -30,27 +30,34 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdSelection::~HdSelection() = default;
+
 void 
-HdSelection::AddRprim(HdSelection::HighlightMode const& mode,
-                      SdfPath const& path)
+HdSelection::AddRprim(HdSelection::HighlightMode const &mode,
+                      SdfPath const &renderIndexPath)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
     _selMap[mode][path].fullySelected = true;
     TF_DEBUG(HD_SELECTION_UPDATE).Msg(
             "Adding Rprim %s to HdSelection (mode %d)", path.GetText(), mode);
 }
 
 void 
-HdSelection::AddInstance(HdSelection::HighlightMode const& mode,
-                         SdfPath const& path,
+HdSelection::AddInstance(HdSelection::HighlightMode const &mode,
+                         SdfPath const &renderIndexPath,
                          VtIntArray const &instanceIndices/*=VtIntArray()*/)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
 
     if (instanceIndices.empty()) {
-        // For instances, an empty instanceIndices array implies that all
-        // instances are selected. Since instances are tied to an rprim (i.e.,
-        // they share the same primId), this effectively means that all
+        // Since instances are tied to an rprim (i.e., they share the same 
+        // primId), empty instance indices effectively means that all
         // instances of the rprim are selected.
         _selMap[mode][path].fullySelected = true;
     }
@@ -61,11 +68,14 @@ HdSelection::AddInstance(HdSelection::HighlightMode const& mode,
 }
 
 void 
-HdSelection::AddElements(HdSelection::HighlightMode const& mode,
-                         SdfPath const& path,
+HdSelection::AddElements(HdSelection::HighlightMode const &mode,
+                         SdfPath const &renderIndexPath,
                          VtIntArray const &elementIndices)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
 
     if (elementIndices.empty()) {
         // For element (faces) subprims alone, we use an empty indices array to
@@ -83,11 +93,15 @@ HdSelection::AddElements(HdSelection::HighlightMode const& mode,
 }
 
 void 
-HdSelection::AddEdges(HdSelection::HighlightMode const& mode,
-                      SdfPath const& path,
+HdSelection::AddEdges(HdSelection::HighlightMode const &mode,
+                      SdfPath const &renderIndexPath,
                       VtIntArray const &edgeIndices)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
+
     // For edges & points, we skip empty indices arrays
     if (!edgeIndices.empty()) {
         _selMap[mode][path].edgeIndices.push_back(edgeIndices);
@@ -98,23 +112,29 @@ HdSelection::AddEdges(HdSelection::HighlightMode const& mode,
 }
 
 void 
-HdSelection::AddPoints(HdSelection::HighlightMode const& mode,
-                       SdfPath const& path,
+HdSelection::AddPoints(HdSelection::HighlightMode const &mode,
+                       SdfPath const &renderIndexPath,
                        VtIntArray const &pointIndices)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
 
     // When points are added without a color, we use -1 to encode this.
     _AddPoints(mode, path, pointIndices, /*pointColorIndex=*/-1);
 }
 
 void 
-HdSelection::AddPoints(HdSelection::HighlightMode const& mode,
-                       SdfPath const& path,
+HdSelection::AddPoints(HdSelection::HighlightMode const &mode,
+                       SdfPath const &renderIndexPath,
                        VtIntArray const &pointIndices,
-                       GfVec4f const& pointColor)
+                       GfVec4f const &pointColor)
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return;
+    }
+    SdfPath const &path = renderIndexPath;
 
     // When points are added with a color, add it to the tracked colors if
     // needed, and use the resulting index 
@@ -132,24 +152,15 @@ HdSelection::AddPoints(HdSelection::HighlightMode const& mode,
     _AddPoints(mode, path, pointIndices, (int) pointColorId);
 }
 
-SdfPathVector
-HdSelection::GetSelectedPrimPaths(HdSelection::HighlightMode const& mode) const
+HdSelection::PrimSelectionState const *
+HdSelection::GetPrimSelectionState(HdSelection::HighlightMode const &mode,
+                                   SdfPath const &renderIndexPath) const
 {
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
-    // Aggregate rprim paths in the selection map.
-    SdfPathVector selectedPrims;
-    for (auto const &pair : _selMap[mode]) {
-        selectedPrims.push_back(pair.first);
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return nullptr;
     }
+    SdfPath const &path = renderIndexPath;
 
-    return selectedPrims;
-}
-
-HdSelection::PrimSelectionState const*
-HdSelection::GetPrimSelectionState(HdSelection::HighlightMode const& mode,
-                                   SdfPath const &path) const
-{
-    TF_VERIFY(mode < HdSelection::HighlightModeCount);
     auto const &it = _selMap[mode].find(path);
     if (it != _selMap[mode].end()) {
         return &(it->second);
@@ -158,15 +169,26 @@ HdSelection::GetPrimSelectionState(HdSelection::HighlightMode const& mode,
     }
 }
 
-bool
-HdSelection::IsEmpty() const
+SdfPathVector
+HdSelection::GetAllSelectedPrimPaths() const
 {
-    for (auto const& mode : _selMap) {
-        if (mode.size() > 0) {
-            return false;
-        }
+    SdfPathVector paths;
+    for (int mode = HdSelection::HighlightModeSelect;
+             mode < HdSelection::HighlightModeCount; mode++) {
+        _GetSelectionPrimPathsForMode(HighlightMode(mode), &paths);
     }
-    return true;
+    return paths;
+}
+
+SdfPathVector
+HdSelection::GetSelectedPrimPaths(HdSelection::HighlightMode const &mode) const
+{
+    SdfPathVector paths;
+    if (!TF_VERIFY(mode < HdSelection::HighlightModeCount)) {
+        return paths;
+    }
+    _GetSelectionPrimPathsForMode(mode, &paths);
+    return paths;
 }
 
 std::vector<GfVec4f> const&
@@ -175,12 +197,25 @@ HdSelection::GetSelectedPointColors() const
     return _selectedPointColors;
 }
 
+bool
+HdSelection::IsEmpty() const
+{
+    for (auto const &mode : _selMap) {
+        if (mode.size() > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void
-HdSelection::_AddPoints(HdSelection::HighlightMode const& mode,
-                       SdfPath const& path,
+HdSelection::_AddPoints(HdSelection::HighlightMode const &mode,
+                       SdfPath const &renderIndexPath,
                        VtIntArray const &pointIndices,
                        int pointColorIndex)
 {
+    SdfPath const &path = renderIndexPath;
+
     // For edges & points, we skip empty indices arrays
     if (!pointIndices.empty()) {
         _selMap[mode][path].pointIndices.push_back(pointIndices);
@@ -188,6 +223,20 @@ HdSelection::_AddPoints(HdSelection::HighlightMode const& mode,
         TF_DEBUG(HD_SELECTION_UPDATE).Msg(
             "Adding points of Rprim %s to HdSelection (mode %d) with point"
             " color index %d", path.GetText(), mode, pointColorIndex);
+    }
+}
+
+void HdSelection::_GetSelectionPrimPathsForMode(
+    HdSelection::HighlightMode const &mode,
+    SdfPathVector *paths) const
+{
+    if (!TF_VERIFY(paths)) {
+        return;
+    }
+
+    for (auto const &pair : _selMap[mode]) {
+        SdfPath const &rprimPath = pair.first;
+        paths->push_back(rprimPath);
     }
 }
 
