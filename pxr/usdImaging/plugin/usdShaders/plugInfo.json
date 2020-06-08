@@ -7,7 +7,10 @@
                         "bases": ["NdrDiscoveryPlugin"],
                         "displayName": "USD-based shader definition discovery plugin."
                     }
-                }
+                },
+                # Allow usdShaders/shaders to be accessible by hio/glslfx.cpp's 
+                #   ShaderResourceRegistry
+                "ShaderResources": "shaders"
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "usdShaders",
