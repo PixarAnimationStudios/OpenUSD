@@ -25,7 +25,6 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/field.h"
@@ -44,6 +43,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/volume.h"
 
+#include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -243,7 +244,7 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
             GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
             HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
         return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
-    } else if (name == HdAovTokens->depth) {
+    } else if (HdAovHasDepthSemantic(name)) {
         return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
     }
 

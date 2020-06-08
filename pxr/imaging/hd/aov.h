@@ -115,6 +115,8 @@ struct HdRenderPassAovBinding {
 
     /// The identifier of the renderer output to be consumed. This should take
     /// a value from HdAovTokens.
+    /// XXX: Depth aov bindings are identified by the "depth" suffix.
+    /// See HdAovHasDepthSemantic().
     TfToken aovName;
 
     /// The render buffer to be bound to the above terminal output.
@@ -158,6 +160,9 @@ bool operator!=(const HdRenderPassAovBinding& lhs,
 HD_API
 size_t hash_value(const HdRenderPassAovBinding &b);
 
+/// Returns true if the aov is used as a depth binding based on its name.
+HD_API
+bool HdAovHasDepthSemantic(TfToken const& aovName);
 
 /// \class HdParsedAovToken
 ///

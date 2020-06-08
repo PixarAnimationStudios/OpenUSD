@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
@@ -65,17 +66,9 @@ HdStRenderBuffer::Allocate(
     _dimensions = dimensions;
     _format = format;
     _multiSampled = multiSampled;
-
-    // XXX HdFormat does not have a depth format and neither HdAovDescriptor
-    // nor HdRenderBufferDescriptor have 'Purpose / Usage' flags that tell us
-    // the usage is for depth. Temp hack: do a string-compare the path which
-    // is build out of HdAovTokens.
     const TfToken& bufferName = GetId().GetNameToken();
-    bool _isDepthBuffer =
-        TfStringEndsWith(bufferName.GetString(), HdAovTokens->depth);
-
-    _usage = _isDepthBuffer ? HgiTextureUsageBitsDepthTarget :
-                              HgiTextureUsageBitsColorTarget;
+    _usage = HdAovHasDepthSemantic(bufferName) ?
+                HgiTextureUsageBitsDepthTarget : HgiTextureUsageBitsColorTarget;
 
     // Allocate new GPU resource
     HgiTextureDesc texDesc;
@@ -88,6 +81,7 @@ HdStRenderBuffer::Allocate(
 
     // Allocate multi-sample texture (optional)
     if (_multiSampled) {
+        // XXX: The sample count should be an argument to this method.
         texDesc.sampleCount = HgiSampleCount4;
         _textureMS = _hgi->CreateTexture(texDesc);
     }
