@@ -57,30 +57,23 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdStRenderPassState::HdStRenderPassState()
-    : HdRenderPassState()
-    , _renderPassShader(new HdStRenderPassShader())
-    , _fallbackLightingShader(new HdSt_FallbackLightingShader())
-    , _clipPlanesBufferSize(0)
-    , _alphaThresholdCurrent(0)
+    : HdStRenderPassState(std::make_shared<HdStRenderPassShader>())
 {
-    _lightingShader = _fallbackLightingShader;
 }
 
 HdStRenderPassState::HdStRenderPassState(
     HdStRenderPassShaderSharedPtr const &renderPassShader)
     : HdRenderPassState()
     , _renderPassShader(renderPassShader)
-    , _fallbackLightingShader(new HdSt_FallbackLightingShader())
+    , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
+    , _hasCustomGraphicsCmdsDesc(false)
 {
     _lightingShader = _fallbackLightingShader;
 }
 
-HdStRenderPassState::~HdStRenderPassState()
-{
-    /*NOTHING*/
-}
+HdStRenderPassState::~HdStRenderPassState() = default;
 
 bool
 HdStRenderPassState::_UseAlphaMask() const
@@ -469,8 +462,19 @@ HdStRenderPassState::GetShaderHash() const
 HgiGraphicsCmdsDesc
 HdStRenderPassState::MakeGraphicsCmdsDesc() const
 {
-    const size_t maxColorTex = 8;
     const HdRenderPassAovBindingVector& aovBindings = GetAovBindings();
+
+    if (_hasCustomGraphicsCmdsDesc) {
+        if (!aovBindings.empty()) {
+            TF_CODING_ERROR(
+                "Cannot specify a graphics cmds desc and aov bindings "
+                "at the same time.");
+        }
+
+        return _customGraphicsCmdsDesc;
+    }
+
+    static const size_t maxColorTex = 8;
     const bool useMultiSample = GetUseAovMultiSample();
 
     HgiGraphicsCmdsDesc desc;
@@ -565,5 +569,21 @@ HdStRenderPassState::MakeGraphicsCmdsDesc() const
 
     return desc;
 }
+
+void
+HdStRenderPassState::SetCustomGraphicsCmdsDesc(
+    const HgiGraphicsCmdsDesc &graphicsCmdDesc)
+{
+    _customGraphicsCmdsDesc = graphicsCmdDesc;
+    _hasCustomGraphicsCmdsDesc = true;
+}
+
+void
+HdStRenderPassState::ClearCustomGraphicsCmdsDesc()
+{
+    _customGraphicsCmdsDesc = HgiGraphicsCmdsDesc();
+    _hasCustomGraphicsCmdsDesc = false;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

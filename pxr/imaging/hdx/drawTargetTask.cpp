@@ -32,9 +32,20 @@
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+struct
+HdxDrawTargetTask::_RenderPassInfo
+{
+    HdStRenderPassStateSharedPtr renderPassState;
+    HdStSimpleLightingShaderSharedPtr simpleLightingShader;
+    HdStDrawTarget *target;
+    unsigned int version;
+};
 
 static
 HdCompareFunction
@@ -93,9 +104,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
 {
 }
 
-HdxDrawTargetTask::~HdxDrawTargetTask()
-{
-}
+HdxDrawTargetTask::~HdxDrawTargetTask() = default;
 
 namespace {
 
@@ -150,7 +159,7 @@ struct _DrawTargetEntry
     // Index in draw target vector created by namespace traversal
     size_t originalIndex;
     // The draw target
-    HdStDrawTarget const * drawTarget;
+    HdStDrawTarget * drawTarget;
     // Do other draw targets depend on this one?
     bool hasDependentDrawTargets;
 };
@@ -160,7 +169,7 @@ using _DrawTargetEntryVector = std::vector<_DrawTargetEntry>;
 // Topologically sort draw targets.
 static
 void
-_SortDrawTargets(HdStDrawTargetPtrConstVector const &drawTargets,
+_SortDrawTargets(HdStDrawTargetPtrVector const &drawTargets,
                  _DrawTargetEntryVector * result)
 {
     TRACE_FUNCTION();
@@ -251,7 +260,7 @@ _GetSortedDrawTargets(
     HdRenderIndex *renderIndex,
     _DrawTargetEntryVector *result)
 {
-    HdStDrawTargetPtrConstVector unsortedDrawTargets;
+    HdStDrawTargetPtrVector unsortedDrawTargets;
     HdStDrawTarget::GetDrawTargets(renderIndex, &unsortedDrawTargets);
     
     _SortDrawTargets(unsortedDrawTargets, result);
@@ -298,7 +307,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
-    unsigned drawTargetVersion
+    const unsigned drawTargetVersion
         = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
@@ -312,44 +321,37 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         _renderPasses.reserve(drawTargetEntries.size());
 
         for (_DrawTargetEntry const &entry : drawTargetEntries) {
-            if (HdStDrawTarget const * const drawTarget = entry.drawTarget) {
+            if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
                 if (drawTarget->IsEnabled()) {
-                    HdxDrawTargetRenderPassUniquePtr pass(
-                                    new HdxDrawTargetRenderPass(&renderIndex));
+                    HdxDrawTargetRenderPassUniquePtr pass =
+                        std::make_unique<HdxDrawTargetRenderPass>(&renderIndex);
 
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
                     pass->SetHasDependentDrawTargets(
                         entry.hasDependentDrawTargets);
+                    _renderPasses.push_back(std::move(pass));
 
-                    HdStRenderPassStateSharedPtr renderPassState(
-                        new HdStRenderPassState());
-                    HdStSimpleLightingShaderSharedPtr simpleLightingShader(
-                        new HdStSimpleLightingShader());
-
-                    _renderPassesInfo.emplace_back(
-                            RenderPassInfo {
-                                    renderPassState,
-                                    simpleLightingShader,
-                                    drawTarget,
-                                    drawTarget->GetVersion()
-                             });
-                    _renderPasses.emplace_back(std::move(pass));
+                    _renderPassesInfo.push_back(
+                        { std::make_shared<HdStRenderPassState>(),
+                          std::make_shared<HdStSimpleLightingShader>(),
+                          drawTarget,
+                          drawTarget->GetVersion() });
                 }
             }
         }
         _currentDrawTargetSetVersion = drawTargetVersion;
     } else {
-        size_t numRenderPasses = _renderPassesInfo.size();
+        const size_t numRenderPasses = _renderPassesInfo.size();
 
         // Need to look for changes in individual draw targets.
         for (size_t renderPassIdx = 0;
              renderPassIdx < numRenderPasses;
              ++renderPassIdx) {
-            RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+            _RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
 
-            const HdStDrawTarget *target = renderPassInfo.target;
-            unsigned int targetVersion = target->GetVersion();
+            HdStDrawTarget const *target = renderPassInfo.target;
+            const unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
                 _renderPasses[renderPassIdx]->SetDrawTarget(
@@ -371,24 +373,24 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     GlfSimpleLightingContextRefPtr lightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
-    size_t numRenderPasses = _renderPassesInfo.size();
+    const size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
-        HdxDrawTargetRenderPass *renderPass = 
+        _RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+        HdxDrawTargetRenderPass * const renderPass = 
             _renderPasses[renderPassIdx].get();
         HdStRenderPassStateSharedPtr &renderPassState = 
             renderPassInfo.renderPassState;
-        const HdStDrawTarget *drawTarget = renderPassInfo.target;
-        const HdStDrawTargetRenderPassState *drawTargetRenderPassState =
+        HdStDrawTarget * const drawTarget = renderPassInfo.target;
+        const HdStDrawTargetRenderPassState * const drawTargetRenderPassState =
             drawTarget->GetRenderPassState();
         const SdfPath &cameraId = drawTargetRenderPassState->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
-        const HdCamera *camera = static_cast<const HdCamera *>(
+        const HdCamera * const camera = static_cast<const HdCamera *>(
             renderIndex.GetSprim(HdPrimTypeTokens->camera,
                 cameraId));
 
@@ -399,7 +401,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             return;
         }
 
-        HdCompareFunction depthFunc =
+        const HdCompareFunction depthFunc =
             HdxDrawTargetTask_GetResolvedDepthFunc(
                 _depthFunc,
                 drawTargetRenderPassState->GetDepthPriority());
@@ -422,7 +424,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         // Update camera/framing state
         // XXX Since we flip the projection matrix below, we can't set the
         // camera handle on renderPassState and use its projection matrix.
-        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+        GfVec2i const &resolution = drawTarget->GetResolution();
 
         GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
         GfMatrix4d projectionMatrix = camera->GetProjectionMatrix();
@@ -431,7 +433,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
         projectionMatrix = projectionMatrix * yflip;
 
-        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
+        const GfVec4d viewport(0, 0, resolution[0], resolution[1]);
         renderPassState->SetCameraFramingState(
             viewMatrix, projectionMatrix, viewport, camera->GetClipPlanes());
 
@@ -470,18 +472,83 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     *dirtyBits = HdChangeTracker::Clean;
 }
 
+// Compute attachment descriptors for the draw target so that
+// the draw target textures are used as render targets.
+//
+static
+HgiGraphicsCmdsDesc
+_MakeGraphicsCmdsDesc(HdStDrawTarget * const drawTarget)
+{
+    static const HgiTextureHandle empty;
+
+    HgiGraphicsCmdsDesc desc;
+
+    for (const HdStDrawTarget::AttachmentData & data :
+             drawTarget->GetAttachments()) {
+
+        const bool isMultisampled = bool(data.textureMSAA);
+        // Render into MSAA texture if MSAA is used, otherwise
+        // render directly into target texture.
+        const HdStDynamicUvTextureObjectSharedPtr & textureObject =
+            isMultisampled ? data.textureMSAA : data.texture;
+        const HgiTextureHandle & texture =
+            textureObject->GetTexture();
+        // Only give the resolved texture when using MSAA.
+        const HgiTextureHandle resolveTexture =
+            isMultisampled ? data.texture->GetTexture() : empty;
+        
+        const GfVec3i &dimensions = texture->GetDescriptor().dimensions;
+        desc.width = dimensions[0];
+        desc.height = dimensions[1];
+        
+        HgiAttachmentDesc attachmentDesc;
+        attachmentDesc.loadOp =
+            HgiAttachmentLoadOpClear;
+        attachmentDesc.storeOp =
+            isMultisampled ? HgiAttachmentStoreOpDontCare
+                           : HgiAttachmentStoreOpStore;
+        attachmentDesc.clearValue = data.clearValue;
+        attachmentDesc.blendEnabled = false;
+        if (data.name == HdStDrawTargetTokens->depth.GetString()) {
+            desc.depthAttachmentDesc = std::move(attachmentDesc);
+            desc.depthTexture = texture;
+            desc.depthResolveTexture = resolveTexture;
+        } else {
+            desc.colorAttachmentDescs.push_back(std::move(attachmentDesc));
+            desc.colorTextures.push_back(texture);
+            if (resolveTexture) {
+                desc.colorResolveTextures.push_back(resolveTexture);
+            }
+        }
+    }
+
+    return desc;
+}
+
 void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
-    size_t numRenderPasses = _renderPassesInfo.size();
+    const size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdxDrawTargetRenderPass *renderPass =
+        HdxDrawTargetRenderPass * const renderPass =
             _renderPasses[renderPassIdx].get();
         renderPass->Prepare();
+
+        if (HdStDrawTarget::GetUseStormTextureSystem()) {
+            const _RenderPassInfo &info = _renderPassesInfo[renderPassIdx];
+
+            // (Re-)Allocate the GPU textures for attachments (if, e.g., not
+            // initialized).
+            info.target->AllocateTexturesIfNecessary();
+
+            // Make render pass use these textures as render targets.
+            info.renderPassState->SetCustomGraphicsCmdsDesc(
+                _MakeGraphicsCmdsDesc(info.target));
+        }
     }
 }
 
@@ -523,14 +590,14 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     // PSO.
     glFrontFace(GL_CW);
 
-    size_t numRenderPasses = _renderPassesInfo.size();
+    const size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdxDrawTargetRenderPass *renderPass = 
+        HdxDrawTargetRenderPass * const renderPass = 
             _renderPasses[renderPassIdx].get();
-        HdStRenderPassStateSharedPtr renderPassState =
+        HdStRenderPassStateSharedPtr const renderPassState =
             _renderPassesInfo[renderPassIdx].renderPassState;
         renderPassState->Bind();
         renderPass->Execute(renderPassState, GetRenderTags());
@@ -539,7 +606,9 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         if (renderPass->HasDependentDrawTargets()) {
             // If later draw targets depend on this one, we need to
             // resolve before they fire (if MSAA enabled).
-            renderPass->GetDrawTarget()->Resolve();
+            if (renderPass->GetDrawTarget()) {
+                renderPass->GetDrawTarget()->Resolve();
+            }
         }
     }
 

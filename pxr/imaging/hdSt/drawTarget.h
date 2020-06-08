@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -42,14 +43,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_DRAW_TARGET_TOKENS                  \
+#define HDST_DRAW_TARGET_TOKENS                 \
     (attachments)                               \
     (camera)                                    \
     (collection)                                \
     (depthClearValue)                           \
     (drawTargetSet)                             \
     (enable)                                    \
-    (resolution)
+    (resolution)                                \
+    (depth)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_API, HDST_DRAW_TARGET_TOKENS);
 
@@ -57,11 +59,15 @@ class HdSceneDelegate;
 class HdRenderIndex;
 class HdCamera;
 class HdStDrawTargetAttachmentDescArray;
+class HdStTextureIdentifier;
+class HdStResourceRegistry;
 
+using GlfGLContextSharedPtr = std::shared_ptr<class GlfGLContext>;
 
-typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
+using HdStDrawTargetPtrVector = std::vector<class HdStDrawTarget *>;
 
-typedef std::vector<class HdStDrawTarget const *> HdStDrawTargetPtrConstVector;
+using HdStDynamicUvTextureObjectSharedPtr =
+    std::shared_ptr<class HdStDynamicUvTextureObject>;
 
 /// \class HdStDrawTarget
 ///
@@ -70,12 +76,13 @@ typedef std::vector<class HdStDrawTarget const *> HdStDrawTargetPtrConstVector;
 /// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.
 ///
-class HdStDrawTarget : public HdSprim {
+class HdStDrawTarget : public HdSprim
+{
 public:
     HDST_API
     HdStDrawTarget(SdfPath const & id);
     HDST_API
-    virtual ~HdStDrawTarget();
+    ~HdStDrawTarget() override;
 
     /// Dirty bits for the HdStDrawTarget object
     enum DirtyBits : HdDirtyBits {
@@ -94,6 +101,20 @@ public:
                                    |DirtyDTCollection)
     };
 
+    /// If true, the draw target attachments are managed by the
+    /// Storm texture system. This also makes the draw target task
+    /// use HgiGraphicsCmdDesc to bind the attachments as render
+    /// targets. Shaders who want to read the attachments can bind
+    /// the textures like any other texture in the Storm texture
+    /// system.
+    /// Note: draw targets managed by the Storm texture system do not
+    /// work when bindless textures are enabled.
+    ///
+    /// If false, uses GlfDrawTarget.
+    ///
+    HDST_API
+    static bool GetUseStormTextureSystem();
+
     /// Returns the version of the under-lying GlfDrawTarget.
     /// The version changes if the draw target attachments texture ids
     /// are changed in anyway (for example switching to a new
@@ -104,15 +125,15 @@ public:
 
     /// Synchronizes state from the delegate to this object.
     HDST_API
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
-
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
+    
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
     HDST_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 
     // ---------------------------------------------------------------------- //
@@ -138,8 +159,64 @@ public:
     /// returns all HdStDrawTargets in the render index
     HDST_API
     static void GetDrawTargets(HdRenderIndex* renderIndex,
-                               HdStDrawTargetPtrConstVector *drawTargets);
+                               HdStDrawTargetPtrVector *drawTargets);
 
+    /// When using the Storm texture system for draw targets, returns
+    /// the texture identifier for an attachment. A shader can bind
+    /// this texture using this texture identifier when allocating a
+    /// texture handle with the resource registry.
+    ///
+    /// Note: Calling GetTextureIdentifier from within a material sync
+    /// is still safe even though a draw target might be synced after
+    /// the material since both are sprims.
+    ///
+    HDST_API
+    HdStTextureIdentifier GetTextureIdentifier(
+        /// Name of attachment (depth is treated the same as color attachments).
+        const std::string &attachmentName,
+        const HdSceneDelegate * sceneDelegate,
+        /// Retrieve MSAA texture instead of resolved texture.
+        bool multiSampled = false) const;
+
+    /// Allocate the actual GPU textures used as attachments.
+    ///
+    /// Only call if using the Storm texture system.
+    ///
+    HDST_API
+    void AllocateTexturesIfNecessary();
+
+    /// The data describing the draw target attachments when using the Storm
+    /// texture system. Filled during Sync.
+    struct AttachmentData {
+        /// Attachment name (e.g., color, depth).
+        std::string name;
+        /// Value used to clear attachment before rendering to it.
+        GfVec4f clearValue;
+        /// Format of attachment
+        HdFormat format;
+        /// (Resolved) texture to read from.
+        HdStDynamicUvTextureObjectSharedPtr texture;
+        /// MSAA texture to render to (if MSAA is enabled for draw targets).
+        HdStDynamicUvTextureObjectSharedPtr textureMSAA;
+    };
+
+    using AttachmentDataVector = std::vector<AttachmentData>;
+    
+    /// Get data describing the darw target attachments.
+    ///
+    /// Only call if using the Storm texture system.
+    ///
+    const AttachmentDataVector &GetAttachments() const {
+        return _attachmentDataVector;
+    }
+
+    /// Resolution.
+    ///
+    /// Set during sync.
+    ///
+    const GfVec2i &GetResolution() const {
+        return _resolution;
+    }
 
 private:
     unsigned int     _version;
@@ -147,6 +224,7 @@ private:
     bool                    _enabled;
     SdfPath                 _cameraId;
     GfVec2i                 _resolution;
+    float                   _depthClearValue;
     HdRprimCollection       _collection;
 
     HdStDrawTargetRenderPassState _renderPassState;
@@ -157,8 +235,28 @@ private:
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
+    AttachmentDataVector _attachmentDataVector;
+    // Is it necessary to create GPU resources because they are uninitialized
+    // or the attachments/resolution changed.
+    bool _texturesDirty;
+
     void _SetAttachments(HdSceneDelegate *sceneDelegate,
                          const HdStDrawTargetAttachmentDescArray &attachments);
+
+    // Helper used to populate attachment data.
+    HdStDynamicUvTextureObjectSharedPtr _CreateTextureObject(
+        const std::string &name,
+        HdSceneDelegate * sceneDelegate,
+        HdStResourceRegistry * resourceRegistry,
+        bool multiSampled);
+
+    // Populate attachment data from descriptor.
+    void _SetAttachmentData(
+        HdSceneDelegate *sceneDelegate,
+        const HdStDrawTargetAttachmentDescArray &attachments);
+
+    // Set clear value for depth attachments.
+    void _SetAttachmentDataDepthClearValue();
 
     void _SetCamera(const SdfPath &cameraPath);
 

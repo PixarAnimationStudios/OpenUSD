@@ -71,6 +71,12 @@ HdxDrawTargetResolveTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    if (HdStDrawTarget::GetUseStormTextureSystem()) {
+        // When submitting graphics cmds through Hgi, the MSAA textures
+        // will be resolved automatically and there is no need for this task.
+        return;
+    }
+
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.
     HdTaskContext::const_iterator valueIt =

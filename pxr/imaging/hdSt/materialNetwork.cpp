@@ -738,7 +738,7 @@ _MakeMaterialParamsForTexture(
 
     // Extract texture file path
     std::string filePath;
-    bool askSceneDelegateForTexture = true;
+    bool useTexturePrimToFindTexture = true;
     
     SdfPath texturePrimPathForSceneDelegate;
 
@@ -765,7 +765,7 @@ _MakeMaterialParamsForTexture(
             // types). The HdSceneDelegate::GetTextureResource/ID path will
             // be obsoleted and probably removed at some point.
             if (v.IsHolding<SdfAssetPath>() || v.IsHolding<std::string>()) {
-                askSceneDelegateForTexture = false;
+                useTexturePrimToFindTexture = false;
             }
         }
     } else {
@@ -878,7 +878,7 @@ _MakeMaterialParamsForTexture(
           textureType,
           _GetSamplerParameters(nodePath, node, sdrNode),
           memoryRequest,
-          askSceneDelegateForTexture,
+          useTexturePrimToFindTexture,
           texturePrimPathForSceneDelegate,
           // Default value for the old texture system
           _GetParamFallbackValue(network, downstreamNode, paramName) });

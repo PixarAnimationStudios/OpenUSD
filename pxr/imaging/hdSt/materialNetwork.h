@@ -85,10 +85,15 @@ public:
         // Memory request in bytes.
         size_t memoryRequest;
 
-        // Use HdSceneDelegate::GetTextureResourceID and
-        // HdSceneDelegate::GetTextureResource instead of allocating
-        // the texture using the Storm texture system.
-        bool askSceneDelegateForTexture;
+        // The texture is not just identified by a file path attribute
+        // on the texture prim but there is special API to texture prim
+        // to obtain the texture.
+        //
+        // This is used for draw targets and for scene delegates that
+        // provide textures through
+        // HdSceneDelegate::GetTextureResourceID and
+        // HdSceneDelegate::GetTextureResource.
+        bool useTexturePrimToFindTexture;
         // The value passed to HdSceneDelegate::GetTextureResourceID.
         SdfPath texturePrim;
         // Fallback value from texture node used when the texture

@@ -27,63 +27,55 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hdx/drawTargetRenderPass.h"
 
 #include "pxr/imaging/hd/task.h"
 
-#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStDrawTarget;
-
 using HdxDrawTargetRenderPassUniquePtr =
-    std::unique_ptr<HdxDrawTargetRenderPass>;
+    std::unique_ptr<class HdxDrawTargetRenderPass>;
 using HdStSimpleLightingShaderSharedPtr =
     std::shared_ptr<class HdStSimpleLightingShader>;
 
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
 
-class HdxDrawTargetTask  : public HdTask {
+class HdxDrawTargetTask  : public HdTask
+{
 public:
     HDX_API
     HdxDrawTargetTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxDrawTargetTask();
+    ~HdxDrawTargetTask() override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
+    void Sync(HdSceneDelegate* delegate,
+              HdTaskContext* ctx,
+              HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
-
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
+    
     /// Execute render pass task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
     /// Collect Render Tags used by the task.
     HDX_API
-    virtual const TfTokenVector &GetRenderTags() const override;
+    const TfTokenVector &GetRenderTags() const override;
 
 private:
-    struct RenderPassInfo {
-        HdStRenderPassStateSharedPtr renderPassState;
-        HdStSimpleLightingShaderSharedPtr simpleLightingShader;
-        const HdStDrawTarget *target;
-        unsigned int version;
-    };
+    struct _RenderPassInfo;
     unsigned _currentDrawTargetSetVersion;
 
-    typedef std::vector< RenderPassInfo > RenderPassInfoArray;
-    RenderPassInfoArray _renderPassesInfo;
+    using _RenderPassInfoVector = std::vector<_RenderPassInfo>;
+    _RenderPassInfoVector _renderPassesInfo;
     std::vector< HdxDrawTargetRenderPassUniquePtr > _renderPasses;
 
     // Raster State - close match to render task
