@@ -70,6 +70,15 @@ _CreateSourceTypeAttr(UsdRenderVar &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRenderVar &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRender.Var(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRenderVar()
@@ -124,6 +133,7 @@ void wrapUsdRenderVar()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

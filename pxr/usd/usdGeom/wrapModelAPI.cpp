@@ -119,6 +119,15 @@ _CreateModelCardTextureZNegAttr(UsdGeomModelAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomModelAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.ModelAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomModelAPI()
@@ -222,6 +231,7 @@ void wrapUsdGeomModelAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

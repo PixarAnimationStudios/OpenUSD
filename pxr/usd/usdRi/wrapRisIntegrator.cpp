@@ -63,6 +63,15 @@ _CreateArgsPathAttr(UsdRiRisIntegrator &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiRisIntegrator &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.RisIntegrator(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiRisIntegrator()
@@ -110,6 +119,7 @@ void wrapUsdRiRisIntegrator()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

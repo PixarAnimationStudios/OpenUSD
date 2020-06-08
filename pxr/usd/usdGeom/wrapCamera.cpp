@@ -140,6 +140,15 @@ _CreateShutterCloseAttr(UsdGeomCamera &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomCamera &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Camera(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomCamera()
@@ -264,6 +273,7 @@ void wrapUsdGeomCamera()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -77,6 +77,15 @@ _CreateNormalsAttr(UsdGeomPointBased &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Normal3fArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomPointBased &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.PointBased(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomPointBased()
@@ -135,6 +144,7 @@ void wrapUsdGeomPointBased()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

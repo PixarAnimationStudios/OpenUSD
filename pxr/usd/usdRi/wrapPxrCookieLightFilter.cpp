@@ -329,6 +329,15 @@ _CreateColorTintAttr(UsdRiPxrCookieLightFilter &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiPxrCookieLightFilter &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.PxrCookieLightFilter(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiPxrCookieLightFilter()
@@ -642,6 +651,7 @@ void wrapUsdRiPxrCookieLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -56,6 +56,15 @@ _CreateTangentsAttr(UsdGeomHermiteCurves &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomHermiteCurves &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.HermiteCurves(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomHermiteCurves()
@@ -96,6 +105,7 @@ void wrapUsdGeomHermiteCurves()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);
@@ -122,7 +132,7 @@ void wrapUsdGeomHermiteCurves()
 
 namespace {
 
-static std::string _Repr(
+static std::string _PointAndTangentsRepr(
     const UsdGeomHermiteCurves::PointAndTangentArrays &arrays) {
     return TfStringPrintf("UsdGeom.HermiteCurves(%s, %s)",
                           TfPyRepr(arrays.GetPoints()).c_str(),
@@ -144,7 +154,7 @@ WRAP_CUSTOM {
             .def("Interleave", &ThisStruct::Interleave)
             .def("Separate", &ThisStruct::Separate)
             .staticmethod("Separate")
-            .def("__repr__", &::_Repr)
+            .def("__repr__", &::_PointAndTangentsRepr)
             .def(!self)
             .def(self == self)
             .def(self != self);

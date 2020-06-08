@@ -98,6 +98,15 @@ _CreateGainAttr(UsdMediaSpatialAudio &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdMediaSpatialAudio &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdMedia.SpatialAudio(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdMediaSpatialAudio()
@@ -180,6 +189,7 @@ void wrapUsdMediaSpatialAudio()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

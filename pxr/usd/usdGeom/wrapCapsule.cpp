@@ -77,6 +77,15 @@ _CreateExtentAttr(UsdGeomCapsule &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomCapsule &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Capsule(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomCapsule()
@@ -138,6 +147,7 @@ void wrapUsdGeomCapsule()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

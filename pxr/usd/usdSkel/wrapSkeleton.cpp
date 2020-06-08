@@ -77,6 +77,15 @@ _CreateRestTransformsAttr(UsdSkelSkeleton &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4dArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSkelSkeleton &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSkel.Skeleton(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSkelSkeleton()
@@ -138,6 +147,7 @@ void wrapUsdSkelSkeleton()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

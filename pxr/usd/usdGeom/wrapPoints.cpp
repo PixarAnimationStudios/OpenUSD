@@ -63,6 +63,15 @@ _CreateIdsAttr(UsdGeomPoints &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomPoints &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Points(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomPoints()
@@ -110,6 +119,7 @@ void wrapUsdGeomPoints()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

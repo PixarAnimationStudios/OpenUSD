@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdSkelPackedJointAnimation &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSkel.PackedJointAnimation(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSkelPackedJointAnimation()
@@ -82,6 +91,7 @@ void wrapUsdSkelPackedJointAnimation()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

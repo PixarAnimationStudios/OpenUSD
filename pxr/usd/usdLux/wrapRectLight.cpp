@@ -70,6 +70,15 @@ _CreateTextureFileAttr(UsdLuxRectLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxRectLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.RectLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxRectLight()
@@ -124,6 +133,7 @@ void wrapUsdLuxRectLight()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

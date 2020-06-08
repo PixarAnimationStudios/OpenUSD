@@ -63,6 +63,15 @@ _CreateTreatAsPointAttr(UsdLuxSphereLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxSphereLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.SphereLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxSphereLight()
@@ -110,6 +119,7 @@ void wrapUsdLuxSphereLight()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

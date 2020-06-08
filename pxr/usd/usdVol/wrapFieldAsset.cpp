@@ -56,6 +56,15 @@ _CreateFilePathAttr(UsdVolFieldAsset &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdVolFieldAsset &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdVol.FieldAsset(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdVolFieldAsset()
@@ -93,6 +102,7 @@ void wrapUsdVolFieldAsset()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

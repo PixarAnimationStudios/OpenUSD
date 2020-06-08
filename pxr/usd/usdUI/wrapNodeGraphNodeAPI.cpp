@@ -91,6 +91,15 @@ _CreateSizeAttr(UsdUINodeGraphNodeAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdUINodeGraphNodeAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdUI.NodeGraphNodeAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdUINodeGraphNodeAPI()
@@ -166,6 +175,7 @@ void wrapUsdUINodeGraphNodeAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

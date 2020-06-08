@@ -721,6 +721,15 @@ _CreateFrame4dArrayAttr(UsdContrivedBase &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Frame4dArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdContrivedBase &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdContrived.Base(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedBase()
@@ -1423,6 +1432,7 @@ void wrapUsdContrivedBase()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

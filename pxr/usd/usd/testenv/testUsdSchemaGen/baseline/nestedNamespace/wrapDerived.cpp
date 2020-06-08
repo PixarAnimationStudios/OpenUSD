@@ -119,6 +119,15 @@ _CreateJustDefaultAttr(UsdContrivedDerived &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdContrivedDerived &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdContrived.Derived(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedDerived()
@@ -227,6 +236,7 @@ void wrapUsdContrivedDerived()
              &This::GetBindingRel)
         .def("CreateBindingRel",
              &This::CreateBindingRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -91,6 +91,15 @@ _CreateBlendShapeWeightsAttr(UsdSkelAnimation &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSkelAnimation &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSkel.Animation(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSkelAnimation()
@@ -166,6 +175,7 @@ void wrapUsdSkelAnimation()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -56,6 +56,15 @@ _CreateLightListCacheBehaviorAttr(UsdLuxListAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxListAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.ListAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxListAPI()
@@ -101,6 +110,7 @@ void wrapUsdLuxListAPI()
              &This::GetLightListRel)
         .def("CreateLightListRel",
              &This::CreateLightListRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

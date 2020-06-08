@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdShadeNodeGraph &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdShade.NodeGraph(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdShadeNodeGraph()
@@ -82,6 +91,7 @@ void wrapUsdShadeNodeGraph()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

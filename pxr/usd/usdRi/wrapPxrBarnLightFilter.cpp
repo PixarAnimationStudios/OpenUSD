@@ -231,6 +231,15 @@ _CreateEdgeScaleRightAttr(UsdRiPxrBarnLightFilter &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiPxrBarnLightFilter &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.PxrBarnLightFilter(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiPxrBarnLightFilter()
@@ -446,6 +455,7 @@ void wrapUsdRiPxrBarnLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

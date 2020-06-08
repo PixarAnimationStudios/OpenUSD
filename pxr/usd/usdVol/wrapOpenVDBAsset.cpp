@@ -56,6 +56,15 @@ _CreateFieldNameAttr(UsdVolOpenVDBAsset &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdVolOpenVDBAsset &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdVol.OpenVDBAsset(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdVolOpenVDBAsset()
@@ -96,6 +105,7 @@ void wrapUsdVolOpenVDBAsset()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

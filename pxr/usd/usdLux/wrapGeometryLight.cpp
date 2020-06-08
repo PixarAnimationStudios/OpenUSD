@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdLuxGeometryLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.GeometryLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxGeometryLight()
@@ -87,6 +96,7 @@ void wrapUsdLuxGeometryLight()
              &This::GetGeometryRel)
         .def("CreateGeometryRel",
              &This::CreateGeometryRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);
