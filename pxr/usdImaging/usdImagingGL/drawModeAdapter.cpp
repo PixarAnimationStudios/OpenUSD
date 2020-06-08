@@ -25,16 +25,12 @@
 #include "pxr/usdImaging/usdImagingGL/package.h"
 #include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
-#include "pxr/usdImaging/usdImaging/debugCodes.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/material.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/image.h"
