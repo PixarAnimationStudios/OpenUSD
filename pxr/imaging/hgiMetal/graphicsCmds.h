@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_GRAPHICS_ENCODER_H
-#define PXR_IMAGING_HGI_METAL_GRAPHICS_ENCODER_H
+#ifndef PXR_IMAGING_HGI_METAL_GRAPHICS_CMDS_H
+#define PXR_IMAGING_HGI_METAL_GRAPHICS_CMDS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
@@ -39,7 +39,7 @@ struct HgiGraphicsCmdsDesc;
 
 /// \class HgiMetalGraphicsCmds
 ///
-/// Metalk implementation of HgiGraphicsEncoder.
+/// Metal implementation of HgiGraphicsEncoder.
 ///
 class HgiMetalGraphicsCmds final : public HgiGraphicsCmds
 {
@@ -87,10 +87,10 @@ protected:
     HgiMetalGraphicsCmds(
         HgiMetal* hgi,
         HgiGraphicsCmdsDesc const& desc);
-    
+
     HGIMETAL_API
     bool Commit();
-    
+
 private:
     HgiMetalGraphicsCmds() = delete;
     HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
