@@ -598,15 +598,18 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
 void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
     UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const
 {
-    // Append the new applied schema names to the existing applied schemas for
+    // Prepend the new applied schema names to the existing applied schemas for
     // prim definition.
-    primDef->_appliedAPISchemas.insert(primDef->_appliedAPISchemas.end(), 
+    primDef->_appliedAPISchemas.insert(primDef->_appliedAPISchemas.begin(), 
         appliedAPISchemas.begin(), appliedAPISchemas.end());
 
     // Now we'll add in properties from each new applied API schema in order. 
-    // Note that applied API schemas are ordered weakest to strongest so we 
-    // overwrite a property's path if we encounter a duplicate property name.
-    for (const TfToken &schema : appliedAPISchemas) {
+    // Note that applied API schemas are ordered strongest to weakest so we
+    // apply in reverse order, overwriting a property's path if we encounter a 
+    // duplicate property name.
+    for (auto it = appliedAPISchemas.crbegin(); 
+         it != appliedAPISchemas.crend(); ++it) {
+        const TfToken &schema = *it;
 
         // Applied schemas may be single or multiple apply so we have to parse
         // the schema name into a type and possibly an instance name.

@@ -337,13 +337,13 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Prim has the same type and now has both its original API schemas and
         # the new one. Note that the new schema was added using an explicit 
-        # list op but was still appended to the original list. Fallback API 
+        # list op but was still prepended to the original list. Fallback API 
         # schemas cannot be deleted and any authored API schemas will always be
-        # appended to the fallbacks.
+        # prepended to the fallbacks.
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
-            ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI", 
-             "TestMultiApplyAPI:garply"])
+            ["TestMultiApplyAPI:garply", 
+             "TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
                          'TestWithFallbackAppliedSchema')
         # Note that prim type info does NOT contain the fallback applied API
