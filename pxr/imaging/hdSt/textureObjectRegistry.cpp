@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
 #include "pxr/imaging/hdSt/textureObject.h"
+#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 
@@ -45,6 +46,15 @@ HdSt_TextureObjectRegistry::SetHgi(Hgi * const hgi)
     _hgi = hgi;
 }
 
+bool
+static
+_IsDynamic(const HdStTextureIdentifier &textureId)
+{
+    return
+        dynamic_cast<const HdStDynamicUvSubtextureIdentifier*>(
+            textureId.GetSubtextureIdentifier());
+}
+
 HdStTextureObjectSharedPtr
 HdSt_TextureObjectRegistry::_MakeTextureObject(
     const HdStTextureIdentifier &textureId,
@@ -52,7 +62,13 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
 {
     switch(textureType) {
     case HdTextureType::Uv:
-        return std::make_shared<HdStUvTextureObject>(textureId, this);
+        if (_IsDynamic(textureId)) {
+            return
+                std::make_shared<HdStDynamicUvTextureObject>(textureId, this);
+        } else {
+            return
+                std::make_shared<HdStAssetUvTextureObject>(textureId, this);
+        }
     case HdTextureType::Field:
         return std::make_shared<HdStFieldTextureObject>(textureId, this);
     case HdTextureType::Ptex:

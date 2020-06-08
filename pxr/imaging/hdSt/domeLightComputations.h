@@ -58,8 +58,6 @@ public:
         // Name of computation shader to use, also used as
         // key when setting the GL name on the lighting shader
         const TfToken & shaderToken, 
-        // OpenGL texture name of texture serving as source
-        unsigned int sourceGLTextureName, 
         // Lighting shader that remembers the GL texture names
         HdStSimpleLightingShaderPtr const &lightingShader,
         // Number of mip levels.
@@ -81,11 +79,7 @@ public:
     int GetNumOutputElements() const override { return 0; }
 
 private:
-    uint32_t _CreateGLTexture(int32_t width, int32_t height) const;
-
-private:
     const TfToken _shaderToken;
-    const uint32_t _sourceGLTextureName;
     HdStSimpleLightingShaderPtr const _lightingShader;
     const unsigned int _numLevels;
     const unsigned int _level;

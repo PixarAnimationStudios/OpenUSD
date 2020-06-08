@@ -98,4 +98,23 @@ HdStUvOrientationSubtextureIdentifier::Hash() const
     }
 }
 
+HdStDynamicUvSubtextureIdentifier::HdStDynamicUvSubtextureIdentifier()
+    = default;
+
+HdStDynamicUvSubtextureIdentifier::~HdStDynamicUvSubtextureIdentifier()
+    = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStDynamicUvSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStDynamicUvSubtextureIdentifier>();
+}
+
+HdStSubtextureIdentifier::ID
+HdStDynamicUvSubtextureIdentifier::Hash() const
+{
+    static ID result = TfToken("dynamicTexture").Hash();
+    return result;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

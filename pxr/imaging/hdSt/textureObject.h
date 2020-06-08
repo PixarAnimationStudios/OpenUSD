@@ -121,25 +121,54 @@ private:
 
 /// \class HdStUvTextureObject
 ///
-/// A uv texture.
+/// A base class for uv textures.
 ///
-class HdStUvTextureObject final : public HdStTextureObject
+class HdStUvTextureObject : public HdStTextureObject
+{
+public:
+    /// Get the handle to the actual GPU resource.
+    ///
+    /// Only valid after commit phase.
+    ///
+    HDST_API
+    virtual HgiTextureHandle const &GetTexture() const = 0;
+
+    /// Opinion about wrapS and wrapT parameters from the texture file.
+    ///
+    /// Only valid after commit phase. Can be HdWrapNoOpinion.
+    HDST_API
+    virtual const std::pair<HdWrap, HdWrap> &GetWrapParameters() const = 0;
+
+    HDST_API
+    HdTextureType GetTextureType() const override final;
+
+protected:
+    HdStUvTextureObject(
+        const HdStTextureIdentifier &textureId,
+        HdSt_TextureObjectRegistry * textureObjectRegistry);
+};
+
+/// \class HdAssetStUvTextureObject
+///
+/// A uv texture loading the asset identified by the texture identifier.
+///
+class HdStAssetUvTextureObject final : public HdStUvTextureObject
 {
 public:
     HDST_API
-    HdStUvTextureObject(
+    HdStAssetUvTextureObject(
         const HdStTextureIdentifier &textureId,
         HdSt_TextureObjectRegistry *textureObjectRegistry);
 
     HDST_API
-    ~HdStUvTextureObject() override;
+    ~HdStAssetUvTextureObject() override;
 
     /// Get the handle to the actual GPU resource.
     ///
     /// Only valid after commit phase.
     ///
     HDST_API
-    HgiTextureHandle const &GetTexture() const {
+    HgiTextureHandle const &GetTexture() const override {
         return _gpuTexture;
     }
 
@@ -147,15 +176,12 @@ public:
     ///
     /// Only valid after commit phase. Can be HdWrapNoOpinion.
     HDST_API
-    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const {
+    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const override {
         return _wrapParameters;
     }
 
     HDST_API
     bool IsValid() const override;
-
-    HDST_API
-    HdTextureType GetTextureType() const override;
 
 protected:
     HDST_API

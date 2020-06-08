@@ -114,6 +114,12 @@ public:
     ///
     void MarkSamplerGarbageCollectionNeeded();
 
+    /// Get texture object registry.
+    ///
+    HdSt_TextureObjectRegistry * GetTextureObjectRegistry() const {
+        return _textureObjectRegistry.get();
+    }
+
     /// Get sampler object registry.
     ///
     HdSt_SamplerObjectRegistry * GetSamplerObjectRegistry() const {

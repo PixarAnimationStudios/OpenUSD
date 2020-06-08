@@ -49,6 +49,7 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        dynamicUvTextureObject
         extComputation
         extCompGpuComputation
         extCompGpuComputationBufferSource

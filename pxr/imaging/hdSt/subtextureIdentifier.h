@@ -118,6 +118,30 @@ private:
     bool _flipVertically;
 };
 
+///
+/// \class HdStDynamicUvSubtextureIdentifier
+///
+/// Used as a tag that the Storm texture system returns a
+/// HdStDynamicUvTextureObject that is populated by a client rather
+/// than by the Storm texture system.
+///
+class HdStDynamicUvSubtextureIdentifier final
+                                : public HdStSubtextureIdentifier
+{
+public:
+    HDST_API
+    HdStDynamicUvSubtextureIdentifier();
+
+    HDST_API
+    ~HdStDynamicUvSubtextureIdentifier() override;
+    
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    HDST_API
+    ID Hash() const override;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

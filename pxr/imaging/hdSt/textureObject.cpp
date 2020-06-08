@@ -413,6 +413,23 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
 ///////////////////////////////////////////////////////////////////////////////
 // Uv texture
 
+HdStUvTextureObject::HdStUvTextureObject(
+    const HdStTextureIdentifier &textureId,
+    HdSt_TextureObjectRegistry * textureObjectRegistry)
+  : HdStTextureObject(textureId, textureObjectRegistry)
+{
+}
+
+
+HdTextureType
+HdStUvTextureObject::GetTextureType() const
+{
+    return HdTextureType::Uv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Uv asset texture
+
 static
 HdWrap
 _GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
@@ -475,15 +492,15 @@ _GetImageOriginLocation(const HdStSubtextureIdentifier * const subId)
     return GlfImage::OriginLowerLeft;
 }
 
-HdStUvTextureObject::HdStUvTextureObject(
+HdStAssetUvTextureObject::HdStAssetUvTextureObject(
     const HdStTextureIdentifier &textureId,
     HdSt_TextureObjectRegistry * const textureObjectRegistry)
-  : HdStTextureObject(textureId, textureObjectRegistry)
+  : HdStUvTextureObject(textureId, textureObjectRegistry)
   , _wrapParameters{HdWrapUseMetadata, HdWrapUseMetadata}
 {
 }
 
-HdStUvTextureObject::~HdStUvTextureObject()
+HdStAssetUvTextureObject::~HdStAssetUvTextureObject()
 {
     if (Hgi * hgi = _GetHgi()) {
         hgi->DestroyTexture(&_gpuTexture);
@@ -491,7 +508,7 @@ HdStUvTextureObject::~HdStUvTextureObject()
 }
 
 void
-HdStUvTextureObject::_Load()
+HdStAssetUvTextureObject::_Load()
 {
     TRACE_FUNCTION();
 
@@ -520,7 +537,7 @@ HdStUvTextureObject::_Load()
 }
 
 void
-HdStUvTextureObject::_Commit()
+HdStAssetUvTextureObject::_Commit()
 {
     TRACE_FUNCTION();
 
@@ -550,15 +567,9 @@ HdStUvTextureObject::_Commit()
 }
 
 bool
-HdStUvTextureObject::IsValid() const
+HdStAssetUvTextureObject::IsValid() const
 {
     return _gpuTexture;
-}
-
-HdTextureType
-HdStUvTextureObject::GetTextureType() const
-{
-    return HdTextureType::Uv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

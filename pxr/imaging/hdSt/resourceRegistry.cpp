@@ -38,6 +38,7 @@
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/textureHandleRegistry.h"
+#include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -1096,6 +1097,19 @@ HdStResourceRegistry::AllocateTextureHandle(
         samplerParams, memoryRequest, createBindlessHandle,
         shaderCode);
 }
+
+HdStTextureObjectSharedPtr
+HdStResourceRegistry::AllocateTextureObject(
+        HdStTextureIdentifier const &textureId,
+        const HdTextureType textureType)
+{
+    HdSt_TextureObjectRegistry * const reg = 
+        _textureHandleRegistry->GetTextureObjectRegistry();
+        
+    return reg->AllocateTextureObject(
+        textureId, textureType);
+            
+}    
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
