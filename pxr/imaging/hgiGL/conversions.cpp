@@ -89,9 +89,12 @@ static_assert(_CompileTimeValidateHgiFormatTable(),
 static const uint32_t
 _ShaderStageTable[][2] =
 {
-    {HgiShaderStageVertex,   GL_VERTEX_SHADER},
-    {HgiShaderStageFragment, GL_FRAGMENT_SHADER},
-    {HgiShaderStageCompute,  GL_COMPUTE_SHADER}
+    {HgiShaderStageVertex,              GL_VERTEX_SHADER},
+    {HgiShaderStageFragment,            GL_FRAGMENT_SHADER},
+    {HgiShaderStageCompute,             GL_COMPUTE_SHADER},
+    {HgiShaderStageTessellationControl, GL_TESS_CONTROL_SHADER},
+    {HgiShaderStageTessellationEval,    GL_TESS_EVALUATION_SHADER},
+    {HgiShaderStageGeometry,            GL_GEOMETRY_SHADER}
 };
 
 static const uint32_t

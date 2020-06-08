@@ -327,6 +327,11 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         case HgiShaderStageCompute:
             entryPoint = @"computeEntryPoint";
             break;
+        case HgiShaderStageTessellationControl:
+        case HgiShaderStageTessellationEval:
+        case HgiShaderStageGeometry:
+            TF_CODING_ERROR("Todo: Unsupported shader stage");
+            break;
     }
     
     // Load the function into the library

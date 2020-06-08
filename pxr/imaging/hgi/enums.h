@@ -252,13 +252,25 @@ using HgiBufferUsage = HgiBits;
 ///   Fragment Shader.</li>
 /// <li>HgiShaderStageCompute:
 ///   Compute Shader.</li>
+/// <li>HgiShaderStageTessellationControl:
+///   Transforms the control points of the low order surface (patch).
+///   This runs before the tessellator fixed function stage.</li>
+/// <li>HgiShaderStageTessellationEval:
+///   Generates the surface geometry (the points) from the transformed control
+///   points for every coordinate coming out of the tessellator fixed function
+///  stage. </li>
+/// <li>HgiShaderStageGeometry:
+///   Governs the processing of Primitives.</li>
 /// </ul>
 ///
 enum HgiShaderStageBits : HgiBits
 {
-    HgiShaderStageVertex   = 1 << 0,
-    HgiShaderStageFragment = 1 << 1,
-    HgiShaderStageCompute  = 1 << 2
+    HgiShaderStageVertex               = 1 << 0,
+    HgiShaderStageFragment             = 1 << 1,
+    HgiShaderStageCompute              = 1 << 2,
+    HgiShaderStageTessellationControl  = 1 << 3,
+    HgiShaderStageTessellationEval     = 1 << 4,
+    HgiShaderStageGeometry             = 1 << 5,
 };
 using HgiShaderStage = HgiBits;
 
