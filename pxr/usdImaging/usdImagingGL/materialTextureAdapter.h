@@ -48,17 +48,6 @@ public:
 
     USDIMAGINGGL_API
     virtual ~UsdImagingGLMaterialTextureAdapter();
-    
-    // ---------------------------------------------------------------------- //
-    /// \name Texture resources
-    // ---------------------------------------------------------------------- //
-
-    USDIMAGINGGL_API
-    HdTextureResourceSharedPtr
-    GetTextureResource(
-        UsdPrim const& usdPrim, 
-        SdfPath const &id, 
-        UsdTimeCode time) const override;
 };
 
 

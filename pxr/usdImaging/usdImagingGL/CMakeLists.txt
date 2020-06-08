@@ -58,7 +58,6 @@ pxr_library(usdImagingGL
 
     PRIVATE_CLASSES
         legacyEngine
-        textureUtils
 
     PRIVATE_HEADERS
         unitTestGLDrawing.h
