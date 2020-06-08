@@ -84,7 +84,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (instance)
     (Material)
     (DomeLight)
-    (MaterialTexture)
     (lightFilterType)
     (textureMemory)
 );
@@ -243,19 +242,6 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
         adapterKey = prim.GetPrimTypeInfo().GetSchemaTypeName();
-
-        // XXX Checking for preview binding purpose here is wrong.
-        // What we really want to do is check for Storm specifically, because
-        // a renderer like HdPrman also supports Preview purpose, but does not
-        // want to run the below Storm-specific adapters.
-
-        TfToken bindingPurpose = GetRenderIndex().
-            GetRenderDelegate()->GetMaterialBindingPurpose();
-
-        if (bindingPurpose == HdTokens->preview &&
-            adapterKey == _tokens->Material) {
-            adapterKey = _tokens->MaterialTexture;
-        }
     }
 
     return _AdapterLookup(adapterKey);

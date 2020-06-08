@@ -7,11 +7,6 @@
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "__drawModeAdapter"
-                    },
-                    "UsdImagingGLMaterialTextureAdapter" : {
-                        "bases": ["UsdImagingMaterialAdapter"],
-                        "isInternal": true,
-                        "primTypeName": "MaterialTexture"
                     }
                 }
             },

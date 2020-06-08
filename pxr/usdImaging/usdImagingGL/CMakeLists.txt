@@ -47,7 +47,6 @@ pxr_library(usdImagingGL
     PUBLIC_CLASSES
         drawModeAdapter
         engine
-        materialTextureAdapter
         package
         renderParams
 
