@@ -120,7 +120,6 @@ private:
         void _GetCustomBindings(
             HdBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const override;
-        bool _Link(HdStGLSLProgramSharedPtr const & glslProgram) override;
     private:
         bool _useDrawArrays;
         bool _useInstanceCulling;
@@ -132,11 +131,11 @@ private:
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCulling(HdStDrawItem const *item,
+    void _GPUFrustumInstanceCulling(HdStDrawItem const *item,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCullingXFB(HdStDrawItem const *item,
+    void _GPUFrustumNonInstanceCulling(HdStDrawItem const *item,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
