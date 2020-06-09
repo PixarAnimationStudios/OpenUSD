@@ -171,11 +171,16 @@ public:
     HGI_API
     virtual TfToken const& GetAPIName() const = 0;
 
-    /// Called at the start of a new rendering frame.
+    /// Optionally called by client app at the start of a new rendering frame.
+    /// We can't rely on StartFrame for anything important, because it is up to
+    /// the external client to (optionally) call this and they may never do.
+    /// Hydra doesn't have a clearly defined start or end frame.
+    /// This can be helpful to insert GPU frame debug markers.
     HGI_API
     virtual void StartFrame() = 0;
 
-    /// Called at the end of a rendering frame.
+    /// Optionally called at the end of a rendering frame.
+    /// Please read the comments in StartFrame.
     HGI_API
     virtual void EndFrame() = 0;
 
