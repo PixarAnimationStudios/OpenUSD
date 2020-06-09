@@ -129,9 +129,9 @@ public:
     /// to a uint64_t. Clients should avoid using this function and instead
     /// use Hgi base classes so that client code works with any Hgi platform.
     /// For transitioning code to Hgi, it can however we useful to directly
-    /// access a platform's internaly resource handles.
+    /// access a platform's internal resource handles.
     /// There is no safety provided in using this. If you by accident pass a
-    /// HgiMetalTexture into an OpenGL call, bad things may happen.
+    /// HgiMetal resource into an OpenGL call, bad things may happen.
     /// In OpenGL this returns the GLuint resource name.
     /// In Metal this returns the id<MTLTexture> as uint64_t.
     /// In Vulkan this returns the VkImage as uint64_t.

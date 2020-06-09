@@ -367,6 +367,12 @@ HgiMetalShaderFunction::GetCompileErrors()
     return _errors;
 }
 
+uint64_t
+HgiMetalShaderFunction::GetRawResource() const
+{
+    return (uint64_t) _shaderId;
+}
+
 id<MTLFunction>
 HgiMetalShaderFunction::GetShaderId() const
 {

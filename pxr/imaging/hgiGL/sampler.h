@@ -43,6 +43,9 @@ public:
     HGIGL_API
     ~HgiGLSampler() override;
 
+    HGIGL_API
+    uint64_t GetRawResource() const override;
+
     /// Returns the gl resource id of the sampler.
     HGIGL_API
     uint32_t GetSamplerId() const;

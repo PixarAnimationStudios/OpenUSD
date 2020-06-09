@@ -91,6 +91,12 @@ HgiGLSampler::~HgiGLSampler()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+uint64_t
+HgiGLSampler::GetRawResource() const
+{
+    return (uint64_t) _samplerId;
+}
+
 uint32_t
 HgiGLSampler::GetSamplerId() const
 {

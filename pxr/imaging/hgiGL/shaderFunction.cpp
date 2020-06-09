@@ -86,6 +86,12 @@ HgiGLShaderFunction::GetCompileErrors()
     return _errors;
 }
 
+uint64_t
+HgiGLShaderFunction::GetRawResource() const
+{
+    return (uint64_t) _shaderId;
+}
+
 uint32_t
 HgiGLShaderFunction::GetShaderId() const
 {

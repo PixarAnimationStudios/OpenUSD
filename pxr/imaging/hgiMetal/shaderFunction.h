@@ -50,6 +50,9 @@ public:
     HGIMETAL_API
     std::string const& GetCompileErrors() override;
 
+    HGIMETAL_API
+    uint64_t GetRawResource() const override;
+
     /// Returns the gl resource id of the shader.
     HGIMETAL_API
     id<MTLFunction> GetShaderId() const;

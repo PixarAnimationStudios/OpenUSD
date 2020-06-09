@@ -48,6 +48,9 @@ public:
     HGIMETAL_API
     ~HgiMetalBuffer() override;
 
+    HGIMETAL_API
+    uint64_t GetRawResource() const override;
+
     id<MTLBuffer> GetBufferId() const {return _bufferId;}
 
 private:

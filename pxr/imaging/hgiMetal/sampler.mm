@@ -66,6 +66,12 @@ HgiMetalSampler::~HgiMetalSampler()
     }
 }
 
+uint64_t
+HgiMetalSampler::GetRawResource() const
+{
+    return (uint64_t) _samplerId;
+}
+
 id<MTLSamplerState>
 HgiMetalSampler::GetSamplerId() const
 {

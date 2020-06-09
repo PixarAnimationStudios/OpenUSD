@@ -54,6 +54,9 @@ public:
     HGIGL_API
     HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
 
+    HGIGL_API
+    uint64_t GetRawResource() const override;
+
     /// Returns the gl resource id of the program.
     HGIGL_API
     uint32_t GetProgramId() const;

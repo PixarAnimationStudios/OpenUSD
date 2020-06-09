@@ -68,4 +68,10 @@ HgiMetalBuffer::~HgiMetalBuffer()
     }
 }
 
+uint64_t
+HgiMetalBuffer::GetRawResource() const
+{
+    return (uint64_t) _bufferId;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

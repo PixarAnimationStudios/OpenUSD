@@ -103,6 +103,19 @@ public:
     HGI_API
     HgiSamplerDesc const& GetDescriptor() const;
 
+    /// This function returns the handle to the Hgi backend's gpu resource, cast
+    /// to a uint64_t. Clients should avoid using this function and instead
+    /// use Hgi base classes so that client code works with any Hgi platform.
+    /// For transitioning code to Hgi, it can however we useful to directly
+    /// access a platform's internal resource handles.
+    /// There is no safety provided in using this. If you by accident pass a
+    /// HgiMetal resource into an OpenGL call, bad things may happen.
+    /// In OpenGL this returns the GLuint resource name.
+    /// In Metal this returns the id<MTLSamplerState> as uint64_t.
+    /// In Vulkan this returns the VkSampler as uint64_t.
+    HGI_API
+    virtual uint64_t GetRawResource() const = 0;
+
 protected:
     HGI_API
     HgiSampler(HgiSamplerDesc const& desc);

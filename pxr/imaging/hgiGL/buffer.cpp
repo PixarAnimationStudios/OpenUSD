@@ -98,5 +98,11 @@ HgiGLBuffer::~HgiGLBuffer()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+uint64_t
+HgiGLBuffer::GetRawResource() const
+{
+    return (uint64_t) _bufferId;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

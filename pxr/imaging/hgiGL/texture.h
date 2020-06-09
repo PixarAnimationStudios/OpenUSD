@@ -41,8 +41,6 @@ public:
     HGIGL_API
     ~HgiGLTexture() override;
 
-    /// This hgi transition helper returns the gl resource as uint64_t
-    /// for external clients.
     HGIGL_API
     uint64_t GetRawResource() const override;
 

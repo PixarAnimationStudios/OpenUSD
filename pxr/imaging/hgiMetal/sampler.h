@@ -49,6 +49,9 @@ public:
     ~HgiMetalSampler() override;
 
     HGIMETAL_API
+    uint64_t GetRawResource() const override;
+
+    HGIMETAL_API
     id<MTLSamplerState> GetSamplerId() const;
 
 private:

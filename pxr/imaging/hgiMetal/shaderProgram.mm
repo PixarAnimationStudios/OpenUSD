@@ -73,4 +73,10 @@ HgiMetalShaderProgram::GetCompileErrors()
     return _errors;
 }
 
+uint64_t
+HgiMetalShaderProgram::GetRawResource() const
+{
+    return 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
