@@ -2192,10 +2192,17 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id,
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
-        return primInfo->adapter
+        // Now, return the multi-sampled result.
+        size_t nSamples = primInfo->adapter
             ->SampleTransform(primInfo->usdPrim, cachePath, 
                               _time, maxNumSamples,
                               sampleTimes, sampleValues);
+        // Make sure to clear the transform out of the value cache so we don't
+        // leak memory...
+        GfMatrix4d ctm(1.0);
+        _valueCache.ExtractTransform(cachePath, &ctm);
+
+        return nSamples;
     }
     return 0;
 }
@@ -2364,9 +2371,16 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id,
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
-        return primInfo->adapter
+        // Retrieve the multi-sampled result.
+        size_t nSamples = primInfo->adapter
             ->SamplePrimvar(primInfo->usdPrim, cachePath, key,
                             _time, maxNumSamples, sampleTimes, sampleValues);
+        // Make sure to clear the primvar out of the value cache so we don't
+        // leak memory...
+        VtValue value;
+        _valueCache.ExtractPrimvar(cachePath, key, &value);
+
+        return nSamples;
     }
     return 0;
 }

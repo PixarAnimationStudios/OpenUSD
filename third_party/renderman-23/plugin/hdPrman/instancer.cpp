@@ -74,6 +74,15 @@ HdPrmanInstancer::SyncPrimvars()
             // primvar names and then cache each one.
             for (HdPrimvarDescriptor const& primvar:
                  delegate->GetPrimvarDescriptors(id, HdInterpolationInstance)) {
+                // Skip primvars that have special handling elsewhere.
+                // The transform primvars are all handled in
+                // SampleInstanceTransform.
+                if (primvar.name == HdInstancerTokens->instanceTransform ||
+                    primvar.name == HdInstancerTokens->rotate ||
+                    primvar.name == HdInstancerTokens->scale ||
+                    primvar.name == HdInstancerTokens->translate) {
+                    continue;
+                }
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id,
                                                     primvar.name)) {
                     VtValue value = delegate->Get(id, primvar.name);
@@ -88,104 +97,6 @@ HdPrmanInstancer::SyncPrimvars()
             changeTracker.MarkInstancerClean(id);
         }
     }
-}
-
-// XXX (mostly) duped from HdEmbree -- WBN to share somewhere
-VtMatrix4dArray
-HdPrmanInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // The transforms for this level of instancer are computed by:
-    // foreach(index : indices) {
-    //     instancerTransform * translate(index) * rotate(index) *
-    //     scale(index) * instanceTransform(index)
-    // }
-    // If any transform isn't provided, it's assumed to be the identity.
-
-    GfMatrix4d instancerTransform =
-        GetDelegate()->GetInstancerTransform(GetId());
-    VtIntArray instanceIndices =
-        GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
-
-    VtMatrix4dArray transforms(instanceIndices.size());
-    for (size_t i = 0; i < instanceIndices.size(); ++i) {
-        transforms[i] = instancerTransform;
-    }
-
-    // "translate" holds a translation vector for each index.
-    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
-        const VtVec3fArray translates =
-            _primvarMap[HdInstancerTokens->translate].value.Get<VtVec3fArray>();
-        for (int i: instanceIndices) {
-            GfMatrix4d translateMat(1);
-            translateMat.SetTranslate(GfVec3d(translates[i]));
-            transforms[i] = translateMat * transforms[i];
-        }
-    }
-
-    // "rotate" holds a quaternion in <real, i, j, k> format for each index.
-    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
-        const VtVec4fArray rotates =
-            _primvarMap[HdInstancerTokens->rotate].value.Get<VtVec4fArray>();
-        for (int i: instanceIndices) {
-            GfQuaternion quat(rotates[i][0],
-                GfVec3d(rotates[i][1], rotates[i][2], rotates[i][3]));
-            GfMatrix4d rotateMat(1);
-            rotateMat.SetRotate(GfRotation(quat));
-            transforms[i] = rotateMat * transforms[i];
-        }
-    }
-
-    // "scale" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
-        const VtVec3fArray scales =
-            _primvarMap[HdInstancerTokens->scale].value.Get<VtVec3fArray>();
-        for (int i: instanceIndices) {
-            GfMatrix4d scaleMat(1);
-            scaleMat.SetScale(GfVec3d(scales[i]));
-            transforms[i] = scaleMat * transforms[i];
-        }
-    }
-
-    // "instanceTransform" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
-        const VtMatrix4dArray instanceTransforms =
-            _primvarMap[HdInstancerTokens->instanceTransform]
-            .value.Get<VtMatrix4dArray>();
-        for (int i: instanceIndices) {
-            transforms[i] = instanceTransforms[i] * transforms[i];
-        }
-    }
-
-    if (GetParentId().IsEmpty()) {
-        return transforms;
-    }
-
-    HdInstancer *parentInstancer =
-        GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
-    if (!TF_VERIFY(parentInstancer)) {
-        return transforms;
-    }
-
-    // The transforms taking nesting into account are computed by:
-    // parentTransforms = parentInstancer->ComputeInstanceTransforms(GetId())
-    // foreach (parentXf : parentTransforms, xf : transforms) {
-    //     parentXf * xf
-    // }
-    VtMatrix4dArray parentTransforms =
-        static_cast<HdPrmanInstancer*>(parentInstancer)->
-            ComputeInstanceTransforms(GetId());
-
-    VtMatrix4dArray final(parentTransforms.size() * transforms.size());
-    for (size_t i = 0; i < parentTransforms.size(); ++i) {
-        for (size_t j = 0; j < transforms.size(); ++j) {
-            final[i * transforms.size() + j] = transforms[j] *
-                                               parentTransforms[i];
-        }
-    }
-    return final;
 }
 
 // Helper to accumulate sample times from the largest set of
@@ -366,13 +277,6 @@ HdPrmanInstancer::GetInstancePrimvars(
         HdPrimvarDescriptor const& primvar = entry.second.desc;
         // Skip non-instance-rate primvars.
         if (primvar.interpolation != HdInterpolationInstance) {
-            continue;
-        }
-        // Skip primvars that have special handling elsewhere.
-        if (entry.first == HdInstancerTokens->instanceTransform ||
-            entry.first == HdInstancerTokens->rotate ||
-            entry.first == HdInstancerTokens->scale ||
-            entry.first == HdInstancerTokens->translate) {
             continue;
         }
         // Confirm that instance-rate primvars are array-valued
