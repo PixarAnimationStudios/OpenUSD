@@ -833,7 +833,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     // Is the property a primvar?
-    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
+    if (UsdGeomPrimvar::IsPrimvarRelatedPropertyName(propertyName)) {
         // Ignore local constant/uniform primvars.
         UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
         if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||

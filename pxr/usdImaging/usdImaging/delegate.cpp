@@ -1210,7 +1210,6 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         SdfPath const& usdPrimPath = usdPath.GetPrimPath();
         TfToken const& attrName = usdPath.GetNameToken();
         UsdPrim usdPrim = _stage->GetPrimAtPath(usdPrimPath);
-        static std::string primvarsNS = "primvars:";
 
         // If either model:drawMode or model:applyDrawMode changes, we need to
         // repopulate the whole subtree starting at the owning prim.
@@ -1236,7 +1235,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             // Because these are inherited attributes, we must update all
             // children.
             _GatherDependencies(usdPrimPath, &affectedCachePaths);
-        } else if (TfStringStartsWith(attrName.GetString(), primvarsNS)) {
+        } else if (UsdGeomPrimvar::IsPrimvarRelatedPropertyName(attrName)) {
             // Primvars can be inherited, so we need to invalidate everything
             // downstream.  Technically, only constant primvars on non-leaf
             // prims are inherited, but we can't check the interpolation mode

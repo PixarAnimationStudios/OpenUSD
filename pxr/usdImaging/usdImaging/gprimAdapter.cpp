@@ -461,7 +461,7 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
     
     // Note: This doesn't handle "built-in" attributes that are treated as
     // primvars. That responsibility falls on the child adapter.
-    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
+    if (UsdGeomPrimvar::IsPrimvarRelatedPropertyName(propertyName)) {
         return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
                 prim, cachePath, propertyName);
     }

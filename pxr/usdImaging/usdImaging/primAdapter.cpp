@@ -703,14 +703,6 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
 }
 
 /*static*/
-bool
-UsdImagingPrimAdapter::_HasPrimvarsPrefix(TfToken const& propertyName)
-{
-    return TfStringStartsWith(propertyName.GetString(),
-                              _tokens->primvarsPrefix);
-}
-
-/*static*/
 TfToken
 UsdImagingPrimAdapter::_GetStrippedPrimvarName(TfToken const& propertyName)
 {

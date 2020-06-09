@@ -1303,7 +1303,7 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyInstanceIndex;
     }
 
-    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
+    if (UsdGeomPrimvar::IsPrimvarRelatedPropertyName(propertyName)) {
         return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
                 prim, cachePath, propertyName);
     }
