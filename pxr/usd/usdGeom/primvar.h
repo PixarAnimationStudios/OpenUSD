@@ -349,6 +349,19 @@ public:
     USDGEOM_API
     static bool IsPrimvar(const UsdAttribute &attr);
 
+
+    /// Test whether a given \p name represents a valid name of a primvar, 
+    /// which implies that creating a UsdGeomPrimvar with the given name will 
+    /// succeed.
+    /// 
+    USDGEOM_API
+    static bool IsValidPrimvarName(const TfToken& name);
+
+    /// Test whether a given \p name contains the "primvars:" prefix
+    ///
+    USDGEOM_API
+    static bool IsPrimvarRelatedPropertyName(const TfToken& name);
+
     /// Validate that the provided \p interpolation is a valid setting for 
     /// interpolation as defined by \ref Usd_InterpolationVals.  
     USDGEOM_API
