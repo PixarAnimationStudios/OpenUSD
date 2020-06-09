@@ -153,12 +153,15 @@ HdStGLUtils::ReadBuffer(GLint vbo,
 
     // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
-    if (caps.directStateAccessEnabled) {
-        glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
-    } else {
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glGetBufferSubData(GL_ARRAY_BUFFER, vboOffset, vboSize, &tmp[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    if (vbo > 0) {
+        if (caps.directStateAccessEnabled) {
+            glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
+        } else {
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glGetBufferSubData(GL_ARRAY_BUFFER, vboOffset, vboSize, &tmp[0]);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
     }
 
     // Convert data to Vt
