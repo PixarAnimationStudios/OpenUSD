@@ -119,6 +119,12 @@ HgiMetalTexture::~HgiMetalTexture()
     }
 }
 
+uint64_t
+HgiMetalTexture::GetRawResource() const
+{
+    return (uint64_t) _textureId;
+}
+
 id<MTLTexture>
 HgiMetalTexture::GetTextureId() const
 {

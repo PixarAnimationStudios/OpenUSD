@@ -279,4 +279,10 @@ HgiGLTexture::~HgiGLTexture()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+uint64_t
+HgiGLTexture::GetRawResource() const
+{
+    return (uint64_t) _textureId;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

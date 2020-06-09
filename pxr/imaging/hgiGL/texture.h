@@ -41,7 +41,12 @@ public:
     HGIGL_API
     ~HgiGLTexture() override;
 
-    /// Returns the internal OpenGL unique Id of the texture.
+    /// This hgi transition helper returns the gl resource as uint64_t
+    /// for external clients.
+    HGIGL_API
+    uint64_t GetRawResource() const override;
+
+    /// Returns the OpenGL id / name of the texture.
     uint32_t GetTextureId() const {return _textureId;}
 
 protected:

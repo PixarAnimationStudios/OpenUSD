@@ -48,6 +48,12 @@ public:
     HGIMETAL_API
     ~HgiMetalTexture() override;
 
+    /// This hgi transition helper returns the Metal resource as uint64_t
+    /// for external clients.
+    HGIMETAL_API
+    uint64_t GetRawResource() const override;
+
+    /// Returns the handle to the Metal texture.
     HGIMETAL_API
     id<MTLTexture> GetTextureId() const;
 
