@@ -163,7 +163,8 @@ HdxPrmanRenderDelegate::GetDefaultAovDescriptor(
         return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
     }
 
-    return HdAovDescriptor();
+    return HdAovDescriptor(HdFormatFloat32Vec3, false,
+                           VtValue(GfVec3f(0.0f)));
 }
 
 bool

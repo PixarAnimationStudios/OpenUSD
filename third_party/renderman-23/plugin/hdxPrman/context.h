@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/renderThread.h"
 #include "hdPrman/context.h"
 #include "framebuffer.h"
+#include "renderBuffer.h"
 
 #include "Riley.h"
 
@@ -86,6 +87,9 @@ struct HdxPrman_InteractiveContext : public HdPrman_Context
     // Checks whether context was successfully initialized.
     // ie. riley was created
     bool IsValid() const;
+
+    // Creates displays in riley based on aovBindings vector
+    bool CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
 
     // Render thread for background rendering.
     HdRenderThread renderThread;

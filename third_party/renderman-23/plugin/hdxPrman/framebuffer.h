@@ -25,8 +25,11 @@
 #define EXT_RMANPKG_23_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_FRAMEBUFFER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/gf/matrix4d.h"
+
+#include "Riley.h"
 
 #include <vector>
 #include <mutex>
@@ -41,6 +44,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// without requiring either to know about the other.
 class HdxPrmanFramebuffer {
 public:
+    struct HdPrmanAov {
+        TfToken name;
+        HdFormat format;
+        VtValue clearValue;
+        std::vector<uint32_t> pixels;
+    };
+    typedef std::vector<HdPrmanAov> HdPrmanAovList ;
+    typedef std::vector<HdPrmanAov>::iterator HdPrmanAovIt ;
+
     HdxPrmanFramebuffer();
     ~HdxPrmanFramebuffer();
 
@@ -53,12 +65,12 @@ public:
     /// Resize the buffer.
     void Resize(int width, int height);
 
+    void Clear();
+
+    void AddAov(TfToken aovName, HdFormat dataType, VtValue clearValue);
+
     std::mutex mutex;
-    std::vector<float> color;
-    std::vector<float> depth;
-    std::vector<int32_t> primId;
-    std::vector<int32_t> instanceId;
-    std::vector<int32_t> elementId;
+    HdPrmanAovList aovs;
 
     int w, h;
     int32_t id;
@@ -67,10 +79,10 @@ public:
     GfMatrix4d proj;
 
     // Clear functionality.
-    GfVec4f clearColor;
-    float clearDepth;
-    int32_t clearId;
     bool pendingClear;
+
+    riley::DisplayId dspyId;
+    riley::RenderTargetId rtId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

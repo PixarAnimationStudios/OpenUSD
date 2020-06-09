@@ -44,7 +44,15 @@
 #include "RixShadingUtils.h"
 #include "RixPredefinedStrings.hpp"
 
+#include <unordered_map>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (sourceName)
+    (sourceType)
+    );
 
 void HdxPrman_RenderThreadCallback(HdxPrman_InteractiveContext *context)
 {
@@ -149,7 +157,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     //
     // Riley setup
     //
-    static const RtUString us_bufferID("bufferID");
     static const RtUString us_circle("circle");
     static const RtUString us_defaultColor("defaultColor");
     static const RtUString us_default("default");
@@ -158,7 +165,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     static const RtUString us_diffuseColor("diffuseColor");
     static const RtUString us_diffuseDoubleSided("diffuseDoubleSided");
     static const RtUString us_displayColor("displayColor");
-    static const RtUString us_hydra("hydra");
     static const RtUString us_lightA("lightA");
     static const RtUString us_main_cam("main_cam");
     static const RtUString us_main_cam_projection("main_cam_projection");
@@ -322,109 +328,7 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         cameraId = riley->CreateCamera(camName, cameraNode, xform, camParams);
     }
 
-    // Displays & Display Channels
-    riley::RenderTargetId rtid = riley::RenderTargetId::k_InvalidId;
-    {
-        float const filterwidth[] = { 1.0f, 1.0f };
-
-        std::vector<riley::RenderOutputId> renderOutputs;
-
-        RtParamList renderOutputParams;
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_Ci, 
-                                      riley::RenderOutputType::k_Color,
-                                      RixStr.k_Ci, 
-                                      RixStr.k_filter, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-        
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_a, 
-                                      riley::RenderOutputType::k_Float,
-                                      RixStr.k_a, 
-                                      RixStr.k_filter, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-
-        renderOutputParams.SetString(RixStr.k_rule, RixStr.k_zmin);
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_z, 
-                                      riley::RenderOutputType::k_Integer,
-                                      RixStr.k_z, 
-                                      RixStr.k_zmin, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_id, 
-                                      riley::RenderOutputType::k_Integer,
-                                      RixStr.k_id, 
-                                      RixStr.k_zmin, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_id2, 
-                                      riley::RenderOutputType::k_Integer,
-                                      RixStr.k_id2, 
-                                      RixStr.k_zmin, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-
-        renderOutputs.push_back(
-            riley->CreateRenderOutput(RixStr.k_faceindex, 
-                                      riley::RenderOutputType::k_Integer,
-                                      RixStr.k_faceindex, RixStr.k_zmin, 
-                                      RixStr.k_box, 
-                                      filterwidth, 
-                                      1.0f, 
-                                      renderOutputParams));
-        
-        uint32_t renderTargetFormat[3] = 
-            {static_cast<uint32_t>(resolution[0]),
-             static_cast<uint32_t>(resolution[1]), 1};
-        RtParamList renderTargetParams;
-        rtid =riley->CreateRenderTarget(
-                    (uint32_t)renderOutputs.size(), 
-                    renderOutputs.data(), 
-                    renderTargetFormat,
-                    RtUString("weighted"), 
-                    1.0f, 
-                    renderTargetParams);
-
-        RtParamList displayParams;
-        riley->CreateDisplay(rtid, 
-                             RixStr.k_framebuffer, 
-                             us_hydra, 
-                             (uint32_t)renderOutputs.size(),
-                             renderOutputs.data(),
-                             displayParams);
-
-    }
-
-    // Clear values...
-    framebuffer.Resize(resolution[0], resolution[1]);
-    framebuffer.clearColor[0] = framebuffer.clearColor[1] =
-        framebuffer.clearColor[2] = 0.0f;
-    framebuffer.clearColor[3] = 0.0f;
-    framebuffer.clearDepth = 1.0f;
-    framebuffer.clearId = -1;
-
-    // Set camera & display
-    renderViews.clear();
-    renderViews.push_back(riley::RenderView{rtid, 
-                                            integratorId, 
-                                            cameraId});
+    // Dicing Camera
     riley->SetActiveCamera(cameraId);
 
     // Light
@@ -602,6 +506,279 @@ HdxPrman_InteractiveContext::StopRender()
         riley->Stop();
         renderThread.StopRender();
     }
+}
+
+bool
+HdxPrman_InteractiveContext::CreateDisplays(
+    const HdRenderPassAovBindingVector& aovBindings)
+{
+    // Proceed with creating displays if the number has changed
+    // or the display names don't match what we have.
+    bool needCreate = false;
+    bool needClear = false;
+    if(framebuffer.aovs.size() != aovBindings.size())
+    {
+        needCreate = true;
+    }
+    else
+    {
+        for( size_t aov = 0; aov < aovBindings.size(); ++aov )
+        {
+            if(aovBindings[aov].aovName != framebuffer.aovs[aov].name)
+            {
+                needCreate = true;
+                break;
+            }
+            else if((aovBindings[aov].aovName == HdAovTokens->color ||
+                    aovBindings[aov].aovName == HdAovTokens->depth) &&
+                    (aovBindings[aov].clearValue !=
+                     framebuffer.aovs[aov].clearValue))
+            {
+                // Request a framebuffer clear if the clear value in the aov
+                // has changed from the framebuffer clear value.
+                // We do this before StartRender() to avoid race conditions
+                // where some buckets may get discarded or cleared with
+                // the wrong value.
+                StopRender();
+                framebuffer.pendingClear = true;
+                framebuffer.aovs[aov].clearValue = aovBindings[aov].clearValue;
+                needClear = true;
+            }
+        }
+    }
+    if(!needCreate)
+    {
+        return needClear; // return val indicates whether render needs restart
+    }
+
+    StopRender();
+
+    std::lock_guard<std::mutex> lock(framebuffer.mutex);
+
+    static const RtUString us_bufferID("bufferID");
+    static const RtUString us_hydra("hydra");
+    static const RtUString us_ci("ci");
+    static const RtUString us_st("__st");
+    static const RtUString us_primvars_st("primvars:st");
+
+    if(framebuffer.aovs.size())
+    {
+        framebuffer.aovs.clear();
+        framebuffer.w = 0;
+        framebuffer.h = 0;
+        riley->DeleteRenderTarget(framebuffer.rtId);
+        riley->DeleteDisplay(framebuffer.dspyId);
+    }
+    // Displays & Display Channels
+    riley::RenderTargetId rtid = riley::RenderTargetId::k_InvalidId;
+
+    float const filterwidth[] = { 1.0f, 1.0f };
+
+    std::vector<riley::RenderOutputId> renderOutputs;
+
+    RtParamList renderOutputParams;
+
+    std::unordered_map<RtUString, RtUString> sourceNames;
+    for( size_t aov = 0; aov < aovBindings.size(); ++aov )
+    {
+        std::string dataType;
+        std::string sourceType;
+        RtUString aovName(aovBindings[aov].aovName.GetText());
+        RtUString sourceName;
+        riley::RenderOutputType rt = riley::RenderOutputType::k_Float;
+        RtUString filterName = RixStr.k_filter;
+
+        HdFormat aovFormat = aovBindings[aov].renderBuffer->GetFormat();
+
+        // Prman always renders colors as float, so for types with 3 or 4
+        // components, always set the format in our framebuffer to float.
+        // Conversion will take place in the Blit method of renderBuffer.cpp
+        // when it notices that the aovBinding's buffer format doesn't match
+        // our framebuffer's format.
+        int componentCount = HdGetComponentCount(aovFormat);
+        if(componentCount == 3)
+        {
+            aovFormat = HdFormatFloat32Vec3;
+        }
+        else if(componentCount == 4)
+        {
+            aovFormat = HdFormatFloat32Vec4;
+        }
+
+        // Prman only supports float, color, and integer
+        if(aovFormat == HdFormatFloat32)
+        {
+            rt = riley::RenderOutputType::k_Float;
+        }
+        else if(aovFormat == HdFormatFloat32Vec4 ||
+                aovFormat == HdFormatFloat32Vec3)
+        {
+            rt = riley::RenderOutputType::k_Color;
+        }
+        else if(aovFormat == HdFormatInt32)
+        {
+            rt = riley::RenderOutputType::k_Integer;
+        }
+
+        // Look at the aovSettings to see if there is
+        // information about the source.  In prman
+        // an aov can have an arbitrary name, while its source
+        // might be an lpe or a standard aov name.
+        // When no source is specified, we'll assume the aov name
+        // is standard and also use that as the source.
+        for(auto it = aovBindings[aov].aovSettings.begin();
+            it != aovBindings[aov].aovSettings.end(); it++)
+        {
+            if(it->first == _tokens->sourceName)
+            {
+                VtValue val = it->second;
+                sourceName =
+                    RtUString(
+                        val.UncheckedGet<TfToken>().GetString().c_str());
+            }
+            else if(it->first == _tokens->sourceType)
+            {
+                VtValue val = it->second;
+                sourceType = val.UncheckedGet<TfToken>().GetString();
+            }
+        }
+
+        // If the sourceType hints that the source is an lpe, make sure
+        // it starts with "lpe:" as required by prman.
+        if(sourceType == RixStr.k_lpe.CStr())
+        {
+            std::string sn = sourceName.CStr();
+            if(sn.find(RixStr.k_lpe.CStr()) == std::string::npos)
+                sn = "lpe:" + sn;
+            sourceName = RtUString(sn.c_str());
+        }
+
+        // Map some standard hydra aov names to their equivalent prman names
+        if(aovBindings[aov].aovName == HdAovTokens->color ||
+           aovBindings[aov].aovName.GetString() == us_ci.CStr())
+        {
+            aovName = RixStr.k_Ci;
+            sourceName = RixStr.k_Ci;
+        }
+        else if(aovBindings[aov].aovName == HdAovTokens->depth)
+        {
+            sourceName = RixStr.k_z;
+        }
+        else if(aovBindings[aov].aovName == HdAovTokens->normal)
+        {
+            sourceName= RixStr.k_Nn;
+        }
+        else if(aovBindings[aov].aovName == HdAovTokens->primId)
+        {
+            aovName = RixStr.k_id;
+            sourceName = RixStr.k_id;
+        }
+        else if(aovBindings[aov].aovName == HdAovTokens->instanceId)
+        {
+            aovName = RixStr.k_id2;
+            sourceName = RixStr.k_id2;
+        }
+        else if(aovBindings[aov].aovName == HdAovTokens->elementId)
+        {
+            aovName = RixStr.k_faceindex;
+            sourceName = RixStr.k_faceindex;
+        }
+        else if(aovName == us_primvars_st)
+        {
+            sourceName = us_st;
+        }
+
+        // If no sourceName is specified, assume name is a standard prman aov
+        if(sourceName.Empty())
+        {
+            sourceName = aovName;
+        }
+
+        // z and integer types require zmin filter
+        if(sourceName == RixStr.k_z || rt == riley::RenderOutputType::k_Integer)
+        {
+            filterName = RixStr.k_zmin;
+        }
+
+        if(!sourceName.Empty())
+        {
+            // This is a workaround for an issue where we get an
+            // unexpected duplicate in the aovBindings sometimes,
+            // where the second entry lacks a sourceName.
+            // Can't just skip it because the caller expects
+            // a result in the buffer
+            sourceNames[RtUString(aovBindings[aov].aovName.GetText())] =
+                sourceName;
+        }
+        else
+        {
+            auto it =
+                sourceNames.find(RtUString(aovBindings[aov].aovName.GetText()));
+            if(it != sourceNames.end())
+            {
+                sourceName = it->second;
+            }
+        }
+
+        renderOutputs.push_back(
+            riley->CreateRenderOutput(
+                                      aovName,
+                                      rt,
+                                      sourceName,
+                                      filterName,
+                                      RixStr.k_box,
+                                      filterwidth,
+                                      1.0f,
+                                      renderOutputParams));
+        framebuffer.AddAov(aovBindings[aov].aovName,
+                           aovFormat,
+                           aovBindings[aov].clearValue);
+
+        // When a float4 color is requested, assume we require alpha as well.
+        // This assumption is reflected in framebuffer.cpp HydraDspyData
+        if(rt == riley::RenderOutputType::k_Color && componentCount == 4)
+        {
+            renderOutputs.push_back(
+                riley->CreateRenderOutput(
+                                          RixStr.k_a,
+                                          riley::RenderOutputType::k_Float,
+                                          RixStr.k_a,
+                                          RixStr.k_filter,
+                                          RixStr.k_box,
+                                          filterwidth,
+                                          1.0f,
+                                          renderOutputParams));
+        }
+    }
+
+    uint32_t renderTargetFormat[3] =
+            {static_cast<uint32_t>(resolution[0]),
+             static_cast<uint32_t>(resolution[1]), 1};
+    RtParamList renderTargetParams;
+    rtid =riley->CreateRenderTarget(
+        (uint32_t)renderOutputs.size(),
+        renderOutputs.data(),
+        renderTargetFormat,
+        RtUString("weighted"),
+        1.0f,
+        renderTargetParams);
+    framebuffer.rtId = rtid;
+
+    RtParamList displayParams;
+    framebuffer.dspyId = riley->CreateDisplay(
+        rtid,
+        RixStr.k_framebuffer,
+        us_hydra,
+        (uint32_t)renderOutputs.size(),
+        renderOutputs.data(),
+        displayParams);
+
+    renderViews.clear();
+    renderViews.push_back(riley::RenderView{rtid,
+                    integratorId,
+                    cameraId});
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
