@@ -2037,7 +2037,14 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
         // path, if one was provided.
         if (instanceIdx == instanceIndex) {
             SdfPathVector instanceChain;
-            if (!protoPath.IsEmpty()) {
+            // To get the correct prim-in-master, we need to add the prototype
+            // path to the instance chain.  However, there's a case in _Populate
+            // where we populate prototype prims that are just a master (used
+            // by e.g. cards).  In this case, the proto path is overridden to
+            // be the instance path, and we don't want to add it to the instance
+            // chain since instanceContext.front would duplicate it.
+            UsdPrim p = adapter->_GetPrim(protoPath);
+            if (p && !p.IsInstance()) {
                 instanceChain.push_back(protoPath);
             }
             for (UsdPrim const& prim : instanceContext) {
