@@ -182,6 +182,8 @@ HdSt_DomeLightComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
         desc.dimensions = GfVec3i(width, height, 1);
         desc.layerCount = 1;
         desc.mipLevels = _numLevels;
+        desc.usage =
+            HgiTextureUsageBitsShaderRead | HgiTextureUsageBitsShaderWrite;
         _FillPixelsByteSize(&desc);
         dstUvTextureObject->CreateTexture(desc);
     }
