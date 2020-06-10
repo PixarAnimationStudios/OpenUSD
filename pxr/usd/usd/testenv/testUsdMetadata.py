@@ -342,6 +342,7 @@ class TestUsdMetadata(unittest.TestCase):
 
     def test_BasicCustomData(self):
         '''Test basic CustomData API, including by-key-path API'''
+        from pxr import Vt
 
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestBasicCustomData.'+fmt)
@@ -349,6 +350,20 @@ class TestUsdMetadata(unittest.TestCase):
 
             assert not p.HasCustomData()
             assert not p.HasAuthoredCustomData()
+
+            p.SetCustomData({'a': [1,2,3,4]})
+            self.assertEqual(p.GetCustomData(),
+                             {'a': Vt.IntArray([1,2,3,4])})
+
+            p.SetCustomData({'a': ['b','c','d']})
+            self.assertEqual(p.GetCustomData(),
+                             {'a': Vt.StringArray(['b','c','d'])})
+
+            with self.assertRaises(ValueError):
+                p.SetCustomData({'foo': ['different types', 1, 'here']})
+
+            with self.assertRaises(ValueError):
+                p.SetCustomData({'empty_list': []})
 
             p.SetCustomData({'foo':'bar'})
             assert p.HasCustomData()
