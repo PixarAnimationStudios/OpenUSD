@@ -144,8 +144,11 @@ namespace {
 
     // Helper to convert array types to Sdf types. Shouldn't be used directly;
     // use `_GetTypeAsSdfType()` instead
+    // If arraySize > 0 and isDynamic is true, tries to generate a dynamic array
+    // of fixed-size float arrays. Where not possible, this is flattened to a simple
+    // dynamic array.
     const SdfTypeIndicator _GetTypeAsSdfArrayType(
-        const TfToken& type, size_t arraySize)
+        const TfToken& type, size_t arraySize, bool isDynamic)
     {
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
         bool conversionSuccessful = false;
@@ -157,17 +160,26 @@ namespace {
         // as well.
         if (type == SdrPropertyTypes->Float) {
             if (arraySize == 2) {
-                convertedType = SdfValueTypeNames->Float2;
+                if (isDynamic)
+                    convertedType = SdfValueTypeNames->Float2Array;
+                else
+                    convertedType = SdfValueTypeNames->Float2;
                 conversionSuccessful = true;
             } else if (arraySize == 3) {
-                convertedType = SdfValueTypeNames->Float3;
+                if (isDynamic)
+                    convertedType = SdfValueTypeNames->Float3Array;
+                else
+                    convertedType = SdfValueTypeNames->Float3;
                 conversionSuccessful = true;
             } else if (arraySize == 4) {
-                convertedType = SdfValueTypeNames->Float4;
+                if (isDynamic)
+                    convertedType = SdfValueTypeNames->Float4Array;
+                else
+                    convertedType = SdfValueTypeNames->Float4;
                 conversionSuccessful = true;
             }
         }
-
+     
         // If no float array conversion was done, try converting to an array
         // type without a fixed dimension
         if (!conversionSuccessful) {
@@ -197,10 +209,14 @@ namespace {
     const SdfTypeIndicator _GetTypeAsSdfType(
         const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
     {
+        bool isDynamicArray =
+            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+        bool isArray = (arraySize > 0) || isDynamicArray;
+
         // There is one Sdf type (Asset) that is not included in the type
         // mapping because it is determined dynamically
         if (_IsAssetIdentifier(metadata)) {
-            if (arraySize > 0) {
+            if (isArray) {
                 return std::make_pair(SdfValueTypeNames->AssetArray, TfToken());
             }
             return std::make_pair(SdfValueTypeNames->Asset, TfToken());
@@ -221,8 +237,8 @@ namespace {
         // If the conversion can't be made, it defaults to the 'Token' type
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
 
-        if (arraySize > 0) {
-            return _GetTypeAsSdfArrayType(type, arraySize);
+        if (isArray) {
+            return _GetTypeAsSdfArrayType(type, arraySize, isDynamicArray);
         }
 
         const TokenToSdfTypeMap& tokenTypeToSdfType = GetTokenTypeToSdfType();
@@ -283,7 +299,8 @@ namespace {
         return false;
     }
 
-    // This methods conforms the given default value's type with the property's
+
+    // These methods conform the given default value's type with the property's
     // SdfValueTypeName.  This step is important because a Sdr parser should not
     // care about what SdfValueTypeName the parsed property will eventually map
     // to, and a parser will just return the value it sees with the type that
@@ -291,6 +308,75 @@ namespace {
     // 'transformations' that make use of metadata and other knowledge should
     // happen in this conformance step when the SdrShaderProperty is
     // instantiated.
+
+    // conforms a fixed size array of floats to type T
+    template<typename T>
+    T _ConformFixedFloatArray(const VtFloatArray& array);
+
+    template<>
+    GfVec2f
+    _ConformFixedFloatArray<GfVec2f>(const VtFloatArray& array)
+    {
+        if (array.size() >= 2) {
+            return GfVec2f(array[0],array[1]);
+        }
+        return GfVec2f();
+    }
+
+    template<>
+    GfVec3f
+    _ConformFixedFloatArray<GfVec3f>(const VtFloatArray& array)
+    {
+        if (array.size() >= 3) {
+            return GfVec3f(array[0],array[1],array[2]);
+        }
+        return GfVec3f();
+    }
+
+    template<>
+    GfVec4f
+    _ConformFixedFloatArray<GfVec4f>(const VtFloatArray& array)
+    {
+        if (array.size() >= 4) {
+            return GfVec4f(array[0],array[1],array[2],array[3]);
+        }
+        return GfVec4f();
+    }
+
+    // conforms a dynamic array of fixed size arrays
+    template<typename T>
+    VtArray<T>
+    _ConformDynamicFloatArray(const VtArray<VtFloatArray>& array)
+    {
+        VtArray<T> result;
+        result.reserve(array.size());
+        for (const VtFloatArray& subArray : array) {
+            result.push_back(_ConformFixedFloatArray<T>(subArray));
+        }
+        return result;
+    }
+
+    // conforms either a fixed-size array of float or
+    // a dynamic array of fixed-size arrays of float
+    template<typename T>
+    VtValue
+    _ConformFloatArray(const VtValue& defaultVal,
+                       bool dynamic)
+    {
+        if (dynamic) {
+            VtArray<VtFloatArray> arrayVal;
+            if (_GetValue(defaultVal, &arrayVal)) {
+                return VtValue(_ConformDynamicFloatArray<T>(arrayVal));
+            }
+        } else {
+            VtFloatArray arrayVal;
+            if (_GetValue(defaultVal, &arrayVal)) {
+                return VtValue(_ConformFixedFloatArray<T>(arrayVal));
+            }
+        }
+        return VtValue();
+    }
+
     VtValue
     _ConformDefaultValue(
         const VtValue& defaultValue,
@@ -319,7 +405,7 @@ namespace {
         // ASSET and ASSET ARRAY
         // ---------------------------------------------------------------------
         if (sdrType == SdrPropertyTypes->String &&
-            IsPropertyAnAssetIdentifier(metadata)) {
+            _IsAssetIdentifier(metadata)) {
             if (isArray) {
                 VtStringArray arrayVal;
                 _GetValue(defaultValue, &arrayVal);
@@ -340,31 +426,21 @@ namespace {
 
         // FLOAT ARRAY (FIXED SIZE 2, 3, 4)
         // ---------------------------------------------------------------------
-        else if (sdrType == SdrPropertyTypes->Float &&
-                 isArray) {
-            VtFloatArray arrayVal;
-            _GetValue(defaultValue, &arrayVal);
-
+        else if (sdrType == SdrPropertyTypes->Float) {
             // We return a fixed-size array for arrays with size 2, 3, or 4
             // because SdrShaderProperty::GetTypeAsSdfType returns a specific
             // size type (Float2, Float3, Float4).  If in the future we want to
             // return a VtFloatArray instead, we need to change the logic in
             // SdrShaderProperty::GetTypeAsSdfType
             if (arraySize == 2) {
-                return VtValue(
-                    GfVec2f(arrayVal[0],
-                            arrayVal[1]));
+                VtValue conformed = _ConformFloatArray<GfVec2f>(defaultValue,isDynamicArray);
+                if (!conformed.IsEmpty()) return conformed;
             } else if (arraySize == 3) {
-                return VtValue(
-                    GfVec3f(arrayVal[0],
-                            arrayVal[1],
-                            arrayVal[2]));
+                VtValue conformed = _ConformFloatArray<GfVec3f>(defaultValue,isDynamicArray);
+                if (!conformed.IsEmpty()) return conformed;
             } else if (arraySize == 4) {
-                return VtValue(
-                    GfVec4f(arrayVal[0],
-                            arrayVal[1],
-                            arrayVal[2],
-                            arrayVal[3]));
+                VtValue conformed = _ConformFloatArray<GfVec4f>(defaultValue,isDynamicArray);
+                if (!conformed.IsEmpty()) return conformed;
             }
         }
 
