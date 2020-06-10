@@ -36,7 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGLDescriptorCacheItem {
     HgiGraphicsCmdsDesc descriptor;
-    HgiTextureHandle depthTexture;
     uint32_t framebuffer = 0;
 };
 
@@ -45,7 +44,6 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
 {
     HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
     dci->descriptor = desc;
-    dci->depthTexture = desc.depthTexture;
 
     // Create framebuffer
     glCreateFramebuffers(1, &dci->framebuffer);
