@@ -62,7 +62,7 @@ public:
   void ComputeProgramName();
   bool HaveAttribute(const TfToken& name);
 
-  size_t GetNumVertexPerPrimitive(){return _numVertexPerPrimitive;};
+  size_t GetNumVertexPerPrimitive() const {return _numVertexPerPrimitive;};
   void SetNumVertexPerPrimitive(size_t numVertexPerPrimitive){
     _numVertexPerPrimitive = numVertexPerPrimitive;
   };

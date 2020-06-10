@@ -45,7 +45,7 @@ public:
     /// Return the generated fragment shader source
     const std::string& GetFragmentShaderCode() const { return _fragmentCode; }
 
-    void GenerateProgramCode(bool hasGeometryShader);
+    void GenerateProgramCode(bool hasGeometryShader, size_t numVertexPerPrimitive=0);
 
 private:
     void _EmitDeclaration(  std::stringstream &ss,
@@ -75,7 +75,7 @@ private:
 
     
     void _GenerateVersion();
-    void _GeneratePrimvars(bool hasGeometryShader);
+    void _GeneratePrimvars(bool hasGeometryShader, size_t numVertexPerPrimitive=0);
     void _GenerateUniforms();
     void _GenerateResults();
 

@@ -1,0 +1,152 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2020 benmalartre
+//
+// Unlicensed 
+//
+
+#import $TOOLS/LoFi/shaders/common.glslfx
+
+--- --------------------------------------------------------------------------
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "vertex": {
+                "source": [ "Common.Camera",
+                            "Curves.Vertex" ]
+            },
+            "geometry": {
+                "source": [ "Common.Camera",
+                            "Curves.Geometry" ]
+            },
+            "fragment": {
+                "source": [ "Common.Camera",
+                            "Curves.Fragment" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Vertex
+
+void main()
+{
+  /*
+  mat4 viewModel = GetViewMatrix() * GetModelMatrix();
+  vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
+  vec4 n = LOFI_GET_normalMatrix() * vec4(LOFI_GET_normal(), 0.0);
+  gl_Position = GetProjectionMatrix() * p;
+#ifdef LOFI_HAS_color
+  LOFI_SET_color(LOFI_GET_color());
+#endif
+  LOFI_SET_position(p.xyz);
+  LOFI_SET_normal(n.xyz);
+  */
+  gl_Position = vec4(LOFI_GET_position(), 1.0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Geometry
+
+layout (lines_adjacency) in;
+layout (triangle_strip, max_vertices = 4) out;
+
+void main()
+{
+  /*
+  float lineWidth = 0.01;
+  vec3 prev = gl_in[0].gl_Position.xyz;
+  vec3 start = gl_in[1].gl_Position.xyz;
+  vec3 end = gl_in[2].gl_Position.xyz;
+  vec3 next = gl_in[3].gl_Position.xyz;
+
+  vec3 lhs = cross(normalize(end-start), vec3(0.0, 0.0, -1.0));
+
+  // is previous line segment a zero vector?
+  bool colStart = length(start-prev) < 0.0001; // 0.0001 is arbitrary epsilon
+  // is next line segment a zero vector?
+  bool colEnd = length(end-next) < 0.0001;
+
+  vec3 a = normalize(start-prev);
+  vec3 b = normalize(start-end);
+  vec3 c = (a+b)*0.5;
+  vec3 startLhs = normalize(c) * sign(dot(c, lhs));
+  a = normalize(end-start);
+  b = normalize(end-next);
+  c = (a+b)*0.5;
+  vec3 endLhs = normalize(c) * sign(dot(c, lhs));
+
+  if(colStart)
+      startLhs = lhs;
+  if(colEnd)
+      endLhs = lhs;
+
+  float startInvScale = dot(startLhs, lhs);
+  float endInvScale = dot(endLhs, lhs);
+
+  startLhs *= lineWidth*0.5;
+  endLhs *= lineWidth*0.5;
+
+  mat4 modelToClip = GetMVPMatrix();
+  gl_Position = modelToClip*vec4(start+startLhs/startInvScale, 1.0);
+  //g_color = v_color[1];
+  EmitVertex();
+  gl_Position = modelToClip*vec4(start-startLhs/startInvScale, 1.0);
+  EmitVertex();
+  gl_Position = modelToClip*vec4(end+endLhs/endInvScale, 1.0);
+  //g_color = v_color[2];
+  EmitVertex();
+  gl_Position = modelToClip*vec4(end-endLhs/endInvScale, 1.0);
+  EmitVertex();
+  EndPrimitive();
+  */
+  float r = 0.01;
+
+  mat4 mv = GetViewMatrix() * GetModelMatrix();
+  vec4 p1 = mv * gl_in[1].gl_Position;
+  vec4 p2 = mv * gl_in[2].gl_Position;
+
+  vec2 dir = normalize(p2.xy - p1.xy);
+  vec2 normal = vec2(dir.y, -dir.x);
+
+  vec4 offset1, offset2;
+  offset1 = vec4(normal * r, 0, 0);
+  offset2 = vec4(normal * r, 0, 0);
+
+  vec4 coords[4];
+  coords[0] = p1 + offset1;
+  coords[1] = p1 - offset1;
+  coords[2] = p2 + offset2;
+  coords[3] = p2 - offset2;
+
+  for (int i = 0; i < 4; ++i) {
+      coords[i] = GetProjectionMatrix() * coords[i];
+      gl_Position = coords[i];
+      EmitVertex();
+  }
+  EndPrimitive();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment
+void main()
+{
+  vec3 viewPoint = GetViewPoint();
+  vec3 delta = normalize(viewPoint - LOFI_GET_position());
+
+  vec3 lightDir = normalize((GetViewMatrix() * vec4(1.0,1.0,1.0,0.0)).xyz);
+#ifdef LOFI_HAS_color
+  vec3 color = LOFI_GET_color();
+#else
+  vec3 color = LOFI_GET_displayColor();
+#endif
+  float dc = dot(delta, LOFI_GET_normal())  ;
+  //if(dc< 0.5) color *= 0.0;
+  float dl = dot(lightDir, LOFI_GET_normal())  ;
+  if(dl<0.5)color *=0.2;  
+  
+  LOFI_SET_result(vec4(color,1.0));
+}

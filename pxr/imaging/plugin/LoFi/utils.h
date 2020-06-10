@@ -134,4 +134,17 @@ LoFiTriangulateDatas( const VtArray<GfVec3i>& samples,
   }
 };
 
+/// Curves adjacency
+void
+LoFiCurvesAdjacency( const VtArray<int>& curveVertexCount,
+                      const size_t numControlPoints,
+                      VtArray<int>& samples);
+
+/// Compute smooth normals on a curve
+void 
+LoFiComputeCurveNormals(const VtArray<GfVec3f>& positions,
+                          const VtArray<int>& curveVertexCounts,
+                          const VtArray<int>& samples,
+                          VtArray<GfVec3f>& normals);
+
 PXR_NAMESPACE_CLOSE_SCOPE
