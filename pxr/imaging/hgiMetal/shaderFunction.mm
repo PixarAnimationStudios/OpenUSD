@@ -114,8 +114,8 @@ _GetPackedTypeDefinitions()
     "    return *(thread int*)&pi;\n"
     "}\n"
     
-    "mat4 inverse(float4x4 a) { return transpose(a); }\n"
-    "mat4 _inverse(float4x4 a) {\n"
+    "mat4 inverse_fast(float4x4 a) { return transpose(a); }\n"
+    "mat4 inverse(float4x4 a) {\n"
     "    float b00 = a[0][0] * a[1][1] - a[0][1] * a[1][0];\n"
     "    float b01 = a[0][0] * a[1][2] - a[0][2] * a[1][0];\n"
     "    float b02 = a[0][0] * a[1][3] - a[0][3] * a[1][0];\n"
@@ -148,25 +148,7 @@ _GetPackedTypeDefinitions()
     "                a[0][0] * b09 - a[0][1] * b07 + a[0][2] * b06,\n"
     "                a[3][1] * b01 - a[3][0] * b03 - a[3][2] * b00,\n"
     "                a[2][0] * b03 - a[2][1] * b01 + a[2][2] * b00) * invdet;\n"
-    "}\n\n"
-    "template <typename T>\n"
-    "T atan(T y, T x) { return atan2(y, x); }\n\n"
-    "template <typename T>\n"
-    "T bitfieldReverse(T x) { return reverse_bits(x); }\n\n"
-    "template <typename T>\n"
-    "ivec2 imageSize(T texture) {\n"
-    "    return ivec2(texture.get_width(), texture.get_height());\n"
-    "}\n\n"
-
-    "template <typename T>\n"
-    "ivec2 textureSize(T texture, int lod) {\n"
-    "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
-    "}\n\n"
-
-
-    "constexpr sampler texelSampler(address::clamp_to_edge,\n"
-    "                               filter::linear);\n";
-
+    "}\n\n";
 }
 
 static std::string
@@ -242,23 +224,41 @@ _ComputeHeader(id<MTLDevice> device)
             << "#define discard discard_fragment();\n"
             << "#define radians(d) (d * 0.01745329252)\n"
             << "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
-            << "#define greaterThan(a,b) (a > b)\n"
-            << "#define lessThan(a,b)    (a < b)\n"
             << "#define dFdx    dfdx\n"
-            << "#define dFdy    dfdy\n";
+            << "#define dFdy    dfdy\n"
+    
+            << "#define lessThan(a, b) ((a) < (b))\n"
+            << "#define lessThanEqual(a, b) ((a) <= (b))\n"
+            << "#define greaterThan(a, b) ((a) > (b))\n"
+            << "#define greaterThanEqual(a, b) ((a) >= (b))\n"
+            << "#define equal(a, b) ((a) == (b))\n"
+            << "#define notEqual(a, b) ((a) != (b))\n"
+
+            << "template <typename T>\n"
+            << "T mod(T y, T x) { return fmod(y, x); }\n\n"
+            << "template <typename T>\n"
+            << "T atan(T y, T x) { return atan2(y, x); }\n\n"
+            << "template <typename T>\n"
+            << "T bitfieldReverse(T x) { return reverse_bits(x); }\n\n"
+            << "template <typename T>\n"
+            << "ivec2 imageSize(T texture) {\n"
+            << "    return ivec2(texture.get_width(), texture.get_height());\n"
+            << "}\n\n"
+
+            << "template <typename T>\n"
+            << "ivec2 textureSize(T texture, int lod) {\n"
+            << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+            << "}\n\n"
+
+            << "constexpr sampler texelSampler(address::clamp_to_edge,\n"
+            << "                               filter::linear);\n";
     
     // wrapper for type float and int to deal with .x accessors and the
     // like that are valid in GLSL
     header  << "struct wrapped_float {\n"
             << "    union {\n"
-            << "        float x;\n"
-            << "        float xx;\n"
-            << "        float xxx;\n"
-            << "        float xxxx;\n"
-            << "        float r;\n"
-            << "        float rr;\n"
-            << "        float rrr;\n"
-            << "        float rrrr;\n"
+            << "        float x, xx, xxx, xxxx, y, z, w;\n"
+            << "        float r, rr, rrr, rrrr, g, b, a;\n"
             << "    };\n"
             << "    wrapped_float(float _x) { x = _x;}\n"
             << "    operator float () {\n"
@@ -268,14 +268,8 @@ _ComputeHeader(id<MTLDevice> device)
     
     header  << "struct wrapped_int {\n"
             << "    union {\n"
-            << "        int x;\n"
-            << "        int xx;\n"
-            << "        int xxx;\n"
-            << "        int xxxx;\n"
-            << "        int r;\n"
-            << "        int rr;\n"
-            << "        int rrr;\n"
-            << "        int rrrr;\n"
+            << "        int x, xx, xxx, xxxx, y, z, w;\n"
+            << "        int r, rr, rrr, rrrr, g, b, a;\n"
             << "    };\n"
             << "    wrapped_int(int _x) { x = _x;}\n"
             << "    operator int () {\n"
@@ -316,7 +310,7 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
                                               options:options
                                                 error:&error];
 
-    NSString *entryPoint;
+    NSString *entryPoint = nullptr;
     switch (_descriptor.shaderStage) {
         case HgiShaderStageVertex:
             entryPoint = @"vertexEntryPoint";
