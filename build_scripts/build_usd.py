@@ -1284,7 +1284,7 @@ def InstallDraco(context, force, buildArgs):
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
-DRACO = Dependency("Draco", InstallDraco, "include/Draco/src/draco/compression/decode.h")
+DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 
 ############################################################
 # MaterialX
