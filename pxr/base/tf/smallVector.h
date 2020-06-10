@@ -184,7 +184,6 @@ public:
     ///     - shrink_to_fit
     ///     - shrink_to_local / shrink_to_internal (or similar, free standing
     ///         function)
-    ///     - std::initializer_list support
 
     /// \name Relevant Typedefs.
     /// @{
@@ -266,6 +265,11 @@ public:
             rhs._Destruct();
         }
         std::swap(_size, rhs._size);
+    }
+
+    /// Construct a new vector from initializer list
+    TfSmallVector(std::initializer_list<T> values)
+        : TfSmallVector(values.begin(), values.end()) {
     }
 
     template<typename _ForwardIterator>

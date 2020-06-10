@@ -192,6 +192,30 @@ testConstructors()
             }
         }
     }
+
+    // Initializer List Construction
+    {
+        TfSmallVector<int, 5> il0 = {};
+        TF_AXIOM(il0.size() == 0);
+        TF_AXIOM(il0.capacity() == 5);
+
+        TfSmallVector<int, 5> il1 = {1, 2, 3};
+        TF_AXIOM(il1.size() == 3);
+        TF_AXIOM(il1.capacity() == 5);
+        TF_AXIOM(il1[0] = 1);
+        TF_AXIOM(il1[1] = 2);
+        TF_AXIOM(il1[2] = 3);
+
+        TfSmallVector<int, 5> il2 = {6, 5, 4, 3, 2, 1};
+        TF_AXIOM(il2.size() == 6);
+        TF_AXIOM(il2.capacity() == 6);
+        TF_AXIOM(il2[0] = 6);
+        TF_AXIOM(il2[1] = 5);
+        TF_AXIOM(il2[2] = 4);
+        TF_AXIOM(il2[3] = 3);
+        TF_AXIOM(il2[4] = 2);
+        TF_AXIOM(il2[5] = 1);
+    }
 }
 
 static void
