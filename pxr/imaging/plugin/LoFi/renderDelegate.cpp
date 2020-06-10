@@ -15,6 +15,7 @@
 
 #include "pxr/imaging/plugin/LoFi/mesh.h"
 #include "pxr/imaging/plugin/LoFi/points.h"
+#include "pxr/imaging/plugin/LoFi/curves.h"
 #include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/bprim.h"
@@ -31,7 +32,8 @@ TF_DEFINE_PUBLIC_TOKENS(LoFiRenderSettingsTokens, LOFI_RENDER_SETTINGS_TOKENS);
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
   HdPrimTypeTokens->mesh,
-  HdPrimTypeTokens->points
+  HdPrimTypeTokens->points,
+  HdPrimTypeTokens->basisCurves
 };
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -148,6 +150,8 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
     return new LoFiMesh(rprimId, instancerId);
   } else if(typeId == HdPrimTypeTokens->points) {
     return new LoFiPoints(rprimId, instancerId);
+  } else if(typeId == HdPrimTypeTokens->basisCurves) {
+    return new LoFiCurves(rprimId, instancerId);
   } else {
     TF_CODING_ERROR("Unknown Rprim type=%s id=%s", 
       typeId.GetText(), 

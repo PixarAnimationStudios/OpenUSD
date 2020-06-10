@@ -111,4 +111,39 @@ LoFiComputeVertexColors(  const VtArray<GfVec3f>& positions,
   }
 }
 
+void
+LoFiCurvesAdjacency( const VtArray<int>& curveVertexCount,
+                      const size_t numControlPoints,
+                      VtArray<int>& samples)
+{
+  size_t sizeAdjacency = (numControlPoints - curveVertexCount.size()) * 4;
+  samples.resize(sizeAdjacency);
+  size_t baseIdx = 0;
+  size_t sampleIdx = 0;
+  for(const auto& cnt: curveVertexCount) {
+    size_t numSegments = cnt-1;
+    size_t first = sampleIdx;
+    size_t last = sampleIdx + numSegments * 4 - 1;
+    for(size_t seg = 0; seg < numSegments; ++seg) {
+      samples[sampleIdx++] = baseIdx  + seg - 1;
+      samples[sampleIdx++] = baseIdx  + seg    ;
+      samples[sampleIdx++] = baseIdx  + seg + 1;
+      samples[sampleIdx++] = baseIdx  + seg + 2;
+    }
+    samples[first] = baseIdx;
+    samples[last] = baseIdx + numSegments;
+    baseIdx += cnt;
+  }
+}
+
+void 
+LoFiComputeCurveNormals(const VtArray<GfVec3f>& positions,
+                          const VtArray<int>& curveVertexCounts,
+                          const VtArray<int>& samples,
+                          VtArray<GfVec3f>& normals)
+{
+  normals.resize(positions.size());
+  for(auto& normal: normals)normal = pxr::GfVec3f(1.f,0.f,0.f);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

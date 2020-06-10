@@ -285,7 +285,7 @@ LoFiCodeGen::_GenerateVersion()
 
 
 void
-LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
+LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader, size_t numVertexPerPrimitive)
 {
   std::stringstream vertexInputs;
   std::vector<std::string> vertexDatas, geometryDatas;
@@ -343,7 +343,8 @@ LoFiCodeGen::_GeneratePrimvars(bool hasGeometryShader)
   
   if(hasGeometryShader)
   {
-    _genGS << "#define LOFI_NUM_PRIMITIVE_VERTS 2\n";
+    _genGS << "#define LOFI_NUM_PRIMITIVE_VERTS ";
+    _genGS << numVertexPerPrimitive << "\n";
     // geometry shader code
     TF_FOR_ALL(it, vertexDatas)
     {
@@ -419,7 +420,7 @@ void LoFiCodeGen::_GenerateResults()
                     TfToken("result"), LoFiGLTokens->vec4, 1);
 }
 
-void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader)
+void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader, size_t numVertexPerPrimitive)
 {
   // initialize source buckets
   _genCommon.str(""), _genVS.str(""), _genGS.str(""), _genFS.str("");
@@ -438,8 +439,10 @@ void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader)
   _genGS << _genCommon.str();
   _genFS << _genCommon.str();
 
+  //std::cout << "NUM VERTEX PER PRIMITIVE : " << numVertexPerPrimitive << std::endl;
+
   _GenerateUniforms();
-  _GeneratePrimvars(hasGeometryShader);
+  _GeneratePrimvars(hasGeometryShader, numVertexPerPrimitive);
   _GenerateResults();
 
   // shader sources which own main()
@@ -452,6 +455,14 @@ void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader)
   _geometryCode = _genGS.str();
   _fragmentCode = _genFS.str();
 
+/*
+  std::cout << "######################## VERTEX ########################" << std::endl;
+  std::cout << _vertexCode << std::endl;
+  std::cout << "######################## GEOMETRY ########################" << std::endl;
+  std::cout << _geometryCode << std::endl;
+  std::cout << "######################## FRAGMENT ########################" << std::endl;
+  std::cout << _fragmentCode << std::endl;
+*/
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

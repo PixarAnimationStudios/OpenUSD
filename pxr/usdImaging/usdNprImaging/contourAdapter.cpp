@@ -143,7 +143,7 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
   graph->Prepare(*datas.strokeParams);
   graph->ClearStrokeChains();
   graph->BuildStrokeChains(EDGE_SILHOUETTE);
-
+/*
   UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
   
   halfEdgeMesh->ComputeOutputGeometry(
@@ -157,6 +157,7 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
     outputBuffer->faceVertexCounts,
     outputBuffer->faceVertexIndices
   );
+  */
 }
 
 void 
@@ -391,9 +392,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 2;
           }
         }
-        //indicesIndex += numIndices;
         offsetIndex += numNodes * 2;
-        
       }
     }
   }

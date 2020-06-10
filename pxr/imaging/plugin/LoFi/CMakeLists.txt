@@ -40,6 +40,7 @@ pxr_plugin(LoFi
         mesh
         points
         instancer
+		curves
         sceneDelegate
         renderDelegate
         renderPass
@@ -59,6 +60,7 @@ pxr_plugin(LoFi
         shaders/simple.glslfx
         shaders/mesh.glslfx
         shaders/points.glslfx
+        shaders/curves.glslfx
         shaders/visibility.glslfx
 )
 

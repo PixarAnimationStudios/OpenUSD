@@ -55,7 +55,7 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       shaderPath = _GetShaderPath("mesh.glslfx");
       break;
     case LoFiProgramType::LOFI_PROGRAM_CURVE:
-      shaderPath = _GetShaderPath("curve.glslfx");
+      shaderPath = _GetShaderPath("curves.glslfx");
       hasGeometryShader = true;
       break;
     case LoFiProgramType::LOFI_PROGRAM_POINT:
@@ -71,7 +71,7 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
     binder->GetAttributeBindings(),
     shaderCode
   );
-  codeGen.GenerateProgramCode(hasGeometryShader);
+  codeGen.GenerateProgramCode(hasGeometryShader, binder->GetNumVertexPerPrimitive());
 
   if(!hasGeometryShader)
   {
