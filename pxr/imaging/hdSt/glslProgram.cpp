@@ -26,13 +26,13 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 
 #include <climits>
 #include <cstdlib>
@@ -42,9 +42,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_CONTEXT_CHECK, 0,
-    "Enable GL context sharing validation");
 
 // Get the line number from the compilation error message, and return a boolean
 // indicating success/failure of parsing.
@@ -143,7 +140,7 @@ HdStGLSLProgram::HdStGLSLProgram(
     TfToken const &role,
     HdStResourceRegistry *const registry)
     :_registry(registry)
-    , _program(role),
+    , _programResource(role),
     _uniformBuffer(role)
 {
     static size_t globalDebugID = 0;
@@ -152,12 +149,16 @@ HdStGLSLProgram::HdStGLSLProgram(
 
 HdStGLSLProgram::~HdStGLSLProgram()
 {
-    GLuint program = _program.GetId();
-    if (program != 0) {
-        if (glDeleteProgram)
-            glDeleteProgram(program);
-        _program.SetAllocation(0, 0);
+    Hgi *const hgi = _registry->GetHgi();
+
+    if (_program) {
+        for (HgiShaderFunctionHandle fn : _program->GetShaderFunctions()) {
+            hgi->DestroyShaderFunction(&fn);
+        }
+        hgi->DestroyShaderProgram(&_program);
     }
+    _programResource.SetAllocation(0, 0);
+
     GLuint uniformBuffer = _uniformBuffer.GetId();
     if (uniformBuffer) {
         if (glDeleteBuffers)
@@ -189,21 +190,31 @@ HdStGLSLProgram::CompileShader(GLenum type,
     // early out for empty source.
     // this may not be an error, since glslfx gives empty string
     // for undefined shader stages (i.e. null geometry shader)
-    if (shaderSource.empty()) return false;
+    if (shaderSource.empty()) {
+        return false;
+    }
 
+    HgiShaderStage shaderStage = 0;
     const char *shaderType = NULL;
+
     if (type == GL_VERTEX_SHADER) {
         shaderType = "GL_VERTEX_SHADER";
+        shaderStage = HgiShaderStageVertex;
     } else if (type == GL_TESS_CONTROL_SHADER) {
         shaderType = "GL_TESS_CONTROL_SHADER";
+        shaderStage = HgiShaderStageTessellationControl;
     } else if (type == GL_TESS_EVALUATION_SHADER) {
         shaderType = "GL_TESS_EVALUATION_SHADER";
+        shaderStage = HgiShaderStageTessellationEval;
     } else if (type == GL_GEOMETRY_SHADER) {
         shaderType = "GL_GEOMETRY_SHADER";
+        shaderStage = HgiShaderStageGeometry;
     } else if (type == GL_FRAGMENT_SHADER) {
         shaderType = "GL_FRAGMENT_SHADER";
+        shaderStage = HgiShaderStageFragment;
     } else if (type == GL_COMPUTE_SHADER) {
         shaderType = "GL_COMPUTE_SHADER";
+        shaderStage = HgiShaderStageCompute;
     } else {
         TF_CODING_ERROR("Invalid shader type %d\n", type);
         return false;
@@ -213,23 +224,13 @@ HdStGLSLProgram::CompileShader(GLenum type,
         _DumpShaderSource(shaderType, shaderSource);
     }
 
-    // glew has to be initialized
-    if (!glCreateProgram)
-        return false;
+    Hgi *const hgi = _registry->GetHgi();
 
-    // create a program if not exists
-    GLuint program = _program.GetId();
-    if (program == 0) {
-        program = glCreateProgram();
-        _program.SetAllocation(program, 0);
-    }
-
-    // create a shader, compile it
-    const char *shaderSources[1];
-    shaderSources[0] = shaderSource.c_str();
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, sizeof(shaderSources)/sizeof(const char *), shaderSources, NULL);
-    glCompileShader(shader);
+    // Create a shader, compile it
+    HgiShaderFunctionDesc shaderFnDesc;
+    shaderFnDesc.shaderCode = shaderSource;
+    shaderFnDesc.shaderStage = shaderStage;
+    HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 
     std::string fname;
     if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCEFILE)) {
@@ -245,8 +246,8 @@ HdStGLSLProgram::CompileShader(GLenum type,
         std::cout << "Write " << fname << " (size=" << shaderSource.size() << ")\n";
     }
 
-    std::string logString;
-    if (!HdStGLUtils::GetShaderCompileStatus(shader, &logString)) {
+    if (!shaderFn->IsValid()) {
+        std::string logString = shaderFn->GetCompileErrors();
         unsigned int lineNum = 0;
         if (_ParseLineNumberOfError(logString, &lineNum)) {
             // Get lines surrounding the erroring line for context.
@@ -271,33 +272,31 @@ HdStGLSLProgram::CompileShader(GLenum type,
         }
 
         // shader is no longer needed.
-        glDeleteShader(shader);
-        
+        hgi->DestroyShaderFunction(&shaderFn);
+
         return false;
     }
 
-    // attach the shader to the program
-    glAttachShader(program, shader);
-
-    // shader is no longer needed.
-    glDeleteShader(shader);
+    // Store the shader function in the program descriptor so it can be used
+    // during Link time.
+    _programDesc.shaderFunctions.push_back(shaderFn);
 
     return true;
 }
 
-static std::string
-_GetShaderType(GLint type)
+static const char*
+_GetShaderType(HgiShaderStage stage)
 {
-    switch(type) {
-        case GL_VERTEX_SHADER:
+    switch(stage) {
+        case HgiShaderStageVertex:
             return "--------GL_VERTEX_SHADER--------\n";
-        case GL_FRAGMENT_SHADER:
+        case HgiShaderStageFragment:
             return "--------GL_FRAGMENT_SHADER--------\n";
-        case GL_GEOMETRY_SHADER:
+        case HgiShaderStageGeometry:
             return "--------GL_GEOMETRY_SHADER--------\n";
-        case GL_TESS_CONTROL_SHADER:
+        case HgiShaderStageTessellationControl:
             return "--------GL_TESS_CONTROL_SHADER--------\n";
-        case GL_TESS_EVALUATION_SHADER:
+        case HgiShaderStageTessellationEval:
             return "--------GL_TESS_EVALUATION_SHADER--------\n";
 
         default:
@@ -305,40 +304,19 @@ _GetShaderType(GLint type)
     }
 }
 
-static void
-_DebugAppendShaderSource(GLuint shader, std::string * result)
-{
-    GLint sourceType = 0;
-    glGetShaderiv(shader, GL_SHADER_TYPE, &sourceType);
-
-    GLint sourceLength = 0;
-    glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &sourceLength);
-    if (sourceLength > 0) {
-        char *shaderSource = new char[sourceLength];
-        glGetShaderSource(shader, sourceLength, NULL, shaderSource);
-        // don't copy in the null terminator from the char*
-        result->append(_GetShaderType(sourceType));
-        result->append(shaderSource, sourceLength-1);
-        delete[] shaderSource;
-    }
-}
-
 static std::string
-_DebugLinkSource(GLuint program)
+_DebugLinkSource(HgiShaderProgramHandle const& program)
 {
     std::string result;
-    result = TfStringPrintf("==== Source Program ID=%d\nBEGIN_DUMP\n", program);
+    result = TfStringPrintf("==== Source Program ID=%p\nBEGIN_DUMP\n",
+                            program.Get());
 
-    GLint numAttachedShaders = 0;
-    glGetProgramiv(program, GL_ATTACHED_SHADERS, &numAttachedShaders);
-    if (numAttachedShaders > 0) {
-        GLuint * attachedShaders = new GLuint[numAttachedShaders];
-        glGetAttachedShaders(program,
-                             numAttachedShaders, NULL, attachedShaders);
-        for (int i=0; i<numAttachedShaders; ++i) {
-            _DebugAppendShaderSource(attachedShaders[i], &result);
-        }
+    for (HgiShaderFunctionHandle fn : program->GetShaderFunctions()) {
+        HgiShaderFunctionDesc const& desc = fn->GetDescriptor();
+        result.append(_GetShaderType(desc.shaderStage));
+        result.append(desc.shaderCode);
     }
+
     result += "END DUMP\n";
 
     return result;
@@ -350,45 +328,33 @@ HdStGLSLProgram::Link()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!glLinkProgram) return false; // glew initialized
-
-    GLuint program = _program.GetId();
-    if (program == 0) {
+    if (_programDesc.shaderFunctions.empty()) {
         TF_CODING_ERROR("At least one shader has to be compiled before linking.");
         return false;
     }
 
-    bool dumpShaderBinary = TfDebug::IsEnabled(HDST_DUMP_SHADER_BINARY);
+    Hgi *const hgi = _registry->GetHgi();
 
-    if (dumpShaderBinary) {
-        // set RETRIEVABLE_HINT to true for getting program binary length.
-        // note: Actually the GL driver may recompile the program dynamically on
-        // some state changes, so the size of program could be inaccurate.
-        glProgramParameteri(program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT,
-                            GL_TRUE);
+    // Create the shader program.
+    if (_program) {
+        hgi->DestroyShaderProgram(&_program);
     }
+    _program = hgi->CreateShaderProgram(_programDesc);
 
-    // link
-    glLinkProgram(program);
-
-    std::string logString;
-    bool success = true;
-    if (!HdStGLUtils::GetProgramLinkStatus(program, &logString)) {
-        // XXX:validation
+    bool success = _program->IsValid();
+    if (!success) {
+        std::string const& logString = _program->GetCompileErrors();
         TF_WARN("Failed to link shader: %s", logString.c_str());
-        success = false;
 
         if (TfDebug::IsEnabled(HDST_DUMP_FAILING_SHADER_SOURCE)) {
-            std::cout << _DebugLinkSource(program) << std::flush;
+            std::cout << _DebugLinkSource(_program) << std::flush;
         }
     }
 
-    // initial program size
-    GLint size;
-    glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &size);
-
-    // update the program resource allocation
-    _program.SetAllocation(program, size);
+    // update the program resource allocation.
+    TF_VERIFY(hgi->GetAPIName() == HgiTokens->OpenGL, "TODO Hgi transition");
+    uint32_t glProgram = _program.Get()->GetRawResource();
+    _programResource.SetAllocation(glProgram, 0);
 
     // create an uniform buffer
     GLuint uniformBuffer = _uniformBuffer.GetId();
@@ -402,47 +368,16 @@ HdStGLSLProgram::Link()
         _uniformBuffer.SetAllocation(uniformBuffer, 0);
     }
 
-    // binary dump out
-    if (dumpShaderBinary) {
-        std::vector<char> bin(size);
-        GLsizei len;
-        GLenum format;
-        glGetProgramBinary(program, size, &len, &format, &bin[0]);
-        std::stringstream fname;
-        fname << "program" << _debugID << ".bin";
-
-        std::fstream output(fname.str().c_str(), std::ios::out|std::ios::binary);
-        output.write(&bin[0], size);
-        output.close();
-
-        std::cout << "Write " << fname.str() << " (size=" << size << ")\n";
-    }
-
     return success;
 }
 
 bool
 HdStGLSLProgram::Validate() const
 {
-    GLuint program = _program.GetId();
-    if (program == 0) return false;
-
-    if (TfDebug::IsEnabled(HD_SAFE_MODE) ||
-        TfGetEnvSetting(HD_ENABLE_SHARED_CONTEXT_CHECK)) {
-
-        HD_TRACE_FUNCTION();
-
-        // make sure the binary size is same as when it's created.
-        if (glIsProgram(program) == GL_FALSE) return false;
-        GLint size = 0;
-        glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &size);
-        if (size == 0) {
-            return false;
-        }
-        if (static_cast<size_t>(size) != _program.GetSize()) {
-            return false;
-        }
+    if (!_program || !_program->IsValid()) {
+        return false;
     }
+
     return true;
 }
 
