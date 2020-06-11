@@ -140,6 +140,12 @@ LoFiCurvesAdjacency( const VtArray<int>& curveVertexCount,
                       const size_t numControlPoints,
                       VtArray<int>& samples);
 
+/// Curves segments
+void
+LoFiCurvesSegments( const VtArray<int>& curveVertexCount,
+                    const size_t numControlPoints,
+                    VtArray<int>& samples);
+
 /// Compute smooth normals on a curve
 void 
 LoFiComputeCurveNormals(const VtArray<GfVec3f>& positions,

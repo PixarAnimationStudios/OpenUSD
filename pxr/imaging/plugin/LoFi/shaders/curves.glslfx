@@ -34,18 +34,19 @@
 
 void main()
 {
-  /*
+  
   mat4 viewModel = GetViewMatrix() * GetModelMatrix();
   vec4 p = viewModel * vec4(LOFI_GET_position(), 1.0);
   vec4 n = LOFI_GET_normalMatrix() * vec4(LOFI_GET_normal(), 0.0);
-  gl_Position = GetProjectionMatrix() * p;
 #ifdef LOFI_HAS_color
   LOFI_SET_color(LOFI_GET_color());
 #endif
-  LOFI_SET_position(p.xyz);
+  LOFI_SET_position(p.xyz / p.w);
   LOFI_SET_normal(n.xyz);
-  */
-  gl_Position = vec4(LOFI_GET_position(), 1.0);
+#ifdef LOFI_HAS_width
+  LOFI_SET_width(LOFI_GET_width());
+#endif
+
 }
 
 --- --------------------------------------------------------------------------
@@ -56,77 +57,56 @@ layout (triangle_strip, max_vertices = 4) out;
 
 void main()
 {
-  /*
-  float lineWidth = 0.01;
-  vec3 prev = gl_in[0].gl_Position.xyz;
-  vec3 start = gl_in[1].gl_Position.xyz;
-  vec3 end = gl_in[2].gl_Position.xyz;
-  vec3 next = gl_in[3].gl_Position.xyz;
+  float lineWidth = 0.1;
+#ifdef LOFI_HAS_width
+  float w1 = LOFI_GET_width(1);
+  float w2 = LOFI_GET_width(2);
+#else
+  float w1 = 0.1;
+  float w2 = 0.1;
+#endif
+  vec3 p0 = LOFI_GET_position(0);
+  vec3 p1 = LOFI_GET_position(1);
+  vec3 p2 = LOFI_GET_position(2);
+  vec3 p3 = LOFI_GET_position(3);
 
-  vec3 lhs = cross(normalize(end-start), vec3(0.0, 0.0, -1.0));
+  vec3 seg0, seg1, seg2;
+  seg0 = p1-p0;
+  seg1 = p2-p1;
+  seg2 = p3-p2;
 
-  // is previous line segment a zero vector?
-  bool colStart = length(start-prev) < 0.0001; // 0.0001 is arbitrary epsilon
-  // is next line segment a zero vector?
-  bool colEnd = length(end-next) < 0.0001;
+  vec3 tan1, tan2;
+  vec3 nrm = normalize(cross(normalize(seg1), vec3(0,0,1)));
 
-  vec3 a = normalize(start-prev);
-  vec3 b = normalize(start-end);
-  vec3 c = (a+b)*0.5;
-  vec3 startLhs = normalize(c) * sign(dot(c, lhs));
-  a = normalize(end-start);
-  b = normalize(end-next);
-  c = (a+b)*0.5;
-  vec3 endLhs = normalize(c) * sign(dot(c, lhs));
+  if(length(seg0) < 0.0001)
+    tan1 = normalize(seg1);
+  else
+    tan1 = normalize(seg0 * 0.5 + seg1 * 0.5);
 
-  if(colStart)
-      startLhs = lhs;
-  if(colEnd)
-      endLhs = lhs;
+  if(length(seg2)< 0.0001)
+    tan2 = normalize(seg1);
+  else
+    tan2 = normalize(seg1 * 0.5+ seg2 * 0.5);
 
-  float startInvScale = dot(startLhs, lhs);
-  float endInvScale = dot(endLhs, lhs);
+  vec3 miter1 = normalize(cross(tan1, vec3(0,0,1)));
+  vec3 miter2 = normalize(cross(tan2, vec3(0,0,1)));
 
-  startLhs *= lineWidth*0.5;
-  endLhs *= lineWidth*0.5;
+  float l1 = w1 / dot( miter1, nrm );
+  float l2 = w2 / dot( miter2, nrm );
 
-  mat4 modelToClip = GetMVPMatrix();
-  gl_Position = modelToClip*vec4(start+startLhs/startInvScale, 1.0);
+  mat4 projMatrix = GetProjectionMatrix();
+  gl_Position = projMatrix*vec4(p1 + miter1 * l1, 1.0);
+  LOFI_SET_color(LOFI_GET_color(1));
   //g_color = v_color[1];
   EmitVertex();
-  gl_Position = modelToClip*vec4(start-startLhs/startInvScale, 1.0);
+  gl_Position = projMatrix*vec4(p1 - miter1 * l1, 1.0);
   EmitVertex();
-  gl_Position = modelToClip*vec4(end+endLhs/endInvScale, 1.0);
+  gl_Position = projMatrix*vec4(p2 + miter2 * l2, 1.0);
+  LOFI_SET_color(LOFI_GET_color(2));
   //g_color = v_color[2];
   EmitVertex();
-  gl_Position = modelToClip*vec4(end-endLhs/endInvScale, 1.0);
+  gl_Position = projMatrix*vec4(p2 - miter2 * l2, 1.0);
   EmitVertex();
-  EndPrimitive();
-  */
-  float r = 0.01;
-
-  mat4 mv = GetViewMatrix() * GetModelMatrix();
-  vec4 p1 = mv * gl_in[1].gl_Position;
-  vec4 p2 = mv * gl_in[2].gl_Position;
-
-  vec2 dir = normalize(p2.xy - p1.xy);
-  vec2 normal = vec2(dir.y, -dir.x);
-
-  vec4 offset1, offset2;
-  offset1 = vec4(normal * r, 0, 0);
-  offset2 = vec4(normal * r, 0, 0);
-
-  vec4 coords[4];
-  coords[0] = p1 + offset1;
-  coords[1] = p1 - offset1;
-  coords[2] = p2 + offset2;
-  coords[3] = p2 - offset2;
-
-  for (int i = 0; i < 4; ++i) {
-      coords[i] = GetProjectionMatrix() * coords[i];
-      gl_Position = coords[i];
-      EmitVertex();
-  }
   EndPrimitive();
 }
 
@@ -143,10 +123,11 @@ void main()
 #else
   vec3 color = LOFI_GET_displayColor();
 #endif
+/*
   float dc = dot(delta, LOFI_GET_normal())  ;
   //if(dc< 0.5) color *= 0.0;
   float dl = dot(lightDir, LOFI_GET_normal())  ;
   if(dl<0.5)color *=0.2;  
-  
+*/
   LOFI_SET_result(vec4(color,1.0));
 }

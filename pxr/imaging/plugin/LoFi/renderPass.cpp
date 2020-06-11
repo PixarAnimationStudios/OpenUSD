@@ -10,6 +10,7 @@
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/timer.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,7 +57,8 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       break;
     case LoFiProgramType::LOFI_PROGRAM_CURVE:
       shaderPath = _GetShaderPath("curves.glslfx");
-      hasGeometryShader = true;
+      if(GlfContextCaps::GetInstance().glslVersion >= 330)
+        hasGeometryShader = true;
       break;
     case LoFiProgramType::LOFI_PROGRAM_POINT:
       shaderPath = _GetShaderPath("points.glslfx");

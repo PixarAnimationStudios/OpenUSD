@@ -7,6 +7,7 @@
 #define PXR_IMAGING_PLUGIN_LOFI_CURVES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -83,6 +84,7 @@ private:
     
     VtArray<GfVec3f>                _positions;
     VtArray<int>                    _curveVertexCounts;
+    VtArray<float>                  _widths;
     VtArray<GfVec3f>                _normals;
     VtArray<GfVec3f>                _colors;
     VtArray<int>                    _samples;
