@@ -60,12 +60,13 @@ void main()
 {
   float lineWidth = 0.1;
 #ifdef LOFI_HAS_width
-  float w1 = LOFI_GET_width(1);
-  float w2 = LOFI_GET_width(2);
+  float w1 = LOFI_GET_width(1) * 0.5;
+  float w2 = LOFI_GET_width(2) * 0.5;
 #else
   float w1 = 0.1;
   float w2 = 0.1;
 #endif
+
   vec3 p0 = LOFI_GET_position(0);
   vec3 p1 = LOFI_GET_position(1);
   vec3 p2 = LOFI_GET_position(2);
@@ -97,13 +98,18 @@ void main()
 
   mat4 projMatrix = GetProjectionMatrix();
   gl_Position = projMatrix*vec4(p1 + miter1 * l1, 1.0);
+#ifdef LOFI_HAS_color
   LOFI_SET_color(LOFI_GET_color(1));
+#endif
+  
   //g_color = v_color[1];
   EmitVertex();
   gl_Position = projMatrix*vec4(p1 - miter1 * l1, 1.0);
   EmitVertex();
   gl_Position = projMatrix*vec4(p2 + miter2 * l2, 1.0);
+#ifdef LOFI_HAS_color
   LOFI_SET_color(LOFI_GET_color(2));
+#endif
   //g_color = v_color[2];
   EmitVertex();
   gl_Position = projMatrix*vec4(p2 - miter2 * l2, 1.0);

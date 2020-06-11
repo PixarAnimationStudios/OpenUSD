@@ -87,7 +87,7 @@ LoFiCurves::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
 {
   uint32_t numInputElements = 0;
   const LoFiTopology* topo = _vertexArray->GetTopology();
-  uint32_t numOutputElements = topo->numElements + topo->numBases;
+  uint32_t numOutputElements = topo->numElements;
   const char* datasPtr = NULL;
   bool valid = true;
   short tuppleSize = 3;
@@ -208,15 +208,10 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
 
     LoFiTopology* topo = _vertexArray->GetTopology();
     topo->samples = (const int*)&_samples[0];
-    if(LOFI_GL_VERSION >= 330) {
-      topo->numElements = _samples.size() / 4;
-      _vertexArray->SetNumElements(_samples.size() / 4);
-    } else {
-      topo->numElements = _samples.size() / 2;
-      _vertexArray->SetNumElements(_samples.size() / 2);
-    }
+    topo->numElements = _samples.size();
     topo->numBases = curveVertexCounts.size();
     
+    _vertexArray->SetNumElements(_samples.size());
     _vertexArray->SetNeedUpdate(true);
     
     needReallocate = true;
@@ -427,7 +422,8 @@ LoFiCurves::Sync( HdSceneDelegate *sceneDelegate,
 
   if(!initialized)
   {
-    _vertexArray->SetAdjacency(_samples);
+    if(LOFI_GL_VERSION >= 330)
+      _vertexArray->UseAdjacency();
     _PopulateBinder(resourceRegistry);
   }
   drawItem->SetDisplayColor(_displayColor);
