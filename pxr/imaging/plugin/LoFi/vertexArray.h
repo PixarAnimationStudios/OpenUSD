@@ -75,7 +75,7 @@ public:
   inline void SetNumElements(uint32_t numElements){_numElements = numElements;};
 
   // adjacency
-  void SetAdjacency(const VtArray<int>& adjacency);
+  void UseAdjacency(){_adjacency=true;};
 
   // allocate
   void Populate();
@@ -90,12 +90,7 @@ private:
   LoFiTopology                      _topology;
   LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
-  bool                              _indexed;
-
-  // index buffer
-  GLuint                            _ebo;
-  int*                              _adjacency;
-  size_t                            _numAdjacency;
+  bool                              _adjacency;
 
   // flags
   uint32_t                          _channels;

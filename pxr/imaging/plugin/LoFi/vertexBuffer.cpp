@@ -131,6 +131,10 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
   }
   else if(topo->type == LoFiTopology::Type::LINES)
   {
+    std::cout << "LINE OUTPUT DATA : " << _numOutputElements << std::endl;
+    std::cout << "TOPO NUM ELEMENTS : " << topo->numElements << std::endl;
+    const int* samples = topo->samples;
+    bool useAdjacency = (samples[0] == samples[1]);
     switch(_interpolation) {
       case LoFiInterpolationConstant:
       {
@@ -143,34 +147,55 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
 
       case LoFiInterpolationUniform:
       {
-        size_t curveIdx = 0;
-        size_t sampleIdx = 0;
-        size_t offsetIdx = 0;
-        const int* samples = topo->samples;
-        for(size_t i=0;i<topo->numBases;++i) 
-        {
-          size_t numSegments = 1;
-          while(samples[sampleIdx+2] != samples[sampleIdx+3]) {
-            numSegments++;
-            sampleIdx+=4;
+        size_t curveIndex = 0;
+        size_t sampleIndex = 0;
+        size_t offsetIndex = 0;
+        if(useAdjacency) {
+          for(size_t i=0;i<topo->numBases;++i) {
+            while(true) {
+              for(size_t j=0;j<4;++j) {
+                memcpy(
+                  (void*)(result + _elementSize * offsetIndex++), 
+                  (void*)(_rawInputDatas + curveIndex * _elementSize),
+                  _elementSize);
+              }
+              sampleIndex +=4;
+              if(samples[sampleIndex-2] == samples[sampleIndex-1])break;
+            }
+            curveIndex++;
           }
-          numSegments++;
-
-          for(size_t j=0;j<numSegments;++j) 
-          {
-            memcpy(
-              (void*)(result + (offsetIdx + j) * _elementSize), 
-              (void*)(_rawInputDatas + curveIdx * _elementSize),
-              _elementSize);
+        } else {
+          for(size_t i=0;i<topo->numBases;++i) {
+            while(true) {
+              for(size_t j=0;j<2;++j) {
+                memcpy(
+                  (void*)(result + _elementSize * offsetIndex++), 
+                  (void*)(_rawInputDatas + curveIndex * _elementSize),
+                  _elementSize);
+              }
+              sampleIndex +=2;
+              if(sampleIndex >= topo->numElements || samples[sampleIndex] != samples[sampleIndex-1])break;
+            }
+            curveIndex++;
           }
-
-          offsetIdx += numSegments;
-          sampleIdx += 4;
-          curveIdx++;
         }
         break;
       }
+
+      case LoFiInterpolationVarying:
       case LoFiInterpolationVertex:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(
+            (void*)(result + i * _elementSize),
+            (void*)(_rawInputDatas + samples[i] * _elementSize), 
+            _elementSize
+          );
+        }
+        break;
+      }
+      
       default:
       {
         memcpy(result, _rawInputDatas, _numInputElements * _elementSize);
