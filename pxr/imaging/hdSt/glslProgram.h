@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/resourceGL.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/enums.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,9 +56,9 @@ public:
     HDST_API
     static ID ComputeHash(TfToken const & sourceFile);
 
-    /// Compile shader source of type
+    /// Compile shader source for a shader stage.
     HDST_API
-    bool CompileShader(GLenum type, std::string const & source);
+    bool CompileShader(HgiShaderStage stage, std::string const & source);
 
     /// Link the compiled shaders together.
     HDST_API

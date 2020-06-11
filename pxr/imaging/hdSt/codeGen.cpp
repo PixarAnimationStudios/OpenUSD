@@ -827,21 +827,22 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (hasVS) {
         _vsSource = _genCommon.str() + _genVS.str();
-        if (!glslProgram->CompileShader(GL_VERTEX_SHADER, _vsSource)) {
+        if (!glslProgram->CompileShader(HgiShaderStageVertex, _vsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasFS) {
         _fsSource = _genCommon.str() + _genFS.str();
-        if (!glslProgram->CompileShader(GL_FRAGMENT_SHADER, _fsSource)) {
+        if (!glslProgram->CompileShader(HgiShaderStageFragment, _fsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasTCS) {
         _tcsSource = _genCommon.str() + _genTCS.str();
-        if (!glslProgram->CompileShader(GL_TESS_CONTROL_SHADER, _tcsSource)) {
+        if (!glslProgram->CompileShader(
+                HgiShaderStageTessellationControl, _tcsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
@@ -849,14 +850,14 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (hasTES) {
         _tesSource = _genCommon.str() + _genTES.str();
         if (!glslProgram->CompileShader(
-                    GL_TESS_EVALUATION_SHADER, _tesSource)) {
+                HgiShaderStageTessellationEval, _tesSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasGS) {
         _gsSource = _genCommon.str() + _genGS.str();
-        if (!glslProgram->CompileShader(GL_GEOMETRY_SHADER, _gsSource)) {
+        if (!glslProgram->CompileShader(HgiShaderStageGeometry, _gsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
@@ -1005,7 +1006,7 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     // compile shaders
     {
         _csSource = _genCommon.str() + _genCS.str();
-        if (!glslProgram->CompileShader(GL_COMPUTE_SHADER, _csSource)) {
+        if (!glslProgram->CompileShader(HgiShaderStageCompute, _csSource)) {
             const char *shaderSources[1];
             shaderSources[0] = _csSource.c_str();
             GLuint shader = glCreateShader(GL_COMPUTE_SHADER);

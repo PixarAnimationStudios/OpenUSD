@@ -181,8 +181,9 @@ HdStGLSLProgram::ComputeHash(TfToken const &sourceFile)
 }
 
 bool
-HdStGLSLProgram::CompileShader(GLenum type,
-                             std::string const &shaderSource)
+HdStGLSLProgram::CompileShader(
+    HgiShaderStage stage,
+    std::string const &shaderSource)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -194,29 +195,31 @@ HdStGLSLProgram::CompileShader(GLenum type,
         return false;
     }
 
-    HgiShaderStage shaderStage = 0;
-    const char *shaderType = NULL;
+    const char *shaderType = nullptr;
 
-    if (type == GL_VERTEX_SHADER) {
-        shaderType = "GL_VERTEX_SHADER";
-        shaderStage = HgiShaderStageVertex;
-    } else if (type == GL_TESS_CONTROL_SHADER) {
-        shaderType = "GL_TESS_CONTROL_SHADER";
-        shaderStage = HgiShaderStageTessellationControl;
-    } else if (type == GL_TESS_EVALUATION_SHADER) {
-        shaderType = "GL_TESS_EVALUATION_SHADER";
-        shaderStage = HgiShaderStageTessellationEval;
-    } else if (type == GL_GEOMETRY_SHADER) {
-        shaderType = "GL_GEOMETRY_SHADER";
-        shaderStage = HgiShaderStageGeometry;
-    } else if (type == GL_FRAGMENT_SHADER) {
-        shaderType = "GL_FRAGMENT_SHADER";
-        shaderStage = HgiShaderStageFragment;
-    } else if (type == GL_COMPUTE_SHADER) {
-        shaderType = "GL_COMPUTE_SHADER";
-        shaderStage = HgiShaderStageCompute;
-    } else {
-        TF_CODING_ERROR("Invalid shader type %d\n", type);
+    switch (stage) {
+        case HgiShaderStageVertex:
+            shaderType = "GL_VERTEX_SHADER";
+            break;
+        case HgiShaderStageTessellationControl:
+            shaderType = "GL_TESS_CONTROL_SHADER";
+            break;
+        case HgiShaderStageTessellationEval:
+            shaderType = "GL_TESS_EVALUATION_SHADER";
+            break;
+        case HgiShaderStageGeometry:
+            shaderType = "GL_GEOMETRY_SHADER";
+            break;
+        case HgiShaderStageFragment:
+            shaderType = "GL_FRAGMENT_SHADER";
+            break;
+        case HgiShaderStageCompute:
+            shaderType = "GL_COMPUTE_SHADER";
+            break;
+    }
+
+    if (!shaderType) {
+        TF_CODING_ERROR("Invalid shader type %d\n", stage);
         return false;
     }
 
@@ -229,7 +232,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
     // Create a shader, compile it
     HgiShaderFunctionDesc shaderFnDesc;
     shaderFnDesc.shaderCode = shaderSource;
-    shaderFnDesc.shaderStage = shaderStage;
+    shaderFnDesc.shaderStage = stage;
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 
     std::string fname;
@@ -415,7 +418,8 @@ HdStGLSLProgram::GetComputeProgram(
         }
         std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
-                GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {
+                HgiShaderStageCompute,
+                version + glslfx.GetSource(shaderToken))) {
             TF_CODING_ERROR("Fail to compile " + shaderToken.GetString());
             return HdStGLSLProgramSharedPtr();
         }
