@@ -136,6 +136,25 @@ LoFiCurvesAdjacency( const VtArray<int>& curveVertexCount,
   }
 }
 
+void
+LoFiCurvesSegments( const VtArray<int>& curveVertexCount,
+                    const size_t numControlPoints,
+                    VtArray<int>& samples)
+{
+  size_t sizeSegments = (numControlPoints - curveVertexCount.size()) * 2;
+  samples.resize(sizeSegments);
+  size_t baseIdx = 0;
+  size_t sampleIdx = 0;
+  for(const auto& cnt: curveVertexCount) {
+    size_t numSegments = cnt-1;
+    for(size_t seg = 0; seg < numSegments; ++seg) {
+      samples[sampleIdx++] = baseIdx  + seg;
+      samples[sampleIdx++] = baseIdx  + seg + 1;
+    }
+    baseIdx += cnt;
+  }
+}
+
 void 
 LoFiComputeCurveNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& curveVertexCounts,

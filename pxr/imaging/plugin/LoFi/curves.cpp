@@ -16,7 +16,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include <iostream>
 #include <memory>
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -39,6 +38,7 @@ LoFiCurves::GetInitialDirtyBitsMask() const
             | HdChangeTracker::DirtyExtent
             | HdChangeTracker::DirtyNormals
             | HdChangeTracker::DirtyPoints
+            | HdChangeTracker::DirtyWidths
             | HdChangeTracker::DirtyPrimvar
             | HdChangeTracker::DirtyRepr
             | HdChangeTracker::DirtyTopology
@@ -86,7 +86,8 @@ LoFiCurves::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
                             LoFiResourceRegistrySharedPtr registry)
 {
   uint32_t numInputElements = 0;
-  uint32_t numOutputElements = _samples.size();
+  const LoFiTopology* topo = _vertexArray->GetTopology();
+  uint32_t numOutputElements = topo->numElements + topo->numBases;
   const char* datasPtr = NULL;
   bool valid = true;
   short tuppleSize = 3;
@@ -103,6 +104,12 @@ LoFiCurves::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       numInputElements = _normals.size();
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_normals.cdata();
+      break;
+    case CHANNEL_WIDTH:
+      _widths = value.Get<VtArray<float>>();
+      numInputElements = _widths.size();
+      if(!numInputElements) valid = false;
+      else datasPtr = (const char*)_widths.cdata();
       break;
     case CHANNEL_COLOR:
       _colors = value.Get<VtArray<GfVec3f>>();
@@ -183,17 +190,27 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
   // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
   {
-    std::cout << "CONTROL POINTS : " << topology.CalculateNeededNumberOfControlPoints() << std::endl;
-    LoFiCurvesAdjacency(
-      topology.GetCurveVertexCounts(), 
-      topology.CalculateNeededNumberOfControlPoints(),
-      _samples
-    );
+    VtArray<int> curveVertexCounts = topology.GetCurveVertexCounts();
+    if(GlfContextCaps::GetInstance().glslVersion >= 330) {
+      LoFiCurvesAdjacency(
+        curveVertexCounts, 
+        topology.CalculateNeededNumberOfControlPoints(),
+        _samples
+      );
+    }
+    else {
+      LoFiCurvesSegments(
+        curveVertexCounts, 
+        topology.CalculateNeededNumberOfControlPoints(),
+        _samples
+      );
+    }
 
     LoFiTopology* topo = _vertexArray->GetTopology();
     topo->samples = (const int*)&_samples[0];
-    topo->numElements = _samples.size();
-    _vertexArray->SetNumElements(_samples.size());
+    topo->numElements = _samples.size() / 4;
+    topo->numBases = curveVertexCounts.size();
+    _vertexArray->SetNumElements(_samples.size() / 4);
     _vertexArray->SetNeedUpdate(true);
     
     needReallocate = true;
@@ -216,18 +233,14 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
 
   // get primvars
   HdPrimvarDescriptorVector primvars;
-  for (size_t i=0; i < HdInterpolationCount; ++i) 
-  {
+  for (size_t i=0; i < HdInterpolationCount; ++i) {
     HdInterpolation interp = static_cast<HdInterpolation>(i);
     primvars = GetPrimvarDescriptors(sceneDelegate, interp);
-    for (HdPrimvarDescriptor const& pv: primvars) 
-    {
-      if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
-      {
+    for (HdPrimvarDescriptor const& pv: primvars) {
+      if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
         VtValue value = GetPrimvar(sceneDelegate, pv.name);
 
-        if(pv.name == HdTokens->points)
-        {
+        if(pv.name == HdTokens->points) {
           LoFiVertexBufferState state =
             _PopulatePrimvar( sceneDelegate,
                               interp,
@@ -237,10 +250,7 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
           if(state != LoFiVertexBufferState::TO_RECYCLE && 
             state != LoFiVertexBufferState::INVALID)
               pointPositionsUpdated = true;
-        }
-        
-        else if(pv.name == HdTokens->normals)
-        {
+        } else if(pv.name == HdTokens->normals) {
           LoFiVertexBufferState state =
             _PopulatePrimvar(sceneDelegate,
                             interp,
@@ -249,22 +259,23 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
                             registry);
           if(state != LoFiVertexBufferState::INVALID)
               haveAuthoredNormals = true;
-        }
-          
-        else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
-        {
+        } else if(pv.name == HdTokens->widths) {
+          std::cout << "POPULATE CURVE WIDTHS !!!" << std::endl;
+          LoFiVertexBufferState state =
+            _PopulatePrimvar(sceneDelegate,
+                            interp,
+                            CHANNEL_WIDTH,
+                            value,
+                            registry);
+        } else if(pv.name == TfToken("uv") || pv.name == TfToken("st")) {
           _PopulatePrimvar(sceneDelegate,
                           interp,
                           CHANNEL_UV,
                           value,
                           registry);
-        }
-        
-        else if(pv.name == TfToken("displayColor") || 
-          pv.name == TfToken("primvars:displayColor"))
-        {
-          if(interp != HdInterpolationConstant)
-          {
+        } else if(pv.name == TfToken("displayColor") || 
+          pv.name == TfToken("primvars:displayColor")) {
+          if(interp != HdInterpolationConstant) {
              LoFiVertexBufferState state =
             _PopulatePrimvar(sceneDelegate,
                             interp,
@@ -274,9 +285,7 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
             if(state != LoFiVertexBufferState::INVALID)
                 haveAuthoredDisplayColor = true;
             _varyingColor = true;
-          }
-          else 
-          {
+          } else  {
             _displayColor = value.UncheckedGet<VtArray<GfVec3f>>()[0];
             _varyingColor = false;
           }
@@ -340,7 +349,8 @@ LoFiCurves::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
     binder->CreateAttributeBinding(LoFiBufferTokens->normal, LoFiGLTokens->vec3, CHANNEL_NORMAL);
     if(_colors.size())
       binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
-
+    if(_widths.size())
+      binder->CreateAttributeBinding(LoFiBufferTokens->width, LoFiGLTokens->_float, CHANNEL_WIDTH);
     binder->SetNumVertexPerPrimitive(4);
     binder->SetProgramType(LOFI_PROGRAM_CURVE);
     binder->ComputeProgramName();
@@ -358,7 +368,6 @@ LoFiCurves::Sync( HdSceneDelegate *sceneDelegate,
   HD_TRACE_FUNCTION();
   HF_MALLOC_TAG_FUNCTION();
 
-  std::cout << "BASIS CURVE SYNC : " << GetId() << std::endl;
   // get render index
   HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
 

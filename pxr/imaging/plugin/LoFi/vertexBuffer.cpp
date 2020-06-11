@@ -131,7 +131,51 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
   }
   else if(topo->type == LoFiTopology::Type::LINES)
   {
-    memcpy(result, _rawInputDatas, _numInputElements * _elementSize);
+    switch(_interpolation) {
+      case LoFiInterpolationConstant:
+      {
+        for(size_t i=0;i<_numOutputElements;++i) 
+        {
+          memcpy(result + i * _elementSize, _rawInputDatas, _elementSize);
+        }
+        break;
+      }
+
+      case LoFiInterpolationUniform:
+      {
+        size_t curveIdx = 0;
+        size_t sampleIdx = 0;
+        size_t offsetIdx = 0;
+        const int* samples = topo->samples;
+        for(size_t i=0;i<topo->numBases;++i) 
+        {
+          size_t numSegments = 1;
+          while(samples[sampleIdx+2] != samples[sampleIdx+3]) {
+            numSegments++;
+            sampleIdx+=4;
+          }
+          numSegments++;
+
+          for(size_t j=0;j<numSegments;++j) 
+          {
+            memcpy(
+              (void*)(result + (offsetIdx + j) * _elementSize), 
+              (void*)(_rawInputDatas + curveIdx * _elementSize),
+              _elementSize);
+          }
+
+          offsetIdx += numSegments;
+          sampleIdx += 4;
+          curveIdx++;
+        }
+        break;
+      }
+      case LoFiInterpolationVertex:
+      default:
+      {
+        memcpy(result, _rawInputDatas, _numInputElements * _elementSize);
+      }
+    }
   }
   else if(topo->type == LoFiTopology::Type::TRIANGLES)
   {

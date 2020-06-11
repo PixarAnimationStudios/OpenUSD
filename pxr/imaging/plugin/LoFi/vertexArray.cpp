@@ -97,7 +97,7 @@ LoFiVertexArray::Draw() const
     case LoFiTopology::Type::LINES:
       if(_indexed)
         glDrawElements(GL_LINES_ADJACENCY,     // primitive type
-                      _numElements * 2,        // index count
+                      _numElements * 4,            // index count
                       GL_UNSIGNED_INT,         // index type
                       0);
       else

@@ -40,7 +40,7 @@ pxr_plugin(LoFi
         mesh
         points
         instancer
-		curves
+        curves
         sceneDelegate
         renderDelegate
         renderPass
