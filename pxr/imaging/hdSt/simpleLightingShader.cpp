@@ -328,7 +328,9 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
             _domeLightEnvironmentTextureHandle->GetTextureObject();
         HdStTextureIdentifier const &textureId =
             textureObject->GetTextureIdentifier();
-        if (textureId.GetFilePath() != resolvedPath) {
+        if (textureId.GetFilePath() == resolvedPath) {
+            // Same environment map, no need to recompute
+            // dome light textures.
             return;
         }
     }
