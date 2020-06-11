@@ -472,12 +472,9 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     *dirtyBits = HdChangeTracker::Clean;
 }
 
-// Compute attachment descriptors for the draw target so that
-// the draw target textures are used as render targets.
-//
-static
 HgiGraphicsCmdsDesc
-_MakeGraphicsCmdsDesc(HdStDrawTarget * const drawTarget)
+HdxDrawTargetTask::MakeGraphicsCmdsDesc(HdStDrawTarget * const drawTarget,
+    const bool clear)
 {
     static const HgiTextureHandle empty;
 
@@ -503,7 +500,8 @@ _MakeGraphicsCmdsDesc(HdStDrawTarget * const drawTarget)
         
         HgiAttachmentDesc attachmentDesc;
         attachmentDesc.loadOp =
-            HgiAttachmentLoadOpClear;
+            clear ? HgiAttachmentLoadOpClear
+                  : HgiAttachmentLoadOpLoad;
         attachmentDesc.storeOp =
             isMultisampled ? HgiAttachmentStoreOpDontCare
                            : HgiAttachmentStoreOpStore;
@@ -547,7 +545,8 @@ HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
 
             // Make render pass use these textures as render targets.
             info.renderPassState->SetCustomGraphicsCmdsDesc(
-                _MakeGraphicsCmdsDesc(info.target));
+                MakeGraphicsCmdsDesc(info.target,
+                                     /* clear = */ true));
         }
     }
 }
