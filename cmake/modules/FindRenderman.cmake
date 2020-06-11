@@ -134,13 +134,8 @@ list(APPEND required_vars "RENDERMAN_INCLUDE_DIR")
 list(APPEND required_vars "RENDERMAN_EXECUTABLE")
 list(APPEND required_vars "RENDERMAN_BINARY_DIR")
 list(APPEND required_vars "RENDERMAN_VERSION_MAJOR")
-
-if("${RENDERMAN_VERSION_MAJOR}" EQUAL "22")
-  list(APPEND required_vars "LOADPRMAN_LIBRARY")
-elseif("${RENDERMAN_VERSION_MAJOR}" EQUAL "23")
-  list(APPEND required_vars "PRMAN_LIBRARY")
-  list(APPEND required_vars "PXRCORE_LIBRARY")
-endif()
+list(APPEND required_vars "PRMAN_LIBRARY")
+list(APPEND required_vars "PXRCORE_LIBRARY")
 
 find_package_handle_standard_args(Renderman
   REQUIRED_VARS
