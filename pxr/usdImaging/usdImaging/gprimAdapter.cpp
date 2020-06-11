@@ -439,9 +439,10 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
 {
-    if(propertyName == UsdGeomTokens->visibility 
-          || propertyName == UsdGeomTokens->purpose)
+    if (propertyName == UsdGeomTokens->visibility)
         return HdChangeTracker::DirtyVisibility;
+    else if (propertyName == UsdGeomTokens->purpose)
+        return HdChangeTracker::DirtyRenderTag;
 
     else if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName))
         return HdChangeTracker::DirtyTransform;
