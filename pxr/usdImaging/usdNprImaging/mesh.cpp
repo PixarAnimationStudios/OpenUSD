@@ -213,11 +213,12 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
   {
     edgeIndex = halfEdge.first;
     uint64_t twinIndex = ((edgeIndex & 0xffffffff) << 32) | (edgeIndex >> 32);
-    auto& twinEdge = halfEdgesMap.find(twinIndex);
-    if(twinEdge != halfEdgesMap.end())
+    const auto& it = halfEdgesMap.find(twinIndex);
+    if(it != halfEdgesMap.end())
     {
-      twinEdge->second->twin = halfEdge.second;
-      halfEdge.second->twin = twinEdge->second;
+      UsdNprHalfEdge* twinEdge = (UsdNprHalfEdge*)it->second;
+      twinEdge->twin = halfEdge.second;
+      halfEdge.second->twin = twinEdge;
     }
     else ++boundaryCount;
   }

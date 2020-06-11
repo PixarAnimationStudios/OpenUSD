@@ -190,8 +190,9 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
   // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
   {
+    const GlfContextCaps& caps = GlfContextCaps::GetInstance();
     VtArray<int> curveVertexCounts = topology.GetCurveVertexCounts();
-    if(GlfContextCaps::GetInstance().glslVersion >= 330) {
+    if(caps.glslVersion >= 330) {
       LoFiCurvesAdjacency(
         curveVertexCounts, 
         topology.CalculateNeededNumberOfControlPoints(),
@@ -208,9 +209,15 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
 
     LoFiTopology* topo = _vertexArray->GetTopology();
     topo->samples = (const int*)&_samples[0];
-    topo->numElements = _samples.size() / 4;
+    if(caps.glslVersion >= 330) {
+      topo->numElements = _samples.size() / 4;
+      _vertexArray->SetNumElements(_samples.size() / 4);
+    } else {
+      topo->numElements = _samples.size() / 2;
+      _vertexArray->SetNumElements(_samples.size() / 2);
+    }
     topo->numBases = curveVertexCounts.size();
-    _vertexArray->SetNumElements(_samples.size() / 4);
+    
     _vertexArray->SetNeedUpdate(true);
     
     needReallocate = true;
