@@ -33,6 +33,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -317,6 +318,13 @@ public:
         return *this;
     }
 
+    /// Replace existing contents with the contents of \p ilist.
+    ///
+    TfSmallVector &operator=(std::initializer_list<T> ilist) {
+        assign(ilist.begin(), ilist.end());
+        return *this;
+    }
+
     /// Swap two vector instances.
     ///
     void swap(TfSmallVector &rhs) {
@@ -481,6 +489,12 @@ public:
         _size = newSize;
     }
 
+    /// Replace existing contents with the contents of \p ilist.
+    ///
+    void assign(std::initializer_list<T> ilist) {
+        assign(ilist.begin(), ilist.end());
+    }
+
     /// Emplace an entry at the back of the vector.
     ///
     template < typename... Args >
@@ -595,6 +609,12 @@ public:
         }
 
         _size += numNewElems;
+    }
+
+    /// Insert elements from \p ilist starting at position \p pos.
+    ///
+    void insert(iterator pos, std::initializer_list<T> ilist) {
+        insert(pos, ilist.begin(), ilist.end());
     }
 
     /// Remove the entry at the back of the vector.
