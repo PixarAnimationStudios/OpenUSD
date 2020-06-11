@@ -57,7 +57,7 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
       break;
     case LoFiProgramType::LOFI_PROGRAM_CURVE:
       shaderPath = _GetShaderPath("curves.glslfx");
-      if(GlfContextCaps::GetInstance().glslVersion >= 330)
+      if(LOFI_GL_VERSION >= 330)
         hasGeometryShader = true;
       break;
     case LoFiProgramType::LOFI_PROGRAM_POINT:
