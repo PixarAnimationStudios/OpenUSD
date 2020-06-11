@@ -46,6 +46,7 @@ void main()
 #ifdef LOFI_HAS_width
   LOFI_SET_width(LOFI_GET_width());
 #endif
+  gl_Position = GetProjectionMatrix() * p;
 
 }
 

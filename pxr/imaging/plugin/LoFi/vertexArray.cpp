@@ -95,11 +95,18 @@ LoFiVertexArray::Draw() const
       glDrawArrays(GL_POINTS, 0, _numElements);
       break;
     case LoFiTopology::Type::LINES:
-      if(_indexed)
-        glDrawElements(GL_LINES_ADJACENCY,     // primitive type
-                      _numElements * 4,            // index count
-                      GL_UNSIGNED_INT,         // index type
-                      0);
+      if(_indexed) {
+        if(_numAdjacency / _numElements == 2)
+          glDrawElements(GL_LINES,               // primitive type
+                        _numElements * 2,        // index count
+                        GL_UNSIGNED_INT,         // index type
+                        0);
+        else
+          glDrawElements(GL_LINES_ADJACENCY,     // primitive type
+                        _numElements * 4,        // index count
+                        GL_UNSIGNED_INT,         // index type
+                        0);
+      }
       else
         glDrawArrays(GL_LINES, 0, _numElements);
       break;
