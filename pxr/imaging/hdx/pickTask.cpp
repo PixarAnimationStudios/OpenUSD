@@ -586,6 +586,12 @@ HdxPickResult::HdxPickResult(
     , _bufferSize(bufferSize)
     , _subRect(subRect)
 {
+    // Clamp _subRect [x,y,w,h] to render buffer [0,0,w,h]
+    _subRect[0] = std::max(0, _subRect[0]);
+    _subRect[1] = std::max(0, _subRect[1]);
+    _subRect[2] = std::min(_bufferSize[0]-_subRect[0], _subRect[2]);
+    _subRect[3] = std::min(_bufferSize[1]-_subRect[1], _subRect[3]);
+
     _eyeToWorld = viewMatrix.GetInverse();
     _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }
