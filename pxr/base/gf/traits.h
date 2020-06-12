@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include <type_traits>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// A metafunction with a static const bool member 'value' that is true for
@@ -48,6 +50,17 @@ struct GfIsGfQuat { static const bool value = false; };
 /// GfRange types and false for all other types.
 template <class T>
 struct GfIsGfRange { static const bool value = false; };
+
+/// A metafunction which is equivalent to std::is_floating_point but
+/// allows for additional specialization for types like GfHalf
+template <class T>
+struct GfIsFloatingPoint : public std::is_floating_point<T>{};
+
+/// A metafunction which is equivalent to std::arithmetic but
+/// also includes any specializations from GfIsFloatingPoint (like GfHalf)
+template <class T>
+struct GfIsArithmetic : public std::integral_constant<
+    bool, GfIsFloatingPoint<T>::value || std::is_arithmetic<T>::value>{};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

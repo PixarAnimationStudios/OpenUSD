@@ -161,6 +161,8 @@ void wrapMath()
     def("Max", (int (*)(int, int, int, int, int)) GfMax<int>);
 
     def("Dot", (double (*)(double, double)) GfDot);
+    def("CompMult", (double (*)(double, double)) GfCompMult);
+    def("CompDiv", (double (*)(double, double)) GfCompDiv);
 
     TfPyContainerConversions::from_python_sequence< std::vector<int>, TfPyContainerConversions::variable_capacity_policy>();
 

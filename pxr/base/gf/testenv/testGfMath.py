@@ -148,5 +148,14 @@ class TestGfMath(unittest.TestCase):
         self.assertEqual(Dot(2.0, 3.0), 6.0)
         self.assertEqual(Dot(-2.0, 3.0), -6.0)
 
+    def test_CompMult(self):
+        self.assertEqual(CompMult(2.0, 3.0), 6.0)
+        self.assertEqual(CompMult(-2.0, 3.0), -6.0)
+
+    def test_CompDiv(self):
+        self.assertEqual(CompDiv(6.0, 3.0), 2.0)
+        self.assertEqual(CompDiv(-6.0, 3.0), -2.0)
+
+
 if __name__ == '__main__':
     unittest.main()
