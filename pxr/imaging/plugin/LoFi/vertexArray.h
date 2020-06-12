@@ -41,7 +41,7 @@ public:
   GLuint Get() const {return _vao;};
 
   // topology
-  LoFiTopology* GetTopology(){return &_topology;};
+  LoFiTopology* GetTopology(){return _topology;};
 
   // buffers
   bool HasBuffer(LoFiAttributeChannel channel);
@@ -87,7 +87,7 @@ public:
 
 private:
   // datas
-  LoFiTopology                      _topology;
+  LoFiTopology*                     _topology;
   LoFiVertexBufferSharedPtrMap      _buffers;
   GLuint                            _vao;
   bool                              _adjacency;
