@@ -3,7 +3,7 @@
 #include <sstream>
 #include "pxr/base/arch/hash.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
-
+#include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -107,7 +107,8 @@ void LoFiGLSLProgram::_Build()
     glAttachShader(_pgm,_frag->Get());
   }
   
-  glBindAttribLocation(_pgm,0,"position");
+  glBindAttribLocation(_pgm,CHANNEL_POSITION,"position");
+  glBindAttribLocation(_pgm,CHANNEL_COLOR,"color");
   glLinkProgram(_pgm);  
   glUseProgram(_pgm);
   

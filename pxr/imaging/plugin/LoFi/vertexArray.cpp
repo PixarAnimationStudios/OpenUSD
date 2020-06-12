@@ -85,7 +85,7 @@ LoFiVertexArray::Draw() const
     case LoFiTopology::Type::LINES:
       if(_adjacency)
         glDrawArrays(GL_LINES_ADJACENCY, 0, _numElements);
-      else
+      else 
         glDrawArrays(GL_LINES, 0, _numElements);
       break;
     case LoFiTopology::Type::TRIANGLES:

@@ -351,7 +351,8 @@ LoFiCurves::_PopulateBinder(LoFiResourceRegistrySharedPtr registry)
       binder->CreateAttributeBinding(LoFiBufferTokens->color, LoFiGLTokens->vec3, CHANNEL_COLOR);
     if(_widths.size())
       binder->CreateAttributeBinding(LoFiBufferTokens->width, LoFiGLTokens->_float, CHANNEL_WIDTH);
-    binder->SetNumVertexPerPrimitive(4);
+    if(LOFI_GL_VERSION >= 330)binder->SetNumVertexPerPrimitive(4);
+    else binder->SetNumVertexPerPrimitive(2);
     binder->SetProgramType(LOFI_PROGRAM_CURVE);
     binder->ComputeProgramName();
   }
@@ -421,8 +422,7 @@ LoFiCurves::Sync( HdSceneDelegate *sceneDelegate,
 
   if(!initialized)
   {
-    if(LOFI_GL_VERSION >= 330)
-      _vertexArray->UseAdjacency();
+    if(LOFI_GL_VERSION >= 330)_vertexArray->UseAdjacency();
     _PopulateBinder(resourceRegistry);
   }
   drawItem->SetDisplayColor(_displayColor);
