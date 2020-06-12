@@ -2327,8 +2327,8 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             // XXX(UsdImaging): We use cachePath directly as usdPath here,
             // but should do the proper transformation.  Maybe we can use
             // the primInfo.usdPrim?
-            TF_VERIFY(_GetUsdPrim(cachePath).GetAttribute(key)
-                      .Get(&value, _time),
+            UsdPrim prim = _GetUsdPrim(cachePath);
+            TF_VERIFY(prim && prim.GetAttribute(key).Get(&value, _time),
                       "%s, %s\n", id.GetText(), key.GetText());
         }
     }
