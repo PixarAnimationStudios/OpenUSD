@@ -19,12 +19,17 @@ LoFiVertexArray::LoFiVertexArray(LoFiTopology::Type type)
 , _needUpdate(true)
 , _adjacency(false)
 {
-  _topology.type = type;
+  if(type == LoFiTopology::LINES) {
+    _topology = new LoFiCurvesTopology();
+  }
+  else _topology = new LoFiTopology();
+  _topology->type = type;
 }
 
 // destructor
 LoFiVertexArray::~LoFiVertexArray()
 {
+  delete(_topology);
   if(_vao)glDeleteVertexArrays(1, &_vao);
 }
 
@@ -72,7 +77,7 @@ void
 LoFiVertexArray::Draw() const
 {
   Bind();
-  switch(_topology.type)
+  switch(_topology->type)
   {
     case LoFiTopology::Type::POINTS:
       glDrawArrays(GL_POINTS, 0, _numElements);
@@ -81,7 +86,7 @@ LoFiVertexArray::Draw() const
       if(_adjacency)
         glDrawArrays(GL_LINES_ADJACENCY, 0, _numElements);
       else
-        glDrawArrays(GL_LINES_ADJACENCY, 0, _numElements);
+        glDrawArrays(GL_LINES, 0, _numElements);
       break;
     case LoFiTopology::Type::TRIANGLES:
         glDrawArrays(GL_TRIANGLES, 0, _numElements);

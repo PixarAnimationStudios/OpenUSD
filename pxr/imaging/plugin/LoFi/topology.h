@@ -17,16 +17,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 struct LoFiTopology
 {
-    enum Type {
-        POINTS,
-        LINES,
-        TRIANGLES    
-    };
-    Type                type;
-    const int*          samples;
-    const int*          bases;
-    size_t              numElements;
-    size_t              numBases;
+  enum Type {
+      POINTS,
+      LINES,
+      TRIANGLES    
+  };
+  Type                type;
+  const int*          samples;
+  size_t              numElements;
+};
+
+enum LoFiCurveType {
+  LOFI_CURVE_LINEAR,
+  LOFI_CURVE_CUBIC
+};
+
+enum LoFiCurveBasis {
+  LOFI_CURVE_BASIS_NONE,
+  LOFI_CURVE_BASIS_BEZIER,
+  LOFI_CURVE_BASIS_BSPLINE,
+  LOFI_CURVE_BASIS_CATMULLROM
+};
+
+struct LoFiCurvesTopology : public LoFiTopology
+{
+  const int*          bases;
+  size_t              numBases;
+  LoFiCurveType       curveType;
+  LoFiCurveBasis      curveBasis;
+  bool                wrap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

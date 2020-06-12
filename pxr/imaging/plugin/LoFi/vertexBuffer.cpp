@@ -131,9 +131,10 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
   }
   else if(topo->type == LoFiTopology::Type::LINES)
   {
+    LoFiCurvesTopology* curveTopo = (LoFiCurvesTopology*)topo;
     std::cout << "LINE OUTPUT DATA : " << _numOutputElements << std::endl;
     std::cout << "TOPO NUM ELEMENTS : " << topo->numElements << std::endl;
-    const int* samples = topo->samples;
+    const int* samples = curveTopo->samples;
     bool useAdjacency = (samples[0] == samples[1]);
     switch(_interpolation) {
       case LoFiInterpolationConstant:
@@ -151,7 +152,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
         size_t sampleIndex = 0;
         size_t offsetIndex = 0;
         if(useAdjacency) {
-          for(size_t i=0;i<topo->numBases;++i) {
+          for(size_t i=0;i<curveTopo->numBases;++i) {
             while(true) {
               for(size_t j=0;j<4;++j) {
                 memcpy(
@@ -165,7 +166,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
             curveIndex++;
           }
         } else {
-          for(size_t i=0;i<topo->numBases;++i) {
+          for(size_t i=0;i<curveTopo->numBases;++i) {
             while(true) {
               for(size_t j=0;j<2;++j) {
                 memcpy(
@@ -174,7 +175,7 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
                   _elementSize);
               }
               sampleIndex +=2;
-              if(sampleIndex >= topo->numElements || samples[sampleIndex] != samples[sampleIndex-1])break;
+              if(sampleIndex >= curveTopo->numElements || samples[sampleIndex] != samples[sampleIndex-1])break;
             }
             curveIndex++;
           }

@@ -187,7 +187,6 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
 
 
   bool needReallocate = false;
-  // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
   {
     VtArray<int> curveVertexCounts = topology.GetCurveVertexCounts();
@@ -206,7 +205,7 @@ void LoFiCurves::_PopulateCurves( HdSceneDelegate*              sceneDelegate,
       );
     }
 
-    LoFiTopology* topo = _vertexArray->GetTopology();
+    LoFiCurvesTopology* topo =(LoFiCurvesTopology*)_vertexArray->GetTopology();
     topo->samples = (const int*)&_samples[0];
     topo->numElements = _samples.size();
     topo->numBases = curveVertexCounts.size();
