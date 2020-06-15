@@ -31,6 +31,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/work/threadLimits.h"
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
@@ -223,7 +224,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
         return false;
     }
     TF_DEBUG(PLUG_INFO_SEARCH).
-        Msg("Did read plugin info %s\n", pathname.c_str());
+        Msg(" Did read plugin info %s\n", pathname.c_str());
 
     // Look for our expected keys.
     JsObject::const_iterator i;
@@ -720,6 +721,9 @@ Plug_ReadPlugInfo(
     Plug_TaskArena* taskArena)
 {
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
+    TfStopwatch stopwatch;
+    stopwatch.Start();
+
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
     for (const auto& pathname : pathnames) {
         if (pathname.empty()) {
@@ -745,7 +749,10 @@ Plug_ReadPlugInfo(
     }
 
     context.taskArena.Wait();
-    TF_DEBUG(PLUG_INFO_SEARCH).Msg("Did check plugin info paths\n");
+    stopwatch.Stop();
+    TF_DEBUG(PLUG_INFO_SEARCH).
+        Msg(" Did check plugin info paths in %f seconds\n", 
+            stopwatch.GetSeconds());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
