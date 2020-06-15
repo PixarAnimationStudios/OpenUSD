@@ -136,7 +136,7 @@ HdStRenderBuffer::Map()
         // Use blit work to record resource copy commands.
         HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
         blitCmds->CopyTextureGpuToCpu(copyOp);
-        _hgi->SubmitCmds(blitCmds.get(), 1);
+        _hgi->SubmitCmds(blitCmds.get());
     }
 
     return _mappedBuffer.data();

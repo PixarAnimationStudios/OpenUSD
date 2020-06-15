@@ -162,7 +162,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     if (gfxCmds) {
         gfxCmds->PopDebugGroup();
-        _hgi->SubmitCmds(gfxCmds.get(), 1);
+        _hgi->SubmitCmds(gfxCmds.get());
     }
 }
 

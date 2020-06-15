@@ -115,28 +115,24 @@ HgiMetal::GetPrimaryDevice() const
 }
 
 void
-HgiMetal::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
+HgiMetal::SubmitCmds(HgiCmds* cmds)
 {
     TRACE_FUNCTION();
 
-    if (!cmdsptr || count==0) {
+    if (!cmds) {
         return;
     }
 
-    for (uint32_t i=0; i<count; i++) {
-        HgiCmds* w = cmdsptr + i;
-
-        if (HgiMetalGraphicsCmds* gw = dynamic_cast<HgiMetalGraphicsCmds*>(w)) {
-            if (gw->Commit()) {
-                _workToFlush = true;
-            }
-        } else if (HgiMetalBlitCmds* bw = dynamic_cast<HgiMetalBlitCmds*>(w)) {
-            if (bw->Commit()) {
-                _workToFlush = true;
-            }
+    if (HgiMetalGraphicsCmds* gw = dynamic_cast<HgiMetalGraphicsCmds*>(cmds)) {
+        if (gw->Commit()) {
+            _workToFlush = true;
+        }
+    } else if (HgiMetalBlitCmds* bw = dynamic_cast<HgiMetalBlitCmds*>(cmds)) {
+        if (bw->Commit()) {
+            _workToFlush = true;
         }
     }
-    
+
     CommitCommandBuffer();
 }
 

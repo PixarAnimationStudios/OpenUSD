@@ -150,7 +150,7 @@ HdxColorChannelTask::_CreateParameterBuffer()
         copyOp.destinationByteOffset = 0;
         copyOp.gpuDestinationBuffer = _parameterBuffer;
         blitCmds->CopyBufferCpuToGpu(copyOp);
-        _GetHgi()->SubmitCmds(blitCmds.get(), 1);
+        _GetHgi()->SubmitCmds(blitCmds.get());
     }
 }
 

@@ -88,11 +88,11 @@ HgiGL::GetPrimaryDevice() const
 }
 
 void
-HgiGL::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
+HgiGL::SubmitCmds(HgiCmds* cmds)
 {
     TRACE_FUNCTION();
 
-    if (!cmdsptr || count==0) {
+    if (!cmds) {
         return;
     }
 
@@ -103,15 +103,11 @@ HgiGL::SubmitCmds(HgiCmds* cmdsptr, uint32_t count)
     // that to work we need to first complete the transition to Hgi.
     HgiGL_ScopedStateHolder openglStateGuard;
 
-    for (uint32_t i=0; i<count; i++) {
-        HgiCmds* w = cmdsptr + i;
-
-        if (HgiGLGraphicsCmds* gw = dynamic_cast<HgiGLGraphicsCmds*>(w)) {
-            gw->EndRecording();
-            _device->SubmitOps(gw->GetOps());
-        } else if (HgiGLBlitCmds* bw = dynamic_cast<HgiGLBlitCmds*>(w)) {
-            _device->SubmitOps(bw->GetOps());
-        }
+    if (HgiGLGraphicsCmds* gw = dynamic_cast<HgiGLGraphicsCmds*>(cmds)) {
+        gw->EndRecording();
+        _device->SubmitOps(gw->GetOps());
+    } else if (HgiGLBlitCmds* bw = dynamic_cast<HgiGLBlitCmds*>(cmds)) {
+        _device->SubmitOps(bw->GetOps());
     }
 }
 

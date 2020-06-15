@@ -542,7 +542,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.
-    _hgi->SubmitCmds(gfxCmds.get(), 1);
+    _hgi->SubmitCmds(gfxCmds.get());
 }
 
 void

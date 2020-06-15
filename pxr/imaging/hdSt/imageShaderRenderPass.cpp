@@ -188,7 +188,7 @@ HdSt_ImageShaderRenderPass::_Execute(
 
     if (gfxCmds) {
         gfxCmds->PopDebugGroup();
-        _hgi->SubmitCmds(gfxCmds.get(), 1);
+        _hgi->SubmitCmds(gfxCmds.get());
     }
 }
 

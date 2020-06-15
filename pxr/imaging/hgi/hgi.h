@@ -69,12 +69,12 @@ public:
     HGI_API
     virtual ~Hgi();
 
-    /// Submit one or multiple (count>1) HgiCmds objects.
+    /// Submit one HgiCmds objects.
     /// Once the cmds object is submitted it cannot be re-used to record cmds.
     /// A call to SubmitCmds would usually result in the hgi backend submitting
     /// the cmd buffers of the cmds object(s) to the device queue.
     HGI_API
-    virtual void SubmitCmds(HgiCmds* cmds, uint32_t count=1) = 0;
+    virtual void SubmitCmds(HgiCmds* cmds) = 0;
 
     /// *** DEPRECATED *** Please use: CreatePlatformDefaultHgi
     HGI_API

@@ -54,7 +54,7 @@ public:
     ~HgiGL() override;
 
     HGIGL_API
-    void SubmitCmds(HgiCmds* cmds, uint32_t count=1) override;
+    void SubmitCmds(HgiCmds* cmds) override;
 
     HGIGL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(

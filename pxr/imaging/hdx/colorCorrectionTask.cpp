@@ -421,7 +421,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.
-    _GetHgi()->SubmitCmds(gfxCmds.get(), 1);
+    _GetHgi()->SubmitCmds(gfxCmds.get());
 }
 
 void

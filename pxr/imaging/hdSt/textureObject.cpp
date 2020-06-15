@@ -558,7 +558,7 @@ HdStAssetUvTextureObject::_Commit()
         if (desc.mipLevels > 1) {
             HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
             blitCmds->GenerateMipMaps(_gpuTexture);
-            hgi->SubmitCmds(blitCmds.get(), 1);
+            hgi->SubmitCmds(blitCmds.get());
         }
     }
 
