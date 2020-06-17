@@ -36,9 +36,7 @@ HgiMetalResourceBindings::HgiMetalResourceBindings(
 {
 }
 
-HgiMetalResourceBindings::~HgiMetalResourceBindings()
-{
-}
+HgiMetalResourceBindings::~HgiMetalResourceBindings() = default;
 
 void
 HgiMetalResourceBindings::BindResources(

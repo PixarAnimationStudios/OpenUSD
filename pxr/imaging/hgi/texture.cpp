@@ -30,9 +30,7 @@ HgiTexture::HgiTexture(HgiTextureDesc const& desc)
 {
 }
 
-HgiTexture::~HgiTexture()
-{
-}
+HgiTexture::~HgiTexture() = default;
 
 HgiTextureDesc const&
 HgiTexture::GetDescriptor() const

@@ -51,9 +51,7 @@ HgiMetalShaderProgram::HgiMetalShaderProgram(HgiShaderProgramDesc const& desc)
     }
 }
 
-HgiMetalShaderProgram::~HgiMetalShaderProgram()
-{
-}
+HgiMetalShaderProgram::~HgiMetalShaderProgram() = default;
 
 HgiShaderFunctionHandleVector const&
 HgiMetalShaderProgram::GetShaderFunctions() const

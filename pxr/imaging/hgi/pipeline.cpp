@@ -30,9 +30,7 @@ HgiPipeline::HgiPipeline(HgiPipelineDesc const& desc)
 {
 }
 
-HgiPipeline::~HgiPipeline()
-{
-}
+HgiPipeline::~HgiPipeline() = default;
 
 HgiPipelineDesc const&
 HgiPipeline::GetDescriptor() const

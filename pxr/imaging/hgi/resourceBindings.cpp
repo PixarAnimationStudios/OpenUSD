@@ -30,9 +30,7 @@ HgiResourceBindings::HgiResourceBindings(HgiResourceBindingsDesc const& desc)
 {
 }
 
-HgiResourceBindings::~HgiResourceBindings()
-{
-}
+HgiResourceBindings::~HgiResourceBindings() = default;
 
 HgiResourceBindingsDesc const&
 HgiResourceBindings::GetDescriptor() const

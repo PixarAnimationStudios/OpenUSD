@@ -38,9 +38,7 @@ Hgi::Hgi()
 {
 }
 
-Hgi::~Hgi()
-{
-}
+Hgi::~Hgi() = default;
 
 static Hgi*
 _MakeNewPlatformDefaultHgi()

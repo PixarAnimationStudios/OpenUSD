@@ -34,12 +34,9 @@ HgiGLResourceBindings::HgiGLResourceBindings(
     HgiResourceBindingsDesc const& desc)
     : HgiResourceBindings(desc)
 {
-
 }
 
-HgiGLResourceBindings::~HgiGLResourceBindings()
-{
-}
+HgiGLResourceBindings::~HgiGLResourceBindings() = default;
 
 void
 HgiGLResourceBindings::BindResources()

@@ -30,9 +30,7 @@ HgiSampler::HgiSampler(HgiSamplerDesc const& desc)
 {
 }
 
-HgiSampler::~HgiSampler()
-{
-}
+HgiSampler::~HgiSampler() = default;
 
 HgiSamplerDesc const&
 HgiSampler::GetDescriptor() const

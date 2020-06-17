@@ -30,9 +30,7 @@ HgiBuffer::HgiBuffer(HgiBufferDesc const& desc)
 {
 }
 
-HgiBuffer::~HgiBuffer()
-{
-}
+HgiBuffer::~HgiBuffer() = default;
 
 HgiBufferDesc const&
 HgiBuffer::GetDescriptor() const

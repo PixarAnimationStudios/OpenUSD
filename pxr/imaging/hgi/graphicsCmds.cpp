@@ -25,12 +25,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGraphicsCmds::HgiGraphicsCmds()
-{
-}
+HgiGraphicsCmds::HgiGraphicsCmds() = default;
 
-HgiGraphicsCmds::~HgiGraphicsCmds()
-{
-}
+HgiGraphicsCmds::~HgiGraphicsCmds() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
