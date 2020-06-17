@@ -185,7 +185,16 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     }
 }
 
-UsdImagingGLEngine::~UsdImagingGLEngine() = default;
+UsdImagingGLEngine::~UsdImagingGLEngine()
+{
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    // Destroy objects in opposite order of construction.
+    _taskController = nullptr;
+    _sceneDelegate = nullptr;
+    _renderIndex = nullptr;
+    _renderDelegate = nullptr;
+}
 
 //----------------------------------------------------------------------------
 // Rendering
@@ -771,6 +780,8 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         return true;
     }
 
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     HdPluginRenderDelegateUniqueHandle renderDelegate =
         registry.CreateRenderDelegate(resolvedId);
     if(!renderDelegate) {
@@ -819,6 +830,8 @@ void
 UsdImagingGLEngine::_SetRenderDelegate(
     HdPluginRenderDelegateUniqueHandle &&renderDelegate)
 {
+    // This relies on SetRendererPlugin to release the GIL...
+
     // Destruction
 
     // Destroy objects in opposite order of construction.
@@ -984,6 +997,8 @@ UsdImagingGLEngine::PauseRenderer()
         return false;
     }
 
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     TF_VERIFY(_renderDelegate);
     return _renderDelegate->Pause();
 }
@@ -994,6 +1009,8 @@ UsdImagingGLEngine::ResumeRenderer()
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
     }
+
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     TF_VERIFY(_renderDelegate);
     return _renderDelegate->Resume();
@@ -1017,6 +1034,8 @@ UsdImagingGLEngine::StopRenderer()
         return false;
     }
 
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     TF_VERIFY(_renderDelegate);
     return _renderDelegate->Stop();
 }
@@ -1027,6 +1046,8 @@ UsdImagingGLEngine::RestartRenderer()
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
     }
+
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     TF_VERIFY(_renderDelegate);
     return _renderDelegate->Restart();
@@ -1148,7 +1169,12 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
-    _engine.Execute(_renderIndex.get(), &tasks);
+    {
+        // Release the GIL before calling into hydra, in case any hydra plugins
+        // call into python.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        _engine.Execute(_renderIndex.get(), &tasks);
+    }
 
     if (isCoreProfileContext) {
 
