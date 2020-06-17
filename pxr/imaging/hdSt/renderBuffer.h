@@ -106,7 +106,7 @@ private:
 
     GfVec3i _dimensions;
     HdFormat _format;
-    HgiTextureUsageBits _usage;
+    HgiTextureUsage _usage;
     bool _multiSampled;
 
     // The GPU texture resource

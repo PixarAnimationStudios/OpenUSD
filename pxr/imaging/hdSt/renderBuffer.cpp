@@ -31,6 +31,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static 
+HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
+{
+    if (HdAovHasDepthSemantic(name)) {
+        if (format == HdFormatFloat32UInt8) {
+            return HgiTextureUsageBitsDepthTarget |
+                   HgiTextureUsageBitsStencilTarget;
+        }
+        return HgiTextureUsageBitsDepthTarget;
+    }
+
+    return HgiTextureUsageBitsColorTarget;
+}
 
 HdStRenderBuffer::HdStRenderBuffer(Hgi* hgi, SdfPath const& id)
     : HdRenderBuffer(id)
@@ -67,8 +80,7 @@ HdStRenderBuffer::Allocate(
     _format = format;
     _multiSampled = multiSampled;
     const TfToken& bufferName = GetId().GetNameToken();
-    _usage = HdAovHasDepthSemantic(bufferName) ?
-                HgiTextureUsageBitsDepthTarget : HgiTextureUsageBitsColorTarget;
+    _usage = _GetTextureUsage(format, bufferName);
 
     // Allocate new GPU resource
     HgiTextureDesc texDesc;

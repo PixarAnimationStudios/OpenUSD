@@ -71,6 +71,9 @@ static const _FormatDesc FORMAT_DESC[] =
 
     {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT  }, // BC6FloatVec3
     {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT}, // BC6UFloatVec3
+
+    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // HdFormatFloat32UInt8
+
 };
 
 // A few random format validations to make sure out GL table stays aligned
@@ -188,17 +191,28 @@ HgiGLConversions::GetFormat(
     if ((inFormat < 0) || (inFormat >= HgiFormatCount))
     {
         TF_CODING_ERROR("Unexpected  %d", inFormat);
-        *outFormat = GL_RGBA;
-        *outType = GL_BYTE;
-        *outInternalFormat = GL_RGBA8;
+        if (outFormat) {
+            *outFormat = GL_RGBA;
+        }
+        if (outType) {
+            *outType = GL_BYTE;
+        }
+        if (outInternalFormat) {
+            *outInternalFormat = GL_RGBA8;
+        }
         return;
     }
 
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
-
-    *outFormat = desc.format;
-    *outType = desc.type;
-    *outInternalFormat = desc.internalFormat;
+    if (outFormat) {
+        *outFormat = desc.format;
+    }
+    if (outType) {
+        *outType = desc.type;
+    }
+    if (outInternalFormat) {
+        *outInternalFormat = desc.internalFormat;
+    }
 }
 
 GLenum

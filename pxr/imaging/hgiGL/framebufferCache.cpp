@@ -95,9 +95,13 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
         uint32_t textureName = glTexture->GetTextureId();
 
         if (TF_VERIFY(glIsTexture(textureName), "Attachment not a texture")) {
+            GLenum attachment =
+                (desc.depthAttachmentDesc.format == HgiFormatFloat32UInt8)?
+                    GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
+
             glNamedFramebufferTexture(
                 dci->framebuffer,
-                GL_DEPTH_ATTACHMENT,
+                attachment,
                 textureName,
                 0); // level
         }

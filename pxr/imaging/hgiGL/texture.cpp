@@ -175,10 +175,17 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     const bool isCompressed = HgiIsCompressed(desc.format);
 
     if (desc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(desc.format == HgiFormatFloat32);
-        glFormat = GL_DEPTH_COMPONENT;
+        TF_VERIFY(desc.format == HgiFormatFloat32 ||
+                  desc.format == HgiFormatFloat32UInt8);
+        
+        if (desc.format == HgiFormatFloat32UInt8) {
+            glFormat = GL_DEPTH_STENCIL;
+            glInternalFormat = GL_DEPTH32F_STENCIL8;
+        } else {
+            glFormat = GL_DEPTH_COMPONENT;
+            glInternalFormat = GL_DEPTH_COMPONENT32F;
+        }
         glPixelType = GL_FLOAT;
-        glInternalFormat = GL_DEPTH_COMPONENT32F;
     } else {
         HgiGLConversions::GetFormat(
             desc.format, 

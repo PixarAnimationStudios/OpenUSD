@@ -89,6 +89,9 @@ enum HgiFormat
     // BPTC compressed. 3-component, 4x4 blocks, unsigned floating-point
     HgiFormatBC6UFloatVec3,
 
+    // Depth stencil format (Float32 can be used for just depth)
+    HgiFormatFloat32UInt8,
+
     HgiFormatCount
 };
 

@@ -48,8 +48,15 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     if (desc.usage & HgiTextureUsageBitsColorTarget) {
         usage = MTLTextureUsageRenderTarget;
     } else if (desc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(desc.format == HgiFormatFloat32);
-        mtlFormat = MTLPixelFormatDepth32Float;
+        TF_VERIFY(desc.format == HgiFormatFloat32 ||
+                  desc.format == HgiFormatFloat32UInt8);
+        
+        // XXX: MTLPixelFormatDepth32Float isn't in the conversions table..
+        if (desc.usage & HgiTextureUsageBitsStencilTarget) {
+            mtlFormat = MTLPixelFormatDepth32Float_Stencil8;
+        } else {
+            mtlFormat = MTLPixelFormatDepth32Float;
+        }
         usage = MTLTextureUsageRenderTarget;
     }
 

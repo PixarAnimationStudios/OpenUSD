@@ -85,21 +85,25 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
             return;
         }
 
-        GLenum glInternalFormat = 0;
         GLenum glFormat = 0;
         GLenum glPixelType = 0;
 
         if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
-            TF_VERIFY(texDesc.format == HgiFormatFloat32);
+            TF_VERIFY(texDesc.format == HgiFormatFloat32 ||
+                      texDesc.format == HgiFormatFloat32UInt8);
+            // XXX: Copy only the depth component. To copy stencil, we'd need
+            // to set the format to GL_STENCIL_INDEX separately..
             glFormat = GL_DEPTH_COMPONENT;
             glPixelType = GL_FLOAT;
-            glInternalFormat = GL_DEPTH_COMPONENT32F;
+        } else if (texDesc.usage & HgiTextureUsageBitsStencilTarget) {
+            TF_WARN("Copying a stencil-only texture is unsupported currently\n"
+                   );
+            return;
         } else {
             HgiGLConversions::GetFormat(
                 texDesc.format,
                 &glFormat,
-                &glPixelType,
-                &glInternalFormat);
+                &glPixelType);
         }
 
         if (HgiIsCompressed(texDesc.format)) {

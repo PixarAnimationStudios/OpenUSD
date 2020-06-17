@@ -78,9 +78,11 @@ enum HgiTextureType
 ///
 /// <ul>
 /// <li>HgiTextureUsageBitsColorTarget:
-///   The texture is an color attachment rendered into via a render pass.</li>
+///   The texture is a color attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsDepthTarget:
-///   The texture is an depth attachment rendered into via a render pass.</li>
+///   The texture is a depth attachment rendered into via a render pass.</li>
+/// <li>HgiTextureUsageBitsStencilTarget:
+///   The texture is a stencil attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsShaderRead:
 ///   The texture is sampled from in a shader (image load / sampling)</li>
 /// <li>HgiTextureUsageBitsShaderWrite:
@@ -93,12 +95,13 @@ enum HgiTextureType
 ///
 enum HgiTextureUsageBits : HgiBits
 {
-    HgiTextureUsageBitsColorTarget = 1 << 0,
-    HgiTextureUsageBitsDepthTarget = 1 << 1,
-    HgiTextureUsageBitsShaderRead  = 1 << 2,
-    HgiTextureUsageBitsShaderWrite = 1 << 3,
+    HgiTextureUsageBitsColorTarget   = 1 << 0,
+    HgiTextureUsageBitsDepthTarget   = 1 << 1,
+    HgiTextureUsageBitsStencilTarget = 1 << 2,
+    HgiTextureUsageBitsShaderRead    = 1 << 3,
+    HgiTextureUsageBitsShaderWrite   = 1 << 4,
 
-    HgiTextureUsageCustomBitsBegin = 1 << 4,
+    HgiTextureUsageCustomBitsBegin = 1 << 5,
 };
 
 using HgiTextureUsage = HgiBits;
