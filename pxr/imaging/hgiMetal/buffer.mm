@@ -68,6 +68,12 @@ HgiMetalBuffer::~HgiMetalBuffer()
     }
 }
 
+size_t
+HgiMetalBuffer::GetByteSizeOfResource() const
+{
+    return _descriptor.byteSize;
+}
+
 uint64_t
 HgiMetalBuffer::GetRawResource() const
 {

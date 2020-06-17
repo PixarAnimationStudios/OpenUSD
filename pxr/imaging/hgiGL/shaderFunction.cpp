@@ -86,6 +86,12 @@ HgiGLShaderFunction::GetCompileErrors()
     return _errors;
 }
 
+size_t
+HgiGLShaderFunction::GetByteSizeOfResource() const
+{
+    return 0; // Can only query program binary size, not individual shaders.
+}
+
 uint64_t
 HgiGLShaderFunction::GetRawResource() const
 {

@@ -48,6 +48,9 @@ public:
     HGIMETAL_API
     ~HgiMetalTexture() override;
 
+    HGIMETAL_API
+    size_t GetByteSizeOfResource() const override;
+
     /// This hgi transition helper returns the Metal resource as uint64_t
     /// for external clients.
     HGIMETAL_API

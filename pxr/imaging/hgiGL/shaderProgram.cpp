@@ -34,12 +34,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
     : HgiShaderProgram(desc)
     , _programId(0)
+    , _byteSize(0)
 {
     _programId = glCreateProgram();
 
     if (!_descriptor.debugName.empty()) {
         glObjectLabel(GL_PROGRAM, _programId,-1, _descriptor.debugName.c_str());
     }
+
+    glProgramParameteri(
+        _programId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
     for (HgiShaderFunctionHandle const& shd : desc.shaderFunctions) {
         HgiGLShaderFunction* glShader = 
@@ -60,6 +64,10 @@ HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
         glGetProgramInfoLog(_programId, logSize, nullptr, &_errors[0]);
         glDeleteProgram(_programId);
         _programId = 0;
+    } else {
+        GLint size;
+        glGetProgramiv(_programId, GL_PROGRAM_BINARY_LENGTH, &size);
+        _byteSize = (size_t)size;
     }
 
     HGIGL_POST_PENDING_GL_ERRORS();
@@ -88,6 +96,12 @@ std::string const&
 HgiGLShaderProgram::GetCompileErrors()
 {
     return _errors;
+}
+
+size_t
+HgiGLShaderProgram::GetByteSizeOfResource() const
+{
+    return _byteSize;
 }
 
 uint64_t

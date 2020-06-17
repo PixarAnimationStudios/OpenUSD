@@ -49,6 +49,9 @@ public:
     std::string const& GetCompileErrors() override;
 
     HGIGL_API
+    size_t GetByteSizeOfResource() const override;
+
+    HGIGL_API
     uint64_t GetRawResource() const override;
 
     /// Returns the gl resource id of the shader.

@@ -361,6 +361,12 @@ HgiMetalShaderFunction::GetCompileErrors()
     return _errors;
 }
 
+size_t
+HgiMetalShaderFunction::GetByteSizeOfResource() const
+{
+    return 0;
+}
+
 uint64_t
 HgiMetalShaderFunction::GetRawResource() const
 {

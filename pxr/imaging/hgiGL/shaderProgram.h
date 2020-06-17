@@ -55,6 +55,9 @@ public:
     HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
 
     HGIGL_API
+    size_t GetByteSizeOfResource() const override;
+
+    HGIGL_API
     uint64_t GetRawResource() const override;
 
     /// Returns the gl resource id of the program.
@@ -75,6 +78,7 @@ private:
 private:
     std::string _errors;
     uint32_t _programId;
+    size_t _byteSize;
 };
 
 

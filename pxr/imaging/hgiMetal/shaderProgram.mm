@@ -73,6 +73,16 @@ HgiMetalShaderProgram::GetCompileErrors()
     return _errors;
 }
 
+size_t
+HgiMetalShaderProgram::GetByteSizeOfResource() const
+{
+    size_t  byteSize = 0;
+    for (HgiShaderFunctionHandle const& fn : _descriptor.shaderFunctions) {
+        byteSize += fn->GetByteSizeOfResource();
+    }
+    return byteSize;
+}
+
 uint64_t
 HgiMetalShaderProgram::GetRawResource() const
 {

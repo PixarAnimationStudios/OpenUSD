@@ -42,6 +42,9 @@ public:
     ~HgiGLBuffer() override;
 
     HGIGL_API
+    size_t GetByteSizeOfResource() const override;
+
+    HGIGL_API
     uint64_t GetRawResource() const override;
 
     uint32_t GetBufferId() const {return _bufferId;}

@@ -100,6 +100,11 @@ public:
     HGI_API
     virtual std::string const& GetCompileErrors() = 0;
 
+    /// Returns the byte size of the GPU shader function.
+    /// This can be helpful if the application wishes to tally up memory usage.
+    HGI_API
+    virtual size_t GetByteSizeOfResource() const = 0;
+
     /// This function returns the handle to the Hgi backend's gpu resource, cast
     /// to a uint64_t. Clients should avoid using this function and instead
     /// use Hgi base classes so that client code works with any Hgi platform.

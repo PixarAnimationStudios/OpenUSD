@@ -279,6 +279,14 @@ HgiGLTexture::~HgiGLTexture()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+size_t
+HgiGLTexture::GetByteSizeOfResource() const
+{
+    GfVec3i const& s = _descriptor.dimensions;
+    return HgiDataSizeOfFormat(_descriptor.format) * 
+        s[0] * s[1] * std::max(s[2], 1);
+}
+
 uint64_t
 HgiGLTexture::GetRawResource() const
 {

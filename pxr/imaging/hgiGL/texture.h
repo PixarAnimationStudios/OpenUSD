@@ -42,6 +42,9 @@ public:
     ~HgiGLTexture() override;
 
     HGIGL_API
+    size_t GetByteSizeOfResource() const override;
+
+    HGIGL_API
     uint64_t GetRawResource() const override;
 
     /// Returns the OpenGL id / name of the texture.

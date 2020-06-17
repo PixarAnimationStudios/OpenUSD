@@ -98,6 +98,12 @@ HgiGLBuffer::~HgiGLBuffer()
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+size_t
+HgiGLBuffer::GetByteSizeOfResource() const
+{
+    return _descriptor.byteSize;
+}
+
 uint64_t
 HgiGLBuffer::GetRawResource() const
 {
