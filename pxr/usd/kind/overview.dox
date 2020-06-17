@@ -48,6 +48,7 @@
 /// file of any module within your "pixar-base aware" build environment.
 /// The dictionary entries will look like the following:
 /// \code{.json}
+/// "Info": {
 ///     "Kinds": {
 ///         "chargroup": {
 ///             "baseKind": "assembly",
@@ -58,7 +59,8 @@
 ///         },
 ///         "newRootKind": {
 ///         }
-///     },
+///     }
+/// }
 /// \endcode
 /// \note One cannot alter core kinds or their place in the hierarchy or any
 /// other data associated with them by attempting to override them in the
