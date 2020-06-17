@@ -362,6 +362,11 @@ public:
     USDGEOM_API
     static bool IsPrimvarRelatedPropertyName(const TfToken& name);
 
+    /// Returns the \p name, devoid of the "primvars:" token if present,
+    /// otherwise returns the \p name unchanged
+    USDGEOM_API
+    static TfToken StripPrimvarsName(const TfToken& name);
+
     /// Validate that the provided \p interpolation is a valid setting for 
     /// interpolation as defined by \ref Usd_InterpolationVals.  
     USDGEOM_API

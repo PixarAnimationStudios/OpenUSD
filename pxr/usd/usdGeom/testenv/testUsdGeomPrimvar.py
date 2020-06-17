@@ -39,8 +39,12 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # Add three Primvars
         u1 = gp_pv.CreatePrimvar('u_1', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse( u1.NameContainsNamespaces() )
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(u1.GetName()), "u_1")
         # Make sure it's OK to manually specify the classifier namespace
         v1 = gp_pv.CreatePrimvar('primvars:v_1', Sdf.ValueTypeNames.FloatArray)
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(v1.GetName()), "v_1")
+        noPrimvarsPrefixName = "noPrimvarPrefixName"
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(noPrimvarsPrefixName), noPrimvarsPrefixName)
         self.assertFalse( v1.NameContainsNamespaces() )
         _3dpmats = gp_pv.CreatePrimvar('projMats', Sdf.ValueTypeNames.Matrix4dArray,
                                     "constant", nPasses)

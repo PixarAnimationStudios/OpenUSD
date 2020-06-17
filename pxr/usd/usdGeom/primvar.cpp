@@ -77,6 +77,18 @@ UsdGeomPrimvar::IsPrimvarRelatedPropertyName(const TfToken& name)
 }
 
 /* static */
+TfToken
+UsdGeomPrimvar::StripPrimvarsName(const TfToken& name)
+{
+    std::string const & fullName = name.GetString();
+
+    std::pair<std::string, bool> res =
+        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+
+    return res.second ? TfToken(res.first) : name;
+}
+
+/* static */
 bool
 UsdGeomPrimvar::_IsNamespaced(const TfToken& name)
 {
