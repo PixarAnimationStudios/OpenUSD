@@ -154,6 +154,10 @@ public:
         const SdfPath& path, ExternalTime time, 
         Usd_InterpolatorBase* interpolator, T* value) const;
 
+    /// Return the layer associated with this clip, opening it if it hasn't
+    /// been opened already.
+    SdfLayerHandle GetLayer() const;
+
     /// Return the layer associated with this clip iff it has already been
     /// opened successfully.
     ///

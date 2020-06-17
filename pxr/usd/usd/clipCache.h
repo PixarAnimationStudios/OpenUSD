@@ -79,6 +79,10 @@ public:
     /// memory bloat; however, once a layer is open, it will generally be
     /// kept open for the life of the stage.
     SdfLayerHandleSet GetUsedLayers() const;
+
+    /// Reload all clip layers that have been opened. Generated clip manifests
+    /// will also be regenerated.
+    void Reload();
     
     /// Get all clips that may contribute opinions to attributes on the
     /// prim at \p path, including clips that were authored on ancestral prims.
@@ -96,20 +100,30 @@ public:
     ///
     struct Lifeboat
     {
-        std::vector<Usd_ClipSetRefPtr> _clips;
+        explicit Lifeboat(Usd_ClipCache& cache);
+        ~Lifeboat();
+        Usd_ClipCache& _cache;
+
+        class Data;
+        std::unique_ptr<Data> _data;
     };
 
-    /// Invalidates the clip cache for prims at and below \p path. Any
-    /// invalidated clips will be transferred into the \p lifeboat, instead
-    /// of being disposed immediately. This potentially allows the underlying
-    /// clip layer to be reused if the clip cache is repopulated while
-    /// the lifeboat is still active.
+    /// Invalidates the clip cache for prims at and below \p path. 
+    /// A Lifeboat object must be active for this cache before calling
+    /// this function. This potentially allows the underlying clip layers
+    /// to be reused if the clip cache is repopulated while the lifeboat
+    /// is still active.
     ///
     /// NOTE: This function must not be invoked concurrently with any other
     /// function on this object.
-    void InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat);
+    void InvalidateClipsForPrim(const SdfPath& path);
 
 private:
+    void _ComputeClipsFromPrimIndex(
+        const SdfPath& usdPrimPath,
+        const PcpPrimIndex& primIndex, 
+        std::vector<Usd_ClipSetRefPtr>* clips) const;
+
     inline const std::vector<Usd_ClipSetRefPtr>& 
     _GetClipsForPrim_NoLock(const SdfPath& path) const;
 
@@ -118,7 +132,9 @@ private:
     // authored will have entries.
     typedef SdfPathTable<std::vector<Usd_ClipSetRefPtr> >_ClipTable;
     _ClipTable _table;
+
     ConcurrentPopulationContext *_concurrentPopulationContext;
+    Lifeboat *_lifeboat;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

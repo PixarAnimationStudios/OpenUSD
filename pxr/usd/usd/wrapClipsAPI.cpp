@@ -113,6 +113,8 @@ void wrapUsdClipsAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/makePyConstructor.h"
+
 namespace {
 
 static VtDictionary _GetClips(const UsdClipsAPI &self)
@@ -367,6 +369,21 @@ WRAP_CUSTOM {
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
              (arg("manifestAssetPath"), arg("clipSet")))
 
+        .def("GenerateClipManifest", 
+             (SdfLayerRefPtr(UsdClipsAPI::*)() const)
+                 (&UsdClipsAPI::GenerateClipManifest),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("GenerateClipManifest", 
+             (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&) const)
+                 (&UsdClipsAPI::GenerateClipManifest),
+             arg("clipSet"),
+             return_value_policy<TfPyRefPtrFactory<> >())
+
+        .def("GenerateClipManifestFromLayers", 
+             &UsdClipsAPI::GenerateClipManifestFromLayers,
+             (arg("clipLayers"), arg("clipPrimPath")),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .staticmethod("GenerateClipManifestFromLayers")
 
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&))

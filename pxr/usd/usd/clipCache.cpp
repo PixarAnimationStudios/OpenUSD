@@ -42,6 +42,7 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <string>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,8 +59,65 @@ Usd_ClipCache::ConcurrentPopulationContext::~ConcurrentPopulationContext()
     _cache._concurrentPopulationContext = nullptr;
 }
 
+// ------------------------------------------------------------
+
+class Usd_ClipCache::Lifeboat::Data
+{
+public:
+    struct ManifestKey
+    {
+        SdfPath primPath;
+        std::string clipSetName;
+        SdfPath clipPrimPath;
+        VtArray<SdfAssetPath> clipAssetPaths;
+        
+        bool operator==(const ManifestKey& rhs) const
+        {
+            return std::tie(
+                primPath, clipSetName, clipPrimPath, clipAssetPaths) ==
+                   std::tie(
+                rhs.primPath, rhs.clipSetName, rhs.clipPrimPath, 
+                rhs.clipAssetPaths);
+        }
+        
+        struct Hash
+        {
+            inline size_t operator()(const ManifestKey& key) const
+            {
+                size_t hash = key.primPath.GetHash();
+                boost::hash_combine(hash, TfHash()(key.clipSetName));
+                boost::hash_combine(hash, key.clipPrimPath.GetHash());
+                for (const auto& p : key.clipAssetPaths) {
+                    boost::hash_combine(hash, p.GetHash());
+                }
+                return hash;
+            }
+        };
+    };
+
+    std::vector<Usd_ClipSetRefPtr> clips;
+    std::unordered_map<ManifestKey, std::string, ManifestKey::Hash>
+        generatedManifests;
+};
+
+Usd_ClipCache::Lifeboat::Lifeboat(Usd_ClipCache& cache)
+    : _cache(cache)
+    , _data(new Data)
+{
+    TF_AXIOM(!_cache._lifeboat);
+    _cache._lifeboat = this;
+}
+ 
+Usd_ClipCache::Lifeboat::~Lifeboat()
+{
+    _cache._lifeboat = nullptr;
+}
+
+// ------------------------------------------------------------
+
 Usd_ClipCache::Usd_ClipCache()
     : _concurrentPopulationContext(nullptr)
+    , _lifeboat(nullptr)
 {
 }
 
@@ -70,10 +128,12 @@ Usd_ClipCache::~Usd_ClipCache()
 static Usd_ClipSetRefPtr
 _CreateClipSetFromDefinition(
     const SdfPath& usdPrimPath,
+    const std::string& clipSetName,
     const Usd_ClipSetDefinition& clipSetDef)
 {
     std::string status;
-    Usd_ClipSetRefPtr clipSet = Usd_ClipSet::New(clipSetDef, &status);
+    Usd_ClipSetRefPtr clipSet = Usd_ClipSet::New(
+        clipSetName, clipSetDef, &status);
 
     if (!status.empty()) {
         if (!clipSet) {
@@ -92,20 +152,54 @@ _CreateClipSetFromDefinition(
     return clipSet;
 }
 
-static void
-_AddClipsFromPrimIndex(
+void
+Usd_ClipCache::_ComputeClipsFromPrimIndex(
     const SdfPath& usdPrimPath,
     const PcpPrimIndex& primIndex, 
-    std::vector<Usd_ClipSetRefPtr>* clips)
+    std::vector<Usd_ClipSetRefPtr>* clips) const
 {
     std::vector<Usd_ClipSetDefinition> clipSetDefs;
-    Usd_ComputeClipSetDefinitionsForPrimIndex(primIndex, &clipSetDefs);
+    std::vector<std::string> clipSetNames;
+    Usd_ComputeClipSetDefinitionsForPrimIndex(
+        primIndex, &clipSetDefs, &clipSetNames);
 
     clips->reserve(clipSetDefs.size());
-    for (const Usd_ClipSetDefinition& clipSetDef : clipSetDefs) {
-        Usd_ClipSetRefPtr clipSet = 
-            _CreateClipSetFromDefinition(usdPrimPath, clipSetDef);
+    for (size_t i = 0; i < clipSetDefs.size(); ++i) {
+        Usd_ClipSetDefinition& clipSetDef = clipSetDefs[i];
+        const std::string& clipSetName = clipSetNames[i];
+
+        // If no clip manifest was explicitly specified and we have an
+        // active lifeboat (i.e., we're in the middle of change processing)
+        // see if we can reuse a generated manifest from before.
+        bool reusingGeneratedManifest = false;
+        if (!clipSetDef.clipManifestAssetPath && _lifeboat) {
+            Lifeboat::Data::ManifestKey key;
+            key.primPath = usdPrimPath;
+            key.clipSetName = clipSetName;
+            if (clipSetDef.clipPrimPath) {
+                key.clipPrimPath = SdfPath(*clipSetDef.clipPrimPath);
+            }
+            if (clipSetDef.clipAssetPaths) {
+                key.clipAssetPaths = *clipSetDef.clipAssetPaths;
+            }
+
+            const std::string* manifestIdentifier = TfMapLookupPtr(
+                _lifeboat->_data->generatedManifests, key);
+            if (manifestIdentifier) {
+                clipSetDef.clipManifestAssetPath = 
+                    SdfAssetPath(*manifestIdentifier);
+                reusingGeneratedManifest = true;
+            }
+        }
+
+        Usd_ClipSetRefPtr clipSet = _CreateClipSetFromDefinition(
+            usdPrimPath, clipSetName, clipSetDef);
         if (clipSet && !clipSet->valueClips.empty()) {
+            // If reusing a previously-generated manifest from the lifeboat, 
+            // pull on it here to ensure the manifest takes ownership of it.
+            if (reusingGeneratedManifest) {
+                TF_UNUSED(clipSet->manifestClip->GetLayer());
+            }
             clips->push_back(clipSet);
         }
     }
@@ -119,7 +213,7 @@ Usd_ClipCache::PopulateClipsForPrim(
     TfAutoMallocTag2 tag("Usd", "Usd_ClipCache::PopulateClipsForPrim");
 
     std::vector<Usd_ClipSetRefPtr> allClips;
-    _AddClipsFromPrimIndex(path, primIndex, &allClips);
+    _ComputeClipsFromPrimIndex(path, primIndex, &allClips);
 
     const bool primHasClips = !allClips.empty();
     if (primHasClips) {
@@ -187,6 +281,62 @@ Usd_ClipCache::GetUsedLayers() const
     return layers;
 }
 
+void
+Usd_ClipCache::Reload()
+{
+    SdfChangeBlock changeBlock;
+
+    // Collect all unique clip sets to iterate over to avoid duplicated work
+    // due to ancestral clip entries (see PopulateClipsForPrim)
+    std::unordered_set<Usd_ClipSetRefPtr> clipSets;
+    for (auto it = _table.begin(), end = _table.end(); it != end; ++it) {
+        clipSets.insert(it->second.begin(), it->second.end());
+    }
+
+    // Iterate through all clip sets and call SdfLayer::Reload for any
+    // associated layers that are opened.
+    std::unordered_set<SdfLayerHandle, TfHash> reloadedClipLayers;
+    for (const Usd_ClipSetRefPtr& clipSet : clipSets) {
+        // Reload all clip layers.
+        for (const Usd_ClipRefPtr& clip : clipSet->valueClips) {
+            const SdfLayerHandle clipLayer = clip->GetLayerIfOpen();
+            if (!clipLayer) {
+                continue;
+            }
+
+            // It's possible (but unlikely?) that the same clip layer is used
+            // in multiple clip sets. We need to keep track of all the layers
+            // that were reloaded to handle that case.
+            const bool notPreviouslyReloaded =
+                reloadedClipLayers.insert(clipLayer).second;
+            if (notPreviouslyReloaded) {
+                clipLayer->Reload();
+            }
+        }
+
+        // Reload the manifest if it was supplied by the user, otherwise
+        // regenerate it.
+        //
+        // It's tempting to try to only regenerate the manifest if any
+        // of the clip layers were actually reloaded. However, this doesn't
+        // handle the case where someone modifies a clip layer, saves it,
+        // then tries to reload the stage. In that case, the clip layer
+        // wouldn't have anything to reload, so we wouldn't know that we
+        // need to regenerate the manifest.
+        SdfLayerHandle manifestLayer = clipSet->manifestClip->GetLayerIfOpen();
+        if (manifestLayer) {
+            if (Usd_IsAutoGeneratedClipManifest(manifestLayer)) {
+                SdfLayerRefPtr newManifest = Usd_GenerateClipManifest(
+                    clipSet->valueClips, clipSet->clipPrimPath);
+                manifestLayer->TransferContent(newManifest);
+            }
+            else {
+                manifestLayer->Reload();
+            }
+        }
+    }
+}
+
 const std::vector<Usd_ClipSetRefPtr>&
 Usd_ClipCache::GetClipsForPrim(const SdfPath& path) const
 {
@@ -214,18 +364,52 @@ Usd_ClipCache::_GetClipsForPrim_NoLock(const SdfPath& path) const
 }
 
 void 
-Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat)
+Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& invalidatePath)
 {
+    // We expect a Lifeboat to always be active when invoking this function
+    // for simplicity.
+    TF_AXIOM(_lifeboat);
+
     // We do not have to take the lock here -- this function must be invoked
     // exclusive to any other member function.
-    auto range = _table.FindSubtreeRange(path);
+
+    auto range = _table.FindSubtreeRange(invalidatePath);
     for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
-        const auto& entry = *entryIter;
-        lifeboat->_clips.insert(
-            lifeboat->_clips.end(), entry.second.begin(), entry.second.end());
+        const SdfPath& path = entryIter->first;
+        const std::vector<Usd_ClipSetRefPtr>& clipSets = entryIter->second;
+
+        // Keep all clip sets alive. In particular, this keeps any layers
+        // that have been opened and are owned by these clip sets alive until
+        // the lifeboat is dropped.
+        _lifeboat->_data->clips.insert(
+            _lifeboat->_data->clips.end(), clipSets.begin(), clipSets.end());
+
+        // Keep track of all generated manifests so that they can be reused
+        // during population until the lifeboat s dropped.
+        for (const Usd_ClipSetRefPtr& clipSet : clipSets) {
+            const SdfLayerHandle manifestLayer = 
+                clipSet->manifestClip->GetLayerIfOpen();
+            if (!manifestLayer 
+                || !Usd_IsAutoGeneratedClipManifest(manifestLayer)) {
+                continue;
+            }
+
+            Lifeboat::Data::ManifestKey key;
+            key.primPath = path;
+            key.clipSetName = clipSet->name;
+            key.clipPrimPath = clipSet->clipPrimPath;
+                
+            key.clipAssetPaths.reserve(clipSet->valueClips.size());
+            for (const Usd_ClipRefPtr& clip : clipSet->valueClips) {
+                key.clipAssetPaths.push_back(clip->assetPath);
+            }
+
+            _lifeboat->_data->generatedManifests[std::move(key)] = 
+                manifestLayer->GetIdentifier();
+        }
     }
 
-    _table.erase(path);
+    _table.erase(invalidatePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

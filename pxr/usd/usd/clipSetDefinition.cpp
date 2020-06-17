@@ -305,6 +305,8 @@ _DeriveClipInfo(const std::string& templateAssetPath,
 namespace 
 {
 struct _ClipSet {
+    explicit _ClipSet(const std::string& name_) : name(name_) { }
+
     struct _AnchorInfo {
         PcpLayerStackPtr layerStack;
         SdfPath primPath;
@@ -314,6 +316,7 @@ struct _ClipSet {
     };
     _AnchorInfo anchorInfo;
     VtDictionary clipInfo;
+    std::string name;
 };
 }
 
@@ -434,7 +437,8 @@ _ResolveClipSetsInNode(
                     continue;
                 }
 
-                _ClipSet& clipSet = clipSetsInNode[clipSetName];
+                _ClipSet& clipSet = clipSetsInNode.emplace(
+                    clipSetName, clipSetName).first->second;
 
                 VtDictionary clipInfoForLayer;
                 clipInfoValue.Swap(clipInfoForLayer);
@@ -498,7 +502,8 @@ _ResolveClipSetsInNode(
 void
 Usd_ComputeClipSetDefinitionsForPrimIndex(
     const PcpPrimIndex& primIndex,
-    std::vector<Usd_ClipSetDefinition>* clipDefinitions)
+    std::vector<Usd_ClipSetDefinition>* clipSetDefinitions,
+    std::vector<std::string>* clipSetNames)
 {
     std::map<std::string, _ClipSet> composedClipSets;
 
@@ -511,7 +516,8 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
             const std::string& clipSetName = entry.first;
             const _ClipSet& nodeClipSet = entry.second;
 
-            _ClipSet& composedClipSet = composedClipSets[clipSetName];
+            _ClipSet& composedClipSet = composedClipSets.emplace(
+                clipSetName, clipSetName).first->second;
             if (!composedClipSet.anchorInfo.layerStack) {
                 composedClipSet.anchorInfo = nodeClipSet.anchorInfo;
             }
@@ -553,10 +559,18 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
 
     // Unpack the information in the composed clip sets into individual
     // Usd_ResolvedClipInfo objects.
-    clipDefinitions->reserve(sortedClipSets.size());
+    clipSetDefinitions->reserve(sortedClipSets.size());
+    if (clipSetNames) {
+        clipSetNames->reserve(sortedClipSets.size());
+    }
+
     for (const _ClipSet& clipSet : sortedClipSets) {
-        clipDefinitions->push_back(Usd_ClipSetDefinition());
-        Usd_ClipSetDefinition& out = clipDefinitions->back();
+        clipSetDefinitions->push_back(Usd_ClipSetDefinition());
+        Usd_ClipSetDefinition& out = clipSetDefinitions->back();
+
+        if (clipSetNames) {
+            clipSetNames->push_back(clipSet.name);
+        }
 
         out.sourceLayerStack = clipSet.anchorInfo.layerStack;
         out.sourcePrimPath = clipSet.anchorInfo.primPath;

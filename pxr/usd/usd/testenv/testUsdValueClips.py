@@ -37,6 +37,19 @@ def InterpolationType(stage, interpolationType):
     finally:
         stage.SetInterpolationType(oldInterpolationType)
 
+@contextlib.contextmanager
+def LayerChangeListener():
+    class _Listener(object):
+        def __init__(self):
+            self.changedLayers = []
+            self._listener = Tf.Notice.RegisterGlobally(
+                Sdf.Notice.LayersDidChange, self._HandleNotice)
+        def _HandleNotice(self, notice, sender):
+            self.changedLayers += notice.GetLayers()
+
+    l = _Listener()
+    yield l
+
 class TestUsdValueClips(unittest.TestCase):
     def CheckTimeSamples(self, attr):
         """Verifies attribute time samples are as expected via
@@ -114,7 +127,9 @@ class TestUsdValueClips(unittest.TestCase):
 
         # No clip layers should be loaded yet
         self.assertEqual(stage.GetUsedLayers(includeClipLayers=True), 
-                    stage.GetUsedLayers(includeClipLayers=False))
+                         stage.GetUsedLayers(includeClipLayers=False))
+        self.assertFalse(Sdf.Layer.Find('basic/clip.usda'))
+        self.assertFalse(Sdf.Layer.Find('basic/manifest.usda'))
 
         # Clips are never consulted for default values.  This implies also
         # that no clips should even get loaded as a result of the queries.
@@ -129,7 +144,9 @@ class TestUsdValueClips(unittest.TestCase):
         
         # Still shouldn't have loaded any clip layers! 
         self.assertEqual(stage.GetUsedLayers(includeClipLayers=True), 
-                    stage.GetUsedLayers(includeClipLayers=False))
+                         stage.GetUsedLayers(includeClipLayers=False))
+        self.assertFalse(Sdf.Layer.Find('basic/clip.usda'))
+        self.assertFalse(Sdf.Layer.Find('basic/manifest.usda'))
 
         # These attributes all have multiple time samples either locally
         # or from the single clip, so they all might be time varying.
@@ -139,12 +156,6 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertTrue(payloadAttr.ValueMightBeTimeVarying())
         self.assertTrue(varAttr.ValueMightBeTimeVarying())
 
-        # Since this test case does not have a clipManifest, we must have
-        # opened *all* clips to answer the ValueMightBeTimeVarying() queries.
-        # Perfect example of how clipManifestAssetPath helps performance.
-        self.assertNotEqual(stage.GetUsedLayers(includeClipLayers=True), 
-                            stage.GetUsedLayers(includeClipLayers=False))
-
         # Model_1 has active clips authored starting at time 10. However, the first
         # active clip is "held active" to -inf, and for any given time t, the prior
         # active clip at time t is still considered active.  So even when querying
@@ -153,12 +164,15 @@ class TestUsdValueClips(unittest.TestCase):
         # to time-within-clip-earlier-than-first-clipTimes-knot.  In our test case,
         # this means all attrs except localAttr (which has local timeSamples in the
         # clip-anchoring layer) should get their values from the first clip.
-        
         self.CheckValue(localAttr, time=5, expected=5.0)
         self.CheckValue(refAttr, time=5, expected=-5.0)
         self.CheckValue(clsAttr, time=5, expected=-5.0)
         self.CheckValue(payloadAttr, time=5, expected=-5.0)
         self.CheckValue(varAttr, time=5, expected=-5.0)
+
+        # We expect the manifest and the first clip to be opened at this point.
+        self.assertTrue(Sdf.Layer.Find('basic/clip.usda'))
+        self.assertTrue(Sdf.Layer.Find('basic/manifest.usda'))
 
         # Starting at time 10, clips should be consulted for values.
         #
@@ -713,10 +727,6 @@ class TestUsdValueClips(unittest.TestCase):
         # This prim has multiple clips that contribute values to this attribute,
         # so it should be detected as potentially time varying.
         self.assertTrue(attr.ValueMightBeTimeVarying())
-
-        # Doing this check should only have caused the first clip to be opened.
-        self.assertTrue(Sdf.Layer.Find('multiclip/clip1.usda'))
-        self.assertFalse(Sdf.Layer.Find('multiclip/clip2.usda'))
         
         # clip1 is active in the range [..., 16)
         # clip2 is active in the range [16, ...)
@@ -1255,6 +1265,12 @@ class TestUsdValueClips(unittest.TestCase):
         stage = Usd.Stage.Open('manifest/root.usda')
         prim = stage.GetPrimAtPath('/WithManifestClip')
 
+        # No clip layers should be loaded yet. We have an manifest explicitly
+        # specified so we don't need to open any of the clip layers to
+        # generate one.
+        self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
+        self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
+
         # This attribute doesn't exist in the manifest, so we should
         # not have looked in any clips for samples, and its value should
         # fall back to its default value.
@@ -1335,6 +1351,210 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(inManifestNotInClip.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
         self.CheckTimeSamples(inManifestNotInClip)
+
+    def test_ClipManifestGeneration(self):
+        """Tests generating a manifest using UsdClipsAPI"""
+        def _ValidateManifest(manifest):
+            def _CheckAttribute(path):
+                attr = manifest.GetAttributeAtPath(path)
+                self.assertTrue(attr)
+                self.assertIsNone(attr.default)
+
+            _CheckAttribute('/Clip/A.a')
+            _CheckAttribute('/Clip/A.b')
+            _CheckAttribute('/Clip/A{v=a}.c')
+            _CheckAttribute('/Clip/A.z')
+
+            # We should not have an entry for d in the manifest since it has
+            # no time samples in any of the clips.
+            self.assertFalse(manifest.GetAttributeAtPath('/Clip/A.d'))
+
+        # Test UsdClipsAPI.GenerateManifestFromLayers
+        clip1 = Sdf.Layer.FindOrOpen('manifestGeneration/clip_1.usda')
+        self.assertTrue(clip1)
+        clip2 = Sdf.Layer.FindOrOpen('manifestGeneration/clip_2.usda')
+        self.assertTrue(clip2)
+
+        manifest = Usd.ClipsAPI.GenerateClipManifestFromLayers(
+            [clip1, clip2], '/Clip/A')
+        _ValidateManifest(manifest)
+
+        # Test errors when passing in a non-prim path
+        with self.assertRaises(Tf.ErrorException):
+            manifest = Usd.ClipsAPI.GenerateClipManifestFromLayers(
+                [clip1, clip2], '/')
+
+        with self.assertRaises(Tf.ErrorException):
+            manifest = Usd.ClipsAPI.GenerateClipManifestFromLayers(
+                [clip1, clip2], '/Foo.bar')
+
+        # Test errors when passing in an invalid clip layer
+        with self.assertRaises(Tf.ErrorException):
+            manifest = Usd.ClipsAPI.GenerateClipManifestFromLayers(
+                [clip1, None], '/Model')
+
+        # Test UsdClipsAPI.GenerateManifest on authored clip sets.
+        stage = Usd.Stage.Open('manifestGeneration/root.usda')
+        prim = stage.GetPrimAtPath('/Model')
+
+        clipsAPI = Usd.ClipsAPI(prim)
+        clipsAPI.SetClipAssetPaths([Sdf.AssetPath('./clip_1.usda'), 
+                                    Sdf.AssetPath('./clip_2.usda')])
+        clipsAPI.SetClipActive([(0, 0), (2, 1)])
+
+        _ValidateManifest(clipsAPI.GenerateClipManifest())
+        _ValidateManifest(clipsAPI.GenerateClipManifest('default'))
+
+    def test_ClipManifestAutoGeneration(self):
+        """Verifies behavior with automatic generation of clip manifest
+        when no manifest is explicitly specified."""
+        # Temporarily modify the first clip to test Reload functionality
+        clipLayer = Sdf.Layer.FindOrOpen('manifestGeneration/clip_1.usda')
+        del clipLayer.GetPrimAtPath('/Clip/A').properties['b']
+
+        stage = Usd.Stage.Open('manifestGeneration/root.usda')
+        prim = stage.GetPrimAtPath('/Model')
+
+        def _GetManifestLayer(stage):
+            def _IsManifestLayer(l):
+                return l.anonymous and 'generated_manifest' in l.identifier
+            layers = [l for l in stage.GetUsedLayers() if _IsManifestLayer(l)]
+            self.assertEqual(len(layers), 1)
+            return layers[0]
+
+        # The prim at /Model has one active clip specified and no manifest.
+        # A manifest should have automatically been generated for this
+        # clip containing declarations for the attributes in the clip.
+        #
+        # Note that the manifest does not contain /Clip/A.d. Although it
+        # is declared in clip_1.usda, it has no time samples so it's ignored.
+        #
+        # Note that the manifest does not contain /Clip/B. Since the clip set's
+        # primPath is set to /Clip/A, no values under /Clip/B will ever be used
+        # so it's ignored.
+        manifestLayer = _GetManifestLayer(stage)
+        self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.a'))
+        self.assertFalse(manifestLayer.GetAttributeAtPath('/Clip/A.b'))
+        self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A{v=a}.c'))
+        self.assertFalse(manifestLayer.GetAttributeAtPath('/Clip/A.d'))
+        self.assertFalse(manifestLayer.GetPrimAtPath('/Clip/B'))
+
+        # Reloading the stage should cause the manifest to be regenerated.
+        with LayerChangeListener() as l:
+            stage.Reload()
+
+            # Note that unlike test cases below, the manifestLayer will remain
+            # valid and will just be modified in place.
+            self.assertTrue(clipLayer in l.changedLayers)
+            self.assertTrue(manifestLayer in l.changedLayers)
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.a'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.b'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A{v=a}.c'))
+            self.assertFalse(manifestLayer.GetPrimAtPath('/Clip/B'))
+
+        # Now add on a new active clip. A new manifest should be created
+        # containing attributes from clip_1.usda and clip_2.usda.
+        with LayerChangeListener() as l:
+            clipsAPI = Usd.ClipsAPI(prim)
+            clipsAPI.SetClipAssetPaths([Sdf.AssetPath('./clip_1.usda'), 
+                                        Sdf.AssetPath('./clip_2.usda')])
+            clipsAPI.SetClipActive([(0, 0), (2, 1)])
+
+            self.assertFalse(manifestLayer)
+            manifestLayer = _GetManifestLayer(stage)
+
+            self.assertTrue(manifestLayer in l.changedLayers)
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.a'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.b'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.z'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A{v=a}.c'))
+            self.assertFalse(manifestLayer.GetPrimAtPath('/Clip/B'))
+
+        # Authoring more clip metadata causes the prim to resync, but
+        # should reuse the existing manifest instead of regenerating.
+        with LayerChangeListener() as l:
+            clipsAPI.SetClipTimes([(0, 0), (1, 1), (2, 0), (2, 1)])
+
+            self.assertTrue(manifestLayer)
+
+            self.assertFalse(manifestLayer in l.changedLayers)
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.a'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.b'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A.z'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/A{v=a}.c'))
+
+        # Change the clip prim path. A new manifest should be created
+        # containing only attributes under the new path.
+        with LayerChangeListener() as l:
+            clipsAPI.SetClipPrimPath('/Clip/B')
+
+            self.assertFalse(manifestLayer)
+            manifestLayer = _GetManifestLayer(stage)
+
+            self.assertTrue(manifestLayer in l.changedLayers)
+            self.assertFalse(manifestLayer.GetPrimAtPath('/Clip/A'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/B.g'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/B.h'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/Clip/B.y'))
+
+    def test_ClipTemplateManifestGeneration(self):
+        """Tests generating a manifest using UsdClipsAPI with template-based
+        value clips"""
+        def _ValidateManifest(manifest):
+            def _CheckAttribute(path):
+                attr = manifest.GetAttributeAtPath(path)
+                self.assertTrue(attr)
+                self.assertIsNone(attr.default)
+
+            _CheckAttribute('/points.extent')
+            _CheckAttribute('/points.a')
+            
+            # This attribute exists in a clip that should not be picked up
+            # by the template specification.
+            self.assertFalse(manifest.GetAttributeAtPath('/points.b'))
+
+        stage = Usd.Stage.Open('template/manifestGeneration/root.usda')
+        prim = stage.GetPrimAtPath('/World/points')
+
+        clipsAPI = Usd.ClipsAPI(prim)
+        _ValidateManifest(clipsAPI.GenerateClipManifest())
+        _ValidateManifest(clipsAPI.GenerateClipManifest('default'))
+
+    def test_ClipTemplateManifestAutoGeneration(self):
+        """Verifies automatic generation of clip manifest for template-based
+        value clip specification"""
+        stage = Usd.Stage.Open('template/manifestGeneration/root.usda')
+        prim = stage.GetPrimAtPath('/World/points')
+
+        def _GetManifestLayer(stage):
+            def _IsManifestLayer(l):
+                return l.anonymous and 'generated_manifest' in l.identifier
+            layers = [l for l in stage.GetUsedLayers() if _IsManifestLayer(l)]
+            self.assertEqual(len(layers), 1)
+            return layers[0]
+        
+        # The prim at /World/points has template-based clips specified
+        # that should pick up p.001.usda and p.002.usda.
+        # A manifest should have automatically been generated for this
+        # clip containing declarations for the attributes in these clips.
+        manifestLayer = _GetManifestLayer(stage)
+        self.assertTrue(manifestLayer.GetAttributeAtPath('/points.extent'))
+        self.assertTrue(manifestLayer.GetAttributeAtPath('/points.a'))
+        self.assertFalse(manifestLayer.GetAttributeAtPath('/points.b'))
+
+        # Extend the template end time to pick up an additional clip.
+        # This should cause a resync and a new manifest to be generated.
+        with LayerChangeListener() as l:
+            clipsAPI = Usd.ClipsAPI(prim)
+            clipsAPI.SetClipTemplateEndTime(3)
+
+            self.assertFalse(manifestLayer)
+            manifestLayer = _GetManifestLayer(stage)
+            self.assertTrue(manifestLayer in l.changedLayers)
+
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/points.extent'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/points.a'))
+            self.assertTrue(manifestLayer.GetAttributeAtPath('/points.b'))
 
     def test_ClipTemplateBehavior(self):
         primPath = Sdf.Path('/World/fx/Particles_Splash/points')

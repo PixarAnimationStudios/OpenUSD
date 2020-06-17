@@ -114,6 +114,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usd/clipSet.h"
+#include "pxr/usd/usd/clipSetDefinition.h"
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -129,6 +131,31 @@ TfToken
 _MakeKeyPath(const std::string& clipSet, const TfToken& clipInfoKey)
 {
     return TfToken(clipSet + ":" + clipInfoKey.GetString());
+}
+
+bool
+_ComputeClipSetDefinition(
+    const UsdPrim& prim, const std::string& clipSet,
+    Usd_ClipSetDefinition* clipSetDef)
+{
+    std::vector<Usd_ClipSetDefinition> clipSetDefs;
+    std::vector<std::string> clipSetNames;
+    Usd_ComputeClipSetDefinitionsForPrimIndex(
+        prim.GetPrimIndex(), &clipSetDefs, &clipSetNames);
+
+    auto it = std::find(clipSetNames.begin(), clipSetNames.end(), clipSet);
+    if (it == clipSetNames.end()) {
+        TF_CODING_ERROR("No clip set named '%s'", clipSet.c_str());
+        return false;
+    }
+
+    const size_t clipDefIndex = std::distance(clipSetNames.begin(), it);
+    if (!TF_VERIFY(clipDefIndex < clipSetDefs.size())) {
+        return false;
+    }
+
+    *clipSetDef = clipSetDefs[clipDefIndex];
+    return true;
 }
 
 }
@@ -282,6 +309,47 @@ UsdClipsAPI::GetClipManifestAssetPath(SdfAssetPath* assetPath,
 {
     USD_CLIPS_API_CLIPSET_GETTER(GetClipManifestAssetPath,
         assetPath, clipSet, UsdClipsAPIInfoKeys->manifestAssetPath);
+}
+
+SdfLayerRefPtr
+UsdClipsAPI::GenerateClipManifest(const std::string& clipSetName) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return SdfLayerRefPtr();
+    }
+
+    Usd_ClipSetDefinition clipSetDef;
+    if (!_ComputeClipSetDefinition(GetPrim(), clipSetName, &clipSetDef)) {
+        return SdfLayerRefPtr();
+    }
+
+    std::string err;
+    Usd_ClipSetRefPtr clipSet = Usd_ClipSet::New(clipSetName, clipSetDef, &err);
+    if (!clipSet) {
+        if (!err.empty()) {
+            TF_CODING_ERROR(
+                "Invalid clips in clip set '%s': %s", 
+                clipSetName.c_str(), err.c_str());
+        }
+        return SdfLayerRefPtr();
+    }
+
+    return Usd_GenerateClipManifest(clipSet->valueClips, clipSet->clipPrimPath);
+}
+
+SdfLayerRefPtr
+UsdClipsAPI::GenerateClipManifest() const
+{
+    return GenerateClipManifest(UsdClipsAPISetNames->default_.GetString());
+}
+
+SdfLayerRefPtr
+UsdClipsAPI::GenerateClipManifestFromLayers(
+    const SdfLayerHandleVector& clipLayers, 
+    const SdfPath& clipPrimPath)
+{
+    return Usd_GenerateClipManifest(clipLayers, clipPrimPath);
 }
 
 bool 

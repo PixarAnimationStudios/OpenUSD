@@ -373,6 +373,31 @@ public:
     USD_API
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
 
+    /// Create a clip manifest containing entries for all attributes in the
+    /// value clips for clip set \p clipSet. This returns an anonymous layer
+    /// that can be exported and reused (\see SetClipManifestAssetPath).
+    ///
+    /// Returns an invalid SdfLayerRefPtr on failure.
+    USD_API
+    SdfLayerRefPtr GenerateClipManifest(const std::string& clipSet) const;
+
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
+    SdfLayerRefPtr GenerateClipManifest() const;
+
+    /// Create a clip manifest containing entries for all attributes in the
+    /// given \p clipLayers that belong to the prim at \p clipPrimPath and
+    /// all descendants. This returns an anonymous layer that can be exported
+    /// and reused (\see SetClipManifestAssetPath).
+    ///
+    /// Returns an invalid SdfLayerRefPtr on failure.
+    USD_API
+    static SdfLayerRefPtr 
+    GenerateClipManifestFromLayers(const SdfLayerHandleVector& clipLayers, 
+                                   const SdfPath& clipPrimPath);
+
     /// A template string representing a set of assets to be used as clips
     /// for the clip set named \p clipSet. This string can be of two forms: 
     ///

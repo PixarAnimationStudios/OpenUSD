@@ -3112,13 +3112,12 @@ UsdStage::Reload()
 
     ArResolverScopedCache resolverCache;
 
+    // Reload layers that are reached via composition.
     PcpChanges changes;
     _cache->Reload(&changes);
 
-    // XXX: Usd should ideally be doing the reloads for both clip layers
-    // as well as any that need to be reloaded as noticed by Pcp.
-    // See bug/140498 for more info.
-    SdfLayer::ReloadLayers(_clipCache->GetUsedLayers()); 
+    // Reload all clip layers that are opened.
+    _clipCache->Reload();
 
     // Process changes.  This won't be invoked automatically if we didn't
     // reload any layers but only loaded layers that we failed to load
@@ -4133,9 +4132,9 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     // Invalidate the clip cache, but keep the clips alive for the duration
     // of recomposition in the (likely) case that clip data hasn't changed
     // and the underlying clip layer can be reused.
-    Usd_ClipCache::Lifeboat clipLifeboat;
+    Usd_ClipCache::Lifeboat clipLifeboat(*_clipCache);
     for (const auto& entry : *pathsToRecompose) {
-        _clipCache->InvalidateClipsForPrim(entry.first, &clipLifeboat);
+        _clipCache->InvalidateClipsForPrim(entry.first);
     }
 
     // Ask Pcp to compute all the prim indexes in parallel, stopping at

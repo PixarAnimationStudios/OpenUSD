@@ -735,15 +735,21 @@ Usd_Clip::_GetLayerForClip() const
 }
 
 SdfLayerHandle
+Usd_Clip::GetLayer() const
+{
+    const SdfLayerRefPtr& layer = _GetLayerForClip();
+    return TfStringStartsWith(layer->GetIdentifier(), 
+                              _tokens->dummy_clip.GetString()) ?
+        SdfLayerHandle() : SdfLayerHandle(layer);
+}
+
+SdfLayerHandle
 Usd_Clip::GetLayerIfOpen() const
 {
-    if (_hasLayer){
-        return TfStringStartsWith(_layer->GetIdentifier(), 
-                                  _tokens->dummy_clip.GetString()) ?
-            SdfLayerHandle() : SdfLayerHandle(_layer);
+    if (!_hasLayer) {
+        return SdfLayerHandle();
     }
-
-    return SdfLayerHandle();
+    return GetLayer();
 }
 
 namespace { // Anonymous namespace

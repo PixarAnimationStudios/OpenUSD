@@ -116,11 +116,15 @@ public:
     size_t indexOfLayerWhereAssetPathsFound;
 };
 
-/// Computes clip set definitions for the given \p primIndex.
+/// Computes clip set definitions for the given \p primIndex and returns
+/// them in \p clipSetDefinitions. The clip sets in this vector are sorted in
+/// strength order. If \p clipSetNames is provided it will contain the name
+/// for each clip set in the corresponding position in \p clipSetDefinitions.
 void
 Usd_ComputeClipSetDefinitionsForPrimIndex(
     const PcpPrimIndex& primIndex,
-    std::vector<Usd_ClipSetDefinition>* clipDefinitions);
+    std::vector<Usd_ClipSetDefinition>* clipSetDefinitions,
+    std::vector<std::string>* clipSetNames = nullptr);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
