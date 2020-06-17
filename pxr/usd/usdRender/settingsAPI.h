@@ -110,11 +110,13 @@ public:
     /// 
     /// \return A valid UsdRenderSettingsAPI object is returned upon success. 
     /// An invalid (or empty) UsdRenderSettingsAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDRENDER_API
     static UsdRenderSettingsAPI 

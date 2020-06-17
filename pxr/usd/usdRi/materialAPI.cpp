@@ -70,8 +70,10 @@ UsdSchemaType UsdRiMaterialAPI::_GetSchemaType() const {
 UsdRiMaterialAPI
 UsdRiMaterialAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiMaterialAPI>(
-            prim, _schemaTokens->RiMaterialAPI);
+    if (prim.ApplyAPI<UsdRiMaterialAPI>()) {
+        return UsdRiMaterialAPI(prim);
+    }
+    return UsdRiMaterialAPI();
 }
 
 /* static */

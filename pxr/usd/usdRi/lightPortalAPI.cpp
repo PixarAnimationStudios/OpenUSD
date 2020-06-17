@@ -70,8 +70,10 @@ UsdSchemaType UsdRiLightPortalAPI::_GetSchemaType() const {
 UsdRiLightPortalAPI
 UsdRiLightPortalAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiLightPortalAPI>(
-            prim, _schemaTokens->RiLightPortalAPI);
+    if (prim.ApplyAPI<UsdRiLightPortalAPI>()) {
+        return UsdRiLightPortalAPI(prim);
+    }
+    return UsdRiLightPortalAPI();
 }
 
 /* static */

@@ -151,11 +151,13 @@ private:
     /// 
     /// \return A valid UsdContrivedMultipleApplyAPI object is returned upon success. 
     /// An invalid (or empty) UsdContrivedMultipleApplyAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// failure. See \ref UsdPrim::ApplyAPI() for 
     /// conditions resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     static UsdContrivedMultipleApplyAPI 
     _Apply(const UsdPrim &prim, const TfToken &name);

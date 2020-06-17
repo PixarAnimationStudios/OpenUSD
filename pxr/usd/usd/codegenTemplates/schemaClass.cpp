@@ -186,12 +186,15 @@ UsdSchemaType {{ cls.cppClassName }}::_GetSchemaType() const {
 {% endif %}
 {
 {% if cls.isMultipleApply %}
-    return UsdAPISchemaBase::_MultipleApplyAPISchema<{{ cls.cppClassName }}>(
-            prim, _schemaTokens->{{ cls.primName }}, name);
+    if (prim.ApplyAPI<{{ cls.cppClassName }}>(name)) {
+        return {{ cls.cppClassName }}(prim, name);
+    }
 {% else %}
-    return UsdAPISchemaBase::_ApplyAPISchema<{{ cls.cppClassName }}>(
-            prim, _schemaTokens->{{ cls.primName }});
+    if (prim.ApplyAPI<{{ cls.cppClassName }}>()) {
+        return {{ cls.cppClassName }}(prim);
+    }
 {% endif %}
+    return {{ cls.cppClassName }}();
 }
 {% endif %}
 

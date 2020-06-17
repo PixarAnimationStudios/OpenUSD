@@ -70,8 +70,10 @@ UsdSchemaType UsdGeomMotionAPI::_GetSchemaType() const {
 UsdGeomMotionAPI
 UsdGeomMotionAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdGeomMotionAPI>(
-            prim, _schemaTokens->MotionAPI);
+    if (prim.ApplyAPI<UsdGeomMotionAPI>()) {
+        return UsdGeomMotionAPI(prim);
+    }
+    return UsdGeomMotionAPI();
 }
 
 /* static */

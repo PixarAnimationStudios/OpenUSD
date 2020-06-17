@@ -70,8 +70,10 @@ UsdSchemaType UsdLuxShapingAPI::_GetSchemaType() const {
 UsdLuxShapingAPI
 UsdLuxShapingAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdLuxShapingAPI>(
-            prim, _schemaTokens->ShapingAPI);
+    if (prim.ApplyAPI<UsdLuxShapingAPI>()) {
+        return UsdLuxShapingAPI(prim);
+    }
+    return UsdLuxShapingAPI();
 }
 
 /* static */

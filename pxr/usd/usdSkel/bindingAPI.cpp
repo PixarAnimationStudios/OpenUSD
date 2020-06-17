@@ -70,8 +70,10 @@ UsdSchemaType UsdSkelBindingAPI::_GetSchemaType() const {
 UsdSkelBindingAPI
 UsdSkelBindingAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdSkelBindingAPI>(
-            prim, _schemaTokens->SkelBindingAPI);
+    if (prim.ApplyAPI<UsdSkelBindingAPI>()) {
+        return UsdSkelBindingAPI(prim);
+    }
+    return UsdSkelBindingAPI();
 }
 
 /* static */

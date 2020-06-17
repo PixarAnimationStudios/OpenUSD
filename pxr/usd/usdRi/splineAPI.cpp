@@ -70,8 +70,10 @@ UsdSchemaType UsdRiSplineAPI::_GetSchemaType() const {
 UsdRiSplineAPI
 UsdRiSplineAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiSplineAPI>(
-            prim, _schemaTokens->RiSplineAPI);
+    if (prim.ApplyAPI<UsdRiSplineAPI>()) {
+        return UsdRiSplineAPI(prim);
+    }
+    return UsdRiSplineAPI();
 }
 
 /* static */
