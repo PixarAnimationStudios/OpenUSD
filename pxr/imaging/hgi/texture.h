@@ -71,7 +71,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HgiTextureDesc
 {
     HgiTextureDesc()
-    : usage(HgiTextureUsageBitsColorTarget)
+    : usage(0)
     , format(HgiFormatInvalid)
     , type(HgiTextureType2D)
     , dimensions(0)

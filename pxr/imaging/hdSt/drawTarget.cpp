@@ -435,6 +435,8 @@ _GetTextureDescriptor(const HdStDrawTarget::AttachmentData &data,
     desc.dimensions = GfVec3i(resolution[0], resolution[1], 1);
     if (data.name == HdStDrawTargetTokens->depth.GetString()) {
         desc.usage = HgiTextureUsageBitsDepthTarget;
+    } else {
+        desc.usage = HgiTextureUsageBitsColorTarget;
     }
  
     if (multiSample) {
