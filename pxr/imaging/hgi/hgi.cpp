@@ -25,6 +25,7 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,6 +40,13 @@ Hgi::Hgi()
 }
 
 Hgi::~Hgi() = default;
+
+void
+Hgi::SubmitCmds(HgiCmds* cmds)
+{
+    TRACE_FUNCTION();
+    _SubmitCmds(cmds);
+}
 
 static Hgi*
 _MakeNewPlatformDefaultHgi()
@@ -105,5 +113,10 @@ Hgi::GetUniqueId()
     return _uniqueIdCounter.fetch_add(1);
 }
 
+bool
+Hgi::_SubmitCmds(HgiCmds* cmds)
+{
+    return cmds->_Submit(this);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

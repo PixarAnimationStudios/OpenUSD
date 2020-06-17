@@ -57,15 +57,14 @@ public:
     HGIGL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
 
-    /// Return the list of recorded functions (cmds / ops).
-    HGIGL_API
-    HgiGLOpsVector const& GetOps() const;
-
 protected:
     friend class HgiGL;
 
     HGIGL_API
     HgiGLBlitCmds();
+
+    HGIGL_API
+    bool _Submit(Hgi* hgi) override;
 
 private:
     HgiGLBlitCmds & operator=(const HgiGLBlitCmds&) = delete;

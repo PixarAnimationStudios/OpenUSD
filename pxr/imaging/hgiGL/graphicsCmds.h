@@ -46,14 +46,9 @@ public:
     HGIGL_API
     ~HgiGLGraphicsCmds() override;
 
-    /// End recording of commands.
-    /// This performs multisample resolve when needed.
-    HGIGL_API
-    void EndRecording();
-
     /// XXX This function is exposed temporarily for Hgi transition.
     /// It allows code that is not yet converted to Hgi (e.g. HdSt) to insert
-    /// its opengl calls into the ops-stack of HgiGL to esnure that all commands
+    /// its opengl calls into the ops-stack of HgiGL to ensure that all commands
     /// execute in the correct order. Once HdSt has transition fully to Hgi we
     /// should remove this function.
     HGIGL_API
@@ -92,10 +87,6 @@ public:
         uint32_t vertexOffset,
         uint32_t instanceCount) override;
 
-    /// Return the list of recorded functions (cmds / ops).
-    HGIGL_API
-    HgiGLOpsVector const& GetOps() const;
-
 protected:
     friend class HgiGL;
 
@@ -104,10 +95,16 @@ protected:
         HgiGLDevice* device,
         HgiGraphicsCmdsDesc const& desc);
 
+    HGIGL_API
+    bool _Submit(Hgi* hgi) override;
+
 private:
     HgiGLGraphicsCmds() = delete;
     HgiGLGraphicsCmds & operator=(const HgiGLGraphicsCmds&) = delete;
     HgiGLGraphicsCmds(const HgiGLGraphicsCmds&) = delete;
+
+    /// This performs multisample resolve when needed at the end of recording.
+    void _Resolve();
 
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;

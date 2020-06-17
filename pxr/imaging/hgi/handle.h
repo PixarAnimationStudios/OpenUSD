@@ -58,7 +58,7 @@ public:
     }
 
     // Note this only checks if a ptr is set, it does not offer weak_ptr safety.
-    operator bool() const {return _ptr;}
+    operator bool() const {return _ptr!=nullptr;}
 
     // Pointer access operator
     T* operator ->() const {return _ptr;}

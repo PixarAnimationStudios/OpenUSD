@@ -28,9 +28,11 @@
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
+#include "pxr/imaging/hgiGL/scopedStateHolder.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,49 +48,7 @@ HgiGLGraphicsCmds::HgiGLGraphicsCmds(
     }
 }
 
-HgiGLGraphicsCmds::~HgiGLGraphicsCmds()
-{
-    TF_VERIFY(!_recording, "EndRecording was not called.");
-}
-
-void
-HgiGLGraphicsCmds::EndRecording()
-{
-    if (!_recording) {
-        return;
-    }
-
-    if (!_descriptor.colorResolveTextures.empty() && 
-            _descriptor.colorResolveTextures.size() != 
-                _descriptor.colorTextures.size()) {
-        TF_CODING_ERROR("color and resolve texture count mismatch.");
-        return;
-    }
-
-    if (_descriptor.depthResolveTexture && !_descriptor.depthTexture) {
-        TF_CODING_ERROR("DepthResolve texture without depth texture.");
-        return;
-    }
-
-    // At the end of the GraphicsCmd we resolve the multisample textures.
-    // This emulates what happens in Metal or Vulkan when the multisample
-    // resolve happens at the end of a render pass.
-    GfVec4i region(0, 0, _descriptor.width, _descriptor.height);
-
-    for (size_t i=0; i<_descriptor.colorResolveTextures.size(); i++) {
-        HgiTextureHandle src = _descriptor.colorTextures[i];
-        HgiTextureHandle dst = _descriptor.colorResolveTextures[i];
-        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/false));
-    }
-    
-    if (_descriptor.depthResolveTexture) {
-        HgiTextureHandle src = _descriptor.depthTexture;
-        HgiTextureHandle dst = _descriptor.depthResolveTexture;
-        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/true));
-    }
-    
-    _recording = false;
-}
+HgiGLGraphicsCmds::~HgiGLGraphicsCmds() = default;
 
 void
 HgiGLGraphicsCmds::InsertFunctionOp(std::function<void(void)> const& fn)
@@ -162,11 +122,64 @@ HgiGLGraphicsCmds::PopDebugGroup()
     _ops.push_back( HgiGLOps::PopDebugGroup() );
 }
 
-HgiGLOpsVector const&
-HgiGLGraphicsCmds::GetOps() const
+bool
+HgiGLGraphicsCmds::_Submit(Hgi* hgi)
 {
-    return _ops;
+    if (_ops.empty()) {
+        return false;
+    }
+
+    // Capture OpenGL state before executing the 'ops' and restore it when this
+    // function ends. We do this defensively because parts of our pipeline may
+    // not set and restore all relevant gl state.
+    HgiGL_ScopedStateHolder openglStateGuard;
+
+    // Resolve multisample textures
+    _Resolve();
+
+    HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
+    HgiGLDevice* device = hgiGL->GetPrimaryDevice();
+    device->SubmitOps(_ops);
+    return true;
 }
 
+void
+HgiGLGraphicsCmds::_Resolve()
+{
+    if (!_recording) {
+        return;
+    }
+
+    if (!_descriptor.colorResolveTextures.empty() && 
+            _descriptor.colorResolveTextures.size() != 
+                _descriptor.colorTextures.size()) {
+        TF_CODING_ERROR("color and resolve texture count mismatch.");
+        return;
+    }
+
+    if (_descriptor.depthResolveTexture && !_descriptor.depthTexture) {
+        TF_CODING_ERROR("DepthResolve texture without depth texture.");
+        return;
+    }
+
+    // At the end of the GraphicsCmd we resolve the multisample textures.
+    // This emulates what happens in Metal or Vulkan when the multisample
+    // resolve happens at the end of a render pass.
+    GfVec4i region(0, 0, _descriptor.width, _descriptor.height);
+
+    for (size_t i=0; i<_descriptor.colorResolveTextures.size(); i++) {
+        HgiTextureHandle src = _descriptor.colorTextures[i];
+        HgiTextureHandle dst = _descriptor.colorResolveTextures[i];
+        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/false));
+    }
+    
+    if (_descriptor.depthResolveTexture) {
+        HgiTextureHandle src = _descriptor.depthTexture;
+        HgiTextureHandle dst = _descriptor.depthResolveTexture;
+        _ops.push_back(HgiGLOps::ResolveImage(src, dst, region,/*depth*/true));
+    }
+    
+    _recording = false;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

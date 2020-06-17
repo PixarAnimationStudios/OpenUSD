@@ -114,28 +114,6 @@ HgiMetal::GetPrimaryDevice() const
     return _device;
 }
 
-void
-HgiMetal::SubmitCmds(HgiCmds* cmds)
-{
-    TRACE_FUNCTION();
-
-    if (!cmds) {
-        return;
-    }
-
-    if (HgiMetalGraphicsCmds* gw = dynamic_cast<HgiMetalGraphicsCmds*>(cmds)) {
-        if (gw->Commit()) {
-            _workToFlush = true;
-        }
-    } else if (HgiMetalBlitCmds* bw = dynamic_cast<HgiMetalBlitCmds*>(cmds)) {
-        if (bw->Commit()) {
-            _workToFlush = true;
-        }
-    }
-
-    CommitCommandBuffer();
-}
-
 HgiGraphicsCmdsUniquePtr
 HgiMetal::CreateGraphicsCmds(
     HgiGraphicsCmdsDesc const& desc)
@@ -296,6 +274,20 @@ HgiMetal::CommitCommandBuffer(CommitCommandBufferWaitType waitType,
     [_commandBuffer retain];
     
     _workToFlush = false;
+}
+
+bool
+HgiMetal::_SubmitCmds(HgiCmds* cmds)
+{
+    TRACE_FUNCTION();
+
+    if (cmds) {
+        _workToFlush = Hgi::_SubmitCmds(cmds);
+    }
+
+    CommitCommandBuffer();
+
+    return _workToFlush;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

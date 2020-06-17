@@ -27,7 +27,9 @@
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/ops.h"
+#include "pxr/imaging/hgiGL/scopedStateHolder.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 
@@ -38,9 +40,7 @@ HgiGLBlitCmds::HgiGLBlitCmds()
 {
 }
 
-HgiGLBlitCmds::~HgiGLBlitCmds()
-{
-}
+HgiGLBlitCmds::~HgiGLBlitCmds() = default;
 
 void
 HgiGLBlitCmds::PushDebugGroup(const char* label)
@@ -73,11 +73,22 @@ HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     _ops.push_back( HgiGLOps::GenerateMipMaps(texture) );
 }
 
-HgiGLOpsVector const&
-HgiGLBlitCmds::GetOps() const
+bool
+HgiGLBlitCmds::_Submit(Hgi* hgi)
 {
-    return _ops;
-}
+    if (_ops.empty()) {
+        return false;
+    }
 
+    // Capture OpenGL state before executing the 'ops' and restore it when this
+    // function ends. We do this defensively because parts of our pipeline may
+    // not set and restore all relevant gl state.
+    HgiGL_ScopedStateHolder openglStateGuard;
+
+    HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
+    HgiGLDevice* device = hgiGL->GetPrimaryDevice();
+    device->SubmitOps(_ops);
+    return true;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

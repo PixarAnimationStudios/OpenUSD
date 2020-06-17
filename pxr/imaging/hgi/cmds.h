@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
+
 using HgiCmdsUniquePtr = std::unique_ptr<class HgiCmds>;
 
 
@@ -45,8 +47,16 @@ public:
     virtual ~HgiCmds();
 
 protected:
+    friend class Hgi;
+
     HGI_API
     HgiCmds();
+
+    // Submit can be called inside of Hgi::SubmitCmds to commit the
+    // command buffer to the GPU. Returns true if work was committed.
+    // The default implementation returns false.
+    HGI_API
+    virtual bool _Submit(Hgi* hgi);
 
 private:
     HgiCmds & operator=(const HgiCmds&) = delete;

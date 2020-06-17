@@ -67,17 +67,6 @@ HgiMetalBlitCmds::_CreateEncoder()
     }
 }
 
-bool
-HgiMetalBlitCmds::Commit()
-{
-    if (_blitEncoder) {
-        [_blitEncoder endEncoding];
-        _blitEncoder = nil;
-        return true;
-    }
-    return false;
-}
-
 void
 HgiMetalBlitCmds::PushDebugGroup(const char* label)
 {
@@ -220,6 +209,17 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
         
         [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
     }
+}
+
+bool
+HgiMetalBlitCmds::_Submit(Hgi* hgi)
+{
+    if (_blitEncoder) {
+        [_blitEncoder endEncoding];
+        _blitEncoder = nil;
+        return true;
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

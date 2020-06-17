@@ -116,11 +116,12 @@ public:
     /// Once the cmds object is submitted it cannot be re-used to record cmds.
     /// A call to SubmitCmds would usually result in the hgi backend submitting
     /// the cmd buffers of the cmds object(s) to the device queue.
+    /// Derived classes can override _SubmitCmds to customize submission.
     /// Thread safety: This call is not thread-safe. Submission must happen on
     /// the main thread so we can continue to support the OpenGL platform. 
     /// See notes above.
     HGI_API
-    virtual void SubmitCmds(HgiCmds* cmds) = 0;
+    void SubmitCmds(HgiCmds* cmds);
 
     /// *** DEPRECATED *** Please use: CreatePlatformDefaultHgi
     HGI_API
@@ -264,6 +265,12 @@ protected:
     void DestroyObject(HgiHandle<T>* handle) {
         handle->_Destroy();
     }
+
+    // Calls Submit on provided Cmds.
+    // Derived classes can override this function if they need customize the
+    // command submission. The default implementation calls cmds->_Submit().
+    HGI_API
+    virtual bool _SubmitCmds(HgiCmds* cmds);
 
 private:
     Hgi & operator=(const Hgi&) = delete;

@@ -163,17 +163,6 @@ HgiMetalGraphicsCmds::~HgiMetalGraphicsCmds()
     TF_VERIFY(_encoder == nil, "Encoder created, but never commited.");
 }
 
-bool
-HgiMetalGraphicsCmds::Commit()
-{
-    if (_encoder) {
-        [_encoder endEncoding];
-        _encoder = nil;
-    }
-
-    return _hasWork;
-}
-
 void
 HgiMetalGraphicsCmds::SetViewport(GfVec4i const& vp)
 {
@@ -274,5 +263,15 @@ HgiMetalGraphicsCmds::PopDebugGroup()
 {
 }
 
+bool
+HgiMetalGraphicsCmds::_Submit(Hgi* hgi)
+{
+    if (_encoder) {
+        [_encoder endEncoding];
+        _encoder = nil;
+    }
+
+    return _hasWork;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

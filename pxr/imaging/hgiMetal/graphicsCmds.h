@@ -89,7 +89,7 @@ protected:
         HgiGraphicsCmdsDesc const& desc);
 
     HGIMETAL_API
-    bool Commit();
+    bool _Submit(Hgi* hgi) override;
 
 private:
     HgiMetalGraphicsCmds() = delete;

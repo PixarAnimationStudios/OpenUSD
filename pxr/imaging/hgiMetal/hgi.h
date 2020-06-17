@@ -61,9 +61,6 @@ public:
     ~HgiMetal() override;
 
     HGIMETAL_API
-    void SubmitCmds(HgiCmds* cmds) override;
-
-    HGIMETAL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
 
@@ -162,6 +159,10 @@ public:
     void CommitCommandBuffer(
         CommitCommandBufferWaitType waitType = CommitCommandBuffer_NoWait,
         bool forceNewBuffer = false);
+
+protected:
+    HGIMETAL_API
+    bool _SubmitCmds(HgiCmds* cmds) override;
 
 private:
     HgiMetal & operator=(const HgiMetal&) = delete;
