@@ -42,9 +42,6 @@ HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
         glObjectLabel(GL_PROGRAM, _programId,-1, _descriptor.debugName.c_str());
     }
 
-    glProgramParameteri(
-        _programId, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
-
     for (HgiShaderFunctionHandle const& shd : desc.shaderFunctions) {
         HgiGLShaderFunction* glShader = 
             static_cast<HgiGLShaderFunction*>(shd.Get());
