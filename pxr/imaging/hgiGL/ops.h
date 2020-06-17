@@ -48,9 +48,25 @@ using HgiGLOpsFn = std::function<void(void)>;
 ///
 /// A collection of functions used by cmds objects to do deferred cmd recording.
 /// Modern API's support command buffer recording of gfx commands ('deferred').
+/// Meaning: No commands are executed on the GPU until we Submit the cmd buffer.
+///
 /// OpenGL uses 'immediate' mode instead where gfx commands are immediately
-/// processed. We use 'Ops' functions to record our OpenGL function in a list
-/// and only emit them to OpenGL during the submit cmds phase.
+/// processed and given to the GPU at a time of the drivers choosing.
+/// We use 'Ops' functions to record our OpenGL function in a list and only
+/// execute them in OpenGL during the SubmitCmds phase.
+///
+/// This has two benefits:
+///
+/// 1. OpenGL behaves more like Metal and Vulkan. So when clients write Hgi code
+///    they get similar behavior in gpu command execution across all backends.
+///    For example, if you are running with HgiGL and recording commands into a
+///    Hgi***Cmds object and forget to call 'SubmitCmds' you will notice that
+///    your commands are not executed on the GPU, just like what would happen if
+///    you were running with HgiMetal.
+///
+/// 2. It lets us satisfy the Hgi requirement that Hgi***Cmds objects must be
+///    able to do their recording on secondary threads.
+///
 class HgiGLOps
 {
 public:

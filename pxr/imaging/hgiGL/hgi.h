@@ -44,6 +44,11 @@ using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
 ///
 /// OpenGL implementation of the Hydra Graphics Interface.
 ///
+/// HgiGL expects the GL context to be externally managed.
+/// When HgiGL is constructed and during any of its resource create / destroy
+/// calls and during command recording operations it expects that the OpenGL
+/// context is valid and current.
+///
 class HgiGL final : public Hgi
 {
 public:
