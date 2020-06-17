@@ -357,7 +357,8 @@ HdStGLSLProgram::Link()
     // update the program resource allocation.
     TF_VERIFY(hgi->GetAPIName() == HgiTokens->OpenGL, "TODO Hgi transition");
     uint32_t glProgram = _program.Get()->GetRawResource();
-    _programResource.SetAllocation(glProgram, 0);
+    const size_t byteSize = _program->GetByteSizeOfResource();
+    _programResource.SetAllocation(glProgram, byteSize);
 
     // create an uniform buffer
     GLuint uniformBuffer = _uniformBuffer.GetId();
