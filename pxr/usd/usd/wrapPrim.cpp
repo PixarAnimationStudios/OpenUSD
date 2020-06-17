@@ -239,6 +239,17 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::HasAPI,
             (arg("schemaType"), arg("instanceName")=TfToken()))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaType"), arg("instanceName")=TfToken()))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaType"), arg("instanceName")=TfToken()))
+
+        .def("AddAppliedSchema", &UsdPrim::AddAppliedSchema)
+        .def("RemoveAppliedSchema", &UsdPrim::RemoveAppliedSchema)
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 

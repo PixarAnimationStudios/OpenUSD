@@ -236,7 +236,10 @@ protected:
         const UsdPrim &prim, 
         const TfToken &apiSchemaName) 
     {
-        return APISchemaType(_ApplyAPISchemaImpl(prim, apiSchemaName));
+        if (prim.ApplyAPI<APISchemaType>()) {
+            return APISchemaType(prim);
+        }
+        return APISchemaType();
     }
 
     /// Helper method to apply a </b>multiple-apply</b> API schema with the 
@@ -269,13 +272,10 @@ protected:
         const TfToken &apiSchemaName,
         const TfToken &instanceName) 
     {
-        if (instanceName.IsEmpty()) {
-            TF_CODING_ERROR("Instance name is empty!");
-            return APISchemaType();
+        if (prim.ApplyAPI<APISchemaType>(instanceName)) {
+            return APISchemaType(prim, instanceName);
         }
-
-        TfToken apiName(SdfPath::JoinIdentifier(apiSchemaName, instanceName));
-        return APISchemaType(_ApplyAPISchemaImpl(prim, apiName), instanceName);
+        return APISchemaType();
     }
 
     /// Check whether this APISchema object is valid for the currently held  
@@ -294,13 +294,6 @@ protected:
     bool _IsCompatible() const override;
 
 private:
-    // Helper method for adding 'apiName' to the apiSchemas metadata on the 
-    // prim at 'path' on the given 'stage'.
-    USD_API
-    static UsdPrim _ApplyAPISchemaImpl(
-        const UsdPrim &prim,
-        const TfToken &apiName);
-
     // The instance name associated with this schema object, if it is a 
     // multiple-apply API schema. For example, in the case of UsdCollectionAPI, 
     // this will hold the name of the collection.

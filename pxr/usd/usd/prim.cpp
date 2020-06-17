@@ -201,8 +201,184 @@ UsdPrim::_HasAPI(
 }
 
 bool
-UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const{
+UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
     return _HasAPI(schemaType, true, instanceName);
+}
+
+bool
+UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
+    if (instanceName.IsEmpty()) {
+        return AddAppliedSchema(typeName);
+    }
+    TfToken apiName(SdfPath::JoinIdentifier(typeName, instanceName));
+    return AddAppliedSchema(apiName);
+}
+
+bool
+UsdPrim::ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+        TF_CODING_ERROR("ApplyAPI: provided schema type ( %s ) is not an "
+            "applied API schema type.", schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
+        if (instanceName.IsEmpty()) {
+            TF_CODING_ERROR("ApplyAPI: Multiple application API schemas like "
+                            "%s must have an application instanceName.", 
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+    } else {
+        if (!instanceName.IsEmpty()) {
+            TF_CODING_ERROR("ApplyAPI: Single application API schemas like "
+                            "%s cannot have an application instanceName.", 
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+    }
+
+    return _ApplyAPI(schemaType, instanceName);
+}
+
+bool
+UsdPrim::_RemoveAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
+    if (instanceName.IsEmpty()) {
+        return RemoveAppliedSchema(typeName);
+    }
+    TfToken apiName(SdfPath::JoinIdentifier(typeName, instanceName));
+    return RemoveAppliedSchema(apiName);
+}
+
+bool
+UsdPrim::RemoveAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+        TF_CODING_ERROR("RemoveAPI: provided schema type ( %s ) is not an "
+            "applied API schema type.", schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
+        if (instanceName.IsEmpty()) {
+            TF_CODING_ERROR("RemoveAPI: Multiple application API schemas like "
+                            "%s must have an application instanceName.", 
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+    } else {
+        if (!instanceName.IsEmpty()) {
+            TF_CODING_ERROR("RemoveAPI: Single application API schemas like "
+                            "%s cannot have an application instanceName.", 
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+    }
+
+    return _RemoveAPI(schemaType, instanceName);
+}
+
+bool 
+UsdPrim::AddAppliedSchema(const TfToken &appliedSchemaName) const
+{
+    // This should find or create the primSpec in the current edit target.
+    // It will also issue an error if it's unable to.
+    SdfPrimSpecHandle primSpec = _GetStage()->_CreatePrimSpecForEditing(*this);
+
+    // _CreatePrimSpecForEditing would have already issued a runtime error
+    // in case of a failure.
+    if (!primSpec) {
+        TF_WARN("Unable to create primSpec at path <%s> in edit target '%s'. "
+                "Failed to add applied API schema.",
+            GetPath().GetText(),
+            _GetStage()->GetEditTarget().GetLayer()->GetIdentifier().c_str());
+        return false;
+    }
+
+    auto _HasItem = [](const TfTokenVector &items, const TfToken &item) {
+        return std::find(items.begin(), items.end(), item) != items.end();
+    };
+
+    SdfTokenListOp listOp =
+        primSpec->GetInfo(UsdTokens->apiSchemas).Get<SdfTokenListOp>();
+
+    if (listOp.IsExplicit()) {
+        // If the list op is explicit we check if the explicit item to see if
+        // our name is already in it. We'll add it to the end of the explicit
+        // list if it is not.
+        const TfTokenVector &items = listOp.GetExplicitItems();
+        if (_HasItem(items, appliedSchemaName)) {
+            return true;
+        }
+        // Use ReplaceOperations to append in place.
+        if (!listOp.ReplaceOperations(SdfListOpTypeExplicit, 
+                items.size(), 0, {appliedSchemaName})) {
+            return false;
+        }
+    } else {
+        // Otherwise our name could be in the append or prepend list (we 
+        // purposefully ignore the "add" list which is deprecated) so we check 
+        // both before adding it to the end of prepends.
+        const TfTokenVector &preItems = listOp.GetPrependedItems();
+        const TfTokenVector &appItems = listOp.GetAppendedItems();
+        if (_HasItem(preItems, appliedSchemaName) || 
+            _HasItem(appItems, appliedSchemaName)) {
+            return true;
+        }
+        // Use ReplaceOperations to append in place.
+        if (!listOp.ReplaceOperations(SdfListOpTypePrepended, 
+                preItems.size(), 0, {appliedSchemaName})) {
+            return false;
+        }
+    }
+
+    // If we got here, we edited the list op, so author it back to the spec.
+    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue::Take(listOp));
+    return true;
+}
+
+bool 
+UsdPrim::RemoveAppliedSchema(const TfToken &appliedSchemaName) const
+{
+    // This should create the primSpec in the current edit target.
+    // It will also issue an error if it's unable to.
+    SdfPrimSpecHandle primSpec = _GetStage()->_CreatePrimSpecForEditing(*this);
+
+    // _CreatePrimSpecForEditing would have already issued a runtime error
+    // in case of a failure.
+    if (!primSpec) {
+        TF_WARN("Unable to create primSpec at path <%s> in edit target '%s'. "
+                "Failed to remove applied API schema.",
+            GetPath().GetText(),
+            _GetStage()->GetEditTarget().GetLayer()->GetIdentifier().c_str());
+        return false;
+    }
+
+    SdfTokenListOp listOp =
+        primSpec->GetInfo(UsdTokens->apiSchemas).Get<SdfTokenListOp>();
+
+    // Create a list op that deletes our schema name and apply it to the current
+    // apiSchemas list op for the edit prim spec. This will take care of making
+    // sure it ends up in the deletes list (for non-explicit list ops) and is
+    // removed from any other items list that would add it back.
+    SdfTokenListOp editListOp;
+    editListOp.SetDeletedItems({appliedSchemaName});
+    if (auto result = editListOp.ApplyOperations(listOp)) {
+        primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
+        return true;
+    } else {
+        TF_CODING_ERROR("Failed to apply list op edits to 'apiSchemas' on spec "
+                        "at path <%s> in layer '%s'", 
+                        primSpec->GetLayer()->GetIdentifier().c_str(), 
+                        primSpec->GetPath().GetText());
+        return false;
+    }
 }
 
 std::vector<UsdProperty>
