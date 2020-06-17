@@ -550,11 +550,6 @@ protected:
     USDIMAGING_API
     static bool _HasPrimvarsPrefix(TfToken const& propertyName);
 
-    // Strips the "primvars:" prefix and returns the resulting substring as 
-    // a token.
-    USDIMAGING_API
-    static TfToken _GetStrippedPrimvarName(TfToken const& propertyName);
-
     // Convenience methods to figure out what changed about the primvar and
     // return the appropriate dirty bit.
     // Caller can optionally pass in a dirty bit to set for primvar value

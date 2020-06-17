@@ -44,11 +44,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((primvarsPrefix, "primvars:"))
-);
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdImagingPrimAdapter>();
@@ -702,15 +697,6 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
-/*static*/
-TfToken
-UsdImagingPrimAdapter::_GetStrippedPrimvarName(TfToken const& propertyName)
-{
-    // Strip prefix
-    return TfToken(propertyName.GetString().substr(
-                _tokens->primvarsPrefix.GetString().size()));
-}
-
 namespace {
 
 // The types of primvar changes expected
@@ -866,7 +852,7 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
     }
 
     // Determine if primvar is in the value cache.
-    TfToken primvarName = _GetStrippedPrimvarName(propertyName);
+    TfToken primvarName = UsdGeomPrimvar::StripPrimvarsName(propertyName);
     HdPrimvarDescriptorVector& primvarDescs =
         _GetValueCache()->GetPrimvars(cachePath);  
     
