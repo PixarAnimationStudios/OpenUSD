@@ -1289,7 +1289,7 @@ DRACO = Dependency("Draco", InstallDraco, "include/Draco/src/draco/compression/d
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.36.0.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.37.1.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
