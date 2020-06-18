@@ -67,7 +67,7 @@ public:
     /// If found, will return the value from the task context data associated
     /// with the token. Returns false if the data could not be found.
     HD_API
-    bool GetTaskContextData(const TfToken &id, VtValue *data);
+    bool GetTaskContextData(const TfToken &id, VtValue *data) const;
 
     /// Removes the specified token.
     HD_API

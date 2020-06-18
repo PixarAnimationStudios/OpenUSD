@@ -63,7 +63,7 @@ HdEngine::SetTaskContextData(const TfToken &id, const VtValue &data)
 }
 
 bool
-HdEngine::GetTaskContextData(const TfToken &id, VtValue *data)
+HdEngine::GetTaskContextData(const TfToken &id, VtValue *data) const
 {
     if (!TF_VERIFY(data)) {
         return false;
