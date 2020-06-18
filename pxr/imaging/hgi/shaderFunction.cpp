@@ -38,6 +38,13 @@ HgiShaderFunction::GetDescriptor() const
     return _descriptor;
 }
 
+void
+HgiShaderFunction::_ClearShaderCode()
+{
+    // Swap with empty string since shrink_to_fit is non-binding
+    std::string().swap(_descriptor.shaderCode);
+}
+
 HgiShaderFunctionDesc::HgiShaderFunctionDesc()
     : shaderStage(0)
     , shaderCode(std::string())

@@ -123,6 +123,12 @@ protected:
     HGI_API
     HgiShaderFunction(HgiShaderFunctionDesc const& desc);
 
+    // Clear shader code (releases its memory) inside descriptor.
+    // This can be helpful when large shader code is stored and you want to
+    // release that memory after shader compilation.
+    HGI_API
+    void _ClearShaderCode();
+
     HgiShaderFunctionDesc _descriptor;
 
 private:

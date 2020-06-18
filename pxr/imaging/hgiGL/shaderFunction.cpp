@@ -63,6 +63,9 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         _shaderId = 0;
     }
 
+    // Release shader code memory (codegen shaders can be large)
+    _ClearShaderCode();
+
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 

@@ -340,6 +340,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
     }
 
+    // Release shader code memory (codegen shaders can be large)
+    _ClearShaderCode();
+
     [library release];
 }
 
