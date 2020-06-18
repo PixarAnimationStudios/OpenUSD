@@ -123,7 +123,7 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
             copyOp.sourceTexelOffset[2], // z offset
             texDesc.dimensions[0], // width
             texDesc.dimensions[1], // height
-            texDesc.dimensions[2], // layerCnt
+            texDesc.dimensions[2], // layerCnt or depth
             glFormat,
             glPixelType,
             copyOp.destinationBufferByteSize,
