@@ -36,6 +36,10 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     : HgiTexture(desc)
     , _textureId(nil)
 {
+    if (desc.type != HgiTextureType2D && desc.type != HgiTextureType3D) {
+        TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+    }
+
     MTLResourceOptions resourceOptions = MTLResourceStorageModePrivate;
     MTLTextureUsage usage = MTLTextureUsageUnknown;
 
@@ -101,7 +105,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
         }
 #endif
 
-    if (depth > 1) {
+    if (desc.type == HgiTextureType3D) {
         texDesc.depth = depth;
         texDesc.textureType = MTLTextureType3D;
     }
