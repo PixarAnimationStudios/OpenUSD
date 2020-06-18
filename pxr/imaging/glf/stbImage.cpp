@@ -567,13 +567,39 @@ namespace
 uint8_t
 _Quantize(float value)
 {
-    static const int min = 0;
-    static const int max = std::numeric_limits<uint8_t>::max();
+    static constexpr int min = 0;
+    static constexpr int max = std::numeric_limits<uint8_t>::max();
 
     int result = min + std::floor((max - min) * value + 0.499999f);
     return std::min(max, std::max(min, result));
 }
 
+template<typename T>
+Glf_StbImage::StorageSpec
+_Quantize(
+    Glf_StbImage::StorageSpec const & storageIn,
+    std::unique_ptr<uint8_t[]> & quantizedData)
+{
+    // stb requires unsigned byte data to write non .hdr file formats.
+    // We'll quantize the data ourselves here.
+    size_t numElements =
+        storageIn.width * storageIn.height *
+        _GetNumChannelsFromGLFormat(storageIn.format);
+
+    quantizedData.reset(new uint8_t[numElements]);
+
+    const T* inData = static_cast<T*>(storageIn.data);
+    for (size_t i = 0; i < numElements; ++i) {
+        quantizedData[i] = _Quantize(inData[i]);
+    }
+
+    Glf_StbImage::StorageSpec quantizedSpec;
+    quantizedSpec = storageIn; // shallow copy
+    quantizedSpec.data = quantizedData.get();
+    quantizedSpec.type = GL_UNSIGNED_BYTE;
+    
+    return quantizedSpec;
+}
 
 } // end anonymous namespace
 
@@ -592,24 +618,12 @@ Glf_StbImage::Write(StorageSpec const & storageIn,
 
     StorageSpec quantizedSpec;
     std::unique_ptr<uint8_t[]> quantizedData;
-    if (storageIn.type == GL_FLOAT && fileExtension != "hdr") 
-    {
-        // stb requires unsigned byte data to write non .hdr file formats.
-        // We'll quantize the data ourselves here.
-        size_t numElements = 
-            storageIn.width * storageIn.height *
-            _GetNumChannelsFromGLFormat(storageIn.format);
 
-        quantizedData.reset(new uint8_t[numElements]);
-
-        const float* inData = static_cast<float*>(storageIn.data);
-        for (size_t i = 0; i < numElements; ++i) {
-            quantizedData[i] = _Quantize(inData[i]);
-        }
-
-        quantizedSpec = storageIn; // shallow copy
-        quantizedSpec.data = quantizedData.get();
-        quantizedSpec.type = GL_UNSIGNED_BYTE;
+    if (storageIn.type == GL_FLOAT && fileExtension != "hdr") {
+        quantizedSpec = _Quantize<float>(storageIn, quantizedData);
+    } 
+    else if (storageIn.type == GL_HALF_FLOAT && fileExtension != "hdr") {
+        quantizedSpec = _Quantize<GfHalf>(storageIn, quantizedData);
     }
     else if (storageIn.type != GL_UNSIGNED_BYTE && fileExtension != "hdr") {
         TF_CODING_ERROR("stb expects unsigned byte data to write filetype %s",
