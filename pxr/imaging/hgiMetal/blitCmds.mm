@@ -153,8 +153,7 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                 destinationOffset:0
            destinationBytesPerRow:(bytesPerPixel * texDesc.dimensions[0])
          destinationBytesPerImage:(bytesPerPixel * texDesc.dimensions[0] *
-                                   texDesc.dimensions[1] *
-                                   texDesc.dimensions[2])
+                                   texDesc.dimensions[1])
                           options:blitOptions];
 
     if (@available(macOS 10.11, ios 100.100, *)) {
