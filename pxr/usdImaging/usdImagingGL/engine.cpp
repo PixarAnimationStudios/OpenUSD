@@ -185,15 +185,21 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     }
 }
 
-UsdImagingGLEngine::~UsdImagingGLEngine()
+void
+UsdImagingGLEngine::_DestroyHydraObjects()
 {
-    TF_PY_ALLOW_THREADS_IN_SCOPE();
-
     // Destroy objects in opposite order of construction.
     _taskController = nullptr;
     _sceneDelegate = nullptr;
     _renderIndex = nullptr;
     _renderDelegate = nullptr;
+}
+
+UsdImagingGLEngine::~UsdImagingGLEngine()
+{
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    _DestroyHydraObjects();
 }
 
 //----------------------------------------------------------------------------
@@ -833,12 +839,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
     // This relies on SetRendererPlugin to release the GIL...
 
     // Destruction
-
-    // Destroy objects in opposite order of construction.
-    _taskController = nullptr;
-    _sceneDelegate = nullptr;
-    _renderIndex = nullptr;
-    _renderDelegate = nullptr;
+    _DestroyHydraObjects();
 
     _isPopulated = false;
 

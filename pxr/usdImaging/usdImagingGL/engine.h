@@ -500,6 +500,8 @@ protected:
     SdfPath const _sceneDelegateId;
 
 private:
+    void _DestroyHydraObjects();
+
     // Note that the order of construction/destruction matters,
     // thus the switches between protected and private are necessary
     // until we have created getters for _taskController, ... as well.
