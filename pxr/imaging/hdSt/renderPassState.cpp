@@ -36,6 +36,7 @@
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -460,8 +461,41 @@ HdStRenderPassState::GetShaderHash() const
     return hash;
 }
 
+static
+HdRenderBuffer *
+_GetRenderBuffer(const HdRenderPassAovBinding& aov,
+                 const HdRenderIndex * const renderIndex)
+{
+    if (aov.renderBuffer) {
+        return aov.renderBuffer;
+    }
+
+    return 
+        dynamic_cast<HdRenderBuffer*>(
+            renderIndex->GetBprim(
+                HdPrimTypeTokens->renderBuffer,
+                aov.renderBufferId));
+}
+
+// Clear values are always vec4f in HgiGraphicsCmdDesc.
+static
+GfVec4f _ToVec4f(const VtValue &v)
+{
+    if (v.IsHolding<float>()) {
+        const float depth = v.UncheckedGet<float>();
+        return GfVec4f(depth,0,0,0);
+    }
+
+    if (v.IsHolding<GfVec4f>()) {
+        return v.UncheckedGet<GfVec4f>();
+    }
+
+    return GfVec4f(0);
+}
+
 HgiGraphicsCmdsDesc
-HdStRenderPassState::MakeGraphicsCmdsDesc() const
+HdStRenderPassState::MakeGraphicsCmdsDesc(
+    const HdRenderIndex * const renderIndex) const
 {
     const HdRenderPassAovBindingVector& aovBindings = GetAovBindings();
 
@@ -486,12 +520,17 @@ HdStRenderPassState::MakeGraphicsCmdsDesc() const
     // that backs the render buffer and was attached for graphics encoding.
 
     for (const HdRenderPassAovBinding& aov : aovBindings) {
-        if (!TF_VERIFY(aov.renderBuffer, "Invalid render buffer")) {
+        HdRenderBuffer * const renderBuffer =
+            _GetRenderBuffer(aov, renderIndex);
+
+
+        if (!TF_VERIFY(renderBuffer, "Invalid render buffer")) {
             continue;
         }
 
-        bool multiSampled= useMultiSample && aov.renderBuffer->IsMultiSampled();
-        VtValue rv = aov.renderBuffer->GetResource(multiSampled);
+        const bool multiSampled =
+            useMultiSample && renderBuffer->IsMultiSampled();
+        const VtValue rv = renderBuffer->GetResource(multiSampled);
 
         if (!TF_VERIFY(rv.IsHolding<HgiTextureHandle>(), 
             "Invalid render buffer texture")) {
@@ -504,7 +543,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc() const
         // Get resolve texture target.
         HgiTextureHandle hgiResolveHandle;
         if (multiSampled) {
-            VtValue resolveRes = aov.renderBuffer->GetResource(/*ms*/false);
+            VtValue resolveRes = renderBuffer->GetResource(/*ms*/false);
             if (!TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
                 continue;
             }
@@ -512,8 +551,8 @@ HdStRenderPassState::MakeGraphicsCmdsDesc() const
         }
 
         // Assume AOVs have the same dimensions so pick size of any.
-        desc.width = aov.renderBuffer->GetWidth();
-        desc.height = aov.renderBuffer->GetHeight();
+        desc.width = renderBuffer->GetWidth();
+        desc.height = renderBuffer->GetHeight();
 
         HgiAttachmentDesc attachmentDesc;
 
@@ -533,12 +572,8 @@ HdStRenderPassState::MakeGraphicsCmdsDesc() const
             HgiAttachmentStoreOpDontCare :
             HgiAttachmentStoreOpStore;
 
-        if (aov.clearValue.IsHolding<float>()) {
-            float depth = aov.clearValue.UncheckedGet<float>();
-            attachmentDesc.clearValue = GfVec4f(depth,0,0,0);
-        } else if (aov.clearValue.IsHolding<GfVec4f>()) {
-            const GfVec4f& col = aov.clearValue.UncheckedGet<GfVec4f>();
-            attachmentDesc.clearValue = col;
+        if (!aov.clearValue.IsEmpty()) {
+            attachmentDesc.clearValue = _ToVec4f(aov.clearValue);
         }
 
         // HdSt expresses blending per RenderPassState, where Hgi expresses

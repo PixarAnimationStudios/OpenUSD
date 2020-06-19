@@ -45,6 +45,7 @@ using HdStRenderPassShaderSharedPtr =
 using HdSt_FallbackLightingShaderSharedPtr =
     std::shared_ptr<class HdSt_FallbackLightingShader>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
+class HdRenderIndex;
 
 /// \class HdStRenderPassState
 ///
@@ -117,7 +118,7 @@ public:
     //
     // By default, converts AOV bindings to HgiGraphicsCmds descriptor
     HDST_API
-    HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc() const;
+    HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc(const HdRenderIndex *) const;
 
     // Use custom graphics cmds descriptor instead of creating one from
     // AOV bindings.
