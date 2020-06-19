@@ -29,6 +29,7 @@ LoFiVertexArray::LoFiVertexArray(LoFiTopology::Type type)
 // destructor
 LoFiVertexArray::~LoFiVertexArray()
 {
+  _buffers.clear();
   delete(_topology);
   if(_vao)glDeleteVertexArrays(1, &_vao);
 }
@@ -141,10 +142,10 @@ LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedP
 
 LoFiVertexBufferSharedPtr 
 LoFiVertexArray::CreateBuffer(LoFiTopology* topo, LoFiAttributeChannel channel, 
-  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation, const std::string& name)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(topo, channel, numInputElements, numOutputElements, interpolation)
+    new LoFiVertexBuffer(topo, channel, numInputElements, numOutputElements, interpolation, name)
   );
 }
 

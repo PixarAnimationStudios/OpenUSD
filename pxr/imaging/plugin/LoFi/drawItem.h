@@ -50,6 +50,7 @@ public:
 
   void PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms);
   const VtArray<GfMatrix4f>& GetInstancesXforms() const {return _instancesXform;};
+  void ClearInstancesXforms();
 
   void PopulateInstancesColors(const VtArray<GfVec3f>& colors){_instancesColor = colors;};
   bool HaveInstancesColors() const {return _instancesColor.size()>0;};

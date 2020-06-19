@@ -15,7 +15,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // constructor
 LoFiVertexBuffer::LoFiVertexBuffer(LoFiTopology* topo, LoFiAttributeChannel channel,
-  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation)
+  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation,
+  const std::string& name)
   : _topology(topo)
   , _channel(channel)
   , _hash(0)
@@ -26,6 +27,7 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiTopology* topo, LoFiAttributeChannel chan
   , _needUpdate(true)
   , _interpolation(interpolation)
   , _vbo(0)
+  , _name(name)
 {
   switch(channel)
   {
@@ -132,8 +134,6 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
   else if(topo->type == LoFiTopology::Type::LINES)
   {
     LoFiCurvesTopology* curveTopo = (LoFiCurvesTopology*)topo;
-    std::cout << "LINE OUTPUT DATA : " << _numOutputElements << std::endl;
-    std::cout << "TOPO NUM ELEMENTS : " << topo->numElements << std::endl;
     const int* samples = curveTopo->samples;
     bool useAdjacency = (samples[0] == samples[1]);
     switch(_interpolation) {
@@ -270,7 +270,6 @@ void LoFiVertexBuffer::ComputeOutputDatas(const LoFiTopology* topo,
       } 
     }
   }
-  
 }
 
 

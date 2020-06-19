@@ -71,11 +71,10 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     HdReprSharedPtr &repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr
-    *dirtyBits |= (HdChangeTracker::NewRepr
-               | HdChangeTracker::DirtyNormals);
+    *dirtyBits |= (HdChangeTracker::NewRepr);
 
     // add draw items
-    LoFiDrawItem *surfaceItem = new LoFiDrawItem(&_sharedData);
+    LoFiDrawItem* surfaceItem = new LoFiDrawItem(&_sharedData);
     repr->AddDrawItem(surfaceItem); 
   }
 }
@@ -92,27 +91,32 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
   const char* datasPtr = NULL;
   bool valid = true;
   short tuppleSize = 3;
+  std::string name = GetId().GetText();
   switch(channel)
   {
     case CHANNEL_POSITION:
+      name += "_POSITION";
       _positions = value.Get<VtArray<GfVec3f>>();
       numInputElements = _positions.size();
       if(!numInputElements)valid = false;
       else datasPtr = (const char*)_positions.cdata();
       break;
     case CHANNEL_NORMAL:
+      name += "_NORMAL";
       _normals = value.Get<VtArray<GfVec3f>>();
       numInputElements = _normals.size();
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_normals.cdata();
       break;
     case CHANNEL_COLOR:
+      name += "_COLOR";
       _colors = value.Get<VtArray<GfVec3f>>();
       numInputElements = _colors.size();
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_colors.cdata();
       break;
     case CHANNEL_UV:
+      name += "_UVS";
       _uvs = value.Get<VtArray<GfVec2f>>();
       numInputElements = _uvs.size();
       if(!numInputElements) valid = false;
@@ -132,7 +136,8 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
         channel, 
         numInputElements,
         numOutputElements,
-        interpolation);
+        interpolation,
+        name);
 
     size_t bufferKey = buffer->ComputeKey(GetId());
 
@@ -168,7 +173,6 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
         _vertexArray->SetBuffer(channel, old);
         return LoFiVertexBufferState::TO_UPDATE;
       }
-
     }
   }
   else return LoFiVertexBufferState::INVALID;
@@ -231,7 +235,6 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
       if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
       {
         VtValue value = GetPrimvar(sceneDelegate, pv.name);
-
         if(pv.name == HdTokens->points)
         {
           LoFiVertexBufferState state =
@@ -365,7 +368,6 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
 {
   HD_TRACE_FUNCTION();
   HF_MALLOC_TAG_FUNCTION();
-
   // get render index
   HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
 
@@ -378,8 +380,9 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   
   // check initialized
   bool initialized = false;
-  if(_vertexArray.get() != NULL) initialized = true;
 
+  if(_vertexArray.get() != NULL) initialized = true;
+  
   // get associated draw item
   HdReprSharedPtr& repr = _reprs.back().second;
   LoFiDrawItem* drawItem = static_cast<LoFiDrawItem*>(repr->GetDrawItem(0));
@@ -387,9 +390,9 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   // create vertex array and store in registry
   if(!initialized) 
   {
+    size_t surfaceId = GetId().GetHash();
     // surface
     {
-      size_t surfaceId = GetId().GetHash();
       _vertexArray = LoFiVertexArraySharedPtr(new LoFiVertexArray(LoFiTopology::Type::TRIANGLES));
       auto surfaceInstance = resourceRegistry->RegisterVertexArray(surfaceId);
       surfaceInstance.SetValue(_vertexArray);  
@@ -399,30 +402,33 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
     }
   }
   
-  _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
   _UpdateVisibility(sceneDelegate, dirtyBits);
-
-  // instances
-  if (!GetInstancerId().IsEmpty())
+  if(IsVisible())
   {
-    // Retrieve instance transforms from the instancer.
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
+    
+    // instances
+    if (! GetInstancerId().IsEmpty())
+    {
+      // Retrieve instance transforms from the instancer.
+      HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    LoFiInstancer* instancer = 
-       static_cast<LoFiInstancer*>(renderIndex.GetInstancer(GetInstancerId()));
-    VtMatrix4dArray transforms =
-       instancer->ComputeInstanceTransforms(GetId());
-
-    drawItem->PopulateInstancesXforms(transforms);
-    drawItem->PopulateInstancesColors(instancer->GetColors());
+      LoFiInstancer* instancer = 
+        static_cast<LoFiInstancer*>(renderIndex.GetInstancer(GetInstancerId()));
+      VtMatrix4dArray transforms =
+        instancer->ComputeInstanceTransforms(GetId());
+      drawItem->PopulateInstancesXforms(transforms);
+      drawItem->PopulateInstancesColors(instancer->GetColors());
+    }
+    else drawItem->ClearInstancesXforms();
+    drawItem->SetDisplayColor(_displayColor);
   }
 
   if(!initialized)
   {
     _PopulateBinder(resourceRegistry);
   }
-  drawItem->SetDisplayColor(_displayColor);
-
+  
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }

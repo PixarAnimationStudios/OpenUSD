@@ -17,6 +17,8 @@ class LoFiVertexArray;
 class LoFiVertexBuffer;
 class LoFiGLSLShader;
 class LoFiGLSLProgram;
+class LoFiTextureResource;
+class LoFiTextureResourceHandle;
 
 typedef std::shared_ptr<class LoFiGLSLShader>
     LoFiGLSLShaderSharedPtr;
@@ -28,6 +30,10 @@ typedef std::shared_ptr<class LoFiVertexBuffer>
     LoFiVertexBufferSharedPtr;
 typedef std::shared_ptr<class LoFiResourceRegistry>
     LoFiResourceRegistrySharedPtr;
+typedef std::shared_ptr<class LoFiTextureResource>
+    LoFiTextureResourceSharedPtr;
+typedef std::shared_ptr<class LoFiTextureResourceHandle>
+    LoFiTextureResourceHandleSharedPtr;  
 
 /// \class LoFiResourceRegistry
 ///
@@ -66,6 +72,10 @@ public:
     LoFiVertexArraySharedPtr
     GetVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id);
 
+    /// Check a vertex buffer object
+    bool
+    HasVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id);
+
     /// Register a vertex buffer object
     HdInstance<LoFiVertexBufferSharedPtr>
     RegisterVertexBuffer(HdInstance<LoFiVertexBufferSharedPtr>::ID id);
@@ -94,6 +104,35 @@ public:
     LoFiGLSLProgramSharedPtr
     GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id);
 
+    /// Register a texture into the texture registry.
+    /// Typically the other id's used refer to unique content
+    /// where as for textures it's a unique id provided by the scene delegate.
+    /// Hydra expects the id's to be unique in the context of a scene/stage
+    /// aka render index.  However, the texture registry can be shared between
+    /// multiple render indices, so the renderIndexId is used to create
+    /// a globally unique id for the texture resource.
+    LOFI_API
+    HdInstance<LoFiTextureResourceSharedPtr>
+    RegisterTextureResource(TextureKey id);
+
+    /// Find a texture in the texture registry. If found, it returns it.
+    /// See RegisterTextureResource() for parameter details.
+    LOFI_API
+    HdInstance<LoFiTextureResourceSharedPtr>
+    FindTextureResource(TextureKey id, bool *found);
+
+    /// Register a texture resource handle.
+    LOFI_API
+    HdInstance<LoFiTextureResourceHandleSharedPtr>
+    RegisterTextureResourceHandle(
+        HdInstance<LoFiTextureResourceHandleSharedPtr>::ID id);
+
+    /// Find a texture resource handle.
+    LOFI_API
+    HdInstance<LoFiTextureResourceHandleSharedPtr>
+    FindTextureResourceHandle(
+        HdInstance<LoFiTextureResourceHandleSharedPtr>::ID id, bool *found);
+
 
 protected:
     virtual void _Commit() override;
@@ -116,6 +155,12 @@ private:
 
     // glsl program registry
     HdInstanceRegistry<LoFiGLSLProgramSharedPtr> _glslProgramRegistry;
+
+    // texture resource registry
+    HdInstanceRegistry<LoFiTextureResourceSharedPtr> _textureResourceRegistry;
+
+     // texture resource handle registry
+    HdInstanceRegistry<LoFiTextureResourceHandleSharedPtr> _textureResourceHandleRegistry;
 
 };
 

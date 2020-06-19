@@ -363,7 +363,8 @@ LoFiPoints::Sync( HdSceneDelegate *sceneDelegate,
     drawItem->SetVertexArray(_vertexArray.get());
   }
   _UpdateVisibility(sceneDelegate, dirtyBits);
-  _PopulatePoints(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
+  if(IsVisible())
+    _PopulatePoints(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
 
   // populate binder
   if(!initialized)

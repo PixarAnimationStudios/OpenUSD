@@ -27,14 +27,22 @@ pxr_plugin(LoFi
     PUBLIC_CLASSES
         debugCodes
         tokens
+        glConversions
         shaderCode
         binding
         codeGen
         shader
         topology
+        textureResource
+        textureResourceHandle
         vertexBuffer
         vertexArray
         drawItem
+        drawTarget
+        drawTargetTextureResource
+        drawTargetAttachmentDesc
+        drawTargetAttachmentDescArray
+        drawTargetRenderPassState
         resourceRegistry
         utils
         mesh
@@ -52,6 +60,7 @@ pxr_plugin(LoFi
         codeGen.h
         shader.h
         renderParam.h
+        debugCodes.h
 
     RESOURCE_FILES
         plugInfo.json
