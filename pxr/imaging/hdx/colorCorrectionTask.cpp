@@ -212,34 +212,38 @@ HdxColorCorrectionTask::_CreateShaderResources()
     HioGlslfx glslfx(HdxPackageColorCorrectionShader(), technique);
 
     // Setup the vertex shader
+    std::string vsCode;
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
     if (technique != HgiTokens->Metal) {
-        vertDesc.shaderCode = "#version 450 \n";
+        vsCode = "#version 450 \n";
     }
-    vertDesc.shaderCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
+    vsCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
+    vertDesc.shaderCode = vsCode.c_str();;
     HgiShaderFunctionHandle vertFn = _GetHgi()->CreateShaderFunction(vertDesc);
 
     // Setup the fragment shader
+    std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     if (technique != HgiTokens->Metal) {
-        fragDesc.shaderCode = "#version 450 \n";
+        fsCode = "#version 450 \n";
     }
 
     if (useOCIO) {
-        fragDesc.shaderCode += "#define GLSLFX_USE_OCIO\n";
+        fsCode += "#define GLSLFX_USE_OCIO\n";
         // Our current version of OCIO outputs 130 glsl and texture3D is
         // removed from glsl in 140.
-        fragDesc.shaderCode += "#define texture3D texture\n";
+        fsCode += "#define texture3D texture\n";
     }
-    fragDesc.shaderCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
+    fsCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
     if (useOCIO) {
         std::string ocioGpuShaderText = _CreateOpenColorIOResources();
-        fragDesc.shaderCode += ocioGpuShaderText;
+        fsCode += ocioGpuShaderText;
     }
+    fragDesc.shaderCode = fsCode.c_str();
     HgiShaderFunctionHandle fragFn = _GetHgi()->CreateShaderFunction(fragDesc);
 
     // Setup the shader program

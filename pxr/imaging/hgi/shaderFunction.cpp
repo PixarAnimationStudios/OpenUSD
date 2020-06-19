@@ -38,16 +38,9 @@ HgiShaderFunction::GetDescriptor() const
     return _descriptor;
 }
 
-void
-HgiShaderFunction::_ClearShaderCode()
-{
-    // Swap with empty string since shrink_to_fit is non-binding
-    std::string().swap(_descriptor.shaderCode);
-}
-
 HgiShaderFunctionDesc::HgiShaderFunctionDesc()
     : shaderStage(0)
-    , shaderCode(std::string())
+    , shaderCode(nullptr)
 {
 }
 
@@ -56,8 +49,9 @@ bool operator==(
     const HgiShaderFunctionDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.shaderStage == rhs.shaderStage &&
-           lhs.shaderCode == rhs.shaderCode;
+           lhs.shaderStage == rhs.shaderStage;
+           // Omitted. Only used tmp during shader compile
+           // lhs.shaderCode == rhs.shaderCode
 }
 
 bool operator!=(

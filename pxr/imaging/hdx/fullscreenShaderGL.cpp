@@ -89,19 +89,23 @@ HdxFullscreenShaderGL::SetProgram(
     HioGlslfx fsGlslfx(glslfx);
 
     // Setup the vertex shader
+    std::string vsCode;
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
-    vertDesc.shaderCode = vsGlslfx.GetSource(_tokens->fullscreenVertex);
-    TF_VERIFY(!vertDesc.shaderCode.empty());
+    vsCode = vsGlslfx.GetSource(_tokens->fullscreenVertex);
+    TF_VERIFY(!vsCode.empty());
+    vertDesc.shaderCode = vsCode.c_str();
     HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
 
     // Setup the fragment shader
+    std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = technique.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    fragDesc.shaderCode = fsGlslfx.GetSource(technique);
-    TF_VERIFY(!fragDesc.shaderCode.empty());
+    fsCode = fsGlslfx.GetSource(technique);
+    TF_VERIFY(!fsCode.empty());
+    fragDesc.shaderCode = fsCode.c_str();
     HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
 
     // Setup the shader program

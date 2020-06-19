@@ -45,7 +45,7 @@ bool operator==(
     return lhs.debugName == rhs.debugName &&
            lhs.usage == rhs.usage &&
            lhs.byteSize == rhs.byteSize
-           // Omitted because data ptr should not be held onto
+           // Omitted. Only used tmp during creation of buffer.
            // lhs.initialData == rhs.initialData &&
     ;
 }

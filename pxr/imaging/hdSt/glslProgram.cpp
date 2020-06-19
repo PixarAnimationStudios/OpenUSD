@@ -231,7 +231,7 @@ HdStGLSLProgram::CompileShader(
 
     // Create a shader, compile it
     HgiShaderFunctionDesc shaderFnDesc;
-    shaderFnDesc.shaderCode = shaderSource;
+    shaderFnDesc.shaderCode = shaderSource.c_str();
     shaderFnDesc.shaderStage = stage;
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 

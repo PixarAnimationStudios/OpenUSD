@@ -47,7 +47,7 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
     }
 
-    const char* src = desc.shaderCode.c_str();
+    const char* src = desc.shaderCode;
     glShaderSource(_shaderId, 1, &src, nullptr);
     glCompileShader(_shaderId);
 
@@ -63,9 +63,7 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         _shaderId = 0;
     }
 
-    // Release shader code memory (codegen shaders can be large)
-    _ClearShaderCode();
-
+    _descriptor.shaderCode = nullptr;
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 

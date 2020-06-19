@@ -44,10 +44,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <ul>
 /// <li>debugName:
 ///   This label can be applied as debug label for gpu debugging.</li>
-/// <li>shaderCode:
-///   The ascii shader code.</li>
 /// <li>shaderStage:
-///   The shader stage this function represents (e.g. vertex or fragment shader).</li>
+///   The shader stage this function represents.</li>
+/// <li>shaderCode:
+///   The ascii shader code used to compile the shader.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -57,7 +57,7 @@ struct HgiShaderFunctionDesc
 
     std::string debugName;
     HgiShaderStage shaderStage;
-    std::string shaderCode;
+    const char* shaderCode;
 };
 
 HGI_API
@@ -122,12 +122,6 @@ public:
 protected:
     HGI_API
     HgiShaderFunction(HgiShaderFunctionDesc const& desc);
-
-    // Clear shader code (releases its memory) inside descriptor.
-    // This can be helpful when large shader code is stored and you want to
-    // release that memory after shader compilation.
-    HGI_API
-    void _ClearShaderCode();
 
     HgiShaderFunctionDesc _descriptor;
 
