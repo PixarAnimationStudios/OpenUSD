@@ -1462,5 +1462,11 @@ UsdImagingGLEngine::_GetSceneDelegate() const
     return _sceneDelegate.get();
 }
 
+HdEngine *
+UsdImagingGLEngine::_GetHdEngine()
+{
+    return &_engine;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

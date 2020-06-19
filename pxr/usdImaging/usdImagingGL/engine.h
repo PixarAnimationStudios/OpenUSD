@@ -483,6 +483,9 @@ protected:
     UsdImagingDelegate *_GetSceneDelegate() const;
 
     USDIMAGINGGL_API
+    HdEngine *_GetHdEngine();
+
+    USDIMAGINGGL_API
     HdSelectionSharedPtr _GetSelection() const;
 
     // _hgi is first field so that it is guaranteed to
@@ -491,8 +494,11 @@ protected:
     HgiUniquePtr _hgi;
     // Similar for HdDriver.
     HdDriver _hgiDriver;
+
+private:
     HdEngine _engine;
 
+protected:
     // ... and the other Hydra resources
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
