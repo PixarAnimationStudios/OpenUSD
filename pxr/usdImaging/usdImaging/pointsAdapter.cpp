@@ -170,18 +170,15 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
             _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
             UsdGeomPoints points(prim);
-            HdInterpolation interpolation;
             VtFloatArray widths;
             if (points.GetWidthsAttr().Get(&widths, time)) {
-                interpolation = _UsdToHdInterpolation(
+                HdInterpolation interpolation = _UsdToHdInterpolation(
                     points.GetWidthsInterpolation());
+                _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
+                valueCache->GetWidths(cachePath) = VtValue(widths);
             } else {
-                widths = VtFloatArray(1);
-                widths[0] = 1.0f;
-                interpolation = HdInterpolationConstant;
+                _RemovePrimvar(&primvars, UsdGeomTokens->widths);
             }
-            _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
-            valueCache->GetWidths(cachePath) = VtValue(widths);
         }
     }
 
