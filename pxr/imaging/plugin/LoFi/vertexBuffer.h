@@ -52,7 +52,6 @@ enum LoFiVertexBufferState : short {
 typedef std::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
 typedef std::vector<LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrList;
 typedef std::map<LoFiAttributeChannel, LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrMap;
-
 /// \class LoFiVertexBuffer
 ///
 ///
@@ -64,7 +63,8 @@ public:
                     LoFiAttributeChannel channel, 
                     uint32_t numInputElements,
                     uint32_t numOutputElements,
-                    HdInterpolation interpolation);
+                    HdInterpolation interpolation,
+                    const std::string& name="Buffer");
 
   // destructor
   ~LoFiVertexBuffer();
@@ -122,6 +122,10 @@ public:
   void Populate();
   GLuint Get() const {return _vbo;};
   void Bind();
+
+  // name
+  void SetName(const std::string& name){_name = name;};
+  const std::string& GetName(){return _name;};
 
 private: 
   // description

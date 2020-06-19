@@ -43,6 +43,12 @@ LoFiDrawItem::PopulateInstancesXforms(const VtArray<GfMatrix4d>& xforms)
   }
 }
 
+void 
+LoFiDrawItem::ClearInstancesXforms()
+{
+  _instancesXform.clear();
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

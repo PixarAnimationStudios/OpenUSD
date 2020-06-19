@@ -453,14 +453,14 @@ void LoFiCodeGen::GenerateProgramCode(bool hasGeometryShader, size_t numVertexPe
   _geometryCode = _genGS.str();
   _fragmentCode = _genFS.str();
 
-
+/*
   std::cout << "######################## VERTEX ########################" << std::endl;
   std::cout << _vertexCode << std::endl;
   std::cout << "######################## GEOMETRY ########################" << std::endl;
   std::cout << _geometryCode << std::endl;
   std::cout << "######################## FRAGMENT ########################" << std::endl;
   std::cout << _fragmentCode << std::endl;
-
+*/
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

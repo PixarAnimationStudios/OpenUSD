@@ -117,20 +117,75 @@ LoFiRenderPass::_SetupGLSLProgram(const LoFiBinder* binder)
   return instance.GetValue();
 
 }
-
+/*
 void
 LoFiRenderPass::_SetupDrawTarget(int width, int height)
 {
   GfVec2i attachmentSize(width,height);
-  GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(attachmentSize);
+  _drawTarget = GlfDrawTarget::New(attachmentSize);
 
   // create initial attachments
-  drawTarget->Bind();
-  drawTarget->AddAttachment(
+  _drawTarget->Bind();
+  _drawTarget->AddAttachment(
       "color", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
-  drawTarget->AddAttachment(
+  _drawTarget->AddAttachment(
       "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
-  drawTarget->Unbind();
+  _drawTarget->Unbind();
+}
+*/
+void
+LoFiRenderPass::_MarkCollectionDirty()
+{
+  // Force any cached data based on collection to be refreshed.
+  _collectionChanged = true;
+  _collectionVersion = 0;
+}
+
+void
+LoFiRenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
+{
+  HD_TRACE_FUNCTION();
+  //GLF_GROUP_FUNCTION();
+
+  HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
+  HdRprimCollection const &collection = GetRprimCollection();
+
+  const int collectionVersion =
+    tracker.GetCollectionVersion(collection.GetName());
+
+  const int renderTagVersion =
+    tracker.GetRenderTagVersion();
+
+  const bool collectionChanged = _collectionChanged ||
+    (_collectionVersion != collectionVersion);
+
+  const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
+
+  if (collectionChanged || renderTagsChanged) {
+    HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
+    TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
+                                        "(repr = %s)"
+                                        "version: %d -> %d\n",
+                                          collection.GetName().GetText(),
+                                          collection.GetReprSelector().GetText(),
+                                          _collectionVersion,
+                                          collectionVersion);
+
+    _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
+    _drawItemCount = _drawItems.size();
+    _drawItemsChanged = true;
+
+    _collectionVersion = collectionVersion;
+    _collectionChanged = false;
+
+    _renderTagVersion = renderTagVersion;
+  }
+}
+
+void
+LoFiRenderPass::_Prepare(TfTokenVector const &renderTags)
+{
+    _PrepareDrawItems(renderTags);
 }
 
 void
@@ -142,10 +197,14 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   GfMatrix4d cullMatrix = renderPassState->GetCullMatrix();
   GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
-  auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
+  //auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
+
+  _PrepareDrawItems(renderTags);
+
+  _programDrawItemsMap.clear();
 
   // first check draw item program map
-  for(auto drawItem: drawItems)
+  for(auto drawItem: _drawItems)
   {
     const LoFiDrawItem* lofiDrawItem = 
       reinterpret_cast<const LoFiDrawItem*>(drawItem);

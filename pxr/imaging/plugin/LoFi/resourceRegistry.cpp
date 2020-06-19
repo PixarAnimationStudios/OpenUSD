@@ -72,6 +72,14 @@ LoFiResourceRegistry::GetVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id
   else return LoFiVertexArraySharedPtr(nullptr);
 }
 
+bool
+LoFiResourceRegistry::HasVertexArray(HdInstance<LoFiVertexArraySharedPtr>::ID id)
+{
+  bool found = false;
+  auto instance = _vertexArrayRegistry.FindInstance(id, &found);
+  return found;
+}
+
 HdInstance<LoFiVertexBufferSharedPtr>
 LoFiResourceRegistry::RegisterVertexBuffer(
   HdInstance<LoFiVertexBufferSharedPtr>::ID id)
@@ -126,30 +134,61 @@ LoFiResourceRegistry::GetGLSLProgram(HdInstance<LoFiGLSLProgramSharedPtr>::ID id
   else return LoFiGLSLProgramSharedPtr(nullptr);
 }
 
+HdInstance<LoFiTextureResourceSharedPtr>
+LoFiResourceRegistry::RegisterTextureResource(TextureKey id)
+{
+    return _textureResourceRegistry.GetInstance(id);
+}
+
+HdInstance<LoFiTextureResourceSharedPtr>
+LoFiResourceRegistry::FindTextureResource(TextureKey id, bool *found)
+{
+    return _textureResourceRegistry.FindInstance(id, found);
+}
+
+HdInstance<LoFiTextureResourceHandleSharedPtr>
+LoFiResourceRegistry::RegisterTextureResourceHandle(
+        HdInstance<LoFiTextureResourceHandleSharedPtr>::ID id)
+{
+    return _textureResourceHandleRegistry.GetInstance(id);
+}
+
+HdInstance<LoFiTextureResourceHandleSharedPtr>
+LoFiResourceRegistry::FindTextureResourceHandle(
+        HdInstance<LoFiTextureResourceHandleSharedPtr>::ID id, bool *found)
+{
+    return _textureResourceHandleRegistry.FindInstance(id, found);
+}
+
 void
 LoFiResourceRegistry::_Commit()
 {
   for(auto& instance: _vertexBufferRegistry)
   {
-    LoFiVertexBufferSharedPtr vertexBuffer = instance.second.value;
+    LoFiVertexBufferSharedPtr& vertexBuffer = instance.second.value;
     if(vertexBuffer->GetNeedReallocate())
     {
       vertexBuffer->Reallocate();
       vertexBuffer->Populate();
+      TF_DEBUG(LOFI_REGISTRY).Msg("Reallocate Vertex Buffer : %s\n", vertexBuffer->GetName().c_str());
     }
     else if(vertexBuffer->GetNeedUpdate())
     {
       vertexBuffer->Populate();
+      TF_DEBUG(LOFI_REGISTRY).Msg("Populate Vertex Buffer : %s\n", vertexBuffer->GetName().c_str());
     }
+    
   }
 
   for(auto& instance: _vertexArrayRegistry)
   {
-    LoFiVertexArraySharedPtr vertexArray = instance.second.value;
+    LoFiVertexArraySharedPtr& vertexArray = instance.second.value;
     if(vertexArray->GetNeedUpdate())
     {
       vertexArray->Populate();
+       TF_DEBUG(LOFI_REGISTRY).Msg("Populate Vertex ARRAY !!!\n");
     }
+   
   }
 }
 
@@ -160,6 +199,8 @@ LoFiResourceRegistry::_GarbageCollect()
   _vertexBufferRegistry.GarbageCollect();
   _glslShaderRegistry.GarbageCollect();
   _glslProgramRegistry.GarbageCollect();
+  _textureResourceRegistry.GarbageCollect();
+  _textureResourceHandleRegistry.GarbageCollect();
 }
 
 void

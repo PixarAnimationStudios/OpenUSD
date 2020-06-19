@@ -53,7 +53,8 @@ public:
                 LoFiAttributeChannel channel, 
                 uint32_t numInputElements, 
                 uint32_t numOutputElements,
-                HdInterpolation interpolation);
+                HdInterpolation interpolation,
+                const std::string& name="Buffer");
 
   // channels
   inline void SetHaveChannel(LoFiAttributeChannel channel) { 

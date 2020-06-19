@@ -401,23 +401,25 @@ LoFiCurves::Sync( HdSceneDelegate *sceneDelegate,
       drawItem->SetVertexArray(_vertexArray.get());
     }
   }
-  
-  _PopulateCurves(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
   _UpdateVisibility(sceneDelegate, dirtyBits);
+  if(IsVisible()) {
+    _PopulateCurves(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
+  
+    // instances
+    if (!GetInstancerId().IsEmpty())
+    {
+      // Retrieve instance transforms from the instancer.
+      HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-  // instances
-  if (!GetInstancerId().IsEmpty())
-  {
-    // Retrieve instance transforms from the instancer.
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+      LoFiInstancer* instancer = 
+        static_cast<LoFiInstancer*>(renderIndex.GetInstancer(GetInstancerId()));
+      VtMatrix4dArray transforms =
+        instancer->ComputeInstanceTransforms(GetId());
 
-    LoFiInstancer* instancer = 
-       static_cast<LoFiInstancer*>(renderIndex.GetInstancer(GetInstancerId()));
-    VtMatrix4dArray transforms =
-       instancer->ComputeInstanceTransforms(GetId());
-
-    drawItem->PopulateInstancesXforms(transforms);
-    drawItem->PopulateInstancesColors(instancer->GetColors());
+      drawItem->PopulateInstancesXforms(transforms);
+      drawItem->PopulateInstancesColors(instancer->GetColors());
+    }
+    drawItem->SetDisplayColor(_displayColor);
   }
 
   if(!initialized)
@@ -425,7 +427,7 @@ LoFiCurves::Sync( HdSceneDelegate *sceneDelegate,
     if(LOFI_GL_VERSION >= 330)_vertexArray->UseAdjacency();
     _PopulateBinder(resourceRegistry);
   }
-  drawItem->SetDisplayColor(_displayColor);
+  
 
   // Clean all dirty bits.
   *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;

@@ -8,6 +8,7 @@
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/renderDelegate.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
+#include "pxr/imaging/plugin/LoFi/drawTarget.h"
 
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -38,7 +39,8 @@ const TfTokenVector LoFiRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
-  HdPrimTypeTokens->camera
+  HdPrimTypeTokens->camera,
+  HdPrimTypeTokens->drawTarget
 };
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -86,6 +88,7 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
   {
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
     if (_counterResourceRegistry.fetch_sub(1) == 1) {
+      _resourceRegistry->GarbageCollect();
       _resourceRegistry.reset();
     }
   }
@@ -95,10 +98,11 @@ void
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
   _resourceRegistry->Commit();
+
   //if (tracker->IsGarbageCollectionNeeded()) {
   _resourceRegistry->GarbageCollect();
   //  tracker->ClearGarbageCollectionNeeded();
-  //}
+  //}  
 }
 
 HdRenderSettingDescriptorList
@@ -136,9 +140,7 @@ LoFiRenderDelegate::CreateRenderPass(
   HdRenderIndex *index,
   HdRprimCollection const& collection)
 {
-  return HdRenderPassSharedPtr(
-    new LoFiRenderPass(index, collection)
-  );  
+  return HdRenderPassSharedPtr(new LoFiRenderPass(index, collection));  
 }
 
 HdRprim *
@@ -163,7 +165,6 @@ LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
 void
 LoFiRenderDelegate::DestroyRprim(HdRprim *rPrim)
 {
-  std::cout << "Destroy LoFi Rprim id=" << rPrim->GetId() << std::endl;
   delete rPrim;
 }
 
@@ -171,12 +172,11 @@ HdSprim *
 LoFiRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
-  if (typeId == HdPrimTypeTokens->camera) 
-  {
+  if (typeId == HdPrimTypeTokens->camera) {
     return new HdCamera(sprimId);
-  } 
-  else 
-  {
+  } else  if (typeId == HdPrimTypeTokens->drawTarget) {
+    return new LoFiDrawTarget(sprimId);
+  } else {
     TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
   }
 
@@ -190,6 +190,8 @@ LoFiRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
   // They'll use default values and won't be updated by a scene delegate.
   if (typeId == HdPrimTypeTokens->camera) {
     return new HdCamera(SdfPath::EmptyPath());
+  } else  if (typeId == HdPrimTypeTokens->drawTarget) {
+    return new LoFiDrawTarget(SdfPath::EmptyPath());
   }
   else {
     TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
@@ -201,7 +203,7 @@ LoFiRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 void
 LoFiRenderDelegate::DestroySprim(HdSprim *sPrim)
 {
-  TF_CODING_ERROR("Destroy Sprim not supported");
+  delete sPrim;
 }
 
 HdBprim *
@@ -239,7 +241,7 @@ LoFiRenderDelegate::CreateInstancer(
 void 
 LoFiRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 {
-  TF_CODING_ERROR("Destroy instancer not supported");
+  delete instancer;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

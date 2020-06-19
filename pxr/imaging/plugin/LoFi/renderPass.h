@@ -36,33 +36,42 @@ public:
   virtual ~LoFiRenderPass();
 
 protected:
-
   /// Setup simple GLSL program
   TfToken _GetShaderPath(char const * shader);
   void _GetShaderCode(const TfToken& path, const TfToken& name);
   
   LoFiGLSLProgramSharedPtr _SetupGLSLProgram(const LoFiBinder* binder);
 
-  /// Setup the framebuffer with color and depth attachments
-  ///   \param width The width of the framebuffer
-  ///   \param height The height of the framebuffer
-  void _SetupDrawTarget(int width, int height);
+  /// Mark collection as dirty for update
+  virtual void _MarkCollectionDirty() override; 
+
+  /// Prepare the scene for rendering 
+  virtual void _Prepare(TfTokenVector const &renderTags) override;
 
   /// Draw the scene with the bound renderpass state.
   ///   \param renderPassState Input parameters (including viewer parameters)
   ///                          for this renderpass.
   ///   \param renderTags Which rendertags should be drawn this pass.
-  void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
+  virtual void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
                 TfTokenVector const &renderTags) override;
 
 private:
-  GlfDrawTargetRefPtr                 _drawTarget;
+  void _PrepareDrawItems(TfTokenVector const& renderTags);
+  GlfDrawTargetRefPtr                            _drawTarget;
 
   // draw items are organized by glsl program
   std::map<TfToken, LoFiGLSLProgramSharedPtr>    _programs;
   typedef std::map<TfToken, LoFiDrawItemPtrSet> _ProgramDrawItemsMap;
   _ProgramDrawItemsMap                           _programDrawItemsMap;
 
+  // -----------------------------------------------------------------------
+  // Change tracking state.
+  int _collectionVersion;
+  int _renderTagVersion;
+  bool _collectionChanged;
+  HdRenderIndex::HdDrawItemPtrVector _drawItems;
+  size_t _drawItemCount;
+  bool _drawItemsChanged;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
