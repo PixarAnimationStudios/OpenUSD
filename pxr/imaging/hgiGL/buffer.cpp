@@ -76,9 +76,6 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         TF_VERIFY(desc.vertexStride > 0);
     }
 
-    // Don't hold onto buffer data ptr locally. HgiBufferDesc states that:
-    // "The application may alter or free this memory as soon as the constructor
-    //  of the HgiBuffer has returned."
     _descriptor.initialData = nullptr;
 
     HGIGL_POST_PENDING_GL_ERRORS();
