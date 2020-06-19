@@ -675,6 +675,11 @@ UsdImagingGLEngine::DecodeIntersection(
     const int instanceIdx = HdxPickTask::DecodeIDRenderColor(instanceIdColor);
     SdfPath primPath =
         _sceneDelegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
+
+    if (primPath.IsEmpty()) {
+        return false;
+    }
+
     SdfPath delegateId, instancerId;
     _sceneDelegate->GetRenderIndex().GetSceneDelegateAndInstancerIds(
         primPath, &delegateId, &instancerId);
@@ -694,7 +699,7 @@ UsdImagingGLEngine::DecodeIntersection(
         *outHitInstanceIndex = instanceIdx;
     }
 
-    return !primPath.IsEmpty();
+    return true;
 }
 
 //----------------------------------------------------------------------------
