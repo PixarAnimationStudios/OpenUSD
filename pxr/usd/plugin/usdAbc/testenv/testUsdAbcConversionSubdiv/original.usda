@@ -166,7 +166,8 @@ def Xform "World" (
                 float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
                 int[] faceVertexIndices = [0, 4, 6, 2, 0, 1, 5, 4, 4, 5, 7, 6, 3, 7, 5, 1, 6, 7, 3, 2, 2, 3, 1, 0]
-                token interpolateBoundary = "none"
+                token interpolateBoundary = "edgeOnly"
+                token faceVaryingLinearInterpolation = "boundaries"
                 point3f[] points = [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
                 color3f[] primvars:displayColor = [(1, 1, 0)]
                 float[] primvars:displayOpacity = [1]
@@ -184,7 +185,8 @@ def Xform "World" (
                 float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
                 int[] faceVertexIndices = [0, 4, 6, 2, 0, 1, 5, 4, 4, 5, 7, 6, 3, 7, 5, 1, 6, 7, 3, 2, 2, 3, 1, 0]
-                token interpolateBoundary = "none"
+                token interpolateBoundary = "edgeOnly"
+                token faceVaryingLinearInterpolation = "boundaries"
                 point3f[] points = [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
                 color3f[] primvars:displayColor = [(1, 1, 0)]
                 float[] primvars:displayOpacity = [1]

@@ -3285,7 +3285,7 @@ _ReadSubD(_PrimReaderContext* context)
         UsdGeomTokens->faceVaryingLinearInterpolation,
         SdfValueTypeNames->Token,
         _CopyFaceVaryingInterpolateBoundary(
-            context->ExtractSchema(".faceVaryingLinearInterpolation")));
+            context->ExtractSchema(".faceVaryingInterpolateBoundary")));
     context->AddProperty(
         UsdGeomTokens->holeIndices,
         SdfValueTypeNames->IntArray,

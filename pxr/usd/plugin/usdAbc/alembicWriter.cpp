@@ -1801,11 +1801,11 @@ _SampleForAlembic
 _CopyInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() || value == UsdGeomTokens->none) {
-        return _SampleForAlembic(int32_t(0));
-    }
-    if (value == UsdGeomTokens->edgeAndCorner) {
+    if (value.IsEmpty() || value == UsdGeomTokens->edgeAndCorner) {
         return _SampleForAlembic(int32_t(1));
+    }
+    if (value == UsdGeomTokens->none) {
+        return _SampleForAlembic(int32_t(0));
     }
     if (value == UsdGeomTokens->edgeOnly) {
         return _SampleForAlembic(int32_t(2));
@@ -1820,11 +1820,13 @@ _SampleForAlembic
 _CopyFaceVaryingInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() || value == UsdGeomTokens->all) {
-        return _SampleForAlembic(int32_t(0));
-    }
-    if (value == UsdGeomTokens->cornersPlus1) {
+    if (value.IsEmpty() || value == UsdGeomTokens->cornersPlus1 ||
+        value == UsdGeomTokens->cornersOnly ||
+        value == UsdGeomTokens->cornersPlus2) {
         return _SampleForAlembic(int32_t(1));
+    }
+    if (value == UsdGeomTokens->all) {
+        return _SampleForAlembic(int32_t(0));
     }
     if (value == UsdGeomTokens->none) {
         return _SampleForAlembic(int32_t(2));
@@ -3065,11 +3067,16 @@ _WriteSubD(_PrimWriterContext* context)
     MySampleT mySample;
     SampleT& sample = mySample;
     for (double time : context->GetSampleTimesUnion()) {
-        // Build the sample.  Usd defaults faceVaryingLinearInterpolation to
-        // edgeAndCorner but Alembic defaults to bilinear so set that first
-        // in case we have no opinion.
+        // Build the sample.  Usd defaults both interpolateBoundary and
+        // faceVaryingLinearInterpolation to edgeAndCorner (1 in both cases)
+        // but Alembic defaults to none (0) and bilinear (0) respectively,
+        // so set these first in case we have no opinion (converters will
+        // not be invoked and no value assigned if the Usd value is absent).
         sample.reset();
+
+        sample.setInterpolateBoundary(1);
         sample.setFaceVaryingInterpolateBoundary(1);
+
         _CopySelfBounds(time, extent, &sample);
         _SampleForAlembic alembicPositions =
         _Copy(schema,
