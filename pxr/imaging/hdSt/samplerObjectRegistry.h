@@ -56,7 +56,7 @@ class HdSt_SamplerObjectRegistry final
 {
 public:
     HDST_API
-    HdSt_SamplerObjectRegistry();
+    explicit HdSt_SamplerObjectRegistry(Hgi * hgi);
 
     HDST_API 
     ~HdSt_SamplerObjectRegistry();
@@ -80,11 +80,6 @@ public:
     ///
     HDST_API
     Hgi * GetHgi() const { return _hgi; }
-
-    /// Set Hgi instance
-    ///
-    HDST_API
-    void SetHgi(Hgi* hgi);
 
 private:
     std::vector<HdStSamplerObjectSharedPtr> _samplerObjects;

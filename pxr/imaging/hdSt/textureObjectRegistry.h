@@ -47,7 +47,7 @@ class Hgi;
 class HdSt_TextureObjectRegistry final
 {
 public:
-    HdSt_TextureObjectRegistry();
+    explicit HdSt_TextureObjectRegistry(Hgi * hgi);
     ~HdSt_TextureObjectRegistry();
 
     /// Allocate texture.
@@ -81,10 +81,6 @@ public:
     /// Get Hgi instance
     ///
     Hgi * GetHgi() const { return _hgi; }
-
-    /// Set Hgi instance
-    ///
-    void SetHgi(Hgi* hgi);
 
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(

@@ -73,11 +73,8 @@ using HdStShaderCodeSharedPtr =
 class HdSt_TextureHandleRegistry final
 {
 public:
-    HdSt_TextureHandleRegistry();
+    explicit HdSt_TextureHandleRegistry(Hgi * hgi);
     ~HdSt_TextureHandleRegistry();
-
-    /// Set Hgi instance
-    void SetHgi(Hgi* hgi);
 
     /// Allocate texture handle (thread-safe).
     ///

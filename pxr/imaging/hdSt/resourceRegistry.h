@@ -89,10 +89,7 @@ public:
     HF_MALLOC_TAG_NEW("new HdStResourceRegistry");
 
     HDST_API
-    HdStResourceRegistry();
-
-    HDST_API
-    HdStResourceRegistry(Hgi* hgi);
+    explicit HdStResourceRegistry(Hgi* hgi);
 
     HDST_API
     ~HdStResourceRegistry() override;
@@ -106,10 +103,6 @@ public:
     /// Returns Hgi used to create/destroy GPU resources.
     HDST_API
     Hgi* GetHgi();
-
-    /// Set Hgi
-    HDST_API
-    void SetHgi(Hgi* hgi);
 
     /// ------------------------------------------------------------------------
     /// Texture allocation API

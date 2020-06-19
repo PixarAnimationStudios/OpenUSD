@@ -89,8 +89,8 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
     }
 }
 
-HdStResourceRegistry::HdStResourceRegistry()
-    : _hgi(nullptr)
+HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
+    : _hgi(hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
     , _nonUniformAggregationStrategy(
@@ -106,14 +106,8 @@ HdStResourceRegistry::HdStResourceRegistry()
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
         std::make_unique<HdStVBOSimpleMemoryManager>())
-    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>())
+    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
 {
-}
-
-HdStResourceRegistry::HdStResourceRegistry(Hgi* hgi)
-    : HdStResourceRegistry()
-{
-    SetHgi(hgi);
 }
 
 HdStResourceRegistry::~HdStResourceRegistry() = default;
@@ -174,13 +168,6 @@ Hgi*
 HdStResourceRegistry::GetHgi()
 {
     return _hgi;
-}
-
-void
-HdStResourceRegistry::SetHgi(Hgi* hgi)
-{
-    _hgi = hgi;
-    _textureHandleRegistry->SetHgi(hgi);
 }
 
 /// ------------------------------------------------------------------------

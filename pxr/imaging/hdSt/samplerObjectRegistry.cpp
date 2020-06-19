@@ -30,18 +30,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry()
-  : _hgi(nullptr)
+HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(Hgi * const hgi)
+  : _hgi(hgi)
 {
 }
 
 HdSt_SamplerObjectRegistry::~HdSt_SamplerObjectRegistry() = default;
-
-void
-HdSt_SamplerObjectRegistry::SetHgi(Hgi * const hgi)
-{
-    _hgi = hgi;
-}
 
 template<HdTextureType textureType>
 static

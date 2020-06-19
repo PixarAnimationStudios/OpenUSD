@@ -33,18 +33,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry()
-  : _hgi(nullptr)
+HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry(Hgi * const hgi)
+  : _hgi(hgi)
 {
 }
 
 HdSt_TextureObjectRegistry::~HdSt_TextureObjectRegistry() = default;
-
-void
-HdSt_TextureObjectRegistry::SetHgi(Hgi * const hgi)
-{
-    _hgi = hgi;
-}
 
 bool
 static
