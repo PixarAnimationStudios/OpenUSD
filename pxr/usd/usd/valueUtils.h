@@ -100,6 +100,53 @@ Usd_ClearValueIfBlocked(VtValue* value)
     return false;
 }
 
+/// Helper function for setting a value into an SdfAbstractDataValue
+/// for generic programming.
+template <class T>
+inline void
+Usd_SetValue(SdfAbstractDataValue *dv, T const &val)
+{ 
+    dv->StoreValue(val); 
+}
+
+/// \overload
+/// Helper function for setting a value into a VtValue
+/// for generic programming.
+template <class T>
+inline void
+Usd_SetValue(VtValue *value, T const &val)
+{ 
+    *value = val; 
+}
+
+enum class Usd_DefaultValueResult 
+{
+    None = 0,
+    Found,
+    Blocked,
+};
+
+template <class T>
+Usd_DefaultValueResult 
+Usd_HasDefault(const SdfLayerRefPtr& layer, const SdfPath& specPath, T* value)
+{
+    // We need to actually examine the default value in all cases to see
+    // if a block was authored. So, if no value to fill in was specified,
+    // we need to create a dummy one.
+    if (!value) {
+        VtValue dummy;
+        return Usd_HasDefault(layer, specPath, &dummy);
+    }
+
+    if (layer->HasField(specPath, SdfFieldKeys->Default, value)) {
+        if (Usd_ClearValueIfBlocked(value)) {
+            return Usd_DefaultValueResult::Blocked;
+        }
+        return Usd_DefaultValueResult::Found;
+    }
+    return Usd_DefaultValueResult::None;
+}
+
 template <class T>
 inline bool
 Usd_QueryTimeSample(

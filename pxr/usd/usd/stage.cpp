@@ -5135,13 +5135,6 @@ void _UncheckedSwap(VtValue *value, T& val) {
     value->UncheckedSwap(val);
 }
 
-template <class T>
-static void
-_Set(SdfAbstractDataValue *dv, T const &val) { dv->StoreValue(val); }
-template <class T>
-static void _Set(VtValue *value, T const &val) { *value = val; }
-
-
 namespace {
 
 // Helper for lazily computing and caching the layer to stage offset for the 
@@ -5347,7 +5340,7 @@ struct ValueComposerBase
     template <class ValueType>
     void ConsumeExplicitValue(ValueType type) 
     {
-        _Set(_value, type);
+        Usd_SetValue(_value, type);
         _done = true;
     }
 
@@ -6850,6 +6843,57 @@ _GetClipsThatApplyToNode(
     return relevantClips;
 }
 
+static bool
+_HasTimeSamples(const SdfLayerRefPtr& source, 
+                const SdfPath& specPath, 
+                const double* time = nullptr, 
+                double* lower = nullptr, double* upper = nullptr)
+{
+    if (time) {
+        // If caller wants bracketing time samples as well, we can just use
+        // GetBracketingTimeSamplesForPath. If no samples exist, this should
+        // return false.
+        return source->GetBracketingTimeSamplesForPath(
+            specPath, *time, lower, upper);
+    }
+
+    return source->GetNumTimeSamplesForPath(specPath) > 0;
+}
+
+static bool
+_HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips, 
+                const SdfPath& specPath, 
+                const double* time = nullptr, 
+                double* lower = nullptr, double* upper = nullptr,
+                size_t* sourceClipIndex = nullptr)
+{
+    if (time) {        
+        for (size_t i = 0; i < sourceClips->valueClips.size(); ++i) {
+            const Usd_ClipRefPtr& clip = sourceClips->valueClips[i];
+
+            // If given a time, do a range check on the clip first.
+            if (*time < clip->startTime || *time >= clip->endTime) {
+                continue;
+            }
+
+            if (clip->GetBracketingTimeSamplesForPath(
+                    specPath, *time, lower, upper) && 
+                clip->_GetNumTimeSamplesForPathInLayerForClip(specPath) != 0) {
+                *sourceClipIndex = i;
+                return true;
+            }
+        }
+    }
+    else {
+        for (const Usd_ClipRefPtr& clip : sourceClips->valueClips) {
+            if (clip->_GetNumTimeSamplesForPathInLayerForClip(specPath) > 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // Helper for getting the fully resolved value from an attribute generically
 // for all value types for use by _GetValue and _GetValueForResolveInfo. 
 template <class T>
@@ -7217,87 +7261,6 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
     return false;
 }
 
-namespace 
-{
-bool
-_HasTimeSamples(const SdfLayerRefPtr& source, 
-                const SdfPath& specPath, 
-                const double* time = nullptr, 
-                double* lower = nullptr, double* upper = nullptr)
-{
-    if (time) {
-        // If caller wants bracketing time samples as well, we can just use
-        // GetBracketingTimeSamplesForPath. If no samples exist, this should
-        // return false.
-        return source->GetBracketingTimeSamplesForPath(
-            specPath, *time, lower, upper);
-    }
-
-    return source->GetNumTimeSamplesForPath(specPath) > 0;
-}
-
-bool
-_HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips, 
-                const SdfPath& specPath, 
-                const double* time = nullptr, 
-                double* lower = nullptr, double* upper = nullptr,
-                size_t* sourceClipIndex = nullptr)
-{
-    if (time) {        
-        for (size_t i = 0; i < sourceClips->valueClips.size(); ++i) {
-            const Usd_ClipRefPtr& clip = sourceClips->valueClips[i];
-
-            // If given a time, do a range check on the clip first.
-            if (*time < clip->startTime || *time >= clip->endTime) {
-                continue;
-            }
-
-            if (clip->GetBracketingTimeSamplesForPath(
-                    specPath, *time, lower, upper) && 
-                clip->_GetNumTimeSamplesForPathInLayerForClip(specPath) != 0) {
-                *sourceClipIndex = i;
-                return true;
-            }
-        }
-    }
-    else {
-        for (const Usd_ClipRefPtr& clip : sourceClips->valueClips) {
-            if (clip->_GetNumTimeSamplesForPathInLayerForClip(specPath) > 0) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-enum _DefaultValueResult {
-    _DefaultValueNone = 0,
-    _DefaultValueFound,
-    _DefaultValueBlocked,
-};
-
-template <class T>    
-_DefaultValueResult 
-_HasDefault(const SdfLayerRefPtr& layer, const SdfPath& specPath, T* value)
-{
-    // We need to actually examine the default value in all cases to see
-    // if a block was authored. So, if no value to fill in was specified,
-    // we need to create a dummy one.
-    if (!value) {
-        VtValue dummy;
-        return _HasDefault(layer, specPath, &dummy);
-    }
-
-    if (layer->HasField(specPath, SdfFieldKeys->Default, value)) {
-        if (Usd_ClearValueIfBlocked(value)) {
-            return _DefaultValueBlocked;
-        }
-        return _DefaultValueFound;
-    }
-    return _DefaultValueNone;
-}
-} // end anonymous namespace
-
 // Our property stack resolver never indicates for resolution to stop
 // as we need to gather all relevant property specs in the LayerStack
 struct UsdStage::_PropertyStackResolver {
@@ -7404,12 +7367,12 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;
         }
         else { 
-            _DefaultValueResult defValue = _HasDefault(
+            Usd_DefaultValueResult defValue = Usd_HasDefault(
                 layer, specPath, _extraInfo->defaultOrFallbackValue);
-            if (defValue == _DefaultValueFound) {
+            if (defValue == Usd_DefaultValueResult::Found) {
                 _resolveInfo->_source = UsdResolveInfoSourceDefault;
             }
-            else if (defValue == _DefaultValueBlocked) {
+            else if (defValue == Usd_DefaultValueResult::Blocked) {
                 _resolveInfo->_valueIsBlocked = true;
                 return ProcessFallback();
             }
