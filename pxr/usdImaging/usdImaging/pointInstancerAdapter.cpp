@@ -1153,57 +1153,26 @@ UsdImagingPointInstancerAdapter::_ComputeInstanceMap(
                     _InstancerData const& instrData,
                     UsdTimeCode time) const
 {
-    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
+    TRACE_FUNCTION();
 
     TF_DEBUG(USDIMAGING_INSTANCER).Msg(
         "[PointInstancer::_ComputeInstanceMap] %s\n",
         instancerPath.GetText());
 
-    UsdGeomPointInstancer instancer(instancerPrim);
-    if (!instancer) {
-        TF_WARN("Instancer prim <%s> is not a valid PointInstancer\n",
-                instancerPath.GetText());
-        return _InstanceMap();
+    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
+    VtArray<VtIntArray> indices =
+        GetPerPrototypeIndices(instancerPrim, time);
+
+    if (indices.size() > instrData.prototypePaths.size()) {
+        TF_WARN("ProtoIndex %lu out of bounds (prototypes size = %lu)",
+                indices.size() - 1, instrData.prototypePaths.size());
     }
+    indices.resize(instrData.prototypePaths.size());
 
-    UsdAttribute indicesAttr = instancer.GetProtoIndicesAttr();
-    VtIntArray indices;
-
-    if (!indicesAttr.Get(&indices, time)) {
-        TF_RUNTIME_ERROR("Failed to read point cloud indices");
-        return _InstanceMap();
-    }
-
-    // Initialize all of the indices to empty.
     _InstanceMap instanceMap;
-    for (SdfPath const& proto : instrData.prototypePaths) {
-        instanceMap[proto] = VtIntArray();
+    for (size_t i = 0; i < instrData.prototypePaths.size(); ++i) {
+        instanceMap[instrData.prototypePaths[i]] = indices[i];
     }
-
-    // Fetch the "mask", a bit array of enabled/disabled state per instance.
-    // If no value is available, mask will be ignored below.
-    std::vector<bool> mask = instancer.ComputeMaskAtTime(time);
-
-    for (size_t instanceId = 0; instanceId < indices.size(); ++instanceId) {
-        size_t protoIndex = indices[instanceId];
-
-        if (protoIndex >= instrData.prototypePaths.size()) {
-            TF_WARN("Invalid index (%lu) found in <%s.%s> for time (%s)\n",
-                    protoIndex, instancer.GetPath().GetText(), 
-                    indicesAttr.GetName().GetText(),
-                    TfStringify(time).c_str());
-            continue;
-        }
-        SdfPath const& protoPath = instrData.prototypePaths[protoIndex];
-
-        if (mask.size() == 0 || mask[instanceId]) {
-            instanceMap[protoPath].push_back(instanceId);
-        }
-    }
-
-    TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
-        "[Instancer Updated]: <%s>\n",
-        instancerPrim.GetPath().GetText());
 
     return instanceMap;
 }

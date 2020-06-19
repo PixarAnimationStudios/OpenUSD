@@ -24,7 +24,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_INHERITED_CACHE_H
 #define PXR_USD_IMAGING_USD_IMAGING_INHERITED_CACHE_H
 
-/// \file usdImaging/inheritedCache.h
+/// \file usdImaging/resolvedAttributeCache.h
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
@@ -41,10 +41,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImaging_InheritedCache
+/// \class UsdImaging_ResolvedAttributeCache
 ///
-/// A general caching mechanism for attributes inherited up or down the ancestor
-/// chain.
+/// A general caching mechanism for attributes that are nontrivial to resolve,
+/// such as attributes inherited up or down the ancestor chain or attributes
+/// with significant load-time processing involved.
 ///
 /// This class is thread safe following the basic guarantee that calling const
 /// methods are thread safe, non-const methods are not.
@@ -61,11 +62,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// MakeQuery() method of the strategy object, making it available for use in 
 /// computations. If MakeQuery() is expected to modify the ImplData object in 
 /// any way, care must be taken to ensure that the modifications are 
-/// thread-safe. The fallback type for ImplData is bool, when it's not used by 
-/// an InheritedCache.
+/// thread-safe. The fallback type for ImplData is bool, when it's not specified
+/// by a cache.
 /// 
 template<typename Strategy, typename ImplData=bool>
-class UsdImaging_InheritedCache
+class UsdImaging_ResolvedAttributeCache
 {
     friend Strategy;
     struct _Entry;
@@ -80,7 +81,7 @@ public:
         ValueOverridesMap;
 
     /// Construct a new for the specified \p time.
-    explicit UsdImaging_InheritedCache(
+    explicit UsdImaging_ResolvedAttributeCache(
         const UsdTimeCode time,
         ImplData *implData=nullptr,
         const ValueOverridesMap valueOverrides=ValueOverridesMap())
@@ -93,14 +94,14 @@ public:
     }
 
     /// Construct a new cache for UsdTimeCode::Default().
-    UsdImaging_InheritedCache()
+    UsdImaging_ResolvedAttributeCache()
         : _time(UsdTimeCode::Default())
         , _rootPath(SdfPath::AbsoluteRootPath())
         , _cacheVersion(1)
     {
     }
 
-    ~UsdImaging_InheritedCache()
+    ~UsdImaging_ResolvedAttributeCache()
     {
         WorkSwapDestroyAsync(_cache);
     }
@@ -353,7 +354,7 @@ private:
 
 template<typename Strategy, typename ImplData>
 void
-UsdImaging_InheritedCache<Strategy,ImplData>::_SetCacheEntryForPrim(
+UsdImaging_ResolvedAttributeCache<Strategy,ImplData>::_SetCacheEntryForPrim(
     const UsdPrim &prim,
     value_type const& value,
     _Entry* entry) const
@@ -377,8 +378,8 @@ UsdImaging_InheritedCache<Strategy,ImplData>::_SetCacheEntryForPrim(
 }
 
 template<typename Strategy, typename ImplData>
-typename UsdImaging_InheritedCache<Strategy, ImplData>::_Entry*
-UsdImaging_InheritedCache<Strategy, ImplData>::_GetCacheEntryForPrim(
+typename UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_Entry*
+UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetCacheEntryForPrim(
     const UsdPrim &prim) const
 {
     typename _CacheMap::const_iterator it = _cache.find(prim);
@@ -395,8 +396,8 @@ UsdImaging_InheritedCache<Strategy, ImplData>::_GetCacheEntryForPrim(
 }
 
 template<typename Strategy, typename ImplData>
-typename UsdImaging_InheritedCache<Strategy, ImplData>::value_type const*
-UsdImaging_InheritedCache<Strategy, ImplData>::_GetValue(
+typename UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::value_type const*
+UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetValue(
     const UsdPrim& prim) const
 {
     static value_type const default_ = Strategy::MakeDefault();
@@ -424,7 +425,7 @@ UsdImaging_InheritedCache<Strategy, ImplData>::_GetValue(
         _SetCacheEntryForPrim(prim, it->second, entry);
     } else {
         _SetCacheEntryForPrim(prim,
-                              Strategy::Inherit(this, prim, &entry->query), 
+                              Strategy::Compute(this, prim, &entry->query), 
                               entry);
     }
     return &entry->value;
@@ -442,7 +443,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_XfStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_XfStrategy> UsdImaging_XformCache;
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_XfStrategy> UsdImaging_XformCache;
 
 struct UsdImaging_XfStrategy {
     typedef GfMatrix4d value_type;
@@ -462,7 +463,7 @@ struct UsdImaging_XfStrategy {
 
     static 
     value_type
-    Inherit(UsdImaging_XformCache const* owner, 
+    Compute(UsdImaging_XformCache const* owner, 
             UsdPrim prim,
             query_type const* query)
     { 
@@ -520,7 +521,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_VisStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_VisStrategy> UsdImaging_VisCache;
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_VisStrategy> UsdImaging_VisCache;
 
 struct UsdImaging_VisStrategy {
     typedef TfToken value_type; // invisible, inherited
@@ -540,7 +541,7 @@ struct UsdImaging_VisStrategy {
 
     static 
     value_type
-    Inherit(UsdImaging_VisCache const* owner, 
+    Compute(UsdImaging_VisCache const* owner, 
             UsdPrim prim,
             query_type const* query)
     { 
@@ -565,7 +566,7 @@ struct UsdImaging_VisStrategy {
 // -------------------------------------------------------------------------- //
 
 struct UsdImaging_PurposeStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy> 
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_PurposeStrategy> 
     UsdImaging_PurposeCache;
 
 struct UsdImaging_PurposeStrategy {
@@ -589,7 +590,7 @@ struct UsdImaging_PurposeStrategy {
 
     static 
     value_type
-    Inherit(UsdImaging_PurposeCache const* owner, 
+    Compute(UsdImaging_PurposeCache const* owner, 
             UsdPrim prim,
             query_type const* query)
     {
@@ -680,7 +681,7 @@ private:
 };
 
 struct UsdImaging_MaterialStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_MaterialStrategy,
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_MaterialStrategy,
     UsdImaging_MaterialBindingImplData> 
         UsdImaging_MaterialBindingCache;
 
@@ -708,7 +709,7 @@ struct UsdImaging_MaterialStrategy {
  
     static 
     value_type
-    Inherit(UsdImaging_MaterialBindingCache const* owner,
+    Compute(UsdImaging_MaterialBindingCache const* owner,
             UsdPrim prim,
             query_type const* query)
     { 
@@ -753,7 +754,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_DrawModeStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_DrawModeStrategy>
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_DrawModeStrategy>
     UsdImaging_DrawModeCache;
 
 struct UsdImaging_DrawModeStrategy
@@ -775,7 +776,7 @@ struct UsdImaging_DrawModeStrategy
 
     static
     value_type
-    Inherit(UsdImaging_DrawModeCache const* owner,
+    Compute(UsdImaging_DrawModeCache const* owner,
             UsdPrim prim,
             query_type const* query)
     {
@@ -791,6 +792,87 @@ struct UsdImaging_DrawModeStrategy
     ComputeDrawMode(UsdPrim const& prim)
     {
         return UsdGeomModelAPI(prim).ComputeModelDrawMode();
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// UsdGeomPointInstancer indices cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/pointInstancer.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_PointInstancerIndicesStrategy;
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_PointInstancerIndicesStrategy>
+    UsdImaging_PointInstancerIndicesCache;
+
+struct UsdImaging_PointInstancerIndicesStrategy
+{
+    // map from protoIndex -> instanceIndices.
+    typedef VtArray<VtIntArray> value_type;
+    // We don't use query_type, but can't set it to void.
+    typedef int query_type;
+
+    // XXX: Most indices values will be static, but since they *can*
+    // be animated, we need to return true here to get invalidation on
+    // time-change.  It would be nice to add a per-entry time-varying bit
+    // to the resolved cache, instead of having the global per-attribute
+    // bit.
+    //
+    // In this particular case, instance indices are only recomputed when
+    // we see "DirtyInstanceIndex" in UpdateForTime, so though we'll be
+    // clearing cache entries out of the resolved cache on time-change,
+    // we won't actually call out to the attribute cache on static indices.
+    static
+    bool ValueMightBeTimeVarying() { return true; }
+    static
+    value_type MakeDefault() { return value_type(); }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        return 0;
+    }
+
+    static
+    value_type
+    Compute(UsdImaging_PointInstancerIndicesCache const* owner,
+            UsdPrim prim,
+            query_type const* query)
+    {
+        return ComputePerPrototypeIndices(prim, owner->GetTime());
+    }
+
+    static
+    value_type
+    ComputePerPrototypeIndices(UsdPrim const& prim, UsdTimeCode time)
+    {
+        value_type v;
+
+        UsdGeomPointInstancer pi(prim);
+        VtIntArray protoIndices;
+        if (!pi.GetProtoIndicesAttr().Get(&protoIndices, time)) {
+            TF_WARN("Failed to read point instancer protoIndices");
+            return v;
+        }
+
+        std::vector<bool> mask = pi.ComputeMaskAtTime(time);
+
+        for (size_t instanceId = 0; instanceId < protoIndices.size(); ++instanceId) {
+            size_t protoIndex = protoIndices[instanceId];
+
+            if (protoIndex >= v.size()) {
+                v.resize(protoIndex + 1);
+            }
+
+            if (mask.size() == 0 || mask[instanceId]) {
+                v[protoIndex].push_back(instanceId);
+            }
+        }
+
+        return v;
     }
 };
 
@@ -813,7 +895,7 @@ struct UsdImaging_CoordSysBindingImplData {
 
 struct UsdImaging_CoordSysBindingStrategy;
 
-typedef UsdImaging_InheritedCache<
+typedef UsdImaging_ResolvedAttributeCache<
     UsdImaging_CoordSysBindingStrategy,
     UsdImaging_CoordSysBindingImplData>
     UsdImaging_CoordSysBindingCache;
@@ -856,7 +938,7 @@ struct UsdImaging_CoordSysBindingStrategy
 
     static
     value_type
-    Inherit(UsdImaging_CoordSysBindingCache const* owner,
+    Compute(UsdImaging_CoordSysBindingCache const* owner,
             UsdPrim prim,
             query_type const* query)
     {
@@ -913,7 +995,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_InheritedPrimvarStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_InheritedPrimvarStrategy>
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_InheritedPrimvarStrategy>
     UsdImaging_InheritedPrimvarCache;
 
 struct UsdImaging_InheritedPrimvarStrategy
@@ -941,7 +1023,7 @@ struct UsdImaging_InheritedPrimvarStrategy
     }
 
     static
-    value_type Inherit(UsdImaging_InheritedPrimvarCache const* owner,
+    value_type Compute(UsdImaging_InheritedPrimvarCache const* owner,
                        UsdPrim prim,
                        query_type const* query)
     {

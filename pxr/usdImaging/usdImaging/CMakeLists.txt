@@ -29,7 +29,7 @@ pxr_library(usdImaging
         debugCodes
         delegate
         indexProxy
-        inheritedCache
+        resolvedAttributeCache
         instancerContext
         tokens
         valueCache

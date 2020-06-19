@@ -125,6 +125,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _purposeCache() // note that purpose is uniform, so no GetTime()
     , _drawModeCache(GetTime())
     , _inheritedPrimvarCache()
+    , _pointInstancerIndicesCache(GetTime())
     , _displayRender(true)
     , _displayProxy(true)
     , _displayGuides(true)
@@ -760,6 +761,8 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     _time = time;
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
+    _pointInstancerIndicesCache.SetTime(_time);
+
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
 
@@ -883,6 +886,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _drawModeCache.Clear();
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
+    _pointInstancerIndicesCache.Clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);

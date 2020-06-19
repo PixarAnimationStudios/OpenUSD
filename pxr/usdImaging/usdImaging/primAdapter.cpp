@@ -26,7 +26,7 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdImaging/inheritedCache.h"
+#include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/usd/sdf/schema.h"
@@ -77,6 +77,12 @@ static bool _IsEnabledPurposeCache() {
     return _v;
 }
 
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_POINT_INSTANCER_INDICES_CACHE, 1,
+                      "Enable a cache for point instancer indices.");
+static bool _IsEnabledPointInstancerIndicesCache() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_POINT_INSTANCER_INDICES_CACHE) == 1;
+    return _v;
+}
 
 UsdImagingPrimAdapter::~UsdImagingPrimAdapter() 
 {
@@ -1172,6 +1178,24 @@ TfToken
 UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
 {
     return _delegate->_GetModelDrawMode(prim);
+}
+
+VtArray<VtIntArray>
+UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
+                                              UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+
+    UsdImaging_PointInstancerIndicesCache &indicesCache =
+        _delegate->_pointInstancerIndicesCache;
+
+    if (_IsEnabledPointInstancerIndicesCache() &&
+        indicesCache.GetTime() == time) {
+        return indicesCache.GetValue(prim);
+    } else {
+        return UsdImaging_PointInstancerIndicesStrategy::
+            ComputePerPrototypeIndices(prim, time);
+    }
 }
 
 /*virtual*/

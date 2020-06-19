@@ -31,7 +31,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
-#include "pxr/usdImaging/usdImaging/inheritedCache.h"
+#include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
@@ -714,6 +714,7 @@ private:
     UsdImaging_DrawModeCache _drawModeCache;
     UsdImaging_CollectionCache _collectionCache;
     UsdImaging_InheritedPrimvarCache _inheritedPrimvarCache;
+    UsdImaging_PointInstancerIndicesCache _pointInstancerIndicesCache;
 
     // Pickability
     PickabilityMap _pickablesMap;

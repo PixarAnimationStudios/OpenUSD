@@ -31,7 +31,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
-#include "pxr/usdImaging/usdImaging/inheritedCache.h"
+#include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/texture.h"
@@ -409,6 +409,15 @@ public:
     /// the namespace if necessary.
     USDIMAGING_API
     TfToken GetModelDrawMode(UsdPrim const& prim);
+
+    /// Computes the per-prototype instance indices for a UsdGeomPointInstancer.
+    /// XXX: This needs to be defined on the base class, to have access to the
+    /// delegate, but it's a clear violation of abstraction.  This call is only
+    /// legal for prims of type UsdGeomPointInstancer; in other cases, the
+    /// returned array will be empty and the computation will issue errors.
+    USDIMAGING_API
+    VtArray<VtIntArray> GetPerPrototypeIndices(UsdPrim const& prim,
+                                               UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
