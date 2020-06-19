@@ -496,7 +496,7 @@ protected:
     HdDriver _hgiDriver;
 
 private:
-    HdEngine _engine;
+    std::unique_ptr<HdEngine> _engine;
 
 protected:
     // ... and the other Hydra resources

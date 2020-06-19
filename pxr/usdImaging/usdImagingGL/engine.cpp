@@ -189,6 +189,7 @@ void
 UsdImagingGLEngine::_DestroyHydraObjects()
 {
     // Destroy objects in opposite order of construction.
+    _engine = nullptr;
     _taskController = nullptr;
     _sceneDelegate = nullptr;
     _renderIndex = nullptr;
@@ -277,7 +278,7 @@ UsdImagingGLEngine::RenderBatch(
     _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
 
     VtValue selectionValue(_selTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
+    _engine->SetTaskContextData(HdxTokens->selectionState, selectionValue);
     _Execute(params, _taskController->GetRenderingTasks());
 }
 
@@ -621,7 +622,7 @@ UsdImagingGLEngine::TestIntersection(
     pickParams.outHits = &allHits;
     const VtValue vtPickParams(pickParams);
 
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
     _Execute(params, _taskController->GetPickingTasks());
 
     // Since we are in nearest-hit mode, we expect allHits to have
@@ -867,6 +868,10 @@ UsdImagingGLEngine::_SetRenderDelegate(
         _renderIndex.get(),
         _ComputeControllerPath(_renderDelegate));
 
+    // The task context holds on to resources in the render
+    // deletegate, so we want to destroy it first and thus
+    // create it last.
+    _engine = std::make_unique<HdEngine>();
 }
 
 //----------------------------------------------------------------------------
@@ -1179,7 +1184,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         // Release the GIL before calling into hydra, in case any hydra plugins
         // call into python.
         TF_PY_ALLOW_THREADS_IN_SCOPE();
-        _engine.Execute(_renderIndex.get(), &tasks);
+        _engine->Execute(_renderIndex.get(), &tasks);
     }
 
     if (isCoreProfileContext) {
@@ -1465,7 +1470,7 @@ UsdImagingGLEngine::_GetSceneDelegate() const
 HdEngine *
 UsdImagingGLEngine::_GetHdEngine()
 {
-    return &_engine;
+    return _engine.get();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

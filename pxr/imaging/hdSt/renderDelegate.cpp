@@ -132,15 +132,7 @@ public:
 
         // Also register with HdPerfLog.
         //
-        // XXX:
-        // HdPerfLog takes an shared_ptr even though it doesn't take
-        // shared ownership. This will keep all resource registries alive
-        // until HdPerfLog is destroyed.
-        //
-        // HdPerfLog should really take a weak or raw ptr:
-        // HdPerfLog::GetInstance().AddResourceRegistry(result.get());
-
-        HdPerfLog::GetInstance().AddResourceRegistry(result);
+        HdPerfLog::GetInstance().AddResourceRegistry(result.get());
 
         return result;
     }
@@ -150,9 +142,7 @@ private:
     {
         std::lock_guard<std::mutex> guard(_mutex);
 
-        // XXX:
-        // Remove from HdPerfLog once HdPerfLog isn't saving shared_ptr's:
-        // HdPerfLog::GetInstance().RemoveResourceRegistry(registry);
+        HdPerfLog::GetInstance().RemoveResourceRegistry(registry);
         
         _map.erase(registry->GetHgi());
         delete registry;
