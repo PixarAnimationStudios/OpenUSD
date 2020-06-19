@@ -988,6 +988,14 @@ def InstallPtex_Windows(context, force, buildArgs):
                   [("add_definitions(-DPTEX_STATIC)", 
                     "# add_definitions(-DPTEX_STATIC)")])
 
+        # Patch Ptex::String to export symbol for operator<< 
+        # This is required for newer versions of OIIO, which make use of the
+        # this operator on Windows platform specifically.
+        PatchFile('src\\ptex\\Ptexture.h',
+                  [("std::ostream& operator << (std::ostream& stream, const Ptex::String& str);",
+                    "PTEXAPI std::ostream& operator << (std::ostream& stream, const Ptex::String& str);")])
+
+
         RunCMake(context, force, buildArgs)
 
 def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
