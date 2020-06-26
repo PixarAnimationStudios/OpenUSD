@@ -336,17 +336,15 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
         }
-        // Add this instancer into the render index if it has any prototypes.
-        if (primCount > 0) {
-            index->InsertInstancer(instancerPath,
-                                   /*parentPath=*/ctx.instancerCachePath,
-                                   _GetPrim(instancerPath),
-                                   ctx.instancerAdapter);
+        // Add this instancer into the render index
+        index->InsertInstancer(instancerPath,
+                               /*parentPath=*/ctx.instancerCachePath,
+                               _GetPrim(instancerPath),
+                               ctx.instancerAdapter);
 
-            // Mark this instancer as having a TrackVariability queued, since
-            // we automatically queue it in InsertInstancer.
-            instancerData.refreshVariability = true;
-        }
+        // Mark this instancer as having a TrackVariability queued, since
+        // we automatically queue it in InsertInstancer.
+        instancerData.refreshVariability = true;
     }
 
     // Add an entry to the instancer data for the given instance. Keep
