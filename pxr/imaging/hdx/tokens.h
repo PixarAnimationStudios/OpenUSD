@@ -84,7 +84,6 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (drawTargetResolveTask)     \
     (pickTask)                  \
     (pickFromRenderBufferTask)  \
-    (colorizeTask)              \
     (colorizeSelectionTask)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);

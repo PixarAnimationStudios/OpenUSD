@@ -40,7 +40,6 @@ pxr_library(hdx
 
     PUBLIC_CLASSES
         aovInputTask
-        colorizeTask
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
@@ -48,7 +47,6 @@ pxr_library(hdx
         drawTargetTask
         drawTargetResolveTask
         fullscreenShader
-        fullscreenShaderGL
         hgiConversions
         oitBufferAccessor
         oitRenderTask
