@@ -317,16 +317,6 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     // update range list (should be done before early exit)
     _SetRangeList(ranges);
 
-    // If there is no data to reallocate, it is the caller's responsibility to
-    // deallocate the underlying resource. 
-    //
-    // XXX: There is an issue here if the caller does not deallocate
-    // after this return, we will hold onto unused GPU resources until the next
-    // reallocation. Perhaps we should free the buffer here to avoid that
-    // situation.
-    if (totalNumElements == 0)
-        return;
-
     _totalCapacity = totalNumElements;
 
     // resize each BufferResource
@@ -348,21 +338,25 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         GLuint curId = curRes->GetId();
 
         if (glGenBuffers) {
-
-            if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glCreateBuffers(1, &newId);
-                glNamedBufferData(newId,
-                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
-            } else {
-                glGenBuffers(1, &newId);
-                glBindBuffer(GL_ARRAY_BUFFER, newId);
-                glBufferData(GL_ARRAY_BUFFER,
-                             bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
+            if (bufferSize > 0) {
+                // Allocate a new buffer object only for a non-zero buffer size.
+                // Note: GL does support 0 sized buffer objects, but other APIs
+                // don't.
+                if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+                    glCreateBuffers(1, &newId);
+                    glNamedBufferData(newId,
+                                    bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                } else {
+                    glGenBuffers(1, &newId);
+                    glBindBuffer(GL_ARRAY_BUFFER, newId);
+                    glBufferData(GL_ARRAY_BUFFER,
+                                bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                }
             }
 
-            // if old buffer exists, copy unchanged data
-            if (curId) {
+            // if old buffer and new buffer exists, copy unchanged data
+            if (curId && newId) {
                 std::vector<size_t>::iterator newOffsetIt = newOffsets.begin();
 
                 // pre-pass to combine consecutive buffer range relocation

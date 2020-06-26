@@ -399,16 +399,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     // update range list (should be done before early exit)
     _SetRangeList(ranges);
 
-    // If there is no data to reallocate, it is the caller's responsibility to
-    // deallocate the underlying resource. 
-    //
-    // XXX: There is an issue here if the caller does not deallocate
-    // after this return, we will hold onto unused GPU resources until the next
-    // reallocation. Perhaps we should free the buffer here to avoid that
-    // situation.
-    if (totalSize == 0)
-        return;
-
     // resize each BufferResource
     // all HdBufferSources are sharing same VBO
 
@@ -425,19 +415,26 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
     if (glGenBuffers) {
 
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (caps.directStateAccessEnabled) {
-            glCreateBuffers(1, &newId);
-            glNamedBufferData(newId, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
-        } else {
-            glGenBuffers(1, &newId);
-            glBindBuffer(GL_ARRAY_BUFFER, newId);
-            glBufferData(GL_ARRAY_BUFFER, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (totalSize > 0) {
+            // Allocate a new buffer object only for a non-zero buffer size.
+            // Note: GL does support 0 sized buffer objects, but other APIs
+            // don't.
+            GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+            if (caps.directStateAccessEnabled) {
+                glCreateBuffers(1, &newId);
+                glNamedBufferData(newId, totalSize, /*data=*/NULL,
+                                  GL_STATIC_DRAW);
+            } else {
+                glGenBuffers(1, &newId);
+                glBindBuffer(GL_ARRAY_BUFFER, newId);
+                glBufferData(GL_ARRAY_BUFFER, totalSize, /*data=*/NULL,
+                             GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+            }
         }
 
-        // if old buffer exists, copy unchanged data
-        if (curId) {
+        // if old and new buffers exists, copy unchanged data
+        if (curId && newId) {
             int index = 0;
 
             size_t rangeCount = GetRangeCount();
@@ -445,7 +442,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             // pre-pass to combine consecutive buffer range relocation
             HdStGLBufferRelocator relocator(curId, newId);
             for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
-                _StripedInterleavedBufferRangeSharedPtr range = _GetRangeSharedPtr(rangeIdx);
+                _StripedInterleavedBufferRangeSharedPtr range =
+                    _GetRangeSharedPtr(rangeIdx);
 
                 if (!range) {
                     TF_CODING_ERROR("_StripedInterleavedBufferRange expired "
