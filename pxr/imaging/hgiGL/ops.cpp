@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/pipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
+#include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -141,7 +142,7 @@ HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
         HgiGLBuffer* srcBuffer = static_cast<HgiGLBuffer*>(srcBufHandle.Get());
 
         if (!TF_VERIFY(srcBuffer && srcBuffer->GetBufferId(),
-            "Invalid source texture handle")) {
+            "Invalid source buffer handle")) {
             return;
         }
 
@@ -149,7 +150,7 @@ HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
         HgiGLBuffer* dstBuffer = static_cast<HgiGLBuffer*>(dstBufHandle.Get());
 
         if (!TF_VERIFY(dstBuffer && dstBuffer->GetBufferId(),
-            "Invalid destination texture handle")) {
+            "Invalid destination buffer handle")) {
             return;
         }
 
@@ -352,6 +353,24 @@ HgiGLOps::BindResources(HgiResourceBindingsHandle res)
         {
             rb->BindResources();
         }
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::SetConstantValues(
+    HgiPipelineHandle pipeline,
+    HgiShaderStage stages,
+    uint32_t bindIndex,
+    uint32_t byteSize,
+    const void* data)
+{
+    return [pipeline, bindIndex, byteSize, data] {
+        HgiGLShaderProgram* glProgram =
+            static_cast<HgiGLShaderProgram*>(
+                pipeline->GetDescriptor().shaderProgram.Get());
+        uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
+        glNamedBufferData(ubo, byteSize, data, GL_STATIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
     };
 }
 

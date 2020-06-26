@@ -60,6 +60,14 @@ public:
     void BindResources(HgiResourceBindingsHandle resources) override;
 
     HGIMETAL_API
+    void SetConstantValues(
+        HgiPipelineHandle pipeline,
+        HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data) override;
+
+    HGIMETAL_API
     void BindVertexBuffers(
         uint32_t firstBinding,
         HgiBufferHandleVector const& buffers,

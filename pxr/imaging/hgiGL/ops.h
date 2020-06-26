@@ -105,6 +105,14 @@ public:
     static HgiGLOpsFn BindResources(HgiResourceBindingsHandle resources);
 
     HGIGL_API
+    static HgiGLOpsFn SetConstantValues(
+        HgiPipelineHandle pipeline,
+        HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data);
+
+    HGIGL_API
     static HgiGLOpsFn BindVertexBuffers(
         uint32_t firstBinding,
         HgiBufferHandleVector const& buffers,

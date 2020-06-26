@@ -64,6 +64,15 @@ public:
     HGIGL_API
     uint32_t GetProgramId() const;
 
+    /// Returns the gl resource for the uniform block of this shader program.
+    /// This uniform block is used to store some per-shader values, such as
+    /// indices or offsets into other buffers.
+    /// See also Hgi::SetConstantValues.
+    /// 'sizeHint' is used to store the byte size of the uniform buffer, but
+    /// this fn does not actually allocate the data storage for the buffer.
+    HGIGL_API
+    uint32_t GetUniformBuffer(size_t sizeHint);
+
 protected:
     friend class HgiGL;
 
@@ -78,7 +87,9 @@ private:
 private:
     std::string _errors;
     uint32_t _programId;
-    size_t _byteSize;
+    size_t _programByteSize;
+    uint32_t _uniformBuffer;
+    size_t _uboByteSize;
 };
 
 

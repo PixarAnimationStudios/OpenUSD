@@ -73,6 +73,14 @@ public:
     void BindResources(HgiResourceBindingsHandle resources) override;
 
     HGIGL_API
+    void SetConstantValues(
+        HgiPipelineHandle pipeline,
+        HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data) override;
+    
+    HGIGL_API
     void BindVertexBuffers(
         uint32_t firstBinding,
         HgiBufferHandleVector const& buffers,

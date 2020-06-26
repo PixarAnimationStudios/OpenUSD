@@ -81,6 +81,24 @@ HgiGLGraphicsCmds::BindResources(HgiResourceBindingsHandle res)
 }
 
 void
+HgiGLGraphicsCmds::SetConstantValues(
+    HgiPipelineHandle pipeline,
+    HgiShaderStage stages,
+    uint32_t bindIndex,
+    uint32_t byteSize,
+    const void* data)
+{
+    _ops.push_back(
+        HgiGLOps::SetConstantValues(
+            pipeline,
+            stages,
+            bindIndex,
+            byteSize,
+            data)
+        );
+}
+
+void
 HgiGLGraphicsCmds::BindVertexBuffers(
     uint32_t firstBinding,
     HgiBufferHandleVector const& vertexBuffers,

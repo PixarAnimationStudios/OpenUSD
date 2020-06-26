@@ -80,6 +80,22 @@ public:
     HGI_API
     virtual void BindResources(HgiResourceBindingsHandle resources) = 0;
 
+    /// Set Push / Function constants.
+    /// `pipeline` is the pipeline that you are binding before the draw call. It
+    /// contains the program used for the uniform buffer
+    /// `stages` describes for what shader stage you are setting the push
+    /// constant values for. Each stage can have its own (or none) binding
+    /// and they must match what is described in the shader functions.
+    /// `byteSize` is the size of the data you are updating.
+    /// `data` is the data you are copying into the push constants block.
+    HGI_API
+    virtual void SetConstantValues(
+        HgiPipelineHandle pipeline,
+        HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data) = 0;
+
     /// Binds the vertex buffer(s) that describe the vertex attributes.
     /// `firstBinding` the first index to which buffers are bound (usually 0).
     /// `byteOffsets` offset to where the data of each buffer starts, in bytes.

@@ -202,6 +202,26 @@ HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
 }
 
 void
+HgiMetalGraphicsCmds::SetConstantValues(
+    HgiPipelineHandle pipeline,
+    HgiShaderStage stages,
+    uint32_t bindIndex,
+    uint32_t byteSize,
+    const void* data)
+{
+    if (stages & HgiShaderStageVertex) {
+        [_encoder setVertexBytes:data
+                          length:byteSize
+                         atIndex:bindIndex];
+    }
+    if (stages & HgiShaderStageFragment) {
+        [_encoder setFragmentBytes:data
+                            length:byteSize
+                           atIndex:bindIndex];
+    }
+}
+
+void
 HgiMetalGraphicsCmds::BindVertexBuffers(
     uint32_t firstBinding,
     HgiBufferHandleVector const& vertexBuffers,
