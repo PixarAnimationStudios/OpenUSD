@@ -78,6 +78,9 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp);
+    
+    HGIGL_API
+    static HgiGLOpsFn CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp);
 
     HGIGL_API
     static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);

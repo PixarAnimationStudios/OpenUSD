@@ -51,6 +51,9 @@ public:
 
     HGIMETAL_API
     void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
+    
+    HGIMETAL_API
+    void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) override;
 
     HGIMETAL_API
     void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;

@@ -61,6 +61,13 @@ HgiGLBlitCmds::CopyTextureGpuToCpu(
     _ops.push_back( HgiGLOps::CopyTextureGpuToCpu(copyOp) );
 }
 
+void
+HgiGLBlitCmds::CopyBufferGpuToGpu(
+    HgiBufferGpuToGpuOp const& copyOp)
+{
+    _ops.push_back( HgiGLOps::CopyBufferGpuToGpu(copyOp) );
+}
+
 void 
 HgiGLBlitCmds::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 {

@@ -92,6 +92,48 @@ struct HgiTextureGpuToCpuOp
     size_t destinationBufferByteSize;
 };
 
+//// \struct HgiBufferGpuToGpuOp
+///
+/// Describes the properties needed to copy buffer data from GPU to CPU.
+///
+/// It is the responsibility of the caller to:
+///   - ensure the destination buffer is large enough to receive the data
+///     (keep in mind the destinationByteOffset).
+///   - ensure the source buffer and destination buffer are valid at the time
+///     the command is executed.
+///   - insert the appropriate barriers in the command buffer prior to
+///     reading/writing to/from the resources.
+///
+/// <ul>
+/// <li>gpuSourceBuffer:
+///   The gpu buffer to copy pixels from.</li>
+/// <li>sourceByteOffset:
+///   The byte offset in source buffer to start copying the data from.</li>
+/// <li>byteSize:
+///   Size of the data (in bytes) to copy</li>
+/// <li>gpuDestinationBuffer:
+///   The copy destination cpu buffer.</li>
+/// <li>destinationByteOffset:
+///   The byte offset in destination buffer where to start copying the data to.</li>
+/// </ul>
+///
+struct HgiBufferGpuToGpuOp
+{
+    HgiBufferGpuToGpuOp()
+    : gpuSourceBuffer()
+    , sourceByteOffset(0)
+    , byteSize(0)
+    , gpuDestinationBuffer()
+    , destinationByteOffset(0)
+    {}
+
+    HgiBufferHandle gpuSourceBuffer;
+    size_t sourceByteOffset;
+    size_t byteSize;
+    HgiBufferHandle gpuDestinationBuffer;
+    size_t destinationByteOffset;
+};
+
 
 //// \struct HgiBufferCpuToGpuOp
 ///
@@ -127,7 +169,7 @@ struct HgiBufferCpuToGpuOp
     , byteSize(0)
     {}
 
-    void* cpuSourceBuffer;
+    void const* cpuSourceBuffer;
     size_t sourceByteOffset;
     HgiBufferHandle gpuDestinationBuffer;
     size_t destinationByteOffset;

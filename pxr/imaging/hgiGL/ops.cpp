@@ -133,6 +133,39 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
     };
 }
 
+HgiGLOpsFn
+HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
+{
+    return [copyOp] {
+        HgiBufferHandle const& srcBufHandle = copyOp.gpuSourceBuffer;
+        HgiGLBuffer* srcBuffer = static_cast<HgiGLBuffer*>(srcBufHandle.Get());
+
+        if (!TF_VERIFY(srcBuffer && srcBuffer->GetBufferId(),
+            "Invalid source texture handle")) {
+            return;
+        }
+
+        HgiBufferHandle const& dstBufHandle = copyOp.gpuDestinationBuffer;
+        HgiGLBuffer* dstBuffer = static_cast<HgiGLBuffer*>(dstBufHandle.Get());
+
+        if (!TF_VERIFY(dstBuffer && dstBuffer->GetBufferId(),
+            "Invalid destination texture handle")) {
+            return;
+        }
+
+        if (copyOp.byteSize == 0) {
+            TF_WARN("The size of the data to copy was zero (aborted)");
+            return;
+        }
+
+        glCopyNamedBufferSubData(srcBuffer->GetBufferId(),
+                                 dstBuffer->GetBufferId(),
+                                 copyOp.sourceByteOffset,
+                                 copyOp.destinationByteOffset,
+                                 copyOp.byteSize);
+    };
+}
+
 HgiGLOpsFn 
 HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 {

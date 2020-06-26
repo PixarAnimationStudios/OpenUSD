@@ -33,6 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiTextureGpuToCpuOp;
+struct HgiBufferGpuToGpuOp;
 struct HgiBufferCpuToGpuOp;
 struct HgiResolveImageOp;
 
@@ -63,6 +64,10 @@ public:
     /// This call is blocking until the data is ready to be read on CPU.
     HGI_API
     virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
+
+    /// Copy a buffer resource from GPU to GPU.
+    HGI_API
+    virtual void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) = 0;
 
     /// Copy new data from cpu into gpu buffer.
     /// For example copy new data into a uniform block or storage buffer.

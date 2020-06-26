@@ -165,6 +165,40 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
     [cpuBuffer release];
 }
 
+void
+HgiMetalBlitCmds::CopyBufferGpuToGpu(
+    HgiBufferGpuToGpuOp const& copyOp)
+{
+    HgiBufferHandle const& srcBufHandle = copyOp.gpuSourceBuffer;
+    HgiMetalBuffer* srcBuffer =static_cast<HgiMetalBuffer*>(srcBufHandle.Get());
+
+    if (!TF_VERIFY(srcBuffer && srcBuffer->GetBufferId(),
+        "Invalid source buffer handle")) {
+        return;
+    }
+
+    HgiBufferHandle const& dstBufHandle = copyOp.gpuDestinationBuffer;
+    HgiMetalBuffer* dstBuffer =static_cast<HgiMetalBuffer*>(dstBufHandle.Get());
+
+    if (!TF_VERIFY(dstBuffer && dstBuffer->GetBufferId(),
+        "Invalid destination buffer handle")) {
+        return;
+    }
+
+    if (copyOp.byteSize == 0) {
+        TF_WARN("The size of the data to copy was zero (aborted)");
+        return;
+    }
+
+    _CreateEncoder();
+
+    [_blitEncoder copyFromBuffer:srcBuffer->GetBufferId()
+                    sourceOffset:copyOp.sourceByteOffset
+                        toBuffer:dstBuffer->GetBufferId()
+               destinationOffset:copyOp.destinationByteOffset
+                            size:copyOp.byteSize];
+}
+
 void HgiMetalBlitCmds::CopyBufferCpuToGpu(
     HgiBufferCpuToGpuOp const& copyOp)
 {
