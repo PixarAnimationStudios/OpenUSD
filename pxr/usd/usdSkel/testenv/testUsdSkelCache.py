@@ -114,13 +114,9 @@ class TestUsdSkelCache(unittest.TestCase):
         skel1 = UsdSkel.Skeleton.Get(stage, "/Skel1")
         skel2 = UsdSkel.Skeleton.Get(stage, "/Skel2")
 
-        # TODO: Skel population does not currently traverse instance proxies,
-        # so the resolved bindings below will not include skinned meshes within
-        # instances.
-
         binding1 = cache.ComputeSkelBinding(root, skel1)
         self.assertEqual(binding1.GetSkeleton().GetPrim(), skel1.GetPrim())
-        self.assertEqual(len(binding1.GetSkinningTargets()), 1)
+        self.assertEqual(len(binding1.GetSkinningTargets()), 2)
         skinningQuery1 = binding1.GetSkinningTargets()[0]
         self.assertEqual(skinningQuery1.GetPrim().GetPath(),
                          Sdf.Path("/SkelBinding/Scope/Inherit"))
@@ -163,9 +159,9 @@ class TestUsdSkelCache(unittest.TestCase):
                          Sdf.Path("/SkelBinding/Scope/Override"))
 
         allBindings = cache.ComputeSkelBindings(root)
-        # Expecting two resolved bindings. This should *not* include bindings
-        # for any inactive skels.
-        self.assertEqual(len(allBindings), 2)
+        # Expecting three resolved bindings. This should *not* include bindings
+        # for any inactive skels, but does include instances
+        self.assertEqual(len(allBindings), 3)
 
         self.assertEqual(binding1.GetSkeleton().GetPrim(),
                          allBindings[0].GetSkeleton().GetPrim())
