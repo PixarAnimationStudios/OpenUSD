@@ -140,6 +140,8 @@ public:
 private:
     void _Destroy(HdStResourceRegistry * const registry)
     {
+        TRACE_FUNCTION();
+
         std::lock_guard<std::mutex> guard(_mutex);
 
         HdPerfLog::GetInstance().RemoveResourceRegistry(registry);
