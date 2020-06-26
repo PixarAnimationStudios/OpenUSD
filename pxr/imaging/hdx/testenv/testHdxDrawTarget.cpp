@@ -188,6 +188,14 @@ int main(int argc, char *argv[])
     // storm texture system.
     textureNode.parameters[TfToken("file")] = 
         VtValue(drawTargetAttachmentId);
+    textureNode.parameters[TfToken("wrapS")] =
+        VtValue(TfToken("repeat"));
+    textureNode.parameters[TfToken("wrapT")] =
+        VtValue(TfToken("repeat"));
+    textureNode.parameters[TfToken("minFilter")] =
+        VtValue(TfToken("linear"));
+    textureNode.parameters[TfToken("magFilter")] =
+        VtValue(TfToken("linear"));
 
     // Insert connection between texture node and terminal
     HdMaterialRelationship rel;

@@ -85,6 +85,7 @@ public:
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
+    HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const &id);
 
     /// Instancer
     void AddInstancer(SdfPath const &id,
