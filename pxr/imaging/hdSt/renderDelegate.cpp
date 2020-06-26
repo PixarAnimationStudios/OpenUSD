@@ -415,7 +415,7 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
     } else if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(bprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
-        return new HdStRenderBuffer(_hgi, bprimId);
+        return new HdStRenderBuffer(_resourceRegistry.get(), bprimId);
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -431,7 +431,8 @@ HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
     } else if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
-        return new HdStRenderBuffer(_hgi, SdfPath::EmptyPath());
+        return new HdStRenderBuffer(_resourceRegistry.get(),
+                                    SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
