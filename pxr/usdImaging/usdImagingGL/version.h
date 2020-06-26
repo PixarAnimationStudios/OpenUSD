@@ -30,7 +30,8 @@
 // 3 -> 4: Add "instancerContext" to new picking API.
 // 4 -> 5: Use UsdImagingGLEngine::_GetSceneDelegate() instead of _delegate.
 // 5 -> 6: Use UsdImagingGLEngine::_GetHdEngine() instead of _engine.
-#define USDIMAGINGGL_API_VERSION 6
+// 6 -> 7: Added UsdImagingGLEngine::_GetTaskController() and _IsUsingLegacyImpl()
+#define USDIMAGINGGL_API_VERSION 7
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 

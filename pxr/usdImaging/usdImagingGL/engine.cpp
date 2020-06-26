@@ -1473,5 +1473,17 @@ UsdImagingGLEngine::_GetHdEngine()
     return _engine.get();
 }
 
+HdxTaskController *
+UsdImagingGLEngine::_GetTaskController() const
+{
+    return _taskController.get();
+}
+
+bool
+UsdImagingGLEngine::_IsUsingLegacyImpl() const
+{
+    return bool(_legacyImpl);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

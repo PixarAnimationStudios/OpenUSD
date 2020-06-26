@@ -486,34 +486,31 @@ protected:
     HdEngine *_GetHdEngine();
 
     USDIMAGINGGL_API
+    HdxTaskController *_GetTaskController() const;
+
+    USDIMAGINGGL_API
+    bool _IsUsingLegacyImpl() const;
+
+    USDIMAGINGGL_API
     HdSelectionSharedPtr _GetSelection() const;
 
-    // _hgi is first field so that it is guaranteed to
-    // be destructed last and thus available while any other
-    // Hydra objects have a pointer to Hgi.
+protected:
+
+// private:
+    // Note that any of the fields below might become private
+    // in the future and subclasses should use the above getters
+    // to access them instead.
+
     HgiUniquePtr _hgi;
     // Similar for HdDriver.
     HdDriver _hgiDriver;
 
-private:
-    std::unique_ptr<HdEngine> _engine;
-
 protected:
-    // ... and the other Hydra resources
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
     SdfPath const _sceneDelegateId;
 
-private:
-    void _DestroyHydraObjects();
-
-    // Note that the order of construction/destruction matters,
-    // thus the switches between protected and private are necessary
-    // until we have created getters for _taskController, ... as well.
-    std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
-
-protected:
     std::unique_ptr<HdxTaskController> _taskController;
 
     HdxSelectionTrackerSharedPtr _selTracker;
@@ -536,6 +533,12 @@ protected:
     // time we expect this to be null.  When it is not null, none of the other
     // member variables of this class are used.
     std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
+
+private:
+    void _DestroyHydraObjects();
+
+    std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+    std::unique_ptr<HdEngine> _engine;
 };
 
 
