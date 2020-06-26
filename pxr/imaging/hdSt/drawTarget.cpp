@@ -103,13 +103,22 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyDTResolution) {
+        const VtValue vtValue =
+            sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
+        
+        // The resolution is needed to set the viewport and compute the
+        // camera projection matrix (more precisely, to do the aspect ratio
+        // adjustment).
+        //
+        // Note that it is also stored in the render buffers. This is
+        // somewhat redundant but it would be complicated for the draw
+        // target to reach through to the render buffers to get the
+        // resolution and that conceptually, the view port and camera
+        // projection matrix are different from the texture
+        // resolution.
+        _resolution = vtValue.Get<GfVec2i>();
+
         if (!GetUseStormTextureSystem()) {
-
-            const VtValue vtValue =
-                sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
-
-            _resolution = vtValue.Get<GfVec2i>();
-            
             // No point in Resizing the textures if new ones are going to
             // be created (see _SetAttachments())
             if (_drawTarget && ((bits & DirtyDTAttachment) == Clean)) {
