@@ -50,6 +50,16 @@
 #   define ARCH_STATIC_LIBRARY_SUFFIX ".a"
 #endif
 
+// On MacOS shared libraries and loadable modules (aka loadable bundles aka
+// plugins) are different entities. Most cross-platform software packages
+// that create  loadable modules use .so as the extension on MacOS for
+// compatibility, so we use that here.
+#if defined(ARCH_OS_DARWIN)
+#   define ARCH_PLUGIN_SUFFIX ".so"
+#else
+#   define ARCH_PLUGIN_SUFFIX ARCH_LIBRARY_SUFFIX
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// library.h
