@@ -151,8 +151,6 @@ void wrapRegistry()
               arg("metadata")=NdrTokenMap()),
              return_internal_reference<>())
 
-        .def("GetNodeByURI", &This::GetNodeByURI,
-            return_internal_reference<>())
         .def("GetNodesByIdentifier", &This::GetNodesByIdentifier,
             (args("identifier")))
         .def("GetNodesByName", &This::GetNodesByName,

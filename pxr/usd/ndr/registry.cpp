@@ -691,22 +691,6 @@ NdrRegistry::_GetNodeByTypePriority(
     return nullptr;
 }
 
-NdrNodeConstPtr
-NdrRegistry::GetNodeByURI(const std::string& uri)
-{
-    NdrNodeConstPtrVec parsedNodes = _ParseNodesMatchingPredicate(
-        [&uri](const NdrNodeDiscoveryResult& dr) {
-            return dr.uri == uri;
-        },
-        true // onlyParseFirstMatch
-    );
-
-    if (!parsedNodes.empty()) {
-        return parsedNodes[0];
-    }
-
-    return nullptr;
-}
 
 NdrNodeConstPtrVec
 NdrRegistry::GetNodesByIdentifier(const NdrIdentifier& identifier)

@@ -93,11 +93,6 @@ public:
         const TfToken &sourceType,
         const NdrTokenMap &metadata=NdrTokenMap());
 
-    /// Exactly like `NdrRegistry::GetNodeByURI()`, but returns a
-    /// `SdrShaderNode` pointer instead of a `NdrNode` pointer.
-    SDR_API
-    SdrShaderNodeConstPtr GetShaderNodeByURI(const std::string& uri);
-
     /// Exactly like `NdrRegistry::GetNodesByIdentifier()`, but returns a vector
     /// of `SdrShaderNode` pointers instead of a vector of `NdrNode` pointers.
     SDR_API

@@ -10,7 +10,7 @@ agnostic to the node's domain (shading, lighting, compositing, etc), register
 nodes with Ndr, and subsequently ask for information about those nodes.
 The information Ndr provides about these nodes will be fairly generic, given
 that Ndr must not cater to any specific type of node. However, specialized
-registries can derive from Ndr, and it's there that domain-specific logic
+registries can derive from Ndr, and it is there that domain-specific logic
 can be implemented. Additionally, node parsing and "discovery" are done via
 plugins, again to keep Ndr generic and extendable.
 
@@ -50,6 +50,19 @@ information such as:
     <li>Any metadata attached to the node</li>
 </ul>
 
+An NdrNode represents a dataflow-connectable computation, intended to be a 
+node in a computational network.  A node's NdrProperty's represent its 
+computational inputs and outputs, and its __URI__'s identify its external
+sources:
+- NdrNode::GetResolvedDefinitionURI() identifies the asset that provided
+  the definition of the node, which is determined during 
+  \ref ndr_DiscoveryPlugin "node discovery."
+- NdrNode::GetResolvedImplementationURI() identifies (if relevant) an 
+  implementation of the node's computation, for use by clients of computational
+  networks in which node instances may appear. It is the responsibility of a
+  \ref ndr_ParserPlugin "parser plugin" to determine and resolve an 
+  implementation from the node's definition.
+
 \subsection ndr_BaseProperty Ndr Base Property
 Ndr also provides a base property class, `NdrProperty`. Inputs and outputs are
 on a node are collectively identified as "properties".
@@ -66,17 +79,20 @@ The base property exposes information like:
 Discovery plugins are how the registry finds (or "discovers") nodes. The
 registry makes no assumptions on where, or how, nodes are stored. A discovery
 plugin can be built to find file-based nodes on the filesystem (a typical case),
-search a database, a cloud service, or any other system that nodes might reside
-in. If nodes are scattered across multiple systems, a discovery plugin can be
+search a database, a cloud service, or any other system that might contain nodes.
+ If nodes are scattered across multiple systems, a discovery plugin can be
 created for each. More info about discovery plugins is available in the
 `NdrDiscoveryPlugin` documentation.
 
 Note that a filesystem-based discovery plugin is active by default. More
 information on how to configure this plugin can be found in the documentation
 for `_NdrFilesystemDiscoveryPlugin`. In a nutshell, there are a few environment
-variables that can be configured to control its behavior. It's important to
-emphasize that other filesystem-based discovery plugins can be created if
-different behavior is needed.
+variables that can be configured to control its behavior. However, the more
+robust pattern that any renderer or shading-system plugin should follow is to
+provide its __own__ DiscoveryPlugin, so that its configuration will not interfere
+with that of other plugins.  The filesystem discovery machinery that the builtin
+`_NdrFilesystemDiscoveryPlugin` plugin uses is available for other discovery
+plugins to use - see NdrFsHelpersDiscoverNodes().
 
 \subsection ndr_ParserPlugin Parser Plugins
 Once the registry knows about nodes via the discovery plugin(s), the parser

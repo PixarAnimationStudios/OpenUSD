@@ -257,7 +257,7 @@ _GetGlslfxForTerminal(
         nodeTypeId, HioGlslfxTokens->glslfx);
 
     if (sdrNode) {
-        std::string const& glslfxFilePath = sdrNode->GetResolvedSourceURI();
+        std::string const& glslfxFilePath = sdrNode->GetResolvedImplementationURI();
         if (!glslfxFilePath.empty()) {
 
             // It is slow to go to disk and load the glslfx file. We don't want

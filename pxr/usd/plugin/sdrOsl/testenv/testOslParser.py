@@ -74,7 +74,7 @@ class TestShaderNode(unittest.TestCase):
 
         utils.TestBasicNode(self.node,
                             "OSL",
-                            self.uri,
+                            self.resolvedUri,
                             self.resolvedUri)
 
     def test_ShaderSpecific(self):

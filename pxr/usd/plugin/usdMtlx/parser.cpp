@@ -78,8 +78,8 @@ public:
                                   discoveryResult.family,
                                   context,
                                   discoveryResult.sourceType,
-                                  uri,
-                                  resolvedUri,
+                                  definitionURI,
+                                  implementationURI,
                                   std::move(properties),
                                   std::move(metadata)));
     }
@@ -98,8 +98,8 @@ public:
     const NdrNodeDiscoveryResult& discoveryResult;
     bool valid;
 
-    std::string uri;
-    std::string resolvedUri;
+    std::string definitionURI;
+    std::string implementationURI;
     TfToken context;
     NdrPropertyUniquePtrVec properties;
     NdrTokenMap metadata;
@@ -265,10 +265,11 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
         context = SdrNodeContext->Pattern;
     }
 
-    // Build the basic shader node info.
-    builder->context     = context;
-    builder->uri         = UsdMtlxGetSourceURI(nodeDef);
-    builder->resolvedUri = builder->uri;
+    // Build the basic shader node info. We are filling in implementationURI
+    // as a placeholder - it should get set to a more acccurate value by caller.
+    builder->context           = context;
+    builder->definitionURI     = UsdMtlxGetSourceURI(nodeDef);
+    builder->implementationURI = builder->definitionURI;
 
     // Metadata
     builder->metadata[SdrNodeMetadata->Label] = nodeDef->getNodeString();
@@ -332,13 +333,14 @@ ParseElement(
         return;
     }
 
-    // Get the file.
+    // Get the implementation file.  Note we're not doing proper Ar asset
+    // localization here yet.
     auto filename = impl->getFile();
     if (filename.empty()) {
         builder->SetInvalid();
         return;
     }
-    builder->uri = filename;
+
     if (TfIsRelativePath(filename)) {
         // The path is relative to some library path but we don't know which.
         // We'll just check them all until we find an existing file.
@@ -362,7 +364,7 @@ ParseElement(
             return;
         }
     }
-    builder->resolvedUri = filename;
+    builder->implementationURI = filename;
 
     // Function
     auto&& function = impl->getFunction();

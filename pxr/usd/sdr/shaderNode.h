@@ -89,8 +89,8 @@ public:
                   const TfToken& family,
                   const TfToken& context,
                   const TfToken& sourceType,
-                  const std::string& uri,
-                  const std::string& resolvedUri,
+                  const std::string& definitionURI,
+                  const std::string& implementationURI,
                   NdrPropertyUniquePtrVec&& properties,
                   const NdrTokenMap& metadata = NdrTokenMap(),
                   const std::string &sourceCode = std::string());

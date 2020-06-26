@@ -49,7 +49,7 @@ public:
                 discoveryResult.family,
                 discoveryResult.sourceType,
                 discoveryResult.sourceType,
-                discoveryResult.uri,
+                discoveryResult.resolvedUri,
                 discoveryResult.resolvedUri,
                 NdrPropertyUniquePtrVec()
             )

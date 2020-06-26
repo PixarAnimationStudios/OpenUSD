@@ -311,7 +311,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         discoveryResult.family,
         _tokens->sourceType,
         _tokens->sourceType,
-        discoveryResult.uri,
+        discoveryResult.resolvedUri,
         discoveryResult.resolvedUri,
         std::move(nodeProperties),
         metadata,
