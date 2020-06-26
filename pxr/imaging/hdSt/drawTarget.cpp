@@ -127,51 +127,44 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (bits & DirtyDTAttachment) {
-        if (GetUseStormTextureSystem()) {
+    if (GetUseStormTextureSystem()) {
+        if (bits & DirtyDTAovBindings) {
             const VtValue aovBindingsValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
             _renderPassState.SetAovBindings(
                 aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
                     {}));
+        }
 
+        if (bits & DirtyDTDepthPriority) {
             const VtValue depthPriorityValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->depthPriority);
             _renderPassState.SetDepthPriority(
                 depthPriorityValue.GetWithDefault<HdDepthPriority>(
                     HdDepthPriorityNearest));
-        } else {
+        }
+    } else {
+        if (bits & DirtyDTAttachment) {
             // Depends on resolution being set correctly.
             const VtValue vtValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
-
             
             const HdStDrawTargetAttachmentDescArray &attachments =
                 vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
                     HdStDrawTargetAttachmentDescArray());
-
+            
             _SetAttachments(sceneDelegate, attachments);
         }
-    }
 
-    if (bits & DirtyDTDepthClearValue) {
-        if (GetUseStormTextureSystem()) {
-            // Depth clear value is encoded in aov bindings like
-            // all the other clear values.
-            const VtValue aovBindingsValue =
-                sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
-            _renderPassState.SetAovBindings(
-                aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
-                    {}));
-        } else {
+        if (bits & DirtyDTDepthClearValue) {
             const VtValue vtValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
-
+            
             _depthClearValue = vtValue.GetWithDefault<float>(1.0f);
             _renderPassState.SetDepthClearValue(_depthClearValue);
         }
     }
-
+        
     if (bits & DirtyDTCollection) {
         VtValue vtValue =
                        sceneDelegate->Get(id, HdStDrawTargetTokens->collection);

@@ -80,19 +80,27 @@ public:
     ~HdStDrawTarget() override;
 
     /// Dirty bits for the HdStDrawTarget object
+    ///
+    /// When GetUseStormTextureSystem() is true, "Legacy" dirty
+    /// bits are ignored.
+    ///
     enum DirtyBits : HdDirtyBits {
         Clean                   = 0,
         DirtyDTEnable           = 1 <<  0,
         DirtyDTCamera           = 1 <<  1,
         DirtyDTResolution       = 1 <<  2,
-        DirtyDTAttachment       = 1 <<  3,
-        DirtyDTDepthClearValue  = 1 <<  4,
-        DirtyDTCollection       = 1 <<  5,
+        DirtyDTAttachment       = 1 <<  3, // Legacy
+        DirtyDTAovBindings      = 1 <<  4,
+        DirtyDTDepthClearValue  = 1 <<  5, // Legacy
+        DirtyDTDepthPriority    = 1 <<  6,
+        DirtyDTCollection       = 1 <<  7,
         AllDirty                = (DirtyDTEnable
                                    |DirtyDTCamera
                                    |DirtyDTResolution
                                    |DirtyDTAttachment
+                                   |DirtyDTAovBindings
                                    |DirtyDTDepthClearValue
+                                   |DirtyDTDepthPriority
                                    |DirtyDTCollection)
     };
 
