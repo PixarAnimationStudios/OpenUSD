@@ -80,7 +80,6 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 ///
 /// Each Hgi backend is additionally encouraged to support:
 ///
-/// * Multi threaded support for SubmitCmds (submit from secondary thread).
 /// * Multi threaded support for resource creation and destruction.
 ///
 /// We currently do not rely on these additional multi-threading features in
