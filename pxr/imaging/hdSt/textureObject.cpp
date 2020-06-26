@@ -569,7 +569,7 @@ HdStAssetUvTextureObject::_Commit()
 bool
 HdStAssetUvTextureObject::IsValid() const
 {
-    return _gpuTexture;
+    return _gpuTexture ? true : false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -687,7 +687,7 @@ HdStFieldTextureObject::_Commit()
 bool
 HdStFieldTextureObject::IsValid() const
 {
-    return _gpuTexture;
+    return _gpuTexture ? true : false;
 }
 
 HdTextureType
