@@ -359,6 +359,120 @@ static void testArray() {
             TF_AXIOM(da.cdata()[n] == double(n));
         }
     }
+    {
+        // Test VtArray erasing from the middle
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray::iterator it = array.erase(
+            array.cbegin() + 2, array.cbegin() + 4);
+        TF_AXIOM(array.size() == 4);
+        TF_AXIOM(array == VtIntArray({1, 2, 5, 6}));
+        TF_AXIOM(it == array.begin() + 2);
+    }
+    {
+        // Test VtArray erasing from the beginning
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray::iterator it = array.erase(
+            array.cbegin(), array.cbegin() + 4);
+        TF_AXIOM(array.size() == 2);
+        TF_AXIOM(array == VtIntArray({5, 6}));
+        TF_AXIOM(it == array.begin());
+    }
+    {
+        // Test VtArray erasing to the end
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray::iterator it = array.erase(array.cbegin()+4, array.cend());
+        TF_AXIOM(array.size() == 4);
+        TF_AXIOM(array == VtIntArray({1, 2, 3, 4}));
+        TF_AXIOM(it == array.end());
+    }
+    {
+        // Test VtArray erasing all
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray::iterator it = array.erase(array.cbegin(), array.cend());
+        TF_AXIOM(array.empty());
+        TF_AXIOM(array == VtIntArray({}));
+        TF_AXIOM(it == array.end());
+    }
+    {
+        // Test VtArray erasing single element with copy
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray copy = array;
+        VtIntArray::iterator it = array.erase(array.cbegin() + 2);
+        TF_AXIOM(array.size() == 5);
+        TF_AXIOM(array == VtIntArray({1, 2, 4, 5, 6}));
+        TF_AXIOM(it == array.begin() + 2);
+        TF_AXIOM(copy.size() == 6);
+        TF_AXIOM(copy == VtIntArray({1, 2, 3, 4, 5, 6}));
+    }
+    {
+        // Test VtArray erasing all with copy
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        VtIntArray copy = array;
+        VtIntArray::iterator it = array.erase(array.cbegin(), array.cend());
+        TF_AXIOM(array.empty());
+        TF_AXIOM(array == VtIntArray({}));
+        TF_AXIOM(it == array.end());
+        TF_AXIOM(copy.size() == 6);
+        TF_AXIOM(copy == VtIntArray({1, 2, 3, 4, 5, 6}));
+    }
+    {
+        // Test VtArray erasing all strings with copies
+        VtStringArray array({"one", "two", "three", "four"});
+        VtStringArray copy = array;
+        VtStringArray::iterator it = array.erase(array.cbegin(), array.cend());
+        TF_AXIOM(array.empty());
+        TF_AXIOM(array == VtStringArray());
+        TF_AXIOM(it == array.end());
+        TF_AXIOM(copy.size() == 4);
+        TF_AXIOM(copy == VtStringArray({"one", "two", "three", "four"}));
+    }
+    {
+        // Test VtArray erasing single element string
+        VtStringArray array({"one", "two", "three", "four"});
+        array.erase(array.cbegin() + 1);
+        TF_AXIOM(array.size() == 3);
+        TF_AXIOM(array == VtStringArray({"one", "three", "four"}));
+    }
+    {
+        // Test erasing an empty range from an empty vec
+        VtStringArray array;
+        VtStringArray::iterator it =
+            array.erase(array.cbegin(), array.cbegin());
+        TF_AXIOM(array.empty());
+        TF_AXIOM(it == array.cbegin());
+        TF_AXIOM(it == array.cend());        
+    }
+    {
+        // Ensure that iterator returned from erase returns the same value 
+        // for vector and array
+        VtIntArray array({1, 2, 3, 4, 5, 6});
+        std::vector<int> vector({1, 2, 3, 4, 5, 6});
+        
+        VtIntArray::iterator arrayIt = array.erase(
+            std::next(array.cbegin(), 1));
+        std::vector<int>::iterator vectorIt = vector.erase(
+            std::next(vector.cbegin(), 1));
+        
+        TF_AXIOM(*vectorIt == 3);
+        TF_AXIOM(*vectorIt == *arrayIt);
+
+        VtIntArray::iterator emptyArrayIt = 
+            array.erase(array.cbegin(), array.cbegin());
+        std::vector<int>::iterator emptyVectorIt = 
+            vector.erase(vector.cbegin(), vector.cbegin());
+
+        TF_AXIOM(*emptyVectorIt == 1);
+        TF_AXIOM(*emptyVectorIt == *emptyArrayIt);
+
+        // When erasing the last element in an array, make sure we return
+        // the new end()
+        VtIntArray::iterator lastArrayIt = array.erase(
+            std::next(array.cend(), - 1));
+        std::vector<int>::iterator lastVectorIt = 
+            vector.erase(std::next(vector.cend(), - 1));
+        TF_AXIOM(lastVectorIt == vector.end());
+        TF_AXIOM(lastArrayIt == array.end());
+    }
 }
 
 static void testArrayOperators() {
