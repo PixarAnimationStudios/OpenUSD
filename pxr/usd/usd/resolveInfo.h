@@ -56,7 +56,6 @@ enum UsdResolveInfoSource
     UsdResolveInfoSourceDefault,         ///< Attribute default value
     UsdResolveInfoSourceTimeSamples,     ///< Attribute time samples
     UsdResolveInfoSourceValueClips,      ///< Value clips
-    UsdResolveInfoSourceIsTimeDependent, ///< Source may vary over time
 };
 
 /// \class UsdResolveInfo
@@ -91,7 +90,6 @@ public:
             _source == UsdResolveInfoSourceDefault ||
             _source == UsdResolveInfoSourceTimeSamples ||
             _source == UsdResolveInfoSourceValueClips ||
-            _source == UsdResolveInfoSourceIsTimeDependent ||
             _valueIsBlocked;
     }
 
@@ -101,8 +99,7 @@ public:
         return
             _source == UsdResolveInfoSourceDefault ||
             _source == UsdResolveInfoSourceTimeSamples ||
-            _source == UsdResolveInfoSourceValueClips ||
-            _source == UsdResolveInfoSourceIsTimeDependent;
+            _source == UsdResolveInfoSourceValueClips;
     }
 
     /// Return the node within the containing PcpPrimIndex that provided

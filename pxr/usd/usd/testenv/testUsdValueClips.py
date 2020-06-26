@@ -82,7 +82,13 @@ class TestUsdValueClips(unittest.TestCase):
         # Verify that getting the complete time sample map for this
         # attribute is equivalent to asking for the value at each time
         # returned by GetTimeSamples()
-        timeSampleMap = dict([(t, attr.Get(t)) for t in allTimeSamples])
+        def _GetValue(attr, t):
+            v = attr.Get(t)
+            if v == None:
+                return Sdf.ValueBlock()
+            return v
+
+        timeSampleMap = dict([(t, _GetValue(attr, t)) for t in allTimeSamples])
 
         self.assertEqual(timeSampleMap, attr.GetMetadata('timeSamples'))
 
@@ -773,11 +779,6 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetResolveInfo(0).GetSource(),
             Usd.ResolveInfoSourceDefault)
 
-        # Doing this check should have caused all clips to be opened, since
-        # we need to check each one to see if any of them provide a time sample.
-        self.assertTrue(Sdf.Layer.Find('multiclip/nosamples_clip.usda'))
-        self.assertTrue(Sdf.Layer.Find('multiclip/nosamples_clip2.usda'))
-
         # This prim has multiple clips specified from frames [0.0, 31.0] but
         # none provide samples for the size attribute. The value in this
         # time range should be equal to the default value from the reference.
@@ -807,14 +808,16 @@ class TestUsdValueClips(unittest.TestCase):
         attr = model.GetAttribute('size')
         
         # The clip in the range [..., 16) has no samples for the attribute,
-        # so the value should be the default value from the reference.
+        # so the value should be the default value from the manifest. Since
+        # no default value is specified, we use the default value for the
+        # attribute type.
         with InterpolationType(stage, Usd.InterpolationTypeLinear):
             for t in range(-10, 16):
-                self.CheckValue(attr, time=t, expected=1.0)
+                self.CheckValue(attr, time=t, expected=0.0)
 
         with InterpolationType(stage, Usd.InterpolationTypeHeld):
             for t in range(-10, 16):
-                self.CheckValue(attr, time=t, expected=1.0)
+                self.CheckValue(attr, time=t, expected=0.0)
 
         # This attribute should be detected as potentially time-varying
         # since multiple clips are involved and at least one of them has
@@ -893,12 +896,12 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=3, expected=-26.0)
 
             # Middle clip with no samples. Since the middle clip has no 
-            # time samples, we get the default value specified in the reference,
-            # since that's next in the value resolution order.
-            self.CheckValue(attr, time=4, expected=1.0)
-            self.CheckValue(attr, time=5, expected=1.0)
-            self.CheckValue(attr, time=6, expected=1.0)
-            self.CheckValue(attr, time=7, expected=1.0)
+            # time samples and there is no default value specified in the
+            # manifest, we use the default value for the attribute type.
+            self.CheckValue(attr, time=4, expected=0.0)
+            self.CheckValue(attr, time=5, expected=0.0)
+            self.CheckValue(attr, time=6, expected=0.0)
+            self.CheckValue(attr, time=7, expected=0.0)
 
             # Last clip.
             self.CheckValue(attr, time=8, expected=-26.0)
@@ -917,12 +920,12 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=3, expected=-26.0)
 
             # Middle clip with no samples. Since the middle clip has no 
-            # time samples, we get the default value specified in the reference,
-            # since that's next in the value resolution order.
-            self.CheckValue(attr, time=4, expected=1.0)
-            self.CheckValue(attr, time=5, expected=1.0)
-            self.CheckValue(attr, time=6, expected=1.0)
-            self.CheckValue(attr, time=7, expected=1.0)
+            # time samples and there is no default value specified in the
+            # manifest, we use the default value for the attribute type.
+            self.CheckValue(attr, time=4, expected=0.0)
+            self.CheckValue(attr, time=5, expected=0.0)
+            self.CheckValue(attr, time=6, expected=0.0)
+            self.CheckValue(attr, time=7, expected=0.0)
 
             # Last clip.
             self.CheckValue(attr, time=8, expected=-26.0)
@@ -1314,13 +1317,18 @@ class TestUsdValueClips(unittest.TestCase):
         # range.
         inManifestAndInClip = prim.GetAttribute('inManifestAndInClip')
         self.assertTrue(inManifestAndInClip.ValueMightBeTimeVarying())
-        # We should only have needed to open the first clip to determine
-        # if the attribute might be varying.
-        self.assertTrue(Sdf.Layer.Find('manifest/clip_1.usda'))
+        # Since there's more than one clip we don't need to open any 
+        # layers to determine if the attribute might be varying.
+        self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
         self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
         self.CheckValue(inManifestAndInClip, time=0, expected=0.0)
         self.CheckValue(inManifestAndInClip, time=1, expected=-1.0)
-        self.CheckValue(inManifestAndInClip, time=2, expected=1.0)
+
+        # Note that the clip at t=2 does not have a value for this attribute,
+        # and the manifest has no default value specified, so we fall back
+        # to the default value for the attribute type.
+        self.CheckValue(inManifestAndInClip, time=2, expected=0.0)
+
         self.assertEqual(inManifestAndInClip.GetTimeSamples(), 
                          [0.0, 1.0, 2.0, 3.0])
         self.assertEqual(inManifestAndInClip.GetTimeSamplesInInterval(
@@ -1334,23 +1342,66 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
 
         # Lastly, this attribute is in the manifest but has no
-        # samples in the clip, so we should just fall back to the default
-        # value.
+        # samples in the clip and no default in the manifest, so we should
+        # fall back to the default value for the attribute type.
         stage = Usd.Stage.Open('manifest/root.usda')
         prim = stage.GetPrimAtPath('/WithManifestClip')
 
         inManifestNotInClip = prim.GetAttribute('inManifestNotInClip')
-        self.assertFalse(inManifestNotInClip.ValueMightBeTimeVarying())
-        # Since the attribute is in the manifest, we have to search all
-        # the clips to see which of them have samples. In this case, none
-        # of them do, so we fall back to the default value.
-        self.assertTrue(Sdf.Layer.Find('manifest/clip_1.usda'))
-        self.assertTrue(Sdf.Layer.Find('manifest/clip_2.usda'))
-        self.CheckValue(inManifestNotInClip, time=0, expected=2.0)
-        self.assertEqual(inManifestNotInClip.GetTimeSamples(), [])
+        self.assertTrue(inManifestNotInClip.ValueMightBeTimeVarying())
+        # Since there's more than one clip we don't need to open any 
+        # layers to determine if the attribute might be varying.
+        self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
+        self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
+        self.CheckValue(inManifestNotInClip, time=0, expected=0)
+        self.assertEqual(inManifestNotInClip.GetTimeSamples(), 
+                         [0.0, 1.0, 2.0, 3.0])
         self.assertEqual(inManifestNotInClip.GetTimeSamplesInInterval(
-            Gf.Interval.GetFullInterval()), [])
+            Gf.Interval.GetFullInterval()), [0.0, 1.0, 2.0, 3.0])
         self.CheckTimeSamples(inManifestNotInClip)
+
+    def test_ClipManifestFallback(self):
+        """Verifies fallback values from manifest when a clip does not
+        have values for an attribute that is in the manifest."""
+        stage = Usd.Stage.Open('manifestFallback/root.usda')
+
+        # In the following test cases, the clip that is active at t=2.0
+        # contains no attributes.
+
+        # If the attribute is declared with a default value in the
+        # manifest, we fall back to that value.
+        fallbackInManifest = \
+            stage.GetAttributeAtPath('/Model.fallbackInManifest')
+        self.assertEqual(fallbackInManifest.Get(0.0), 10.0)
+        self.assertEqual(fallbackInManifest.Get(2.0), 50.0)
+        self.assertEqual(fallbackInManifest.Get(4.0), 20.0)
+        self.assertEqual(fallbackInManifest.GetTimeSamples(),
+                         [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
+                          4.0 - Usd.TimeCode.SafeStep(), 4.0])
+        self.CheckTimeSamples(fallbackInManifest)
+        
+        fallbackBlockInManifest = \
+            stage.GetAttributeAtPath('/Model.fallbackBlockInManifest')
+        self.assertEqual(fallbackBlockInManifest.Get(0.0), 10.0)
+        self.assertEqual(fallbackBlockInManifest.Get(2.0), None)
+        self.assertEqual(fallbackBlockInManifest.Get(4.0), 20.0)
+        self.assertEqual(fallbackBlockInManifest.GetTimeSamples(),
+                         [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
+                          4.0 - Usd.TimeCode.SafeStep(), 4.0])
+        self.CheckTimeSamples(fallbackBlockInManifest)
+
+        # If the attribute is declared without a default value in the
+        # manifest, we fall back to the default value for the attribute's
+        # type.
+        noFallbackInManifest =  \
+            stage.GetAttributeAtPath('/Model.noFallbackInManifest')
+        self.assertEqual(noFallbackInManifest.Get(0.0), 10.0)
+        self.assertEqual(noFallbackInManifest.Get(2.0), 0.0)
+        self.assertEqual(noFallbackInManifest.Get(4.0), 20.0)
+        self.assertEqual(noFallbackInManifest.GetTimeSamples(),
+                         [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
+                          4.0 - Usd.TimeCode.SafeStep(), 4.0])
+        self.CheckTimeSamples(noFallbackInManifest)
 
     def test_ClipManifestGeneration(self):
         """Tests generating a manifest using UsdClipsAPI"""
@@ -1720,7 +1771,6 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=2, expected=300.0)
         self.CheckTimeSamples(attr)
 
-
     def test_InterpolateSamplesInClip(self):
         """Tests that time samples in clips are interpolated
         when a clip time is specified and no sample exists in
@@ -1735,6 +1785,52 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=3, expected=15.0)
         self.CheckValue(attr, time=4, expected=20.0)
         self.CheckTimeSamples(attr)
+
+    def test_AssetPathValuesInClips(self):
+        """Tests that asset path values in clips are resolved
+        properly."""
+        stage = Usd.Stage.Open('assetPathValues/root.usda')
+
+        def _CheckPaths(p1, p2):
+            self.assertEqual(os.path.normcase(p1), os.path.normcase(p2))
+
+        def _CheckAssetPathValue(attr, time, expected):
+            _CheckPaths(attr.Get(time).resolvedPath, expected)
+            _CheckPaths(Usd.AttributeQuery(attr).Get(time).resolvedPath,
+                        expected)
+
+        def _CheckAssetPathArrayValue(attr, time, expected):
+            array = attr.Get(time)
+            self.assertEqual(len(array), len(expected))
+            for (p1, p2) in zip(array, expected):
+                _CheckPaths(p1.resolvedPath, p2)
+
+        # Test that relative asset paths from clips are anchored to the
+        # clip layer. Note that at time 1 we have a clip with no samples
+        # so we should get the default value defined in the manifest;
+        # the resolved path there should be anchored to the manifest layer.
+
+        attr = stage.GetAttributeAtPath('/Model.assetPath')
+        _CheckAssetPathValue(
+            attr, time=0, 
+            expected=os.path.abspath('assetPathValues/clip1/clip1.usda'))
+        _CheckAssetPathValue(
+            attr, time=1, 
+            expected=os.path.abspath('assetPathValues/manifest/manifest.usda'))
+        _CheckAssetPathValue(
+            attr, time=2,
+            expected=os.path.abspath('assetPathValues/clip2/clip2.usda'))
+
+        attr = stage.GetAttributeAtPath('/Model.assetPathArray')
+        _CheckAssetPathArrayValue(
+            attr, time=0, 
+            expected=[os.path.abspath('assetPathValues/clip1/clip1.usda')])
+        _CheckAssetPathArrayValue(
+            attr, time=1, 
+            expected=[os.path.abspath('assetPathValues/manifest/manifest.usda')])
+        _CheckAssetPathArrayValue(
+            attr, time=2,
+            expected=[os.path.abspath('assetPathValues/clip2/clip2.usda')])
 
 if __name__ == "__main__":
     unittest.main()
