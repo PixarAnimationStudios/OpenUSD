@@ -52,6 +52,8 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -338,6 +340,10 @@ public:
     USDIMAGINGGL_API
     bool SetRendererAov(TfToken const& id);
 
+    /// Returns an AOV texture handle for the given token.
+    USDIMAGINGGL_API
+    HgiTextureHandle GetAovTexture(TfToken const& name) const;
+
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
     UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
@@ -423,7 +429,18 @@ public:
 
     /// @}
 
+    // ---------------------------------------------------------------------
+    /// \name HGI
+    /// @{
+    // ---------------------------------------------------------------------
 
+    /// Returns the HGI interface.
+    ///
+    USDIMAGINGGL_API
+    Hgi* GetHgi();
+
+    /// @}
+    
 protected:
 
     /// Open some protected methods for whitebox testing.

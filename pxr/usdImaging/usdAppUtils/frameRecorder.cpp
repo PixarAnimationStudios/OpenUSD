@@ -29,24 +29,17 @@
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
 #include "pxr/base/gf/camera.h"
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/frustum.h"
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/imaging/garch/gl.h"
-#include "pxr/imaging/glf/drawTarget.h"
+
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
-#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
+
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/hgi.h"
 
 #include <string>
 
@@ -132,6 +125,122 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     return gfCamera;
 }
 
+static void
+_ReadbackTexture(Hgi* const hgi,
+                 HgiTextureHandle const& textureHandle,
+                 std::vector<uint8_t>& buffer)
+{
+    const HgiTextureDesc& textureDesc = textureHandle.Get()->GetDescriptor();
+    const size_t formatByteSize = HgiDataSizeOfFormat(textureDesc.format);
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+    
+    // For Metal the CPU buffer has to be rounded up to multiple of 4096 bytes.
+    constexpr size_t bitMask = 4096 - 1;
+    const size_t alignedByteSize = (dataByteSize + bitMask) & (~bitMask);
+    
+    buffer.resize(alignedByteSize);
+
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    HgiTextureGpuToCpuOp copyOp;
+    copyOp.gpuSourceTexture = textureHandle;
+    copyOp.sourceTexelOffset = GfVec3i(0);
+    copyOp.mipLevel = 0;
+    copyOp.startLayer = 0;
+    copyOp.numLayers = 1;
+    copyOp.cpuDestinationBuffer = buffer.data();
+    copyOp.destinationByteOffset = 0;
+    copyOp.destinationBufferByteSize = alignedByteSize;
+    blitCmds->CopyTextureGpuToCpu(copyOp);
+    hgi->SubmitCmds(blitCmds.get());
+}
+
+struct _FormatDesc {
+    GLenum format;
+    GLenum type;
+};
+
+static constexpr _FormatDesc FORMAT_DESC[HgiFormatCount] =
+{
+    // format,  type
+    {GL_RED,  GL_UNSIGNED_BYTE }, // UNorm8
+    {GL_RG,   GL_UNSIGNED_BYTE }, // UNorm8Vec2
+//  {GL_RGB,  GL_UNSIGNED_BYTE }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE }, // UNorm8Vec4
+
+    {GL_RED,  GL_BYTE          }, // SNorm8
+    {GL_RG,   GL_BYTE          }, // SNorm8Vec2
+//  {GL_RGB,  GL_BYTE          }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_BYTE          }, // SNorm8Vec4
+
+    {GL_RED,  GL_HALF_FLOAT    }, // Float16
+    {GL_RG,   GL_HALF_FLOAT    }, // Float16Vec2
+    {GL_RGB,  GL_HALF_FLOAT    }, // Float16Vec3
+    {GL_RGBA, GL_HALF_FLOAT    }, // Float16Vec4
+
+    {GL_RED,  GL_FLOAT         }, // Float32
+    {GL_RG,   GL_FLOAT         }, // Float32Vec2
+    {GL_RGB,  GL_FLOAT         }, // Float32Vec3
+    {GL_RGBA, GL_FLOAT         }, // Float32Vec4
+
+    {GL_RED,  GL_INT           }, // Int32
+    {GL_RG,   GL_INT           }, // Int32Vec2
+    {GL_RGB,  GL_INT           }, // Int32Vec3
+    {GL_RGBA, GL_INT           }, // Int32Vec4
+
+//  {GL_RGB, GL_UNSIGNED_BYTE  }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE }, // UNorm8Vec4sRGB,
+
+    {GL_RGB, GL_FLOAT          }, // BC6FloatVec3
+    {GL_RGB, GL_FLOAT          }
+};
+
+static bool
+_WriteTextureToFile(HgiTextureDesc const& textureDesc,
+                    std::vector<uint8_t> const& buffer,
+                    std::string const& filename,
+                    const bool flipped)
+{
+    const size_t formatByteSize = HgiDataSizeOfFormat(textureDesc.format);
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+    
+    if (buffer.size() < dataByteSize) {
+        return false;
+    }
+    
+    if (textureDesc.format < 0 || textureDesc.format >= HgiFormatCount) {
+        return false;
+    }
+
+    _FormatDesc formatDesc = FORMAT_DESC[textureDesc.format];
+    
+    GlfImage::StorageSpec storage;
+    storage.width = width;
+    storage.height = height;
+    storage.format = formatDesc.format;
+    storage.type = formatDesc.type;
+    storage.flipped = flipped;
+    storage.data = (void*)buffer.data();
+
+    {
+        TRACE_FUNCTION_SCOPE("writing image");
+        VtDictionary metadata;
+        
+        GlfImageSharedPtr const image = GlfImage::OpenForWriting(filename);
+        const bool writeSuccess = image && image->Write(storage, metadata);
+        
+        if (!writeSuccess) {
+            TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool
 UsdAppUtilsFrameRecorder::Record(
         const UsdStagePtr& stage,
@@ -213,15 +322,6 @@ UsdAppUtilsFrameRecorder::Record(
     renderParams.showGuides = _HasPurpose(_purposes, UsdGeomTokens->guide);
 
     glEnable(GL_DEPTH_TEST);
-
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(renderResolution);
-    drawTarget->Bind();
-
-    drawTarget->AddAttachment("color",
-        GL_RGBA, GL_FLOAT, GL_RGBA);
-    drawTarget->AddAttachment("depth",
-        GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
-
     glViewport(0, 0, _imageWidth, imageHeight);
 
     const GLfloat CLEAR_DEPTH[1] = { 1.0f };
@@ -233,9 +333,19 @@ UsdAppUtilsFrameRecorder::Record(
         _imagingEngine.Render(pseudoRoot, renderParams);
     } while (!_imagingEngine.IsConverged());
 
-    drawTarget->Unbind();
+    HgiTextureHandle handle = _imagingEngine.GetAovTexture(HdAovTokens->color);
+    if (!handle) {
+        TF_CODING_ERROR("No color presentation texture");
+        return false;
+    }
+    
+    std::vector<uint8_t> buffer;
+    _ReadbackTexture(_imagingEngine.GetHgi(), handle, buffer);
 
-    return drawTarget->WriteToFile("color", outputImagePath);
+    return _WriteTextureToFile(handle.Get()->GetDescriptor(),
+                               buffer,
+                               outputImagePath,
+                               true);
 }
 
 

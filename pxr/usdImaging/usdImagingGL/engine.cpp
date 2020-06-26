@@ -922,6 +922,22 @@ UsdImagingGLEngine::SetRendererAov(TfToken const &id)
     return false;
 }
 
+HgiTextureHandle
+UsdImagingGLEngine::GetAovTexture(
+    TfToken const& name) const
+{
+    VtValue aov;
+    HgiTextureHandle aovTexture;
+
+    if (_engine->GetTaskContextData(name, &aov)) {
+        if (aov.IsHolding<HgiTextureHandle>()) {
+            aovTexture = aov.Get<HgiTextureHandle>();
+        }
+    }
+
+    return aovTexture;
+}
+
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
@@ -1106,6 +1122,12 @@ UsdImagingGLEngine::GetRenderStats() const
 
     TF_VERIFY(_renderDelegate);
     return _renderDelegate->GetRenderStats();
+}
+
+Hgi*
+UsdImagingGLEngine::GetHgi()
+{
+    return _hgi.get();
 }
 
 //----------------------------------------------------------------------------
