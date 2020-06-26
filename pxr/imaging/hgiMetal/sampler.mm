@@ -38,11 +38,11 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
 {
     MTLSamplerDescriptor* smpDesc = [MTLSamplerDescriptor new];
 
-    smpDesc.rAddressMode =
-        HgiMetalConversions::GetSamplerAddressMode(desc.addressModeU);
     smpDesc.sAddressMode =
-        HgiMetalConversions::GetSamplerAddressMode(desc.addressModeV);
+        HgiMetalConversions::GetSamplerAddressMode(desc.addressModeU);
     smpDesc.tAddressMode =
+        HgiMetalConversions::GetSamplerAddressMode(desc.addressModeV);
+    smpDesc.rAddressMode =
         HgiMetalConversions::GetSamplerAddressMode(desc.addressModeW);
     smpDesc.minFilter = HgiMetalConversions::GetMinMagFilter(desc.magFilter);
     smpDesc.magFilter = HgiMetalConversions::GetMinMagFilter(desc.minFilter);
