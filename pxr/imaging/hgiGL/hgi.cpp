@@ -57,6 +57,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 HgiGL::HgiGL()
     : _device(nullptr)
+    , _garbageCollector(this)
+    , _frameDepth(0)
 {
     static std::once_flag versionOnce;
     std::call_once(versionOnce, [](){
@@ -75,6 +77,7 @@ HgiGL::HgiGL()
 
 HgiGL::~HgiGL()
 {
+    _garbageCollector.PerformGarbageCollection();
     delete _device;
 }
 
@@ -104,6 +107,12 @@ HgiGL::CreateTexture(HgiTextureDesc const & desc)
     return HgiTextureHandle(new HgiGLTexture(desc), GetUniqueId());
 }
 
+void
+HgiGL::DestroyTexture(HgiTextureHandle* texHandle)
+{
+    _TrashObject(texHandle, _garbageCollector.GetTextureList());
+}
+
 HgiSamplerHandle
 HgiGL::CreateSampler(HgiSamplerDesc const & desc)
 {
@@ -113,13 +122,7 @@ HgiGL::CreateSampler(HgiSamplerDesc const & desc)
 void
 HgiGL::DestroySampler(HgiSamplerHandle* smpHandle)
 {
-    DestroyObject(smpHandle);
-}
-
-void
-HgiGL::DestroyTexture(HgiTextureHandle* texHandle)
-{
-    DestroyObject(texHandle);
+    _TrashObject(smpHandle, _garbageCollector.GetSamplerList());
 }
 
 HgiBufferHandle
@@ -131,7 +134,7 @@ HgiGL::CreateBuffer(HgiBufferDesc const & desc)
 void
 HgiGL::DestroyBuffer(HgiBufferHandle* bufHandle)
 {
-    DestroyObject(bufHandle);
+    _TrashObject(bufHandle, _garbageCollector.GetBufferList());
 }
 
 HgiShaderFunctionHandle
@@ -143,7 +146,7 @@ HgiGL::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 void
 HgiGL::DestroyShaderFunction(HgiShaderFunctionHandle* shaderFunctionHandle)
 {
-    DestroyObject(shaderFunctionHandle);
+    _TrashObject(shaderFunctionHandle,_garbageCollector.GetShaderFunctionList());
 }
 
 HgiShaderProgramHandle
@@ -155,7 +158,7 @@ HgiGL::CreateShaderProgram(HgiShaderProgramDesc const& desc)
 void
 HgiGL::DestroyShaderProgram(HgiShaderProgramHandle* shaderProgramHandle)
 {
-    DestroyObject(shaderProgramHandle);
+    _TrashObject(shaderProgramHandle,_garbageCollector.GetShaderProgramList());
 }
 
 HgiResourceBindingsHandle
@@ -168,7 +171,7 @@ HgiGL::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 void
 HgiGL::DestroyResourceBindings(HgiResourceBindingsHandle* resHandle)
 {
-    DestroyObject(resHandle);
+    _TrashObject(resHandle,_garbageCollector.GetResourceBindingsList());
 }
 
 HgiPipelineHandle
@@ -180,12 +183,55 @@ HgiGL::CreatePipeline(HgiPipelineDesc const& desc)
 void
 HgiGL::DestroyPipeline(HgiPipelineHandle* pipeHandle)
 {
-    DestroyObject(pipeHandle);
+    _TrashObject(pipeHandle,_garbageCollector.GetPipelineList());
 }
 
 TfToken const&
 HgiGL::GetAPIName() const {
     return HgiTokens->OpenGL;
+}
+
+void
+HgiGL::StartFrame()
+{
+    // Protect against client calling StartFrame more than once (nested engines)
+    if (_frameDepth++ == 0) {
+        // Start Full Frame debug label
+        #if defined(GL_KHR_debug)
+        if (GLEW_KHR_debug) {
+            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, 
+                "Full Hydra Frame");
+        }
+        #endif
+    }
+}
+
+void
+HgiGL::EndFrame()
+{
+    if (--_frameDepth == 0) {
+        _garbageCollector.PerformGarbageCollection();
+
+        // End Full Frame debug label
+        #if defined(GL_KHR_debug)
+        if (GLEW_KHR_debug) {
+            glPopDebugGroup();
+        }
+        #endif
+    }
+}
+
+bool
+HgiGL::_SubmitCmds(HgiCmds* cmds)
+{
+    bool result = Hgi::_SubmitCmds(cmds);
+
+    // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
+    if (_frameDepth == 0) {
+        _garbageCollector.PerformGarbageCollection();
+    }
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

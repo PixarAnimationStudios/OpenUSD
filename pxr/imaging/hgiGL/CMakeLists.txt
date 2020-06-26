@@ -31,6 +31,7 @@ pxr_library(hgiGL
         buffer
         device
         framebufferCache
+        garbageCollector
         graphicsCmds
         hgi
         ops
