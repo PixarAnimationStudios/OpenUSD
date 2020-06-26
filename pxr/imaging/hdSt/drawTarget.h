@@ -51,23 +51,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawTargetSet)                             \
     (enable)                                    \
     (resolution)                                \
-    (depth)
+    (aovBindings)                               \
+    (depth)                                     \
+    (depthPriority)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_API, HDST_DRAW_TARGET_TOKENS);
 
-class HdSceneDelegate;
-class HdRenderIndex;
 class HdCamera;
 class HdStDrawTargetAttachmentDescArray;
-class HdStTextureIdentifier;
-class HdStResourceRegistry;
 
 using GlfGLContextSharedPtr = std::shared_ptr<class GlfGLContext>;
 
 using HdStDrawTargetPtrVector = std::vector<class HdStDrawTarget *>;
-
-using HdStDynamicUvTextureObjectSharedPtr =
-    std::shared_ptr<class HdStDynamicUvTextureObject>;
 
 /// \class HdStDrawTarget
 ///
@@ -161,55 +156,6 @@ public:
     static void GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrVector *drawTargets);
 
-    /// When using the Storm texture system for draw targets, returns
-    /// the texture identifier for an attachment. A shader can bind
-    /// this texture using this texture identifier when allocating a
-    /// texture handle with the resource registry.
-    ///
-    /// Note: Calling GetTextureIdentifier from within a material sync
-    /// is still safe even though a draw target might be synced after
-    /// the material since both are sprims.
-    ///
-    HDST_API
-    HdStTextureIdentifier GetTextureIdentifier(
-        /// Name of attachment (depth is treated the same as color attachments).
-        const std::string &attachmentName,
-        const HdSceneDelegate * sceneDelegate,
-        /// Retrieve MSAA texture instead of resolved texture.
-        bool multiSampled = false) const;
-
-    /// Allocate the actual GPU textures used as attachments.
-    ///
-    /// Only call if using the Storm texture system.
-    ///
-    HDST_API
-    void AllocateTexturesIfNecessary();
-
-    /// The data describing the draw target attachments when using the Storm
-    /// texture system. Filled during Sync.
-    struct AttachmentData {
-        /// Attachment name (e.g., color, depth).
-        std::string name;
-        /// Value used to clear attachment before rendering to it.
-        GfVec4f clearValue;
-        /// Format of attachment
-        HdFormat format;
-        /// (Resolved) texture to read from.
-        HdStDynamicUvTextureObjectSharedPtr texture;
-        /// MSAA texture to render to (if MSAA is enabled for draw targets).
-        HdStDynamicUvTextureObjectSharedPtr textureMSAA;
-    };
-
-    using AttachmentDataVector = std::vector<AttachmentData>;
-    
-    /// Get data describing the darw target attachments.
-    ///
-    /// Only call if using the Storm texture system.
-    ///
-    const AttachmentDataVector &GetAttachments() const {
-        return _attachmentDataVector;
-    }
-
     /// Resolution.
     ///
     /// Set during sync.
@@ -235,25 +181,12 @@ private:
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
-    AttachmentDataVector _attachmentDataVector;
     // Is it necessary to create GPU resources because they are uninitialized
     // or the attachments/resolution changed.
     bool _texturesDirty;
 
     void _SetAttachments(HdSceneDelegate *sceneDelegate,
                          const HdStDrawTargetAttachmentDescArray &attachments);
-
-    // Helper used to populate attachment data.
-    HdStDynamicUvTextureObjectSharedPtr _CreateTextureObject(
-        const std::string &name,
-        HdSceneDelegate * sceneDelegate,
-        HdStResourceRegistry * resourceRegistry,
-        bool multiSampled);
-
-    // Populate attachment data from descriptor.
-    void _SetAttachmentData(
-        HdSceneDelegate *sceneDelegate,
-        const HdStDrawTargetAttachmentDescArray &attachments);
 
     // Set clear value for depth attachments.
     void _SetAttachmentDataDepthClearValue();

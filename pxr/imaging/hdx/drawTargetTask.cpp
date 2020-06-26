@@ -413,8 +413,10 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         renderPassState->SetAlphaThreshold(_alphaThreshold);
         renderPassState->SetCullStyle(_cullStyle);
         renderPassState->SetDepthFunc(depthFunc);
+        renderPassState->SetAovBindings(
+            drawTargetRenderPassState->GetAovBindings());
 
-        HdStSimpleLightingShaderSharedPtr &simpleLightingShader
+        HdStSimpleLightingShaderSharedPtr const& simpleLightingShader
             = _renderPassesInfo[renderPassIdx].simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();
@@ -472,57 +474,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     *dirtyBits = HdChangeTracker::Clean;
 }
 
-HgiGraphicsCmdsDesc
-HdxDrawTargetTask::MakeGraphicsCmdsDesc(HdStDrawTarget * const drawTarget,
-    const bool clear)
-{
-    static const HgiTextureHandle empty;
-
-    HgiGraphicsCmdsDesc desc;
-
-    for (const HdStDrawTarget::AttachmentData & data :
-             drawTarget->GetAttachments()) {
-
-        const bool isMultisampled = bool(data.textureMSAA);
-        // Render into MSAA texture if MSAA is used, otherwise
-        // render directly into target texture.
-        const HdStDynamicUvTextureObjectSharedPtr & textureObject =
-            isMultisampled ? data.textureMSAA : data.texture;
-        const HgiTextureHandle & texture =
-            textureObject->GetTexture();
-        // Only give the resolved texture when using MSAA.
-        const HgiTextureHandle resolveTexture =
-            isMultisampled ? data.texture->GetTexture() : empty;
-        
-        const GfVec3i &dimensions = texture->GetDescriptor().dimensions;
-        desc.width = dimensions[0];
-        desc.height = dimensions[1];
-        
-        HgiAttachmentDesc attachmentDesc;
-        attachmentDesc.loadOp =
-            clear ? HgiAttachmentLoadOpClear
-                  : HgiAttachmentLoadOpLoad;
-        attachmentDesc.storeOp =
-            isMultisampled ? HgiAttachmentStoreOpDontCare
-                           : HgiAttachmentStoreOpStore;
-        attachmentDesc.clearValue = data.clearValue;
-        attachmentDesc.blendEnabled = false;
-        if (data.name == HdStDrawTargetTokens->depth.GetString()) {
-            desc.depthAttachmentDesc = std::move(attachmentDesc);
-            desc.depthTexture = texture;
-            desc.depthResolveTexture = resolveTexture;
-        } else {
-            desc.colorAttachmentDescs.push_back(std::move(attachmentDesc));
-            desc.colorTextures.push_back(texture);
-            if (resolveTexture) {
-                desc.colorResolveTextures.push_back(resolveTexture);
-            }
-        }
-    }
-
-    return desc;
-}
-
 void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
@@ -535,19 +486,6 @@ HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
         HdxDrawTargetRenderPass * const renderPass =
             _renderPasses[renderPassIdx].get();
         renderPass->Prepare();
-
-        if (HdStDrawTarget::GetUseStormTextureSystem()) {
-            const _RenderPassInfo &info = _renderPassesInfo[renderPassIdx];
-
-            // (Re-)Allocate the GPU textures for attachments (if, e.g., not
-            // initialized).
-            info.target->AllocateTexturesIfNecessary();
-
-            // Make render pass use these textures as render targets.
-            info.renderPassState->SetCustomGraphicsCmdsDesc(
-                MakeGraphicsCmdsDesc(info.target,
-                                     /* clear = */ true));
-        }
     }
 }
 

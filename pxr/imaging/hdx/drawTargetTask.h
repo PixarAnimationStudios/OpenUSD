@@ -39,7 +39,6 @@ using HdxDrawTargetRenderPassUniquePtr =
 using HdStSimpleLightingShaderSharedPtr =
     std::shared_ptr<class HdStSimpleLightingShader>;
 class HdStDrawTarget;
-struct HgiGraphicsCmdsDesc;
 
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
@@ -71,22 +70,6 @@ public:
     /// Collect Render Tags used by the task.
     HDX_API
     const TfTokenVector &GetRenderTags() const override;
-
-    /// Compute attachment descriptors for the draw target so that the
-    /// draw target textures are used as render targets.
-    ///
-    /// Eventually, draw targets should just use the AOV system:
-    /// a scene delegate would express the draw target attachments as render
-    /// buffers and give AOV bindings pointing to the render buffers.
-    /// The HdStRenderPassState would pick up the AOV bindings and tell
-    /// Hgi to use them as render targets.
-    ///
-    /// For now, we extract the render targets by going to the HdStDrawTarget.
-    ///
-    HDX_API
-    static HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc(
-        HdStDrawTarget * drawTarget,
-        bool clear);
 
 private:
     struct _RenderPassInfo;

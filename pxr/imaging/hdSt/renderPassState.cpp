@@ -37,7 +37,6 @@
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -70,7 +69,6 @@ HdStRenderPassState::HdStRenderPassState(
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
-    , _hasCustomGraphicsCmdsDesc(false)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -485,12 +483,35 @@ GfVec4f _ToVec4f(const VtValue &v)
         const float depth = v.UncheckedGet<float>();
         return GfVec4f(depth,0,0,0);
     }
-
+    if (v.IsHolding<double>()) {
+        const double val = v.UncheckedGet<double>();
+        return GfVec4f(val);
+    }
+    if (v.IsHolding<GfVec2f>()) {
+        const GfVec2f val = v.UncheckedGet<GfVec2f>();
+        return GfVec4f(val[0], val[1], 0.0, 1.0);
+    }
+    if (v.IsHolding<GfVec2d>()) {
+        const GfVec2d val = v.UncheckedGet<GfVec2d>();
+        return GfVec4f(val[0], val[1], 0.0, 1.0);
+    }
+    if (v.IsHolding<GfVec3f>()) {
+        const GfVec3f val = v.UncheckedGet<GfVec3f>();
+        return GfVec4f(val[0], val[1], val[2], 1.0);
+    }
+    if (v.IsHolding<GfVec3d>()) {
+        const GfVec3d val = v.UncheckedGet<GfVec3d>();
+        return GfVec4f(val[0], val[1], val[2], 1.0);
+    }
     if (v.IsHolding<GfVec4f>()) {
         return v.UncheckedGet<GfVec4f>();
     }
+    if (v.IsHolding<GfVec4d>()) {
+        return GfVec4f(v.UncheckedGet<GfVec4d>());
+    }
 
-    return GfVec4f(0);
+    TF_CODING_ERROR("Unsupported clear value for draw target attachment.");
+    return GfVec4f(0.0);
 }
 
 HgiGraphicsCmdsDesc
@@ -498,16 +519,6 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
     const HdRenderIndex * const renderIndex) const
 {
     const HdRenderPassAovBindingVector& aovBindings = GetAovBindings();
-
-    if (_hasCustomGraphicsCmdsDesc) {
-        if (!aovBindings.empty()) {
-            TF_CODING_ERROR(
-                "Cannot specify a graphics cmds desc and aov bindings "
-                "at the same time.");
-        }
-
-        return _customGraphicsCmdsDesc;
-    }
 
     static const size_t maxColorTex = 8;
     const bool useMultiSample = GetUseAovMultiSample();
@@ -605,21 +616,5 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
     return desc;
 }
-
-void
-HdStRenderPassState::SetCustomGraphicsCmdsDesc(
-    const HgiGraphicsCmdsDesc &graphicsCmdDesc)
-{
-    _customGraphicsCmdsDesc = graphicsCmdDesc;
-    _hasCustomGraphicsCmdsDesc = true;
-}
-
-void
-HdStRenderPassState::ClearCustomGraphicsCmdsDesc()
-{
-    _customGraphicsCmdsDesc = HgiGraphicsCmdsDesc();
-    _hasCustomGraphicsCmdsDesc = false;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

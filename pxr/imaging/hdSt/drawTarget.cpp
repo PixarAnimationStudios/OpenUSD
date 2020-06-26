@@ -49,9 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HDST_USE_STORM_TEXTURE_SYSTEM_FOR_DRAW_TARGETS, false,
                       "Use Storm texture system for draw targets.");
 
-TF_DEFINE_ENV_SETTING(HDST_DRAW_TARGETS_NUM_SAMPLES, 4,
-                      "Number of samples, greater than 1 forces MSAA.");
-
 TF_DEFINE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_DRAW_TARGET_TOKENS);
 
 HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
@@ -60,7 +57,6 @@ HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
     , _enabled(true)
     , _resolution(512, 512)
     , _depthClearValue(1.0)
-    , _texturesDirty(true)
 {
 }
 
@@ -73,36 +69,6 @@ HdStDrawTarget::GetUseStormTextureSystem()
     static bool result =
         TfGetEnvSetting(HDST_USE_STORM_TEXTURE_SYSTEM_FOR_DRAW_TARGETS);
     return result;
-}
-
-static
-HgiSampleCount
-_GetSampleCountUncached()
-{
-    const int c = TfGetEnvSetting(HDST_DRAW_TARGETS_NUM_SAMPLES);
-    switch(c) {
-    case 1:
-        return HgiSampleCount1;
-    case 4:
-        return HgiSampleCount4;
-    case 16:
-        return HgiSampleCount16;
-    default:
-        TF_RUNTIME_ERROR(
-            "Unsupported value %d for HDST_DRAW_TARGETS_NUM_SAMPLES", c);
-        return HgiSampleCount4;
-    }
-}
-
-// How many MSAA samples to use (1 means no MSAA)
-static
-HgiSampleCount
-_GetSampleCount()
-{
-    // Cached so we only getting the runtime error once.
-    static const HgiSampleCount result = _GetSampleCountUncached();
-    return result;
-
 }
 
 /*virtual*/
@@ -137,14 +103,13 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyDTResolution) {
-        VtValue vtValue =
-                        sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
+        if (!GetUseStormTextureSystem()) {
 
-        _resolution = vtValue.Get<GfVec2i>();
+            const VtValue vtValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
 
-        if (GetUseStormTextureSystem()) {
-            _texturesDirty = true;
-        } else {
+            _resolution = vtValue.Get<GfVec2i>();
+            
             // No point in Resizing the textures if new ones are going to
             // be created (see _SetAttachments())
             if (_drawTarget && ((bits & DirtyDTAttachment) == Clean)) {
@@ -154,33 +119,48 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyDTAttachment) {
-        // Depends on resolution being set correctly.
-        VtValue vtValue =
-                       sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
+        if (GetUseStormTextureSystem()) {
+            const VtValue aovBindingsValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
+            _renderPassState.SetAovBindings(
+                aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
+                    {}));
 
+            const VtValue depthPriorityValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->depthPriority);
+            _renderPassState.SetDepthPriority(
+                depthPriorityValue.GetWithDefault<HdDepthPriority>(
+                    HdDepthPriorityNearest));
+        } else {
+            // Depends on resolution being set correctly.
+            const VtValue vtValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
 
-        const HdStDrawTargetAttachmentDescArray &attachments =
-            vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
+            
+            const HdStDrawTargetAttachmentDescArray &attachments =
+                vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
                     HdStDrawTargetAttachmentDescArray());
 
-        if (GetUseStormTextureSystem()) {
-            _SetAttachmentData(sceneDelegate, attachments);
-        } else {
             _SetAttachments(sceneDelegate, attachments);
         }
     }
 
     if (bits & DirtyDTDepthClearValue) {
-        VtValue vtValue =
-                  sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
-
-        _depthClearValue = vtValue.GetWithDefault<float>(1.0f);
-
         if (GetUseStormTextureSystem()) {
-            _SetAttachmentDataDepthClearValue();
-        }
+            // Depth clear value is encoded in aov bindings like
+            // all the other clear values.
+            const VtValue aovBindingsValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
+            _renderPassState.SetAovBindings(
+                aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
+                    {}));
+        } else {
+            const VtValue vtValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
 
-        _renderPassState.SetDepthClearValue(_depthClearValue);
+            _depthClearValue = vtValue.GetWithDefault<float>(1.0f);
+            _renderPassState.SetDepthClearValue(_depthClearValue);
+        }
     }
 
     if (bits & DirtyDTCollection) {
@@ -263,209 +243,6 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
     GlfGLContext::MakeCurrent(oldContext);
 
     return result;
-}
-
-HdStTextureIdentifier
-HdStDrawTarget::GetTextureIdentifier(
-    const std::string &attachmentName,
-    const HdSceneDelegate * const sceneDelegate,
-    const bool multiSampled) const
-{
-    // Create an ID that is unique to:
-    // - the draw target
-    // - the attachment
-    // - the MSAA vs resolved texture
-    // - the scene delegate (texture object registry is shared across scene
-    //   delegates, so the above could result in name space collision)
-    std::string idStr =
-        TfStringPrintf("[%p] ", sceneDelegate);
-    idStr += GetId().GetString();
-    idStr += " attachment: " + attachmentName;
-    if (multiSampled) {
-        idStr += " [MSAA]";
-    }
-    
-    return HdStTextureIdentifier(
-        TfToken(idStr),
-        // Tag as texture not being loaded from an asset by
-        // texture registry but populated by us, the draw target.
-        std::make_unique<HdStDynamicUvSubtextureIdentifier>());
-}
-
-// Clear values are always vec4f in HgiGraphicsCmdDesc.
-static
-GfVec4f _ToVec4f(const VtValue &v)
-{
-    if (v.IsHolding<float>()) {
-        const float val = v.UncheckedGet<float>();
-        return GfVec4f(val);
-    }
-    if (v.IsHolding<double>()) {
-        const double val = v.UncheckedGet<double>();
-        return GfVec4f(val);
-    }
-    if (v.IsHolding<GfVec2f>()) {
-        const GfVec2f val = v.UncheckedGet<GfVec2f>();
-        return GfVec4f(val[0], val[1], 0.0, 1.0);
-    }
-    if (v.IsHolding<GfVec2d>()) {
-        const GfVec2d val = v.UncheckedGet<GfVec2d>();
-        return GfVec4f(val[0], val[1], 0.0, 1.0);
-    }
-    if (v.IsHolding<GfVec3f>()) {
-        const GfVec3f val = v.UncheckedGet<GfVec3f>();
-        return GfVec4f(val[0], val[1], val[2], 1.0);
-    }
-    if (v.IsHolding<GfVec3d>()) {
-        const GfVec3d val = v.UncheckedGet<GfVec3d>();
-        return GfVec4f(val[0], val[1], val[2], 1.0);
-    }
-    if (v.IsHolding<GfVec4f>()) {
-        return v.UncheckedGet<GfVec4f>();
-    }
-    if (v.IsHolding<GfVec4d>()) {
-        return GfVec4f(v.UncheckedGet<GfVec4d>());
-    }
-
-    TF_CODING_ERROR("Unsupported clear value for draw target attachment.");
-    return GfVec4f(0.0);
-}
-
-HdStDynamicUvTextureObjectSharedPtr
-HdStDrawTarget::_CreateTextureObject(
-    const std::string &name,
-    HdSceneDelegate * const sceneDelegate,
-    HdStResourceRegistry * const resourceRegistry,
-    bool multiSampled)
-{
-    if (multiSampled && _GetSampleCount() == HgiSampleCount1) {
-        // Do not allocate an MSAA texture when not using MSAA.
-        return nullptr;
-    }
-    
-    // Allocate texture object (the actual GPU resource is allocated later).
-    return
-        std::static_pointer_cast<HdStDynamicUvTextureObject>(
-            resourceRegistry->AllocateTextureObject(
-                GetTextureIdentifier(name, sceneDelegate, multiSampled),
-                HdTextureType::Uv));
-}
-
-void
-HdStDrawTarget::_SetAttachmentData(
-    HdSceneDelegate * const sceneDelegate,
-    const HdStDrawTargetAttachmentDescArray &attachments)
-{
-    _attachmentDataVector.clear();
-
-    HdStResourceRegistry * const resourceRegistry =
-        static_cast<HdStResourceRegistry *>(
-            sceneDelegate->GetRenderIndex().GetResourceRegistry().get());
-    
-    for (size_t i = 0; i < attachments.GetNumAttachments(); i++) {
-        const HdStDrawTargetAttachmentDesc &desc = attachments.GetAttachment(i);
-
-        _attachmentDataVector.push_back(
-            { desc.GetName(),
-              _ToVec4f(desc.GetClearColor()),
-              desc.GetFormat(),
-              _CreateTextureObject(
-                  desc.GetName(),
-                  sceneDelegate,
-                  resourceRegistry,
-                  /* multiSampled = */ false),
-              _CreateTextureObject(
-                  desc.GetName(),
-                  sceneDelegate,
-                  resourceRegistry,
-                  /* multiSampled = */ true) });
-    }
-    
-    // We always need a depth attachment and it is not among the attachments
-    // in the attachment descriptor.
-    _attachmentDataVector.push_back(
-        { HdStDrawTargetTokens->depth.GetString(),
-          GfVec4f(_depthClearValue),
-          HdFormatFloat32,
-          _CreateTextureObject(
-              HdStDrawTargetTokens->depth.GetString(),
-              sceneDelegate,
-              resourceRegistry,
-              /* multiSampled = */ false),
-          _CreateTextureObject(
-              HdStDrawTargetTokens->depth.GetString(),
-              sceneDelegate,
-              resourceRegistry,
-              /* multiSampled = */ true) });
- 
-    _texturesDirty = true;
-}
-
-void
-HdStDrawTarget::_SetAttachmentDataDepthClearValue()
-{
-    // Find the depth attachment ...
-    for (AttachmentData &data : _attachmentDataVector) {
-        if (data.name == HdStDrawTargetTokens->depth.GetString()) {
-            // ... and set its clear value.
-            data.clearValue = GfVec4f(_depthClearValue);
-        }
-    }
-}
-
-// Debug name for texture.
-static
-std::string
-_GetDebugName(const HdStDynamicUvTextureObjectSharedPtr &textureObject)
-{
-    return textureObject->GetTextureIdentifier().GetFilePath().GetString();
-}
-
-static
-HgiTextureDesc
-_GetTextureDescriptor(const HdStDrawTarget::AttachmentData &data,
-                      const GfVec2i &resolution,
-                      const bool multiSample)
-{
-    HgiTextureDesc desc;
-    desc.debugName =
-        _GetDebugName(multiSample ? data.textureMSAA : data.texture);
-    desc.format = HdStHgiConversions::GetHgiFormat(data.format);
-    desc.type = HgiTextureType2D;
-    desc.dimensions = GfVec3i(resolution[0], resolution[1], 1);
-    if (data.name == HdStDrawTargetTokens->depth.GetString()) {
-        desc.usage = HgiTextureUsageBitsDepthTarget;
-    } else {
-        desc.usage = HgiTextureUsageBitsColorTarget;
-    }
- 
-    if (multiSample) {
-        desc.sampleCount = _GetSampleCount();
-    }
-
-    return desc;
-}
-
-void
-HdStDrawTarget::AllocateTexturesIfNecessary()
-{
-    if (!_texturesDirty) {
-        return;
-    }
-
-    for (const AttachmentData &data : _attachmentDataVector) {        
-        data.texture->CreateTexture(
-            _GetTextureDescriptor(
-                data, _resolution, /* multiSample = */ false));
-
-        if (data.textureMSAA) {
-            data.textureMSAA->CreateTexture(
-                _GetTextureDescriptor(
-                    data, _resolution, /* multiSample = */ true));
-        }
-    }
-
-    _texturesDirty = false;
 }
 
 void

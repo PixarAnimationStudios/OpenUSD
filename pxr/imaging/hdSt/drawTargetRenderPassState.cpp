@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/aov.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -82,6 +82,12 @@ void HdStDrawTargetRenderPassState::SetRprimCollection(
 {
     _rprimCollection = col;
     ++_rprimCollectionVersion;
+}
+
+void HdStDrawTargetRenderPassState::SetAovBindings(
+    const HdRenderPassAovBindingVector &aovBindings)
+{
+    _aovBindings = aovBindings;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/drawTarget.h"
 
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -856,6 +857,14 @@ _MakeMaterialParamsForTexture(
             // such as render-targets.
             filePath = _ResolveAssetPath(v);
             texturePrimPathForSceneDelegate = nodePath;
+
+            // If the file attribute is an SdfPath, interpret it as path
+            // to a prim holding the texture resource (e.g., a render buffer).
+            if (HdStDrawTarget::GetUseStormTextureSystem()) {
+                if (v.IsHolding<SdfPath>()) {
+                    texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
+                }
+            }
             
             // Use the type of the filePath attribute to determine whether
             // to use the Storm texture system (for SdfAssetPath/std::string)

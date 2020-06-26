@@ -114,20 +114,11 @@ public:
     size_t GetShaderHash() const;
 
     // Helper to get graphics cmds descriptor describing textures
-    // we render into and the blend state.
+    // we render into and the blend state, constructed from
+    // AOV bindings.
     //
-    // By default, converts AOV bindings to HgiGraphicsCmds descriptor
     HDST_API
     HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc(const HdRenderIndex *) const;
-
-    // Use custom graphics cmds descriptor instead of creating one from
-    // AOV bindings.
-    HDST_API
-    void SetCustomGraphicsCmdsDesc(const HgiGraphicsCmdsDesc &graphicsCmdDesc);
-
-    // Go back to using AOV bindings again.
-    HDST_API
-    void ClearCustomGraphicsCmdsDesc();
 
 private:
     bool _UseAlphaMask() const;
@@ -143,9 +134,6 @@ private:
     HdBufferArrayRangeSharedPtr _renderPassStateBar;
     size_t _clipPlanesBufferSize;
     float _alphaThresholdCurrent;
-
-    HgiGraphicsCmdsDesc _customGraphicsCmdsDesc;
-    bool _hasCustomGraphicsCmdsDesc;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
