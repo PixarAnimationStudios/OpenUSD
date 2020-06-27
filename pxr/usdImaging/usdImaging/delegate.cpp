@@ -2139,6 +2139,14 @@ UsdImagingDelegate::PopulateSelection(
     SdfPathVector affectedCachePaths;
     _GatherDependencies(rootPath, &affectedCachePaths);
 
+    std::sort(affectedCachePaths.begin(), affectedCachePaths.end());
+    auto last = std::unique(affectedCachePaths.begin(),
+                            affectedCachePaths.end(),
+                            [](SdfPath const &l, SdfPath const &r) {
+                                return r.HasPrefix(l);
+                            });
+    affectedCachePaths.erase(last, affectedCachePaths.end());
+
     // Loop through gathered prims and add them to the selection set
     bool added = false;
     for (size_t i = 0; i < affectedCachePaths.size(); ++i) {

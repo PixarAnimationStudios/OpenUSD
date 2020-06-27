@@ -1732,6 +1732,49 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         }
         selectionPathVec.push_front(p.GetPath());
 
+        // Precompute the instance map.
+        _InstanceMap instanceMap = _ComputeInstanceMap(
+                cachePath, *instrData, _GetTimeWithOffset(0.0));
+
+        // If "cachePath" and "usdPrim" are equal, and hydraInstanceIndex
+        // has a value, we're responding to "AddSelected(/World/PI, N)";
+        // we can treat it as an instance index for this PI, rather than
+        // treating it as an absolute instance index for an rprim.
+        if (usdPrim.GetPath() == cachePath.GetAbsoluteRootOrPrimPath()) {
+            // "N" here refers to the instance index in the protoIndices array,
+            // which may be different than the actual hydra index, so we need
+            // to find the correct prototype/instance pair.
+            for (auto const& pair : instrData->protoPrimMap) {
+                VtIntArray const& indices =
+                    instanceMap[pair.second.protoRootPath];
+                int foundIndex = -1;
+                for (size_t i = 0; i < indices.size(); ++i) {
+                    if (indices[i] == hydraInstanceIndex) {
+                        foundIndex = int(i);
+                        break;
+                    }
+                }
+                if (foundIndex == -1) {
+                    continue;
+                }
+                VtIntArray instanceIndices;
+                if (parentInstanceIndices.size() > 0) {
+                    for (const int pi : parentInstanceIndices) {
+                        instanceIndices.push_back(pi * indices.size() +
+                            foundIndex);
+                    }
+                } else {
+                    instanceIndices.push_back(foundIndex);
+                }
+                UsdPrim selectionPrim =
+                    _GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
+
+                return pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, selectionPrim,
+                    -1, instanceIndices, result);
+            }
+        }
+
         bool added = false;
         for (auto const& pair : instrData->protoPrimMap) {
 
@@ -1787,17 +1830,19 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
                 continue;
             }
 
-            // Compose instance indices, if we don't have an explicit index.
+            // Compose instance indices.
             VtIntArray instanceIndices;
-            if (hydraInstanceIndex == -1 && parentInstanceIndices.size() != 0) {
-                _InstanceMap instanceMap = _ComputeInstanceMap(
-                    cachePath, *instrData, _GetTimeWithOffset(0.0));
-                VtIntArray const& indices =
-                    instanceMap[pair.second.protoRootPath];
+            VtIntArray const& indices =
+                instanceMap[pair.second.protoRootPath];
+            if (parentInstanceIndices.size() > 0) {
                 for (const int pi : parentInstanceIndices) {
                     for (size_t i = 0; i < indices.size(); ++i) {
                         instanceIndices.push_back(pi * indices.size() + i);
                     }
+                }
+            } else {
+                for (size_t i = 0; i < indices.size(); ++i) {
+                    instanceIndices.push_back(i);
                 }
             }
 
