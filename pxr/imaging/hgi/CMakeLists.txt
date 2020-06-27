@@ -11,10 +11,12 @@ pxr_library(hgi
         attachmentDesc
         blitCmds
         buffer
+        computeCmds
+        computePipeline
         graphicsCmds
         graphicsCmdsDesc
+        graphicsPipeline
         hgi
-        pipeline
         resourceBindings
         sampler
         shaderFunction

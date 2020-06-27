@@ -21,42 +21,51 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
-#define PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
+#ifndef PXR_IMAGING_HGI_METAL_PIPELINE_H
+#define PXR_IMAGING_HGI_METAL_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
+
 #include "pxr/imaging/hgiMetal/api.h"
+
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HgiMetal;
 
+/// \class HgiMetalPipeline
 ///
-/// \class HgiMetalResourceBindings
+/// Metal implementation of HgiGraphicsPipeline.
 ///
-/// Metal implementation of HgiResourceBindings.
-///
-///
-class HgiMetalResourceBindings final : public HgiResourceBindings
+class HgiMetalGraphicsPipeline final : public HgiGraphicsPipeline
 {
 public:
     HGIMETAL_API
-    HgiMetalResourceBindings(HgiResourceBindingsDesc const& desc);
+    HgiMetalGraphicsPipeline(HgiMetal *hgi, HgiGraphicsPipelineDesc const& desc);
 
     HGIMETAL_API
-    ~HgiMetalResourceBindings() override;
+    ~HgiMetalGraphicsPipeline() override;
 
-    /// Binds the resources to GPU.
+    /// Apply pipeline state
     HGIMETAL_API
-    void BindResources(id<MTLRenderCommandEncoder> renderEncoder);
-
-    HGIMETAL_API
-    void BindResources(id<MTLComputeCommandEncoder> computeEncoder);
+    void BindPipeline(id<MTLRenderCommandEncoder> renderEncoder);
 
 private:
-    HgiMetalResourceBindings() = delete;
-    HgiMetalResourceBindings & operator=(const HgiMetalResourceBindings&) = delete;
-    HgiMetalResourceBindings(const HgiMetalResourceBindings&) = delete;
+    HgiMetalGraphicsPipeline() = delete;
+    HgiMetalGraphicsPipeline& operator=(const HgiMetalGraphicsPipeline&)=delete;
+    HgiMetalGraphicsPipeline(const HgiMetalGraphicsPipeline&) = delete;
+    
+    void _CreateVertexDescriptor();
+    void _CreateDepthStencilState(id<MTLDevice> device);
+    void _CreateRenderPipelineState(id<MTLDevice> device);
+
+    MTLVertexDescriptor *_vertexDescriptor;
+    id<MTLDepthStencilState> _depthStencilState;
+    id<MTLRenderPipelineState> _renderPipelineState;
 };
 
 

@@ -67,7 +67,8 @@ public:
     HgiShaderFunctionHandleVector* GetShaderFunctionList();
     HgiShaderProgramHandleVector* GetShaderProgramList();
     HgiResourceBindingsHandleVector* GetResourceBindingsList();
-    HgiPipelineHandleVector* GetPipelineList();
+    HgiGraphicsPipelineHandleVector* GetGraphicsPipelineList();
+    HgiComputePipelineHandleVector* GetComputePipelineList();
 
 private:
     HgiGLGarbageCollector & operator =
@@ -89,7 +90,8 @@ private:
     std::vector<HgiShaderFunctionHandleVector*> _shaderFunctionList;
     std::vector<HgiShaderProgramHandleVector*> _shaderProgramList;
     std::vector<HgiResourceBindingsHandleVector*> _resourceBindingsList;
-    std::vector<HgiPipelineHandleVector*> _pipelineList;
+    std::vector<HgiGraphicsPipelineHandleVector*> _graphicsPipelineList;
+    std::vector<HgiComputePipelineHandleVector*> _computePipelineList;
 
     std::mutex _garbageMutex;
     bool _isDestroying;

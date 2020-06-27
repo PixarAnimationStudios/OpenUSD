@@ -67,6 +67,9 @@ public:
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIGL_API
+    HgiComputeCmdsUniquePtr CreateComputeCmds() override;
+
+    HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;
 
     HGIGL_API
@@ -108,11 +111,19 @@ public:
     void DestroyResourceBindings(HgiResourceBindingsHandle* resHandle) override;
 
     HGIGL_API
-    HgiPipelineHandle CreatePipeline(
-        HgiPipelineDesc const& pipeDesc) override;
+    HgiGraphicsPipelineHandle CreateGraphicsPipeline(
+        HgiGraphicsPipelineDesc const& pipeDesc) override;
 
     HGIGL_API
-    void DestroyPipeline(HgiPipelineHandle* pipeHandle) override;
+    void DestroyGraphicsPipeline(
+        HgiGraphicsPipelineHandle* pipeHandle) override;
+
+    HGIGL_API
+    HgiComputePipelineHandle CreateComputePipeline(
+        HgiComputePipelineDesc const& pipeDesc) override;
+
+    HGIGL_API
+    void DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle) override;
 
     HGIGL_API
     TfToken const& GetAPIName() const override;

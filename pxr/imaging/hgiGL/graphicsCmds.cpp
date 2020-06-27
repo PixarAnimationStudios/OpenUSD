@@ -30,7 +30,7 @@
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/ops.h"
-#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/graphicsPipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/scopedStateHolder.h"
 
@@ -69,7 +69,7 @@ HgiGLGraphicsCmds::SetScissor(GfVec4i const& sc)
 }
 
 void
-HgiGLGraphicsCmds::BindPipeline(HgiPipelineHandle pipeline)
+HgiGLGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
@@ -82,7 +82,7 @@ HgiGLGraphicsCmds::BindResources(HgiResourceBindingsHandle res)
 
 void
 HgiGLGraphicsCmds::SetConstantValues(
-    HgiPipelineHandle pipeline,
+    HgiGraphicsPipelineHandle pipeline,
     HgiShaderStage stages,
     uint32_t bindIndex,
     uint32_t byteSize,

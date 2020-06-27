@@ -23,10 +23,11 @@
 //
 #include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/buffer.h"
+#include "pxr/imaging/hgiGL/computePipeline.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
-#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/graphicsPipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -335,10 +336,20 @@ HgiGLOps::SetScissor(GfVec4i const& sc)
 }
 
 HgiGLOpsFn
-HgiGLOps::BindPipeline(HgiPipelineHandle pipeline)
+HgiGLOps::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     return [pipeline] {
-        if (HgiGLPipeline* p = static_cast<HgiGLPipeline*>(pipeline.Get())) {
+        if (HgiGLGraphicsPipeline* p = static_cast<HgiGLGraphicsPipeline*>(pipeline.Get())) {
+            p->BindPipeline();
+        }
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::BindPipeline(HgiComputePipelineHandle pipeline)
+{
+    return [pipeline] {
+        if (HgiGLComputePipeline* p = static_cast<HgiGLComputePipeline*>(pipeline.Get())) {
             p->BindPipeline();
         }
     };
@@ -358,8 +369,25 @@ HgiGLOps::BindResources(HgiResourceBindingsHandle res)
 
 HgiGLOpsFn
 HgiGLOps::SetConstantValues(
-    HgiPipelineHandle pipeline,
+    HgiGraphicsPipelineHandle pipeline,
     HgiShaderStage stages,
+    uint32_t bindIndex,
+    uint32_t byteSize,
+    const void* data)
+{
+    return [pipeline, bindIndex, byteSize, data] {
+        HgiGLShaderProgram* glProgram =
+            static_cast<HgiGLShaderProgram*>(
+                pipeline->GetDescriptor().shaderProgram.Get());
+        uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
+        glNamedBufferData(ubo, byteSize, data, GL_STATIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::SetConstantValues(
+    HgiComputePipelineHandle pipeline,
     uint32_t bindIndex,
     uint32_t byteSize,
     const void* data)
@@ -431,6 +459,16 @@ HgiGLOps::DrawIndexed(
             (void*)(uintptr_t(indexBufferByteOffset)),
             instanceCount,
             vertexOffset);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::Dispatch(int dimX, int dimY)
+{
+    return [dimX, dimY] {
+        glDispatchCompute(dimX, dimY, 1);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };

@@ -67,14 +67,14 @@ public:
     void SetScissor(GfVec4i const& sc) override;
 
     HGIGL_API
-    void BindPipeline(HgiPipelineHandle pipeline) override;
+    void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
 
     HGIGL_API
     void BindResources(HgiResourceBindingsHandle resources) override;
 
     HGIGL_API
     void SetConstantValues(
-        HgiPipelineHandle pipeline,
+        HgiGraphicsPipelineHandle pipeline,
         HgiShaderStage stages,
         uint32_t bindIndex,
         uint32_t byteSize,

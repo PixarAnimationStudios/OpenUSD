@@ -21,66 +21,46 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_GRAPHICS_CMDS_H
-#define PXR_IMAGING_HGI_METAL_GRAPHICS_CMDS_H
+#ifndef PXR_IMAGING_HGI_METAL_COMPUTE_CMDS_H
+#define PXR_IMAGING_HGI_METAL_COMPUTE_CMDS_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiMetal/api.h"
-#include "pxr/imaging/hgi/graphicsCmds.h"
+#include "pxr/imaging/hgi/computeCmds.h"
 #include <cstdint>
 
 #include <Metal/Metal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiGraphicsCmdsDesc;
-
+class HgiMetalComputePipeline;
 
 /// \class HgiMetalGraphicsCmds
 ///
 /// Metal implementation of HgiGraphicsEncoder.
 ///
-class HgiMetalGraphicsCmds final : public HgiGraphicsCmds
+class HgiMetalComputeCmds final : public HgiComputeCmds
 {
 public:
     HGIMETAL_API
-    ~HgiMetalGraphicsCmds() override;
+    ~HgiMetalComputeCmds() override;
 
     HGIMETAL_API
-    void SetViewport(GfVec4i const& vp) override;
-
-    HGIMETAL_API
-    void SetScissor(GfVec4i const& sc) override;
-
-    HGIMETAL_API
-    void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
+    void BindPipeline(HgiComputePipelineHandle pipeline) override;
 
     HGIMETAL_API
     void BindResources(HgiResourceBindingsHandle resources) override;
 
     HGIMETAL_API
     void SetConstantValues(
-        HgiGraphicsPipelineHandle pipeline,
-        HgiShaderStage stages,
+        HgiComputePipelineHandle pipeline,
         uint32_t bindIndex,
         uint32_t byteSize,
         const void* data) override;
 
     HGIMETAL_API
-    void BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets) override;
-
-    HGIMETAL_API
-    void DrawIndexed(
-        HgiBufferHandle const& indexBuffer,
-        uint32_t indexCount,
-        uint32_t indexBufferByteOffset,
-        uint32_t firstIndex,
-        uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+    void Dispatch(int dimX, int dimY) override;
 
     HGIMETAL_API
     void PushDebugGroup(const char* label) override;
@@ -92,21 +72,19 @@ protected:
     friend class HgiMetal;
 
     HGIMETAL_API
-    HgiMetalGraphicsCmds(
-        HgiMetal* hgi,
-        HgiGraphicsCmdsDesc const& desc);
+    HgiMetalComputeCmds(HgiMetal* hgi);
 
     HGIMETAL_API
     bool _Submit(Hgi* hgi) override;
 
 private:
-    HgiMetalGraphicsCmds() = delete;
-    HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
-    HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
+    HgiMetalComputeCmds() = delete;
+    HgiMetalComputeCmds & operator=(const HgiMetalComputeCmds&) = delete;
+    HgiMetalComputeCmds(const HgiMetalComputeCmds&) = delete;
 
     HgiMetal* _hgi;
-    id<MTLRenderCommandEncoder> _encoder;
-    HgiGraphicsCmdsDesc _descriptor;
+    HgiMetalComputePipeline* _pipelineState;
+    id<MTLComputeCommandEncoder> _encoder;
     bool _hasWork;
 };
 

@@ -26,11 +26,13 @@
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/buffer.h"
 #include "pxr/imaging/hgiMetal/blitCmds.h"
+#include "pxr/imaging/hgiMetal/computeCmds.h"
+#include "pxr/imaging/hgiMetal/computePipeline.h"
 #include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
-#include "pxr/imaging/hgiMetal/pipeline.h"
+#include "pxr/imaging/hgiMetal/graphicsPipeline.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/sampler.h"
 #include "pxr/imaging/hgiMetal/shaderFunction.h"
@@ -131,6 +133,12 @@ HgiMetal::CreateGraphicsCmds(
     return HgiGraphicsCmdsUniquePtr(encoder);
 }
 
+HgiComputeCmdsUniquePtr
+HgiMetal::CreateComputeCmds()
+{
+    return HgiComputeCmdsUniquePtr(new HgiMetalComputeCmds(this));
+}
+
 HgiBlitCmdsUniquePtr
 HgiMetal::CreateBlitCmds()
 {
@@ -213,14 +221,28 @@ HgiMetal::DestroyResourceBindings(HgiResourceBindingsHandle* resHandle)
     DestroyObject(resHandle);
 }
 
-HgiPipelineHandle
-HgiMetal::CreatePipeline(HgiPipelineDesc const& desc)
+HgiGraphicsPipelineHandle
+HgiMetal::CreateGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
 {
-    return HgiPipelineHandle(new HgiMetalPipeline(this, desc), GetUniqueId());
+    return HgiGraphicsPipelineHandle(
+        new HgiMetalGraphicsPipeline(this, desc), GetUniqueId());
 }
 
 void
-HgiMetal::DestroyPipeline(HgiPipelineHandle* pipeHandle)
+HgiMetal::DestroyGraphicsPipeline(HgiGraphicsPipelineHandle* pipeHandle)
+{
+    DestroyObject(pipeHandle);
+}
+
+HgiComputePipelineHandle
+HgiMetal::CreateComputePipeline(HgiComputePipelineDesc const& desc)
+{
+    return HgiComputePipelineHandle(
+        new HgiMetalComputePipeline(this, desc), GetUniqueId());
+}
+
+void
+HgiMetal::DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)
 {
     DestroyObject(pipeHandle);
 }

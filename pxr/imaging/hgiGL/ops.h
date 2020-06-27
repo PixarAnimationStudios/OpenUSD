@@ -30,7 +30,7 @@
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
 #include "pxr/imaging/hgiGL/api.h"
@@ -99,15 +99,25 @@ public:
     static HgiGLOpsFn SetScissor(GfVec4i const& sc);
 
     HGIGL_API
-    static HgiGLOpsFn BindPipeline(HgiPipelineHandle pipeline);
+    static HgiGLOpsFn BindPipeline(HgiGraphicsPipelineHandle pipeline);
+
+    HGIGL_API
+    static HgiGLOpsFn BindPipeline(HgiComputePipelineHandle pipeline);
 
     HGIGL_API
     static HgiGLOpsFn BindResources(HgiResourceBindingsHandle resources);
 
     HGIGL_API
     static HgiGLOpsFn SetConstantValues(
-        HgiPipelineHandle pipeline,
+        HgiGraphicsPipelineHandle pipeline,
         HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data);
+
+    HGIGL_API
+    static HgiGLOpsFn SetConstantValues(
+        HgiComputePipelineHandle pipeline,
         uint32_t bindIndex,
         uint32_t byteSize,
         const void* data);
@@ -131,6 +141,9 @@ public:
     static HgiGLOpsFn BindFramebufferOp(
         HgiGLDevice* device,
         HgiGraphicsCmdsDesc const& desc);
+
+    HGIGL_API
+    static HgiGLOpsFn Dispatch(int dimX, int dimY);
 
     HGIGL_API
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);

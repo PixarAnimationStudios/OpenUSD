@@ -54,7 +54,8 @@ HgiGLGarbageCollector::~HgiGLGarbageCollector()
         !_shaderFunctionList.empty() || 
         !_shaderProgramList.empty() ||
         !_resourceBindingsList.empty() ||
-        !_pipelineList.empty()) 
+        !_graphicsPipelineList.empty() ||
+        !_computePipelineList.empty()) 
     {
         TF_CODING_ERROR("Some objects not destroyed in Garbage Collector");
     }
@@ -103,10 +104,17 @@ HgiGLGarbageCollector::GetResourceBindingsList()
 }
 
 /* Multi threaded */
-HgiPipelineHandleVector*
-HgiGLGarbageCollector::GetPipelineList()
+HgiGraphicsPipelineHandleVector*
+HgiGLGarbageCollector::GetGraphicsPipelineList()
 {
-    return _GetThreadLocalStorageList(&_pipelineList);
+    return _GetThreadLocalStorageList(&_graphicsPipelineList);
+}
+
+/* Multi threaded */
+HgiComputePipelineHandleVector*
+HgiGLGarbageCollector::GetComputePipelineList()
+{
+    return _GetThreadLocalStorageList(&_computePipelineList);
 }
 
 /* Single threaded */
@@ -121,7 +129,8 @@ HgiGLGarbageCollector::PerformGarbageCollection()
     _EmptyTrash(&_shaderFunctionList);
     _EmptyTrash(&_shaderProgramList);
     _EmptyTrash(&_resourceBindingsList);
-    _EmptyTrash(&_pipelineList);
+    _EmptyTrash(&_graphicsPipelineList);
+    _EmptyTrash(&_computePipelineList);
 
     _isDestroying = false;
 }

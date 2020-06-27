@@ -29,13 +29,15 @@ pxr_library(hgiGL
     PUBLIC_CLASSES
         blitCmds
         buffer
+        computeCmds
+        computePipeline
         device
         framebufferCache
         garbageCollector
         graphicsCmds
+        graphicsPipeline
         hgi
         ops
-        pipeline
         resourceBindings
         sampler
         shaderFunction

@@ -21,19 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiPipeline::HgiPipeline(HgiPipelineDesc const& desc)
+HgiGraphicsPipeline::HgiGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
     : _descriptor(desc)
 {
 }
 
-HgiPipeline::~HgiPipeline() = default;
+HgiGraphicsPipeline::~HgiGraphicsPipeline() = default;
 
-HgiPipelineDesc const&
-HgiPipeline::GetDescriptor() const
+HgiGraphicsPipelineDesc const&
+HgiGraphicsPipeline::GetDescriptor() const
 {
     return _descriptor;
 }
@@ -109,19 +109,17 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-HgiPipelineDesc::HgiPipelineDesc()
-    : pipelineType(HgiPipelineTypeGraphics)
-    , shaderProgram()
+HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
+    : shaderProgram()
     , depthState()
 {
 }
 
 bool operator==(
-    const HgiPipelineDesc& lhs,
-    const HgiPipelineDesc& rhs)
+    const HgiGraphicsPipelineDesc& lhs,
+    const HgiGraphicsPipelineDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.pipelineType == rhs.pipelineType &&
            lhs.resourceBindings == rhs.resourceBindings &&
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&
@@ -133,8 +131,8 @@ bool operator==(
 }
 
 bool operator!=(
-    const HgiPipelineDesc& lhs,
-    const HgiPipelineDesc& rhs)
+    const HgiGraphicsPipelineDesc& lhs,
+    const HgiGraphicsPipelineDesc& rhs)
 {
     return !(lhs == rhs);
 }

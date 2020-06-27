@@ -105,7 +105,7 @@ HdxFullscreenShader::~HdxFullscreenShader()
     }
 
     if (_pipeline) {
-        _hgi->DestroyPipeline(&_pipeline);
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
     }
 }
 
@@ -183,7 +183,7 @@ HdxFullscreenShader::SetDepthState(HgiDepthStencilState const& state)
     }
 
     if (_pipeline) {
-        _hgi->DestroyPipeline(&_pipeline);
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
     }
 
     _depthState = state;
@@ -211,7 +211,7 @@ HdxFullscreenShader::SetBlendState(
     }
 
     if (_pipeline) {
-        _hgi->DestroyPipeline(&_pipeline);
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
     }
 
     _blendingEnabled = enableBlending;
@@ -388,7 +388,7 @@ HdxFullscreenShader::_CreatePipeline(
             return true;
         }
 
-        _hgi->DestroyPipeline(&_pipeline);
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
     }
 
     // Setup attachments
@@ -411,9 +411,8 @@ HdxFullscreenShader::_CreatePipeline(
         _depthAttachment.format = depthDst.Get()->GetDescriptor().format;
     }
 
-    HgiPipelineDesc desc;
+    HgiGraphicsPipelineDesc desc;
     desc.debugName = _debugName + " Pipeline";
-    desc.pipelineType = HgiPipelineTypeGraphics;
     desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
     desc.colorAttachmentDescs.push_back(_attachment0);
@@ -437,7 +436,6 @@ HdxFullscreenShader::_CreatePipeline(
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
     // Set resource bindings (texture, buffers) and shader
-    desc.pipelineType = HgiPipelineTypeGraphics;
     desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
 
@@ -446,7 +444,7 @@ HdxFullscreenShader::_CreatePipeline(
     desc.vertexBuffers.clear();
     desc.vertexBuffers.push_back(_vboDesc);
 
-    _pipeline = _hgi->CreatePipeline(desc);
+    _pipeline = _hgi->CreateGraphicsPipeline(desc);
 
     return true;
 }

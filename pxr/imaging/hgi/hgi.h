@@ -31,9 +31,10 @@
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/sampler.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
@@ -153,6 +154,15 @@ public:
     HGI_API
     virtual HgiBlitCmdsUniquePtr CreateBlitCmds() = 0;
 
+    /// Returns a ComputeCmds object (for temporary use) that is ready to
+    /// record dispatch commands. ComputeCmds is a lightweight object that
+    /// should be re-acquired each frame (don't hold onto it after EndEncoding).
+    /// Thread safety: Each Hgi backend must ensure that a Cmds object can be
+    /// created on the main thread, recorded into (exclusively) by one secondary
+    /// thread and be submitted on the main thread. See notes above.
+    HGI_API
+    virtual HgiComputeCmdsUniquePtr CreateComputeCmds() = 0;
+
     /// Create a texture in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.
     HGI_API
@@ -221,16 +231,28 @@ public:
     virtual void DestroyResourceBindings(
         HgiResourceBindingsHandle* resHandle) = 0;
 
-    /// Create a new pipeline state object.
+    /// Create a new graphics pipeline state object.
     /// Thread safety: Creation must happen on main thread. See notes above.
     HGI_API
-    virtual HgiPipelineHandle CreatePipeline(
-        HgiPipelineDesc const& pipeDesc) = 0;
+    virtual HgiGraphicsPipelineHandle CreateGraphicsPipeline(
+        HgiGraphicsPipelineDesc const& pipeDesc) = 0;
 
-    /// Destroy a pipeline state object.
+    /// Destroy a graphics pipeline state object.
     /// Thread safety: Destruction must happen on main thread. See notes above.
     HGI_API
-    virtual void DestroyPipeline(HgiPipelineHandle* pipeHandle) = 0;
+    virtual void DestroyGraphicsPipeline(
+        HgiGraphicsPipelineHandle* pipeHandle) = 0;
+
+    /// Create a new compute pipeline state object.
+    /// Thread safety: Creation must happen on main thread. See notes above.
+    HGI_API
+    virtual HgiComputePipelineHandle CreateComputePipeline(
+        HgiComputePipelineDesc const& pipeDesc) = 0;
+
+    /// Destroy a compute pipeline state object.
+    /// Thread safety: Destruction must happen on main thread. See notes above.
+    HGI_API
+    virtual void DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)=0;
 
     /// Return the name of the api (e.g. "OpenGL").
     /// Thread safety: This call is thread safe.

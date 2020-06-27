@@ -63,6 +63,9 @@ public:
     HGIMETAL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
+    
+    HGIMETAL_API
+    HgiComputeCmdsUniquePtr CreateComputeCmds() override;
 
     HGIMETAL_API
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
@@ -109,11 +112,19 @@ public:
     void DestroyResourceBindings(HgiResourceBindingsHandle* resHandle) override;
 
     HGIMETAL_API
-    HgiPipelineHandle CreatePipeline(
-        HgiPipelineDesc const& pipeDesc) override;
+    HgiGraphicsPipelineHandle CreateGraphicsPipeline(
+        HgiGraphicsPipelineDesc const& pipeDesc) override;
 
     HGIMETAL_API
-    void DestroyPipeline(HgiPipelineHandle* pipeHandle) override;
+    void DestroyGraphicsPipeline(
+        HgiGraphicsPipelineHandle* pipeHandle) override;
+
+    HGIMETAL_API
+    HgiComputePipelineHandle CreateComputePipeline(
+        HgiComputePipelineDesc const& pipeDesc) override;
+
+    HGIMETAL_API
+    void DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle) override;
 
     HGIMETAL_API
     TfToken const& GetAPIName() const override;

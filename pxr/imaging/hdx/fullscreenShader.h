@@ -31,7 +31,7 @@
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/imaging/hgi/buffer.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -159,7 +159,7 @@ private:
     HgiBufferHandle _vertexBuffer;
     HgiShaderProgramHandle _shaderProgram;
     HgiResourceBindingsHandle _resourceBindings;
-    HgiPipelineHandle _pipeline;
+    HgiGraphicsPipelineHandle _pipeline;
     HgiVertexBufferDesc _vboDesc;
 
     HgiDepthStencilState _depthState;

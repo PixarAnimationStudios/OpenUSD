@@ -97,7 +97,7 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
     }
 
     if (_pipeline) {
-        _GetHgi()->DestroyPipeline(&_pipeline);
+        _GetHgi()->DestroyGraphicsPipeline(&_pipeline);
     }
 }
 
@@ -349,12 +349,11 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
             return true;
         }
         
-        _GetHgi()->DestroyPipeline(&_pipeline);
+        _GetHgi()->DestroyGraphicsPipeline(&_pipeline);
     }
 
-    HgiPipelineDesc desc;
+    HgiGraphicsPipelineDesc desc;
     desc.debugName = "ColorCorrection Pipeline";
-    desc.pipelineType = HgiPipelineTypeGraphics;
     desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
     
@@ -395,7 +394,7 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     _attachment0.format = aovTexture->GetDescriptor().format;
     desc.colorAttachmentDescs.emplace_back(_attachment0);
 
-    _pipeline = _GetHgi()->CreatePipeline(desc);
+    _pipeline = _GetHgi()->CreateGraphicsPipeline(desc);
 
     return true;
 }
@@ -459,7 +458,7 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
                 _GetHgi()->DestroyResourceBindings(&_resourceBindings);
             }
             if (_pipeline) {
-                _GetHgi()->DestroyPipeline(&_pipeline);
+                _GetHgi()->DestroyGraphicsPipeline(&_pipeline);
             }
         }
     }

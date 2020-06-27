@@ -21,24 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <vector>
 
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
-#include "pxr/imaging/hgiMetal/pipeline.h"
+#include "pxr/imaging/hgiMetal/graphicsPipeline.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/shaderProgram.h"
 #include "pxr/imaging/hgiMetal/shaderFunction.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalPipeline::HgiMetalPipeline(
+HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
     HgiMetal *hgi,
-    HgiPipelineDesc const& desc)
-    : HgiPipeline(desc)
+    HgiGraphicsPipelineDesc const& desc)
+    : HgiGraphicsPipeline(desc)
     , _vertexDescriptor(nil)
     , _depthStencilState(nil)
     , _renderPipelineState(nil)
@@ -48,7 +47,7 @@ HgiMetalPipeline::HgiMetalPipeline(
     _CreateRenderPipelineState(hgi->GetPrimaryDevice());
 }
 
-HgiMetalPipeline::~HgiMetalPipeline()
+HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
 {
     if (_renderPipelineState) {
         [_renderPipelineState release];
@@ -62,7 +61,7 @@ HgiMetalPipeline::~HgiMetalPipeline()
 }
 
 void
-HgiMetalPipeline::_CreateVertexDescriptor()
+HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
 {
     _vertexDescriptor = [[MTLVertexDescriptor alloc] init];
 
@@ -91,7 +90,7 @@ HgiMetalPipeline::_CreateVertexDescriptor()
 }
 
 void
-HgiMetalPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
+HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
 {
     MTLRenderPipelineDescriptor *stateDesc =
         [[MTLRenderPipelineDescriptor alloc] init];
@@ -186,7 +185,7 @@ HgiMetalPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
 }
 
 void
-HgiMetalPipeline::_CreateDepthStencilState(id<MTLDevice> device)
+HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
 {
     MTLDepthStencilDescriptor *depthStencilStateDescriptor =
         [[MTLDepthStencilDescriptor alloc] init];
@@ -226,7 +225,7 @@ HgiMetalPipeline::_CreateDepthStencilState(id<MTLDevice> device)
 }
 
 void
-HgiMetalPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder)
+HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder)
 {
     [renderEncoder setRenderPipelineState:_renderPipelineState];
 

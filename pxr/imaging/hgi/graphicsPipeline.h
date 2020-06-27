@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_PIPELINE_H
-#define PXR_IMAGING_HGI_PIPELINE_H
+#ifndef PXR_IMAGING_HGI_GRAPHICS_PIPELINE_H
+#define PXR_IMAGING_HGI_GRAPHICS_PIPELINE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
@@ -219,8 +219,6 @@ bool operator!=(
 /// Describes the properties needed to create a GPU pipeline.
 ///
 /// <ul>
-/// <li>pipelineType:
-///   Bind point for pipeline (Graphics or Compute).</li>
 /// <li>resourceBindings:
 ///   The resource bindings that will be bound when the pipeline is used.
 ///   Primarily used to query the vertex attributes.</li>
@@ -244,13 +242,12 @@ bool operator!=(
 ///   Describes the depth attachment (optional)</li>
 /// </ul>
 ///
-struct HgiPipelineDesc
+struct HgiGraphicsPipelineDesc
 {
     HGI_API
-    HgiPipelineDesc();
+    HgiGraphicsPipelineDesc();
 
     std::string debugName;
-    HgiPipelineType pipelineType;
     HgiResourceBindingsHandle resourceBindings;
     HgiShaderProgramHandle shaderProgram;
     HgiDepthStencilState depthState;
@@ -263,50 +260,51 @@ struct HgiPipelineDesc
 
 HGI_API
 bool operator==(
-    const HgiPipelineDesc& lhs,
-    const HgiPipelineDesc& rhs);
+    const HgiGraphicsPipelineDesc& lhs,
+    const HgiGraphicsPipelineDesc& rhs);
 
 HGI_API
 bool operator!=(
-    const HgiPipelineDesc& lhs,
-    const HgiPipelineDesc& rhs);
+    const HgiGraphicsPipelineDesc& lhs,
+    const HgiGraphicsPipelineDesc& rhs);
 
 
 ///
-/// \class HgiPipeline
+/// \class HgiGraphicsPipeline
 ///
-/// Represents a graphics platform independent GPU pipeline resource.
+/// Represents a graphics platform independent GPU graphics pipeline
+/// resource.
 ///
 /// Base class for Hgi pipelines.
 /// To the client (HdSt) pipeline resources are referred to via
 /// opaque, stateless handles (HgiPipelineHandle).
 ///
-class HgiPipeline
+class HgiGraphicsPipeline
 {
 public:
     HGI_API
-    virtual ~HgiPipeline();
+    virtual ~HgiGraphicsPipeline();
 
     /// The descriptor describes the object.
     HGI_API
-    HgiPipelineDesc const& GetDescriptor() const;
+    HgiGraphicsPipelineDesc const& GetDescriptor() const;
 
 protected:
     HGI_API
-    HgiPipeline(HgiPipelineDesc const& desc);
+    HgiGraphicsPipeline(HgiGraphicsPipelineDesc const& desc);
 
-    HgiPipelineDesc _descriptor;
+    HgiGraphicsPipelineDesc _descriptor;
 
 private:
-    HgiPipeline() = delete;
-    HgiPipeline & operator=(const HgiPipeline&) = delete;
-    HgiPipeline(const HgiPipeline&) = delete;
+    HgiGraphicsPipeline() = delete;
+    HgiGraphicsPipeline & operator=(const HgiGraphicsPipeline&) = delete;
+    HgiGraphicsPipeline(const HgiGraphicsPipeline&) = delete;
 };
 
 /// Explicitly instantiate and define pipeline handle
-template class HgiHandle<class HgiPipeline>;
-using HgiPipelineHandle = HgiHandle<class HgiPipeline>;
-using HgiPipelineHandleVector = std::vector<HgiPipelineHandle>;
+template class HgiHandle<class HgiGraphicsPipeline>;
+using HgiGraphicsPipelineHandle = HgiHandle<class HgiGraphicsPipeline>;
+using HgiGraphicsPipelineHandleVector = std::vector<HgiGraphicsPipelineHandle>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

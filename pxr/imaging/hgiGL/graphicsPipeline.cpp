@@ -25,16 +25,16 @@
 
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
-#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/graphicsPipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLPipeline::HgiGLPipeline(
-    HgiPipelineDesc const& desc)
-    : HgiPipeline(desc)
+HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
+    HgiGraphicsPipelineDesc const& desc)
+    : HgiGraphicsPipeline(desc)
     , _vao()
 {
     glCreateVertexArrays(1, &_vao);
@@ -68,7 +68,7 @@ HgiGLPipeline::HgiGLPipeline(
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
-HgiGLPipeline::~HgiGLPipeline()
+HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline()
 {
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &_vao);
@@ -76,7 +76,7 @@ HgiGLPipeline::~HgiGLPipeline()
 }
 
 void
-HgiGLPipeline::BindPipeline()
+HgiGLGraphicsPipeline::BindPipeline()
 {
     glBindVertexArray(_vao);
 

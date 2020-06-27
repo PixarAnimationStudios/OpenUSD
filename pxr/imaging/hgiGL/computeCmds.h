@@ -21,45 +21,69 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIGL_PIPELINE_H
-#define PXR_IMAGING_HGIGL_PIPELINE_H
+#ifndef PXR_IMAGING_HGI_GL_COMPUTE_CMDS_H
+#define PXR_IMAGING_HGI_GL_COMPUTE_CMDS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
 #include "pxr/imaging/hgiGL/api.h"
-
+#include "pxr/imaging/hgiGL/hgi.h"
+#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-/// \class HgiGLPipeline
+/// \class HgiGLComputeCmds
 ///
-/// OpenGL implementation of HgiPipeline.
+/// OpenGL implementation of HgiComputeCmds.
 ///
-class HgiGLPipeline final : public HgiPipeline
+class HgiGLComputeCmds final : public HgiComputeCmds
 {
 public:
     HGIGL_API
-    ~HgiGLPipeline() override;
+    ~HgiGLComputeCmds() override;
 
-    /// Apply pipeline state
     HGIGL_API
-    void BindPipeline();
+    void PushDebugGroup(const char* label) override;
+
+    HGIGL_API
+    void PopDebugGroup() override;
+
+    HGIGL_API
+    void BindPipeline(HgiComputePipelineHandle pipeline) override;
+
+    HGIGL_API
+    void BindResources(HgiResourceBindingsHandle resources) override;
+
+    HGIGL_API
+    void SetConstantValues(
+        HgiComputePipelineHandle pipeline,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data) override;
+    
+    HGIGL_API
+    void Dispatch(int dimX, int dimY) override;
 
 protected:
     friend class HgiGL;
 
     HGIGL_API
-    HgiGLPipeline(HgiPipelineDesc const& desc);
+    HgiGLComputeCmds(HgiGLDevice* device);
+
+    HGIGL_API
+    bool _Submit(Hgi* hgi) override;
 
 private:
-    HgiGLPipeline() = delete;
-    HgiGLPipeline & operator=(const HgiGLPipeline&) = delete;
-    HgiGLPipeline(const HgiGLPipeline&) = delete;
+    HgiGLComputeCmds() = delete;
+    HgiGLComputeCmds & operator=(const HgiGLComputeCmds&) = delete;
+    HgiGLComputeCmds(const HgiGLComputeCmds&) = delete;
 
-    uint32_t _vao;
+    HgiGLOpsVector _ops;
+
+    // Cmds is used only one frame so storing multi-frame state on will not
+    // survive.
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

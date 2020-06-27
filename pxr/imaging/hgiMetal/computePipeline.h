@@ -21,51 +21,45 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_PIPELINE_H
-#define PXR_IMAGING_HGI_METAL_PIPELINE_H
+#ifndef PXR_IMAGING_HGI_METAL_COMPUTE_PIPELINE_H
+#define PXR_IMAGING_HGI_METAL_COMPUTE_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/computePipeline.h"
 
 #include "pxr/imaging/hgiMetal/api.h"
-
-#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiMetal;
 
-/// \class HgiMetalPipeline
+/// \class HgiMetalComputePipeline
 ///
-/// Metal implementation of HgiPipeline.
+/// Metal implementation of HgiComputePipeline.
 ///
-class HgiMetalPipeline final : public HgiPipeline
+class HgiMetalComputePipeline final : public HgiComputePipeline
 {
 public:
     HGIMETAL_API
-    HgiMetalPipeline(HgiMetal *hgi, HgiPipelineDesc const& desc);
+    HgiMetalComputePipeline(HgiMetal *hgi, HgiComputePipelineDesc const& desc);
 
     HGIMETAL_API
-    ~HgiMetalPipeline() override;
+    ~HgiMetalComputePipeline() override;
 
     /// Apply pipeline state
     HGIMETAL_API
-    void BindPipeline(id<MTLRenderCommandEncoder> renderEncoder);
+    void BindPipeline(id<MTLComputeCommandEncoder> computeEncoder);
+    
+    HGIMETAL_API
+    id<MTLComputePipelineState> GetMetalPipelineState();
 
 private:
-    HgiMetalPipeline() = delete;
-    HgiMetalPipeline & operator=(const HgiMetalPipeline&) = delete;
-    HgiMetalPipeline(const HgiMetalPipeline&) = delete;
+    HgiMetalComputePipeline() = delete;
+    HgiMetalComputePipeline & operator=(const HgiMetalComputePipeline&) = delete;
+    HgiMetalComputePipeline(const HgiMetalComputePipeline&) = delete;
     
-    void _CreateVertexDescriptor();
-    void _CreateDepthStencilState(id<MTLDevice> device);
-    void _CreateRenderPipelineState(id<MTLDevice> device);
-
-    MTLVertexDescriptor *_vertexDescriptor;
-    id<MTLDepthStencilState> _depthStencilState;
-    id<MTLRenderPipelineState> _renderPipelineState;
+    id<MTLComputePipelineState> _computePipelineState;
 };
 
 

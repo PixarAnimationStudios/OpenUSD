@@ -21,42 +21,41 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
-#define PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
+#ifndef PXR_IMAGING_HGIGL_COMPUTE_PIPELINE_H
+#define PXR_IMAGING_HGIGL_COMPUTE_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/resourceBindings.h"
-#include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgiGL/api.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+/// \class HgiGLComputePipeline
 ///
-/// \class HgiMetalResourceBindings
+/// OpenGL implementation of HgiComputePipeline.
 ///
-/// Metal implementation of HgiResourceBindings.
-///
-///
-class HgiMetalResourceBindings final : public HgiResourceBindings
+class HgiGLComputePipeline final : public HgiComputePipeline
 {
 public:
-    HGIMETAL_API
-    HgiMetalResourceBindings(HgiResourceBindingsDesc const& desc);
+    HGIGL_API
+    ~HgiGLComputePipeline() override;
 
-    HGIMETAL_API
-    ~HgiMetalResourceBindings() override;
+    /// Apply pipeline state
+    HGIGL_API
+    void BindPipeline();
 
-    /// Binds the resources to GPU.
-    HGIMETAL_API
-    void BindResources(id<MTLRenderCommandEncoder> renderEncoder);
+protected:
+    friend class HgiGL;
 
-    HGIMETAL_API
-    void BindResources(id<MTLComputeCommandEncoder> computeEncoder);
+    HGIGL_API
+    HgiGLComputePipeline(HgiComputePipelineDesc const& desc);
 
 private:
-    HgiMetalResourceBindings() = delete;
-    HgiMetalResourceBindings & operator=(const HgiMetalResourceBindings&) = delete;
-    HgiMetalResourceBindings(const HgiMetalResourceBindings&) = delete;
+    HgiGLComputePipeline() = delete;
+    HgiGLComputePipeline & operator=(const HgiGLComputePipeline&) = delete;
+    HgiGLComputePipeline(const HgiGLComputePipeline&) = delete;
 };
 
 

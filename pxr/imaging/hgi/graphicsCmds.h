@@ -28,7 +28,7 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/cmds.h"
 #include <memory>
@@ -72,7 +72,7 @@ public:
     /// The resource bindings used when creating the pipeline must be compatible
     /// with the resources bound via BindResources().
     HGI_API
-    virtual void BindPipeline(HgiPipelineHandle pipeline) = 0;
+    virtual void BindPipeline(HgiGraphicsPipelineHandle pipeline) = 0;
 
     /// Bind resources such as textures and uniform buffers.
     /// Usually you call this right after BindPipeline() and the resources bound
@@ -90,7 +90,7 @@ public:
     /// `data` is the data you are copying into the push constants block.
     HGI_API
     virtual void SetConstantValues(
-        HgiPipelineHandle pipeline,
+        HgiGraphicsPipelineHandle pipeline,
         HgiShaderStage stages,
         uint32_t bindIndex,
         uint32_t byteSize,

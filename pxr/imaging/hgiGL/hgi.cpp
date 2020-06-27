@@ -27,11 +27,13 @@
 #include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/blitCmds.h"
 #include "pxr/imaging/hgiGL/buffer.h"
+#include "pxr/imaging/hgiGL/computeCmds.h"
+#include "pxr/imaging/hgiGL/computePipeline.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
-#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/graphicsPipeline.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
@@ -101,6 +103,13 @@ HgiGL::CreateBlitCmds()
     return HgiBlitCmdsUniquePtr(new HgiGLBlitCmds());
 }
 
+HgiComputeCmdsUniquePtr
+HgiGL::CreateComputeCmds()
+{
+    HgiGLComputeCmds* cmds(new HgiGLComputeCmds(_device));
+    return HgiComputeCmdsUniquePtr(cmds);
+}
+
 HgiTextureHandle
 HgiGL::CreateTexture(HgiTextureDesc const & desc)
 {
@@ -146,7 +155,9 @@ HgiGL::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 void
 HgiGL::DestroyShaderFunction(HgiShaderFunctionHandle* shaderFunctionHandle)
 {
-    _TrashObject(shaderFunctionHandle,_garbageCollector.GetShaderFunctionList());
+    _TrashObject(
+        shaderFunctionHandle,
+        _garbageCollector.GetShaderFunctionList());
 }
 
 HgiShaderProgramHandle
@@ -158,7 +169,7 @@ HgiGL::CreateShaderProgram(HgiShaderProgramDesc const& desc)
 void
 HgiGL::DestroyShaderProgram(HgiShaderProgramHandle* shaderProgramHandle)
 {
-    _TrashObject(shaderProgramHandle,_garbageCollector.GetShaderProgramList());
+    _TrashObject(shaderProgramHandle, _garbageCollector.GetShaderProgramList());
 }
 
 HgiResourceBindingsHandle
@@ -171,19 +182,33 @@ HgiGL::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 void
 HgiGL::DestroyResourceBindings(HgiResourceBindingsHandle* resHandle)
 {
-    _TrashObject(resHandle,_garbageCollector.GetResourceBindingsList());
+    _TrashObject(resHandle, _garbageCollector.GetResourceBindingsList());
 }
 
-HgiPipelineHandle
-HgiGL::CreatePipeline(HgiPipelineDesc const& desc)
+HgiGraphicsPipelineHandle
+HgiGL::CreateGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
 {
-    return HgiPipelineHandle(new HgiGLPipeline(desc), GetUniqueId());
+    return HgiGraphicsPipelineHandle(
+        new HgiGLGraphicsPipeline(desc), GetUniqueId());
 }
 
 void
-HgiGL::DestroyPipeline(HgiPipelineHandle* pipeHandle)
+HgiGL::DestroyGraphicsPipeline(HgiGraphicsPipelineHandle* pipeHandle)
 {
-    _TrashObject(pipeHandle,_garbageCollector.GetPipelineList());
+    _TrashObject(pipeHandle, _garbageCollector.GetGraphicsPipelineList());
+}
+
+HgiComputePipelineHandle
+HgiGL::CreateComputePipeline(HgiComputePipelineDesc const& desc)
+{
+    return HgiComputePipelineHandle(
+        new HgiGLComputePipeline(desc), GetUniqueId());
+}
+
+void
+HgiGL::DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)
+{
+    _TrashObject(pipeHandle,_garbageCollector.GetComputePipelineList());
 }
 
 TfToken const&

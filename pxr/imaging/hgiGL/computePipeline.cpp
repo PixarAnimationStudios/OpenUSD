@@ -21,45 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
-#define PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
+#include "pxr/base/tf/diagnostic.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgi/resourceBindings.h"
-#include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgiGL/computePipeline.h"
+#include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/resourceBindings.h"
+#include "pxr/imaging/hgiGL/shaderProgram.h"
+#include "pxr/imaging/hgiGL/shaderFunction.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-///
-/// \class HgiMetalResourceBindings
-///
-/// Metal implementation of HgiResourceBindings.
-///
-///
-class HgiMetalResourceBindings final : public HgiResourceBindings
+HgiGLComputePipeline::HgiGLComputePipeline(
+    HgiComputePipelineDesc const& desc)
+    : HgiComputePipeline(desc)
 {
-public:
-    HGIMETAL_API
-    HgiMetalResourceBindings(HgiResourceBindingsDesc const& desc);
+}
 
-    HGIMETAL_API
-    ~HgiMetalResourceBindings() override;
+HgiGLComputePipeline::~HgiGLComputePipeline() = default;
 
-    /// Binds the resources to GPU.
-    HGIMETAL_API
-    void BindResources(id<MTLRenderCommandEncoder> renderEncoder);
+void
+HgiGLComputePipeline::BindPipeline()
+{
+    //
+    // Shader program
+    //
+    HgiGLShaderProgram* glProgram = 
+        static_cast<HgiGLShaderProgram*>(_descriptor.shaderProgram.Get());
+    if (glProgram) {
+        glUseProgram(glProgram->GetProgramId());
+    }
 
-    HGIMETAL_API
-    void BindResources(id<MTLComputeCommandEncoder> computeEncoder);
-
-private:
-    HgiMetalResourceBindings() = delete;
-    HgiMetalResourceBindings & operator=(const HgiMetalResourceBindings&) = delete;
-    HgiMetalResourceBindings(const HgiMetalResourceBindings&) = delete;
-};
+    HGIGL_POST_PENDING_GL_ERRORS();
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

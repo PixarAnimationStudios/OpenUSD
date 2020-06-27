@@ -21,45 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
-#define PXR_IMAGING_HGI_METAL_RESOURCEBINDINGS_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgi/resourceBindings.h"
-#include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgi/computePipeline.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-///
-/// \class HgiMetalResourceBindings
-///
-/// Metal implementation of HgiResourceBindings.
-///
-///
-class HgiMetalResourceBindings final : public HgiResourceBindings
+HgiComputePipeline::HgiComputePipeline(HgiComputePipelineDesc const& desc)
+    : _descriptor(desc)
 {
-public:
-    HGIMETAL_API
-    HgiMetalResourceBindings(HgiResourceBindingsDesc const& desc);
+}
 
-    HGIMETAL_API
-    ~HgiMetalResourceBindings() override;
+HgiComputePipeline::~HgiComputePipeline() = default;
 
-    /// Binds the resources to GPU.
-    HGIMETAL_API
-    void BindResources(id<MTLRenderCommandEncoder> renderEncoder);
+HgiComputePipelineDesc const&
+HgiComputePipeline::GetDescriptor() const
+{
+    return _descriptor;
+}
 
-    HGIMETAL_API
-    void BindResources(id<MTLComputeCommandEncoder> computeEncoder);
 
-private:
-    HgiMetalResourceBindings() = delete;
-    HgiMetalResourceBindings & operator=(const HgiMetalResourceBindings&) = delete;
-    HgiMetalResourceBindings(const HgiMetalResourceBindings&) = delete;
-};
+HgiComputePipelineDesc::HgiComputePipelineDesc()
+    : shaderProgram()
+{
+}
 
+bool operator==(
+    const HgiComputePipelineDesc& lhs,
+    const HgiComputePipelineDesc& rhs)
+{
+    return lhs.debugName == rhs.debugName &&
+           lhs.shaderProgram == rhs.shaderProgram;
+}
+
+bool operator!=(
+    const HgiComputePipelineDesc& lhs,
+    const HgiComputePipelineDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

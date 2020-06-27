@@ -31,7 +31,7 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hgi/attachmentDesc.h"
 #include "pxr/imaging/hgi/buffer.h"
-#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -109,7 +109,7 @@ private:
     HgiTextureHandle _texture3dLUT;
     HgiShaderProgramHandle _shaderProgram;
     HgiResourceBindingsHandle _resourceBindings;
-    HgiPipelineHandle _pipeline;
+    HgiGraphicsPipelineHandle _pipeline;
 
     TfToken _colorCorrectionMode;
     std::string _displayOCIO;
