@@ -41,6 +41,7 @@ GlfBaseTextureData::_GLInternalFormatFromImageData(
 {
     int numElements = GlfGetNumElements(format);
     switch (type) {
+    case GL_UNSIGNED_SHORT:
     case GL_UNSIGNED_INT:
         switch (numElements) {
         case 1:

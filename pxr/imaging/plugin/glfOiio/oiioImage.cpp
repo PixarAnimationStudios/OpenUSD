@@ -137,8 +137,10 @@ static GLenum
 _GLTypeFromImageData(TypeDesc typedesc)
 {
     switch (typedesc.basetype) {
-    case TypeDesc::UINT:
+    case TypeDesc::UINT32:
         return GL_UNSIGNED_INT;
+    case TypeDesc::UINT16:
+        return GL_UNSIGNED_SHORT;
     case TypeDesc::HALF:
         return GL_HALF_FLOAT;
     case TypeDesc::FLOAT:
@@ -156,11 +158,17 @@ _GetOIIOBaseType(GLenum type)
 {
     switch (type) {
     case GL_UNSIGNED_BYTE:
-    case GL_BYTE:
         return TypeDesc::UINT8;
+    case GL_BYTE:
+        return TypeDesc::INT8;
+    case GL_UNSIGNED_SHORT:
+        return TypeDesc::UINT16;
+    case GL_SHORT:
+        return TypeDesc::INT16;
     case GL_UNSIGNED_INT:
+        return TypeDesc::UINT32;
     case GL_INT:
-        return TypeDesc::UINT;
+        return TypeDesc::INT32;
     case GL_HALF_FLOAT:
         return TypeDesc::HALF;
     case GL_FLOAT:
