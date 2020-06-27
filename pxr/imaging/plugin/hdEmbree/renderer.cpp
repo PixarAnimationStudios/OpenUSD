@@ -297,7 +297,7 @@ HdEmbreeRenderer::_GetClearColor(VtValue const& clearValue)
         {
             GfVec4f f =
                 *(static_cast<const GfVec4f*>(HdGetValueData(clearValue)));
-            return GfVec4f(f[0], f[1], f[2], 1.0f);
+            return f;
         }
         case HdTypeDoubleVec3:
         {
@@ -309,7 +309,7 @@ HdEmbreeRenderer::_GetClearColor(VtValue const& clearValue)
         {
             GfVec4d f =
                 *(static_cast<const GfVec4d*>(HdGetValueData(clearValue)));
-            return GfVec4f(f[0], f[1], f[2], 1.0f);
+            return GfVec4f(f);
         }
         default:
             return GfVec4f(0.0f, 0.0f, 0.0f, 1.0f);
