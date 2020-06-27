@@ -6872,8 +6872,7 @@ static bool
 _HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips, 
                 const SdfPath& specPath, 
                 const double* time = nullptr, 
-                double* lower = nullptr, double* upper = nullptr,
-                size_t* sourceClipIndex = nullptr)
+                double* lower = nullptr, double* upper = nullptr)
 {
     // Bail out immediately if this clip set does not contain values
     // for this attribute.
@@ -6882,32 +6881,9 @@ _HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips,
     }
 
     if (time) {
-        for (size_t i = 0; i < sourceClips->valueClips.size(); ++i) {
-            const Usd_ClipRefPtr& clip = sourceClips->valueClips[i];
-
-            // If given a time, do a range check on the clip first.
-            if (*time < clip->startTime || *time >= clip->endTime) {
-                continue;
-            }
-
-            // Retrieve the bracketing time samples from this clip. Even
-            // though we get time sample times, the clip itself may not
-            // actually have values -- this is a "gap" in the clip set.
-            // See Usd_Clip::GetBracketingTimeSamples for more details
-            //
-            // So, we also check whether the underlying clip layer has time 
-            // sample values and set the source clip index if so.
-            if (clip->GetBracketingTimeSamplesForPath(
-                    specPath, *time, lower, upper) && 
-                clip->_GetNumTimeSamplesForPathInLayerForClip(specPath) != 0) {
-                *sourceClipIndex = i;
-                return true;
-            }
-        }
-
-        // If we're here, then the active clip for the given time did not
-        // have time sample values, so set sourceClipIndex to indicate that.
-        *sourceClipIndex = sourceClips->valueClips.size();
+        const Usd_ClipRefPtr& clip = sourceClips->GetActiveClip(*time);
+        return clip->GetBracketingTimeSamplesForPath(
+            specPath, *time, lower, upper);
     }
 
     // Since this clip set has declared it contains values for this
@@ -7156,7 +7132,6 @@ public:
         UsdTimeCode time, const UsdAttribute& attr,
         const UsdResolveInfo &info,
         const Usd_ClipSetRefPtr &clipSet, 
-        const size_t *clipIndex,
         const double *lowerHint, const double *upperHint,
         Usd_InterpolatorBase *interpolator,
         T *result)
@@ -7170,18 +7145,15 @@ public:
         // layer offsets, it is simpler to bake the effects of 
         // those offsets into Usd_Clip.
         const double localTime = time.GetValue();
-        size_t localClipIndex = clipSet->valueClips.size();
         double upper = 0.0;
         double lower = 0.0;
 
-        if (lowerHint && upperHint && clipIndex) {
-            localClipIndex = *clipIndex;
+        if (lowerHint && upperHint) {
             lower = *lowerHint;
             upper = *upperHint;
         }
         else {
-            _HasTimeSamples(
-                clipSet, specPath, &localTime, &lower, &upper, &localClipIndex);
+            _HasTimeSamples(clipSet, specPath, &localTime, &lower, &upper);
         }
 
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
@@ -7220,14 +7192,6 @@ struct UsdStage::_ExtraResolveInfo
     // If the resolve info source is UsdResolveInfoSourceValueClips this will 
     // be the Usd_ClipSet containing values for the attribute.
     Usd_ClipSetRefPtr clipSet;
-
-    // If the resolve info source is UsdResolveInfoSourceValueClips and
-    // an explicit time is given to _GetResolveInfo, this will be the index
-    // of the Usd_Clip in clipSet->valueClips containing bracketing time samples
-    // for that time, BUT only if that clip contains time sample values. If the
-    // clip that is active at the given time does not contain time sample 
-    // values, this will be set to clipSet->valueClips.size() to indicate that.
-    size_t clipIndex = 0;
 };
 
 SdfLayerRefPtr
@@ -7251,18 +7215,17 @@ UsdStage::_GetLayerWithStrongestValue(
                 resolveInfo._layerStack->GetLayers()[resolveInfo._layerIndex];
         }
         else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
-            const size_t clipIndex = extraResolveInfo.clipIndex;
             const Usd_ClipSetRefPtr& clipSet = extraResolveInfo.clipSet;
+            const Usd_ClipRefPtr& activeClip = 
+                clipSet->GetActiveClip(time.GetValue());
+            const SdfPath specPath =
+                resolveInfo._primPathInLayerStack.AppendProperty(attr.GetName());
 
-            // Active clip has values for this attribute, so get the layer
-            // for that clip. Otherwise, the value will come from the manifest
-            // so use that instead.
-            const Usd_ClipRefPtr& clip = 
-                clipIndex < clipSet->valueClips.size() ? 
-                clipSet->valueClips[clipIndex] : clipSet->manifestClip;
-            if (TF_VERIFY(clip)) {
-                resultLayer = clip->_GetLayerForClip();
-            }
+            // If the active clip has authored time samples, the value will
+            // come from it (or at least be interpolated from it) so use that
+            // clip's layer. Otherwise the value will come from the manifest.
+            resultLayer = activeClip->HasAuthoredTimeSamples(specPath) ? 
+                activeClip->GetLayer() : clipSet->manifestClip->GetLayer();
         }
     }
     return resultLayer;
@@ -7290,7 +7253,7 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
     else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
         return UsdStage_ResolveInfoAccess::_GetClipValue(
             time, attr, resolveInfo, 
-            extraResolveInfo.clipSet, &extraResolveInfo.clipIndex,
+            extraResolveInfo.clipSet,
             &extraResolveInfo.lowerSample, &extraResolveInfo.upperSample,
             interpolator, result);
     }
@@ -7337,22 +7300,26 @@ struct UsdStage::_PropertyStackResolver {
         // this attribute. If a time is given, examine just the clips
         // that are active at that time.
         double lowerSample = 0.0, upperSample = 0.0;
-        size_t clipIndex = 0;
 
         if (_HasTimeSamples(
-                clipSet, specPath, time, &lowerSample, &upperSample, &clipIndex)) {
+                clipSet, specPath, time, &lowerSample, &upperSample)) {
 
-            // Active clip has values for this attribute, so retrieve the
-            // corresponding property spec. Otherwise, we retrieve the clip's
-            // value at this time from the manifest, so add that insted.
-            const Usd_ClipRefPtr& clip = 
-                clipIndex < clipSet->valueClips.size() ? 
-                clipSet->valueClips[clipIndex] : clipSet->manifestClip;
-            if (!TF_VERIFY(clip)) {
+            const Usd_ClipRefPtr& activeClip = clipSet->GetActiveClip(*time);
+
+            // If the active clip has authored time samples, the value will
+            // come from it (or at least be interpolated from it) so use the
+            // property spec from that clip. Otherwise the value will come
+            // from the manifest.
+            const Usd_ClipRefPtr& sourceClip = 
+                activeClip->HasAuthoredTimeSamples(specPath) ?
+                activeClip : clipSet->manifestClip;
+
+            if (!TF_VERIFY(sourceClip)) {
                 return false;
             }
 
-            if (const auto propertySpec = clip->GetPropertyAtPath(specPath)) {
+            if (const auto propertySpec = 
+                    sourceClip->GetPropertyAtPath(specPath)) {
                 propertyStack.push_back(propertySpec);
             }
         }
@@ -7451,8 +7418,7 @@ struct UsdStage::_ResolveInfoResolver
     {
         if (!_HasTimeSamples(
                 clipSet, specPath, time,
-                &_extraInfo->lowerSample, &_extraInfo->upperSample,
-                &_extraInfo->clipIndex)) {
+                &_extraInfo->lowerSample, &_extraInfo->upperSample)) {
             return false;
         }
 
@@ -7648,7 +7614,7 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
             }
 
             return UsdStage_ResolveInfoAccess::_GetClipValue(
-                time, attr, info, clipSet, nullptr, nullptr, nullptr,
+                time, attr, info, clipSet, nullptr, nullptr,
                 interpolator, result);
         }
     }

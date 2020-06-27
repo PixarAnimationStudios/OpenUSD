@@ -65,6 +65,13 @@ public:
     Usd_ClipSet(const Usd_ClipSet&) = delete;
     Usd_ClipSet& operator=(const Usd_ClipSet&) = delete;
 
+    /// Return the active clip at the given \p time. This should
+    /// always be a valid Usd_ClipRefPtr.
+    const Usd_ClipRefPtr& GetActiveClip(double time) const
+    {
+        return valueClips[_FindClipIndexForTime(time)];
+    }
+
     /// Query time sample for the attribute at \p path at \p time.
     /// If no time sample exists in the active clip at \p time,
     /// \p interpolator will be used to try to interpolate the
@@ -104,7 +111,7 @@ Usd_ClipSet::QueryTimeSample(
     const SdfPath& path, double time, 
     Usd_InterpolatorBase* interpolator, T* value) const
 {
-    const Usd_ClipRefPtr& clip = valueClips[_FindClipIndexForTime(time)];
+    const Usd_ClipRefPtr& clip = GetActiveClip(time);
 
     // First query the clip for time samples at the specified time.
     if (clip->QueryTimeSample(path, time, interpolator, value)) {

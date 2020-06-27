@@ -582,6 +582,13 @@ Usd_Clip::HasField(const SdfPath& path, const TfToken& field) const
     return _GetLayerForClip()->HasField(_TranslatePathToClip(path), field);
 }
 
+bool
+Usd_Clip::HasAuthoredTimeSamples(const SdfPath& path) const
+{
+    return _GetLayerForClip()->GetNumTimeSamplesForPath(
+        _TranslatePathToClip(path)) > 0;    
+}
+
 SdfPath
 Usd_Clip::_TranslatePathToClip(const SdfPath& path) const
 {

@@ -132,17 +132,6 @@ public:
 
     size_t GetNumTimeSamplesForPath(const SdfPath& path) const;
 
-    // Internal function used during value resolution. When determining
-    // resolve info sources, value resolution needs to determine when clipTimes
-    // are mapping into an empty clip with no samples, so it can continue
-    // searching for value sources. 
-    size_t _GetNumTimeSamplesForPathInLayerForClip(
-        const SdfPath& path) const 
-    {
-        return _GetLayerForClip()->GetNumTimeSamplesForPath(
-            _TranslatePathToClip(path));
-    }
-
     std::set<ExternalTime>
     ListTimeSamplesForPath(const SdfPath& path) const;
 
@@ -154,6 +143,13 @@ public:
     bool QueryTimeSample(
         const SdfPath& path, ExternalTime time, 
         Usd_InterpolatorBase* interpolator, T* value) const;
+
+    /// Return true if this clip has authored time samples for the attribute
+    /// corresponding to the given \p path. Clips may add time sample times
+    /// at their boundaries and time mappings even if there are no samples
+    /// in the clip. This method ignores these time samples and returns
+    /// whether there truly is a time sample value for the attribute.
+    bool HasAuthoredTimeSamples(const SdfPath& path) const;
 
     /// Return the layer associated with this clip, opening it if it hasn't
     /// been opened already.
