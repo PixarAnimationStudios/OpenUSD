@@ -79,6 +79,21 @@ class TestUsdValueClips(unittest.TestCase):
                 for t in range(int(lowerSample) + 1, int(upperSample)):
                     self.assertEqual(attr.Get(t), attr.Get(lowerSample))
 
+        # Verify that the value before the first time sample and after the
+        # last time sample are held.
+        if len(allTimeSamples) > 0:
+            firstTimeSample = min(allTimeSamples)
+            self.assertEqual(attr.GetBracketingTimeSamples(firstTimeSample - 1),
+                             (firstTimeSample, firstTimeSample))
+            self.assertEqual(attr.Get(firstTimeSample - 1), 
+                             attr.Get(firstTimeSample))
+
+            lastTimeSample = max(allTimeSamples)
+            self.assertEqual(attr.GetBracketingTimeSamples(lastTimeSample + 1),
+                             (lastTimeSample, lastTimeSample))
+            self.assertEqual(attr.Get(lastTimeSample + 1), 
+                             attr.Get(lastTimeSample))
+
         # Verify that getting the complete time sample map for this
         # attribute is equivalent to asking for the value at each time
         # returned by GetTimeSamples()
@@ -282,7 +297,7 @@ class TestUsdValueClips(unittest.TestCase):
         # every 10 frames.
         self.assertEqual(
             attr.GetTimeSamples(), 
-            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 30, 40])
+            [-10, 0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 30, 40])
         self.assertEqual(
             attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
             [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 30])
@@ -605,7 +620,7 @@ class TestUsdValueClips(unittest.TestCase):
         # the discontinuity consistently when flattening the attribute.
         self.assertEqual(
             attr.GetTimeSamples(), 
-            [0, 3, 6, 10 - Usd.TimeCode.SafeStep(), 10, 
+            [-10, 0, 3, 6, 10 - Usd.TimeCode.SafeStep(), 10, 
              13, 16, 20 - Usd.TimeCode.SafeStep(), 20])
 
         self.CheckTimeSamples(attr)
@@ -704,6 +719,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.assertFalse(attr_1.ValueMightBeTimeVarying())
         self.CheckValue(attr_1, time=0, expected=10.0)
+        self.assertEqual(attr_1.GetBracketingTimeSamples(0.0), (0.0, 0.0))
         self.assertEqual(attr_1.GetTimeSamples(), [0.0])
         self.assertEqual(attr_1.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [0.0])
@@ -717,6 +733,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.assertFalse(attr_2.ValueMightBeTimeVarying())
         self.CheckValue(attr_2, time=0, expected=2.0)
+        self.assertEqual(attr_2.GetBracketingTimeSamples(0.0), ())
         self.assertEqual(attr_2.GetTimeSamples(), [])
         self.assertEqual(attr_2.GetTimeSamplesInInterval( 
             Gf.Interval.GetFullInterval()), [])
@@ -943,6 +960,29 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.CheckTimeSamples(attr)
 
+    def test_MultipleClipsWithSomeTimeSamples3(self):
+        """Tests multi-clip case where first clip has no time samples"""
+        stage = Usd.Stage.Open('multiclip/root.usda')
+
+        attr = stage.GetAttributeAtPath('/ModelWithSomeClipSamples3.size')
+
+        # The first active clip has no time samples, so we should get the
+        # default value for doubles (since no default value is declared in
+        # the manifest.
+        self.CheckValue(attr, time=0, expected=0.0)
+        self.CheckValue(attr, time=1, expected=0.0)
+        
+        # Verify the time samples from the second clip.
+        self.CheckValue(attr, time=2, expected=-23)
+        self.CheckValue(attr, time=3, expected=-23)
+        self.CheckValue(attr, time=6, expected=-26)
+        self.CheckValue(attr, time=9, expected=-29)
+
+        # There must be a time sample for each clip at their start and end times.
+        self.assertEqual(attr.GetTimeSamples(), [0.0, 2.0, 3.0, 6.0, 9.0])
+
+        self.CheckTimeSamples(attr)
+
     def test_MultipleClipsWithTimesSpanningClips(self):
         """Tests that clip time mappings that span multiple clips work as
         expected"""
@@ -992,9 +1032,9 @@ class TestUsdValueClips(unittest.TestCase):
         ancestor = stage.GetPrimAtPath('/ModelGroup')
         ancestorAttr = ancestor.GetAttribute('attr')
         
-        self.assertEqual(ancestorAttr.GetTimeSamples(), [5, 10, 15])
+        self.assertEqual(ancestorAttr.GetTimeSamples(), [0, 5, 10, 15])
         self.assertEqual(ancestorAttr.GetTimeSamplesInInterval(Gf.Interval(0, 15)), 
-                [5, 10, 15])
+                         [0, 5, 10, 15])
         self.CheckValue(ancestorAttr, time=5, expected=-5)
         self.CheckValue(ancestorAttr, time=10, expected=-10)
         self.CheckValue(ancestorAttr, time=15, expected=-15)
@@ -1004,9 +1044,9 @@ class TestUsdValueClips(unittest.TestCase):
         descendant = stage.GetPrimAtPath('/ModelGroup/Subgroup')
         descendantAttr = descendant.GetAttribute('attr')
 
-        self.assertEqual(descendantAttr.GetTimeSamples(), [5, 10, 15])
+        self.assertEqual(descendantAttr.GetTimeSamples(), [0, 5, 10, 15])
         self.assertEqual(descendantAttr.GetTimeSamplesInInterval(Gf.Interval(0, 15)), 
-                [5, 10, 15])
+                         [0, 5, 10, 15])
         self.CheckValue(descendantAttr, time=5, expected=-5)
         self.CheckValue(descendantAttr, time=10, expected=-10)
         self.CheckValue(descendantAttr, time=15, expected=-15)
@@ -1016,9 +1056,9 @@ class TestUsdValueClips(unittest.TestCase):
         descendant = stage.GetPrimAtPath('/ModelGroup/Subgroup/Model')
         descendantAttr = descendant.GetAttribute('attr')
 
-        self.assertEqual(descendantAttr.GetTimeSamples(), [1, 2, 3])
+        self.assertEqual(descendantAttr.GetTimeSamples(), [0, 1, 2, 3])
         self.assertEqual(descendantAttr.GetTimeSamplesInInterval(Gf.Interval(0, 2.95)), 
-                [1, 2])
+                         [0, 1, 2])
         self.CheckValue(descendantAttr, time=1, expected=-1)
         self.CheckValue(descendantAttr, time=2, expected=-2)
         self.CheckValue(descendantAttr, time=3, expected=-3)
@@ -1372,9 +1412,9 @@ class TestUsdValueClips(unittest.TestCase):
         # manifest, we fall back to that value.
         fallbackInManifest = \
             stage.GetAttributeAtPath('/Model.fallbackInManifest')
-        self.assertEqual(fallbackInManifest.Get(0.0), 10.0)
-        self.assertEqual(fallbackInManifest.Get(2.0), 50.0)
-        self.assertEqual(fallbackInManifest.Get(4.0), 20.0)
+        self.CheckValue(fallbackInManifest, time=0.0, expected=10.0)
+        self.CheckValue(fallbackInManifest, time=2.0, expected=50.0)
+        self.CheckValue(fallbackInManifest, time=4.0, expected=20.0)
         self.assertEqual(fallbackInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
                           4.0 - Usd.TimeCode.SafeStep(), 4.0])
@@ -1382,9 +1422,9 @@ class TestUsdValueClips(unittest.TestCase):
         
         fallbackBlockInManifest = \
             stage.GetAttributeAtPath('/Model.fallbackBlockInManifest')
-        self.assertEqual(fallbackBlockInManifest.Get(0.0), 10.0)
-        self.assertEqual(fallbackBlockInManifest.Get(2.0), None)
-        self.assertEqual(fallbackBlockInManifest.Get(4.0), 20.0)
+        self.CheckValue(fallbackBlockInManifest, time=0.0, expected=10.0)
+        self.CheckValue(fallbackBlockInManifest, time=2.0, expected=None)
+        self.CheckValue(fallbackBlockInManifest, time=4.0, expected=20.0)
         self.assertEqual(fallbackBlockInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
                           4.0 - Usd.TimeCode.SafeStep(), 4.0])
@@ -1395,12 +1435,49 @@ class TestUsdValueClips(unittest.TestCase):
         # type.
         noFallbackInManifest =  \
             stage.GetAttributeAtPath('/Model.noFallbackInManifest')
-        self.assertEqual(noFallbackInManifest.Get(0.0), 10.0)
-        self.assertEqual(noFallbackInManifest.Get(2.0), 0.0)
-        self.assertEqual(noFallbackInManifest.Get(4.0), 20.0)
+        self.CheckValue(noFallbackInManifest, time=0.0, expected=10.0)
+        self.CheckValue(noFallbackInManifest, time=2.0, expected=0.0)
+        self.CheckValue(noFallbackInManifest, time=4.0, expected=20.0)
         self.assertEqual(noFallbackInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
                           4.0 - Usd.TimeCode.SafeStep(), 4.0])
+        self.CheckTimeSamples(noFallbackInManifest)
+
+    def test_ClipManifestFallback2(self):
+        """Verifies fallback values from manifest when using a single clip
+        that does not have values for an attribute that is in the manifest."""
+        stage = Usd.Stage.Open('manifestFallback/root.usda')
+
+        # In this test case the prim has a single clip with no samples
+        # that is active at time=0.
+
+        # If the attribute is declared with a default value in the
+        # manifest, we fall back to that value.
+        fallbackInManifest = \
+            stage.GetAttributeAtPath('/Model_2.fallbackInManifest')
+        self.CheckValue(fallbackInManifest, time=-1.0, expected=50.0)
+        self.CheckValue(fallbackInManifest, time=0.0, expected=50.0)
+        self.CheckValue(fallbackInManifest, time=1.0, expected=50.0)
+        self.assertEqual(fallbackInManifest.GetTimeSamples(), [0.0])
+        self.CheckTimeSamples(fallbackInManifest)
+        
+        fallbackBlockInManifest = \
+            stage.GetAttributeAtPath('/Model_2.fallbackBlockInManifest')
+        self.CheckValue(fallbackBlockInManifest, time=-1.0, expected=None)
+        self.CheckValue(fallbackBlockInManifest, time=0.0, expected=None)
+        self.CheckValue(fallbackBlockInManifest, time=1.0, expected=None)
+        self.assertEqual(fallbackBlockInManifest.GetTimeSamples(), [0.0])
+        self.CheckTimeSamples(fallbackBlockInManifest)
+
+        # If the attribute is declared without a default value in the
+        # manifest, we fall back to the default value for the attribute's
+        # type.
+        noFallbackInManifest =  \
+            stage.GetAttributeAtPath('/Model_2.noFallbackInManifest')
+        self.CheckValue(noFallbackInManifest, time=-1.0, expected=0.0)
+        self.CheckValue(noFallbackInManifest, time=0.0, expected=0.0)
+        self.CheckValue(noFallbackInManifest, time=1.0, expected=0.0)
+        self.assertEqual(noFallbackInManifest.GetTimeSamples(), [0.0])
         self.CheckTimeSamples(noFallbackInManifest)
 
     def test_ClipManifestGeneration(self):

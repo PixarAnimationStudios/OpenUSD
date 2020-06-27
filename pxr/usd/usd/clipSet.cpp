@@ -329,6 +329,7 @@ Usd_ClipSet::Usd_ClipSet(
                 clipDef.indexOfLayerWhereAssetPathsFound,
             /* clipAssetPath = */ clipEntry.clipAssetPath,
             /* clipPrimPath = */ clipPrimPath,
+            /* clipAuthoredStartTime = */ clipEntry.startTime,
             /* clipStartTime = */ clipStartTime,
             /* clipEndTime = */ clipEndTime,
             /* clipTimes = */ timeMapping));
@@ -356,6 +357,7 @@ Usd_ClipSet::Usd_ClipSet(
         /* clipSourceLayerIndex = */ clipDef.indexOfLayerWhereAssetPathsFound,
         /* clipAssetPath        = */ manifestAssetPath,
         /* clipPrimPath         = */ clipPrimPath,
+        /* clipAuthoredStartTime= */ Usd_ClipTimesEarliest,
         /* clipStartTime        = */ Usd_ClipTimesEarliest,
         /* clipEndTime          = */ Usd_ClipTimesLatest,
         /* clipTimes            = */ Usd_Clip::TimeMappings()));

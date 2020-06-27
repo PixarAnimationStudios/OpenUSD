@@ -112,6 +112,7 @@ public:
         size_t clipSourceLayerIndex,
         const SdfAssetPath& clipAssetPath,
         const SdfPath& clipPrimPath,
+        ExternalTime clipAuthoredStartTime,
         ExternalTime clipStartTime,
         ExternalTime clipEndTime,
         const TimeMappings& timeMapping);
@@ -177,7 +178,19 @@ public:
     SdfAssetPath assetPath;
     SdfPath primPath;
 
-    /// A clip is active in the time range [startTime, endTime).
+    /// The authored start time for this clip. This generally is equivalent
+    /// to the clip's startTime, but for the earliest active clip:
+    ///
+    /// - authoredStartTime: the stage time value authored in the clip set's 
+    ///   active metadata
+    /// - startTime: Usd_ClipTimesEarliest
+    ///
+    /// This distinction is needed for time samples for the earliest clip.
+    ExternalTime authoredStartTime;
+
+    /// A clip is active in the time range [startTime, endTime). For the
+    /// earliest clip in a clip set, startTime will be Usd_ClipTimesEarliest,
+    /// for the latest clip in a clip set, endTime will be Usd_ClipTimesLatest.
     ExternalTime startTime;
     ExternalTime endTime;
 

@@ -22,3 +22,18 @@ def "Model" (
 )
 {
 }
+
+def "Model_2" (
+    references = </Ref>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./nosamples_clip.usda@]
+            asset manifestAssetPath = @./manifest.usda@
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0.0)]
+        }
+    }
+)
+{
+}

@@ -115,6 +115,7 @@ Usd_Clip::Usd_Clip(
     size_t clipSourceLayerIndex,
     const SdfAssetPath& clipAssetPath,
     const SdfPath& clipPrimPath,
+    ExternalTime clipAuthoredStartTime,
     ExternalTime clipStartTime,
     ExternalTime clipEndTime,
     const TimeMappings& timeMapping)
@@ -123,6 +124,7 @@ Usd_Clip::Usd_Clip(
     , sourceLayerIndex(clipSourceLayerIndex)
     , assetPath(clipAssetPath)
     , primPath(clipPrimPath)
+    , authoredStartTime(clipAuthoredStartTime)
     , startTime(clipStartTime)
     , endTime(clipEndTime)
     , times(timeMapping)
@@ -460,10 +462,8 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     // clip from its neighbors and means that value resolution
     // never has to look at more than one clip to answer a
     // time sample query.
-    if (startTime != Usd_ClipTimesEarliest) {
-        bracketingTimes[numTimes] = startTime;
-        numTimes++;
-    }
+    bracketingTimes[numTimes] = authoredStartTime;
+    numTimes++;
 
     if (endTime != Usd_ClipTimesLatest) {
         bracketingTimes[numTimes] = endTime;
@@ -567,9 +567,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
     // isolate them from surrounding clips.
     //
     // See GetBracketingTimeSamplesForPath for more details.
-    if (startTime != Usd_ClipTimesEarliest) {
-        timeSamples.insert(startTime);
-    }
+    timeSamples.insert(authoredStartTime);
 
     if (endTime != Usd_ClipTimesLatest) {
         timeSamples.insert(endTime);
