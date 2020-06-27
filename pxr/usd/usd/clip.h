@@ -187,11 +187,17 @@ public:
 private:
     friend class UsdStage;
 
+    // Helpers for retrieving time sample information from within
+    // clip layers and translating them to external times.
     bool 
-    _GetBracketingTimeSamplesForPathInternal(const SdfPath& path, 
-                                             ExternalTime time, 
-                                             ExternalTime* tLower, 
-                                             ExternalTime* tUpper) const;
+    _GetBracketingTimeSamplesForPathFromClipLayer(
+        const SdfPath& path, 
+        ExternalTime time, ExternalTime* tLower, ExternalTime* tUpper) const;
+
+    void
+    _ListTimeSamplesForPathFromClipLayer(
+        const SdfPath& path,
+        std::set<ExternalTime>* samples) const;
 
     SdfPath _TranslatePathToClip(const SdfPath &path) const;
 

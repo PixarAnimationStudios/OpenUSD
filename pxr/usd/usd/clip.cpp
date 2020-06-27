@@ -250,13 +250,17 @@ _GetLowerBound(
 // of raw doubles.
 template <typename Iterator>
 static
-void
+bool
 _GetBracketingTimeSamples(
     Iterator begin, Iterator end,
     const Usd_Clip::ExternalTime time, 
     Usd_Clip::ExternalTime* tLower, 
     Usd_Clip::ExternalTime* tUpper) 
 {
+    if (begin == end) {
+        return false;
+    }
+
     if (time <= _GetTime(*begin)) {
         // Time is at-or-before the first sample.
         *tLower = *tUpper = _GetTime(*begin);
@@ -275,10 +279,11 @@ _GetBracketingTimeSamples(
             *tLower = _GetTime(*iter);
         }
     }
+    return true;
 }
 
 bool 
-Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
+Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
     const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
@@ -432,37 +437,52 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
-    ExternalTime lowerInClipLayer, upperInClipLayer;
-    bool fetchFromClip = _GetBracketingTimeSamplesForPathInternal(
-        path, time, &lowerInClipLayer, &upperInClipLayer);
+    std::array<Usd_Clip::ExternalTime, 6> bracketingTimes = { 0.0 };
+    size_t numTimes = 0;
 
-    bool fetchFromAuthoredClipTimes = false;
-    ExternalTime lowerInClipTimes, upperInClipTimes;
-    if (!times.empty()) {
-        fetchFromAuthoredClipTimes = true;
-        _GetBracketingTimeSamples(times.cbegin(), times.cend(), time, 
-                                  &lowerInClipTimes, &upperInClipTimes);
+    // Add time samples from the clip layer.
+    if (_GetBracketingTimeSamplesForPathFromClipLayer(
+            path, time, 
+            &bracketingTimes[numTimes], &bracketingTimes[numTimes + 1])) {
+        numTimes += 2;
     }
 
-    if (fetchFromClip && fetchFromAuthoredClipTimes) {
-        std::array<Usd_Clip::ExternalTime, 4> authoredClipTimes = {
-             lowerInClipLayer, upperInClipLayer, 
-             lowerInClipTimes, upperInClipTimes
-        };
-        std::sort(authoredClipTimes.begin(), authoredClipTimes.end());
-        auto uniqueIt = 
-            std::unique(authoredClipTimes.begin(), authoredClipTimes.end());
-        _GetBracketingTimeSamples(
-            authoredClipTimes.begin(), uniqueIt, time, tLower, tUpper);
-    } else if (fetchFromAuthoredClipTimes) {
-        *tLower = lowerInClipTimes;
-        *tUpper = upperInClipTimes;
-    } else {
-        *tLower = lowerInClipLayer;
-        *tUpper = upperInClipLayer;
+    // Each external time in the clip times array is considered a time
+    // sample.
+    if (_GetBracketingTimeSamples(
+            times.cbegin(), times.cend(), time, 
+            &bracketingTimes[numTimes], &bracketingTimes[numTimes + 1])) {
+        numTimes += 2;
     }
 
-    return fetchFromClip || fetchFromAuthoredClipTimes;
+    // Clips introduce time samples at their boundaries even
+    // if time samples don't actually exist. This isolates each
+    // clip from its neighbors and means that value resolution
+    // never has to look at more than one clip to answer a
+    // time sample query.
+    if (startTime != Usd_ClipTimesEarliest) {
+        bracketingTimes[numTimes] = startTime;
+        numTimes++;
+    }
+
+    if (endTime != Usd_ClipTimesLatest) {
+        bracketingTimes[numTimes] = endTime;
+        numTimes++;
+    }
+
+    if (numTimes == 0) {
+        return false;
+    }
+    else if (numTimes == 1) {
+        *tLower = *tUpper = bracketingTimes[0];
+        return true;
+    }
+
+    std::sort(bracketingTimes.begin(), bracketingTimes.begin() + numTimes);
+    auto uniqueIt = std::unique(
+        bracketingTimes.begin(), bracketingTimes.begin() + numTimes);
+    return _GetBracketingTimeSamples(
+        bracketingTimes.begin(), uniqueIt, time, tLower, tUpper);
 }
 
 size_t
@@ -475,16 +495,17 @@ Usd_Clip::GetNumTimeSamplesForPath(const SdfPath& path) const
     return ListTimeSamplesForPath(path).size();
 }
 
-std::set<Usd_Clip::ExternalTime>
-Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
+void
+Usd_Clip::_ListTimeSamplesForPathFromClipLayer(
+    const SdfPath& path,
+    std::set<ExternalTime>* timeSamples) const
 {
     std::set<InternalTime> timeSamplesInClip = 
         _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
     if (times.empty()) {
-        return timeSamplesInClip;
+        *timeSamples = std::move(timeSamplesInClip);
+        return;
     }
-
-    std::set<ExternalTime> timeSamples;
 
     // A clip is active in the time range [startTime, endTime).
     const GfInterval clipTimeInterval(
@@ -518,20 +539,40 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
             if (std::min(m1.internalTime, m2.internalTime) <= t
                 && t <= std::max(m1.internalTime, m2.internalTime)) {
                 if (m1.internalTime == m2.internalTime) {
-                    timeSamples.insert(m1.externalTime);
-                    timeSamples.insert(m2.externalTime);
+                    timeSamples->insert(m1.externalTime);
+                    timeSamples->insert(m2.externalTime);
                 }
                 else {
-                    timeSamples.insert(_TranslateTimeToExternal(t, i, i+1));
+                    timeSamples->insert(_TranslateTimeToExternal(t, i, i+1));
                 }
             }
         }
     }
+}
+
+std::set<Usd_Clip::ExternalTime>
+Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
+{
+    // Retrieve time samples from the clip layer mapped to external times.
+    std::set<ExternalTime> timeSamples;
+    _ListTimeSamplesForPathFromClipLayer(path, &timeSamples);
 
     // Each entry in the clip's time mapping is considered a time sample,
     // so add them in here.
     for (const TimeMapping& t : times) {
         timeSamples.insert(t.externalTime);
+    }
+
+    // Clips introduce time samples at their boundaries to
+    // isolate them from surrounding clips.
+    //
+    // See GetBracketingTimeSamplesForPath for more details.
+    if (startTime != Usd_ClipTimesEarliest) {
+        timeSamples.insert(startTime);
+    }
+
+    if (endTime != Usd_ClipTimesLatest) {
+        timeSamples.insert(endTime);
     }
 
     return timeSamples;

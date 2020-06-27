@@ -7857,22 +7857,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 if (!samples.empty()) {
                     copySamplesInInterval(samples, &timesFromAllClips, interval);
                 }
-
-                // Clips introduce time samples at their boundaries to
-                // isolate them from surrounding clips, even if time samples
-                // don't actually exist. 
-                //
-                // See _GetBracketingTimeSamplesFromResolveInfo for more
-                // details.
-                if (interval.Contains(clipInterval.GetMin())
-                    && clipInterval.GetMin() != Usd_ClipTimesEarliest) {
-                    timesFromAllClips.push_back(clip->startTime);
-                }
-
-                if (interval.Contains(clipInterval.GetMax())
-                    && clipInterval.GetMax() != Usd_ClipTimesLatest){
-                    timesFromAllClips.push_back(clip->endTime);
-                }
             }
 
             if (!timesFromAllClips.empty()) {
@@ -8032,61 +8016,8 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                     continue;
                 }
                 
-                // Clips introduce time samples at their boundaries even 
-                // if time samples don't actually exist. This isolates each
-                // clip from its neighbors and means that value resolution
-                // never has to look at more than one clip to answer a
-                // time sample query.
-                //
-                // We have to accommodate these 'fake' time samples here.
-                bool foundLower = false, foundUpper = false;
-
-                if (desiredTime == clip->startTime) {
-                    *lower = *upper = clip->startTime;
-                    foundLower = foundUpper = true;
-                }
-                else if (desiredTime == clip->endTime) {
-                    *lower = *upper = clip->endTime;
-                    foundLower = foundUpper = true;
-                }
-                else if (clip->GetBracketingTimeSamplesForPath(
+                if (clip->GetBracketingTimeSamplesForPath(
                          specPath, desiredTime, lower, upper)) {
-                    foundLower = foundUpper = true;
-                    if (*lower == *upper) {
-                        if (desiredTime < *lower) {
-                            foundLower = false;
-                        }
-                        else if (desiredTime > *upper) {
-                            foundUpper = false;
-                        }
-                    }
-                }
-
-                if (!foundLower && 
-                    clip->startTime != Usd_ClipTimesEarliest) {
-                    *lower = clip->startTime;
-                    foundLower = true;
-                }
-
-                if (!foundUpper && 
-                    clip->endTime != Usd_ClipTimesLatest) {
-                    *upper = clip->endTime;
-                    foundUpper = true;
-                }
-
-                if (foundLower && !foundUpper) {
-                    *upper = *lower;
-                }
-                else if (!foundLower && foundUpper) {
-                    *lower = *upper;
-                }
-                
-                // '||' is correct here. Consider the case where we only
-                // have a single clip and desiredTime is earlier than the
-                // first time sample -- foundLower will be false, but we
-                // want to return the bracketing samples from the sole
-                // clip anyway.
-                if (foundLower || foundUpper) {
                     *hasSamples = true;
                     return true;
                 }
