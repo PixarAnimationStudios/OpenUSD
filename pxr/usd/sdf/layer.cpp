@@ -4203,11 +4203,10 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
-    string layerDir = TfGetPathName(newFileName);
-    if (!(layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir))) {
+    if (!ArGetResolver().CreatePathForLayer(newFileName)) {
         TF_RUNTIME_ERROR(
-            "Cannot create destination directory %s",
-            layerDir.c_str());
+            "Cannot create path to write '%s'",
+            newFileName.c_str());
         return false;
     }
     

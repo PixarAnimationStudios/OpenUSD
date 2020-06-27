@@ -478,6 +478,16 @@ public:
         return _resolver->OpenAsset(resolvedPath);
     }
 
+    virtual bool CreatePathForLayer(
+        const std::string& path) override
+    {
+        if (ArIsPackageRelativePath(path)) {
+            return _resolver->CreatePathForLayer(
+                ArSplitPackageRelativePathOuter(path).first);
+        }
+        return _resolver->CreatePathForLayer(path);
+    }
+
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override
