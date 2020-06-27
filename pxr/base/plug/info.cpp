@@ -716,6 +716,7 @@ error:
 void
 Plug_ReadPlugInfo(
     const std::vector<std::string>& pathnames,
+    bool pathsAreOrdered,
     const AddVisitedPathCallback& addVisitedPath,
     const AddPluginCallback& addPlugin,
     Plug_TaskArena* taskArena)
@@ -731,9 +732,9 @@ Plug_ReadPlugInfo(
         }
 
         // For convenience we allow given paths that are directories but don't
-        // end in "/" to be handled as directories.  Includes in plugInfo
-        // files must still explicitly append '/' to be handled as
-        // directories.
+        // end in "/" to be handled as directories.  Paths containing wildcards
+        // still require an explicit '/' to be handled as directories, as do 
+        // Includes in plugInfo files.
         const bool hasslash = *pathname.rbegin() == '/';
         if (hasslash || TfIsDir(pathname)) {
             context.taskArena.Run([&context, pathname, hasslash] {
@@ -746,9 +747,13 @@ Plug_ReadPlugInfo(
                 _ReadPlugInfoWithWildcards(&context, pathname);
             });
         }
+        if (pathsAreOrdered) {
+            context.taskArena.Wait();
+        }
     }
-
-    context.taskArena.Wait();
+    if (!pathsAreOrdered) {
+        context.taskArena.Wait();
+    }
     stopwatch.Stop();
     TF_DEBUG(PLUG_INFO_SEARCH).
         Msg(" Did check plugin info paths in %f seconds\n", 
