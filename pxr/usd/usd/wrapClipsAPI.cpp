@@ -305,6 +305,16 @@ WRAP_CUSTOM {
                  (&_SetClipAssetPaths), 
              (arg("assetPaths"), arg("clipSet")))
 
+        .def("ComputeClipAssetPaths",
+            (VtArray<SdfAssetPath>(UsdClipsAPI::*)() const)
+                (&UsdClipsAPI::ComputeClipAssetPaths),
+             return_value_policy<TfPySequenceToList>())
+        .def("ComputeClipAssetPaths",
+            (VtArray<SdfAssetPath>(UsdClipsAPI::*)(const std::string&) const)
+                (&UsdClipsAPI::ComputeClipAssetPaths),
+             arg("clipSet"),
+             return_value_policy<TfPySequenceToList>())
+
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&))
                 (&_GetClipPrimPath))

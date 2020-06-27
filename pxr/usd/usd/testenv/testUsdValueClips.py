@@ -1993,5 +1993,35 @@ class TestUsdValueClips(unittest.TestCase):
             attr, time=2,
             expected=[os.path.abspath('assetPathValues/clip2/clip2.usda')])
 
+    def test_ComputeClipAssetPaths(self):
+        """Test Usd.ClipsAPI.ComputeClipAssetPaths"""
+        def _CheckPaths(p1, p2):
+            self.assertEqual(os.path.normcase(p1), os.path.normcase(p2))
+
+        def _CheckAssetPathArrays(array, expected):
+            self.assertEqual(len(array), len(expected))
+            for (p1, p2) in zip(array, expected):
+                _CheckPaths(p1, p2)
+
+        stage = Usd.Stage.Open('assetPathValues/root.usda')
+        clipsAPI = Usd.ClipsAPI(stage.GetPrimAtPath('/Model'))
+        computedAssetPaths = clipsAPI.ComputeClipAssetPaths()
+        _CheckAssetPathArrays(
+            [p.resolvedPath for p in computedAssetPaths],
+            [os.path.abspath('assetPathValues/clip1/clip1.usda'),
+             os.path.abspath('assetPathValues/nosamples.usda'),
+             os.path.abspath('assetPathValues/clip2/clip2.usda')])
+
+        stage = Usd.Stage.Open('template/int1/result_int_1.usda')
+        clipsAPI = Usd.ClipsAPI(
+            stage.GetPrimAtPath('/World/fx/Particles_Splash/points'))
+        computedAssetPaths = clipsAPI.ComputeClipAssetPaths()
+        _CheckAssetPathArrays(
+            [p.resolvedPath for p in computedAssetPaths],
+            [os.path.abspath('template/int1/p.001.usd'),
+             os.path.abspath('template/int1/p.002.usd'),
+             os.path.abspath('template/int1/p.003.usd'),
+             os.path.abspath('template/int1/p.004.usd')])
+
 if __name__ == "__main__":
     unittest.main()

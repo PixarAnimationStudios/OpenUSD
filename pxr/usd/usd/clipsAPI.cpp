@@ -117,6 +117,13 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usd/clipSet.h"
 #include "pxr/usd/usd/clipSetDefinition.h"
 #include "pxr/usd/usd/tokens.h"
+
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
+#include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/sdf/layerUtils.h"
+
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -271,6 +278,50 @@ UsdClipsAPI::GetClipAssetPaths(VtArray<SdfAssetPath>* assetPaths) const
 {
     USD_CLIPS_API_GETTER(GetClipAssetPaths,
         assetPaths, UsdTokens->clipAssetPaths);
+}
+
+VtArray<SdfAssetPath>
+UsdClipsAPI::ComputeClipAssetPaths(const std::string& clipSet) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return {};
+    }
+
+    Usd_ClipSetDefinition clipSetDef;
+    if (!_ComputeClipSetDefinition(GetPrim(), clipSet, &clipSetDef)
+        || !clipSetDef.clipAssetPaths) {
+        return {};
+    }
+
+    // Anchor and resolve each path in the clipAssetPaths specified in
+    // the definition. 
+    ArResolverScopedCache resolverScopedCache;
+    auto& resolver = ArGetResolver();
+
+    const SdfLayerRefPtr& sourceLayer =
+        clipSetDef.sourceLayerStack->GetLayers()[
+            clipSetDef.indexOfLayerWhereAssetPathsFound];
+    const ArResolverContextBinder binder(
+        clipSetDef.sourceLayerStack->GetIdentifier().pathResolverContext);
+
+    for (SdfAssetPath& p : *clipSetDef.clipAssetPaths) {
+        const std::string anchoredPath = SdfComputeAssetPathRelativeToLayer(
+            sourceLayer, p.GetAssetPath());
+        const std::string resolvedPath = resolver.Resolve(anchoredPath);
+
+        if (!resolvedPath.empty()) {
+            p = SdfAssetPath(p.GetAssetPath(), resolvedPath);
+        }
+    }
+
+    return *clipSetDef.clipAssetPaths;
+}
+
+VtArray<SdfAssetPath>
+UsdClipsAPI::ComputeClipAssetPaths() const
+{
+    return ComputeClipAssetPaths(UsdClipsAPISetNames->default_);
 }
 
 bool 

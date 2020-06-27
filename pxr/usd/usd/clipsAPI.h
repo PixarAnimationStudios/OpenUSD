@@ -234,6 +234,23 @@ public:
     USD_API
     bool SetClipSets(const SdfStringListOp& clipSets);
 
+    /// Computes and resolves the list of clip asset paths used by the
+    /// clip set named \p clipSet. This is the same list of paths that
+    /// would be used during value resolution.
+    ///
+    /// If the clip set is defined using template clip metadata, this
+    /// function will compute the asset paths based on the template
+    /// parameters. Otherwise this function will use the authored
+    /// clipAssetPaths.
+    USD_API
+    VtArray<SdfAssetPath>
+    ComputeClipAssetPaths(const std::string& clipSet) const;
+
+    /// \overload
+    /// This function operates on the default clip set.
+    USD_API
+    VtArray<SdfAssetPath> ComputeClipAssetPaths() const;
+
     /// List of asset paths to the clips in the clip set named \p clipSet.
     /// This list is unordered, but elements in this list are referred to 
     /// by index in other clip-related fields.
