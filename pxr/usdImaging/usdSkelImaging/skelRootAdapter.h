@@ -62,6 +62,9 @@ public:
              const UsdImagingInstancerContext*
                  instancerContext=nullptr) override;
 
+    USDSKELIMAGING_API
+    bool CanPopulateMaster() const override { return true; }
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

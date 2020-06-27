@@ -141,6 +141,10 @@ UsdSkelImagingSkeletonAdapter::Populate(
     if(!TF_VERIFY(prim.IsA<UsdSkelSkeleton>())) {
         return SdfPath();
     }
+    if(prim.IsInstance() || prim.IsInstanceProxy() || prim.IsInMaster()) {
+        // TODO: support UsdSkel with instancing
+        return SdfPath();
+    }
 
     SdfPath const& skelPath = prim.GetPath();
     // Populate may be called via Resync processing for skinned prims, in which
