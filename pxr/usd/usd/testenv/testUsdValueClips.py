@@ -72,6 +72,15 @@ class TestUsdValueClips(unittest.TestCase):
                 self.assertEqual(attr.GetBracketingTimeSamples(t), 
                                  (lowerSample, upperSample))
 
+            # Check the midpoint between lower and upper samples as an
+            # extra sanity check -- this catches issues for non-integer
+            # time sample times.
+            if lowerSample != upperSample:
+                self.assertEqual(
+                    attr.GetBracketingTimeSamples(
+                        lowerSample + ((upperSample - lowerSample) / 2.0)),
+                    (lowerSample, upperSample))
+
             # The attribute should return the same value at every time in the
             # interval [lowerSample, upperSample) if the stage's interpolation
             # type is held.
@@ -966,11 +975,15 @@ class TestUsdValueClips(unittest.TestCase):
 
         attr = stage.GetAttributeAtPath('/ModelWithSomeClipSamples3.size')
 
-        # The first active clip has no time samples, so we should get the
-        # default value for doubles (since no default value is declared in
-        # the manifest.
+        # The first active clip has no time samples, so at the first clip's
+        # start time we should get the default value for doubles (since no
+        # default value is declared in the manifest.
         self.CheckValue(attr, time=0, expected=0.0)
-        self.CheckValue(attr, time=1, expected=0.0)
+
+        # At time 1 we should interpolate between the value at the first
+        # clip's start time and the value at t=2, which is the next clip's
+        # start time.
+        self.CheckValue(attr, time=1, expected=-11.5)
         
         # Verify the time samples from the second clip.
         self.CheckValue(attr, time=2, expected=-23)
@@ -1015,6 +1028,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=100.5, expected=100.5)
         self.CheckValue(attr, time=100.75, expected=100.75)
         self.CheckValue(attr, time=101.0, expected=101.0)
+        self.CheckValue(attr, time=101.25, expected=151.25)
         self.CheckValue(attr, time=101.5, expected=201.5)
         self.CheckValue(attr, time=101.75, expected=201.75)
         self.CheckValue(attr, time=102, expected=202)
@@ -1023,6 +1037,8 @@ class TestUsdValueClips(unittest.TestCase):
                          [100.5, 100.75, 101.0, 101.5, 101.75, 102.0])
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(101, 102)), 
                          [101.0, 101.5, 101.75, 102.0])
+
+        self.CheckTimeSamples(attr)
 
     def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
@@ -1692,16 +1708,25 @@ class TestUsdValueClips(unittest.TestCase):
         prim = stage.GetPrimAtPath(primPath)
         attr = prim.GetAttribute(attrName)
         self.CheckValue(attr, time=1, expected=Vt.Vec3fArray(2, (1,1,1)))
+        self.CheckValue(attr, time=1.5, 
+                        expected=Vt.Vec3fArray(2, (1.5,1.5,1.5)))
         self.CheckValue(attr, time=2, expected=Vt.Vec3fArray(2, (2,2,2)))
+        self.CheckValue(attr, time=2.5, 
+                        expected=Vt.Vec3fArray(2, (2.5,2.5,2.5)))
         self.CheckValue(attr, time=3, expected=Vt.Vec3fArray(2, (3,3,3)))
+        self.CheckValue(attr, time=3.5, 
+                        expected=Vt.Vec3fArray(2, (3.5,3.5,3.5)))
         self.CheckValue(attr, time=4, expected=Vt.Vec3fArray(2, (4,4,4)))
 
         stage = Usd.Stage.Open('template/int2/result_int_2.usda')
         prim = stage.GetPrimAtPath(primPath)
         attr = prim.GetAttribute(attrName)
         self.CheckValue(attr, time=1, expected=Vt.Vec3fArray(2, (1,1,1)))
+        self.CheckValue(attr, time=10, expected=Vt.Vec3fArray(2, (10,10,10)))
         self.CheckValue(attr, time=17, expected=Vt.Vec3fArray(2, (17,17,17)))
+        self.CheckValue(attr, time=26, expected=Vt.Vec3fArray(2, (26,26,26)))
         self.CheckValue(attr, time=33, expected=Vt.Vec3fArray(2, (33,33,33)))
+        self.CheckValue(attr, time=43, expected=Vt.Vec3fArray(2, (43,43,43)))
         self.CheckValue(attr, time=49, expected=Vt.Vec3fArray(2, (49,49,49)))
 
         # Test with template offsets applied
@@ -1710,6 +1735,7 @@ class TestUsdValueClips(unittest.TestCase):
         attr = prim.GetAttribute(attrName)
         self.CheckValue(attr, time=2.5, expected=Vt.Vec3fArray(2, (1,1,1)))
         self.CheckValue(attr, time=3.0, expected=Vt.Vec3fArray(2, (1,1,1)))
+        self.CheckValue(attr, time=3.25, expected=Vt.Vec3fArray(2, (2,2,2)))
         self.CheckValue(attr, time=3.5, expected=Vt.Vec3fArray(2, (3,3,3)))
         self.CheckValue(attr, time=4.0, expected=Vt.Vec3fArray(2, (3,3,3)))
         self.CheckValue(attr, time=4.5, expected=Vt.Vec3fArray(2, (3,3,3)))
@@ -1727,17 +1753,33 @@ class TestUsdValueClips(unittest.TestCase):
         prim = stage.GetPrimAtPath(primPath)
         attr = prim.GetAttribute(attrName)
         self.CheckValue(attr, time=101, expected=Vt.Vec3fArray(2, (101,101,101)))
+        self.CheckValue(attr, time=101.5, 
+                        expected=Vt.Vec3fArray(2, (101.5,101.5,101.5)))
         self.CheckValue(attr, time=102, expected=Vt.Vec3fArray(2, (102,102,102)))
+        self.CheckValue(attr, time=102.5, 
+                        expected=Vt.Vec3fArray(2, (102.5,102.5,102.5)))
         self.CheckValue(attr, time=103, expected=Vt.Vec3fArray(2, (103,103,103)))
+        self.CheckValue(attr, time=103.5, 
+                        expected=Vt.Vec3fArray(2, (103.5,103.5,103.5)))
         self.CheckValue(attr, time=104, expected=Vt.Vec3fArray(2, (104,104,104)))
 
         stage = Usd.Stage.Open('template/subint2/result_subint_2.usda')
         prim = stage.GetPrimAtPath(primPath)
         attr = prim.GetAttribute(attrName)
-        self.CheckValue(attr, time=10.00, expected=Vt.Vec3fArray(2, (10.00, 10.00, 10.00)))
-        self.CheckValue(attr, time=10.05, expected=Vt.Vec3fArray(2, (10.05, 10.05, 10.05)))
-        self.CheckValue(attr, time=10.10, expected=Vt.Vec3fArray(2, (10.10, 10.10, 10.10)))
-        self.CheckValue(attr, time=10.15, expected=Vt.Vec3fArray(2, (10.15, 10.15, 10.15)))
+        self.CheckValue(attr, time=10.00, 
+                        expected=Vt.Vec3fArray(2, (10.00, 10.00, 10.00)))
+        self.CheckValue(attr, time=10.025, 
+                        expected=Vt.Vec3fArray(2, (10.025, 10.025, 10.025)))
+        self.CheckValue(attr, time=10.05, 
+                        expected=Vt.Vec3fArray(2, (10.05, 10.05, 10.05)))
+        self.CheckValue(attr, time=10.08, 
+                       expected=Vt.Vec3fArray(2, (10.08, 10.08, 10.08)))
+        self.CheckValue(attr, time=10.10, 
+                        expected=Vt.Vec3fArray(2, (10.10, 10.10, 10.10)))
+        self.CheckValue(attr, time=10.125, 
+                        expected=Vt.Vec3fArray(2, (10.125, 10.125, 10.125)))
+        self.CheckValue(attr, time=10.15, 
+                        expected=Vt.Vec3fArray(2, (10.15, 10.15, 10.15)))
 
         # Test with template offsets applied
         stage = Usd.Stage.Open('template/subint3/result_subint_3.usda')
@@ -1746,6 +1788,8 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.CheckValue(attr, time=9.95,  expected=Vt.Vec3fArray(2, (10, 10, 10)))
         self.CheckValue(attr, time=10.00, expected=Vt.Vec3fArray(2, (10, 10, 10)))
+        self.CheckValue(attr, time=10.025, 
+                        expected=Vt.Vec3fArray(2, (10.05, 10.05, 10.05)))
         self.CheckValue(attr, time=10.05, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
         self.CheckValue(attr, time=10.10, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
         self.CheckValue(attr, time=10.15, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
@@ -1861,6 +1905,46 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=2, expected=10.0)
         self.CheckValue(attr, time=3, expected=15.0)
         self.CheckValue(attr, time=4, expected=20.0)
+        self.CheckTimeSamples(attr)
+
+    def test_InterpolateSamplesToNextClip(self):
+        """Tests that time samples in clips are interpolated using the
+        value from the next clip if necessary."""
+        stage = Usd.Stage.Open('interpolation/root.usda')
+
+        attr = stage.GetAttributeAtPath('/ClipInterpolationTest.attr')
+        self.CheckValue(attr, time=0, expected=10.0)
+        self.CheckValue(attr, time=1, expected=20.0)
+
+        # At t=0.5, we're beyond the last (and only) time sample in the first
+        # clip that is inside the clip's active time. We should ignore the
+        # time sample authored at t=1.0 in the first clip (since that's outside
+        # the active time for that clip) and interpolate using the time sample
+        # in the next clip at t=1.0
+        self.CheckValue(attr, time=0.5, expected=15.0)
+
+        self.assertEqual(attr.GetTimeSamples(), [0.0, 1.0, 3.0])
+        self.CheckTimeSamples(attr)
+
+    def test_InterpolateSamplesToNextClip2(self):
+        """Tests that additional entries in the times metadata can be used
+        to 'block' interpolating values using the next clip."""
+        stage = Usd.Stage.Open('interpolation/root.usda')
+
+        attr = stage.GetAttributeAtPath('/ClipInterpolationTest2.attr')
+        self.CheckValue(attr, time=0, expected=10.0)
+        self.CheckValue(attr, time=1, expected=20.0)
+
+        # At t=0.5, we're beyond the last (and only) time sample in the first
+        # clip that is inside the clip's active time. In this case we do *not*
+        # ignore the time sample authored at t=1.0 in the first clip because
+        # we have an entry in the times metadata that explicitly says to use
+        # the value from the first clip at t=1.0 when interpolating values
+        # up to the end of the clip.
+        self.CheckValue(attr, time=0.5, expected=55.0)
+
+        self.assertEqual(attr.GetTimeSamples(), 
+                         [0.0, 1.0 - Usd.TimeCode.SafeStep(), 1.0, 3.0])
         self.CheckTimeSamples(attr)
 
     def test_AssetPathValuesInClips(self):

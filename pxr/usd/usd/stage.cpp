@@ -7184,50 +7184,18 @@ public:
                 clipSet, specPath, &localTime, &lower, &upper, &localClipIndex);
         }
 
-        // Active clip has values for this attribute.
-        if (localClipIndex < clipSet->valueClips.size()) {
-            const Usd_ClipRefPtr& clip = clipSet->valueClips[localClipIndex];
+        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
+            "RESOLVE: reading field %s:%s from clip set %s, "
+            "with requested time = %.3f "
+            "reading from sample %.3f \n",
+            specPath.GetText(),
+            SdfFieldKeys->TimeSamples.GetText(),
+            clipSet->name.c_str(),
+            localTime,
+            lower);
 
-            TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
-                "RESOLVE: reading field %s:%s from clip %s, "
-                "with requested time = %.3f "
-                "reading from sample %.3f \n",
-                specPath.GetText(),
-                SdfFieldKeys->TimeSamples.GetText(),
-                TfStringify(clip->assetPath).c_str(),
-                localTime,
-                lower);
-
-            return Usd_GetOrInterpolateValue(
-                clip, specPath, localTime, lower, upper, interpolator, 
-                result);
-        }
-
-        // Active clip has no values for this attribute.
-        // Check default value specified in manifest.
-        const Usd_DefaultValueResult hasDefault = Usd_HasDefault(
-            clipSet->manifestClip, specPath, result);
-        if (hasDefault == Usd_DefaultValueResult::Found) {
-            return true;
-        }
-        else if (hasDefault == Usd_DefaultValueResult::Blocked) {
-            return false;
-        }
-
-        // No default value specified in manifest, return
-        // fallback.
-        TfToken attrTypeName;
-        if (clipSet->manifestClip->HasField(
-                specPath, SdfFieldKeys->TypeName, &attrTypeName)) {
-            const SdfValueTypeName attrType = SdfSchema::GetInstance().FindType(
-                attrTypeName);
-            if (attrType) {
-                Usd_SetValue(result, attrType.GetDefaultValue());
-                return true;
-            }
-        }
-
-        return false;
+        return Usd_GetOrInterpolateValue(
+            clipSet, specPath, localTime, lower, upper, interpolator, result);
     }
 };
 

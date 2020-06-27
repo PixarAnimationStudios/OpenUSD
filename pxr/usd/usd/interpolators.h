@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
-#include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/clipSet.h"
 #include "pxr/usd/usd/valueUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/gf/math.h"
@@ -48,7 +48,7 @@ public:
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) = 0;
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) = 0;
 };
 
@@ -69,8 +69,8 @@ public:
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
-        double time, double lower, double upper) final
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
+        double time, double lower, double upper)
     {
         return false;
     }
@@ -99,7 +99,7 @@ public:
         double time, double lower, double upper) final;
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final;
 
 private:
@@ -140,10 +140,10 @@ public:
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return clip->QueryTimeSample(path, lower, this, _result);
+        return clipSet->QueryTimeSample(path, lower, this, _result);
     }
 
 private:
@@ -200,10 +200,10 @@ public:
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(clip, path, time, lower, upper);
+        return _Interpolate(clipSet, path, time, lower, upper);
     }
 
 private:
@@ -260,10 +260,10 @@ public:
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfPath& path,
+        const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(clip, path, time, lower, upper);
+        return _Interpolate(clipSet, path, time, lower, upper);
     }
 
 private:

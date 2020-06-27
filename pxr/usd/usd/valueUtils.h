@@ -25,7 +25,6 @@
 #define PXR_USD_USD_VALUE_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/common.h"
 
 #include "pxr/usd/sdf/abstractData.h"
@@ -103,20 +102,38 @@ Usd_ClearValueIfBlocked(VtValue* value)
 /// Helper function for setting a value into an SdfAbstractDataValue
 /// for generic programming.
 template <class T>
-inline void
+inline bool
 Usd_SetValue(SdfAbstractDataValue *dv, T const &val)
 { 
-    dv->StoreValue(val); 
+    return dv->StoreValue(val); 
 }
 
 /// \overload
 /// Helper function for setting a value into a VtValue
 /// for generic programming.
 template <class T>
-inline void
+inline bool
 Usd_SetValue(VtValue *value, T const &val)
 { 
     *value = val; 
+    return true;
+}
+
+/// \overload
+/// Helper function for setting a value into a T* from a VtValue
+/// for generic programming.
+template <class T,
+          typename = std::enable_if_t<
+              !std::is_same<T, SdfAbstractDataValue>::value &&
+              !std::is_same<T, VtValue>::value>>
+inline bool
+Usd_SetValue(T* value, VtValue const &val)
+{
+    if (val.IsHolding<T>()) {
+        *value = val.UncheckedGet<T>();
+        return true;
+    }
+    return false;
 }
 
 enum class Usd_DefaultValueResult 
@@ -154,15 +171,6 @@ Usd_QueryTimeSample(
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
     return layer->QueryTimeSample(path, time, result);
-}
-
-template <class T>
-inline bool
-Usd_QueryTimeSample(
-    const Usd_ClipRefPtr& clip, const SdfPath& path,
-    double time, Usd_InterpolatorBase* interpolator, T* result)
-{
-    return clip->QueryTimeSample(path, time, interpolator, result);
 }
 
 /// Merges sample times in \p additionalTimeSamples into the vector pointed to 

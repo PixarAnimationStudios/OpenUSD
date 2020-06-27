@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/valueUtils.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -63,6 +65,19 @@ public:
     Usd_ClipSet(const Usd_ClipSet&) = delete;
     Usd_ClipSet& operator=(const Usd_ClipSet&) = delete;
 
+    /// Query time sample for the attribute at \p path at \p time.
+    /// If no time sample exists in the active clip at \p time,
+    /// \p interpolator will be used to try to interpolate the
+    /// value from the surrounding time samples in the active clip.
+    /// If the active clip has no time samples, use the default
+    /// value for the attribute declared in the manifest. If no
+    /// default value is declared, use the fallback value for
+    /// the attribute's value type.
+    template <class T>
+    bool QueryTimeSample(
+        const SdfPath& path, double time, 
+        Usd_InterpolatorBase* interpolator, T* value) const;
+
     std::string name;
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;
@@ -75,7 +90,62 @@ private:
     Usd_ClipSet(
         const std::string& name,
         const Usd_ClipSetDefinition& definition);
+
+    // Return the index of the clip that is active at the given \p time.
+    // This will always return a valid index into the valueClips list.
+    size_t _FindClipIndexForTime(double time) const;
 };
+
+// ------------------------------------------------------------
+
+template <class T>
+inline bool
+Usd_ClipSet::QueryTimeSample(
+    const SdfPath& path, double time, 
+    Usd_InterpolatorBase* interpolator, T* value) const
+{
+    const Usd_ClipRefPtr& clip = valueClips[_FindClipIndexForTime(time)];
+
+    // First query the clip for time samples at the specified time.
+    if (clip->QueryTimeSample(path, time, interpolator, value)) {
+        return true;
+    }
+
+    // If no samples exist in the clip, get the default value from
+    // the manifest.
+    switch (Usd_HasDefault(manifestClip, path, value)) {
+    case Usd_DefaultValueResult::None:
+        break;
+    case Usd_DefaultValueResult::Found:
+        return true;
+    case Usd_DefaultValueResult::Blocked:
+        return false;
+    }
+
+    // If no default value was specified in the manifest, return the
+    // fallback value for this type.
+    TfToken attrTypeName;
+    if (manifestClip->HasField(path, SdfFieldKeys->TypeName, &attrTypeName)) {
+        const SdfValueTypeName attrType = SdfSchema::GetInstance().FindType(
+            attrTypeName);
+        if (attrType) {
+            return Usd_SetValue(value, attrType.GetDefaultValue());
+        }
+    }
+    
+    return false;
+}
+
+// ------------------------------------------------------------
+
+template <class T>
+inline bool
+Usd_QueryTimeSample(
+    const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
+    double time, Usd_InterpolatorBase* interpolator, T* result)
+{
+    return clipSet->QueryTimeSample(path, time, interpolator, result);
+}
 
 /// Generate a manifest layer for the given \p clips containing all
 /// attributes under the given \p clipPrimPath. Note that this will

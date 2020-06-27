@@ -370,4 +370,40 @@ Usd_ClipSet::Usd_ClipSet(
     }
 }
 
+size_t
+Usd_ClipSet::_FindClipIndexForTime(double time) const
+{
+    size_t clipIndex = 0;
+
+    // If there was only one clip, it must be active over all time so
+    // we don't need to search any further.
+    if (valueClips.size() > 1) {
+        // Find the first clip whose start time is greater than the given
+        // time.
+        auto it = std::upper_bound(
+            valueClips.begin(), valueClips.end(), time,
+            [](double time, const Usd_ClipRefPtr& clip) {
+                return time < clip->startTime;
+            });
+
+        // The upper bound should never be the first clip. Since its
+        // startTime is set to -inf, it should never be greater than any
+        // time that is given.
+        if (TF_VERIFY(it != valueClips.begin())) {
+            // The clip before the upper bound must have time in its
+            // [startTime, endTime) range. This is true even if
+            // it points to valueClips.end(); if this were the case,
+            // then the given time is greater than the last clip's
+            // startTime, but the last clip is active until +inf so
+            // time must fall into its range.
+            clipIndex = std::distance(valueClips.begin(), it) - 1;
+        }
+    }
+
+    return TF_VERIFY(
+        clipIndex < valueClips.size()
+        && time >= valueClips[clipIndex]->startTime 
+        && time < valueClips[clipIndex]->endTime) ? clipIndex : 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

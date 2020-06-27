@@ -42,10 +42,10 @@ Usd_UntypedInterpolator::Interpolate(
 
 bool 
 Usd_UntypedInterpolator::Interpolate(
-    const Usd_ClipRefPtr& clip, const SdfPath& path,
+    const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
     double time, double lower, double upper)
 {
-    return _Interpolate(clip, path, time, lower, upper);
+    return _Interpolate(clipSet, path, time, lower, upper);
 }
 
 template <class Src>
