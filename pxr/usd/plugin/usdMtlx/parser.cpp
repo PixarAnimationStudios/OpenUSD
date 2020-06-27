@@ -48,7 +48,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, ""))
 
     // The name to use for unnamed outputs.
-    ((defaultOutputName, "result"))
+    ((defaultOutputName, "out"))
 );
 
 // A builder for shader nodes.  We find it convenient to build the
@@ -286,13 +286,20 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     for (auto&& mtlxInput: nodeDef->getInputs()) {
         builder->AddProperty(mtlxInput, false);
     }
-    if (type == mx::MULTI_OUTPUT_TYPE_STRING) {
+    if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
+        if (type == mx::MULTI_OUTPUT_TYPE_STRING) {
+            for (auto&& mtlxOutput: nodeDef->getOutputs()) {
+                builder->AddProperty(mtlxOutput, true);
+            }
+        }
+        else if (context == SdrNodeContext->Pattern) {
+            builder->AddProperty(nodeDef, true);
+        }
+    }
+    else {
         for (auto&& mtlxOutput: nodeDef->getOutputs()) {
             builder->AddProperty(mtlxOutput, true);
         }
-    }
-    else if (context == SdrNodeContext->Pattern) {
-        builder->AddProperty(nodeDef, true);
     }
 }
 

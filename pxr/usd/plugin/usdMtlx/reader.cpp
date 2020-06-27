@@ -139,7 +139,7 @@ static const _AttributeNames names;
 TF_DEFINE_PRIVATE_TOKENS(
     tokens,
 
-    ((defaultOutputName, "result"))
+    ((defaultOutputName, "out"))
     ((light, "light"))
 );
 
@@ -769,7 +769,22 @@ _NodeGraphBuilder::_AddNode(
     // We deliberately ignore tokens here.
 
     // Add the outputs.
-    if (_Type(mtlxNode) == mx::MULTI_OUTPUT_TYPE_STRING) {
+    if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
+        if (_Type(mtlxNode) == mx::MULTI_OUTPUT_TYPE_STRING) {
+            if (auto mtlxNodeDef = mtlxNode->getNodeDef()) {
+                for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
+                    for (auto mtlxOutput: i->getOutputs()) {
+                        _AddOutput(mtlxOutput, mtlxNode, connectable);
+                    }
+                }
+            }
+        } 
+        else {
+            // Default output.
+            _AddOutput(mtlxNode, mtlxNode, connectable);
+        }
+    }
+    else {
         if (auto mtlxNodeDef = mtlxNode->getNodeDef()) {
             for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
                 for (auto mtlxOutput: i->getOutputs()) {
@@ -777,10 +792,13 @@ _NodeGraphBuilder::_AddNode(
                 }
             }
         }
-    }
-    else {
-        // Default output.
-        _AddOutput(mtlxNode, mtlxNode, connectable);
+        else {
+            // Make sure to still add a default output to the usd node if the
+            // mtlxNodeDef is invalid, so that we can at least preserve the
+            // shader network topology according to the UsdShade OM, which
+            // requires an output if any input is connected to the node.
+            _AddOutput(mtlxNode, mtlxNode, connectable);
+        }
     }
 }
 
@@ -885,6 +903,9 @@ _NodeGraphBuilder::_AddOutput(
     // Choose the output name.  If mtlxTyped is-a Output then we use the
     // output name, otherwise we use the default.
     const auto isAnOutput = mtlxTyped->isA<mx::Output>();
+    // XXX: Cleanup when cleaning code around handling of default outputs when
+    // mtlxTyped is of type mx::Node and not mx::Output! Basically in 1.37 we 
+    // should not be calling _AddOutput for a node which is not an output.
     const auto outputName =
         isAnOutput
             ? _MakeName(mtlxTyped)
@@ -1400,13 +1421,20 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
 
             // Create USD output(s) for each MaterialX output with
             // semantic="shader".
-            if (_Type(mtlxNodeDef) == mx::MULTI_OUTPUT_TYPE_STRING) {
+            if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
+                if (_Type(mtlxNodeDef) == mx::MULTI_OUTPUT_TYPE_STRING) {
+                    for (auto mtlxOutput: i->getOutputs()) {
+                        _AddShaderOutput(mtlxOutput, connectable);
+                    }
+                }
+                else {
+                    _AddShaderOutput(i, connectable);
+                }
+            } 
+            else {
                 for (auto mtlxOutput: i->getOutputs()) {
                     _AddShaderOutput(mtlxOutput, connectable);
                 }
-            }
-            else {
-                _AddShaderOutput(i, connectable);
             }
         }
     }

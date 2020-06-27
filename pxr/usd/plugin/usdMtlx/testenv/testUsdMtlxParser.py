@@ -50,11 +50,7 @@ class TestParser(unittest.TestCase):
             self.assertEqual(node.GetSourceType(), "OSL")
             self.assertEqual(node.GetFamily(), "UsdMtlxTestNode")
             self.assertEqual(sorted(node.GetInputNames()), ["in", "note"])
-            if node.GetName() == 'nd_surface':
-                # XXX -- Should shader semantic nodes have a named output?
-                self.assertEqual(node.GetOutputNames(), [])
-            else:
-                self.assertEqual(node.GetOutputNames(), ["result"])
+            self.assertEqual(node.GetOutputNames(), ['out'])
 
         # Verify converted types.
         typeNameMap = {

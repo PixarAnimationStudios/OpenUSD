@@ -38,6 +38,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
+#include <MaterialXCore/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <map>
 #include <type_traits>
@@ -207,6 +208,14 @@ UsdMtlxStandardFileExtensions()
 {
     static const auto extensions = NdrStringVec{ "mtlx" };
     return extensions;
+}
+
+bool
+UsdMtlxOutputNodesRequireMultiOutputStringType() 
+{
+    static const bool versionCheck = 
+        (MaterialX::getVersionIntegers() < std::make_tuple(1, 37, 0));
+    return versionCheck;
 }
 
 MaterialX::ConstDocumentPtr 
