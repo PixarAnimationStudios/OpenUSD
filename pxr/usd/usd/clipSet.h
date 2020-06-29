@@ -101,6 +101,7 @@ public:
     SdfPath clipPrimPath;
     Usd_ClipRefPtr manifestClip;
     Usd_ClipRefPtrVector valueClips;
+    bool interpolateMissingClipValues;
 
 private:
     Usd_ClipSet(
@@ -110,6 +111,11 @@ private:
     // Return the index of the clip that is active at the given \p time.
     // This will always return a valid index into the valueClips list.
     size_t _FindClipIndexForTime(double time) const;
+
+    // Return whether the specified clip contributes time sample values
+    // to this clip set for the attribute at \p path.
+    bool _ClipContributesValue(
+        const Usd_ClipRefPtr& clip, const SdfPath& path) const;
 };
 
 // ------------------------------------------------------------

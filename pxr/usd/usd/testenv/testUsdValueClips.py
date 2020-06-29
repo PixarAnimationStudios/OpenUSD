@@ -1066,6 +1066,243 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetTimeSamples(), [0.0, 5.0, 7.0, 9.0])
         self.CheckTimeSamples(attr)
 
+    def test_InterpolateMissingClipValues(self):
+        """Tests interpolation of values for clips that do not have time
+        samples for attributes that have been declared in the manifest."""
+        def _Test(prim):
+            # The first clip active in the range [0, 2) has no samples for
+            # this attribute. We should hold the value in this time range
+            # from the first sample from the second clip.
+            attrNotInFirstClip = prim.GetAttribute('attrNotInFirstClip')
+
+            self.CheckValue(attrNotInFirstClip, time=-1, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=-0.5, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=0, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=0.5, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=1, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=1.5, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=2, expected=300)
+            self.CheckValue(attrNotInFirstClip, time=2.5, expected=350)
+            self.CheckValue(attrNotInFirstClip, time=3, expected=400)
+            self.CheckValue(attrNotInFirstClip, time=3.5, expected=450)
+            self.CheckValue(attrNotInFirstClip, time=4, expected=500)
+            self.CheckValue(attrNotInFirstClip, time=4.5, expected=550)
+            self.CheckValue(attrNotInFirstClip, time=5, expected=600)
+            self.CheckValue(attrNotInFirstClip, time=5.5, expected=650)
+            self.CheckValue(attrNotInFirstClip, time=6, expected=700)
+            self.CheckValue(attrNotInFirstClip, time=6.5, expected=750)
+            self.CheckValue(attrNotInFirstClip, time=7, expected=800)
+            self.CheckValue(attrNotInFirstClip, time=7.5, expected=800)
+            self.CheckValue(attrNotInFirstClip, time=8, expected=800)
+
+            self.assertEqual(attrNotInFirstClip.GetTimeSamples(),
+                             [2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+            self.CheckTimeSamples(attrNotInFirstClip)
+
+            # The middle clips that are active in the range [2, 6) have no
+            # samples for this attribute. We should interpolate the value in
+            # this time range from the first clip and the last clip.
+            attrNotInMiddleClips = prim.GetAttribute('attrNotInMiddleClips')
+
+            self.CheckValue(attrNotInMiddleClips, time=-1, expected=100)
+            self.CheckValue(attrNotInMiddleClips, time=-0.5, expected=100)
+            self.CheckValue(attrNotInMiddleClips, time=0, expected=100)
+            self.CheckValue(attrNotInMiddleClips, time=0.5, expected=150)
+            self.CheckValue(attrNotInMiddleClips, time=1, expected=200)
+            self.CheckValue(attrNotInMiddleClips, time=1.5, expected=250)
+            self.CheckValue(attrNotInMiddleClips, time=2, expected=300)
+            self.CheckValue(attrNotInMiddleClips, time=2.5, expected=350)
+            self.CheckValue(attrNotInMiddleClips, time=3, expected=400)
+            self.CheckValue(attrNotInMiddleClips, time=3.5, expected=450)
+            self.CheckValue(attrNotInMiddleClips, time=4, expected=500)
+            self.CheckValue(attrNotInMiddleClips, time=4.5, expected=550)
+            self.CheckValue(attrNotInMiddleClips, time=5, expected=600)
+            self.CheckValue(attrNotInMiddleClips, time=5.5, expected=650)
+            self.CheckValue(attrNotInMiddleClips, time=6, expected=700)
+            self.CheckValue(attrNotInMiddleClips, time=6.5, expected=750)
+            self.CheckValue(attrNotInMiddleClips, time=7, expected=800)
+            self.CheckValue(attrNotInMiddleClips, time=7.5, expected=800)
+            self.CheckValue(attrNotInMiddleClips, time=8, expected=800)
+
+            self.assertEqual(attrNotInMiddleClips.GetTimeSamples(),
+                             [0.0, 1.0, 6.0, 7.0])
+            self.CheckTimeSamples(attrNotInMiddleClips)
+
+            # The last clip active in the range [6, ...) has no samples for
+            # this attribute. We should hold the value in this time range
+            # from the last sample in the second-to-last clip.
+            attrNotInLastClip = prim.GetAttribute('attrNotInLastClip')
+
+            self.CheckValue(attrNotInLastClip, time=-1, expected=100)
+            self.CheckValue(attrNotInLastClip, time=-0.5, expected=100)
+            self.CheckValue(attrNotInLastClip, time=0, expected=100)
+            self.CheckValue(attrNotInLastClip, time=0.5, expected=150)
+            self.CheckValue(attrNotInLastClip, time=1, expected=200)
+            self.CheckValue(attrNotInLastClip, time=1.5, expected=250)
+            self.CheckValue(attrNotInLastClip, time=2, expected=300)
+            self.CheckValue(attrNotInLastClip, time=2.5, expected=350)
+            self.CheckValue(attrNotInLastClip, time=3, expected=400)
+            self.CheckValue(attrNotInLastClip, time=3.5, expected=450)
+            self.CheckValue(attrNotInLastClip, time=4, expected=500)
+            self.CheckValue(attrNotInLastClip, time=4.5, expected=550)
+            self.CheckValue(attrNotInLastClip, time=5, expected=600)
+            self.CheckValue(attrNotInLastClip, time=5.5, expected=600)
+            self.CheckValue(attrNotInLastClip, time=6, expected=600)
+            self.CheckValue(attrNotInLastClip, time=6.5, expected=600)
+            self.CheckValue(attrNotInLastClip, time=7, expected=600)
+            self.CheckValue(attrNotInLastClip, time=7.5, expected=600)
+            self.CheckValue(attrNotInLastClip, time=8, expected=600)
+
+            self.assertEqual(attrNotInLastClip.GetTimeSamples(),
+                             [0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+            self.CheckTimeSamples(attrNotInLastClip)
+
+            # This attribute is in the manifest but not in any clip. We
+            # expect to get 1 time sample and the fallback value for
+            # the attribute type since no default value is declared in
+            # the manifest.
+            attrNotInAnyClip = prim.GetAttribute('attrNotInAnyClip')
+
+            self.CheckValue(attrNotInAnyClip, time=-1, expected=0)
+            self.CheckValue(attrNotInAnyClip, time=0, expected=0)
+            self.CheckValue(attrNotInAnyClip, time=1, expected=0)
+
+            self.assertEqual(attrNotInAnyClip.GetTimeSamples(), [0.0])
+            self.CheckTimeSamples(attrNotInAnyClip)
+
+        stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+        _Test(stage.GetPrimAtPath('/Model'))
+        _Test(stage.GetPrimAtPath('/ModelWithManifestBlocks'))
+        
+    def test_InterpolateMissingClipValuesWithBlocksInManifest(self):
+        """Tests that interpolation of values for empty clips avoids opening
+        layers for clips that are declared to have no values in the manifest."""
+        def _OpenTestStage():
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+            return Usd.Stage.Open('missingValueInterpolation/root.usda')
+
+        # These attributes have been marked as not having time samples in various
+        # clips, so when we query for values none of those clips should ever be
+        # opened.
+        stage = _OpenTestStage()
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInFirstClip')
+        for i in range(0, 8):
+            attrNotInFirstClip.Get(i)
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+
+        del stage
+        stage = _OpenTestStage()
+        attrNotInMiddleClips = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInMiddleClips')
+        for i in range(0, 8):
+            attrNotInMiddleClips.Get(i)
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+
+        del stage
+        stage = _OpenTestStage()
+        attrNotInLastClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInLastClip')
+        for i in range(0, 8):
+            attrNotInLastClip.Get(i)
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInAnyClip')
+        for i in range(0, 8):
+            attrNotInAnyClip.Get(i)
+            # Note that even though this clip is indicated as not having
+            # samples in any clips, we do still wind up opening clip1.usda
+            # when querying time samples. Avoiding this would incur an
+            # additional check on the manifest in the more common cases,
+            # so we choose not to do that.
+            self.assertTrue(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+
+    def test_InterpolateMissingClipValuesWithFallbacksInManifest(self):
+        """Tests that interpolation for missing clip values will be
+        skipped for attributes with a fallback value declared in the
+        manifest."""
+        stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestFallbacks.attrNotInFirstClip')
+
+        self.CheckValue(attrNotInFirstClip, time=-1, expected=42)
+        self.CheckValue(attrNotInFirstClip, time=-0.5, expected=42)
+        self.CheckValue(attrNotInFirstClip, time=0, expected=42)
+        self.CheckValue(attrNotInFirstClip, time=0.5, expected=106.5)
+        self.CheckValue(attrNotInFirstClip, time=1, expected=171)
+        self.CheckValue(attrNotInFirstClip, time=1.5, expected=235.5)
+        self.CheckValue(attrNotInFirstClip, time=2, expected=300)
+
+        self.assertEqual(attrNotInFirstClip.GetTimeSamples(),
+                         [0.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+        self.CheckTimeSamples(attrNotInFirstClip)
+
+        attrNotInMiddleClips = stage.GetAttributeAtPath(
+            '/ModelWithManifestFallbacks.attrNotInMiddleClips')
+
+        self.CheckValue(attrNotInMiddleClips, time=1, expected=200)
+        self.CheckValue(attrNotInMiddleClips, time=1.5, expected=121)
+        self.CheckValue(attrNotInMiddleClips, time=2, expected=42)
+        self.CheckValue(attrNotInMiddleClips, time=2.5, expected=42)
+        self.CheckValue(attrNotInMiddleClips, time=3, expected=42)
+        self.CheckValue(attrNotInMiddleClips, time=3.5, expected=42)
+        self.CheckValue(attrNotInMiddleClips, time=4, expected=42)
+        self.CheckValue(attrNotInMiddleClips, time=4.5, expected=206.5)
+        self.CheckValue(attrNotInMiddleClips, time=5, expected=371)
+        self.CheckValue(attrNotInMiddleClips, time=5.5, expected=535.5)
+        self.CheckValue(attrNotInMiddleClips, time=6, expected=700)
+
+        self.assertEqual(attrNotInMiddleClips.GetTimeSamples(),
+                         [0.0, 1.0, 2.0, 4.0, 6.0, 7.0])
+        self.CheckTimeSamples(attrNotInMiddleClips)
+
+        attrNotInLastClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestFallbacks.attrNotInLastClip')
+
+        self.CheckValue(attrNotInLastClip, time=5, expected=600.0)
+        self.CheckValue(attrNotInLastClip, time=5.5, expected=321.0)
+        self.CheckValue(attrNotInLastClip, time=6, expected=42.0)
+        self.CheckValue(attrNotInLastClip, time=7, expected=42.0)
+        self.CheckValue(attrNotInLastClip, time=8, expected=42.0)
+
+        self.assertEqual(attrNotInLastClip.GetTimeSamples(),
+                         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+        self.CheckTimeSamples(attrNotInLastClip)
+
+        attrNotInAnyClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestFallbacks.attrNotInAnyClip')
+
+        self.CheckValue(attrNotInAnyClip, time=-1, expected=42.0)
+        self.CheckValue(attrNotInAnyClip, time=0, expected=42.0)
+        self.CheckValue(attrNotInAnyClip, time=1, expected=42.0)
+
+        self.assertEqual(attrNotInAnyClip.GetTimeSamples(), 
+                         [0.0, 2.0, 4.0, 6.0, 7.0])
+        self.CheckTimeSamples(attrNotInAnyClip)
+
     def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
         clips specified on an ancestral model"""
@@ -1225,6 +1462,9 @@ class TestUsdValueClips(unittest.TestCase):
             clipManifestAssetPath = Sdf.AssetPath('clip_manifest.usda')
             model.SetClipManifestAssetPath(clipManifestAssetPath)
             self.assertEqual(model.GetClipManifestAssetPath(), clipManifestAssetPath)
+
+            model.SetInterpolateMissingClipValues(True)
+            self.assertEqual(model.GetInterpolateMissingClipValues(), True)
 
             # Test authoring of template clip metadata
             model.SetClipTemplateAssetPath('clip.###.usda')

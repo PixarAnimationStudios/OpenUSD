@@ -275,6 +275,7 @@ Usd_ClipSet::Usd_ClipSet(
     , sourcePrimPath(clipDef.sourcePrimPath)
     , sourceLayerIndex(clipDef.indexOfLayerWhereAssetPathsFound)
     , clipPrimPath(SdfPath(*clipDef.clipPrimPath))
+    , interpolateMissingClipValues(false)
 {
     // NOTE: Assumes definition has already been validated
 
@@ -337,6 +338,10 @@ Usd_ClipSet::Usd_ClipSet(
         valueClips.push_back(clip);
     }
 
+    if (clipDef.interpolateMissingClipValues) {
+        interpolateMissingClipValues = *clipDef.interpolateMissingClipValues;
+    }
+
     // Create a clip for the manifest. If no manifest has been specified,
     // we generate one for the user automatically.
     SdfAssetPath manifestAssetPath;
@@ -371,35 +376,124 @@ Usd_ClipSet::Usd_ClipSet(
 }
 
 bool
+Usd_ClipSet::_ClipContributesValue(
+    const Usd_ClipRefPtr& clip, const SdfPath& path) const
+{
+    // If this clip interpolates values for clips without authored
+    // values for an attribute, then we need to check whether the
+    // clip actually contains authored values below. Otherwise every
+    // clip contributes a value, so we can use the clip.
+    if (!interpolateMissingClipValues) {
+        return true;
+    }
+
+    // Use the clip if it has authored time samples for the attribute.
+    // If this attribute is blocked at the clip's start time in the 
+    // manifest it means the user has declared there are no samples
+    // in that clip for this attribute. This allows us to skip
+    // opening the layer to check if it has authored time samples.
+    const bool hasAuthoredSamples = 
+        !manifestClip->IsBlocked(path, clip->authoredStartTime) &&
+        clip->HasAuthoredTimeSamples(path);
+    if (hasAuthoredSamples) {
+        return true;
+    }
+
+    // Use the clip if a default value specified in the manifest.
+    if (Usd_HasDefault<int>(manifestClip, path, nullptr) 
+            != Usd_DefaultValueResult::None) {
+        return true;
+    }
+
+    return false;
+}
+
+bool
 Usd_ClipSet::GetBracketingTimeSamplesForPath(
     const SdfPath& path, double time,
     double* lower, double* upper) const
 {
+    bool foundLower = false, foundUpper = false;
+
     const size_t clipIndex = _FindClipIndexForTime(time);
 
     const Usd_ClipRefPtr& activeClip = valueClips[clipIndex];
-    if (!TF_VERIFY(activeClip->GetBracketingTimeSamplesForPath(
-            path, time, lower, upper))) {
-        return false;
+    if (_ClipContributesValue(activeClip, path)) {
+        if (!TF_VERIFY(activeClip->GetBracketingTimeSamplesForPath(
+                path, time, lower, upper))) {
+            return false;
+        }
+
+        // Since each clip always has a time sample at its start time,
+        // the above call will always establish the lower bracketing sample.
+        foundLower = true;
+
+        // If the given time is after the last time sample in the active
+        // time range of the clip we need to search forward for the next 
+        // clip that contributes a value and it to find the upper bracketing
+        // sample. We indicate this by setting foundUpper to false.
+        //
+        // The diagram below shows an example, where the 'X's show time
+        // samples, the '|' shows the endTime of clip 1 and start time
+        // of clip 2, and 't' is the query time. The above call to
+        // GetBracketingTimeSamples gets us the lower bound, which is the
+        // time of the 'X' in clip 1.
+        //         
+        // Clip 1: ------X--t--- | 
+        // Clip 2:               X ------------
+        //
+        foundUpper = !(*lower == *upper && time > *upper);
     }
 
-    // If the given time is after the last time sample in the active
-    // time range of the clip and there is a clip afterwards, use the
-    // start frame of the next clip as the upper bracketing sample,
-    // since each clip introduces a time sample at its start time.
-    //
-    // The diagram below shows an example, where the 'X's show time
-    // samples, the '|' shows the endTime of clip 1 and start time
-    // of clip 2, and 't' is the query time.
-    //         
-    // Clip 1: ------X--t--- | 
-    // Clip 2:               X ------------
-    //
-    const bool activeClipIsLastClip = (clipIndex == valueClips.size() - 1);
-    if (!activeClipIsLastClip && *lower == *upper && time > *upper) {
-        const Usd_ClipRefPtr& nextClip = valueClips[clipIndex + 1];
-        *upper = nextClip->startTime;
+    // If we haven't found the lower bracketing sample from the active
+    // clip, search backwards to find the nearest clip that contributes
+    // values and use that to determine the lower sample.
+    for (size_t i = clipIndex; !foundLower && i-- != 0; ) {
+        const Usd_ClipRefPtr& clip = valueClips[i];
+        if (!_ClipContributesValue(clip, path)) {
+            continue;
+        }
+
+        double tmpLower, tmpUpper;
+        if (!TF_VERIFY(clip->GetBracketingTimeSamplesForPath(
+                    path, time, &tmpLower, &tmpUpper))) {
+            return false;
+        }
+            
+        foundLower = true;
+        *lower = tmpUpper;
     }
+
+    // If we haven't found the upper bracketing sample from the active
+    // clip, search forwards to find the nearest clip that contributes
+    // values and use its start time as the upper sample. We can avoid
+    // the cost of calling GetBracketingTimeSamples here since we know
+    // a clip always has a time sample at its start frame if it
+    // contributes values.
+    for (size_t i = clipIndex + 1; !foundUpper && i < valueClips.size(); ++i) {
+        const Usd_ClipRefPtr& clip = valueClips[i];
+        if (!_ClipContributesValue(clip, path)) {
+            continue;
+        }
+
+        *upper = clip->startTime;
+        foundUpper = true;
+    }
+
+    // Reconcile foundLower and foundUpper values.
+    if (foundLower && !foundUpper) {
+        *upper = *lower;
+    }
+    else if (!foundLower && foundUpper) {
+        *lower = *upper;
+    }
+    else if (!foundLower && !foundUpper) {
+        // In this case, no clips have been found that contribute
+        // values. Use the start time of the first clip as the sole
+        // time sample.
+        *lower = *upper = valueClips.front()->authoredStartTime;
+    }
+
     return true;
 }
 
@@ -408,10 +502,22 @@ Usd_ClipSet::ListTimeSamplesForPath(const SdfPath& path) const
 {
     std::set<double> samples;
     for (const Usd_ClipRefPtr& clip : valueClips) {
+        if (!_ClipContributesValue(clip, path)) {
+            continue;
+        }
+
         const std::set<Usd_Clip::ExternalTime> clipSamples =
             clip->ListTimeSamplesForPath(path);
         samples.insert(clipSamples.begin(), clipSamples.end());
     }
+
+    if (samples.empty()) {
+        // In this case, no clips have been found that contribute
+        // values. Use the start time of the first clip as the sole
+        // time sample.
+        samples.insert(valueClips.front()->authoredStartTime);
+    }
+
     return samples;
 }
 

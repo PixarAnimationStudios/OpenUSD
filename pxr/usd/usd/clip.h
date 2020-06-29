@@ -151,6 +151,10 @@ public:
     /// whether there truly is a time sample value for the attribute.
     bool HasAuthoredTimeSamples(const SdfPath& path) const;
 
+    /// Return true if a value block is authored for the attribute
+    /// corresponding to the given \p path at \p time.
+    bool IsBlocked(const SdfPath& path, ExternalTime time) const;
+
     /// Return the layer associated with this clip, opening it if it hasn't
     /// been opened already.
     SdfLayerHandle GetLayer() const;

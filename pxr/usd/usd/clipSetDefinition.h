@@ -50,7 +50,8 @@ class Usd_ClipSetDefinition
 {
 public:
     Usd_ClipSetDefinition() 
-        : indexOfLayerWhereAssetPathsFound(0) 
+        : interpolateMissingClipValues(false)
+        , indexOfLayerWhereAssetPathsFound(0) 
     {
     }
 
@@ -61,6 +62,7 @@ public:
             && clipPrimPath == rhs.clipPrimPath
             && clipActive == rhs.clipActive
             && clipTimes == rhs.clipTimes
+            && interpolateMissingClipValues == rhs.interpolateMissingClipValues
             && sourceLayerStack == rhs.sourceLayerStack
             && sourcePrimPath == rhs.sourcePrimPath
             && indexOfLayerWhereAssetPathsFound 
@@ -101,6 +103,9 @@ public:
                 boost::hash_combine(hash, time[1]);
             }
         }
+        if (interpolateMissingClipValues) {
+            boost::hash_combine(hash, *interpolateMissingClipValues);
+        }
 
         return hash;
     }
@@ -110,6 +115,7 @@ public:
     boost::optional<std::string> clipPrimPath;
     boost::optional<VtVec2dArray> clipActive;
     boost::optional<VtVec2dArray> clipTimes;
+    boost::optional<bool> interpolateMissingClipValues;
 
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;

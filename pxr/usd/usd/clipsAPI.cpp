@@ -403,6 +403,36 @@ UsdClipsAPI::GenerateClipManifestFromLayers(
     return Usd_GenerateClipManifest(clipLayers, clipPrimPath);
 }
 
+bool
+UsdClipsAPI::SetInterpolateMissingClipValues(bool interpolate)
+{
+    USD_CLIPS_API_SETTER(SetInterpolateMissingClipValues,
+        interpolate, UsdClipsAPIInfoKeys->interpolateMissingClipValues);
+}
+
+bool
+UsdClipsAPI::SetInterpolateMissingClipValues(bool interpolate,
+                                              const std::string& clipSet)
+{
+    USD_CLIPS_API_CLIPSET_SETTER(SetInterpolateMissingClipValues,
+        interpolate, clipSet, UsdClipsAPIInfoKeys->interpolateMissingClipValues);
+}
+
+bool
+UsdClipsAPI::GetInterpolateMissingClipValues(bool* interpolate) const
+{
+    USD_CLIPS_API_GETTER(GetInterpolateMissingClipValues,
+        interpolate, UsdClipsAPIInfoKeys->interpolateMissingClipValues);
+}
+
+bool
+UsdClipsAPI::GetInterpolateMissingClipValues(bool* interpolate,
+                                              const std::string& clipSet) const
+{
+    USD_CLIPS_API_CLIPSET_GETTER(GetInterpolateMissingClipValues,
+        interpolate, clipSet, UsdClipsAPIInfoKeys->interpolateMissingClipValues);
+}
+
 bool 
 UsdClipsAPI::SetClipPrimPath(const std::string& primPath)
 {

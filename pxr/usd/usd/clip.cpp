@@ -604,6 +604,19 @@ Usd_Clip::HasAuthoredTimeSamples(const SdfPath& path) const
         _TranslatePathToClip(path)) > 0;    
 }
 
+bool
+Usd_Clip::IsBlocked(const SdfPath& path, ExternalTime time) const
+{
+    SdfAbstractDataTypedValue<SdfValueBlock> blockValue(nullptr);
+    if (_GetLayerForClip()->QueryTimeSample(
+            path, _TranslateTimeToInternal(time), 
+            (SdfAbstractDataValue*)&blockValue)
+        && blockValue.isValueBlock) {
+        return true;
+    }
+    return false;
+}
+
 SdfPath
 Usd_Clip::_TranslatePathToClip(const SdfPath& path) const
 {

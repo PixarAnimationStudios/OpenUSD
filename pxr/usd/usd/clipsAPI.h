@@ -415,6 +415,33 @@ public:
     GenerateClipManifestFromLayers(const SdfLayerHandleVector& clipLayers, 
                                    const SdfPath& clipPrimPath);
 
+    // Flag indicating whether values for a clip that does not contain authored
+    // time samples are interpolated from surrounding clips.
+    //
+    // If this flag is set, values for clips that do not have authored time
+    // samples for an attribute that is declared in the manifest without a
+    // fallback value will be interpolated from values in surrounding clips.
+    // This is disabled by default.
+    USD_API
+    bool GetInterpolateMissingClipValues(bool* interpolate,
+                                         const std::string& clipSet) const;
+
+    /// \overload
+    /// This function operates on the default clip set.
+    USD_API
+    bool GetInterpolateMissingClipValues(bool* interpolate) const;
+
+    /// Set whether missing clip values are interpolated from surrounding
+    /// clips.
+    USD_API
+    bool SetInterpolateMissingClipValues(bool interpolate,
+                                         const std::string& clipSet);
+
+    /// \overload
+    /// This function operates on the default clip set.
+    USD_API
+    bool SetInterpolateMissingClipValues(bool interpolate);
+
     /// A template string representing a set of assets to be used as clips
     /// for the clip set named \p clipSet. This string can be of two forms: 
     ///
@@ -568,6 +595,7 @@ public:
 #define USDCLIPS_INFO_KEYS  \
     (active)                \
     (assetPaths)            \
+    (interpolateMissingClipValues) \
     (manifestAssetPath)     \
     (primPath)              \
     (templateAssetPath)     \
@@ -596,6 +624,7 @@ public:
 /// \li <b>templateStride</b> - see UsdClipsAPI::GetClipTemplateStride
 /// \li <b>templateActiveOffset</b> - see UsdClipsAPI::GetClipTemplateActiveOffset
 /// \li <b>times</b> - see UsdClipsAPI::GetClipTimes
+/// \li <b>interpolateMissingClipValues</b> - see UsdClipsAPI::GetInterpolateMissingClipValues
 TF_DECLARE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USD_API, USDCLIPS_INFO_KEYS);
 
 /// \hideinitializer

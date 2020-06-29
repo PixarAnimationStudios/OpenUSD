@@ -580,6 +580,8 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
         _SetInfo(clipInfo, UsdClipsAPIInfoKeys->primPath, &out.clipPrimPath);
         _SetInfo(clipInfo, UsdClipsAPIInfoKeys->manifestAssetPath, 
                  &out.clipManifestAssetPath);
+        _SetInfo(clipInfo, UsdClipsAPIInfoKeys->interpolateMissingClipValues,
+                 &out.interpolateMissingClipValues);
 
         if (_SetInfo(clipInfo, UsdClipsAPIInfoKeys->assetPaths, 
                      &out.clipAssetPaths)) {

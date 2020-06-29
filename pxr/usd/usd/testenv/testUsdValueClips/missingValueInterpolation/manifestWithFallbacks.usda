@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "Model"
+{
+    double attrNotInFirstClip = 42.0
+    double attrNotInMiddleClips = 42.0
+    double attrNotInLastClip = 42.0
+    double attrNotInAnyClip = 42.0
+}
