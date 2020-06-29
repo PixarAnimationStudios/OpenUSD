@@ -57,4 +57,32 @@ GetKeyframeDescription(VtValue const& k, UsdAnimXKeyframeDesc* d)
   */
 }
 
+adsk::Keyframe 
+GetKeyframeFromVtValue(double time, VtValue const& value, size_t index)
+{
+  std::cout << "### GET KEYFRAME FROM VTVALUE !!!" << std::endl;
+  VtArray<double> a = value.UncheckedGet<VtArray<double>>();
+  adsk::Keyframe keyframe;
+  keyframe.time = time;
+  keyframe.value = a[0];
+  keyframe.index = index;
+  adsk::Tangent tanIn;
+  tanIn.type = (adsk::TangentType)(int)a[1];
+  tanIn.x = (adsk::seconds)a[2];
+  tanIn.y = (adsk::seconds)a[3];
+  keyframe.tanIn = tanIn;
+  adsk::Tangent tanOut;
+  tanOut.type = (adsk::TangentType)(int)a[4];
+  tanOut.x = (adsk::seconds)a[5];
+  tanOut.y = (adsk::seconds)a[6];
+  keyframe.tanOut = tanOut;
+  keyframe.quaternionW = a[7];
+  keyframe.linearInterpolation = false;
+  std::cout << keyframe << std::endl;
+   std::cout << keyframe.time << ": "<< keyframe.value  << std::endl;
+  return keyframe;
+
+ 
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
