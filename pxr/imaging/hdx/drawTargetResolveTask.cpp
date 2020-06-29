@@ -71,12 +71,6 @@ HdxDrawTargetResolveTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (HdStDrawTarget::GetUseStormTextureSystem()) {
-        // When submitting graphics cmds through Hgi, the MSAA textures
-        // will be resolved automatically and there is no need for this task.
-        return;
-    }
-
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.
     HdTaskContext::const_iterator valueIt =
@@ -89,29 +83,29 @@ HdxDrawTargetResolveTask::Execute(HdTaskContext* ctx)
 
     std::vector<GlfDrawTarget*> drawTargets;
 
-
     const VtValue &valueVt = (valueIt->second);
     if (valueVt.IsHolding<HdxDrawTargetRenderPass *>()) {
-        drawTargets.resize(1);
-
-        HdxDrawTargetRenderPass *pass =
+        HdxDrawTargetRenderPass * const pass =
                               valueVt.UncheckedGet<HdxDrawTargetRenderPass *>();
-
-        drawTargets[0] = boost::get_pointer(pass->GetDrawTarget());
-
+        if (GlfDrawTarget * const drawTarget = 
+                        boost::get_pointer(pass->GetDrawTarget())) {
+            drawTargets = { drawTarget };
+        }
     } else if (valueVt.IsHolding<HdxDrawTargetRenderPassUniquePtrVector *>()) {
-        HdxDrawTargetRenderPassUniquePtrVector *passes =
+        HdxDrawTargetRenderPassUniquePtrVector * const passes =
                valueVt.UncheckedGet<HdxDrawTargetRenderPassUniquePtrVector *>();
-
+        
         // Iterate through all renderpass (drawtarget renderpass), extract the
         // draw target and resolve them if needed. We need to resolve them to 
         // regular buffers so use them in the rest of the pipeline.
  
-        size_t numDrawTargets = passes->size();
+        drawTargets.reserve(passes->size());
 
-        drawTargets.resize(numDrawTargets);
-        for (size_t i = 0; i < numDrawTargets; ++i) {
-            drawTargets[i] = boost::get_pointer((*passes)[i]->GetDrawTarget());
+        for (const HdxDrawTargetRenderPassUniquePtr &pass : *passes) {
+            if (GlfDrawTarget * const drawTarget =
+                            boost::get_pointer(pass->GetDrawTarget())) {
+                drawTargets.push_back(drawTarget);
+            }
         }
     } else {
         TF_CODING_ERROR("drawTargetRenderPasses in task context is of "
