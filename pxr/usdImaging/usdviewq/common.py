@@ -168,6 +168,7 @@ class PickModes(ConstantGroup):
     PRIMS = "Prims"
     MODELS = "Models"
     INSTANCES = "Instances"
+    PROTOTYPES = "Prototypes"
 
 class SelectionHighlightModes(ConstantGroup):
     # Selection highlight modes

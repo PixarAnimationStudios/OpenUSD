@@ -56,6 +56,7 @@ _TestIntersection(
     SdfPath hitPrimPath;
     SdfPath hitInstancerPath;
     int hitInstanceIndex;
+    HdInstancerContext hitInstancerContext;
 
     self.TestIntersection(
         viewMatrix,
@@ -65,9 +66,18 @@ _TestIntersection(
         &hitPoint,
         &hitPrimPath,
         &hitInstancerPath,
-        &hitInstanceIndex);
+        &hitInstanceIndex,
+        &hitInstancerContext);
 
-    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex);
+    SdfPath topLevelPath = SdfPath::EmptyPath();
+    int topLevelInstanceIndex = -1;
+    if (hitInstancerContext.size() > 0) {
+        topLevelPath = hitInstancerContext[0].first;
+        topLevelInstanceIndex = hitInstancerContext[0].second;
+    }
+
+    return boost::python::make_tuple(hitPoint, hitPrimPath,
+            hitInstanceIndex, topLevelPath, topLevelInstanceIndex);
 }
 
 static void

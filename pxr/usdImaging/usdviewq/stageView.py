@@ -40,8 +40,7 @@ from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 from .common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
-                     ReportMetricSize, GetInstanceIndicesForIds,
-                     SelectionHighlightModes, DEBUG_CLIPPING)
+                     ReportMetricSize, SelectionHighlightModes, DEBUG_CLIPPING)
 from .rootDataModel import RootDataModel
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from .viewSettingsDataModel import ViewSettingsDataModel
@@ -662,14 +661,18 @@ class StageView(QtOpenGL.QGLWidget):
     # First arg is primPath, (which could be empty Path)
     # Second arg is instanceIndex (or UsdImagingGL.ALL_INSTANCES for all
     #  instances)
-    # Third arg is selectedPoint
-    # Fourth and Fifth args represent state at time of the pick
-    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
+    # Third and fourth arg are primPath, instanceIndex, of root level
+    #  boundable (if applicable).
+    # Fifth arg is selectedPoint
+    # Sixth and seventh args represent state at time of the pick
+    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Sdf.Path, int, Gf.Vec3f,
+                                       QtCore.Qt.MouseButton,
                                        QtCore.Qt.KeyboardModifiers)
 
     # Only raised when StageView has been told to do so, setting
     # rolloverPicking to True
-    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
+    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Sdf.Path, int,
+                                       Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
     signalMouseDrag = QtCore.Signal()
     signalErrorMessage = QtCore.Signal(str)
 
@@ -1325,16 +1328,6 @@ class StageView(QtOpenGL.QGLWidget):
                     continue
                 primInstances = allInstances[prim]
                 if primInstances != ALL_INSTANCES:
-
-                    # If the prim is a point instancer and has authored instance
-                    # ids, the selection contains instance ids rather than 
-                    # instance indices. We need to convert these back to indices
-                    # before feeding them to the renderer.
-                    instanceIds = GetInstanceIndicesForIds(prim, primInstances,
-                        self._dataModel.currentFrame)
-                    if instanceIds is not None:
-                        primInstances = instanceIds
-
                     for instanceIndex in primInstances:
                         renderer.AddSelected(prim.GetPath(), instanceIndex)
                 else:
@@ -2094,9 +2087,9 @@ class StageView(QtOpenGL.QGLWidget):
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quartuple:
+        Returns a quintuple:
           selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex
+          selectedInstanceIndex, selectedInstancerContext
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
@@ -2179,14 +2172,15 @@ class StageView(QtOpenGL.QGLWidget):
             (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
             if inImageBounds:
-                selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex = self.pick(pickFrustum)
+                selectedPoint, selectedPrimPath, \
+                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
+                self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
-                selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex = \
-                    None, Sdf.Path.emptyPath, None, None
+                selectedPoint, selectedPrimPath, \
+                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
+                    None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
         
             # Correct for high DPI displays
             coord = self._scaleMouseCoords( \
@@ -2196,12 +2190,12 @@ class StageView(QtOpenGL.QGLWidget):
 
             if button:
                 self.signalPrimSelected.emit(
-                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
-                    button, modifiers)
+                    selectedPrimPath, selectedInstanceIndex, selectedTLPath,
+                    selectedTLIndex, selectedPoint, button, modifiers)
             else:
                 self.signalPrimRollover.emit(
-                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
-                    modifiers)
+                    selectedPrimPath, selectedInstanceIndex, selectedTLPath,
+                    selectedTLIndex, selectedPoint, modifiers)
         except Tf.ErrorException as e:
             # If we encounter an error, we want to continue running. Just log 
             # the error and continue.
