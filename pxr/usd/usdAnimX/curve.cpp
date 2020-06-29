@@ -171,6 +171,7 @@ size_t UsdAnimXCurve::findClosest(double time) const
 void UsdAnimXCurve::addKeyframe(const adsk::Keyframe& key)
 {
   //_keyframes.push_back(key);
+  addKeyframe(key.time, key.value);
 }
 
 void UsdAnimXCurve::addKeyframe(double time, double value)

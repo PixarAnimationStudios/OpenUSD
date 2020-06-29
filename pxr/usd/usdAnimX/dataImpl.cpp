@@ -165,7 +165,6 @@ UsdAnimXDataImpl::Has(
         } else if (field == SdfFieldKeys->Default) {
             return _HasPropertyDefaultValue(path, value);
         } else if (field == SdfFieldKeys->TimeSamples) {
-            std::cout << "### QUERY FUCKIN TIME SAMPLES !!!"<<std::endl;
             // Only animated properties have time samples.
             if (_IsAnimatedProperty(path)) {
                 // Will need to generate the full SdfTimeSampleMap with a 
@@ -257,7 +256,6 @@ void
 UsdAnimXDataImpl::VisitSpecs(
     const SdfAbstractData &data, SdfAbstractDataSpecVisitor *visitor) const
 {
-    std::cout << "VISIT SPECS !!!" << std::endl;
     // Visit the pseudoroot.
     if (!visitor->VisitSpec(data, SdfPath::AbsoluteRootPath())) {
         return;
@@ -282,7 +280,6 @@ UsdAnimXDataImpl::VisitSpecs(
 const std::vector<TfToken> &
 UsdAnimXDataImpl::List(const SdfPath &path) const
 {
-    std::cout << "LIST CALLED!!!" << std::endl;
     if (path.IsPropertyPath()) {
         // For properties, check that it's a valid leaf prim property
         const _LeafPrimPropertyInfo *propInfo = 
@@ -591,7 +588,7 @@ UsdAnimXDataImpl::InitFromFile(const std::string& filename)
 }
 
 TfTokenVector 
-UsdAnimXDataImpl::_AnimXPrimData::GetAnimatedPropertyNames() const
+UsdAnimXDataImpl::_AnimXPrimData::  GetAnimatedPropertyNames() const
 {
   std::cout << "ANIM X PRIM DATA GET PROPERTY NAMES" << std::endl;
   TfTokenVector names;

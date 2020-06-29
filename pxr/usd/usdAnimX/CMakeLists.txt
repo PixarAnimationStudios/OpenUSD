@@ -32,7 +32,6 @@ pxr_library(${PXR_PACKAGE}
         keyframe
         curve
         data
-        dataImpl
 
     PYTHON_CPPFILES
         moduleDeps.cpp

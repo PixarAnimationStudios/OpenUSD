@@ -39,7 +39,7 @@ struct UsdAnimXKeyframeDesc {
 std::ostream& operator<<(std::ostream &, adsk::Keyframe const &);
 void GetKeyframeDescription(adsk::Keyframe const &, UsdAnimXKeyframeDesc* desc);
 void GetKeyframeDescription(VtValue const &, UsdAnimXKeyframeDesc* desc);
-
+adsk::Keyframe GetKeyframeFromVtValue(double time, VtValue const& value, size_t index);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PLUGIN_USD_ANIMX_KEYFRAME_H
