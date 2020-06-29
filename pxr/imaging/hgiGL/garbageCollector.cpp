@@ -36,8 +36,9 @@ static void _EmptyTrash(std::vector<std::vector<HgiHandle<T>>*>* list) {
         for (auto objectHandle : *vec) {
             delete objectHandle.Get();
         }
+        vec->clear();
+        vec->shrink_to_fit();
     }
-    list->clear();
 }
 
 HgiGLGarbageCollector::HgiGLGarbageCollector(HgiGL* hgi)
@@ -48,17 +49,7 @@ HgiGLGarbageCollector::HgiGLGarbageCollector(HgiGL* hgi)
 
 HgiGLGarbageCollector::~HgiGLGarbageCollector()
 {
-    if (!_bufferList.empty() || 
-        !_textureList.empty() || 
-        !_samplerList.empty() || 
-        !_shaderFunctionList.empty() || 
-        !_shaderProgramList.empty() ||
-        !_resourceBindingsList.empty() ||
-        !_graphicsPipelineList.empty() ||
-        !_computePipelineList.empty()) 
-    {
-        TF_CODING_ERROR("Some objects not destroyed in Garbage Collector");
-    }
+    PerformGarbageCollection();
 }
 
 /* Multi threaded */
