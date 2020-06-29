@@ -439,7 +439,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
-    std::array<Usd_Clip::ExternalTime, 6> bracketingTimes = { 0.0 };
+    std::array<Usd_Clip::ExternalTime, 5> bracketingTimes = { 0.0 };
     size_t numTimes = 0;
 
     // Add time samples from the clip layer.
@@ -457,7 +457,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         numTimes += 2;
     }
 
-    // Clips introduce time samples at their boundaries even
+    // Clips introduce time samples at their start time even
     // if time samples don't actually exist. This isolates each
     // clip from its neighbors and means that value resolution
     // never has to look at more than one clip to answer a
@@ -465,11 +465,14 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     bracketingTimes[numTimes] = authoredStartTime;
     numTimes++;
 
-    if (endTime != Usd_ClipTimesLatest) {
-        bracketingTimes[numTimes] = endTime;
-        numTimes++;
+    // Remove bracketing times that are outside the clip's active range.
+    {
+        auto removeIt = std::remove_if(
+            bracketingTimes.begin(), bracketingTimes.begin() + numTimes,
+            [this](ExternalTime t) { return t < startTime || t >= endTime; });
+        numTimes = std::distance(bracketingTimes.begin(), removeIt);
     }
-
+        
     if (numTimes == 0) {
         return false;
     }
@@ -504,6 +507,12 @@ Usd_Clip::_ListTimeSamplesForPathFromClipLayer(
         _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
     if (times.empty()) {
         *timeSamples = std::move(timeSamplesInClip);
+
+        // Filter out all samples that are outside the clip's active range
+        timeSamples->erase(
+            timeSamples->begin(), timeSamples->lower_bound(startTime));
+        timeSamples->erase(
+            timeSamples->lower_bound(endTime), timeSamples->end());
         return;
     }
 
@@ -539,11 +548,19 @@ Usd_Clip::_ListTimeSamplesForPathFromClipLayer(
             if (std::min(m1.internalTime, m2.internalTime) <= t
                 && t <= std::max(m1.internalTime, m2.internalTime)) {
                 if (m1.internalTime == m2.internalTime) {
-                    timeSamples->insert(m1.externalTime);
-                    timeSamples->insert(m2.externalTime);
+                    if (clipTimeInterval.Contains(m1.externalTime)) {
+                        timeSamples->insert(m1.externalTime);
+                    }
+                    if (clipTimeInterval.Contains(m2.externalTime)) {
+                        timeSamples->insert(m2.externalTime);
+                    }
                 }
                 else {
-                    timeSamples->insert(_TranslateTimeToExternal(t, i, i+1));
+                    const ExternalTime extTime = 
+                        _TranslateTimeToExternal(t, i, i+1);
+                    if (clipTimeInterval.Contains(extTime)) {
+                        timeSamples->insert(extTime);
+                    }
                 }
             }
         }
@@ -560,18 +577,16 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
     // Each entry in the clip's time mapping is considered a time sample,
     // so add them in here.
     for (const TimeMapping& t : times) {
-        timeSamples.insert(t.externalTime);
+        if (startTime <= t.externalTime && t.externalTime < endTime) {
+            timeSamples.insert(t.externalTime);
+        }
     }
 
-    // Clips introduce time samples at their boundaries to
+    // Clips introduce time samples at their start time to
     // isolate them from surrounding clips.
     //
     // See GetBracketingTimeSamplesForPath for more details.
     timeSamples.insert(authoredStartTime);
-
-    if (endTime != Usd_ClipTimesLatest) {
-        timeSamples.insert(endTime);
-    }
 
     return timeSamples;
 }

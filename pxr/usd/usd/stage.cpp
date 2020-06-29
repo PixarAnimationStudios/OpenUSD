@@ -6881,8 +6881,7 @@ _HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips,
     }
 
     if (time) {
-        const Usd_ClipRefPtr& clip = sourceClips->GetActiveClip(*time);
-        return clip->GetBracketingTimeSamplesForPath(
+        return sourceClips->GetBracketingTimeSamplesForPath(
             specPath, *time, lower, upper);
     }
 
@@ -7763,8 +7762,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
         const SdfPath specPath =
             info._primPathInLayerStack.AppendProperty(attr.GetName());
 
-        std::vector<double> timesFromAllClips;
-
         // Loop through all the clips that apply to this node and
         // combine all the time samples that are provided.
         for (const auto& clipSet : clipsAffectingPrim) {
@@ -7774,35 +7771,12 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 continue;
             }
 
-            for (const auto& clip : clipSet->valueClips) {
-                const auto clipInterval 
-                    = GfInterval(clip->startTime, clip->endTime);
-                
-                // if we are constraining our range, and none of our range
-                // intersects with the specified clip range, we can ignore
-                // and move on to the next clip.
-                if (!interval.Intersects(clipInterval)) {
-                    continue;
-                }
-                
-                // See comments in _GetValueImpl regarding layer
-                // offsets and why they're not applied here.
-                const auto samples = clip->ListTimeSamplesForPath(specPath);
-                if (!samples.empty()) {
-                    copySamplesInInterval(samples, &timesFromAllClips, interval);
-                }
-            }
-
-            if (!timesFromAllClips.empty()) {
-                std::sort(
-                    timesFromAllClips.begin(), timesFromAllClips.end());
-                timesFromAllClips.erase(
-                    std::unique(
-                        timesFromAllClips.begin(), timesFromAllClips.end()),
-                    timesFromAllClips.end());
-                times->swap(timesFromAllClips);
-                return true;
-            }
+            // See comments in _GetValueImpl regarding layer
+            // offsets and why they're not applied here.
+            const std::set<double> samples =
+                clipSet->ListTimeSamplesForPath(specPath);
+            copySamplesInInterval(samples, times, interval);;
+            return true;
         }
     }
 
@@ -7944,17 +7918,10 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                 continue;
             }
 
-            for (const auto& clip : clipSet->valueClips) {
-                if (desiredTime < clip->startTime
-                    || desiredTime >= clip->endTime) {
-                    continue;
-                }
-                
-                if (clip->GetBracketingTimeSamplesForPath(
-                         specPath, desiredTime, lower, upper)) {
-                    *hasSamples = true;
-                    return true;
-                }
+            if (clipSet->GetBracketingTimeSamplesForPath(
+                    specPath, desiredTime, lower, upper)) {
+                *hasSamples = true;
+                return true;
             }
         }
     }

@@ -370,6 +370,51 @@ Usd_ClipSet::Usd_ClipSet(
     }
 }
 
+bool
+Usd_ClipSet::GetBracketingTimeSamplesForPath(
+    const SdfPath& path, double time,
+    double* lower, double* upper) const
+{
+    const size_t clipIndex = _FindClipIndexForTime(time);
+
+    const Usd_ClipRefPtr& activeClip = valueClips[clipIndex];
+    if (!TF_VERIFY(activeClip->GetBracketingTimeSamplesForPath(
+            path, time, lower, upper))) {
+        return false;
+    }
+
+    // If the given time is after the last time sample in the active
+    // time range of the clip and there is a clip afterwards, use the
+    // start frame of the next clip as the upper bracketing sample,
+    // since each clip introduces a time sample at its start time.
+    //
+    // The diagram below shows an example, where the 'X's show time
+    // samples, the '|' shows the endTime of clip 1 and start time
+    // of clip 2, and 't' is the query time.
+    //         
+    // Clip 1: ------X--t--- | 
+    // Clip 2:               X ------------
+    //
+    const bool activeClipIsLastClip = (clipIndex == valueClips.size() - 1);
+    if (!activeClipIsLastClip && *lower == *upper && time > *upper) {
+        const Usd_ClipRefPtr& nextClip = valueClips[clipIndex + 1];
+        *upper = nextClip->startTime;
+    }
+    return true;
+}
+
+std::set<double>
+Usd_ClipSet::ListTimeSamplesForPath(const SdfPath& path) const
+{
+    std::set<double> samples;
+    for (const Usd_ClipRefPtr& clip : valueClips) {
+        const std::set<Usd_Clip::ExternalTime> clipSamples =
+            clip->ListTimeSamplesForPath(path);
+        samples.insert(clipSamples.begin(), clipSamples.end());
+    }
+    return samples;
+}
+
 size_t
 Usd_ClipSet::_FindClipIndexForTime(double time) const
 {

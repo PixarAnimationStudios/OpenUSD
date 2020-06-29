@@ -72,6 +72,15 @@ public:
         return valueClips[_FindClipIndexForTime(time)];
     }
 
+    /// Return bracketing time samples for the attribute at \p path
+    /// at \p time.
+    bool GetBracketingTimeSamplesForPath(
+        const SdfPath& path, double time,
+        double* lower, double* upper) const;
+
+    /// Return set of time samples for attribute at \p path.
+    std::set<double> ListTimeSamplesForPath(const SdfPath& path) const;
+
     /// Query time sample for the attribute at \p path at \p time.
     /// If no time sample exists in the active clip at \p time,
     /// \p interpolator will be used to try to interpolate the

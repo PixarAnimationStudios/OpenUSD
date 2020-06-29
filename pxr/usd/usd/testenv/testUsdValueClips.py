@@ -1040,6 +1040,32 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.CheckTimeSamples(attr)
 
+    def test_MultipleClipsWithNoTimes(self):
+        """Test sequencing multiple clips together with no times metadata
+        to remap times."""
+        stage = Usd.Stage.Open('multiclip/root.usda')
+
+        attr = stage.GetAttributeAtPath('/ModelWithNoTimes.size')
+
+        # In this test case there is no times metadata specified,
+        # so the stage times map to the clip times directly. 
+        self.CheckValue(attr, time=0.0, expected=-5)
+        self.CheckValue(attr, time=5.0, expected=-5)
+        self.CheckValue(attr, time=7.0, expected=-27)
+        self.CheckValue(attr, time=9.0, expected=-29)
+
+        # At t=6 we are between the last time sample in the active range
+        # of the first clip and the first time sample in the second clip.
+        # We should interpolate between these two sample values.
+        self.CheckValue(attr, time=6.0, expected=-16)
+
+        # The clips should only contribute time samples from their active
+        # range, so we should only get the samples at 5.0 from the first
+        # clip, 9.0 from the second clip, and 0.0 and 7.0 from the active
+        # metadata.
+        self.assertEqual(attr.GetTimeSamples(), [0.0, 5.0, 7.0, 9.0])
+        self.CheckTimeSamples(attr)
+
     def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
         clips specified on an ancestral model"""
