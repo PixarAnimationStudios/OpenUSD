@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/base/arch/hash.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtComputation::HdStExtComputation(SdfPath const &id)

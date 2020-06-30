@@ -36,6 +36,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 
+#include "pxr/base/arch/hash.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"

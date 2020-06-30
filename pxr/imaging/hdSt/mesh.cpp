@@ -43,6 +43,8 @@
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
+#include "pxr/base/arch/hash.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/envSetting.h"

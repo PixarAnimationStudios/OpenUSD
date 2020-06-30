@@ -26,6 +26,8 @@
 #include "pxr/imaging/hdSt/mixinShader.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/arch/hash.h"
+
 #include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE

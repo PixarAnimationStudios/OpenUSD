@@ -41,6 +41,7 @@
 
 #include "pxr/imaging/glf/contextCaps.h"
 
+#include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
