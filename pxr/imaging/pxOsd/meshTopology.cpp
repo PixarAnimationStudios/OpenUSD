@@ -29,6 +29,7 @@
 #include "pxr/imaging/pxOsd/meshTopologyValidation.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
+#include "pxr/base/arch/hash.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/debug.h"
