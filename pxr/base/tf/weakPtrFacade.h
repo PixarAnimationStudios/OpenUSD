@@ -40,7 +40,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TfHash;
 template <class U> class TfRefPtr;
 
 template <template <class> class PtrTemplate, class DataType>
@@ -231,8 +230,6 @@ public:
     
 private:
 
-    friend class TfHash;
-
     friend std::type_info const &TfTypeid(Derived const &p) {
         if (ARCH_UNLIKELY(!p))
             TF_FATAL_ERROR("Called TfTypeid on invalid %s",
@@ -420,6 +417,14 @@ struct TfTypeFunctions<Ptr<const T>,
 
     static void Class_Object_MUST_Be_Passed_By_Address() { }
 };
+
+// TfHash support.
+template <class HashState, template <class> class X, class T>
+inline void
+TfHashAppend(HashState &h, TfWeakPtrFacade<X, T> const &ptr)
+{
+    return h.Append(ptr.GetUniqueIdentifier());
+}
 
 // Extend boost::hash to support TfWeakPtrFacade.
 template <template <class> class X, class T>

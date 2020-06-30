@@ -213,6 +213,19 @@ public:
     _Data _ptrStorage;
 };
 
+// TfHash support.  We don't want to choose the TfAnyWeakPtr overload unless the
+// passed argument is exactly TfAnyWeakPtr.  By making this a function template
+// that's only enabled for TfAnyWeakPtr, C++ will not perform implicit
+// conversions since T is deduced.
+template <class HashState,
+          class T, class = typename std::enable_if<
+                       std::is_same<T, TfAnyWeakPtr>::value>::type>
+inline void
+TfHashAppend(HashState &h, const T& ptr)
+{
+    h.Append(ptr.GetUniqueIdentifier());
+}
+
 template <class Ptr>
 TfAnyWeakPtr::_PointerHolder<Ptr>::~_PointerHolder() {}
 

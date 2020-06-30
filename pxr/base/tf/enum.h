@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -404,6 +405,17 @@ private:
     const std::type_info* _typeInfo;
     int _value;
 };
+
+// TfHash support.  Make the enum parameter be a deduced template type but
+// enable the overload only for TfEnum.  This disables implicit conversion from
+// ordinary enum types to TfEnum.
+template <class HashState, class Enum>
+std::enable_if_t<std::is_same<Enum, TfEnum>::value>
+TfHashAppend(HashState &h, Enum const &e)
+{
+    h.Append(TfHashAsCStr(e.GetType().name()));
+    h.Append(e.GetValueAsInt());
+}
 
 /// Output a TfEnum value.
 /// \ingroup group_tf_DebuggingOutput

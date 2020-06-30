@@ -30,63 +30,202 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/api.h"
-#include "pxr/base/arch/hash.h"
 
+#include <cstring>
 #include <string>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TfAnyWeakPtr;
-class TfEnum;
-class TfToken;
-class TfType;
+// Support integers.
+template <class HashState, class T>
+std::enable_if_t<std::is_integral<T>::value>
+TfHashAppend(HashState &h, T integral)
+{
+    h.Append(integral);
+}
 
-template <class T> class TfWeakPtr;
-template <class T> class TfRefPtr;
-class TfRefBase;
+// Simple metafunction that returns an unsigned integral type given a size in
+// bytes.
+template <size_t Size> struct Tf_SizedUnsignedInt;
+template <> struct Tf_SizedUnsignedInt<1> { using type = uint8_t; };
+template <> struct Tf_SizedUnsignedInt<2> { using type = uint16_t; };
+template <> struct Tf_SizedUnsignedInt<4> { using type = uint32_t; };
+template <> struct Tf_SizedUnsignedInt<8> { using type = uint64_t; };
 
-template <template <class> class X, class T>
-class TfWeakPtrFacade;
+// Support enums.
+template <class HashState, class Enum>
+std::enable_if_t<std::is_enum<Enum>::value>
+TfHashAppend(HashState &h, Enum e)
+{
+    h.Append(static_cast<std::underlying_type_t<Enum>>(e));
+}
 
-/// \class TfHash
-/// \ingroup group_tf_String
+// Support floating point.
+template <class HashState, class T>
+std::enable_if_t<std::is_floating_point<T>::value>
+TfHashAppend(HashState &h, T fp)
+{
+    // We want both positive and negative zero to hash the same, so we have to
+    // check against zero here.
+    typename Tf_SizedUnsignedInt<sizeof(T)>::type intbuf = 0;
+    if (fp != static_cast<T>(0)) {
+        memcpy(&intbuf, &fp, sizeof(T));
+    }
+    h.Append(intbuf);
+}
+
+// Support for hashing std::string.
+template <class HashState>
+inline void
+TfHashAppend(HashState &h, const std::string& s)
+{
+    return h.AppendContiguous(s.c_str(), s.length());
+}
+
+// Support for hashing pointers, but we explicitly delete the version for
+// [const] char pointers.  See more below.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const T* ptr) {
+    return h.Append(reinterpret_cast<size_t>(ptr));
+}
+
+// We refuse to hash [const] char *.  You're almost certainly trying to hash the
+// pointed-to string and this will not do that (it will hash the pointer
+// itself).  To hash a c-style null terminated string, you can use
+// TfHashAsCStr() to indicate the intent, or use TfHashCString.  If you
+// really want to hash the pointer then use static_cast<const void*>(ptr) or
+// TfHashCharPtr.
+template <class HashState>
+inline void TfHashAppend(HashState &h, char const *ptr) = delete;
+template <class HashState>
+inline void TfHashAppend(HashState &h, char *ptr) = delete;
+
+/// A structure that wraps a char pointer, indicating intent that it should be
+/// hashed as a c-style null terminated string.  See TfhashAsCStr().
+struct TfCStrHashWrapper
+{
+    explicit TfCStrHashWrapper(char const *cstr) : cstr(cstr) {}
+    char const *cstr;
+};
+
+/// Indicate that a char pointer is intended to be hashed as a C-style null
+/// terminated string.  Use this to wrap a char pointer in a HashState::Append()
+/// call when implementing a TfHashAppend overload.
 ///
-/// Provides hash function on STL string types and other types.
-///
-/// The \c TfHash class is a functor as defined by the STL standard:
-/// currently, it is defined for:
-///   \li std::string
-///   \li TfRefPtr
-///   \li TfWeakPtr
-///   \li TfEnum
-///   \li const void*
-///   \li size_t
-///
-/// The \c TfHash class can be used to implement a
-/// \c TfHashMap with \c string keys as follows:
-/// \code
-///     TfHashMap<string, int, TfHash> m;
-///     m["abc"] = 1;
-/// \endcode
-///
-/// \c TfHash()(const char*) is disallowed to avoid confusion of whether
-/// the pointer or the string is being hashed.  If you want to hash a
-/// C-string use \c TfHashCString and if you want to hash a \c char* use
-/// \c TfHashCharPtr.
-///
-/// One can also declare, for any types \c S and  \c T,
-/// \code
-///     TfHashMap<TfRefPtr<S>, T, TfHash> m1;
-///     TfHashMap<TfWeakPtr<S>, T, TfHash> m2;
-///     TfHashMap<TfEnum, T, TfHash> m3;
-///     TfHashMap<const void*, T, TfHash> m5;
-///     TfHashMap<size_t, T, TfHash> m6;
-/// \endcode
-///
-class TfHash {
+/// This structure provides a lightweight view on the char pointer passed to its
+/// constructor.  It does not copy the data or participate in its lifetime.  The
+/// passed char pointer must remain valid as long as this struct is used.
+inline TfCStrHashWrapper
+TfHashAsCStr(char const *cstr)
+{
+    return TfCStrHashWrapper(cstr);
+}
+
+template <class HashState>
+inline void TfHashAppend(HashState &h, TfCStrHashWrapper hcstr)
+{
+    return h.AppendContiguous(hcstr.cstr, std::strlen(hcstr.cstr));
+}
+
+// Implementation detail: dispatch based on hash capability: Try TfHashAppend
+// first, otherwise try hash_value.  We'd like to otherwise try std::hash<T>,
+// but std::hash<> is not SFINAE-friendly until c++17 and this code needs to
+// support c++14 currently.  We rely on a combination of expression SFINAE and
+// establishing preferred order by passing a 0 constant and having the overloads
+// take int (highest priority), long (next priority) and '...' (lowest
+// priority).
+
+// std::hash version, attempted last.  Consider adding when we move to
+// C++17 or newer.
+/*
+template <class HashState, class T>
+inline auto Tf_HashImpl(HashState &h, T &&obj, ...)
+    -> decltype(std::hash<typename std::decay<T>::type>()(
+                    std::forward<T>(obj)), void())
+{
+    TfHashAppend(
+        h, std::hash<typename std::decay<T>::type>()(std::forward<T>(obj)));
+}
+*/
+
+// hash_value, attempted second.
+template <class HashState, class T>
+inline auto Tf_HashImpl(HashState &h, T &&obj, long)
+    -> decltype(hash_value(std::forward<T>(obj)), void())
+{
+    TfHashAppend(h, hash_value(std::forward<T>(obj)));
+}
+
+// TfHashAppend, attempted first.
+template <class HashState, class T>
+inline auto Tf_HashImpl(HashState &h, T &&obj, int)
+    -> decltype(TfHashAppend(h, std::forward<T>(obj)), void())
+{
+    TfHashAppend(h, std::forward<T>(obj));
+}
+
+// Implementation detail, accumulates hashes.
+struct Tf_HashState
+{
+    // Go thru Tf_HashImpl for non-integers.
+    template <class T>
+    std::enable_if_t<!std::is_integral<std::decay_t<T>>::value>
+    Append(T &&obj) {
+        Tf_HashImpl(*this, std::forward<T>(obj), 0);
+    }
+
+    // Integers bottom out here.
+    template <class T>
+    std::enable_if_t<std::is_integral<T>::value>
+    Append(T i) {
+        if (!_didOne) {
+            _state = i;
+            _didOne = true;
+        }
+        else {
+            _state = _Combine(_state, i);
+        }
+    }
+
+    // Append contiguous objects.
+    template <class T>
+    std::enable_if_t<std::is_integral<T>::value>
+    AppendContiguous(T const *elems, size_t numElems) {
+        _AppendBytes(reinterpret_cast<char const *>(elems),
+                     numElems * sizeof(T));
+    }
+
+    // Append contiguous objects.
+    template <class T>
+    std::enable_if_t<!std::is_integral<T>::value>
+    AppendContiguous(T const *elems, size_t numElems) {
+        while (numElems--) {
+            Append(*elems++);
+        }
+    }
+
 private:
+    friend class TfHash;
+
+    /// Append a number of bytes to the hash state.
+    TF_API void _AppendBytes(char const *bytes, size_t numBytes);
+
+    // Return the hash code for the accumulated hash state.
+    size_t _GetCode() const {
+        // This is based on Knuth's multiplicative hash for integers.  The
+        // constant is the closest prime to the binary expansion of the golden
+        // ratio - 1.  The best way to produce a hash table bucket index from
+        // the result is to shift the result right, since the higher order bits
+        // have the most entropy.  But since we can't know the number of buckets
+        // in a table that's using this, we just reverse the byte order instead.
+        return _SwapByteOrder(_state * 11400714819323198549ULL);
+    }
+
     // This turns into a single bswap/pshufb type instruction on most compilers.
-    inline uint64_t _SwapByteOrder(uint64_t val) const {
+    inline uint64_t
+    _SwapByteOrder(uint64_t val) const {
         val =
             ((val & 0xFF00000000000000u) >> 56u) |
             ((val & 0x00FF000000000000u) >> 40u) |
@@ -99,73 +238,125 @@ private:
         return val;
     }
 
-    inline size_t _Mix(size_t val) const {
-        // This is based on Knuth's multiplicative hash for integers.  The
-        // constant is the closest prime to the binary expansion of the golden
-        // ratio - 1.  The best way to produce a hash table bucket index from
-        // the result is to shift the result right, since the higher order bits
-        // have the most entropy.  But since we can't know the number of buckets
-        // in a table that's using this, we just reverse the byte order instead.
-        uint64_t h = static_cast<uint64_t>(val) * 11400714819323198549ULL;
-        return static_cast<size_t>(_SwapByteOrder(h));
+    size_t _Combine(size_t x, size_t y) const {
+        x += y;
+        return y + x * (x + 1) / 2;
     }
 
-public:
-    size_t operator()(const std::string& s) const {
-        return ArchHash(s.c_str(), s.length());
-    }
-
-    template <class T>
-    size_t operator()(const TfRefPtr<T>& ptr) const {
-        return (*this)(ptr._refBase);
-    }
-
-    template <template <class> class X, class T>
-    size_t operator()(TfWeakPtrFacade<X, T> const &ptr) const {
-        return (*this)(ptr.GetUniqueIdentifier());
-    }
-
-    // We don't want to choose the TfAnyWeakPtr overload unless the passed
-    // argument is exactly TfAnyWeakPtr.  By making this a function template
-    // that's only enabled for TfAnyWeakPtr, C++ will not perform implicit
-    // conversions (since T is deduced).
-    template <class T, class = typename std::enable_if<
-                           std::is_same<T, TfAnyWeakPtr>::value>::type>
-    size_t operator()(const T& ptr) const {
-        return ptr.GetHash();
-    }
-
-    TF_API size_t operator()(const TfEnum& e) const;
-
-    TF_API size_t operator()(const TfType& t) const;
-
-    // We refuse to hash const char*.  You're almost certainly trying to
-    // hash the pointed-to string and this will not do that (it will hash
-    // the pointer itself).  If you really want to hash the pointer then
-    // use static_cast<const void*>(ptr) or TfHashCharPtr and use
-    // TfHashCString if you want to hash the string.
-    template <class T>
-    size_t operator()(const T* ptr) const {
-        static_assert(!std::is_same<T, char>::value,
-                      "Can not hash const char*.");
-        return _Mix((size_t) ptr);
-    }
-
-    size_t operator()(size_t i) const {
-        return _Mix(i);
-    }
-
-    // Provide an overload for TfToken to prevent hashing via TfToken's implicit
-    // conversion to std::string.
-    TF_API size_t operator()(const TfToken& t) const;
+    size_t _state = 0;
+    bool _didOne = false;
 };
 
+/// \class TfHash
+/// \ingroup group_tf_String
+///
+/// A user-extensible hashing mechanism for use with runtime hash tables.
+///
+/// The hash functions here are appropriate for storing objects in runtime hash
+/// tables.  They are not appropriate for document signatures / fingerprinting
+/// or for storage and offline use.  No specific guarantee is made about hash
+/// function quality, and the resulting hash codes are only 64-bits wide.
+/// Callers must assume that collisions will occur and be prepared to deal with
+/// them.
+///
+/// Additionally, no guarantee is made about repeatability from run-to-run.
+/// That is, within a process lifetime an object's hash code will not change
+/// (provided its internal state does not change).  But an object with
+/// equivalent state in a future run of the same process may hash differently.
+///
+/// At the time of this writing we observe good performance combined with the
+/// "avalanche" quality (~50% output bit flip probability for a single input bit
+/// flip) in the low-order 40 output bits.  Higher order bits do not achieve
+/// avalanche, and the highest order 8 bits are particularly poor.  But for our
+/// purposes we deem this performance/quality tradeoff acceptable.
+///
+/// This mechanism has builtin support for integral and floating point types,
+/// some STL types and types in Tf.  TfHash uses three methods to attempt to
+/// hash a passed object.  First, TfHash tries to call TfHashAppend() on its
+/// argument.  This is the primary customization point for TfHash.  If that is
+/// not viable, TfHash makes an unqualified call to hash_value().  We would like
+/// TfHash to try to use std::hash<T> next, but std::hash<T> is not
+/// SFINAE-friendly until c++17, and this code needs to support c++14.
+///
+/// The best way to add TfHash support for user-defined types is to provide a
+/// function overload like the following.
+///
+/// \code
+/// template <class HashState>
+/// void TfHashAppend(HashState &h, MyType const &myObj)
+///     h.Append(myObject._member1);
+///     h.Append(myObject._member2);
+///     h.Append(myObject._member3);
+///     h.AppendContiguous(myObject._memberArray, myObject._numArrayElems);
+/// }
+/// \endcode
+///
+/// The HashState object is left deliberately unspecified, so that different
+/// hash state objects may be used in different circumstances without modifying
+/// this support code, and without excess abstraction penalty.  The methods
+/// available for use in TfHashAppend overloads are:
+///
+/// \code
+/// // Append one object to the hash state.  This invokes the TfHash mechanism
+/// // so it works for any type that is supported by TfHash.
+/// template <class T>
+/// void HashState::Append(T &&obj);
+///
+/// // Append contiguous objects to the hash state.  Note that this is
+/// // explicitly *not* guaranteed to produce the same result as calling
+/// // Append() with each object in order.
+/// template <class T>
+/// void HashState::AppendContiguous(T const *objects, size_t numObjects);
+/// \endcode
+///
+/// The \c TfHash class function object supports:
+///   \li integral types (including bool)
+///   \li floating point types
+///   \li std::string
+///   \li TfRefPtr
+///   \li TfWeakPtr
+///   \li TfEnum
+///   \li const void*
+///   \li types that provide overloads for TfHashAppend
+///   \li types that provide overloads for hash_value
+///
+/// The \c TfHash class can be used to instantiate a \c TfHashMap with \c string
+/// keys as follows:
+/// \code
+///     TfHashMap<string, int, TfHash> m;
+///     m["abc"] = 1;
+/// \endcode
+///
+/// \c TfHash()(const char*) is disallowed to avoid confusion of whether
+/// the pointer or the string is being hashed.  If you want to hash a
+/// C-string use \c TfHashCString and if you want to hash a \c char* use
+/// \c TfHashCharPtr.
+///
+class TfHash {
+public:
+    /// Produce a hash code for \p obj.  See the class documentation for
+    /// details.
+    template <class T>
+    auto operator()(T &&obj) const ->
+        decltype(Tf_HashImpl(std::declval<Tf_HashState &>(),
+                             std::forward<T>(obj), 0), size_t()) {
+        Tf_HashState h;
+        Tf_HashImpl(h, std::forward<T>(obj), 0);
+        return h._GetCode();
+    }
+};
+
+/// A hash function object that hashes the address of a char pointer.
 struct TfHashCharPtr {
     size_t operator()(const char* ptr) const;
 };
+
+/// A hash function object that hashes null-terminated c-string content.
 struct TfHashCString {
     size_t operator()(const char* ptr) const;
 };
+
+/// A function object that compares two c-strings for equality.
 struct TfEqualCString {
     bool operator()(const char* lhs, const char* rhs) const;
 };
