@@ -74,17 +74,20 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (lightTypeDirectional)      \
     (lightTypeSpot)             \
                                 \
+    (aovInputTask)              \
+    (drawTargetTask)            \
+    (drawTargetResolveTask)     \
+    (colorizeSelectionTask)     \
     (oitRenderTask)             \
     (oitResolveTask)            \
+    (oitVolumeRenderTask)       \
+    (pickTask)                  \
+    (pickFromRenderBufferTask)  \
+    (presentTask)               \
     (renderTask)                \
     (renderSetupTask)           \
     (simpleLightTask)           \
-    (shadowTask)                \
-    (drawTargetTask)            \
-    (drawTargetResolveTask)     \
-    (pickTask)                  \
-    (pickFromRenderBufferTask)  \
-    (colorizeSelectionTask)
+    (shadowTask)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
 
