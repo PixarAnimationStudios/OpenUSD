@@ -39,10 +39,10 @@ from .common import ClearColors, HighlightColors
 
 # Map of clear color names to rgba color tuples.
 _CLEAR_COLORS_DICT = {
-    ClearColors.BLACK:       (0.0, 0.0, 0.0, 0.0),
-    ClearColors.DARK_GREY:   (0.3, 0.3, 0.3, 0.0),
-    ClearColors.LIGHT_GREY:  (0.7, 0.7, 0.7, 0.0),
-    ClearColors.WHITE:       (1.0, 1.0, 1.0, 0.0)}
+    ClearColors.BLACK:       (0.0, 0.0, 0.0, 1.0),
+    ClearColors.DARK_GREY:   (0.3, 0.3, 0.3, 1.0),
+    ClearColors.LIGHT_GREY:  (0.7, 0.7, 0.7, 1.0),
+    ClearColors.WHITE:       (1.0, 1.0, 1.0, 1.0)}
 
 
 # Map of highlight color names to rgba color tuples.
