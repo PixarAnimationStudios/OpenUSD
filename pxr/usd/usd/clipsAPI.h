@@ -393,15 +393,26 @@ public:
     /// value clips for clip set \p clipSet. This returns an anonymous layer
     /// that can be exported and reused (\see SetClipManifestAssetPath).
     ///
+    /// If \p writeBlocksForClipsWithMissingValues is \c true, the generated
+    /// manifest will have value blocks authored for each attribute at the
+    /// activation times of clips that do not contain time samples for that 
+    /// attribute. This accelerates searches done when the interpolation of
+    /// missing clip values is enabled. See GetInterpolateMissingClipValues
+    /// and \ref Usd_ValueClips_ClipValueResolution_InterpolatingGaps for more
+    /// details.
+    ///
     /// Returns an invalid SdfLayerRefPtr on failure.
     USD_API
-    SdfLayerRefPtr GenerateClipManifest(const std::string& clipSet) const;
+    SdfLayerRefPtr GenerateClipManifest(
+        const std::string& clipSet,
+        bool writeBlocksForClipsWithMissingValues = false) const;
 
     /// \overload
     /// This function operates on the default clip set. 
     /// \sa \ref UsdClipsAPISetNames
     USD_API
-    SdfLayerRefPtr GenerateClipManifest() const;
+    SdfLayerRefPtr GenerateClipManifest(
+        bool writeBlocksForClipsWithMissingValues = false) const;
 
     /// Create a clip manifest containing entries for all attributes in the
     /// given \p clipLayers that belong to the prim at \p clipPrimPath and

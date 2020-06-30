@@ -1810,6 +1810,39 @@ class TestUsdValueClips(unittest.TestCase):
         _ValidateManifest(clipsAPI.GenerateClipManifest())
         _ValidateManifest(clipsAPI.GenerateClipManifest('default'))
 
+    def test_ClipManifestGenerationWithMissingValues(self):
+        """Tests generating a manifest using UsdClipsAPI and
+        writeBlocksForClipsWithMissingValues=True"""
+        def _ValidateManifest(manifest):
+            def _CheckAttribute(path, expectedTimeSamples):
+                self.assertEqual(
+                    manifest.ListTimeSamplesForPath(path), expectedTimeSamples)
+
+                for time in expectedTimeSamples:
+                    self.assertEqual(
+                        manifest.QueryTimeSample(path, time), Sdf.ValueBlock())
+
+            # These attributes don't exist in clip 2, which is active at time
+            # 2.0 so we expect to see value blocks authored at that time.
+            _CheckAttribute('/Clip/A.a', [2.0])
+            _CheckAttribute('/Clip/A.b', [2.0])
+            _CheckAttribute('/Clip/A{v=a}.c', [2.0])
+
+            # This attribute doesn't exist in clip 1, which is active at times
+            # 0.0 and 4.0, so we expect to see value blocks authored at those
+            # times.
+            _CheckAttribute('/Clip/A.z', [0.0, 4.0])
+
+        stage = Usd.Stage.Open('manifestGeneration/missingValues/root.usda')
+        prim = stage.GetPrimAtPath('/Model')
+
+        clipsAPI = Usd.ClipsAPI(prim)
+
+        _ValidateManifest(clipsAPI.GenerateClipManifest(
+            writeBlocksForClipsWithMissingValues=True))
+        _ValidateManifest(clipsAPI.GenerateClipManifest(
+            'default', writeBlocksForClipsWithMissingValues=True))
+
     def test_ClipManifestAutoGeneration(self):
         """Verifies behavior with automatic generation of clip manifest
         when no manifest is explicitly specified."""
@@ -1924,6 +1957,40 @@ class TestUsdValueClips(unittest.TestCase):
         clipsAPI = Usd.ClipsAPI(prim)
         _ValidateManifest(clipsAPI.GenerateClipManifest())
         _ValidateManifest(clipsAPI.GenerateClipManifest('default'))
+
+    def test_ClipTemplateManifestGenerationWithMissingValues(self):
+        """Tests generating a manifest using UsdClipsAPI with template-based
+        value clips and writeBlocksForClipsWithMissingValues=True"""
+        def _ValidateManifest(manifest):
+            def _CheckAttribute(path, expectedTimeSamples):
+                self.assertEqual(
+                    manifest.ListTimeSamplesForPath(path), expectedTimeSamples)
+
+                for time in expectedTimeSamples:
+                    self.assertEqual(
+                        manifest.QueryTimeSample(path, time), Sdf.ValueBlock())
+
+            # This attribute exists in all clips, so we expect no blocks to be
+            # authored in the manifest.
+            _CheckAttribute('/points.extent', [])
+
+            # This attribute does not exist in clips 1 and 3 which are active
+            # at times 1 and 3, so we expect blocks at those times.
+            _CheckAttribute('/points.a', [1.0, 3.0])
+
+            # This attribute does not exist in clips 1 and 2 which are active
+            # at times 1 and 2, so we expect blocks at those times.
+            _CheckAttribute('/points.b', [1.0, 2.0])
+
+        stage = Usd.Stage.Open(
+            'template/manifestGeneration/missingValues/root.usda')
+        prim = stage.GetPrimAtPath('/World/points')
+
+        clipsAPI = Usd.ClipsAPI(prim)
+        _ValidateManifest(clipsAPI.GenerateClipManifest(
+            writeBlocksForClipsWithMissingValues=True))
+        _ValidateManifest(clipsAPI.GenerateClipManifest(
+            'default', writeBlocksForClipsWithMissingValues=True))
 
     def test_ClipTemplateManifestAutoGeneration(self):
         """Verifies automatic generation of clip manifest for template-based

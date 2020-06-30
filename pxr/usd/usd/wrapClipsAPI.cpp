@@ -389,13 +389,15 @@ WRAP_CUSTOM {
              (arg("manifestAssetPath"), arg("clipSet")))
 
         .def("GenerateClipManifest", 
-             (SdfLayerRefPtr(UsdClipsAPI::*)() const)
+             (SdfLayerRefPtr(UsdClipsAPI::*)(bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
+             arg("writeBlocksForClipsWithMissingValues") = false,
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("GenerateClipManifest", 
-             (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&) const)
+             (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&, bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
-             arg("clipSet"),
+             (arg("clipSet"),
+              arg("writeBlocksForClipsWithMissingValues") = false),
              return_value_policy<TfPyRefPtrFactory<> >())
 
         .def("GenerateClipManifestFromLayers", 

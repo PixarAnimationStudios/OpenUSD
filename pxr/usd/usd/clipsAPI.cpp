@@ -363,7 +363,9 @@ UsdClipsAPI::GetClipManifestAssetPath(SdfAssetPath* assetPath,
 }
 
 SdfLayerRefPtr
-UsdClipsAPI::GenerateClipManifest(const std::string& clipSetName) const
+UsdClipsAPI::GenerateClipManifest(
+    const std::string& clipSetName,
+    bool writeBlocksForClipsWithMissingValues) const
 {
     if (GetPath() == SdfPath::AbsoluteRootPath()) {
         // Special-case to pre-empt coding errors.
@@ -386,13 +388,18 @@ UsdClipsAPI::GenerateClipManifest(const std::string& clipSetName) const
         return SdfLayerRefPtr();
     }
 
-    return Usd_GenerateClipManifest(clipSet->valueClips, clipSet->clipPrimPath);
+    return Usd_GenerateClipManifest(
+        clipSet->valueClips, clipSet->clipPrimPath,
+        /* tag = */ std::string(),
+        writeBlocksForClipsWithMissingValues);
 }
 
 SdfLayerRefPtr
-UsdClipsAPI::GenerateClipManifest() const
+UsdClipsAPI::GenerateClipManifest(
+    bool writeBlocksForClipsWithMissingValues) const
 {
-    return GenerateClipManifest(UsdClipsAPISetNames->default_.GetString());
+    return GenerateClipManifest(
+        UsdClipsAPISetNames->default_, writeBlocksForClipsWithMissingValues);
 }
 
 SdfLayerRefPtr

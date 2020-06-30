@@ -153,20 +153,33 @@ Usd_QueryTimeSample(
 
 /// Generate a manifest layer for the given \p clips containing all
 /// attributes under the given \p clipPrimPath. Note that this will
-/// open the layers for all of these clips. The layer will contain
-/// the given tag in its identifier.
+/// open the layers for all of these clips.
+///
+/// If \p writeBlocksForClipsWithMissingValues is \c true, the generated
+/// manifest will have value blocks authored for each attribute at the
+/// activation times of clips that do not contain time samples for that 
+/// attribute.
+///
+/// The layer will contain the given \p tag in its identifier. 
 SdfLayerRefPtr
 Usd_GenerateClipManifest(
     const Usd_ClipRefPtrVector& clips, const SdfPath& clipPrimPath,
-    const std::string& tag = std::string());
+    const std::string& tag = std::string(),
+    bool writeBlocksForClipsWithMissingValues = false);
 
 /// Generate a manifest layer for the given \p clipLayers containing
 /// all attributes under the given \p clipPrimPath. The layer will contain
 /// the given tag in its identifier.
+///
+/// If \p clipActive is not nullptr, it must be a list of activation times
+/// for the corresponding layer in \p clipLayers. This will be used to
+/// author value blocks for each attribute at the activation times of clips 
+/// that do not contain time samples for that attribute.
 SdfLayerRefPtr
 Usd_GenerateClipManifest(
     const SdfLayerHandleVector& clipLayers, const SdfPath& clipPrimPath,
-    const std::string& tag = std::string());
+    const std::string& tag = std::string(),
+    const std::vector<double>* clipActive = nullptr);
 
 /// Return true if the given layer is a manifest that has been automatically
 /// generated because the user has not supplied one. These layers are anonymous
