@@ -201,28 +201,6 @@ public:
     UsdAttribute CreateDataTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // ELEMENTCOUNT 
-    // --------------------------------------------------------------------- //
-    /// the animated attribute element count.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `int elementCount = 1` |
-    /// | C++ Type | int |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
-    USDANIMX_API
-    UsdAttribute GetElementCountAttr() const;
-
-    /// See GetElementCountAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDANIMX_API
-    UsdAttribute CreateElementCountAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

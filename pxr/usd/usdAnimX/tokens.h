@@ -98,10 +98,6 @@ struct UsdAnimXTokensType {
     /// 
     /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr()
     const TfToken double_;
-    /// \brief "elementCount"
-    /// 
-    /// UsdAnimXFCurveOp
-    const TfToken elementCount;
     /// \brief "float"
     /// 
     /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr(), Default value for UsdAnimXFCurveOp::GetDataTypeAttr()

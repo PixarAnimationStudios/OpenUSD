@@ -62,13 +62,6 @@ _CreateDataTypeAttr(UsdAnimXFCurveOp &self,
     return self.CreateDataTypeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
-        
-static UsdAttribute
-_CreateElementCountAttr(UsdAnimXFCurveOp &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateElementCountAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
-}
 
 static std::string
 _Repr(const UsdAnimXFCurveOp &self)
@@ -123,13 +116,6 @@ void wrapUsdAnimXFCurveOp()
              &This::GetDataTypeAttr)
         .def("CreateDataTypeAttr",
              &_CreateDataTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetElementCountAttr",
-             &This::GetElementCountAttr)
-        .def("CreateElementCountAttr",
-             &_CreateElementCountAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

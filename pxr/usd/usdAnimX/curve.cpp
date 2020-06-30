@@ -24,7 +24,6 @@ bool  UsdAnimXCurve::keyframe(double time, adsk::Keyframe &key) const
         else
             return last(key);
     }
-    std::cout << "KEY FRAME AT INDEX " << index << std::endl;
     return keyframeAtIndex(index, key);
 }
 
@@ -158,20 +157,15 @@ bool UsdAnimXCurve::isRotation() const
 
 size_t UsdAnimXCurve::findClosest(double time) const
 {
-  std::cout << "FIND CLOSEST KEYFRAME " << time << std::endl;
-  std::cout << "NUM KEYFRAMES : " << _keyframes.size() << std::endl;
   for(const auto& key: _keyframes) {
-    std::cout << "KEY TIME : " << key.time << std::endl;
-    if(time<=key.time) {
-      return key.index;
-    }
+    if(time<=key.time) return key.index;
   }
 }
 
 void UsdAnimXCurve::addKeyframe(const adsk::Keyframe& key)
 {
-  //_keyframes.push_back(key);
-  addKeyframe(key.time, key.value);
+  _keyframes.push_back(key);
+  //addKeyframe(key.time, key.value);
 }
 
 void UsdAnimXCurve::addKeyframe(double time, double value)
@@ -188,7 +182,6 @@ void UsdAnimXCurve::addKeyframe(double time, double value)
   key.tanOut = tanOut;                    //!< Out-tangent
   key.quaternionW = 1.0;                  //!< W component of a quaternion if rotation curve
   key.linearInterpolation = false;        //!< Should curve be linearly interpolated? True if tangents of this key and the neighboring one are both linear.
-  
 
   _keyframes.push_back(key);
 }
