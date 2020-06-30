@@ -1066,6 +1066,9 @@ _MakeMaterialParamsForFieldReader(
             // Stashing name of field in _samplerCoords.
             param.samplerCoords.push_back(
                 fieldName.UncheckedGet<TfToken>());
+        } else if (fieldName.IsHolding<std::string>()) {
+            param.samplerCoords.push_back(
+                TfToken(fieldName.UncheckedGet<std::string>()));
         }
     }
 
