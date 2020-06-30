@@ -131,12 +131,19 @@ HdxDrawTargetRenderPass::Sync()
 void
 HdxDrawTargetRenderPass::Prepare()
 {
-    if (_drawTarget &&
-        !TF_VERIFY(_drawTargetContext == GlfGLContext::GetCurrentGLContext())) {
+    if (!_drawTarget) {
         return;
     }
-    
-    SetDrawTarget(_drawTarget);
+
+    // Check that draw target was created on current context.
+    if (_drawTargetContext != GlfGLContext::GetCurrentGLContext()) {
+
+        // If not, create yet another draw target so that it is valid
+        // on the current context.
+
+        TF_CODING_ERROR("Given draw target was for different GL context");
+        SetDrawTarget(_drawTarget);
+    }
 }
 
 void
