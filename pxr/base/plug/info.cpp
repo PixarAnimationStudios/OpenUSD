@@ -736,7 +736,8 @@ Plug_ReadPlugInfo(
         // still require an explicit '/' to be handled as directories, as do 
         // Includes in plugInfo files.
         const bool hasslash = *pathname.rbegin() == '/';
-        if (hasslash || TfIsDir(pathname)) {
+        const bool resolveSymlinks = true;
+        if (hasslash || TfIsDir(pathname, resolveSymlinks)) {
             context.taskArena.Run([&context, pathname, hasslash] {
                 _ReadPlugInfoWithWildcards(&context,
                     hasslash ? pathname : pathname + "/");
