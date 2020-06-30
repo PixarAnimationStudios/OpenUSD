@@ -78,14 +78,6 @@ private:
     // accessible by the Hgi friend class that created the handle. 
     friend class Hgi;
 
-    // Destroy the object inside the handle
-    HGI_API
-    void _Destroy() {
-        delete _ptr;
-        _ptr = nullptr;
-        _id = 0;
-    }
-
     T* _ptr;
     uint64_t _id;
 };

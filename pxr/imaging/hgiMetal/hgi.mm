@@ -154,7 +154,7 @@ HgiMetal::CreateTexture(HgiTextureDesc const & desc)
 void
 HgiMetal::DestroyTexture(HgiTextureHandle* texHandle)
 {
-    DestroyObject(texHandle);
+    _TrashObject(texHandle);
 }
 
 HgiSamplerHandle
@@ -166,7 +166,7 @@ HgiMetal::CreateSampler(HgiSamplerDesc const & desc)
 void
 HgiMetal::DestroySampler(HgiSamplerHandle* smpHandle)
 {
-    DestroyObject(smpHandle);
+    _TrashObject(smpHandle);
 }
 
 HgiBufferHandle
@@ -178,7 +178,7 @@ HgiMetal::CreateBuffer(HgiBufferDesc const & desc)
 void
 HgiMetal::DestroyBuffer(HgiBufferHandle* bufHandle)
 {
-    DestroyObject(bufHandle);
+    _TrashObject(bufHandle);
 }
 
 HgiShaderFunctionHandle
@@ -191,7 +191,7 @@ HgiMetal::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 void
 HgiMetal::DestroyShaderFunction(HgiShaderFunctionHandle* shaderFunctionHandle)
 {
-    DestroyObject(shaderFunctionHandle);
+    _TrashObject(shaderFunctionHandle);
 }
 
 HgiShaderProgramHandle
@@ -204,7 +204,7 @@ HgiMetal::CreateShaderProgram(HgiShaderProgramDesc const& desc)
 void
 HgiMetal::DestroyShaderProgram(HgiShaderProgramHandle* shaderProgramHandle)
 {
-    DestroyObject(shaderProgramHandle);
+    _TrashObject(shaderProgramHandle);
 }
 
 
@@ -218,7 +218,7 @@ HgiMetal::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 void
 HgiMetal::DestroyResourceBindings(HgiResourceBindingsHandle* resHandle)
 {
-    DestroyObject(resHandle);
+    _TrashObject(resHandle);
 }
 
 HgiGraphicsPipelineHandle
@@ -231,7 +231,7 @@ HgiMetal::CreateGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
 void
 HgiMetal::DestroyGraphicsPipeline(HgiGraphicsPipelineHandle* pipeHandle)
 {
-    DestroyObject(pipeHandle);
+    _TrashObject(pipeHandle);
 }
 
 HgiComputePipelineHandle
@@ -244,7 +244,7 @@ HgiMetal::CreateComputePipeline(HgiComputePipelineDesc const& desc)
 void
 HgiMetal::DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)
 {
-    DestroyObject(pipeHandle);
+    _TrashObject(pipeHandle);
 }
 
 TfToken const&

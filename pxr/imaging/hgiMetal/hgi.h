@@ -179,6 +179,14 @@ private:
     HgiMetal & operator=(const HgiMetal&) = delete;
     HgiMetal(const HgiMetal&) = delete;
 
+    // Invalidates the resource handle and destroys the object.
+    // Metal's internal garbage collection will handle the rest.
+    template<class T>
+    void _TrashObject(HgiHandle<T>* handle) {
+        delete handle->Get();
+        *handle = HgiHandle<T>();
+    }
+
     id<MTLDevice> _device;
     id<MTLCommandQueue> _commandQueue;
     id<MTLCommandBuffer> _commandBuffer;

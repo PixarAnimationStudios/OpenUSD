@@ -280,13 +280,6 @@ protected:
     HGI_API
     uint64_t GetUniqueId();
 
-    // Destroys the underlying object that is represented by the handle.
-    // Thread safety: Destruction must happen on main thread. See notes above.
-    template<class T>
-    void DestroyObject(HgiHandle<T>* handle) {
-        handle->_Destroy();
-    }
-
     // Calls Submit on provided Cmds.
     // Derived classes can override this function if they need customize the
     // command submission. The default implementation calls cmds->_Submit().
