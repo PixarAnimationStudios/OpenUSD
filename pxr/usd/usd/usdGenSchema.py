@@ -540,10 +540,10 @@ class ClassInfo(object):
 def _ValidateFields(spec):
     # The schema registry will ignore these fields if they are discovered 
     # in a generatedSchema.usda file, but we want to allow them in schema.usda.
-    whitelist = ["inheritPaths", "customData", "specifier"]
+    includeList = ["inheritPaths", "customData", "specifier"]
 
     invalidFields = [key for key in spec.ListInfoKeys()
-        if Usd.SchemaRegistry.IsDisallowedField(key) and key not in whitelist]
+        if Usd.SchemaRegistry.IsDisallowedField(key) and key not in includeList]
     if not invalidFields:
         return True
 

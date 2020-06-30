@@ -150,7 +150,7 @@ static object
 __getattribute__(object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', if the
     // object's prim is valid, or if the attribute is one of a specific
-    // whitelist.
+    // inclusion list.
     if ((name[0] == '_' && name[1] == '_') ||
         extract<UsdObject &>(selfObj)().GetPrim().IsValid() ||
         strcmp(name, "IsValid") == 0 ||

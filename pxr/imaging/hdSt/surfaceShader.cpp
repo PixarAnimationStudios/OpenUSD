@@ -482,13 +482,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 static TfTokenVector const &
-_GetExtraWhitelistedShaderPrimvarNames()
+_GetExtraIncludedShaderPrimvarNames()
 {
     static const TfTokenVector primvarNames = {
         HdTokens->displayColor,
         HdTokens->displayOpacity,
 
-        // Whitelist a few ad hoc primvar names that
+        // Include a few ad hoc primvar names that
         // are used by the built-in material shading system.
 
         _tokens->ptexFaceOffset,
@@ -516,7 +516,7 @@ _GetExtraWhitelistedShaderPrimvarNames()
 static TfTokenVector
 _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 {
-    TfTokenVector primvarNames = _GetExtraWhitelistedShaderPrimvarNames();
+    TfTokenVector primvarNames = _GetExtraIncludedShaderPrimvarNames();
 
     for (HdSt_MaterialParam const &param: params) {
         if (param.IsFallback()) {

@@ -1767,7 +1767,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
         ignoredKeys.insert(SdfFieldKeys->TimeSamples);
     });
 
-    // First look-up the field in the black-list table.
+    // First look-up the field in the exclude/ignore table.
     if (ignoredKeys.find(fieldKey) != ignoredKeys.end())
         return true;
 

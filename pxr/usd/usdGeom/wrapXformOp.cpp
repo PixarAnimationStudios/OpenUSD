@@ -110,7 +110,7 @@ static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 static object
 __getattribute__(object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or
-    // if the object's prim and attribute are both valid, or whitelist a few
+    // if the object's prim and attribute are both valid, or allow a few
     // methods if just the prim is valid, or an even smaller subset if neighter
     // is valid.
     if ((name[0] == '_' && name[1] == '_') ||
