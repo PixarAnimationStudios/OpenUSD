@@ -362,9 +362,8 @@ public:
     /// The clip manifest indicates which attributes have time samples 
     /// authored in the clips specified on this prim. During value resolution, 
     /// clips will only be examined if the attribute exists and is declared 
-    /// as varying in the manifest. Note that the clip manifest is only 
-    /// consulted to check if an attribute exists and what its variability is. 
-    /// Other values and metadata authored in the manifest will be ignored.
+    /// as varying in the manifest. See \ref Usd_ValueClips_ClipManifest for
+    /// more details.
     ///
     /// For instance, if this prim's path is </Prim_1>, the clip prim path is
     /// </Prim>, and we want values for the attribute </Prim_1.size>, we will
