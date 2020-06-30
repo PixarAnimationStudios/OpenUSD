@@ -136,23 +136,6 @@ UsdAnimXFCurveOp::CreateDataTypeAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-UsdAttribute
-UsdAnimXFCurveOp::GetElementCountAttr() const
-{
-    return GetPrim().GetAttribute(UsdAnimXTokens->elementCount);
-}
-
-UsdAttribute
-UsdAnimXFCurveOp::CreateElementCountAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdAnimXTokens->elementCount,
-                       SdfValueTypeNames->Int,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -172,7 +155,6 @@ UsdAnimXFCurveOp::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdAnimXTokens->attributeName,
         UsdAnimXTokens->dataType,
-        UsdAnimXTokens->elementCount,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

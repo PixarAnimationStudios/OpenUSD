@@ -125,7 +125,8 @@ BOOST_PP_SEQ_FOR_EACH(_USD_ANIMX_DECLARE_INTERPOLATION_TRAITS, ~,
 /// \endcond
 
 // interpolate prototype
-typedef bool(*InterpolateFunc)(const UsdAnimXCurve* curves, VtValue* value, double time);
+typedef bool(*InterpolateFunc)(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time);
 
 template<typename T>
 static 
@@ -140,8 +141,8 @@ static
 inline void
 _Interpolate2(const UsdAnimXCurve* curves, T* value, double time)
 {
-    *value[0] = curves[0].evaluate(time);
-    *value[1] = curves[1].evaluate(time);
+    (*value)[0] = curves[0].evaluate(time);
+    (*value)[1] = curves[1].evaluate(time);
 }
 
 template<typename T>
@@ -149,9 +150,9 @@ static
 inline void
 _Interpolate3(const UsdAnimXCurve* curves, T* value, double time)
 {
-    *value[0] = curves[0].evaluate(time);
-    *value[1] = curves[1].evaluate(time);
-    *value[2] = curves[2].evaluate(time);
+    (*value)[0] = curves[0].evaluate(time);
+    (*value)[1] = curves[1].evaluate(time);
+    (*value)[2] = curves[2].evaluate(time);
 }
 
 template<typename T>
@@ -159,10 +160,10 @@ static
 inline void
 _Interpolate4(const UsdAnimXCurve* curves, T* value, double time)
 {
-    *value[0] = curves[0].evaluate(time);
-    *value[1] = curves[1].evaluate(time);
-    *value[2] = curves[2].evaluate(time);
-    *value[3] = curves[3].evaluate(time);
+    (*value)[0] = curves[0].evaluate(time);
+    (*value)[1] = curves[1].evaluate(time);
+    (*value)[2] = curves[2].evaluate(time);
+    (*value)[3] = curves[3].evaluate(time);
 }
 
 template<typename T>
@@ -170,12 +171,13 @@ static
 inline void
 _InterpolateQuat(const UsdAnimXCurve* curves, T* value, double time)
 {
-  /*
+    /*
     adsk::Quaternion q = adsk::evaluateQuaternionCurve(
         time,
         curves[0], curves[1], curves[2],
         interpolationMethod);
-        */
+    *value = (T)(*(GfQuatD*)&q);
+    */
 }
 
 static

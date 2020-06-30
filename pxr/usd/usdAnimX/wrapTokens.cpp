@@ -73,7 +73,6 @@ void wrapUsdAnimXTokens()
     _AddToken(cls, "cycleRelative", UsdAnimXTokens->cycleRelative);
     _AddToken(cls, "dataType", UsdAnimXTokens->dataType);
     _AddToken(cls, "double_", UsdAnimXTokens->double_);
-    _AddToken(cls, "elementCount", UsdAnimXTokens->elementCount);
     _AddToken(cls, "float_", UsdAnimXTokens->float_);
     _AddToken(cls, "int_", UsdAnimXTokens->int_);
     _AddToken(cls, "keyframes", UsdAnimXTokens->keyframes);

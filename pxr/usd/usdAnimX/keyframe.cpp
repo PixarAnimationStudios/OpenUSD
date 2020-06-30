@@ -22,16 +22,16 @@ operator<<(std::ostream& out, const adsk::Keyframe& k)
 void 
 GetKeyframeDescription(adsk::Keyframe const& k, UsdAnimXKeyframeDesc* d)
 {
-  d->time = k.time;
-  d->data.resize(8);
-  d->data[0] = k.value;
-  d->data[1] = (double)k.tanIn.type;
-  d->data[2] = k.tanIn.x;
-  d->data[3] = k.tanIn.y;
-  d->data[4] = (double)k.tanOut.type;
-  d->data[5] = k.tanOut.x;
-  d->data[6] = k.tanOut.y;
-  d->data[7] = k.quaternionW;
+    d->time = k.time;
+    d->data.resize(8);
+    d->data[0] = k.value;
+    d->data[1] = (double)k.tanIn.type;
+    d->data[2] = k.tanIn.x;
+    d->data[3] = k.tanIn.y;
+    d->data[4] = (double)k.tanOut.type;
+    d->data[5] = k.tanOut.x;
+    d->data[6] = k.tanOut.y;
+    d->data[7] = k.quaternionW;
 }
 
 void 
@@ -60,29 +60,18 @@ GetKeyframeDescription(VtValue const& k, UsdAnimXKeyframeDesc* d)
 adsk::Keyframe 
 GetKeyframeFromVtValue(double time, VtValue const& value, size_t index)
 {
-  std::cout << "### GET KEYFRAME FROM VTVALUE !!!" << std::endl;
-  VtArray<double> a = value.UncheckedGet<VtArray<double>>();
-  adsk::Keyframe keyframe;
-  keyframe.time = time;
-  keyframe.value = a[0];
-  keyframe.index = index;
-  adsk::Tangent tanIn;
-  tanIn.type = (adsk::TangentType)(int)a[1];
-  tanIn.x = (adsk::seconds)a[2];
-  tanIn.y = (adsk::seconds)a[3];
-  keyframe.tanIn = tanIn;
-  adsk::Tangent tanOut;
-  tanOut.type = (adsk::TangentType)(int)a[4];
-  tanOut.x = (adsk::seconds)a[5];
-  tanOut.y = (adsk::seconds)a[6];
-  keyframe.tanOut = tanOut;
-  keyframe.quaternionW = a[7];
-  keyframe.linearInterpolation = false;
-  std::cout << keyframe << std::endl;
-   std::cout << keyframe.time << ": "<< keyframe.value  << std::endl;
-  return keyframe;
-
- 
+    VtArray<double> a = value.UncheckedGet<VtArray<double>>();
+    adsk::Keyframe keyframe;
+    keyframe.time = time;
+    keyframe.index = index;
+    keyframe.value = a[0];
+    keyframe.tanIn = 
+        {(adsk::TangentType)(int)a[1], (adsk::seconds)a[2], (adsk::seconds)a[3]};
+    keyframe.tanOut =
+        {(adsk::TangentType)(int)a[4], (adsk::seconds)a[5], (adsk::seconds)a[6]};
+    keyframe.quaternionW = a[7];
+    keyframe.linearInterpolation = false;
+    return keyframe;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

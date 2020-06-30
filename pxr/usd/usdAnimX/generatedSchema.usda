@@ -14,9 +14,6 @@ class FCurveOp "FCurveOp" (
         allowedTokens = ["bool", "int", "float", "double"]
         doc = "the animated attribute data type."
     )
-    int elementCount = 1 (
-        doc = "the animated attribute element count."
-    )
 }
 
 class FCurve "FCurve" (
