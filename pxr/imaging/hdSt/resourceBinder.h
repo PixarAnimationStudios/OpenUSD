@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -39,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdStDrawItem;
-class HdStResourceGL;
 
 using HdStBufferResourceGLSharedPtr = 
     std::shared_ptr<class HdStBufferResourceGL>;
@@ -303,7 +303,7 @@ public:
     /// in case if explicit resource location qualifier is not available
     /// (GL 4.2 or before)
     HDST_API
-    void IntrospectBindings(HdStResourceGL const & programResource);
+    void IntrospectBindings(HgiShaderProgramHandle const & hgiProgram);
 
     HDST_API
     void Bind(HdBindingRequest const& req) const;

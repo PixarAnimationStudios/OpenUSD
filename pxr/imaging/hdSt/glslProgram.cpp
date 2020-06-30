@@ -141,8 +141,7 @@ HdStGLSLProgram::HdStGLSLProgram(
     TfToken const &role,
     HdStResourceRegistry *const registry)
     :_registry(registry)
-    , _programResource(role),
-    _uniformBuffer(role)
+    , _role(role)
 {
     static size_t globalDebugID = 0;
     _debugID = globalDebugID++;
@@ -157,14 +156,6 @@ HdStGLSLProgram::~HdStGLSLProgram()
             hgi->DestroyShaderFunction(&fn);
         }
         hgi->DestroyShaderProgram(&_program);
-    }
-    _programResource.SetAllocation(0, 0);
-
-    GLuint uniformBuffer = _uniformBuffer.GetId();
-    if (uniformBuffer) {
-        if (glDeleteBuffers)
-            glDeleteBuffers(1, &uniformBuffer);
-        _uniformBuffer.SetAllocation(0, 0);
     }
 }
 
@@ -353,24 +344,6 @@ HdStGLSLProgram::Link()
         if (TfDebug::IsEnabled(HDST_DUMP_FAILING_SHADER_SOURCE)) {
             std::cout << _DebugLinkSource(_program) << std::flush;
         }
-    }
-
-    // update the program resource allocation.
-    TF_VERIFY(hgi->GetAPIName() == HgiTokens->OpenGL, "TODO Hgi transition");
-    uint32_t glProgram = _program.Get()->GetRawResource();
-    const size_t byteSize = _program->GetByteSizeOfResource();
-    _programResource.SetAllocation(glProgram, byteSize);
-
-    // create an uniform buffer
-    GLuint uniformBuffer = _uniformBuffer.GetId();
-    if (uniformBuffer == 0) {
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glCreateBuffers(1, &uniformBuffer);
-        } else {
-            glGenBuffers(1, &uniformBuffer);
-        }
-        _uniformBuffer.SetAllocation(uniformBuffer, 0);
     }
 
     return success;

@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/resourceGL.h"
+#include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/enums.h"
 
@@ -69,12 +69,7 @@ public:
     bool Validate() const;
 
     /// Returns HdResource of the program object.
-    HdStResourceGL const &GetProgram() const { return _programResource; }
-
-    /// Returns HdResource of the global uniform buffer object for this program.
-    HdStResourceGL const &GetGlobalUniformBuffer() const {
-        return _uniformBuffer;
-    }
+    HgiShaderProgramHandle const &GetProgram() const { return _program; }
 
     /// Convenience method to get a shared compute shader program
     HDST_API
@@ -88,10 +83,12 @@ public:
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry);
 
+    /// Returns the role of the GPU data in this resource.
+    TfToken const & GetRole() const {return _role;}
+
 private:
     HdStResourceRegistry *const _registry;
-    HdStResourceGL _programResource;
-    HdStResourceGL _uniformBuffer;
+    TfToken _role;
 
     HgiShaderProgramDesc _programDesc;
     HgiShaderProgramHandle _program;

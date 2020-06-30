@@ -94,18 +94,18 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
     , _nonUniformAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>())
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
     , _nonUniformImmutableAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>())
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
     // default aggregation strategy for uniform on UBO (for globals)
     , _uniformUboAggregationStrategy(
-        std::make_unique<HdStInterleavedUBOMemoryManager>())
+        std::make_unique<HdStInterleavedUBOMemoryManager>(_hgi))
     // default aggregation strategy for uniform on SSBO (for primvars)
     , _uniformSsboAggregationStrategy(
-        std::make_unique<HdStInterleavedSSBOMemoryManager>())
+        std::make_unique<HdStInterleavedSSBOMemoryManager>(_hgi))
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
-        std::make_unique<HdStVBOSimpleMemoryManager>())
+        std::make_unique<HdStVBOSimpleMemoryManager>(_hgi))
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
 {
 }
@@ -464,7 +464,7 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 {
     HdStDispatchBufferSharedPtr const result =
         std::make_shared<HdStDispatchBuffer>(
-            role, count, commandNumUints);
+            _hgi, role, count, commandNumUints);
 
     _dispatchBufferRegistry.push_back(result);
 
@@ -477,7 +477,7 @@ HdStResourceRegistry::RegisterPersistentBuffer(
 {
     HdStPersistentBufferSharedPtr const result =
         std::make_shared<HdStPersistentBuffer>(
-            role, dataSize, data);
+            _hgi, role, dataSize, data);
 
     _persistentBufferRegistry.push_back(result);
 
@@ -1025,12 +1025,12 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         if (!program) {
             continue;
         }
-        size_t size =
-            program->GetProgram().GetSize() +
-            program->GetGlobalUniformBuffer().GetSize();
+
+        HgiShaderProgramHandle const& prgHandle =  program->GetProgram();
+        size_t size = prgHandle ? prgHandle->GetByteSizeOfResource() : 0;
 
         // the role of program and global uniform buffer is always same.
-        std::string const &role = program->GetProgram().GetRole().GetString();
+        std::string const &role = program->GetRole().GetString();
         (*result)[role] = VtDictionaryGet<size_t>(*result, role,
                                                   VtDefault = 0) + size;
 

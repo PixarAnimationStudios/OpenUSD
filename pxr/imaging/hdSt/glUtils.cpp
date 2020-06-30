@@ -24,6 +24,10 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/gf/vec2d.h"
@@ -264,53 +268,26 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 }
 
 void
-HdStGLBufferRelocator::Commit()
+HdStGLBufferRelocator::Commit(Hgi* hgi)
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+    HgiBufferGpuToGpuOp blitOp;
+    blitOp.gpuSourceBuffer = _srcBuffer;
+    blitOp.gpuDestinationBuffer = _dstBuffer;
 
-    if (caps.copyBufferEnabled) {
-        // glCopyBuffer
-        if (!caps.directStateAccessEnabled) {
-            glBindBuffer(GL_COPY_READ_BUFFER, _srcBuffer);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, _dstBuffer);
-        }
+    // Use blit work to record resource copy commands.
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    
+    TF_FOR_ALL (it, _queue) {
+        blitOp.sourceByteOffset = it->readOffset;
+        blitOp.byteSize = it->copySize;
+        blitOp.destinationByteOffset = it->writeOffset;
 
-        TF_FOR_ALL (it, _queue) {
-            if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glCopyNamedBufferSubData(_srcBuffer,
-                                         _dstBuffer,
-                                         it->readOffset,
-                                         it->writeOffset,
-                                         it->copySize);
-            } else {
-                glCopyBufferSubData(GL_COPY_READ_BUFFER,
-                                    GL_COPY_WRITE_BUFFER,
-                                    it->readOffset,
-                                    it->writeOffset,
-                                    it->copySize);
-            }
-        }
-        HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
-                            (double)_queue.size());
-
-        if (!caps.directStateAccessEnabled) {
-            glBindBuffer(GL_COPY_READ_BUFFER, 0);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-        }
-    } else {
-        // read back to CPU and send it to GPU again
-        // (workaround for a driver crash)
-        TF_FOR_ALL (it, _queue) {
-            std::vector<char> data(it->copySize);
-            glBindBuffer(GL_ARRAY_BUFFER, _srcBuffer);
-            glGetBufferSubData(GL_ARRAY_BUFFER, it->readOffset, it->copySize,
-                               &data[0]);
-            glBindBuffer(GL_ARRAY_BUFFER, _dstBuffer);
-            glBufferSubData(GL_ARRAY_BUFFER, it->writeOffset, it->copySize,
-                            &data[0]);
-        }
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        blitCmds->CopyBufferGpuToGpu(blitOp);
     }
+    hgi->SubmitCmds(blitCmds.get());
+
+    HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
+                        (double)_queue.size());
 
     _queue.clear();
 }

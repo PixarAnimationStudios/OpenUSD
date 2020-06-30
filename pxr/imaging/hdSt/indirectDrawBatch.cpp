@@ -1036,13 +1036,13 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
         GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         if (gpuCulling) {
+            HgiBufferHandle const& buffer =
+                _dispatchBuffer->GetEntireResource()->GetId();
             if (caps.directStateAccessEnabled) {
                 bufferData = glMapNamedBuffer(
-                    _dispatchBuffer->GetEntireResource()->GetId(),
-                    GL_READ_ONLY);
+                    buffer->GetRawResource(), GL_READ_ONLY);
             } else {
-                glBindBuffer(GL_ARRAY_BUFFER,
-                             _dispatchBuffer->GetEntireResource()->GetId());
+                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
                 bufferData = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
@@ -1078,12 +1078,12 @@ HdSt_IndirectDrawBatch::PrepareDraw(
         }
 
         if (gpuCulling) {
+            HgiBufferHandle const& buffer =
+                _dispatchBuffer->GetEntireResource()->GetId();
             if (caps.directStateAccessEnabled) {
-                glUnmapNamedBuffer(
-                        _dispatchBuffer->GetEntireResource()->GetId());
+                glUnmapNamedBuffer(buffer->GetRawResource());
             } else {
-                glBindBuffer(GL_ARRAY_BUFFER,
-                             _dispatchBuffer->GetEntireResource()->GetId());
+                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
                 glUnmapBuffer(GL_ARRAY_BUFFER);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
@@ -1134,7 +1134,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     TF_VERIFY(programId);
 
     GlfDebugLabelProgram(programId, "DrawingProgram");
@@ -1354,7 +1354,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
 
     const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
     // bind buffers
@@ -1487,7 +1487,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
     const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
@@ -1602,26 +1602,16 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     }
 
     // Reset visible item count
-    if (_resultBuffer->GetMappedAddress()) {
-        *((GLint *)_resultBuffer->GetMappedAddress()) = 0;
-    } else {
-        GLint count = 0;
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (caps.directStateAccessEnabled) {
-            glNamedBufferSubData(_resultBuffer->GetId(), 0,
-                                 sizeof(count), &count);
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, _resultBuffer->GetId());
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(count), &count);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-    }
+    int32_t count = 0;
+    glNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
+        sizeof(count), &count);
 
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
     int binding = _cullingProgram.GetBinder().GetBinding(
         _tokens->drawIndirectResult).GetLocation();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, _resultBuffer->GetId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding,
+        _resultBuffer->GetBuffer()->GetRawResource());
 }
 
 void
@@ -1638,21 +1628,10 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t *
     }
 
     // Return visible item count
-    if (_resultBuffer->GetMappedAddress()) {
-        *result = *((GLint *)_resultBuffer->GetMappedAddress());
-    } else {
-        GLint count = 0;
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (caps.directStateAccessEnabled) {
-            glGetNamedBufferSubData(_resultBuffer->GetId(), 0,
-                                    sizeof(count), &count);
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, _resultBuffer->GetId());
-            glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(count), &count);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-        *result = count;
-    }
+    int32_t count = 0;
+    glGetNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
+                            sizeof(count), &count);
+    *result = count;
 
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.

@@ -42,6 +42,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStResourceRegistry;
+class Hgi;
 
 /// \class HdStInterleavedMemoryManager
 ///
@@ -182,7 +184,8 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _StripedInterleavedBuffer(TfToken const &role,
+        _StripedInterleavedBuffer(Hgi* hgi,
+                                  TfToken const &role,
                                   HdBufferSpecVector const &bufferSpecs,
                                   HdBufferArrayUsageHint usageHint,
                                   int bufferOffsetAlignment,
@@ -260,6 +263,7 @@ protected:
                                                    int stride);
 
     private:
+        Hgi* _hgi;
         bool _needsCompaction;
         int _stride;
         int _bufferOffsetAlignment;  // ranged binding offset alignment
@@ -272,6 +276,8 @@ protected:
         }
 
     };
+    
+    HdStInterleavedMemoryManager(Hgi* hgi): _hgi(hgi) {}
 
     /// Factory for creating HdBufferArrayRange
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
@@ -284,10 +290,15 @@ protected:
     virtual size_t GetResourceAllocation(
         HdBufferArraySharedPtr const &bufferArray, 
         VtDictionary &result) const;
+    
+    Hgi* _hgi;
 };
 
 class HdStInterleavedUBOMemoryManager : public HdStInterleavedMemoryManager {
 public:
+    HdStInterleavedUBOMemoryManager(Hgi* hgi)
+    : HdStInterleavedMemoryManager(hgi) {}
+
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
     HDST_API
@@ -305,6 +316,9 @@ public:
 
 class HdStInterleavedSSBOMemoryManager : public HdStInterleavedMemoryManager {
 public:
+    HdStInterleavedSSBOMemoryManager(Hgi* hgi)
+    : HdStInterleavedMemoryManager(hgi) {}
+
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
     HDST_API

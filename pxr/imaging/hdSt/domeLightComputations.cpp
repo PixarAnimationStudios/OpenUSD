@@ -138,7 +138,7 @@ HdSt_DomeLightComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
         return;
     }
 
-    const GLuint programId = computeProgram->GetProgram().GetId();
+    const GLuint programId = computeProgram->GetProgram()->GetRawResource();
 
     HdStSimpleLightingShaderSharedPtr const shader = _lightingShader.lock();
     if (!TF_VERIFY(shader)) {

@@ -37,20 +37,18 @@ HdStBufferResourceGL::HdStBufferResourceGL(TfToken const &role,
                                            int offset,
                                            int stride)
     : HdBufferResource(role, tupleType, offset, stride),
-      _gpuAddr(0),
-      _texId(0),
-      _id(0)
+      _gpuAddr(0)
 {
     /*NOTHING*/
 }
 
 HdStBufferResourceGL::~HdStBufferResourceGL()
 {
-    TF_VERIFY(_texId == 0);
+    /*NOTHING*/
 }
 
 void
-HdStBufferResourceGL::SetAllocation(GLuint id, size_t size)
+HdStBufferResourceGL::SetAllocation(HgiBufferHandle const& id, size_t size)
 {
     _id = id;
     HdResource::SetSize(size);
@@ -61,73 +59,12 @@ HdStBufferResourceGL::SetAllocation(GLuint id, size_t size)
     // or when the data store is respecified via BufferData/BufferStorage.
     // It doesn't change even when we make the buffer resident or non-resident.
     // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-    if (id != 0 && caps.bindlessBufferEnabled) {
+    if (id && caps.bindlessBufferEnabled) {
         glGetNamedBufferParameterui64vNV(
-            id, GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
+            id->GetRawResource(), GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
     } else {
         _gpuAddr = 0;
     }
-
-    // release texid if exist. SetAllocation is guaranteed to be called
-    // at the destruction of the hosting buffer array.
-    if (_texId) {
-        glDeleteTextures(1, &_texId);
-        _texId = 0;
-    }
 }
-
-GLuint
-HdStBufferResourceGL::GetTextureBuffer()
-{
-    // XXX: need change tracking.
-
-    if (_tupleType.count != 1) {
-        TF_CODING_ERROR("unsupported tuple size: %zu\n", _tupleType.count);
-        return 0;
-    }
-
-    if (_texId == 0) {
-        glGenTextures(1, &_texId);
-
-        GLenum format = GL_R32F;
-        switch(_tupleType.type) {
-        case HdTypeFloat:
-            format = GL_R32F;
-            break;
-        case HdTypeFloatVec2:
-            format = GL_RG32F;
-            break;
-        case HdTypeFloatVec3:
-            format = GL_RGB32F;
-            break;
-        case HdTypeFloatVec4:
-            format = GL_RGBA32F;
-            break;
-        case HdTypeInt32:
-            format = GL_R32I;
-            break;
-        case HdTypeInt32Vec2:
-            format = GL_RG32I;
-            break;
-        case HdTypeInt32Vec3:
-            format = GL_RGB32I;
-            break;
-        case HdTypeInt32Vec4:
-            format = GL_RGBA32I;
-            break;
-        case HdTypeInt32_2_10_10_10_REV:
-            format = GL_R32I;
-            break;
-        default:
-            TF_CODING_ERROR("unsupported type: 0x%x\n", _tupleType.type);
-        }
-
-        glBindTexture(GL_TEXTURE_BUFFER, _texId);
-        glTexBuffer(GL_TEXTURE_BUFFER, format, GetId());
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
-    }
-    return _texId;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

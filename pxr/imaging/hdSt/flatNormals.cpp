@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgiGL/shaderProgram.h"
+
 #include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/base/vt/array.h"
@@ -137,7 +139,8 @@ HdSt_FlatNormalsComputationGPU::Execute(
             static_cast<HdStResourceRegistry*>(resourceRegistry));
     if (!computeProgram) return;
 
-    GLuint program = computeProgram->GetProgram().GetId();
+    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
+    GLuint program = hgiProgram->GetRawResource();
 
     // prepare uniform buffer for GPU computation
     struct Uniform {
@@ -191,21 +194,39 @@ HdSt_FlatNormalsComputationGPU::Execute(
     uniform.pParamStride = primitiveParam->GetStride() / pParamComponentSize;
 
     // transfer uniform buffer
-    GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
+    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
+    // GfxCmds.
+    const size_t uboSize = sizeof(uniform);
+    HgiGLShaderProgram * const hgiGLProgram =
+        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
+    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     if (caps.directStateAccessEnabled) {
-        glNamedBufferData(ubo, sizeof(uniform), &uniform, GL_STATIC_DRAW);
+        glNamedBufferData(ubo, uboSize, &uniform, GL_STATIC_DRAW);
     } else {
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(uniform), &uniform, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, uboSize, &uniform, GL_STATIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
+    GLuint pointsId =
+        points->GetId() ? points->GetId()->GetRawResource() : 0;
+    GLuint normalsId =
+        normals->GetId() ? normals->GetId()->GetRawResource() : 0;
+    GLuint indicesId =
+        indices->GetId() ? indices->GetId()->GetRawResource() : 0;
+    GLuint primitiveParamId =
+        primitiveParam->GetId() ? primitiveParam->GetId()->GetRawResource() : 0;
+
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, points->GetId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, normals->GetId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, indices->GetId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, primitiveParam->GetId());
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER, 0, pointsId);
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER, 1, normalsId);
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER, 2, indicesId);
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER, 3, primitiveParamId);
 
     // dispatch compute kernel
     glUseProgram(program);

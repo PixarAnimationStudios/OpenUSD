@@ -155,7 +155,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     const HdSt_ResourceBinder &binder = program.GetBinder();
     const HdStShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     TF_VERIFY(programId);
 
     glUseProgram(programId);

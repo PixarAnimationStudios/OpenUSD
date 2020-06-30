@@ -26,12 +26,16 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/resourceGL.h"
+
+#include "pxr/imaging/hd/resource.h"
+
+#include "pxr/imaging/hgi/buffer.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 
 using HdStPersistentBufferSharedPtr = 
     std::shared_ptr<class HdStPersistentBuffer>;
@@ -41,18 +45,20 @@ using HdStPersistentBufferSharedPtr =
 /// A buffer used to prepare data on the GPU that has a persistent mapping
 /// from the CPU.
 ///
-class HdStPersistentBuffer : public HdStResourceGL {
+class HdStPersistentBuffer : public HdResource {
 public:
     HDST_API
-    HdStPersistentBuffer(TfToken const &role, size_t dataSize, void* data);
+    HdStPersistentBuffer(
+        Hgi* hgi, TfToken const &role, size_t dataSize, void* data);
     HDST_API
     ~HdStPersistentBuffer();
 
     /// Returns the mapped address
-    void * GetMappedAddress() const { return _mappedAddress; }
+    HgiBufferHandle const& GetBuffer() const { return _buffer; }
 
 private:
-    void * _mappedAddress;
+    Hgi* _hgi;
+    HgiBufferHandle _buffer;
 };
 
 

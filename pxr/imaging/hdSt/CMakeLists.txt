@@ -81,7 +81,6 @@ pxr_library(hdSt
         renderPass
         renderPassShader
         renderPassState
-        resourceGL
         resourceRegistry
         rprimUtils
         samplerObject

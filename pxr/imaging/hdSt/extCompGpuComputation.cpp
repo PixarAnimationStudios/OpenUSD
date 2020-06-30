@@ -39,6 +39,7 @@
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include <limits>
@@ -102,7 +103,8 @@ HdStExtCompGpuComputation::Execute(
         return;
     }
 
-    GLuint kernel = computeProgram->GetProgram().GetId();
+    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
+    GLuint kernel = hgiProgram->GetRawResource();
     glUseProgram(kernel);
 
     HdStBufferArrayRangeGLSharedPtr outputBar =
@@ -160,10 +162,15 @@ HdStExtCompGpuComputation::Execute(
     }
     
     // Prepare uniform buffer for GPU computation
-    GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
+    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
+    // GfxCmds.
+    const size_t uboSize = sizeof(int32_t) * _uniforms.size();
+    HgiGLShaderProgram * const hgiGLProgram =
+        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
+    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     glBufferData(GL_UNIFORM_BUFFER,
-            sizeof(int32_t) * _uniforms.size(),
+            uboSize,
             &_uniforms[0],
             GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);

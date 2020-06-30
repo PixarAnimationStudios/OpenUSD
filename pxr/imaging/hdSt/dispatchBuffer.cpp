@@ -29,6 +29,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/buffer.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -161,30 +164,24 @@ private:
 };
 
 
-HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
+HdStDispatchBuffer::HdStDispatchBuffer(Hgi* hgi, TfToken const &role, int count,
                                    unsigned int commandNumUints)
  : HdBufferArray(role, TfToken(), HdBufferArrayUsageHint())
+ , _hgi(hgi)
  , _count(count)
  , _commandNumUints(commandNumUints)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    GLuint newId = 0;
     size_t stride = commandNumUints * sizeof(GLuint);
     size_t dataSize = count * stride;
+    
     // just allocate uninitialized
-    if (caps.directStateAccessEnabled) {
-        glCreateBuffers(1, &newId);
-        glNamedBufferData(newId, dataSize, NULL, GL_STATIC_DRAW);
-    } else {
-        glGenBuffers(1, &newId);
-        glBindBuffer(GL_ARRAY_BUFFER, newId);
-        glBufferData(GL_ARRAY_BUFFER, dataSize, NULL, GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
+    HgiBufferDesc bufDesc;
+    bufDesc.usage = HgiBufferUsageUniform;
+    bufDesc.byteSize = dataSize;
+    HgiBufferHandle newId = _hgi->CreateBuffer(bufDesc);
 
     // monolithic resource
     _entireResource = HdStBufferResourceGLSharedPtr(
@@ -200,9 +197,9 @@ HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
 
 HdStDispatchBuffer::~HdStDispatchBuffer()
 {
-    GLuint id = _entireResource->GetId();
-    glDeleteBuffers(1, &id);
-    _entireResource->SetAllocation(0, 0);
+    HgiBufferHandle& id = _entireResource->GetId();
+    _hgi->DestroyBuffer(&id);
+    _entireResource->SetAllocation(HgiBufferHandle(), 0);
 }
 
 void
@@ -214,12 +211,13 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.directStateAccessEnabled) {
-        glNamedBufferSubData(_entireResource->GetId(),
+        glNamedBufferSubData(_entireResource->GetId()->GetRawResource(),
                              0,
                              _entireResource->GetSize(),
                              &data[0]);
     } else {
-        glBindBuffer(GL_ARRAY_BUFFER, _entireResource->GetId());
+        glBindBuffer(GL_ARRAY_BUFFER,
+                     _entireResource->GetId()->GetRawResource());
         glBufferSubData(GL_ARRAY_BUFFER, 0,
                         _entireResource->GetSize(),
                         &data[0]);
@@ -250,8 +248,9 @@ HdStDispatchBuffer::GarbageCollect()
 }
 
 void
-HdStDispatchBuffer::Reallocate(std::vector<HdBufferArrayRangeSharedPtr> const &,
-                             HdBufferArraySharedPtr const &)
+HdStDispatchBuffer::Reallocate(
+    std::vector<HdBufferArrayRangeSharedPtr> const &,
+    HdBufferArraySharedPtr const &)
 {
     TF_CODING_ERROR("HdStDispatchBuffer doesn't support this operation");
 }
@@ -271,7 +270,7 @@ HdStDispatchBuffer::GetResource() const
 
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // make sure this buffer array has only one resource.
-        GLuint id = _resourceList.begin()->second->GetId();
+        HgiBufferHandle const& id = _resourceList.begin()->second->GetId();
         TF_FOR_ALL (it, _resourceList) {
             if (it->second->GetId() != id) {
                 TF_CODING_ERROR("GetResource(void) called on"

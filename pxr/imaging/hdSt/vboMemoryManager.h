@@ -41,6 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 
 /// \class HdStVBOMemoryManager
 ///
@@ -48,7 +49,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdStVBOMemoryManager : public HdAggregationStrategy {
 public:
-    HdStVBOMemoryManager() : HdAggregationStrategy() {}
+    HdStVBOMemoryManager(Hgi *hgi)
+    : HdAggregationStrategy()
+    , _hgi(hgi) {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
@@ -231,7 +234,8 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _StripedBufferArray(TfToken const &role,
+        _StripedBufferArray(Hgi* _hgi,
+                            TfToken const &role,
                             HdBufferSpecVector const &bufferSpecs,
                             HdBufferArrayUsageHint usageHint);
 
@@ -307,6 +311,7 @@ protected:
 
     private:
 
+        Hgi* _hgi;
         bool _needsCompaction;
         int _totalCapacity;
         size_t _maxBytesPerElement;
@@ -318,6 +323,8 @@ protected:
             return std::static_pointer_cast<_StripedBufferArrayRange>(GetRange(idx).lock());
         }
     };
+    
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
