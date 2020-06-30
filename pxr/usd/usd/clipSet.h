@@ -134,28 +134,10 @@ Usd_ClipSet::QueryTimeSample(
     }
 
     // If no samples exist in the clip, get the default value from
-    // the manifest.
-    switch (Usd_HasDefault(manifestClip, path, value)) {
-    case Usd_DefaultValueResult::None:
-        break;
-    case Usd_DefaultValueResult::Found:
-        return true;
-    case Usd_DefaultValueResult::Blocked:
-        return false;
-    }
-
-    // If no default value was specified in the manifest, return the
-    // fallback value for this type.
-    TfToken attrTypeName;
-    if (manifestClip->HasField(path, SdfFieldKeys->TypeName, &attrTypeName)) {
-        const SdfValueTypeName attrType = SdfSchema::GetInstance().FindType(
-            attrTypeName);
-        if (attrType) {
-            return Usd_SetValue(value, attrType.GetDefaultValue());
-        }
-    }
-    
-    return false;
+    // the manifest. Return true if we get a non-block value, false
+    // otherwise.
+    return Usd_HasDefault(manifestClip, path, value) == 
+        Usd_DefaultValueResult::Found;
 }
 
 // ------------------------------------------------------------

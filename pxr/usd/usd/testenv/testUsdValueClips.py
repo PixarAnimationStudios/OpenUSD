@@ -835,15 +835,14 @@ class TestUsdValueClips(unittest.TestCase):
         
         # The clip in the range [..., 16) has no samples for the attribute,
         # so the value should be the default value from the manifest. Since
-        # no default value is specified, we use the default value for the
-        # attribute type.
+        # no default value is specified, we get a value of None.
         with InterpolationType(stage, Usd.InterpolationTypeLinear):
             for t in range(-10, 16):
-                self.CheckValue(attr, time=t, expected=0.0)
+                self.CheckValue(attr, time=t, expected=None)
 
         with InterpolationType(stage, Usd.InterpolationTypeHeld):
             for t in range(-10, 16):
-                self.CheckValue(attr, time=t, expected=0.0)
+                self.CheckValue(attr, time=t, expected=None)
 
         # This attribute should be detected as potentially time-varying
         # since multiple clips are involved and at least one of them has
@@ -923,11 +922,11 @@ class TestUsdValueClips(unittest.TestCase):
 
             # Middle clip with no samples. Since the middle clip has no 
             # time samples and there is no default value specified in the
-            # manifest, we use the default value for the attribute type.
-            self.CheckValue(attr, time=4, expected=0.0)
-            self.CheckValue(attr, time=5, expected=0.0)
-            self.CheckValue(attr, time=6, expected=0.0)
-            self.CheckValue(attr, time=7, expected=0.0)
+            # manifest, we get a value of None.
+            self.CheckValue(attr, time=4, expected=None)
+            self.CheckValue(attr, time=5, expected=None)
+            self.CheckValue(attr, time=6, expected=None)
+            self.CheckValue(attr, time=7, expected=None)
 
             # Last clip.
             self.CheckValue(attr, time=8, expected=-26.0)
@@ -947,11 +946,11 @@ class TestUsdValueClips(unittest.TestCase):
 
             # Middle clip with no samples. Since the middle clip has no 
             # time samples and there is no default value specified in the
-            # manifest, we use the default value for the attribute type.
-            self.CheckValue(attr, time=4, expected=0.0)
-            self.CheckValue(attr, time=5, expected=0.0)
-            self.CheckValue(attr, time=6, expected=0.0)
-            self.CheckValue(attr, time=7, expected=0.0)
+            # manifest, we get a value of None.
+            self.CheckValue(attr, time=4, expected=None)
+            self.CheckValue(attr, time=5, expected=None)
+            self.CheckValue(attr, time=6, expected=None)
+            self.CheckValue(attr, time=7, expected=None)
 
             # Last clip.
             self.CheckValue(attr, time=8, expected=-26.0)
@@ -976,14 +975,14 @@ class TestUsdValueClips(unittest.TestCase):
         attr = stage.GetAttributeAtPath('/ModelWithSomeClipSamples3.size')
 
         # The first active clip has no time samples, so at the first clip's
-        # start time we should get the default value for doubles (since no
-        # default value is declared in the manifest.
-        self.CheckValue(attr, time=0, expected=0.0)
+        # start time we should get None since no default value is declared
+        # in the manifest.
+        self.CheckValue(attr, time=0, expected=None)
 
         # At time 1 we should interpolate between the value at the first
         # clip's start time and the value at t=2, which is the next clip's
         # start time.
-        self.CheckValue(attr, time=1, expected=-11.5)
+        self.CheckValue(attr, time=1, expected=None)
         
         # Verify the time samples from the second clip.
         self.CheckValue(attr, time=2, expected=-23)
@@ -1158,14 +1157,13 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckTimeSamples(attrNotInLastClip)
 
             # This attribute is in the manifest but not in any clip. We
-            # expect to get 1 time sample and the fallback value for
-            # the attribute type since no default value is declared in
-            # the manifest.
+            # expect to get 1 time sample with a value of None since no 
+            # default value is declared in the manifest.
             attrNotInAnyClip = prim.GetAttribute('attrNotInAnyClip')
 
-            self.CheckValue(attrNotInAnyClip, time=-1, expected=0)
-            self.CheckValue(attrNotInAnyClip, time=0, expected=0)
-            self.CheckValue(attrNotInAnyClip, time=1, expected=0)
+            self.CheckValue(attrNotInAnyClip, time=-1, expected=None)
+            self.CheckValue(attrNotInAnyClip, time=0, expected=None)
+            self.CheckValue(attrNotInAnyClip, time=1, expected=None)
 
             self.assertEqual(attrNotInAnyClip.GetTimeSamples(), [0.0])
             self.CheckTimeSamples(attrNotInAnyClip)
@@ -1647,9 +1645,8 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(inManifestAndInClip, time=1, expected=-1.0)
 
         # Note that the clip at t=2 does not have a value for this attribute,
-        # and the manifest has no default value specified, so we fall back
-        # to the default value for the attribute type.
-        self.CheckValue(inManifestAndInClip, time=2, expected=0.0)
+        # and the manifest has no default value specified, so we get None.
+        self.CheckValue(inManifestAndInClip, time=2, expected=None)
 
         self.assertEqual(inManifestAndInClip.GetTimeSamples(), 
                          [0.0, 1.0, 2.0, 3.0])
@@ -1665,7 +1662,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Lastly, this attribute is in the manifest but has no
         # samples in the clip and no default in the manifest, so we should
-        # fall back to the default value for the attribute type.
+        # get None.
         stage = Usd.Stage.Open('manifest/root.usda')
         prim = stage.GetPrimAtPath('/WithManifestClip')
 
@@ -1675,7 +1672,7 @@ class TestUsdValueClips(unittest.TestCase):
         # layers to determine if the attribute might be varying.
         self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
         self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
-        self.CheckValue(inManifestNotInClip, time=0, expected=0)
+        self.CheckValue(inManifestNotInClip, time=0, expected=None)
         self.assertEqual(inManifestNotInClip.GetTimeSamples(), 
                          [0.0, 1.0, 2.0, 3.0])
         self.assertEqual(inManifestNotInClip.GetTimeSamplesInInterval(
@@ -1713,12 +1710,11 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(fallbackBlockInManifest)
 
         # If the attribute is declared without a default value in the
-        # manifest, we fall back to the default value for the attribute's
-        # type.
+        # manifest, we get a value of None.
         noFallbackInManifest =  \
             stage.GetAttributeAtPath('/Model.noFallbackInManifest')
         self.CheckValue(noFallbackInManifest, time=0.0, expected=10.0)
-        self.CheckValue(noFallbackInManifest, time=2.0, expected=0.0)
+        self.CheckValue(noFallbackInManifest, time=2.0, expected=None)
         self.CheckValue(noFallbackInManifest, time=4.0, expected=20.0)
         self.assertEqual(noFallbackInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
@@ -1752,13 +1748,12 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(fallbackBlockInManifest)
 
         # If the attribute is declared without a default value in the
-        # manifest, we fall back to the default value for the attribute's
-        # type.
+        # manifest, we get a value of None.
         noFallbackInManifest =  \
             stage.GetAttributeAtPath('/Model_2.noFallbackInManifest')
-        self.CheckValue(noFallbackInManifest, time=-1.0, expected=0.0)
-        self.CheckValue(noFallbackInManifest, time=0.0, expected=0.0)
-        self.CheckValue(noFallbackInManifest, time=1.0, expected=0.0)
+        self.CheckValue(noFallbackInManifest, time=-1.0, expected=None)
+        self.CheckValue(noFallbackInManifest, time=0.0, expected=None)
+        self.CheckValue(noFallbackInManifest, time=1.0, expected=None)
         self.assertEqual(noFallbackInManifest.GetTimeSamples(), [0.0])
         self.CheckTimeSamples(noFallbackInManifest)
 
