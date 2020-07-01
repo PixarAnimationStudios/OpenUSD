@@ -401,6 +401,11 @@ void _CastAndCompute(
     // e.g. HdStUvSamplerObject
     using SamplerObject = HdStTypedSamplerObject<textureType>;
 
+    if (!namedTextureHandle.handle) {
+        TF_CODING_ERROR("Invalid texture handle in texture binder.");
+        return;
+    }
+
     const TextureObject * const typedTexture =
         dynamic_cast<TextureObject *>(
             namedTextureHandle.handle->GetTextureObject().get());
