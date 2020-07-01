@@ -22,54 +22,58 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "animx.h"
-#include "fileFormat.h"
-#include "data.h"
-#include "pxr/usd/usd/usdFileFormat.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/reference.h"
-#include "pxr/usd/sdf/declareHandles.h"
 
+#include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/atomicOfstreamWrapper.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/propertySpec.h"
+
 #include <iostream>
 #include <fstream>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "animx.h"
+#include "fileFormat.h"
+#include "data.h"
+#include "reader.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdAnimXFileFormatTokens, USD_ANIMX_FILE_FORMAT_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((fCurveOp, "FCurveOp"))
-    ((fCurve, "FCurve"))
-    (attributeName)
+    (prim)
+    (op)
+    (curve)
+    (target)
     (dataType)
     (defaultValue)
-    (keyframes)
 );
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    SDF_DEFINE_FILE_FORMAT(UsdAnimXFileFormat, SdfTextFileFormat);
+    SDF_DEFINE_FILE_FORMAT(UsdAnimXFileFormat, SdfFileFormat);
 }
 
 UsdAnimXFileFormat::UsdAnimXFileFormat()
-    : SdfTextFileFormat(UsdAnimXFileFormatTokens->Id,
-                        UsdAnimXFileFormatTokens->Version,
-                        UsdUsdFileFormatTokens->Target)
+    : SdfFileFormat(
+        UsdAnimXFileFormatTokens->Id,
+        UsdAnimXFileFormatTokens->Version,
+        UsdAnimXFileFormatTokens->Target,
+        UsdAnimXFileFormatTokens->Extension)
 {
-    // Do Nothing.
 }
 
 UsdAnimXFileFormat::~UsdAnimXFileFormat()
 {
-    // Do Nothing.
 }
 
 SdfAbstractDataRefPtr
@@ -79,6 +83,7 @@ UsdAnimXFileFormat::InitData(
     return UsdAnimXData::New();
 }
 
+/*
 static 
 void
 _RecurseSdfChildren(SdfPrimSpecHandle& spec, UsdAnimXDataRefPtr animXData) 
@@ -95,19 +100,18 @@ _RecurseSdfChildren(SdfPrimSpecHandle& spec, UsdAnimXDataRefPtr animXData)
           for(auto& prop: props) {
             TfToken name = prop.GetSpec().GetNameToken();
             if(name == _tokens->attributeName) {
-              attributeName =
-                 prop.GetSpec().GetDefaultValue().GetWithDefault<TfToken>();
+                attributeName =
+                    prop.GetSpec().GetDefaultValue().GetWithDefault<TfToken>();
             }
             else if(name == _tokens->dataType) {
-             dataType = prop.GetSpec().GetDefaultValue().GetWithDefault<TfToken>();
+                dataType = prop.GetSpec().GetDefaultValue().GetWithDefault<TfToken>();
             }
             else if(name == _tokens->defaultValue) {
-              defaultValue = prop.GetSpec().GetDefaultValue();
+                defaultValue = prop.GetSpec().GetDefaultValue();
             }
           }
           animXData->AddOp(spec->GetPath(), attributeName, dataType, defaultValue);
-      }
-      else if(childSpec.GetTypeName() == _tokens->fCurve) {
+      } else if(childSpec.GetTypeName() == _tokens->fCurve) {
           SdfPrimSpec::PropertySpecView props = childSpec.GetProperties();
           SdfPropertySpecHandle prop =  
               childSpec.GetPropertyAtPath(childSpec.GetPath()
@@ -129,24 +133,163 @@ _RecurseSdfChildren(SdfPrimSpecHandle& spec, UsdAnimXDataRefPtr animXData)
           SdfPath primPath = opPath.GetParentPath();
 
           animXData->AddFCurve(primPath, opName, curve);
-      }
-      else {
-        /*
-        SdfPrimSpecHandle childDst = 
-            SdfPrimSpec::New(dst, childSrc.GetName(), SdfSpecifierOver);
-        */
-        animXData->AddPrim(childSpec.GetPath());
+      } else {
+          animXData->AddPrim(childSpec.GetPath());
       }
 
       _RecurseSdfChildren(SdfPrimSpecHandle(childSpec), animXData);
     }
 }
+*/
+static
+bool
+_CanRead(const std::shared_ptr<ArAsset>& asset,
+             const std::string& cookie)
+{
+    TfErrorMark mark;
 
+    char aLine[512];
+
+    size_t numToRead = std::min(sizeof(aLine), cookie.length());
+    if (asset->Read(aLine, numToRead, /* offset = */ 0) != numToRead) {
+        return false;
+    }
+
+    aLine[numToRead] = '\0';
+
+    // Don't allow errors to escape this function, since this function is
+    // just trying to answer whether the asset can be read.
+    return !mark.Clear() && TfStringStartsWith(aLine, cookie);
+}
+
+/*
+static void PrintReadState(size_t state){
+    switch(state) {
+        case READ_NONE:
+            std::cout << "READ STATE : NONE" << std::endl;
+            break;
+        case READ_PRIM_ENTER:
+            std::cout << "READ STATE : PRIM_ENTER" << std::endl;
+            break;
+        case READ_PRIM:
+            std::cout << "READ STATE : PRIM" << std::endl;
+            break;
+        case READ_OP_ENTER:
+            std::cout << "READ STATE : OP_ENTER" << std::endl;
+            break;
+        case READ_OP:
+            std::cout << "READ STATE : OP" << std::endl;
+            break;
+        case READ_CURVE_ENTER:
+            std::cout << "READ STATE : CURVE_ENTER" << std::endl;
+            break;
+        case READ_CURVE:
+            std::cout << "READ STATE : CURVE" << std::endl;
+            break;
+        default:
+            std::cout << "READ STATE : OUT OF BOUND!!!" << std::endl;
+    }
+}
+*/
 bool 
 UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
         bool metadataOnly) const
 {
-  
+    TRACE_FUNCTION();
+
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    if (!asset) {
+        return false;
+    }
+
+    // Quick check to see if the file has the magic cookie before spinning up
+    // the parser.
+    if (!_CanRead(asset, GetFileCookie())) {
+        TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
+                         resolvedPath.c_str(),
+                         GetFormatId().GetText());
+        return false;
+    }
+
+
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
+    UsdAnimXReader reader;
+    reader.Open(asset);
+    /*
+    std::ifstream file(resolvedPath);
+    std::string line;
+
+    UsdAnimXPrimDesc primDesc;
+    UsdAnimXOpDesc opDesc;
+    UsdAnimXCurveDesc curveDesc;
+    UsdAnimXKeyframeDesc keyframeDesc;
+
+    UsdAnimXPrimDesc* currentPrim = NULL;
+    UsdAnimXOpDesc* currentOp = NULL;
+    UsdAnimXCurveDesc* currentCurve = NULL;
+
+    _readState = READ_NONE;
+    _primDepth = 0;
+    size_t start_p, end_p;
+    while (std::getline(file, line)) {
+        if(line.empty())continue;
+        PrintReadState(_readState);
+        std::cout << "PRIM DEPTH : " << _primDepth << std::endl;
+        line = _Trim(line);
+        if(_IsPrim(line, &primDesc))
+        {
+            _primDepth++;
+            if(currentPrim){
+                primDesc.parent = currentPrim;
+                currentPrim->children.push_back(primDesc);
+                currentPrim = &currentPrim->children.back();
+            }
+            else {
+                primDesc.parent = NULL;
+                _rootPrims.push_back(primDesc);
+                currentPrim = &_rootPrims.back();
+            }
+            _readState = READ_PRIM_ENTER;
+        }
+        else if(_IsOp(line, &opDesc))
+        {
+          _readState = READ_OP_ENTER;
+        }
+        else if(_IsCurve(line, &curveDesc))
+        {
+          _readState = READ_CURVE_ENTER;
+        }
+        if(_HasOpeningBrace(line, &start_p)) {
+            _readState++;
+        }
+        else if(_HasClosingBrace(line, &end_p)) {
+            switch(_readState) {
+                case READ_CURVE:
+                    _readState = READ_OP;
+                    break;
+                case READ_OP:
+                    _readState = READ_PRIM;
+                    break;
+                case READ_PRIM:
+                    _primDepth--;
+                    if(_primDepth == 0)_readState = READ_NONE;
+                    break;
+            }
+        }
+    }
+    file.close();
+    */
+    /*
+    if (!Sdf_ParseMenva(
+            resolvedPath, asset, GetFormatId(), GetVersionString(), 
+            metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data))) {
+        return false;
+    }
+    */
+
+    _SetLayerData(layer, data);
+    return true;
+  /*
   std::ifstream is(resolvedPath);
 
   if (is.is_open())
@@ -177,7 +320,7 @@ UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
   }
 
   return false;
-  
+  */
 /*
   SdfAbstractDataRefPtr data = InitData(FileFormatArguments());
   UsdAnimXDataRefPtr animXData = TfStatic_cast<UsdAnimXDataRefPtr>(data);
@@ -247,21 +390,16 @@ UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
   animXData->ComputeTimesSamples();
   _SetLayerData(layer, data);
 */
-  /*
-  SdfAttributeSpecHandle translateSpec = SdfAttributeSpec::New(
-      cubeSpec, "xformOp:translate", 
-      SdfValueTypeNames->Vector3d);
-  translateSpec->SetDefaultValue(VtValue(GfVec3d(0,10,0)));
-
-
-  static const VtValue orderVal(
-                VtTokenArray({TfToken("xformOp:translate")}));
-            SdfAttributeSpecHandle orderAttrSpec = SdfAttributeSpec::New(
-                cubeSpec, "xformOpOrder", 
-                SdfValueTypeNames->TokenArray);
-            orderAttrSpec->SetDefaultValue(orderVal);
-  */
   return true;
+}
+
+bool
+UsdAnimXFileFormat::CanRead(const std::string& filePath) const
+{
+    TRACE_FUNCTION();
+
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    return asset && _CanRead(asset, GetFileCookie());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

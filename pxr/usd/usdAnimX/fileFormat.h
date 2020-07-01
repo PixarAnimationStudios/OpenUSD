@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 benmalartre
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -26,10 +26,15 @@
  
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
-#include "pxr/usd/sdf/textFileFormat.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/vt/value.h"
+#include <vector>
+#include <string>
+#include <iostream>
+#include "api.h"
+#include "desc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,28 +53,29 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXFileFormat);
 ///
 /// File format used by textual animx files.
 ///
-class UsdAnimXFileFormat : public SdfTextFileFormat
+class UsdAnimXFileFormat : public SdfFileFormat
 {
 public:
     /// Override this function from SdfFileFormat to provide our own procedural
     /// SdfAbstractData class.
     SdfAbstractDataRefPtr InitData(
         const FileFormatArguments &args) const override;
-        
-    SDF_API
-      virtual bool Read(
-          SdfLayer* layer,
-          const std::string& resolvedPath,
-          bool metadataOnly) const override;
+
+    ANIMX_API
+    bool Read(SdfLayer* layer,
+              const std::string& resolvedPath,
+              bool metadataOnly) const override;
+
+    ANIMX_API
+    bool CanRead(const std::string& filePath) const override;
+
 
 private:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
     UsdAnimXFileFormat();
-
     virtual ~UsdAnimXFileFormat();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

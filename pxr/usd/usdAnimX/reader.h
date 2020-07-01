@@ -28,137 +28,209 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
-#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/token.h"
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <stdint.h>
+#include "pxr/usd/ar/asset.h"
 #include <string>
 #include <vector>
+#include <memory>
+#include "desc.h"
+#include "tokens.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdAbc_AlembicDataReader
+enum UsdAnimXReaderState {
+    ANIMX_READ_NONE,
+    ANIMX_READ_PRIM_ENTER,
+    ANIMX_READ_PRIM,
+    ANIMX_READ_OP_ENTER,
+    ANIMX_READ_OP,
+    ANIMX_READ_CURVE_ENTER,
+    ANIMX_READ_CURVE
+};
+
+class UsdAnimXData;
+
+/// \class UsdAnimxReader
 ///
 /// An animx reader suitable for an SdfAbstractData.
 ///
-class UsdAnimXDataReader : boost::noncopyable {
+class UsdAnimXReader {
 public:
-    typedef int64_t Index;
+    UsdAnimXReader();
+    ~UsdAnimXReader();
 
-    UsdAnimXDataReader();
-    ~UsdAnimXDataReader();
-
-    /// Open a file.  Returns \c true on success;  errors are reported by
-    /// \c GetErrors().
-    bool Open(const std::string& filePath, 
-              const SdfFileFormat::FileFormatArguments&);
+    /// Open a file
+    //bool Open(const std::string& filePath);
+    bool Open(std::shared_ptr<ArAsset> asset);
 
     /// Close the file.
     void Close();
 
-    /// Return any errors.
-    std::string GetErrors() const;
-
-    /// Set a reader flag.
-    void SetFlag(const TfToken&, bool set = true);
-
-    /// Test for the existence of a spec at \p path.
-    bool HasSpec(const SdfPath& path) const;
-
-    /// Returns the spec type for the spec at \p path.
-    SdfSpecType GetSpecType(const SdfPath& path) const;
-
-    /// Test for the existence of and optionally return the value at
-    /// (\p path,\p fieldName).
-    bool HasField(const SdfPath& path,
-                  const TfToken& fieldName,
-                  SdfAbstractDataValue* value) const;
-
-    /// Test for the existence of and optionally return the value at
-    /// (\p path,\p fieldName).
-    bool HasField(const SdfPath& path,
-                  const TfToken& fieldName,
-                  VtValue* value) const;
-
-    /// Test for the existence of and optionally return the value of the
-    /// property at \p path at index \p index.
-    bool HasValue(const SdfPath& path, Index index,
-                  SdfAbstractDataValue* value) const;
-
-    /// Test for the existence of and optionally return the value of the
-    /// property at \p path at index \p index.
-    bool HasValue(const SdfPath& path, Index index,
-                  VtValue* value) const;
-
-    /// Visit the specs.
-    void VisitSpecs(const SdfAbstractData& owner,
-                    SdfAbstractDataSpecVisitor* visitor) const;
-
-    /// List the fields.
-    TfTokenVector List(const SdfPath& path) const;
-
-    /// The type holds a set of Usd times and can return an Alembic index
-    /// for each time.
-    class TimeSamples {
-        typedef std::vector<double> _UsdTimeCodes;
-    public:
-        typedef _UsdTimeCodes::const_iterator const_iterator;
-
-        /// Construct an empty set of samples.
-        TimeSamples();
-
-        /// Construct from the time samples which must be monotonically
-        /// increasing.
-        TimeSamples(const std::vector<double>& times);
-
-        /// Swaps the contents of this with \p other.
-        void Swap(TimeSamples& other);
-
-        /// Returns \c true iff there are no samples.
-        bool IsEmpty() const;
-
-        /// Returns the number of samples.
-        size_t GetSize() const;
-
-        /// Returns the Usd times.
-        std::set<double> GetTimes() const;
-
-        /// Returns the time sample at index \p index.
-        double operator[](size_t index) const;
-
-        /// Add these Usd times to the given set.
-        void AddTo(std::set<double>*) const;
-
-        /// Returns the index for Usd time \p usdTime and returns \c true
-        /// or returns \c false if \p usdTime is not in the set of samples.
-        bool FindIndex(double usdTime, Index* index) const;
-
-        /// Returns the times bracketing \p time.
-        bool Bracket(double usdTime, double* tLower, double* tUpper) const;
-
-        /// Returns the times bracketing \p time.
-        template <class T>
-        static bool Bracket(const T&, double usdTime,
-                            double* tLower, double* tUpper);
-
-    private:
-        // The monotonically increasing Usd times.
-        _UsdTimeCodes _times;
-    };
-
-    /// Returns the sampled times over all properties.
-    const std::set<double>& ListAllTimeSamples() const;
-
-    /// Returns the sampled times for the property at \p path.
-    const TimeSamples& 
-    ListTimeSamplesForPath(const SdfPath& path) const;
+protected:
+    inline bool _IsPrim(const std::string &s, UsdAnimXPrimDesc *desc);
+    inline bool _IsOp(const std::string &s, UsdAnimXOpDesc *desc);
+    inline bool _IsCurve(const std::string &s, UsdAnimXCurveDesc *desc);
+    inline bool _IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc *desc);
+    inline bool _HasOpeningBrace(const std::string &s, size_t *pos);
+    inline bool _HasClosingBrace(const std::string &s, size_t *pos);
+    inline bool _HasOpeningBracket(const std::string &s, size_t *pos);
+    inline bool _HasClosingBracket(const std::string &s, size_t *pos);
+    inline bool _HasOpeningParenthese(const std::string &s, size_t *pos);
+    inline bool _HasClosingParenthese(const std::string &s, size_t *pos);
+    inline bool _HasOpeningQuote(const std::string &s, size_t *pos);
+    inline bool _HasClosingQuote(const std::string &s, size_t start, size_t *pos);
+    inline bool _HasChar(const std::string &s, const char c, size_t *pos);
+    inline TfToken _GetNameToken(const std::string &s);
+    inline std::string _Trim(const std::string& s);
+    //inline std::vector<std::string> _GetTokens(const std::string& s);
 
 private:
-    boost::scoped_ptr<class UsdAnimXReaderImpl> _impl;
-    std::string _errorLog;
+    std::vector<UsdAnimXPrimDesc> _rootPrims;
+    size_t                        _readState;
+    size_t                        _primDepth;
+    UsdAnimXData*                 _datas;
 };
 
+
+bool 
+UsdAnimXReader::_HasChar(const std::string &s, const char c, size_t *pos)
+{
+  size_t p = s.find(c);
+    if(p != std::string::npos) {
+        *pos = p;
+        return true;
+    }
+    return false;
+}
+
+bool
+UsdAnimXReader::_HasOpeningBrace(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, '{', pos);
+}
+
+bool
+UsdAnimXReader::_HasClosingBrace(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, '}', pos);
+}
+
+bool
+UsdAnimXReader::_HasOpeningBracket(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, '[', pos);
+}
+
+bool
+UsdAnimXReader::_HasClosingBracket(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, ']', pos);
+}
+
+bool
+UsdAnimXReader::_HasOpeningParenthese(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, '(', pos);
+}
+
+bool
+UsdAnimXReader::_HasClosingParenthese(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, ')', pos);
+}
+
+bool
+UsdAnimXReader::_HasOpeningQuote(const std::string &s, size_t *pos)
+{
+    return _HasChar(s, '"', pos);
+}
+
+bool
+UsdAnimXReader::_HasClosingQuote(const std::string &s, size_t start, size_t *pos)
+{
+    return _HasChar(std::string(s.begin() + start, s.end()), '"', pos);
+}
+
+TfToken
+UsdAnimXReader::_GetNameToken(const std::string &s)
+{
+    size_t start, end;
+    if(_HasOpeningQuote(s, &start)) {
+        if(_HasClosingQuote(s, start + 1, &end)) {
+            return TfToken(std::string(s.begin()+start+1, s.begin()+start+1+end));
+        }
+    }
+    return TfToken();
+}
+
+bool 
+UsdAnimXReader::_IsPrim(const std::string& s, UsdAnimXPrimDesc* desc)
+{   
+    static const std::string primSpecifier = UsdAnimXTokens->prim;
+    if(s.find(primSpecifier.c_str(), 0, 
+        primSpecifier.length()) != std::string::npos) {
+            desc->name = _GetNameToken(s);
+            desc->children.clear();
+            desc->ops.clear();
+            return true;
+        }
+            
+    return false;
+}
+
+bool 
+UsdAnimXReader::_IsOp(const std::string& s, UsdAnimXOpDesc* desc)
+{   
+    static const std::string opSpecifier = UsdAnimXTokens->op;
+    if(s.find(opSpecifier.c_str(), 0, 
+        opSpecifier.length()) != std::string::npos) {
+            desc->name = _GetNameToken(s);
+            return true;
+        }
+            
+    return false;
+}
+
+bool 
+UsdAnimXReader::_IsCurve(const std::string& s, UsdAnimXCurveDesc* desc)
+{   
+    static const std::string curveSpecifier = UsdAnimXTokens->curve;
+    if(s.find(curveSpecifier.c_str(), 0, 
+        curveSpecifier.length()) != std::string::npos) {
+            desc->name = _GetNameToken(s);
+            return true;
+        }
+           
+    return false;
+}
+
+bool 
+UsdAnimXReader::_IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc* desc)
+{   
+    if(!_readState == ANIMX_READ_CURVE)return false;
+    return false;
+}
+
+std::string 
+UsdAnimXReader::_Trim(const std::string& s)
+{
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && isspace(*it))it++;
+
+    std::string::const_reverse_iterator rit = s.rbegin();
+    while (rit.base() != it && isspace(*rit))rit++;
+
+    return std::string(it, rit.base());
+}
+
+/*
+std::vector<std::string> 
+UsdAnimXReader::_GetTokens(const std::string& s)
+{
+  return std::vector<std::string>();
+}
+*/
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

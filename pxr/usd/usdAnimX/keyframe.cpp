@@ -1,4 +1,5 @@
-#include "pxr/usd/plugin/usdAnimX/keyframe.h"
+#include "keyframe.h"
+#include "fileFormat.h"
 #include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 

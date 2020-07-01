@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2020 benmalartre
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,27 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDANIMX_API_H
-#define USDANIMX_API_H
+#ifndef PXR_USD_PLUGIN_USD_ANIMX_API_H
+#define PXR_USD_PLUGIN_USD_ANIMX_API_H
 
 #include "pxr/base/arch/export.h"
 
 #if defined(PXR_STATIC)
-#   define USDANIMX_API
-#   define USDANIMX_API_TEMPLATE_CLASS(...)
-#   define USDANIMX_API_TEMPLATE_STRUCT(...)
-#   define USDANIMX_LOCAL
+#   define ANIMX_API
+#   define ANIMX_API_TEMPLATE_CLASS(...)
+#   define ANIMX_API_TEMPLATE_STRUCT(...)
+#   define ANIMX_LOCAL
 #else
-#   if defined(USDANIMX_EXPORTS)
-#       define USDANIMX_API ARCH_EXPORT
-#       define USDANIMX_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
-#       define USDANIMX_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   if defined(ANIMX_EXPORTS)
+#       define ANIMX_API ARCH_EXPORT
+#       define ANIMX_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define ANIMX_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
 #   else
-#       define USDANIMX_API ARCH_IMPORT
-#       define USDANIMX_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
-#       define USDANIMX_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#       define ANIMX_API ARCH_IMPORT
+#       define ANIMX_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define ANIMX_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #   endif
-#   define USDANIMX_LOCAL ARCH_HIDDEN
+#   define ANIMX_LOCAL ARCH_HIDDEN
 #endif
 
-#endif
+#endif // PXR_USD_PLUGIN_USD_ANIMX_API_H

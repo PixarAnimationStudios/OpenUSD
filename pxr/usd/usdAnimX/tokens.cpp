@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 benmalartre
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,46 +21,66 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdAnimX/tokens.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAnimXTokensType::UsdAnimXTokensType() :
-    attributeName("attributeName", TfToken::Immortal),
-    bool_("bool", TfToken::Immortal),
-    constant("constant", TfToken::Immortal),
+    target("target", TfToken::Immortal),
+    dataType("bool", TfToken::Immortal),
+    defaultValue("defaultValue", TfToken::Immortal),
     curveInterpolationMethod("curveInterpolationMethod", TfToken::Immortal),
     curveRotationInterpolationMethod("curveRotationInterpolationMethod", TfToken::Immortal),
+    constant("constant", TfToken::Immortal),
+    linear("linear", TfToken::Immortal),
     cycle("cycle", TfToken::Immortal),
     cycleRelative("cycleRelative", TfToken::Immortal),
-    dataType("dataType", TfToken::Immortal),
-    double_("double", TfToken::Immortal),
-    float_("float", TfToken::Immortal),
-    int_("int", TfToken::Immortal),
-    keyframes("keyframes", TfToken::Immortal),
-    linear("linear", TfToken::Immortal),
     oscillate("oscillate", TfToken::Immortal),
     postInfinityType("postInfinityType", TfToken::Immortal),
     preInfinityType("preInfinityType", TfToken::Immortal),
     tangentType("tangentType", TfToken::Immortal),
+    global("global", TfToken::Immortal),
+    fixed("fixed", TfToken::Immortal),
+    flat("flat", TfToken::Immortal),
+    step("step", TfToken::Immortal),
+    slow("slow", TfToken::Immortal),
+    fast("fast", TfToken::Immortal),
+    smooth("smooth", TfToken::Immortal),
+    clamped("clamped", TfToken::Immortal),
+    automatic("automatic", TfToken::Immortal),
+    sine("sine", TfToken::Immortal),
+    parabolic("parabolic", TfToken::Immortal),
+    logarithmic("logarithmic", TfToken::Immortal),
+    plateau("plateau", TfToken::Immortal),
+    stepNext("stepNext", TfToken::Immortal),
     allTokens({
-        attributeName,
-        bool_,
-        constant,
+        target,
+        dataType,
+        defaultValue,
         curveInterpolationMethod,
         curveRotationInterpolationMethod,
+        constant,
+        linear,
         cycle,
         cycleRelative,
-        dataType,
-        double_,
-        float_,
-        int_,
-        keyframes,
-        linear,
         oscillate,
         postInfinityType,
         preInfinityType,
-        tangentType
+        tangentType,
+        global,
+        fixed,
+        flat,
+        step,
+        slow,
+        fast,
+        smooth,
+        clamped,
+        automatic,
+        sine,
+        parabolic,
+        logarithmic,
+        plateau,
+        stepNext,
     })
 {
 }
