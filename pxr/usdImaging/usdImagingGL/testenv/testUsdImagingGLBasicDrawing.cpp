@@ -259,49 +259,55 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
     _engine->SetRenderViewport(viewport);
  
-    TF_FOR_ALL(timeIt, GetTimes()) {
-        UsdTimeCode time = *timeIt;
-        if (*timeIt == -999) {
+    bool const useAovs = !GetRendererAov().IsEmpty();
+    GfVec4f fboClearColor = useAovs? GfVec4f(0.0f) : GetClearColor();
+    GLfloat clearDepth[1] = { 1.0f };
+    bool const clearOnlyOnce = ShouldClearOnce();
+    bool cleared = false;
+
+    UsdImagingGLRenderParams params;
+    params.drawMode = GetDrawMode();
+    params.enableLighting = IsEnabledTestLighting();
+    params.enableIdRender = IsEnabledIdRender();
+    params.complexity = _GetComplexity();
+    params.cullStyle = IsEnabledCullBackfaces() ?
+                        UsdImagingGLCullStyle::CULL_STYLE_BACK :
+                        UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+    params.showGuides = IsShowGuides();
+    params.showRender = IsShowRender();
+    params.showProxy = IsShowProxy();
+    params.clearColor = GetClearColor();
+
+    glViewport(0, 0, width, height);
+
+    glEnable(GL_DEPTH_TEST);
+
+    if (useAovs) {
+        _engine->SetRendererAov(GetRendererAov());
+    }
+
+    if(IsEnabledTestLighting()) {
+        if(UsdImagingGLEngine::IsHydraEnabled()) {
+            _engine->SetLightingState(_lightingContext);
+        } else {
+            _engine->SetLightingStateFromOpenGL();
+        }
+    }
+
+    if (!GetClipPlanes().empty()) {
+        params.clipPlanes = GetClipPlanes();
+        for (size_t i=0; i<GetClipPlanes().size(); ++i) {
+            glEnable(GL_CLIP_PLANE0 + i);
+        }
+    }
+
+    for (double const &t : GetTimes()) {
+        UsdTimeCode time = t;
+        if (t == -999) {
             time = UsdTimeCode::Default();
         }
-        UsdImagingGLRenderParams params;
-        params.drawMode = GetDrawMode();
-        params.enableLighting = IsEnabledTestLighting();
-        params.enableIdRender = IsEnabledIdRender();
+
         params.frame = time;
-        params.complexity = _GetComplexity();
-        params.cullStyle = IsEnabledCullBackfaces() ?
-                            UsdImagingGLCullStyle::CULL_STYLE_BACK :
-                            UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
-        params.showGuides = IsShowGuides();
-        params.showRender = IsShowRender();
-        params.showProxy = IsShowProxy();
-
-        glViewport(0, 0, width, height);
-
-        glEnable(GL_DEPTH_TEST);
-
-        if (!GetRendererAov().IsEmpty()) {
-            _engine->SetRendererAov(GetRendererAov());
-        }
-
-        if(IsEnabledTestLighting()) {
-            if(UsdImagingGLEngine::IsHydraEnabled()) {
-                _engine->SetLightingState(_lightingContext);
-            } else {
-                _engine->SetLightingStateFromOpenGL();
-            }
-        }
-
-        if (!GetClipPlanes().empty()) {
-            params.clipPlanes = GetClipPlanes();
-            for (size_t i=0; i<GetClipPlanes().size(); ++i) {
-                glEnable(GL_CLIP_PLANE0 + i);
-            }
-        }
-
-        GfVec4f const &clearColor = GetClearColor();
-        GLfloat clearDepth[1] = { 1.0f };
 
         // Make sure we render to convergence.
         TfErrorMark mark;
@@ -316,8 +322,15 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 TRACE_FUNCTION_SCOPE("iteration render convergence");
                 
                 convergenceIterations++;
-                glClearBufferfv(GL_COLOR, 0, clearColor.data());
-                glClearBufferfv(GL_DEPTH, 0, clearDepth);
+
+                if (cleared && clearOnlyOnce) {
+                    // Don't clear the FBO
+                } else {
+                    glClearBufferfv(GL_COLOR, 0, fboClearColor.data());
+                    glClearBufferfv(GL_DEPTH, 0, clearDepth);
+
+                    cleared = true;
+                }
                 
                 _engine->Render(_stage->GetPseudoRoot(), params);
             } while (!_engine->IsConverged());

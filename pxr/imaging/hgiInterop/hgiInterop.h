@@ -53,7 +53,8 @@ public:
     HGIINTEROP_API
     ~HgiInterop();
 
-    /// Transfer (blit) the provided textures to the application / viewer.
+    /// Composite the provided textures with the application / viewer's
+    /// framebuffer contents.
     /// `hgi`: 
     ///     Determines the source format/platform of the textures.
     ///     Eg. if hgi is of type HgiMetal, the textures are HgiMetalTexture.
@@ -61,8 +62,17 @@ public:
     ///     Determines what target format/platform the application is using.
     ///     E.g. If hgi==HgiMetal and interopDst==OpenGL then TransferToApp
     ///     will present the metal textures to the gl application.
-    /// `color`: is the source color aov texture to present to screen.
-    /// `depth`: (optional) is the depth aov texture to present to screen.
+    /// `color`: is the source color aov texture to composite to screen.
+    /// `depth`: (optional) is the depth aov texture to composite to screen.
+    ///
+    /// Note:
+    /// To composite correctly, blending is enabled. 
+    /// If `depth` is provided, depth testing is enabled.
+    /// As a result, the contents of the application framebuffer matter. In
+    /// order to use the contents of `color` and `depth` as-is (i.e., blit), the
+    /// color attachment should be cleared to (0,0,0,0) and the depth
+    /// attachment needs to be cleared to 1.
+    /// 
     HGIINTEROP_API
     void TransferToApp(
         Hgi *hgi,

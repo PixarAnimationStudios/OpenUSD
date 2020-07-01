@@ -35,8 +35,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdxPresentTask
 ///
-/// A task for taking the final rendered and composited result of the aovs and
-/// blit it into the viewers framebuffer.
+/// A task for taking the final result of the aovs and compositing it over the 
+/// currently bound framebuffer.
+/// This task uses the 'color' and optionally 'depth' aov's in the task
+/// context.
 ///
 class HdxPresentTask : public HdxTask
 {

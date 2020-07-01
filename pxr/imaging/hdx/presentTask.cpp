@@ -88,9 +88,10 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
         _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
     }
 
-    // Use HgiInterop to copy/present the Hgi textures to application.
+    // Use HgiInterop to composite the Hgi textures over the application's
+    // framebuffer contents.
     // Eg. This allows us to render with HgiMetal and present the images
-    // into a opengl based application (such as usdView).
+    // into a opengl based application (such as usdview).
     _interop.TransferToApp(_hgi, _interopDst, aovTexture, depthTexture);
 }
 

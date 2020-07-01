@@ -45,9 +45,10 @@ public:
     HGIINTEROP_API
     ~HgiInteropOpenGL();
 
-    /// Copy/Present provided color (and optional depth) textures to app.
+    /// Composite provided color (and optional depth) textures over app's
+    /// framebuffer contents.
     HGIINTEROP_API
-    void CopyToInterop(
+    void CompositeToInterop(
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth);
 

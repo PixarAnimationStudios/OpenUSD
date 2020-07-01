@@ -783,6 +783,9 @@ HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
 
     _CaptureOpenGlState();
     
+    // XXX: This doesn't support "optional" depth. Enabling depth writes without
+    // a depth aov to xfer would mean that the bound depth buffer is overwritten
+    // with the fullscreen tri's depth (i.e., the near plane).
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_TRUE);
     glEnable(GL_DEPTH_TEST);
@@ -791,7 +794,10 @@ HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    glBlendFuncSeparate(/*srcColor*/GL_ONE,
+                        /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
+                        /*srcAlpha*/GL_ONE,
+                        /*dstAlpha*/GL_ONE);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     
     ShaderContext &shader = _shaderProgramContext[shaderIndex];
@@ -842,12 +848,12 @@ HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
 }
 
 void
-HgiInteropMetal::CopyToInterop(
+HgiInteropMetal::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth)
 {
     if (!ARCH_UNLIKELY(color)) {
-        TF_WARN("No valid color texture provided");
+        TF_CODING_ERROR("No valid color texture provided");
         return;
     }
 

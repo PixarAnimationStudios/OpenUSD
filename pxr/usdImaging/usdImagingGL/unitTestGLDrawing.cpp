@@ -243,6 +243,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _showGuides(UsdImagingGLRenderParams().showGuides)
     , _showRender(UsdImagingGLRenderParams().showRender)
     , _showProxy(UsdImagingGLRenderParams().showProxy)
+    , _clearOnce(false)
 {
 }
 
@@ -329,7 +330,7 @@ static void Usage(int argc, char *argv[])
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
 "                           [-times times1 times2 ...] [-cullBackfaces]\n"
-"                           [-clear r g b a] [-translate x y z]\n"
+"                           [-clear r g b a] [-clearOnce] [-translate x y z]\n"
 "                           [-renderSetting name type value]\n"
 "                           [-rendererAov name]\n"
 "                           [-perfStatsFile path]\n"
@@ -364,6 +365,8 @@ static void Usage(int argc, char *argv[])
 "                      an image [()]\n"
 "  -cullBackfaces      enable backface culling\n"
 "  -clear r g b a      clear color\n"
+"  -clearOnce          Clear the framebuffer only once at the start \n"
+"                      instead of before each render.\n"
 "  -translate x y z    default camera translation\n"
 "  -rendererAov name   Name of AOV to display or write out\n"
 "  -perfStatsFile path Path to file performance stats are written to\n"
@@ -594,6 +597,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-proxyPurpose") == 0) {
             ParseShowHide(i, argc, argv, &_showProxy);
+        }
+        else if (strcmp(argv[i], "-clearOnce") == 0) {
+            _clearOnce = true;
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);

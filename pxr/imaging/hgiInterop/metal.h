@@ -53,7 +53,7 @@ public:
 
     /// Copy/Present provided color (and optional depth) textures to app.
     HGIINTEROP_API
-    void CopyToInterop(
+    void CompositeToInterop(
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth);
 

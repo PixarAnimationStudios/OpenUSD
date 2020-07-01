@@ -812,7 +812,8 @@ class StageView(QtOpenGL.QGLWidget):
         return self._rendererAovName
 
     def __init__(self, parent=None, dataModel=None, printTiming=False):
-
+        # Note: The default format *disables* the alpha component and so the
+        # default backbuffer uses GL_RGB.
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
@@ -1632,8 +1633,11 @@ class StageView(QtOpenGL.QGLWidget):
                 from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
                 GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
-            self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
-            GL.glClearColor(*self._renderParams.clearColor)
+            # Clear the default FBO associated with the widget/context to
+            # fully transparent and *not* the bg color.
+            # The bg color is used as the clear color for the aov, and the
+            # results of rendering are composited over the FBO (and not blit).
+            GL.glClearColor(*Gf.Vec4f(0,0,0,0))
 
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glDepthFunc(GL.GL_LESS)
@@ -1729,7 +1733,11 @@ class StageView(QtOpenGL.QGLWidget):
                         UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-                    GL.glDepthFunc(GL.GL_LEQUAL)
+                    # Use display space for the second clear because we
+                    # composite the framebuffer contents with the
+                    # color-corrected (i.e., display space) aov contents.
+                    clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
+                    GL.glClearColor(*clearColor)
                     GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
                 highlightMode = self._dataModel.viewSettings.selHighlightMode
