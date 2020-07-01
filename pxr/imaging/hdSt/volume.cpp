@@ -556,7 +556,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    if ((*dirtyBits) & HdChangeTracker::DirtyVolumeField) {
+    if ((*dirtyBits) & (HdChangeTracker::DirtyVolumeField |
+                        HdChangeTracker::DirtyMaterialId)) {
         /* FIELD TEXTURES */
         
         // (Re-)Allocate the textures associated with the field prims.
