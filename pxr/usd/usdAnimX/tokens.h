@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 benmalartre
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDANIMX_TOKENS_H
-#define USDANIMX_TOKENS_H
+#ifndef PXR_USD_PLUGIN_USD_ANIMX_TOKENS_H
+#define PXR_USD_PLUGIN_USD_ANIMX_TOKENS_H
 
 /// \file usdAnimX/tokens.h
 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// 
-// This is an automatically generated file (by usdGenSchema.py).
-// Do not hand-edit!
-// 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAnimX/api.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
+#include "api.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,34 +38,36 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class UsdAnimXTokensType
 ///
 /// \link UsdAnimXTokens \endlink provides static, efficient
-/// \link TfToken TfTokens\endlink for use in all public USD API.
+/// \link TfToken TfTokens \endlink for use in all public USD API.
 ///
-/// These tokens are auto-generated from the module's schema, representing
-/// property names, for when you need to fetch an attribute or relationship
-/// directly by name, e.g. UsdPrim::GetAttribute(), in the most efficient
-/// manner, and allow the compiler to verify that you spelled the name
-/// correctly.
-///
-/// UsdAnimXTokens also contains all of the \em allowedTokens values
-/// declared for schema builtin attributes of 'token' scene description type.
-/// Use UsdAnimXTokens like so:
-///
-/// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdAnimXTokens->attributeName);
-/// \endcode
 struct UsdAnimXTokensType {
-    USDANIMX_API UsdAnimXTokensType();
-    /// \brief "attributeName"
+    ANIMX_API UsdAnimXTokensType();
+    /// \brief "prim"
     /// 
-    /// UsdAnimXFCurveOp
-    const TfToken attributeName;
-    /// \brief "bool"
+    /// Defines a prim
+    const TfToken prim;
+    /// \brief "op"
     /// 
-    /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr()
-    const TfToken bool_;
-    /// \brief "constant"
+    /// Define an op
+    const TfToken op;
+    /// \brief "curve"
     /// 
-    /// Constant pre/post infinity type., Possible value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Default value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Possible value for UsdAnimXFCurve::GetPreInfinityTypeAttr(), Default value for UsdAnimXFCurve::GetPreInfinityTypeAttr()
+    /// Define a curve
+    const TfToken curve;
+    /// \brief "target"
+    /// 
+    /// Op target 
+    const TfToken target;
+    /// \brief "dataType"
+    /// 
+    /// Op dataType
+    const TfToken dataType;
+    /// \brief "defaultValue"
+    /// 
+    /// Op defaultValue
+    const TfToken defaultValue;
+
+    /// Constant pre/post infinity type.
     const TfToken constant;
     /// \brief "curveInterpolationMethod"
     /// 
@@ -82,64 +77,100 @@ struct UsdAnimXTokensType {
     /// 
     /// Defines interpolation mode for the  rotation curves.
     const TfToken curveRotationInterpolationMethod;
-    /// \brief "cycle"
-    /// 
-    /// Cycle pre/post infinity type., Possible value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Possible value for UsdAnimXFCurve::GetPreInfinityTypeAttr()
-    const TfToken cycle;
-    /// \brief "cycleRelative"
-    /// 
-    /// Cycle Relative pre/post infinity type., Possible value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Possible value for UsdAnimXFCurve::GetPreInfinityTypeAttr()
-    const TfToken cycleRelative;
-    /// \brief "dataType"
-    /// 
-    /// UsdAnimXFCurveOp
-    const TfToken dataType;
-    /// \brief "double"
-    /// 
-    /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr()
-    const TfToken double_;
-    /// \brief "float"
-    /// 
-    /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr(), Default value for UsdAnimXFCurveOp::GetDataTypeAttr()
-    const TfToken float_;
-    /// \brief "int"
-    /// 
-    /// Possible value for UsdAnimXFCurveOp::GetDataTypeAttr()
-    const TfToken int_;
-    /// \brief "keyframes"
-    /// 
-    /// UsdAnimXFCurve
-    const TfToken keyframes;
-    /// \brief "linear"
-    /// 
-    /// Linear pre/post infinity type., Possible value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Possible value for UsdAnimXFCurve::GetPreInfinityTypeAttr()
-    const TfToken linear;
-    /// \brief "oscillate"
-    /// 
-    /// Oscillate pre/post infinity type., Possible value for UsdAnimXFCurve::GetPostInfinityTypeAttr(), Possible value for UsdAnimXFCurve::GetPreInfinityTypeAttr()
-    const TfToken oscillate;
     /// \brief "postInfinityType"
     /// 
-    /// Defines the post-infinity type of the fcurve., UsdAnimXFCurve
+    /// Defines the post-infinity type of the fcurve.
     const TfToken postInfinityType;
     /// \brief "preInfinityType"
     /// 
-    /// Defines the pre-infinity type of the fcurve., UsdAnimXFCurve
+    /// Defines the pre-infinity type of the fcurve.
     const TfToken preInfinityType;
+    /// \brief "linear"
+    /// 
+    /// Linear pre/post infinity type. (also tangent type)
+    const TfToken linear;
+    /// \brief "cycle"
+    /// 
+    /// Cycle pre/post infinity type.
+    const TfToken cycle;
+    /// \brief "cycleRelative"
+    /// 
+    /// Cycle Relative pre/post infinity type.
+    const TfToken cycleRelative;
+    /// \brief "oscillate"
+    /// 
+    /// Oscillate pre/post infinity type.
+    const TfToken oscillate;
     /// \brief "tangentType"
     /// 
     /// Defines the type of the tangent
     const TfToken tangentType;
+    /// \brief "global"
+    /// 
+    /// Tangent type
+    const TfToken global;
+    /// \brief "fixed"
+    /// 
+    /// Tangent type
+    const TfToken fixed;
+    /// \brief "flat"
+    /// 
+    /// Tangent type
+    const TfToken flat;
+    /// \brief "step"
+    /// 
+    /// Tangent type
+    const TfToken step;
+    /// \brief "slow"
+    /// 
+    /// Tangent type
+    const TfToken slow;
+    /// \brief "fast"
+    /// 
+    /// Tangent type
+    const TfToken fast;
+    /// \brief "smooth"
+    /// 
+    /// Tangent type
+    const TfToken smooth;
+    /// \brief "clamped"
+    /// 
+    /// Tangent type
+    const TfToken clamped;
+    /// \brief "auto"
+    /// 
+    /// Tangent type
+    const TfToken automatic;
+    /// \brief "sine"
+    /// 
+    /// Tangent type
+    const TfToken sine;
+    /// \brief "parabolic"
+    /// 
+    /// Tangent type
+    const TfToken parabolic;
+    /// \brief "logarithmic"
+    /// 
+    /// Tangent type
+    const TfToken logarithmic;
+    /// \brief "plateau"
+    /// 
+    /// Tangent type
+    const TfToken plateau;
+    /// \brief "stepNext"
+    /// 
+    /// Tangent type
+    const TfToken stepNext;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };
 
 /// \var UsdAnimXTokens
 ///
-/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// A global variable with static, efficient \link TfToken TfTokens \endlink
 /// for use in all public USD API.  \sa UsdAnimXTokensType
-extern USDANIMX_API TfStaticData<UsdAnimXTokensType> UsdAnimXTokens;
+extern ANIMX_API TfStaticData<UsdAnimXTokensType> UsdAnimXTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // PXR_USD_PLUGIN_USD_ANIMX_TOKENS_H

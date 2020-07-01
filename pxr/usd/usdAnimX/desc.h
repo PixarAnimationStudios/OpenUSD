@@ -21,33 +21,41 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-////////////////////////////////////////////////////////////////////////
+#ifndef PXR_USD_USD_ANIMX_DESC_H
+#define PXR_USD_USD_ANIMX_DESC_H
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/token.h"
-
+#include "pxr/base/vt/value.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
-    // List of direct dependencies for this library.
-    const std::vector<TfToken> reqs = {
-        TfToken("arch"),
-        TfToken("gf"),
-        TfToken("sdf"),
-        TfToken("tf"),
-        TfToken("trace"),
-        TfToken("usd"),
-        TfToken("vt"),
-        TfToken("work")
-    };
-    TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("UsdAnimX"), TfToken("pxr.UsdAnimX"), reqs);
-}
+struct UsdAnimXKeyframeDesc {
+    double time;
+    std::vector<double> data;
+};
+
+struct UsdAnimXCurveDesc {
+    TfToken name;
+    std::vector<UsdAnimXKeyframeDesc> keyframes;
+};
+
+struct UsdAnimXOpDesc {
+    TfToken name;
+    TfToken attributeName;
+    TfToken dataType;
+    VtValue defaultValue;
+
+    std::vector<UsdAnimXCurveDesc> curves;
+};
+
+struct UsdAnimXPrimDesc {
+    TfToken name;
+    std::vector<UsdAnimXPrimDesc> children;
+    std::vector<UsdAnimXOpDesc> ops;
+    UsdAnimXPrimDesc* parent;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-
+#endif // PXR_USD_USD_ANIMX_DESC_H

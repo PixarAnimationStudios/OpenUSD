@@ -31,10 +31,7 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-struct UsdAnimXKeyframeDesc {
-  double time;
-  VtArray<double> data;
-};
+struct UsdAnimXKeyframeDesc;
 
 std::ostream& operator<<(std::ostream &, adsk::Keyframe const &);
 void GetKeyframeDescription(adsk::Keyframe const &, UsdAnimXKeyframeDesc* desc);
