@@ -21,12 +21,14 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_HEADERS
         api.h
         tokens.h
+        types.h
         animx.h
         desc.h
         keyframe.h
 
     PRIVATE_CLASSES
         tokens
+        types
         animx
         keyframe
         curve

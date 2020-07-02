@@ -37,15 +37,18 @@ struct UsdAnimXKeyframeDesc {
 
 struct UsdAnimXCurveDesc {
     TfToken name;
+    TfToken preInfinityType;
+    TfToken postInfinityType;
     std::vector<UsdAnimXKeyframeDesc> keyframes;
 };
 
 struct UsdAnimXOpDesc {
     TfToken name;
-    TfToken attributeName;
+    TfToken target;
     TfToken dataType;
     VtValue defaultValue;
-
+    bool useRotationInterpolation;
+    TfToken interpolationMethod;
     std::vector<UsdAnimXCurveDesc> curves;
 };
 
