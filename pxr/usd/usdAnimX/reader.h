@@ -27,12 +27,17 @@
 /// \file usdAnimX/rader.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/sdf/valueTypeRegistry.h"
+#include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/ar/asset.h"
 #include <string>
 #include <vector>
 #include <memory>
+#include <iostream>
+#include "types.h"
 #include "desc.h"
 #include "tokens.h"
 
@@ -40,12 +45,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 enum UsdAnimXReaderState {
-    ANIMX_READ_NONE,
-    ANIMX_READ_PRIM_ENTER,
     ANIMX_READ_PRIM,
-    ANIMX_READ_OP_ENTER,
     ANIMX_READ_OP,
-    ANIMX_READ_CURVE_ENTER,
     ANIMX_READ_CURVE
 };
 
@@ -68,37 +69,50 @@ public:
     void Close();
 
 protected:
+    inline bool _HasSpec(const std::string& s, const TfToken& token);
     inline bool _IsPrim(const std::string &s, UsdAnimXPrimDesc *desc);
     inline bool _IsOp(const std::string &s, UsdAnimXOpDesc *desc);
     inline bool _IsCurve(const std::string &s, UsdAnimXCurveDesc *desc);
     inline bool _IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc *desc);
-    inline bool _HasOpeningBrace(const std::string &s, size_t *pos);
-    inline bool _HasClosingBrace(const std::string &s, size_t *pos);
-    inline bool _HasOpeningBracket(const std::string &s, size_t *pos);
-    inline bool _HasClosingBracket(const std::string &s, size_t *pos);
-    inline bool _HasOpeningParenthese(const std::string &s, size_t *pos);
-    inline bool _HasClosingParenthese(const std::string &s, size_t *pos);
-    inline bool _HasOpeningQuote(const std::string &s, size_t *pos);
-    inline bool _HasClosingQuote(const std::string &s, size_t start, size_t *pos);
-    inline bool _HasChar(const std::string &s, const char c, size_t *pos);
+    inline bool _HasOpeningBrace(const std::string &s, size_t *pos=NULL);
+    inline bool _HasClosingBrace(const std::string &s, size_t *pos=NULL);
+    inline bool _HasOpeningBracket(const std::string &s, size_t *pos=NULL);
+    inline bool _HasClosingBracket(const std::string &s, size_t *pos=NULL);
+    inline bool _HasOpeningParenthese(const std::string &s, size_t *pos=NULL);
+    inline bool _HasClosingParenthese(const std::string &s, size_t *pos=NULL);
+    inline bool _HasOpeningQuote(const std::string &s, size_t *pos=NULL);
+    inline bool _HasClosingQuote(const std::string &s, size_t start, size_t *pos=NULL);
+    inline bool _HasChar(const std::string &s, const char c, size_t *pos=NULL);
     inline TfToken _GetNameToken(const std::string &s);
+    inline VtValue _GetValue(const std::string& s);
     inline std::string _Trim(const std::string& s);
-    //inline std::vector<std::string> _GetTokens(const std::string& s);
+
+    void _ReadPrim(const std::string& s);
+    void _ReadOp(const std::string& s);
+    void _ReadCurve(const std::string& s);
 
 private:
     std::vector<UsdAnimXPrimDesc> _rootPrims;
     size_t                        _readState;
     size_t                        _primDepth;
     UsdAnimXData*                 _datas;
-};
 
+    UsdAnimXPrimDesc              _primDesc;
+    UsdAnimXOpDesc                _opDesc;
+    UsdAnimXCurveDesc             _curveDesc;
+    UsdAnimXKeyframeDesc          _keyframeDesc;
+
+    UsdAnimXPrimDesc*             _currentPrim;
+    UsdAnimXOpDesc*               _currentOp;
+    UsdAnimXCurveDesc*            _currentCurve;
+};
 
 bool 
 UsdAnimXReader::_HasChar(const std::string &s, const char c, size_t *pos)
 {
   size_t p = s.find(c);
     if(p != std::string::npos) {
-        *pos = p;
+        if(pos)*pos = p;
         return true;
     }
     return false;
@@ -164,51 +178,73 @@ UsdAnimXReader::_GetNameToken(const std::string &s)
     return TfToken();
 }
 
+VtValue
+UsdAnimXReader::_GetValue(const std::string &s)
+{
+    return VtValue();
+}
+
+bool 
+UsdAnimXReader::_HasSpec(const std::string& s, const TfToken& token)
+{
+    const char* spec = token.GetText();
+    if(s.find(spec, 0, 
+        token.size()) != std::string::npos) {
+            return true;
+        }
+    return false;
+}
+
 bool 
 UsdAnimXReader::_IsPrim(const std::string& s, UsdAnimXPrimDesc* desc)
 {   
-    static const std::string primSpecifier = UsdAnimXTokens->prim;
-    if(s.find(primSpecifier.c_str(), 0, 
-        primSpecifier.length()) != std::string::npos) {
-            desc->name = _GetNameToken(s);
-            desc->children.clear();
-            desc->ops.clear();
-            return true;
-        }
-            
+    if(_HasSpec(s, UsdAnimXTokens->prim)) {
+        desc->name = _GetNameToken(s);
+        desc->children.clear();
+        desc->ops.clear();
+        return true;
+    } 
     return false;
 }
 
 bool 
 UsdAnimXReader::_IsOp(const std::string& s, UsdAnimXOpDesc* desc)
 {   
-    static const std::string opSpecifier = UsdAnimXTokens->op;
-    if(s.find(opSpecifier.c_str(), 0, 
-        opSpecifier.length()) != std::string::npos) {
-            desc->name = _GetNameToken(s);
-            return true;
-        }
-            
+    if(_HasSpec(s, UsdAnimXTokens->op)) {
+        desc->name = _GetNameToken(s);
+        return true;
+    }    
     return false;
 }
 
 bool 
 UsdAnimXReader::_IsCurve(const std::string& s, UsdAnimXCurveDesc* desc)
 {   
-    static const std::string curveSpecifier = UsdAnimXTokens->curve;
-    if(s.find(curveSpecifier.c_str(), 0, 
-        curveSpecifier.length()) != std::string::npos) {
-            desc->name = _GetNameToken(s);
-            return true;
-        }
-           
+    if(_HasSpec(s, UsdAnimXTokens->curve)) {
+        desc->name = _GetNameToken(s);
+        return true;
+    }
     return false;
 }
 
 bool 
 UsdAnimXReader::_IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc* desc)
 {   
-    if(!_readState == ANIMX_READ_CURVE)return false;
+    if(_readState != ANIMX_READ_CURVE)return false;
+    if(_HasOpeningBrace(s, NULL) || _HasClosingBrace(s, NULL))return false;
+    if(_HasOpeningParenthese(s) && _HasClosingParenthese(s)) {
+        /*
+        VtValue value = _GetValue(s);
+        if(value.IsHolding<VtArray<double>>()) {
+            VtArray<double>& datas = value.UncheckedGet<VtArray<double>>();
+            desc->time = datas[0];
+            size_t n = datas.size() - 1;
+            desc->data.resize(n);
+            memcpy(&desc->data[0], &datas[1], n * sizeof(double));
+        }
+        */
+        return true;
+    }
     return false;
 }
 

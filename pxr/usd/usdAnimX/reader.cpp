@@ -43,23 +43,11 @@ struct UsdAnimXReadBuffer : std::streambuf
 
 static void PrintReadState(size_t state){
     switch(state) {
-        case ANIMX_READ_NONE:
-            std::cout << "READ STATE : NONE" << std::endl;
-            break;
-        case ANIMX_READ_PRIM_ENTER:
-            std::cout << "READ STATE : PRIM_ENTER" << std::endl;
-            break;
         case ANIMX_READ_PRIM:
             std::cout << "READ STATE : PRIM" << std::endl;
             break;
-        case ANIMX_READ_OP_ENTER:
-            std::cout << "READ STATE : OP_ENTER" << std::endl;
-            break;
         case ANIMX_READ_OP:
             std::cout << "READ STATE : OP" << std::endl;
-            break;
-        case ANIMX_READ_CURVE_ENTER:
-            std::cout << "READ STATE : CURVE_ENTER" << std::endl;
             break;
         case ANIMX_READ_CURVE:
             std::cout << "READ STATE : CURVE" << std::endl;
@@ -70,11 +58,90 @@ static void PrintReadState(size_t state){
 }
 
 UsdAnimXReader::UsdAnimXReader()
+  : _currentPrim(NULL)
+  , _currentOp(NULL)
+  , _currentCurve(NULL)
 {
 }
 
 UsdAnimXReader::~UsdAnimXReader()
 {
+}
+
+void UsdAnimXReader::_ReadPrim(const std::string& s)
+{
+    if(_IsPrim(s, &_primDesc))
+    {
+        _primDepth++;
+        if(_currentPrim){
+            _primDesc.parent = _currentPrim;
+            _currentPrim->children.push_back(_primDesc);
+            _currentPrim = &_currentPrim->children.back();
+        }
+        else {
+            _primDesc.parent = NULL;
+            _rootPrims.push_back(_primDesc);
+            _currentPrim = &_rootPrims.back();
+        }
+        _readState = ANIMX_READ_PRIM;
+    }
+    else if(_IsOp(s, &_opDesc))
+    {
+        std::cout << "GET OP : " << _opDesc.name << std::endl;
+        _currentPrim->ops.push_back(_opDesc);
+        _currentOp = &_currentPrim->ops.back();
+        _readState = ANIMX_READ_OP;
+    }
+}
+
+void UsdAnimXReader::_ReadOp(const std::string& s)
+{ 
+    if(_HasOpeningBrace(s))return;
+    if(_IsCurve(s, &_curveDesc))
+    {
+        std::cout << "GET CURVE : " << _curveDesc.name << std::endl;
+        _currentOp->curves.push_back(_curveDesc);
+        _currentCurve = &_currentOp->curves.back();
+        _readState = ANIMX_READ_CURVE;
+    }
+    else if(_HasSpec(s, UsdAnimXTokens->target)) {
+        std::cout << "TARGET : " << _GetNameToken(s) << std::endl;
+        _currentOp->target = _GetNameToken(s);
+    }
+    else if(_HasSpec(s, UsdAnimXTokens->dataType)) {
+        std::cout << "DATA TYPE : " << _GetNameToken(s) << std::endl;
+        _currentOp->dataType = _GetNameToken(s);
+        const SdfValueTypeName& typeName = 
+            AnimXGetSdfValueTypeNameFromToken(_currentOp->dataType);
+
+        //Sdf_ValueTypeRegistry::FindType(_currentOp->dataType.GetString());
+        //SdfValueTypeName typeName = SdfValueTypeName::
+        TfType type = typeName.GetType();
+        std::cout << "TF TYPE IS KNOWN : " << type.IsUnknown() << std::endl;
+        std::cout << "TF TYPE : " << type.GetTypeid().name() << std::endl;
+    }
+    else if(_HasSpec(s, UsdAnimXTokens->defaultValue)) {
+        std::cout << "DEFAULT VALUE: " << _GetValue(s) << std::endl;
+        _currentOp->defaultValue = _GetValue(s);
+    }
+    //else if(_HasSpec(s, UsdAnimXTokens->use))
+}
+
+void UsdAnimXReader::_ReadCurve(const std::string& s)
+{
+    if(_HasSpec(s, UsdAnimXTokens->preInfinityType)) {
+        std::cout << "HAS PRE INFINITY SPEC!!!" << std::endl;
+        _currentCurve->preInfinityType = _GetNameToken(s);
+        std::cout << "PRE-INFINITY : " << _currentCurve->preInfinityType << std::endl;
+    } else if(_HasSpec(s, UsdAnimXTokens->postInfinityType)) {
+        std::cout << "HAS POST INFINITY SPEC!!!" << std::endl;
+        _currentCurve->postInfinityType = _GetNameToken(s);
+        std::cout << "POST-INFINITY : " << _currentCurve->postInfinityType << std::endl;
+    }
+    else if(_IsKeyframe(s, &_keyframeDesc))
+    {
+        std::cout << "GET KEYFRAME : " << s << std::endl;
+    }
 }
 
 /// Open a file
@@ -87,56 +154,13 @@ bool  UsdAnimXReader::Open(std::shared_ptr<ArAsset> asset)
     std::istream stream(&buffer);
     std::string line;
 
-    UsdAnimXPrimDesc primDesc;
-    UsdAnimXOpDesc opDesc;
-    UsdAnimXCurveDesc curveDesc;
-    UsdAnimXKeyframeDesc keyframeDesc;
-
-    UsdAnimXPrimDesc* currentPrim = NULL;
-    UsdAnimXOpDesc* currentOp = NULL;
-    UsdAnimXCurveDesc* currentCurve = NULL;
-
-    _readState = ANIMX_READ_NONE;
+    _readState = ANIMX_READ_PRIM;
     _primDepth = 0;
-    size_t start_p, end_p;
+    size_t pos;
     while (std::getline(stream, line)) {
         if(line.empty())continue;
-        PrintReadState(_readState);
         line = _Trim(line);
-        if(_IsPrim(line, &primDesc))
-        {
-            _primDepth++;
-            if(currentPrim){
-                primDesc.parent = currentPrim;
-                currentPrim->children.push_back(primDesc);
-                currentPrim = &currentPrim->children.back();
-            }
-            else {
-                primDesc.parent = NULL;
-                _rootPrims.push_back(primDesc);
-                currentPrim = &_rootPrims.back();
-            }
-            _readState = ANIMX_READ_PRIM_ENTER;
-        }
-        else if(_IsOp(line, &opDesc))
-        {
-          std::cout << "GET OP : " << opDesc.name << std::endl;
-          _readState = ANIMX_READ_OP_ENTER;
-        }
-        else if(_IsCurve(line, &curveDesc))
-        {
-          std::cout << "GET CURVE : " << curveDesc.name << std::endl;
-          _readState = ANIMX_READ_CURVE_ENTER;
-        }
-        else if(_IsKeyframe(line, &keyframeDesc))
-        {
-            std::cout << "GET KEYFRAME : " << line << std::endl;
-        }
-
-        if(_HasOpeningBrace(line, &start_p)) {
-            _readState++;
-        }
-        else if(_HasClosingBrace(line, &end_p)) {
+        if(_HasClosingBrace(line, &pos)) {
             switch(_readState) {
                 case ANIMX_READ_CURVE:
                     _readState = ANIMX_READ_OP;
@@ -144,13 +168,21 @@ bool  UsdAnimXReader::Open(std::shared_ptr<ArAsset> asset)
                 case ANIMX_READ_OP:
                     _readState = ANIMX_READ_PRIM;
                     break;
+            }
+        } else {
+            switch(_readState) {
+                case ANIMX_READ_CURVE:
+                    _ReadCurve(line);
+                    break;
+                case ANIMX_READ_OP:
+                    _ReadOp(line);
+                    break;
                 case ANIMX_READ_PRIM:
-                    _primDepth--;
-                    if(_primDepth == 0)_readState = ANIMX_READ_NONE;
+                    _ReadPrim(line);
                     break;
             }
         }
-    }
+    };
     return true;
 }
 

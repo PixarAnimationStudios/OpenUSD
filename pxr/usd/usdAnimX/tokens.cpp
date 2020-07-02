@@ -26,8 +26,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAnimXTokensType::UsdAnimXTokensType() :
+    prim("prim", TfToken::Immortal),
+    op("op", TfToken::Immortal),
+    curve("curve", TfToken::Immortal),
     target("target", TfToken::Immortal),
-    dataType("bool", TfToken::Immortal),
+    dataType("dataType", TfToken::Immortal),
     defaultValue("defaultValue", TfToken::Immortal),
     curveInterpolationMethod("curveInterpolationMethod", TfToken::Immortal),
     curveRotationInterpolationMethod("curveRotationInterpolationMethod", TfToken::Immortal),
