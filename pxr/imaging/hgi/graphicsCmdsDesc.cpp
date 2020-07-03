@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 
+#include <ostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool operator==(
