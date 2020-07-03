@@ -215,11 +215,12 @@ private:
     // Return the hash code for the accumulated hash state.
     size_t _GetCode() const {
         // This is based on Knuth's multiplicative hash for integers.  The
-        // constant is the closest prime to the binary expansion of the golden
-        // ratio - 1.  The best way to produce a hash table bucket index from
+        // constant is the closest prime to the binary expansion of the inverse
+        // golden ratio.  The best way to produce a hash table bucket index from
         // the result is to shift the result right, since the higher order bits
         // have the most entropy.  But since we can't know the number of buckets
-        // in a table that's using this, we just reverse the byte order instead.
+        // in a table that's using this, we just reverse the byte order instead,
+        // to get the highest entropy bits into the low-order bytes.
         return _SwapByteOrder(_state * 11400714819323198549ULL);
     }
 
@@ -239,6 +240,36 @@ private:
     }
 
     size_t _Combine(size_t x, size_t y) const {
+        // This is our hash combiner.  The task is, given two hash codes x and
+        // y, compute a single hash code.  One way to do this is to exclusive-or
+        // the two codes together, but this can produce bad results if they
+        // differ by some fixed amount, For example if the input codes are
+        // multiples of 32, and the two codes we're given are N and N + 32 (this
+        // happens commonly when the hashed values are memory addresses) then
+        // the resulting hash codes for successive pairs of these produces many
+        // repeating values (32, 96, 32, XXX, 32, 96, 32, YYY...).  That's a lot
+        // of collisions.
+        //
+        // Instead we combine hash values by assigning numbers to the lattice
+        // points in the plane, and then treating the inputs x and y as
+        // coordinates identifying a lattice point.  Then the combined hash
+        // value is just the number assigned to the lattice point.  This way
+        // each unique input pair (x, y) gets a unique output hash code.
+        //
+        // We number lattice points by triangular numbers like this:
+        //
+        //  X  0  1  2  3  4  5
+        // Y
+        // 0   0  2  5  9 14 20
+        // 1   1  4  8 13 19 26
+        // 2   3  7 12 18 25 33
+        // 3   6 11 17 24 32 41
+        // 4  10 16 23 31 40 50
+        // 5  15 22 30 39 49 60
+        //
+        // This takes a couple of additions and a multiplication, which is a bit
+        // more expensive than something like an exclusive or, but the quality
+        // improvement outweighs the added expense.
         x += y;
         return y + x * (x + 1) / 2;
     }
