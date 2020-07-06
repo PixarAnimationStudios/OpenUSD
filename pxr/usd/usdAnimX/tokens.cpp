@@ -29,6 +29,7 @@ UsdAnimXTokensType::UsdAnimXTokensType() :
     prim("prim", TfToken::Immortal),
     op("op", TfToken::Immortal),
     curve("curve", TfToken::Immortal),
+    keyframes("keyframes", TfToken::Immortal),
     target("target", TfToken::Immortal),
     dataType("dataType", TfToken::Immortal),
     defaultValue("defaultValue", TfToken::Immortal),

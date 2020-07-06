@@ -50,6 +50,8 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 
 #include <vector>
+#include <iostream>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -126,7 +128,7 @@ BOOST_PP_SEQ_FOR_EACH(_USD_ANIMX_DECLARE_INTERPOLATION_TRAITS, ~,
 
 // interpolate prototype
 typedef bool(*InterpolateFunc)(const std::vector<UsdAnimXCurve>& curves, 
-    VtValue* value, double time);
+    VtValue* value, double time, size_t n);
 
 template<typename T>
 static 
@@ -182,7 +184,8 @@ _InterpolateQuat(const UsdAnimXCurve* curves, T* value, double time)
 
 static
 bool 
-UsdAnimXInterpolateHalf(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateHalf(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
 {
     if(curves.size()!=1)return false;
     GfHalf v;
@@ -193,7 +196,8 @@ UsdAnimXInterpolateHalf(const std::vector<UsdAnimXCurve>& curves, VtValue* value
 
 static
 bool 
-UsdAnimXInterpolateFloat(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateFloat(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=1)return false;
     float v;
@@ -204,7 +208,8 @@ UsdAnimXInterpolateFloat(const std::vector<UsdAnimXCurve>& curves, VtValue* valu
 
 static
 bool 
-UsdAnimXInterpolateDouble(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateDouble(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=1)return false;
     double v;
@@ -215,7 +220,8 @@ UsdAnimXInterpolateDouble(const std::vector<UsdAnimXCurve>& curves, VtValue* val
 
 static
 bool 
-UsdAnimXInterpolateTimeCode(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateTimeCode(const std::vector<UsdAnimXCurve>& curves,
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=1)return false;
     SdfTimeCode v;
@@ -226,7 +232,8 @@ UsdAnimXInterpolateTimeCode(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateMatrix2d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateMatrix2d(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     /*
     if(curves.size()!=1)return false;
@@ -240,7 +247,8 @@ UsdAnimXInterpolateMatrix2d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateMatrix3d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateMatrix3d(const std::vector<UsdAnimXCurve>& curves,
+    VtValue* value, double time, size_t n=0)
 {
     /*
     if(curves.size()!=1)return false;
@@ -254,7 +262,8 @@ UsdAnimXInterpolateMatrix3d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateMatrix4d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateMatrix4d(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     /*
     if(curves.size()!=1)return false;
@@ -268,7 +277,8 @@ UsdAnimXInterpolateMatrix4d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector2d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector2d(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=2)return false;
     GfVec2d v;
@@ -279,7 +289,8 @@ UsdAnimXInterpolateVector2d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector2f(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector2f(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=2)return false;
     GfVec2f v;
@@ -290,7 +301,8 @@ UsdAnimXInterpolateVector2f(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector2h(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector2h(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=2)return false;
     GfVec2h v;
@@ -301,7 +313,8 @@ UsdAnimXInterpolateVector2h(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector3d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector3d(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=3)return false;
     GfVec3d v;
@@ -312,7 +325,8 @@ UsdAnimXInterpolateVector3d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector3f(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector3f(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=3)return false;
     GfVec3f v;
@@ -323,7 +337,8 @@ UsdAnimXInterpolateVector3f(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector3h(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector3h(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=3)return false;
     GfVec3h v;
@@ -334,7 +349,8 @@ UsdAnimXInterpolateVector3h(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector4d(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector4d(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfVec4d v;
@@ -345,7 +361,8 @@ UsdAnimXInterpolateVector4d(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector4f(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector4f(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfVec4f v;
@@ -356,7 +373,8 @@ UsdAnimXInterpolateVector4f(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateVector4h(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateVector4h(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfVec4h v;
@@ -367,7 +385,8 @@ UsdAnimXInterpolateVector4h(const std::vector<UsdAnimXCurve>& curves, VtValue* v
 
 static
 bool 
-UsdAnimXInterpolateQuatd(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateQuatd(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfQuatd v;
@@ -378,7 +397,8 @@ UsdAnimXInterpolateQuatd(const std::vector<UsdAnimXCurve>& curves, VtValue* valu
 
 static
 bool 
-UsdAnimXInterpolateQuatf(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateQuatf(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfQuatf v;
@@ -389,7 +409,8 @@ UsdAnimXInterpolateQuatf(const std::vector<UsdAnimXCurve>& curves, VtValue* valu
 
 static
 bool 
-UsdAnimXInterpolateQuath(const std::vector<UsdAnimXCurve>& curves, VtValue* value, double time)
+UsdAnimXInterpolateQuath(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=0)
 {
     if(curves.size()!=4)return false;
     GfQuath v;
@@ -397,6 +418,290 @@ UsdAnimXInterpolateQuath(const std::vector<UsdAnimXCurve>& curves, VtValue* valu
     *value = VtValue(v);
     return true;
 }
+
+/// Arrays
+static
+bool 
+UsdAnimXInterpolateHalfArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=n)return false;
+    VtArray<GfHalf> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate<GfHalf>(&curves[i], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateFloatArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=n)return false;
+    VtArray<float> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate<float>(&curves[i], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateDoublArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=n)return false;
+    VtArray<double> array(n);
+    for(size_t i=0;i<n;++i) {
+      _Interpolate<double>(&curves[i], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateTimeCodeArray(const std::vector<UsdAnimXCurve>& curves,
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=n)return false;
+    VtArray<SdfTimeCode> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate<SdfTimeCode>(&curves[i], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateMatrix2dArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    /*
+    if(curves.size()!=1)return false;
+    GfMatrix2d v;
+    _Interpolate4<GfMatrix2d>(&curves[0], &v, time);
+    *value = VtValue(v);
+    return true;
+    */
+    return false;
+}
+
+static
+bool 
+UsdAnimXInterpolateMatrix3dArray(const std::vector<UsdAnimXCurve>& curves,
+    VtValue* value, double time, size_t n=1)
+{
+    /*
+    if(curves.size()!=1)return false;
+    GfMatrix2d v;
+    _Interpolate4<GfMatrix2d>(&curves[0], &v, time);
+    *value = VtValue(v);
+    return true;
+    */
+    return false;
+}
+
+static
+bool 
+UsdAnimXInterpolateMatrix4dArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    /*
+    if(curves.size()!=1)return false;
+    GfMatrix2d v;
+    _Interpolate4<GfMatrix2d>(&curves[0], &v, time);
+    *value = VtValue(v);
+    return true;
+    */
+    return false;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector2dArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 2*n)return false;
+    VtArray<GfVec2d> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate2<GfVec2d>(&curves[i*2], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector2fArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 2*n)return false;
+    VtArray<GfVec2f> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate2<GfVec2f>(&curves[i*2], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector2hArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 2*n)return false;
+    VtArray<GfVec2h> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate2<GfVec2h>(&curves[i*2], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector3dArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 3*n)return false;
+    VtArray<GfVec3d> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate3<GfVec3d>(&curves[i*3], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector3fArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 3*n)return false;
+    VtArray<GfVec3f> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate3<GfVec3f>(&curves[i*3], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector3hArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 3*n)return false;
+    VtArray<GfVec3h> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate3<GfVec3h>(&curves[i*3], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector4dArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfVec4d> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate4<GfVec4d>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector4fArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfVec4f> array(n);
+    for(size_t i=0;i<n;++i) {
+      _Interpolate4<GfVec4f>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateVector4hArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfVec4h> array(n);
+    for(size_t i=0;i<n;++i) {
+        _Interpolate4<GfVec4h>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateQuatdArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfQuatd> array(n);
+    for(size_t i=0;i<n;++i) {
+        _InterpolateQuat<GfQuatd>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateQuatfArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfQuatf> array(n);
+    for(size_t i=0;i<n;++i) {
+        _InterpolateQuat<GfQuatf>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateQuathArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size() != 4*n)return false;
+    VtArray<GfQuath> array(n);
+    for(size_t i=0;i<n;++i) {
+        _InterpolateQuat<GfQuath>(&curves[i*4], &array[i], time);
+    }
+    *value = VtValue(array);
+    return true;
+}
+
+/*
+static
+bool 
+UsdAnimXInterpolateVector3fArray(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time)
+{
+    if(curves.size()!=3)return false;
+    VtArray<GfVec3f> array(1);
+    _Interpolate3<GfVec3f>(&curves[0], &array[0], time);
+    *value = VtValue(array);
+    return true;
+}
+*/
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "interpolation.h"
+#include "desc.h"
 #include "curve.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/abstractData.h"
@@ -124,10 +125,9 @@ public:
     const SdfPath& GetRootPrimPath() const;
     
     void AddPrim(const SdfPath& primPath);
-    _AnimXOpData* AddOp(const SdfPath& primPath, const TfToken& name, 
-        const TfToken& typeName, const VtValue& defaultValue);
+    _AnimXOpData* AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op);
     void AddFCurve(const SdfPath& primPath, const TfToken& opName,
-        const UsdAnimXCurve& curve);
+        const UsdAnimXCurveDesc& curve);
 
     void ComputeTimesSamples();
 

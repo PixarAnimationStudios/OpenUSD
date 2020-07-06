@@ -2,9 +2,19 @@
 #include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
- UsdAnimXCurve::UsdAnimXCurve() 
+UsdAnimXCurve::UsdAnimXCurve() 
 { 
 };
+
+UsdAnimXCurve::UsdAnimXCurve(const UsdAnimXCurveDesc &desc)
+{
+    size_t keyframeIndex = 0;
+    for(const auto& keyframe: desc.keyframes) {
+        addKeyframe(GetKeyframeFromDesc(keyframe, keyframeIndex));
+        keyframeIndex++;
+    }
+}
+
 
 bool  UsdAnimXCurve::keyframe(double time, adsk::Keyframe &key) const
 {
@@ -150,59 +160,62 @@ unsigned int UsdAnimXCurve::keyframeCount() const
 
 bool UsdAnimXCurve::isRotation() const
 {
-    return _rotationInterpolationMethod == adsk::CurveRotationInterpolationMethod::Quaternion ||
-        _rotationInterpolationMethod == adsk::CurveRotationInterpolationMethod::Slerp ||
-        _rotationInterpolationMethod == adsk::CurveRotationInterpolationMethod::Squad;
+    return _rotationInterpolationMethod == 
+            adsk::CurveRotationInterpolationMethod::Quaternion ||
+        _rotationInterpolationMethod == 
+            adsk::CurveRotationInterpolationMethod::Slerp ||
+        _rotationInterpolationMethod == 
+            adsk::CurveRotationInterpolationMethod::Squad;
 }
 
 size_t UsdAnimXCurve::findClosest(double time) const
 {
-  for(const auto& key: _keyframes) {
-    if(time<=key.time) return key.index;
-  }
+    for(const auto& key: _keyframes) {
+        if(time<=key.time) return key.index;
+    }
 }
 
 void UsdAnimXCurve::addKeyframe(const adsk::Keyframe& key)
 {
-  _keyframes.push_back(key);
-  //addKeyframe(key.time, key.value);
+    _keyframes.push_back(key);
 }
 
 void UsdAnimXCurve::addKeyframe(double time, double value)
 {
-  
-  adsk::Tangent tanIn = { adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
-  adsk::Tangent tanOut = { adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
+    adsk::Tangent tanIn = { 
+        adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
+    adsk::Tangent tanOut = { 
+        adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
 
-  adsk::Keyframe key;
-  key.time = time;                        //!< Time
-  key.value = value;                      //!< Value
-  key.index = (int)_keyframes.size();     //!< Sequential index of a key in a curve        
-  key.tanIn = tanIn;                      //!< In-tangent
-  key.tanOut = tanOut;                    //!< Out-tangent
-  key.quaternionW = 1.0;                  //!< W component of a quaternion if rotation curve
-  key.linearInterpolation = false;        //!< Should curve be linearly interpolated? True if tangents of this key and the neighboring one are both linear.
+    adsk::Keyframe key;
+    key.time = time;                        // Time
+    key.value = value;                      // Value
+    key.index = (int)_keyframes.size();     // Sequential index of the key      
+    key.tanIn = tanIn;                      // In-tangent
+    key.tanOut = tanOut;                    // Out-tangent
+    key.quaternionW = 1.0;                  // W component of a quaternion
+    key.linearInterpolation = false;        // Curve linearly interpolated
 
-  _keyframes.push_back(key);
+    _keyframes.push_back(key);
 }
 
 void UsdAnimXCurve::removeKeyframe(double time)
 { 
-  std::vector<adsk::Keyframe>::iterator i = _keyframes.begin();
-  for(;i<_keyframes.end();++i) {
-    if(i->time == time)_keyframes.erase(i);
-  }
+    std::vector<adsk::Keyframe>::iterator i = _keyframes.begin();
+    for(;i<_keyframes.end();++i) {
+        if(i->time == time)_keyframes.erase(i);
+    }
 }
 
 void UsdAnimXCurve::removeKeyframe(size_t index)
 {
-  if(index >= 0 && index < _keyframes.size())
-    _keyframes.erase(_keyframes.begin() + index);
+    if(index >= 0 && index < _keyframes.size())
+        _keyframes.erase(_keyframes.begin() + index);
 }
 
 double UsdAnimXCurve::evaluate(double time) const
 {
-  return adsk::evaluateCurve(time, *this);
+    return adsk::evaluateCurve(time, *this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

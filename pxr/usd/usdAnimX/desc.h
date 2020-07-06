@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdAnimXKeyframeDesc {
     double time;
-    std::vector<double> data;
+    double data[8];
 };
 
 struct UsdAnimXCurveDesc {
