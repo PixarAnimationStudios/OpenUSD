@@ -25,18 +25,28 @@
 #define PXR_USD_PLUGIN_USD_ANIMX_KEYFRAME_H
 
 #include "pxr/pxr.h"
+#include "api.h"
+#include "desc.h"
 #include "animx.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/array.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-struct UsdAnimXKeyframeDesc;
+
+struct UsdAnimXKeyframe : public adsk::Keyframe {
+    UsdAnimXKeyframe(const UsdAnimXKeyframeDesc &desc, size_t index);
+    UsdAnimXKeyframe(double time, VtValue &value, size_t index);
+};
+
+ANIMX_API std::ostream& operator<<(std::ostream&, const UsdAnimXKeyframe&);
 
 std::ostream& operator<<(std::ostream &, adsk::Keyframe const &);
-void GetKeyframeDescription(adsk::Keyframe const &, UsdAnimXKeyframeDesc* desc);
-void GetKeyframeDescription(VtValue const &, UsdAnimXKeyframeDesc* desc);
-adsk::Keyframe GetKeyframeFromVtValue(double time, VtValue const& value, size_t index);
+adsk::Keyframe GetKeyframeFromVtValue(double time, VtValue const& value, 
+    size_t index);
+adsk::Keyframe GetKeyframeFromDesc(const UsdAnimXKeyframeDesc &desc, 
+    size_t index);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PLUGIN_USD_ANIMX_KEYFRAME_H

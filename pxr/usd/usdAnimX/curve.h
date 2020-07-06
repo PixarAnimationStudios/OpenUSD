@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "animx.h"
 #include "keyframe.h"
+#include "desc.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdAnimXCurve : public adsk::ICurve {
 public:
   UsdAnimXCurve();
+  UsdAnimXCurve(const UsdAnimXCurveDesc &desc);
   bool keyframe(double time, adsk::Keyframe &key) const override;
   bool keyframeAtIndex(int index, adsk::Keyframe &key) const override;
   bool first(adsk::Keyframe &key) const override;

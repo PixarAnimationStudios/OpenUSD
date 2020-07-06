@@ -54,6 +54,10 @@ struct UsdAnimXTokensType {
     /// 
     /// Define a curve
     const TfToken curve;
+    /// \brief "keyframes"
+    /// 
+    /// Define a sequence of keyframes
+    const TfToken keyframes;
     /// \brief "target"
     /// 
     /// Op target 

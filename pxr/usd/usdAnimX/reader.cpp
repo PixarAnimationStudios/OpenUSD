@@ -26,20 +26,8 @@
 #include "pxr/pxr.h"
 #include "animx.h"
 #include "reader.h"
-#include "data.h"
-#include <memory>
-#include <iostream>
-#include <istream>
-#include <streambuf>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-struct UsdAnimXReadBuffer : std::streambuf
-{
-  UsdAnimXReadBuffer(char* begin, char* end) {
-      setg(begin, begin, end);
-  }
-};
 
 static void PrintReadState(size_t state){
     switch(state) {
@@ -87,7 +75,6 @@ void UsdAnimXReader::_ReadPrim(const std::string& s)
     }
     else if(_IsOp(s, &_opDesc))
     {
-        std::cout << "GET OP : " << _opDesc.name << std::endl;
         _currentPrim->ops.push_back(_opDesc);
         _currentOp = &_currentPrim->ops.back();
         _readState = ANIMX_READ_OP;
@@ -99,61 +86,239 @@ void UsdAnimXReader::_ReadOp(const std::string& s)
     if(_HasOpeningBrace(s))return;
     if(_IsCurve(s, &_curveDesc))
     {
-        std::cout << "GET CURVE : " << _curveDesc.name << std::endl;
         _currentOp->curves.push_back(_curveDesc);
         _currentCurve = &_currentOp->curves.back();
         _readState = ANIMX_READ_CURVE;
     }
     else if(_HasSpec(s, UsdAnimXTokens->target)) {
-        std::cout << "TARGET : " << _GetNameToken(s) << std::endl;
         _currentOp->target = _GetNameToken(s);
     }
     else if(_HasSpec(s, UsdAnimXTokens->dataType)) {
-        std::cout << "DATA TYPE : " << _GetNameToken(s) << std::endl;
         _currentOp->dataType = _GetNameToken(s);
-        const SdfValueTypeName& typeName = 
-            AnimXGetSdfValueTypeNameFromToken(_currentOp->dataType);
-
-        //Sdf_ValueTypeRegistry::FindType(_currentOp->dataType.GetString());
-        //SdfValueTypeName typeName = SdfValueTypeName::
-        TfType type = typeName.GetType();
-        std::cout << "TF TYPE IS KNOWN : " << type.IsUnknown() << std::endl;
-        std::cout << "TF TYPE : " << type.GetTypeid().name() << std::endl;
     }
     else if(_HasSpec(s, UsdAnimXTokens->defaultValue)) {
-        std::cout << "DEFAULT VALUE: " << _GetValue(s) << std::endl;
-        _currentOp->defaultValue = _GetValue(s);
+        _currentOp->defaultValue = _GetValue(s, _currentOp->dataType);
     }
-    //else if(_HasSpec(s, UsdAnimXTokens->use))
 }
 
 void UsdAnimXReader::_ReadCurve(const std::string& s)
 {
     if(_HasSpec(s, UsdAnimXTokens->preInfinityType)) {
-        std::cout << "HAS PRE INFINITY SPEC!!!" << std::endl;
         _currentCurve->preInfinityType = _GetNameToken(s);
-        std::cout << "PRE-INFINITY : " << _currentCurve->preInfinityType << std::endl;
     } else if(_HasSpec(s, UsdAnimXTokens->postInfinityType)) {
-        std::cout << "HAS POST INFINITY SPEC!!!" << std::endl;
         _currentCurve->postInfinityType = _GetNameToken(s);
-        std::cout << "POST-INFINITY : " << _currentCurve->postInfinityType << std::endl;
-    }
-    else if(_IsKeyframe(s, &_keyframeDesc))
+    } else if(_IsKeyframes(s))
     {
-        std::cout << "GET KEYFRAME : " << s << std::endl;
+        _ReadKeyframes(s);
     }
 }
 
-/// Open a file
-bool  UsdAnimXReader::Open(std::shared_ptr<ArAsset> asset)
+void UsdAnimXReader::_ReadKeyframes(const std::string& s)
 {
-    size_t bufferSize = asset->GetSize();
-    std::shared_ptr<const char> content = asset->GetBuffer();
-    UsdAnimXReadBuffer buffer((char*)content.get(), (char*)content.get() + bufferSize);
+    std::istringstream stream(s);
+    size_t state = 0;
+    bool readKey = false;
+    char c;
+    while(true) {
+        if(readKey) {
+            if(!state) {
+                stream >> _keyframeDesc.time;
+            } else {
+                stream >> _keyframeDesc.data[state-1];
+            }
+            state++;
+        }
+        stream >> c;
+        if(c == ')') {
+            readKey = false;
+            state = 0;
+            _currentCurve->keyframes.push_back(_keyframeDesc);
+        } else if(c == '(') {
+            readKey = true;
+        } else if(c == ']') break;
+    }
+}
 
-    std::istream stream(&buffer);
+static VtValue
+_ExtractValueFromString(const std::string &s, const std::type_info &typeInfo, 
+    size_t *pos)
+{
+    std::istringstream stream;
+    stream.str(s);
+    if(typeInfo == typeid(bool)) {
+        return VtValue(
+            _ExtractSingleValueFromString<bool>(stream, pos));
+    } else if(typeInfo == typeid(unsigned char)) {
+        return VtValue(
+            _ExtractSingleValueFromString<unsigned char>(stream, pos));
+    } else if(typeInfo == typeid(int)) {
+        return VtValue(
+            _ExtractSingleValueFromString<int>(stream, pos));
+    } else if(typeInfo == typeid(float)) {
+        return VtValue(
+            _ExtractSingleValueFromString<float>(stream, pos));
+    } else if(typeInfo == typeid(double)) {
+        return VtValue(
+            _ExtractSingleValueFromString<double>(stream, pos));
+    } else if(typeInfo == typeid(TfToken)) {
+        return VtValue(TfToken(s));
+    } else if(typeInfo == typeid(GfVec2i)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec2i>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2h)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec2h>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2f)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec2f>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2d)) {
+       return VtValue(
+          _ExtractTupleValueFromString<GfVec2d>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec3i)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec3i>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3h)) {
+       return VtValue(
+          _ExtractTupleValueFromString<GfVec3h>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3f)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec3f>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3d)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec3d>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec4i)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec4i>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4h)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec4h>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4f)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec4f>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4d)) {
+        return VtValue(
+            _ExtractTupleValueFromString<GfVec4d>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfMatrix4d)) {
+        return VtValue(
+            _ExtractArrayTupleValueFromString<GfMatrix4d>(stream, 4, 4, pos));
+    } /*else if(typeInfo == typeid(GfQuath)) {
+        return VtValue(_ExtractTupleValueFromString<GfQuath>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfQuatf)) {
+        return VtValue(_ExtractTupleValueFromString<GfQuatf>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfQuatd)) {
+        return VtValue(_ExtractTupleValueFromString<GfQuatd>(stream, 4, pos));
+    } */else {
+        return VtValue();
+    }
+}
+
+static VtValue
+_ExtractArrayValueFromString(const std::string &s, 
+    const std::type_info &typeInfo, size_t *pos)
+{
+    std::istringstream stream(s);
+    if(typeInfo == typeid(bool)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<bool>(stream, pos));
+    } else if(typeInfo == typeid(unsigned char)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<unsigned char>(stream, pos));
+    } else if(typeInfo == typeid(int)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<int>(stream, pos));
+    } else if(typeInfo == typeid(float)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<float>(stream, pos));
+    } else if(typeInfo == typeid(double)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<double>(stream, pos));
+    } else if(typeInfo == typeid(TfToken)) {
+        return VtValue(
+            _ExtractSingleValueArrayFromString<TfToken>(stream, pos));
+    } else if(typeInfo == typeid(GfVec2i)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec2i>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2h)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec2h>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2f)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec2f>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec2d)) {
+       return VtValue(
+          _ExtractTupleValueArrayFromString<GfVec2d>(stream, 2, pos));
+    } else if(typeInfo == typeid(GfVec3i)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec3i>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3h)) {
+       return VtValue(
+          _ExtractTupleValueArrayFromString<GfVec3h>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3f)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec3f>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec3d)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec3d>(stream, 3, pos));
+    } else if(typeInfo == typeid(GfVec4i)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec4i>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4h)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec4h>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4f)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec4f>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfVec4d)) {
+        return VtValue(
+            _ExtractTupleValueArrayFromString<GfVec4d>(stream, 4, pos));
+    } /*else if(typeInfo == typeid(GfMatrix4d)) {
+        return VtValue(_ExtractArrayValuesFromString<GfMatrix4d>(stream, pos));
+    } else if(typeInfo == typeid(GfQuath)) {
+        return VtValue(_ExtractArrayValuesFromString<GfQuath>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfQuatf)) {
+        return VtValue(_ExtractArrayValuesFromString<GfQuatf>(stream, 4, pos));
+    } else if(typeInfo == typeid(GfQuatd)) {
+        return VtValue(_ExtractArrayValuesFromString<GfQuatd>(stream, 4, pos));
+    } */else {
+        return VtValue();
+    }
+    /*
+    if(typeInfo == typeid(TfToken)) {
+        return VtValue(_ExtractArrayValuesFromString<TfToken>(stream, &c));
+    }
+    return VtValue();
+    */
+}
+
+VtValue
+UsdAnimXReader::_GetValue(const std::string &s, const TfToken& type)
+{
+    const SdfValueTypeName& typeName = 
+        AnimXGetSdfValueTypeNameFromToken(type);
+    VtValue value = typeName.GetDefaultValue();
+    
+    size_t b, e, c;
+    if(value.IsArrayValued()) {
+        if(_HasChar(s, ' ', &b)) {
+            std::string datas = s.substr(b, s.length()-b+1);
+                return _ExtractArrayValueFromString(datas, 
+                    typeName.GetScalarType().GetType().GetTypeid(), &c);
+        }
+    } else {
+        if(_HasChar(s, ' ', &b)) {
+            std::string datas = s.substr(b+1, s.length()-b);
+                return _ExtractValueFromString(datas, 
+                        typeName.GetType().GetTypeid(), &c);
+        }
+    }
+    return value;
+}
+
+/// Open a file
+bool  UsdAnimXReader::Read(const std::string& resolvedPath)
+{
+    std::ifstream stream(resolvedPath.c_str());
     std::string line;
-
     _readState = ANIMX_READ_PRIM;
     _primDepth = 0;
     size_t pos;
@@ -186,10 +351,40 @@ bool  UsdAnimXReader::Open(std::shared_ptr<ArAsset> asset)
     return true;
 }
 
-/// Close the file.
-void  UsdAnimXReader::Close()
-{
+//namespace { // anonymous namespace
 
+void _PopulatePrim(UsdAnimXDataRefPtr& datas, const UsdAnimXPrimDesc& prim, 
+    const SdfPath& parentPath)
+{
+    SdfPath primPath = parentPath.AppendChild(prim.name);
+    datas->AddPrim(primPath);
+    if(prim.ops.size()) {
+        for(const auto& op: prim.ops) {
+            datas->AddOp(primPath, op);
+            
+            if(op.curves.size()) {
+                for(const auto& curve: op.curves) {
+                    datas->AddFCurve(primPath, op.target, curve);
+                }
+            }
+        }
+    }
+    
+    for(const auto& child: prim.children) {
+        _PopulatePrim(datas, child, primPath);
+    }
+}
+
+//} // end anonymous namespace
+
+/// Populate datas
+void UsdAnimXReader::PopulateDatas(UsdAnimXDataRefPtr& datas)
+{
+    SdfPath rootPath("/");
+    for(const auto& prim: _rootPrims) {
+        _PopulatePrim(datas, prim, rootPath);
+    }
+    datas->ComputeTimesSamples();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

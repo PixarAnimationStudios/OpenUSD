@@ -32,44 +32,47 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp> 
 #include <vector>
+#include <typeinfo>
 #include "api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define _ANIMX_SCALAR_VALUE_TYPES                       \
-    ((Bool,       bool,       bool_,           ()    )) \
-    ((UChar,      uchar,      uchar_,          ()    )) \
-    ((Int,        int,        int_,            ()    )) \
-    ((UInt,       uint,       uint_,           ()    )) \
-    ((Int64,      int64,      int64_,          ()    )) \
-    ((UInt64,     uint64,     uint64_,         ()    )) \
-    ((Half,       half,       half_,           ()    )) \
-    ((Float,      float,      float_,          ()    )) \
-    ((Double,     double,     double_,         ()    )) \
-    ((TimeCode,   timecode,   timecode_,       ()    )) \
-    ((Token,      token,      token_,          ()    )) \
+/// SdfValueTypeName, Serialization, Token
+///
+#define _ANIMX_SCALAR_VALUE_TYPES               \
+    ((Bool,       bool,       bool_,         )) \
+    ((UChar,      uchar,      uchar_,        )) \
+    ((Int,        int,        int_,          )) \
+    ((UInt,       uint,       uint_,         )) \
+    ((Int64,      int64,      int64_,        )) \
+    ((UInt64,     uint64,     uint64_,       )) \
+    ((Half,       half,       half_,         )) \
+    ((Float,      float,      float_,        )) \
+    ((Double,     double,     double_,       )) \
+    ((TimeCode,   timecode,   timecode_,     )) \
+    ((Token,      token,      token_,        )) 
 
-#define _ANIMX_DIMENSIONED_VALUE_TYPES                \
-    ((Matrix2d,   matrix2d,   matrix2d_,     (2,2) )) \
-    ((Matrix3d,   matrix3d,   matrix3d_,     (3,3) )) \
-    ((Matrix4d,   matrix4d,   matrix4d_,     (4,4) )) \
-    ((Quath,      quath,      quath_,        (4)   )) \
-    ((Quatf,      quatf,      quatf_,        (4)   )) \
-    ((Quatd,      quatd,      quatd_,        (4)   )) \
-    ((Int2,       int2,       int2_,         (2)   )) \
-    ((Half2,      half2,      half2_,        (2)   )) \
-    ((Float2,     float2,     float2_,       (2)   )) \
-    ((Double2,    double2,    double2_,      (2)   )) \
-    ((Int3,       int3,       int3_,         (3)   )) \
-    ((Half3,      half3,      half3_,        (3)   )) \
-    ((Float3,     float3,     float3_,       (3)   )) \
-    ((Double3,    double3,    double3_,      (3)   )) \
-    ((Int4,       int4,       int4_,         (4)   )) \
-    ((Half4,      half4,      half4_,        (4)   )) \
-    ((Float4,     float4,     float4_,       (4)   )) \
-    ((Double4,    double4,    double4_,      (4)   ))
+#define _ANIMX_DIMENSIONED_VALUE_TYPES          \
+    ((Matrix2d,   matrix2d,   matrix2d_,     )) \
+    ((Matrix3d,   matrix3d,   matrix3d_,     )) \
+    ((Matrix4d,   matrix4d,   matrix4d_,     )) \
+    ((Quath,      quath,      quath_,        )) \
+    ((Quatf,      quatf,      quatf_,        )) \
+    ((Quatd,      quatd,      quatd_,        )) \
+    ((Int2,       int2,       int2_,         )) \
+    ((Half2,      half2,      half2_,        )) \
+    ((Float2,     float2,     float2_,       )) \
+    ((Double2,    double2,    double2_,      )) \
+    ((Int3,       int3,       int3_,         )) \
+    ((Half3,      half3,      half3_,        )) \
+    ((Float3,     float3,     float3_,       )) \
+    ((Double3,    double3,    double3_,      )) \
+    ((Int4,       int4,       int4_,         )) \
+    ((Half4,      half4,      half4_,        )) \
+    ((Float4,     float4,     float4_,       )) \
+    ((Double4,    double4,    double4_,      ))
 
 #define ANIMX_VALUE_TYPES _ANIMX_SCALAR_VALUE_TYPES _ANIMX_DIMENSIONED_VALUE_TYPES
 
@@ -77,8 +80,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define ANIMX_VALUE_SDF_TYPE(tup) BOOST_PP_TUPLE_ELEM(4, 0, tup)
 #define ANIMX_VALUE_SERIALIZATION_TYPE(tup) BOOST_PP_TUPLE_ELEM(4, 1, tup)
 #define ANIMX_VALUE_TYPE_TOKEN(tup) BOOST_PP_TUPLE_ELEM(4, 2, tup)
-#define ANIMX_VALUE_CPP_TYPE(tup) BOOST_PP_TUPLE_ELEM(4, 2, tup)
-#define ANIMX_VALUE_CPP_ARRAY_TYPE(tup) VtArray<BOOST_PP_TUPLE_ELEM(4, 2, tup)> 
 
 #define ANIMX_VALUE_TYPE_TOKEN_DECL(r, unused, elem) \
     const TfToken ANIMX_VALUE_TYPE_TOKEN(elem);

@@ -24,6 +24,7 @@
 
 #include "types.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/timeCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

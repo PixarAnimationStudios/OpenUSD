@@ -32,15 +32,21 @@
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypeRegistry.h"
 #include "pxr/usd/sdf/abstractData.h"
+#include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/sdf/timeCode.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/ar/asset.h"
 #include <string>
 #include <vector>
 #include <memory>
+#include <fstream>
 #include <iostream>
+#include <streambuf>
+#include <sstream>
 #include "types.h"
 #include "desc.h"
 #include "tokens.h"
-
+#include "data.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,7 +56,6 @@ enum UsdAnimXReaderState {
     ANIMX_READ_CURVE
 };
 
-class UsdAnimXData;
 
 /// \class UsdAnimxReader
 ///
@@ -61,19 +66,16 @@ public:
     UsdAnimXReader();
     ~UsdAnimXReader();
 
-    /// Open a file
-    //bool Open(const std::string& filePath);
-    bool Open(std::shared_ptr<ArAsset> asset);
-
-    /// Close the file.
-    void Close();
+    /// Read a file
+    bool Read(const std::string& filePath);
+    void PopulateDatas(UsdAnimXDataRefPtr& datas);
 
 protected:
     inline bool _HasSpec(const std::string& s, const TfToken& token);
     inline bool _IsPrim(const std::string &s, UsdAnimXPrimDesc *desc);
     inline bool _IsOp(const std::string &s, UsdAnimXOpDesc *desc);
     inline bool _IsCurve(const std::string &s, UsdAnimXCurveDesc *desc);
-    inline bool _IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc *desc);
+    inline bool _IsKeyframes(const std::string& s);
     inline bool _HasOpeningBrace(const std::string &s, size_t *pos=NULL);
     inline bool _HasClosingBrace(const std::string &s, size_t *pos=NULL);
     inline bool _HasOpeningBracket(const std::string &s, size_t *pos=NULL);
@@ -81,21 +83,24 @@ protected:
     inline bool _HasOpeningParenthese(const std::string &s, size_t *pos=NULL);
     inline bool _HasClosingParenthese(const std::string &s, size_t *pos=NULL);
     inline bool _HasOpeningQuote(const std::string &s, size_t *pos=NULL);
-    inline bool _HasClosingQuote(const std::string &s, size_t start, size_t *pos=NULL);
+    inline bool _HasClosingQuote(const std::string &s, size_t start, 
+        size_t *pos=NULL);
     inline bool _HasChar(const std::string &s, const char c, size_t *pos=NULL);
+    inline bool _ReverseHasChar(const std::string &s, const char c, 
+        size_t *pos=NULL);
     inline TfToken _GetNameToken(const std::string &s);
-    inline VtValue _GetValue(const std::string& s);
     inline std::string _Trim(const std::string& s);
+    VtValue _GetValue(const std::string& s, const TfToken& type);
 
     void _ReadPrim(const std::string& s);
     void _ReadOp(const std::string& s);
     void _ReadCurve(const std::string& s);
+    void _ReadKeyframes(const std::string& s);
 
 private:
     std::vector<UsdAnimXPrimDesc> _rootPrims;
     size_t                        _readState;
     size_t                        _primDepth;
-    UsdAnimXData*                 _datas;
 
     UsdAnimXPrimDesc              _primDesc;
     UsdAnimXOpDesc                _opDesc;
@@ -111,6 +116,17 @@ bool
 UsdAnimXReader::_HasChar(const std::string &s, const char c, size_t *pos)
 {
   size_t p = s.find(c);
+    if(p != std::string::npos) {
+        if(pos)*pos = p;
+        return true;
+    }
+    return false;
+}
+
+bool 
+UsdAnimXReader::_ReverseHasChar(const std::string &s, const char c, size_t *pos)
+{
+    size_t p = s.rfind(c);
     if(p != std::string::npos) {
         if(pos)*pos = p;
         return true;
@@ -161,9 +177,11 @@ UsdAnimXReader::_HasOpeningQuote(const std::string &s, size_t *pos)
 }
 
 bool
-UsdAnimXReader::_HasClosingQuote(const std::string &s, size_t start, size_t *pos)
+UsdAnimXReader::_HasClosingQuote(const std::string &s, 
+    size_t start, size_t *pos)
 {
-    return _HasChar(std::string(s.begin() + start, s.end()), '"', pos);
+    return _HasChar(std::string(s.begin() + start, 
+        s.end()), '"', pos);
 }
 
 TfToken
@@ -172,16 +190,11 @@ UsdAnimXReader::_GetNameToken(const std::string &s)
     size_t start, end;
     if(_HasOpeningQuote(s, &start)) {
         if(_HasClosingQuote(s, start + 1, &end)) {
-            return TfToken(std::string(s.begin()+start+1, s.begin()+start+1+end));
+            return TfToken(std::string(s.begin()+start+1, 
+                s.begin()+start+1+end));
         }
     }
     return TfToken();
-}
-
-VtValue
-UsdAnimXReader::_GetValue(const std::string &s)
-{
-    return VtValue();
 }
 
 bool 
@@ -228,21 +241,9 @@ UsdAnimXReader::_IsCurve(const std::string& s, UsdAnimXCurveDesc* desc)
 }
 
 bool 
-UsdAnimXReader::_IsKeyframe(const std::string& s, UsdAnimXKeyframeDesc* desc)
+UsdAnimXReader::_IsKeyframes(const std::string& s)
 {   
-    if(_readState != ANIMX_READ_CURVE)return false;
-    if(_HasOpeningBrace(s, NULL) || _HasClosingBrace(s, NULL))return false;
-    if(_HasOpeningParenthese(s) && _HasClosingParenthese(s)) {
-        /*
-        VtValue value = _GetValue(s);
-        if(value.IsHolding<VtArray<double>>()) {
-            VtArray<double>& datas = value.UncheckedGet<VtArray<double>>();
-            desc->time = datas[0];
-            size_t n = datas.size() - 1;
-            desc->data.resize(n);
-            memcpy(&desc->data[0], &datas[1], n * sizeof(double));
-        }
-        */
+    if(_HasSpec(s, UsdAnimXTokens->keyframes)) {
         return true;
     }
     return false;
@@ -260,13 +261,136 @@ UsdAnimXReader::_Trim(const std::string& s)
     return std::string(it, rit.base());
 }
 
-/*
-std::vector<std::string> 
-UsdAnimXReader::_GetTokens(const std::string& s)
+
+/// Extract data 
+///
+namespace { // anonymous namespace
+template<typename T>
+static
+T _ExtractSingleValueFromString(std::istringstream &stream, size_t *pos)
 {
-  return std::vector<std::string>();
+    T value;
+    stream >> value;
+    *pos = (size_t)stream.tellg();
+    return value;
+};
+
+template<>
+static
+TfToken _ExtractSingleValueFromString<TfToken>(std::istringstream &stream, 
+    size_t *pos)
+{   
+    char c;
+    std::string value;
+    stream >> c >> value >> c;  
+    *pos = (size_t)stream.tellg();
+    return TfToken(value);
 }
-*/
+
+template<typename T>
+static
+VtArray<T> _ExtractSingleValueArrayFromString(std::istringstream &stream, 
+    size_t *pos)
+{
+    char c;
+    VtArray<T> array;
+    T value;
+    stream >> c;
+    while(true) {
+        stream >> value;
+        array.push_back(value);
+        stream >> c;
+        if(c == ']' || (size_t)stream.tellg() == std::string::npos)
+            break;
+    }
+    *pos = (size_t)stream.tellg();
+    return array;
+};
+
+template<>
+static
+VtArray<TfToken> _ExtractSingleValueArrayFromString<TfToken>(
+    std::istringstream &stream, size_t *pos)
+{
+    VtArray<TfToken> array;
+    std::string value;
+    char c;
+    bool reading = false;
+    while(true) {
+        stream >> c;
+        if(c == '"') {
+            reading = 1 - reading;
+            if(!reading) {
+                if(value.length()) {
+                    array.push_back(TfToken(value));
+                    value.clear();
+                }
+            }
+        } else if( c == ']' || (size_t)stream.tellg() == std::string::npos) {
+            break;
+        } else if(reading) {
+            value += c;
+        }
+    }
+    *pos = (size_t)stream.tellg();
+    return array;
+};
+
+template<typename T>
+static
+T _ExtractTupleValueFromString(std::istringstream &stream, size_t d, 
+    size_t *pos)
+{
+    char c;
+    T value;
+    for(size_t i = 0; i < d; ++i) {
+        stream >> c;
+        stream >> value[i];
+    }
+    *pos = (size_t)stream.tellg() + 1;
+    return value;
+};
+
+template<typename T>
+static
+VtArray<T> _ExtractTupleValueArrayFromString(std::istringstream &stream, 
+    size_t d, size_t *pos)
+{
+    char c;
+    VtArray<T> array;
+    T value;
+    stream >> c;
+    while(true) {
+        for(size_t i = 0; i < d; ++i) {
+            stream >> c;
+            stream >> value[i];
+        }
+        array.push_back(value);
+        stream >> c >> c;
+        if(c == ']' || (size_t)stream.tellg() == std::string::npos)
+            break;
+    }
+    *pos = (size_t)stream.tellg() + 1;
+    return array;
+};
+
+template<typename T>
+static
+T _ExtractArrayTupleValueFromString(std::istringstream &stream, 
+    size_t d1, size_t d2, size_t *pos)
+{
+    char c;
+    T value;
+    for(size_t i = 0; i<d1; ++i) {
+        for(size_t j = 0; j<d2; ++j) {
+            stream >> c >> value[i][j];
+        }
+        stream >> c;
+    }
+    *pos = (size_t)stream.tellg() + 1;
+    return value;
+};
+} // end anonymous namespace
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
