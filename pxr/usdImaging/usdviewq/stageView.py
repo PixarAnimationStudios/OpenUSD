@@ -1990,8 +1990,8 @@ class StageView(QtOpenGL.QGLWidget):
             self._cameraMode = "pick"
             self.pickObject(x, y, event.button(), event.modifiers())
 
-        self._lastX = event.x()
-        self._lastY = event.y()
+        self._lastX = x
+        self._lastY = y
 
     def mouseReleaseEvent(self, event):
         self._cameraMode = "none"
@@ -2040,7 +2040,7 @@ class StageView(QtOpenGL.QGLWidget):
             # Mouse tracking is only enabled when rolloverPicking is enabled,
             # and this function only gets called elsewise when mouse-tracking
             # is enabled
-            self.pickObject(coord.x(), coord.y(), None, event.modifiers())
+            self.pickObject(event.x(), event.y(), None, event.modifiers())
         else:
             event.ignore()
 
