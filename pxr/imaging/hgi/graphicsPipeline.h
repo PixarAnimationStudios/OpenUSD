@@ -219,9 +219,6 @@ bool operator!=(
 /// Describes the properties needed to create a GPU pipeline.
 ///
 /// <ul>
-/// <li>resourceBindings:
-///   The resource bindings that will be bound when the pipeline is used.
-///   Primarily used to query the vertex attributes.</li>
 /// <li>shaderProgram:
 ///   Shader functions/stages used in this pipeline.</li>
 /// <li>depthState:
@@ -248,7 +245,6 @@ struct HgiGraphicsPipelineDesc
     HgiGraphicsPipelineDesc();
 
     std::string debugName;
-    HgiResourceBindingsHandle resourceBindings;
     HgiShaderProgramHandle shaderProgram;
     HgiDepthStencilState depthState;
     HgiMultiSampleState multiSampleState;

@@ -354,7 +354,6 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
 
     HgiGraphicsPipelineDesc desc;
     desc.debugName = "ColorCorrection Pipeline";
-    desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
     
     // Describe the vertex buffer

@@ -413,7 +413,6 @@ HdxFullscreenShader::_CreatePipeline(
 
     HgiGraphicsPipelineDesc desc;
     desc.debugName = _debugName + " Pipeline";
-    desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
     desc.colorAttachmentDescs.push_back(_attachment0);
     desc.depthAttachmentDesc = _depthAttachment;
@@ -435,8 +434,7 @@ HdxFullscreenShader::_CreatePipeline(
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
-    // Set resource bindings (texture, buffers) and shader
-    desc.resourceBindings = _resourceBindings;
+    // Set the shaders
     desc.shaderProgram = _shaderProgram;
 
     // Ignore user provided vertex buffers. The VBO must always match the

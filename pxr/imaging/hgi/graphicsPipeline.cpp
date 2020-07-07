@@ -120,7 +120,6 @@ bool operator==(
     const HgiGraphicsPipelineDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.resourceBindings == rhs.resourceBindings &&
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&
            lhs.multiSampleState == rhs.multiSampleState &&
