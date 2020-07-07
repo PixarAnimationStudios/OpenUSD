@@ -30,7 +30,6 @@
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/extComputation.h"
@@ -360,8 +359,7 @@ HdSt_GetExtComputationPrimvarsComputations(
             continue;
         }
 
-        if (HdStGLUtils::IsGpuComputeEnabled() &&
-            !sourceComp->GetGpuKernelSource().empty()) {
+        if (!sourceComp->GetGpuKernelSource().empty()) {
 
             HdStExtCompGpuComputationSharedPtr gpuComputation;
             for (HdExtComputationPrimvarDescriptor const & compPrimvar:

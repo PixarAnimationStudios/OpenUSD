@@ -49,50 +49,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// To enable GPU compute features, OpenSubdiv must be configured to support
-// GLSL compute kernel.
-//
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-// default to GPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#else
-// default to CPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#endif
-
-
-static void
-_InitializeGPUComputeEnabled(bool *gpuComputeEnabled)
-{
-    // GPU Compute
-    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-        const GlfContextCaps &caps = GlfContextCaps::GetInstance();
-        if (caps.glslVersion >= 430 && caps.shaderStorageBufferEnabled) {
-            *gpuComputeEnabled = true;
-        } else {
-            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                    "(OpenGL 4.3 required).\n");
-        }
-#else
-        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
-#endif
-    }
-}
-
-bool 
-HdStGLUtils::IsGpuComputeEnabled()
-{
-    static bool gpuComputeEnabled = false;
-    static std::once_flag gpuComputeEnabledFlag;
-    std::call_once(gpuComputeEnabledFlag, [](){
-        _InitializeGPUComputeEnabled(&gpuComputeEnabled); 
-    });
-    return gpuComputeEnabled;
-}
 
 template <typename T>
 VtValue

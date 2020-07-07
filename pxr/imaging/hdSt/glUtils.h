@@ -37,9 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStGLUtils {
 public:
 
-    HDST_API
-    static bool IsGpuComputeEnabled();
-
     /// Reads the content of VBO back to VtArray.
     /// The \p vboOffset is expressed in bytes.
     HDST_API
