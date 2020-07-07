@@ -60,7 +60,6 @@ public:
                 BINDLESS_UNIFORM,    //
                 UNIFORM,             //
                 UNIFORM_ARRAY,       //
-                TBO,                 //
 
                 // shader parameter bindings
                 FALLBACK,             // fallback value

@@ -84,9 +84,6 @@ namespace {
                 break;
             case HdBinding::BINDLESS_SSBO_RANGE:
                 return HdBinding(HdBinding::BINDLESS_SSBO_RANGE, uniformLocation++);
-            case HdBinding::TBO:
-                return HdBinding(HdBinding::TBO, uniformLocation++, textureUnit++);
-                break;
             case HdBinding::BINDLESS_UNIFORM:
                 return HdBinding(HdBinding::BINDLESS_UNIFORM, uniformLocation++);
                 break;
@@ -180,11 +177,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     const bool bindlessTextureEnabled
         = GlfContextCaps::GetInstance().bindlessTextureEnabled;
 
-    HdBinding::Type arrayBufferBindingType = HdBinding::TBO;  // 3.0
+    HdBinding::Type arrayBufferBindingType = HdBinding::SSBO;
     if (bindlessUniformEnabled) {
         arrayBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
-    } else if (ssboEnabled) {
-        arrayBufferBindingType = HdBinding::SSBO;             // 4.3
     }
 
     HdBinding::Type structBufferBindingType = HdBinding::UBO;  // 3.1
@@ -973,7 +968,6 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                           offset,
                           buffer->GetStride());
         break;
-    case HdBinding::TBO:
     case HdBinding::TEXTURE_2D:
     case HdBinding::TEXTURE_FIELD:
         // nothing
@@ -1042,7 +1036,6 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
     case HdBinding::UNIFORM:
         glBindBufferBase(GL_UNIFORM_BUFFER, loc, 0);
         break;
-    case HdBinding::TBO:
     case HdBinding::TEXTURE_2D:
     case HdBinding::TEXTURE_FIELD:
         // nothing
@@ -1367,8 +1360,7 @@ HdSt_ResourceBinder::IntrospectBindings(HgiShaderProgramHandle const & hgiProgra
                 name = n.str();
             }
             if (type == HdBinding::UNIFORM       ||
-                type == HdBinding::UNIFORM_ARRAY ||
-                type == HdBinding::TBO) {
+                type == HdBinding::UNIFORM_ARRAY) {
                 GLint loc = glGetUniformLocation(program, name.c_str());
                 // update location in resource binder.
                 // some uniforms may be optimized out.
