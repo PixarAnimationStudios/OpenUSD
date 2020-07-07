@@ -55,15 +55,18 @@ _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const SdfPath& clipPath,
                     const object pyStartFrame,
                     const object pyEndFrame,
+                    const object pyInterpolateMissingClipValues,
                     const object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
     constexpr double dmax = std::numeric_limits<double>::max();
-    return UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
-                               _ConvertWithDefault(pyStartFrame, dmax),
-                               _ConvertWithDefault(pyEndFrame, dmax),
-                               clipSet);
+    return UsdUtilsStitchClips(
+        resultLayer, clipLayerFiles, clipPath,
+        _ConvertWithDefault(pyStartFrame, dmax),
+        _ConvertWithDefault(pyEndFrame, dmax),
+        _ConvertWithDefault(pyInterpolateMissingClipValues, false),
+        clipSet);
 }
 
 bool
@@ -88,6 +91,7 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
                            const double endFrame,
                            const double stride,
                            const object pyActiveOffset,
+                           const object pyInterpolateMissingClipValues,
                            const object pyClipSet)
 {
     const auto clipSet 
@@ -95,9 +99,12 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
     const auto activeOffset 
         = _ConvertWithDefault(pyActiveOffset, 
                               std::numeric_limits<double>::max());
-    return UsdUtilsStitchClipsTemplate(resultLayer, topologyLayer,
-                                       clipPath, templatePath, startFrame,
-                                       endFrame, stride, activeOffset, clipSet);
+    const auto interpolateMissingClipValues
+        = _ConvertWithDefault(pyInterpolateMissingClipValues, false);
+    return UsdUtilsStitchClipsTemplate(
+        resultLayer, topologyLayer,
+        clipPath, templatePath, startFrame,
+        endFrame, stride, activeOffset, interpolateMissingClipValues, clipSet);
 }
 
 } // anonymous namespace 
@@ -111,6 +118,7 @@ void wrapStitchClips()
          arg("clipPath"), 
          arg("startFrame")=object(),
          arg("endFrame")=object(),
+         arg("interpolateMissingClipValues")=object(),
          arg("clipSet")=object()));
 
     def("StitchClipsTopology",
@@ -128,6 +136,7 @@ void wrapStitchClips()
          arg("endTimeCode"),
          arg("stride"),
          arg("activeOffset")=object(),
+         arg("interpolateMissingClipValues")=object(),
          arg("clipSet")=object()));
 
     def("GenerateClipTopologyName",
