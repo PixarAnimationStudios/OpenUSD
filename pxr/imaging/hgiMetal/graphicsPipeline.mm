@@ -205,8 +205,10 @@ HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
         depthStencilStateDescriptor.depthCompareFunction = depthFn;
     }
     else {
+        // Even if there is no depth attachment, some drivers may still perform
+        // the depth test. So we pick Always over Never.
         depthStencilStateDescriptor.depthCompareFunction =
-            MTLCompareFunctionNever;
+            MTLCompareFunctionAlways;
     }
     
     if (_descriptor.depthState.stencilTestEnabled) {
