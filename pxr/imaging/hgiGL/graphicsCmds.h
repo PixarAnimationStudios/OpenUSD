@@ -117,6 +117,7 @@ private:
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
     HgiGLOpsVector _ops;
+    int _pushStack;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

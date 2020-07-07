@@ -74,6 +74,7 @@ private:
     HgiGLBlitCmds(const HgiGLBlitCmds&) = delete;
 
     HgiGLOpsVector _ops;
+    int _pushStack;
 
     // BlitCmds is used only one frame so storing multi-frame state here will
     // not survive.

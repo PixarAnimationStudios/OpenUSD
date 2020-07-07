@@ -80,6 +80,7 @@ private:
     HgiGLComputeCmds(const HgiGLComputeCmds&) = delete;
 
     HgiGLOpsVector _ops;
+    int _pushStack;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.
