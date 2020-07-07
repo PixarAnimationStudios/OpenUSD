@@ -168,48 +168,6 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     return VtValue();
 }
 
-bool
-HdStGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
-{
-    // glew has to be initialized
-    if (!glGetShaderiv) return true;
-
-    GLint status = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (reason) {
-        GLint infoLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLength);
-        if (infoLength > 0) {
-            char *infoLog = new char[infoLength];;
-            glGetShaderInfoLog(shader, infoLength, NULL, infoLog);
-            reason->assign(infoLog, infoLength);
-            delete[] infoLog;
-        }
-    }
-    return (status == GL_TRUE);
-}
-
-bool
-HdStGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
-{
-    // glew has to be initialized
-    if (!glGetProgramiv) return true;
-
-    GLint status = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (reason) {
-        GLint infoLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLength);
-        if (infoLength > 0) {
-            char *infoLog = new char[infoLength];;
-            glGetProgramInfoLog(program, infoLength, NULL, infoLog);
-            reason->assign(infoLog, infoLength);
-            delete[] infoLog;
-        }
-    }
-    return (status == GL_TRUE);
-}
-
 // ---------------------------------------------------------------------------
 
 void

@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -992,17 +991,10 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     {
         _csSource = _genCommon.str() + _genCS.str();
         if (!glslProgram->CompileShader(HgiShaderStageCompute, _csSource)) {
-            const char *shaderSources[1];
-            shaderSources[0] = _csSource.c_str();
-            GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
-            glShaderSource(shader, 1, shaderSources, NULL);
-            glCompileShader(shader);
-
-            std::string logString;
-            HdStGLUtils::GetShaderCompileStatus(shader, &logString);
+            HgiShaderProgramHandle const& prg = glslProgram->GetProgram();
+            std::string const& logString = prg->GetCompileErrors();
             TF_WARN("Failed to compile compute shader: %s",
                     logString.c_str());
-            glDeleteShader(shader);
             return HdStGLSLProgramSharedPtr();
         }
     }

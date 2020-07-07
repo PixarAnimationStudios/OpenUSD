@@ -26,7 +26,6 @@
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -116,10 +115,8 @@ HdStExtCompGpuComputationResource::Resolve()
                 }
                 
                 if (!glslProgram->Link()) {
-                    std::string logString;
-                    HdStGLUtils::GetProgramLinkStatus(
-                        glslProgram->GetProgram()->GetRawResource(),
-                        &logString);
+                    std::string const& logString = 
+                        glslProgram->GetProgram()->GetCompileErrors();
                     TF_WARN("Failed to link compute shader: %s",
                             logString.c_str());
                     return false;

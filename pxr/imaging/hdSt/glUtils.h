@@ -45,18 +45,6 @@ public:
                               int vboOffset,
                               int stride,
                               int numElements);
-
-    /// Returns true if the shader has been successfully compiled.
-    /// if not, returns false and fills the error log into reason.
-    HDST_API
-    static bool GetShaderCompileStatus(GLuint shader,
-                                       std::string * reason = NULL);
-
-    /// Returns true if the program has been successfully linked.
-    /// if not, returns false and fills the error log into reason.
-    HDST_API
-    static bool GetProgramLinkStatus(GLuint program,
-                                     std::string * reason = NULL);
 };
 
 /// \class HdStGLBufferRelocator
