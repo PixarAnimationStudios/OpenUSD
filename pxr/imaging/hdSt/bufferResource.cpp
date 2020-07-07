@@ -24,7 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdStBufferResourceGL::HdStBufferResourceGL(TfToken const &role,
+HdStBufferResource::HdStBufferResource(TfToken const &role,
                                            HdTupleType tupleType,
                                            int offset,
                                            int stride)
@@ -42,13 +42,13 @@ HdStBufferResourceGL::HdStBufferResourceGL(TfToken const &role,
     /*NOTHING*/
 }
 
-HdStBufferResourceGL::~HdStBufferResourceGL()
+HdStBufferResource::~HdStBufferResource()
 {
     /*NOTHING*/
 }
 
 void
-HdStBufferResourceGL::SetAllocation(HgiBufferHandle const& id, size_t size)
+HdStBufferResource::SetAllocation(HgiBufferHandle const& id, size_t size)
 {
     _id = id;
     HdResource::SetSize(size);

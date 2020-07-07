@@ -24,7 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
@@ -176,8 +176,8 @@ HdStRenderPassState::Prepare(
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
                 HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
-        HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+        HdStBufferArrayRangeSharedPtr _renderPassStateBar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
@@ -284,8 +284,8 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
     _renderPassShader = renderPassShader;
     if (_renderPassStateBar) {
 
-        HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+        HdStBufferArrayRangeSharedPtr _renderPassStateBar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,

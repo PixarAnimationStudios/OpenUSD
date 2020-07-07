@@ -25,8 +25,8 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
@@ -449,21 +449,21 @@ HdSt_QuadrangulateComputationGPU::Execute(
     HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
     GLuint program = hgiProgram->GetRawResource();
 
-    HdStBufferArrayRangeGLSharedPtr range_ =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+    HdStBufferArrayRangeSharedPtr range_ =
+        std::static_pointer_cast<HdStBufferArrayRange> (range);
 
     // buffer resources for GPU computation
     HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
-    HdStBufferResourceGLSharedPtr primvar =
-        std::static_pointer_cast<HdStBufferResourceGL> (primvar_);
+    HdStBufferResourceSharedPtr primvar =
+        std::static_pointer_cast<HdStBufferResource> (primvar_);
 
-    HdStBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
+    HdStBufferArrayRangeSharedPtr quadrangulateTableRange_ =
+        std::static_pointer_cast<HdStBufferArrayRange> (quadrangulateTableRange);
 
     HdBufferResourceSharedPtr quadrangulateTable_ =
         quadrangulateTableRange_->GetResource();
-    HdStBufferResourceGLSharedPtr quadrangulateTable =
-        std::static_pointer_cast<HdStBufferResourceGL> (quadrangulateTable_);
+    HdStBufferResourceSharedPtr quadrangulateTable =
+        std::static_pointer_cast<HdStBufferResource> (quadrangulateTable_);
 
     // prepare uniform buffer for GPU computation
     struct Uniform {

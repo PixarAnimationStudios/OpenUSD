@@ -26,8 +26,9 @@
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/copyComputation.h"
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/types.h"
@@ -54,13 +55,13 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         return;
     }
 
-    HdStBufferArrayRangeGLSharedPtr srcRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
-    HdStBufferArrayRangeGLSharedPtr dstRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+    HdStBufferArrayRangeSharedPtr srcRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_src);
+    HdStBufferArrayRangeSharedPtr dstRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (range_);
 
-    HdStBufferResourceGLSharedPtr srcRes = srcRange->GetResource(_name);
-    HdStBufferResourceGLSharedPtr dstRes = dstRange->GetResource(_name);
+    HdStBufferResourceSharedPtr srcRes = srcRange->GetResource(_name);
+    HdStBufferResourceSharedPtr dstRes = dstRange->GetResource(_name);
 
     if (!TF_VERIFY(srcRes)) {
         return;
@@ -109,7 +110,7 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
             return;
         }
 
-        HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
+        HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferGpuToGpu);
 
         if (caps.directStateAccessEnabled) {
             glCopyNamedBufferSubData(srcId, dstId,
@@ -137,8 +138,8 @@ HdStCopyComputationGPU::GetNumOutputElements() const
 void
 HdStCopyComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
-    HdStBufferArrayRangeGLSharedPtr srcRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
+    HdStBufferArrayRangeSharedPtr srcRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_src);
 
     specs->emplace_back(_name, srcRange->GetResource(_name)->GetTupleType());
 }

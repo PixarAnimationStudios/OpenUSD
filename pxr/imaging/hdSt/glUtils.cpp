@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/blitCmds.h"
@@ -171,7 +172,7 @@ HdStGLUtils::ReadBuffer(GLint vbo,
 // ---------------------------------------------------------------------------
 
 void
-HdStGLBufferRelocator::AddRange(GLintptr readOffset,
+HdStBufferRelocator::AddRange(GLintptr readOffset,
                               GLintptr writeOffset,
                               GLsizeiptr copySize)
 {
@@ -182,7 +183,7 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 }
 
 void
-HdStGLBufferRelocator::Commit(Hgi* hgi)
+HdStBufferRelocator::Commit(Hgi* hgi)
 {
     HgiBufferGpuToGpuOp blitOp;
     blitOp.gpuSourceBuffer = _srcBuffer;
@@ -200,7 +201,7 @@ HdStGLBufferRelocator::Commit(Hgi* hgi)
     }
     hgi->SubmitCmds(blitCmds.get());
 
-    HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
+    HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferGpuToGpu,
                         (double)_queue.size());
 
     _queue.clear();

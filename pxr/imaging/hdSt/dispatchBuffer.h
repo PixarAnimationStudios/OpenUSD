@@ -29,8 +29,8 @@
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 
 #include <memory>
 
@@ -116,12 +116,12 @@ public:
 
     /// Returns a bar which locates all interleaved resources of the entire
     /// buffer.
-    HdStBufferArrayRangeGLSharedPtr GetBufferArrayRange() const {
+    HdStBufferArrayRangeSharedPtr GetBufferArrayRange() const {
         return _bar;
     }
 
     /// Returns entire buffer as a single HdBufferResource.
-    HdStBufferResourceGLSharedPtr GetEntireResource() const {
+    HdStBufferResourceSharedPtr GetEntireResource() const {
         return _entireResource;
     }
 
@@ -139,22 +139,22 @@ public:
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
     HDST_API
-    HdStBufferResourceGLSharedPtr GetResource() const;
+    HdStBufferResourceSharedPtr GetResource() const;
 
     /// Returns the named GPU resource. This method returns the first found
     /// resource. In HDST_SAFE_MODE it checks all underlying GL buffers
     /// in _resourceMap and raises a coding error if there are more than
     /// one GL buffers exist.
     HDST_API
-    HdStBufferResourceGLSharedPtr GetResource(TfToken const& name);
+    HdStBufferResourceSharedPtr GetResource(TfToken const& name);
 
     /// Returns the list of all named GPU resources for this bufferArray.
-    HdStBufferResourceGLNamedList const& GetResources() const {return _resourceList;}
+    HdStBufferResourceNamedList const& GetResources() const {return _resourceList;}
 
 protected:
     /// Adds a new, named GPU resource and returns it.
     HDST_API
-    HdStBufferResourceGLSharedPtr _AddResource(TfToken const& name,
+    HdStBufferResourceSharedPtr _AddResource(TfToken const& name,
                                                HdTupleType tupleType,
                                                int offset,
                                                int stride);
@@ -163,9 +163,9 @@ private:
     class Hgi *_hgi;
     int _count;
     unsigned int _commandNumUints;
-    HdStBufferResourceGLNamedList _resourceList;
-    HdStBufferResourceGLSharedPtr _entireResource;
-    HdStBufferArrayRangeGLSharedPtr _bar;  // Alternative to range list in base class
+    HdStBufferResourceNamedList _resourceList;
+    HdStBufferResourceSharedPtr _entireResource;
+    HdStBufferArrayRangeSharedPtr _bar;  // Alternative to range list in base class
 };
 
 

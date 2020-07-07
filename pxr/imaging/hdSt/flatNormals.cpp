@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/flatNormals.h"
@@ -85,19 +85,19 @@ HdSt_FlatNormalsComputationGPU::Execute(
     if (_srcDataType == HdTypeInvalid)
         return;
 
-    HdStBufferArrayRangeGLSharedPtr range =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
-    HdStBufferArrayRangeGLSharedPtr vertexRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
-    HdStBufferArrayRangeGLSharedPtr topologyRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
+    HdStBufferArrayRangeSharedPtr range =
+        std::static_pointer_cast<HdStBufferArrayRange> (range_);
+    HdStBufferArrayRangeSharedPtr vertexRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_vertexRange);
+    HdStBufferArrayRangeSharedPtr topologyRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_topologyRange);
 
     // buffer resources for GPU computation
-    HdStBufferResourceGLSharedPtr points = vertexRange->GetResource(_srcName);
-    HdStBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
-    HdStBufferResourceGLSharedPtr indices = topologyRange->GetResource(
+    HdStBufferResourceSharedPtr points = vertexRange->GetResource(_srcName);
+    HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
+    HdStBufferResourceSharedPtr indices = topologyRange->GetResource(
         HdTokens->indices);
-    HdStBufferResourceGLSharedPtr primitiveParam = topologyRange->GetResource(
+    HdStBufferResourceSharedPtr primitiveParam = topologyRange->GetResource(
         HdTokens->primitiveParam);
 
     // select shader by datatype

@@ -47,13 +47,13 @@ public:
                               int numElements);
 };
 
-/// \class HdStGLBufferRelocator
+/// \class HdStBufferRelocator
 ///
 /// A utility class to perform batched buffer copy.
 ///
-class HdStGLBufferRelocator {
+class HdStBufferRelocator {
 public:
-    HdStGLBufferRelocator(
+    HdStBufferRelocator(
         HgiBufferHandle const& srcBuffer, HgiBufferHandle const& dstBuffer) :
         _srcBuffer(srcBuffer), _dstBuffer(dstBuffer) {}
 
@@ -88,8 +88,8 @@ private:
     };
 
     std::vector<_CopyUnit> _queue;
-    HgiBufferHandle const& _srcBuffer;
-    HgiBufferHandle const& _dstBuffer;
+    HgiBufferHandle _srcBuffer;
+    HgiBufferHandle _dstBuffer;
 };
 
 

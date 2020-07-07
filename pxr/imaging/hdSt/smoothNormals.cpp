@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
@@ -82,8 +82,8 @@ HdSt_SmoothNormalsComputationGPU::Execute(
         _adjacency->GetAdjacencyRange();
     TF_VERIFY(adjacencyRange_);
 
-    HdStBufferArrayRangeGLSharedPtr adjacencyRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (adjacencyRange_);
+    HdStBufferArrayRangeSharedPtr adjacencyRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (adjacencyRange_);
 
     // select shader by datatype
     TfToken shaderToken;
@@ -110,13 +110,13 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
     GLuint program = hgiProgram->GetRawResource();
 
-    HdStBufferArrayRangeGLSharedPtr range =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
+    HdStBufferArrayRangeSharedPtr range =
+        std::static_pointer_cast<HdStBufferArrayRange> (range_);
 
     // buffer resources for GPU computation
-    HdStBufferResourceGLSharedPtr points = range->GetResource(_srcName);
-    HdStBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
-    HdStBufferResourceGLSharedPtr adjacency = adjacencyRange->GetResource();
+    HdStBufferResourceSharedPtr points = range->GetResource(_srcName);
+    HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
+    HdStBufferResourceSharedPtr adjacency = adjacencyRange->GetResource();
 
     // prepare uniform buffer for GPU computation
     struct Uniform {

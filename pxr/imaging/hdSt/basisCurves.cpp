@@ -27,7 +27,7 @@
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -856,26 +856,26 @@ HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
 
     typedef HdBufferArrayRangeSharedPtr HdBarPtr;
     if (HdBarPtr const& bar = drawItem->GetConstantPrimvarRange()){
-        HdStBufferArrayRangeGLSharedPtr bar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+        HdStBufferArrayRangeSharedPtr bar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
     if (HdBarPtr const& bar = drawItem->GetVertexPrimvarRange()) {
-        HdStBufferArrayRangeGLSharedPtr bar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+        HdStBufferArrayRangeSharedPtr bar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
     if (HdBarPtr const& bar = drawItem->GetElementPrimvarRange()){
-        HdStBufferArrayRangeGLSharedPtr bar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+        HdStBufferArrayRangeSharedPtr bar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (bar);
 
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
     int instanceNumLevels = drawItem->GetInstancePrimvarNumLevels();
     for (int i = 0; i < instanceNumLevels; ++i) {
         if (HdBarPtr const& bar = drawItem->GetInstancePrimvarRange(i)) {
-            HdStBufferArrayRangeGLSharedPtr bar_ =
-                std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+            HdStBufferArrayRangeSharedPtr bar_ =
+                std::static_pointer_cast<HdStBufferArrayRange> (bar);
 
             hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
         }

@@ -57,7 +57,7 @@ public:
     HgiBufferHandle const& GetBuffer() const { return _buffer; }
 
 private:
-    Hgi* _hgi;
+    Hgi* const _hgi;
     HgiBufferHandle _buffer;
 };
 

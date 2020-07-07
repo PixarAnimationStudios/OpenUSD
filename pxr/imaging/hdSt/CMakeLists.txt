@@ -35,8 +35,8 @@ pxr_library(hdSt
 
     PUBLIC_CLASSES
         basisCurves
-        bufferArrayRangeGL
-        bufferResourceGL
+        bufferArrayRange
+        bufferResource
         commandBuffer
         computeShader
         copyComputation
