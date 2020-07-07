@@ -27,39 +27,30 @@
 /// \file usdAnimX/writer.h
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <set>
 #include <string>
+#include "api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfAbstractData);
 
-/// \class UsdAnimXDataWriter
+/// \class UsdAnimXWriter
 ///
 /// An animx writer suitable for an SdfAbstractData.
 ///
-class UsdAnimXDataWriter : boost::noncopyable {
+class UsdAnimXWriter {
 public:
-    UsdAnimXDataWriter();
-    ~UsdAnimXDataWriter();
+    UsdAnimXWriter();
+    ~UsdAnimXWriter();
 
-    bool Open(const std::string& filePath, const std::string& comment);
+    ANIMX_API
+    bool Open(const std::string& filePath);
+    ANIMX_API
     bool Write(const SdfAbstractDataConstPtr& data);
+    ANIMX_API
     bool Close();
-
-    bool IsValid() const;
-    std::string GetErrors() const;
-
-    void SetFlag(const TfToken&, bool set = true);
-
-private:
-    //boost::scoped_ptr<class UsdAnimXDataWriterImpl> _impl;
-    std::string _errorLog;
 };
 
 

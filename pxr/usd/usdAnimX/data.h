@@ -135,7 +135,6 @@ protected:
     // SdfAbstractData overrides
     void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const override;
 
-    
     bool _IsAnimatedProperty(const SdfPath &path) const;  
     bool _HasPropertyDefaultValue(const SdfPath &path, VtValue *value) const;
     bool _HasPropertyTypeNameValue(const SdfPath &path, VtValue *value) const;
@@ -173,6 +172,7 @@ private:
         const _AnimXOpData* GetAnimatedOp(const TfToken& name) const;
         TfTokenVector GetAnimatedOpNames() const;
         bool HasAnimatedOp(const TfToken& name) const;
+        std::set<double> ComputeTimeSamples() const;
     };
     // Animated Prim cache map
     TfHashMap<SdfPath, _AnimXPrimData, SdfPath::Hash> _animXPrimDataMap;

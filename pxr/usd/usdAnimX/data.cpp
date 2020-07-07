@@ -65,6 +65,20 @@ UsdAnimXData::_AnimXPrimData::HasAnimatedOp(const TfToken& name) const
     return false;
 }
 
+std::set<double> 
+UsdAnimXData::_AnimXPrimData::ComputeTimeSamples() const
+{
+    std::set<double> samples;
+    for(const auto& op: ops) {
+        for(const auto& curve: op.curves) {
+            std::set<double> curveSamples = curve.computeSamples();
+            if(curveSamples.size())
+              samples.insert(curveSamples.begin(), curveSamples.end());
+        }
+    }
+    return samples;
+}
+
 const UsdAnimXData::_AnimXOpData* 
 UsdAnimXData::_AnimXPrimData::GetAnimatedOp(const TfToken& name) const
 {
@@ -188,7 +202,7 @@ UsdAnimXData::CreateSpec(const SdfPath& path,
         return;
     }
     if(specType == SdfSpecType::SdfSpecTypePrim)
-      _primSpecPaths.insert(path);
+        _primSpecPaths.insert(path);
     
     //TF_RUNTIME_ERROR("UsdAnimX file CreateSpec() not supported");
 }
@@ -275,9 +289,36 @@ UsdAnimXData::AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op)
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatf;
     } else if(opData.dataType.GetTypeid() == typeid(GfQuatd)) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatd;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfHalf>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateHalfArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<float>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateFloatArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<double>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateDoubleArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2h>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2hArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2f>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2fArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2d>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2dArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3h>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3hArray;
     } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3f>)) {
-        std::cout << "INTERPOLATE FUCKIN GF3F ARRAY!!! " << std::endl;
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3fArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3d>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3dArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4h>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4hArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4f>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4fArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4d>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4dArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuath>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateQuathArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuatf>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatfArray;
+    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuatd>)) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatdArray;
     } else {
         opData.func = NULL;
     }
@@ -301,6 +342,22 @@ UsdAnimXData::AddFCurve(const SdfPath& primPath, const TfToken& opName,
 void
 UsdAnimXData::ComputeTimesSamples()
 {
+    /*
+    std::cout << "COMPUTE TIME SAMPLES : " << std::endl;
+    _animTimeSampleTimes.clear();
+    for(const auto& animatedPrim: _animXPrimDataMap) {
+        std::cout << animatedPrim.first << " NUM OPS : " << 
+            animatedPrim.second.ops.size() << std::endl;
+        std::set<double> primSamples = 
+            animatedPrim.second.ComputeTimeSamples();
+        _animTimeSampleTimes.insert(primSamples.begin(), primSamples.end());
+    }
+
+    for(const auto& sample: _animTimeSampleTimes) {
+        std::cout << "SAMPLE : " << sample << std::endl;
+    }
+    */
+    //_animTimeSampleTimes.clear();
     for(int ts=1;ts<100;++ts)
         _animTimeSampleTimes.insert((double)ts);
 }

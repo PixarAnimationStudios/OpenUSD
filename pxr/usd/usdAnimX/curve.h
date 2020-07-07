@@ -29,6 +29,7 @@
 #include "keyframe.h"
 #include "desc.h"
 #include <vector>
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,15 +49,16 @@ public:
   bool isRotation() const;
 
   size_t findClosest(double time) const;
-  void addKeyframe(const adsk::Keyframe& key);
+  void addKeyframe(const UsdAnimXKeyframe& key);
   void addKeyframe(double time, double value);
   void removeKeyframe(double time);
   void removeKeyframe(size_t index);
 
+  std::set<double> computeSamples() const;
   double evaluate(double time) const;
 
 private:
-  std::vector<adsk::Keyframe>             _keyframes;
+  std::vector<UsdAnimXKeyframe>           _keyframes;
   adsk::CurveRotationInterpolationMethod  _rotationInterpolationMethod;
   adsk::InfinityType                      _preInfinityType;
   adsk::InfinityType                      _postInfinityType;

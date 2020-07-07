@@ -10,7 +10,7 @@ UsdAnimXCurve::UsdAnimXCurve(const UsdAnimXCurveDesc &desc)
 {
     size_t keyframeIndex = 0;
     for(const auto& keyframe: desc.keyframes) {
-        addKeyframe(GetKeyframeFromDesc(keyframe, keyframeIndex));
+        addKeyframe(UsdAnimXKeyframe(keyframe, keyframeIndex));
         keyframeIndex++;
     }
 }
@@ -175,7 +175,7 @@ size_t UsdAnimXCurve::findClosest(double time) const
     }
 }
 
-void UsdAnimXCurve::addKeyframe(const adsk::Keyframe& key)
+void UsdAnimXCurve::addKeyframe(const UsdAnimXKeyframe& key)
 {
     _keyframes.push_back(key);
 }
@@ -187,7 +187,7 @@ void UsdAnimXCurve::addKeyframe(double time, double value)
     adsk::Tangent tanOut = { 
         adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
 
-    adsk::Keyframe key;
+    UsdAnimXKeyframe key;
     key.time = time;                        // Time
     key.value = value;                      // Value
     key.index = (int)_keyframes.size();     // Sequential index of the key      
@@ -201,7 +201,7 @@ void UsdAnimXCurve::addKeyframe(double time, double value)
 
 void UsdAnimXCurve::removeKeyframe(double time)
 { 
-    std::vector<adsk::Keyframe>::iterator i = _keyframes.begin();
+    std::vector<UsdAnimXKeyframe>::iterator i = _keyframes.begin();
     for(;i<_keyframes.end();++i) {
         if(i->time == time)_keyframes.erase(i);
     }
@@ -216,6 +216,15 @@ void UsdAnimXCurve::removeKeyframe(size_t index)
 double UsdAnimXCurve::evaluate(double time) const
 {
     return adsk::evaluateCurve(time, *this);
+}
+
+std::set<double> UsdAnimXCurve::computeSamples() const
+{
+    std::set<double> samples;
+    for(const auto& keyframe: _keyframes) {
+        samples.insert(keyframe.time);
+    }
+    return samples;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

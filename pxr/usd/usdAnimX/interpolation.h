@@ -450,7 +450,7 @@ UsdAnimXInterpolateFloatArray(const std::vector<UsdAnimXCurve>& curves,
 
 static
 bool 
-UsdAnimXInterpolateDoublArray(const std::vector<UsdAnimXCurve>& curves, 
+UsdAnimXInterpolateDoubleArray(const std::vector<UsdAnimXCurve>& curves, 
     VtValue* value, double time, size_t n=1)
 {
     if(curves.size()!=n)return false;
@@ -689,20 +689,6 @@ UsdAnimXInterpolateQuathArray(const std::vector<UsdAnimXCurve>& curves,
     return true;
 }
 
-/*
-static
-bool 
-UsdAnimXInterpolateVector3fArray(const std::vector<UsdAnimXCurve>& curves, 
-    VtValue* value, double time)
-{
-    if(curves.size()!=3)return false;
-    VtArray<GfVec3f> array(1);
-    _Interpolate3<GfVec3f>(&curves[0], &array[0], time);
-    *value = VtValue(array);
-    return true;
-}
-*/
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_PLUGIN_ANIMX_DATA_H
+#endif // PXR_USD_PLUGIN_ANIMX_INTERPOLATION_H
