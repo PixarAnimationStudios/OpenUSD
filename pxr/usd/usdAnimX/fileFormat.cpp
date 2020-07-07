@@ -43,6 +43,7 @@
 #include "fileFormat.h"
 #include "data.h"
 #include "reader.h"
+#include "writer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -119,6 +120,12 @@ UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
     UsdAnimXReader reader;
     if(reader.Read(resolvedPath)) {
         reader.PopulateDatas(animXData);
+        std::string outputFile = 
+            "E:/Projects/RnD/USD_BUILD/assets/animX/output.animx";
+        UsdAnimXWriter writer;
+        writer.Open(outputFile);
+        writer.Write(data);
+        writer.Close();
     }
     _SetLayerData(layer, data);
     return true;

@@ -53,6 +53,7 @@ public:
   void addKeyframe(double time, double value);
   void removeKeyframe(double time);
   void removeKeyframe(size_t index);
+  void reindexKeys();
 
   std::set<double> computeSamples() const;
   double evaluate(double time) const;

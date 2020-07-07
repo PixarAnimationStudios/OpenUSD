@@ -24,7 +24,12 @@
 /// \file usdAnimX/writer.cpp
 
 #include "pxr/usd/sdf/data.h"
+#include "tokens.h"
 #include "writer.h"
+#include "curve.h"
+#include "keyframe.h"
+#include "data.h"
+#include "desc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdAnimXWriter
 //
 UsdAnimXWriter::UsdAnimXWriter()
+    : _currentDepth(0)
 {
     // Do nothing
 }
@@ -44,19 +50,36 @@ UsdAnimXWriter::~UsdAnimXWriter()
 bool
 UsdAnimXWriter::Open(const std::string& filePath)
 {
-    return true;
+    _file.open(filePath);
+    if(_file.is_open())return true;
+    return false;
 }
 
 bool
 UsdAnimXWriter::Write(const SdfAbstractDataConstPtr& data)
 {
+    UsdAnimXDataConstPtr animXData = 
+        TfStatic_cast<const UsdAnimXDataConstPtr>(data);
+    //for(const auto& prim: animXData)
+    std::cout << "WRITE TO FUCKIN FILE !!!" << std::endl;
+    if(_file.is_open()) {
+        std::vector<UsdAnimXPrimDesc> rootPrims = animXData->BuildDescription();
+        
+        for(auto& rootPrim: rootPrims) {
+            _WritePrim(_file, rootPrim.name);
+        }
+        //data->GetDesc
+        //data->WriteToStream(_file);
+    }
+    
     return true;
 }
 
-bool
+void
 UsdAnimXWriter::Close()
 {
-    return true;
+    if(_file.is_open())
+        _file.close();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

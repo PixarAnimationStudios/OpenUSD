@@ -6,7 +6,7 @@ UsdAnimXKeyframe::UsdAnimXKeyframe(const UsdAnimXKeyframeDesc &desc,
     size_t idx)
 {
     time = desc.time;
-    index = index;
+    index = idx;
     value = desc.data[0];
     tanIn = {
         (adsk::TangentType)(int)desc.data[1], 
