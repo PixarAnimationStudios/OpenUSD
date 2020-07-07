@@ -81,4 +81,26 @@ const SdfValueTypeName& AnimXGetSdfValueTypeNameFromToken(const TfToken& token)
 #undef ANIMX_SDF_VALUE_TYPE_FROM_TOKEN
 #undef ANIMX_SDF_VALUE_TYPE_ARRAY_FROM_TOKEN
 
+#define ANIMX_SERIALIZATION_TYPE_FROM_TOKEN(r, unused, elem)                \
+    if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem))      \
+        return TfToken                                                      \
+            (BOOST_PP_STRINGIZE(                                            \
+                ANIMX_VALUE_SERIALIZATION_TYPE(elem)));
+
+#define ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN(r, unused, elem)          \
+    if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem)Array) \
+        return TfToken                                                      \
+            (BOOST_PP_STRINGIZE(                                            \
+                ANIMX_VALUE_SERIALIZATION_TYPE(elem)[]));
+
+const TfToken& AnimXGetSerializationTypeNameFromToken(const TfToken& token)
+{
+    static TfToken emptyToken;
+    BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_FROM_TOKEN, ~, ANIMX_VALUE_TYPES)
+    BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN, ~, ANIMX_VALUE_TYPES)
+    return emptyToken;
+}
+#undef ANIMX_SERIALIZATION_TYPE_FROM_TOKEN
+#undef ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN
+
 PXR_NAMESPACE_CLOSE_SCOPE

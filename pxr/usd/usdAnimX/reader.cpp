@@ -86,6 +86,8 @@ void UsdAnimXReader::_ReadOp(const std::string& s)
     if(_HasOpeningBrace(s))return;
     if(_IsCurve(s, &_curveDesc))
     {
+        _curveDesc.preInfinityType = UsdAnimXTokens->constant;
+        _curveDesc.postInfinityType = UsdAnimXTokens->constant;
         _currentOp->curves.push_back(_curveDesc);
         _currentCurve = &_currentOp->curves.back();
         _readState = ANIMX_READ_CURVE;
@@ -351,7 +353,7 @@ bool  UsdAnimXReader::Read(const std::string& resolvedPath)
     return true;
 }
 
-//namespace { // anonymous namespace
+namespace { // anonymous namespace
 
 void _PopulatePrim(UsdAnimXDataRefPtr& datas, const UsdAnimXPrimDesc& prim, 
     const SdfPath& parentPath)
@@ -375,7 +377,7 @@ void _PopulatePrim(UsdAnimXDataRefPtr& datas, const UsdAnimXPrimDesc& prim,
     }
 }
 
-//} // end anonymous namespace
+} // end anonymous namespace
 
 /// Populate datas
 void UsdAnimXReader::PopulateDatas(UsdAnimXDataRefPtr& datas)
@@ -384,7 +386,6 @@ void UsdAnimXReader::PopulateDatas(UsdAnimXDataRefPtr& datas)
     for(const auto& prim: _rootPrims) {
         _PopulatePrim(datas, prim, rootPath);
     }
-    datas->ComputeTimesSamples();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

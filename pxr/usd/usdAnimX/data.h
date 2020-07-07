@@ -59,7 +59,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXData);
 /// 
 class UsdAnimXData : public SdfAbstractData
 {
-struct _AnimXOpData;
+struct _OpData;
 public:
     static UsdAnimXDataRefPtr New();
 
@@ -125,57 +125,54 @@ public:
     const SdfPath& GetRootPrimPath() const;
     
     void AddPrim(const SdfPath& primPath);
-    _AnimXOpData* AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op);
+    _OpData* AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op);
     void AddFCurve(const SdfPath& primPath, const TfToken& opName,
         const UsdAnimXCurveDesc& curve);
 
-    void ComputeTimesSamples();
+    std::vector<UsdAnimXPrimDesc> BuildDescription() const;
+
+private:
+    // Animated Operator definition
+    struct _OpData
+    {
+        TfToken name;
+        TfToken target;
+        TfType  dataType;
+        VtValue defaultValue;
+        std::vector<UsdAnimXCurve> curves;
+        InterpolateFunc func;
+    };
+
+    // Animated Prim definition
+    struct _PrimData
+    {
+        std::vector<_OpData> ops;
+
+        _OpData* GetMutableAnimatedOp(const TfToken& name);
+        const _OpData* GetAnimatedOp(const TfToken& name) const;
+        TfTokenVector GetAnimatedOpNames() const;
+        bool HasAnimatedOp(const TfToken& name) const;
+        std::set<double> ComputeTimeSamples() const;
+    };
 
 protected:
     // SdfAbstractData overrides
     void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const override;
 
-    bool _IsAnimatedProperty(const SdfPath &path) const;  
+    const _OpData* _HasAnimatedProperty(const SdfPath &path) const;  
     bool _HasPropertyDefaultValue(const SdfPath &path, VtValue *value) const;
     bool _HasPropertyTypeNameValue(const SdfPath &path, VtValue *value) const;
 
 private:
     // Private constructor for factory New
     UsdAnimXData();
-
-    // Cached set of generated time sample times. All of the animated property
-    // time sample fields have the same time sample times.
-    std::set<double> _animTimeSampleTimes;
-    std::string _filename;
     
     // Cached set of all paths with a generated prim spec.
-    TfHashSet<SdfPath, SdfPath::Hash> _primSpecPaths;
+    TfHashSet<SdfPath, SdfPath::Hash> _primPaths;
     SdfPath _rootPrimPath;
 
-    // Animated Operator definition
-    struct _AnimXOpData
-    {
-        TfToken name;
-        VtValue defaultValue;
-        TfToken typeName;
-        TfType  dataType;
-        std::vector<UsdAnimXCurve> curves;
-        InterpolateFunc func;
-    };
-
-    // Animated Prim definition
-    struct _AnimXPrimData
-    {
-        std::vector<_AnimXOpData> ops;
-
-        _AnimXOpData* GetMutableAnimatedOp(const TfToken& name);
-        const _AnimXOpData* GetAnimatedOp(const TfToken& name) const;
-        TfTokenVector GetAnimatedOpNames() const;
-        bool HasAnimatedOp(const TfToken& name) const;
-        std::set<double> ComputeTimeSamples() const;
-    };
-    // Animated Prim cache map
-    TfHashMap<SdfPath, _AnimXPrimData, SdfPath::Hash> _animXPrimDataMap;
+    // Animated prims datas map
+    TfHashMap<SdfPath, _PrimData, SdfPath::Hash> _animatedPrimDatas;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
