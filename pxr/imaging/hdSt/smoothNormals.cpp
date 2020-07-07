@@ -21,9 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
@@ -37,7 +34,10 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include "pxr/imaging/hgiGL/shaderProgram.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 
 #include "pxr/base/vt/array.h"
 
@@ -72,8 +72,6 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!glDispatchCompute)
-        return;
     if (_srcDataType == HdTypeInvalid)
         return;
 
@@ -102,13 +100,11 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     }
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
     HdStGLSLProgramSharedPtr computeProgram
-        = HdStGLSLProgram::GetComputeProgram(shaderToken,
-            static_cast<HdStResourceRegistry*>(resourceRegistry));
+        = HdStGLSLProgram::GetComputeProgram(shaderToken, hdStResourceRegistry);
     if (!computeProgram) return;
-
-    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
-    GLuint program = hgiProgram->GetRawResource();
 
     HdStBufferArrayRangeSharedPtr range =
         std::static_pointer_cast<HdStBufferArrayRange> (range_);
@@ -164,49 +160,74 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     int numPoints = std::min(numSrcPoints, numDestPoints);
 
-    // transfer uniform buffer
-    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
-    // GfxCmds.
-    const size_t uboSize = sizeof(uniform);
-    HgiGLShaderProgram * const hgiGLProgram =
-        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
-    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (caps.directStateAccessEnabled) {
-        glNamedBufferData(ubo, uboSize, &uniform, GL_STATIC_DRAW);
-    } else {
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, uboSize, &uniform, GL_STATIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    Hgi* hgi = hdStResourceRegistry->GetHgi();
+
+    // XXX We create a hgi pipeline and resource bindings on-the-fly here and
+    // destroy it when done. This won't affect HgiGL, but will be less ideal
+    // for Metal/Vulkan. We may want to cache these on HdStResourceRegistry.
+    // We may also want to share the ComputeCmds across multiple computations
+    // to have a more efficient command buffer submission.
+
+    HgiComputePipelineDesc desc;
+    desc.debugName = "SmoothNormals";
+    desc.shaderProgram = computeProgram->GetProgram();
+    HgiComputePipelineHandle pipeline = hgi->CreateComputePipeline(desc);
+
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "SmoothNormals";
+    resourceDesc.pipelineType = HgiPipelineTypeCompute;
+
+    if (points->GetId()) {
+        HgiBufferBindDesc bufBind0;
+        bufBind0.bindingIndex = 0;
+        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.offsets.push_back(0);
+        bufBind0.buffers.push_back(points->GetId());
+        resourceDesc.buffers.push_back(std::move(bufBind0));
     }
 
-    GLuint pointsId =
-        points->GetId() ? points->GetId()->GetRawResource() : 0;
-    GLuint normalsId = 
-        normals->GetId() ? normals->GetId()->GetRawResource() : 0;
-    GLuint adjacencyId = 
-        adjacency->GetId() ? adjacency->GetId()->GetRawResource() : 0;
+    if (normals->GetId()) {
+        HgiBufferBindDesc bufBind1;
+        bufBind1.bindingIndex = 1;
+        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.offsets.push_back(0);
+        bufBind1.buffers.push_back(normals->GetId());
+        resourceDesc.buffers.push_back(std::move(bufBind1));
+    }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 0, pointsId);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 1, normalsId);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 2, adjacencyId);
+    if (adjacency->GetId()) {
+        HgiBufferBindDesc bufBind2;
+        bufBind2.bindingIndex = 2;
+        bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.offsets.push_back(0);
+        bufBind2.buffers.push_back(adjacency->GetId());
+        resourceDesc.buffers.push_back(std::move(bufBind2));
+    }
+
+    HgiResourceBindingsHandle resourceBindings =
+        hgi->CreateResourceBindings(resourceDesc);
+
+    HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
+    computeCmds->PushDebugGroup("Smooth Normals Encoder");
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(pipeline);
+
+    // transfer uniform buffer
+    computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
 
     // dispatch compute kernel
-    glUseProgram(program);
+    computeCmds->Dispatch(numPoints, 1);
 
-    glDispatchCompute(numPoints, 1, 1);
-
-    glUseProgram(0);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, 0);
+    // submit the work
+    computeCmds->PopDebugGroup();
+    hgi->SubmitCmds(computeCmds.get());
+    
+    hgi->DestroyComputePipeline(&pipeline);
+    hgi->DestroyResourceBindings(&resourceBindings);
 }
 
 void

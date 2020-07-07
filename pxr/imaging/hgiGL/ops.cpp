@@ -470,6 +470,13 @@ HgiGLOps::Dispatch(int dimX, int dimY)
     return [dimX, dimY] {
         glDispatchCompute(dimX, dimY, 1);
 
+        // XXX We assume for now that compute outputs to a SSBO or Texture and
+        // set both barriers. In the future we could try to get the client to
+        // pass in more detailed barrier information or internally try to look
+        // at the resource bindings to make barriers decisions.
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
         HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
