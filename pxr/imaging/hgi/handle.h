@@ -72,12 +72,6 @@ public:
     }
 
 private:
-
-    // Destruction of objects should only happen via the HgiDestroy*** function.
-    // This function is in-accessible by clients using this handle, but
-    // accessible by the Hgi friend class that created the handle. 
-    friend class Hgi;
-
     T* _ptr;
     uint64_t _id;
 };
