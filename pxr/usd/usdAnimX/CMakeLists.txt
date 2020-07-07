@@ -34,6 +34,7 @@ pxr_plugin(${PXR_PACKAGE}
         curve
         data
         reader
+        writer
 
     RESOURCE_FILES
         plugInfo.json

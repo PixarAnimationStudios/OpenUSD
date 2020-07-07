@@ -114,14 +114,12 @@ UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
         return false;
     }
 
-
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     UsdAnimXDataRefPtr animXData = TfStatic_cast<UsdAnimXDataRefPtr>(data);
     UsdAnimXReader reader;
     if(reader.Read(resolvedPath)) {
         reader.PopulateDatas(animXData);
     }
-
     _SetLayerData(layer, data);
     return true;
 }
