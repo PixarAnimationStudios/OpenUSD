@@ -808,4 +808,11 @@ UsdCollectionAPI::BlockCollection() const
     return success;    
 }
 
+/* static */
+bool
+UsdCollectionAPI::CanContainPropertyName(const TfToken &name)
+{
+    return TfStringStartsWith(name, UsdTokens->collection);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

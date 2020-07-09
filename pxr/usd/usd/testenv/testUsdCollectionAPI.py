@@ -269,6 +269,9 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # Test GetName() API.
         self.assertEqual(leafGeom.GetName(), 'leafGeom')
+        self.assertFalse(Usd.CollectionAPI.CanContainPropertyName(
+            leafGeom.GetName()))
+        self.assertTrue(leafGeom.GetCollectionPath().name)
 
         # Test Get/IsCollectionAPIPath API.
         self.assertTrue(Usd.CollectionAPI.IsCollectionAPIPath(

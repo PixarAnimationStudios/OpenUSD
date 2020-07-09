@@ -546,6 +546,11 @@ public:
     USD_API
     bool BlockCollection() const;
 
+    /// Test whether a given \p name contains the "collection:" prefix
+    ///
+    USD_API
+    static bool CanContainPropertyName(const TfToken &name);
+
 private:
 
     // Returns the name of the property belonging to this collection, given the

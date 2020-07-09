@@ -249,6 +249,10 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
              .staticmethod("ComputeIncludedPaths")
 
+        .def("CanContainPropertyName", 
+                This::CanContainPropertyName, arg("name"))
+        .staticmethod("CanContainPropertyName")
+
         .def("ResetCollection", &This::ResetCollection)
         .def("BlockCollection", &This::BlockCollection)
      ;
