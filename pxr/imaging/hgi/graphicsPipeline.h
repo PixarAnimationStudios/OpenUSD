@@ -115,7 +115,7 @@ inline bool operator!=(
 ///
 /// <ul>
 /// <li>alphaToCoverageEnable:
-///   Fragment’s color.a determines coverage (screen door transparency).</li>
+///   Fragment's color.a determines coverage (screen door transparency).</li>
 ///
 struct HgiMultiSampleState
 {
@@ -181,11 +181,11 @@ bool operator!=(
 ///
 /// <ul>
 /// <li>depthTestEnabled:
-///   When enabled uses `depthCompareFn` to test if a fragment passes the 
+///   When enabled uses `depthCompareFn` to test if a fragment passes the
 ///   depth test. Note that depth writes are automatically disabled when
 ///   depthTestEnabled is false.</li>
 /// <li>depthWriteEnabled:
-///   When enabled uses `depthCompareFn` to test if a fragment passes the 
+///   When enabled uses `depthCompareFn` to test if a fragment passes the
 ///   depth test. Note that depth writes are automatically disabled when
 ///   depthTestEnabled is false.</li>
 /// <li>stencilTestEnabled:
@@ -200,7 +200,6 @@ struct HgiDepthStencilState
     bool depthTestEnabled;
     bool depthWriteEnabled;
     HgiCompareFunction depthCompareFn;
-
     bool stencilTestEnabled;
 };
 
@@ -213,6 +212,35 @@ HGI_API
 bool operator!=(
     const HgiDepthStencilState& lhs,
     const HgiDepthStencilState& rhs);
+
+/// \struct HgiGraphicsShaderConstantsDesc
+///
+/// A small, but fast buffer of uniform data for shaders.
+///
+/// <ul>
+/// <li>byteSize:
+///    Size of the constants in bytes. (max 256 bytes)</li>
+/// <li>stageUsage:
+///    What shader stage(s) the constants will be used in.</li>
+/// </ul>
+///
+struct HgiGraphicsShaderConstantsDesc {
+    HGI_API
+    HgiGraphicsShaderConstantsDesc();
+
+    uint32_t byteSize;
+    HgiShaderStage stageUsage;
+};
+
+HGI_API
+bool operator==(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs);
 
 /// \struct HgiPipelineDesc
 ///
@@ -237,6 +265,8 @@ bool operator!=(
 ///   Describes each of the color attachments.</li>
 /// <li>depthAttachmentDesc:
 ///   Describes the depth attachment (optional)</li>
+/// <li>shaderConstantsDesc:
+///   Describes the shader uniforms.</li>
 /// </ul>
 ///
 struct HgiGraphicsPipelineDesc
@@ -252,6 +282,7 @@ struct HgiGraphicsPipelineDesc
     HgiVertexBufferDescVector vertexBuffers;
     HgiAttachmentDescVector colorAttachmentDescs;
     HgiAttachmentDesc depthAttachmentDesc;
+    HgiGraphicsShaderConstantsDesc shaderConstantsDesc;
 };
 
 HGI_API

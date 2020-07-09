@@ -86,6 +86,8 @@ public:
     /// `stages` describes for what shader stage you are setting the push
     /// constant values for. Each stage can have its own (or none) binding
     /// and they must match what is described in the shader functions.
+    /// `bindIndex` is the binding point index in the pipeline's shader
+    /// to bind the data to.
     /// `byteSize` is the size of the data you are updating.
     /// `data` is the data you are copying into the push constants block.
     HGI_API

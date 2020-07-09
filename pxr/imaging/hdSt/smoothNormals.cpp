@@ -171,6 +171,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HgiComputePipelineDesc desc;
     desc.debugName = "SmoothNormals";
     desc.shaderProgram = computeProgram->GetProgram();
+    desc.shaderConstantsDesc.byteSize = sizeof(uniform);
     HgiComputePipelineHandle pipeline = hgi->CreateComputePipeline(desc);
 
     // Begin the resource set
