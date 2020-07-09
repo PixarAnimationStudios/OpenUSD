@@ -865,4 +865,11 @@ UsdShadeMaterialBindingAPI::GetMaterialBindSubsetsFamilyType()
     return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);
 }
 
+/* static */
+bool
+UsdShadeMaterialBindingAPI::CanContainPropertyName(const TfToken &name)
+{
+    return TfStringStartsWith(name, UsdShadeTokens->materialBinding);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

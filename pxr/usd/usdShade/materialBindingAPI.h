@@ -865,6 +865,11 @@ public:
     USDSHADE_API
     TfToken GetMaterialBindSubsetsFamilyType();
 
+    /// Test whether a given \p name contains the "material:binding:" prefix
+    ///
+    USDSHADE_API
+    static bool CanContainPropertyName(const TfToken &name);
+
     /// @}
 
 private:

@@ -42,6 +42,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         weakerBindingAPI = UsdShade.MaterialBindingAPI(gpw)
         weakerBindingAPI.Bind(mw1)
 
+        self.assertTrue(
+                UsdShade.MaterialBindingAPI.CanContainPropertyName(
+                weakerBindingAPI.GetDirectBindingRel().GetName()))
         self.assertEqual(weakerBindingAPI.GetDirectBindingRel().GetTargets(),
                          [Sdf.Path("/weaker/mat1")])
         self.assertEqual(weakerBindingAPI.GetDirectBinding().GetMaterialPath(),
