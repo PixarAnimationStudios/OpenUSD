@@ -46,12 +46,10 @@
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/glf/textureRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -208,7 +206,6 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     , _delegate(renderIndex, controllerId)
 {
     _CreateRenderGraph();
-    _LoadDefaultDomeLightTexture();
 }
 
 HdxTaskController::~HdxTaskController()
@@ -780,23 +777,6 @@ HdxTaskController::_GetAovPath(TfToken const& aov) const
     return GetControllerId().AppendChild(TfToken(identifier));
 }
 
-void
-HdxTaskController::_LoadDefaultDomeLightTexture()
-{
-    // load and attach the texture for the Default DomeLight Texture
-    GlfTextureHandleRefPtr texture = 
-                GlfTextureRegistry::GetInstance().GetTextureHandle(
-                HdxPackageDefaultDomeLightTexture(),
-                GlfImage::ImageOriginLocation::OriginUpperLeft);
-
-    _defaultDomeLightTextureResource = HdTextureResourceSharedPtr(
-                new HdStSimpleTextureResource(texture, HdTextureType::Uv, 
-                HdWrap::HdWrapRepeat, HdWrap::HdWrapRepeat, 
-                HdWrap::HdWrapRepeat, HdMinFilter::HdMinFilterLinear, 
-                HdMagFilter::HdMagFilterLinear, 
-                0.0f));
-}
-
 void 
 HdxTaskController::_SetParameters(SdfPath const& pathName, 
                                     GlfSimpleLight const& light)
@@ -813,8 +793,6 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     // if we are setting the parameters for the dome light we need to add the 
     // default dome light texture resource.
     if (light.IsDomeLight()) {
-        _delegate.SetParameter(pathName, HdLightTokens->textureResource, 
-            _defaultDomeLightTextureResource);
         _delegate.SetParameter(pathName, HdLightTokens->textureFile,
                                SdfAssetPath(
                                    HdxPackageDefaultDomeLightTexture(),
@@ -1593,9 +1571,6 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
                                     HdLightTokens->params, lights[i]);
 
             if (light.IsDomeLight()) {
-                _delegate.SetParameter(_lightIds[i], 
-                                    HdLightTokens->textureResource, 
-                                    _defaultDomeLightTextureResource);
                 _delegate.SetParameter(
                     _lightIds[i], HdLightTokens->textureFile,
                     SdfAssetPath(
