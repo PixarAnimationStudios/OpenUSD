@@ -1222,7 +1222,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         // This is very conservative but it is correct.
         if (attrName == UsdGeomTokens->modelDrawMode ||
             attrName == UsdGeomTokens->modelApplyDrawMode ||
-            TfStringStartsWith(attrName, UsdShadeTokens->materialBinding)) {
+            UsdShadeMaterialBindingAPI::CanContainPropertyName(attrName)) {
             _ResyncUsdPrim(usdPrimPath, proxy, true);
             return;
         }
@@ -1247,7 +1247,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             // _GatherDependencies on a leaf prim won't invoke any extra work
             // vs the equal_range below...
             _GatherDependencies(usdPrimPath, &affectedCachePaths);
-        } else if (TfStringStartsWith(attrName, UsdTokens->collection)) {
+        } else if (UsdCollectionAPI::CanContainPropertyName(attrName)) {
             // XXX Performance: Collections used for material bindings
             // can refer to prims at arbitrary locations in the scene.
             // Accordingly, we conservatively invalidate everything.
@@ -1263,7 +1263,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             TF_FOR_ALL(it, _hdPrimInfoMap) {
                 affectedCachePaths.push_back(it->first);
             }
-        } else if (TfStringStartsWith(attrName, UsdShadeTokens->coordSys)) {
+        } else if (UsdShadeCoordSysAPI::CanContainPropertyName(attrName)) {
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
                 "HdCoordSys bindings affected for %s\n", usdPath.GetText());
             // Coordinate system bindings apply to all descendent gprims.
