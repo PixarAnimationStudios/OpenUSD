@@ -221,4 +221,11 @@ UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &name)
     return TfToken(_tokens->coordSys.GetString() + ":" + name);
 }
 
+/* static */
+bool
+UsdShadeCoordSysAPI::CanContainPropertyName(const TfToken &name)
+{
+    return TfStringStartsWith(name, UsdShadeTokens->coordSys);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

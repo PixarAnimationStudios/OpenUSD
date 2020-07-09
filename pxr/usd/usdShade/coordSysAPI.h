@@ -219,6 +219,11 @@ public:
     /// name, given the coordinate system name.
     USDGEOM_API
     static TfToken GetCoordSysRelationshipName(const std::string &coordSysName);
+
+    /// Test whether a given \p name contains the "coordSys:" prefix
+    ///
+    USDSHADE_API
+    static bool CanContainPropertyName(const TfToken &name);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

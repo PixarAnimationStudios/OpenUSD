@@ -139,6 +139,9 @@ WRAP_CUSTOM {
         .def("GetCoordSysRelationshipName",
             &UsdShadeCoordSysAPI::GetCoordSysRelationshipName)
         .staticmethod("GetCoordSysRelationshipName")
+        .def("CanContainPropertyName", 
+            &UsdShadeCoordSysAPI::CanContainPropertyName, arg("name"))
+        .staticmethod("CanContainPropertyName")
         ;
 
      // Register to and from python conversion for parameter pairs

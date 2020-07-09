@@ -29,6 +29,12 @@ class TestUsdShadeCoordSysAPI(unittest.TestCase):
     def test_CoordSys(self):
         stage = Usd.Stage.Open('test.usda')
 
+        # Test CanContainPropertyName
+        self.assertTrue(UsdShade.CoordSysAPI.CanContainPropertyName(
+            stage.GetPropertyAtPath('/World.coordSys:worldSpace').GetName()))
+        self.assertFalse(UsdShade.CoordSysAPI.CanContainPropertyName(
+            stage.GetPropertyAtPath('/World.xformOp:translate').GetName()))
+
         world = stage.GetPrimAtPath('/World')
         model = stage.GetPrimAtPath('/World/Model')
         geom = stage.GetPrimAtPath('/World/Model/Geom')
