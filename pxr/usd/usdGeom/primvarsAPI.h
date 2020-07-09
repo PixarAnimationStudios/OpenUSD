@@ -446,6 +446,10 @@ public:
     USDGEOM_API
     bool HasPossiblyInheritedPrimvar(const TfToken &name) const;
 
+    /// Test whether a given \p name contains the "primvars:" prefix
+    ///
+    USDGEOM_API
+    static bool CanContainPropertyName(const TfToken& name);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

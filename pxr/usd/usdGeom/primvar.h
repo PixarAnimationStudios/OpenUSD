@@ -357,11 +357,6 @@ public:
     USDGEOM_API
     static bool IsValidPrimvarName(const TfToken& name);
 
-    /// Test whether a given \p name contains the "primvars:" prefix
-    ///
-    USDGEOM_API
-    static bool IsPrimvarRelatedPropertyName(const TfToken& name);
-
     /// Returns the \p name, devoid of the "primvars:" token if present,
     /// otherwise returns the \p name unchanged
     USDGEOM_API

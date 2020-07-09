@@ -559,4 +559,12 @@ UsdGeomPrimvarsAPI::HasPossiblyInheritedPrimvar(const TfToken &name) const
     return false;
 }
 
+/* static */
+bool
+UsdGeomPrimvarsAPI::CanContainPropertyName(const TfToken& name)
+{
+    TfToken const& prefix = UsdGeomPrimvar::_GetNamespacePrefix();
+    return TfStringStartsWith(name, prefix);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
