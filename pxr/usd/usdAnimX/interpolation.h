@@ -184,6 +184,30 @@ _InterpolateQuat(const UsdAnimXCurve* curves, T* value, double time)
 
 static
 bool 
+UsdAnimXInterpolateBool(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=1)return false;
+    bool v;
+    _Interpolate<bool>(&curves[0], &v, time);
+    *value = VtValue(v);
+    return true;
+}
+
+static
+bool 
+UsdAnimXInterpolateInt(const std::vector<UsdAnimXCurve>& curves, 
+    VtValue* value, double time, size_t n=1)
+{
+    if(curves.size()!=1)return false;
+    int v;
+    _Interpolate<int>(&curves[0], &v, time);
+    *value = VtValue(v);
+    return true;
+}
+
+static
+bool 
 UsdAnimXInterpolateHalf(const std::vector<UsdAnimXCurve>& curves, 
     VtValue* value, double time, size_t n=1)
 {

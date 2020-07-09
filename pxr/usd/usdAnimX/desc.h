@@ -45,7 +45,7 @@ struct UsdAnimXCurveDesc {
 struct UsdAnimXOpDesc {
     TfToken name;
     TfToken target;
-    TfType dataType;
+    TfToken dataType;
     VtValue defaultValue;
     bool useRotationInterpolation;
     TfToken interpolationMethod;
@@ -57,7 +57,6 @@ struct UsdAnimXPrimDesc {
     std::vector<UsdAnimXPrimDesc> children;
     std::vector<UsdAnimXOpDesc> ops;
     UsdAnimXPrimDesc* parent;
-    size_t depth;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -135,9 +135,7 @@ private:
     // Animated Operator definition
     struct _OpData
     {
-        TfToken name;
         TfToken target;
-        TfType  dataType;
         VtValue defaultValue;
         std::vector<UsdAnimXCurve> curves;
         InterpolateFunc func;
@@ -161,7 +159,6 @@ protected:
 
     const _OpData* _HasAnimatedProperty(const SdfPath &path) const;  
     bool _HasPropertyDefaultValue(const SdfPath &path, VtValue *value) const;
-    bool _HasPropertyTypeNameValue(const SdfPath &path, VtValue *value) const;
 
 private:
     // Private constructor for factory New
@@ -170,10 +167,25 @@ private:
     // Cached set of all paths with a generated prim spec.
     TfHashSet<SdfPath, SdfPath::Hash> _primPaths;
     SdfPath _rootPrimPath;
-
+    
     // Animated prims datas map
     TfHashMap<SdfPath, _PrimData, SdfPath::Hash> _animatedPrimDatas;
 };
+
+namespace { // anonymous namespace
+static TfToken _GetOpName(const TfToken& token) {
+    std::string nameToken = token.GetString();
+    size_t pos = nameToken.rfind(':');
+    if(pos != std::string::npos) {
+        return TfToken(nameToken.erase(0, pos+1)+"Op");
+    } else {
+        return TfToken(nameToken+"Op");
+    }
+}
+static TfTokenVector _GetCurveNames() {
+    return TfTokenVector();
+}
+} // end anonymous namespace
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

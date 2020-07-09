@@ -23,13 +23,14 @@
 //
 /// \file usdAnimX/writer.cpp
 
-#include "pxr/usd/sdf/data.h"
+#include <pxr/usd/sdf/data.h>
 #include "tokens.h"
 #include "writer.h"
 #include "curve.h"
 #include "keyframe.h"
 #include "data.h"
 #include "desc.h"
+#include "fileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,19 +61,15 @@ UsdAnimXWriter::Write(const SdfAbstractDataConstPtr& data)
 {
     UsdAnimXDataConstPtr animXData = 
         TfStatic_cast<const UsdAnimXDataConstPtr>(data);
-    //for(const auto& prim: animXData)
-    std::cout << "WRITE TO FUCKIN FILE !!!" << std::endl;
     if(_file.is_open()) {
+        _WriteCookie(_file);
         std::vector<UsdAnimXPrimDesc> rootPrims = animXData->BuildDescription();
-        
         for(auto& rootPrim: rootPrims) {
-            _WritePrim(_file, rootPrim.name);
+            _WritePrim(_file, rootPrim);
         }
-        //data->GetDesc
-        //data->WriteToStream(_file);
+        return true;
     }
-    
-    return true;
+    return false;
 }
 
 void
@@ -80,6 +77,117 @@ UsdAnimXWriter::Close()
 {
     if(_file.is_open())
         _file.close();
+}
+
+void
+UsdAnimXWriter::_WriteCookie(std::ostream &stream)
+{
+    stream  << "#" << UsdAnimXFileFormatTokens->Id
+            << " " << UsdAnimXFileFormatTokens->Version 
+            << "\n\n";
+}
+
+void 
+UsdAnimXWriter::_WriteDepth(std::ostream &stream)
+{
+    for(size_t d=0;d<_currentDepth;++d)
+        stream << "\t";
+}
+
+void 
+UsdAnimXWriter::_OpenScope(std::ostream &stream)
+{
+    _WriteDepth(stream);
+    stream << "{\n";
+    _currentDepth++;
+}
+
+void 
+UsdAnimXWriter::_CloseScope(std::ostream &stream)
+{
+    _currentDepth--;
+    _WriteDepth(stream);
+    stream << "}\n"; 
+}
+
+void 
+UsdAnimXWriter::_WritePrim(std::ostream &stream, const UsdAnimXPrimDesc &desc)
+{
+    _WriteDepth(stream);
+    stream << UsdAnimXTokens->prim.GetText() 
+        << " \"" << desc.name.GetText() << "\"\n";
+    _OpenScope(stream);
+    if(desc.ops.size()) {
+        for(const auto& op: desc.ops) {
+            _WriteOp(stream, op);
+        }
+    }
+    if(desc.children.size()) {
+        for(const auto& child: desc.children) {
+            _WritePrim(stream, child);
+        }
+    }
+    _CloseScope(stream);
+}
+
+void 
+UsdAnimXWriter::_WriteOp(std::ostream &stream, const UsdAnimXOpDesc &desc)
+{
+    _WriteDepth(stream);
+    stream << UsdAnimXTokens->op.GetText()
+        << " \"" << desc.name.GetText() << "\"\n";
+    _OpenScope(stream);
+
+    _WriteSpec(stream, UsdAnimXTokens->target, VtValue(desc.target));
+    _WriteSpec(stream, UsdAnimXTokens->dataType, VtValue(desc.dataType));
+    _WriteSpec(stream, UsdAnimXTokens->defaultValue, desc.defaultValue);
+
+    for(const auto& curve: desc.curves) {
+        _WriteCurve(stream, curve);
+    }
+    _CloseScope(stream);
+}
+
+void 
+UsdAnimXWriter::_WriteCurve(std::ostream &stream, const UsdAnimXCurveDesc &desc)
+{
+    _WriteDepth(stream);
+    stream << UsdAnimXTokens->curve.GetText()
+        << " \"" << desc.name.GetText() << "\"\n";
+    _OpenScope(stream);
+    _WriteSpec(stream, UsdAnimXTokens->preInfinityType, 
+        VtValue(desc.preInfinityType));
+    _WriteSpec(stream, UsdAnimXTokens->postInfinityType, 
+        VtValue(desc.postInfinityType));
+    _WriteKeyframes(stream, desc.keyframes);
+    _CloseScope(stream);
+}
+
+void 
+UsdAnimXWriter::_WriteSpec(std::ostream &stream, const TfToken &token, 
+    const VtValue &value)
+{
+    _WriteDepth(stream);
+    if(token == UsdAnimXTokens->dataType) {
+        stream << token << "  \"" << value.Get<TfToken>() << "\"\n";
+    } else if(token == UsdAnimXTokens->defaultValue) {
+        stream << token << " " << value << "\n";
+    } else {
+        stream << token << " \""<< value.Get<TfToken>() << "\"\n";
+    }
+}
+
+void 
+UsdAnimXWriter::_WriteKeyframes(std::ostream &stream, 
+    const std::vector<UsdAnimXKeyframeDesc> &keyframes)
+{
+    _WriteDepth(stream);
+    stream << UsdAnimXTokens->keyframes << " [";
+    for(const auto& keyframe: keyframes) {
+        stream << keyframe << ",";
+    }
+    stream << "]\n";
+    
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

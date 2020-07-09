@@ -102,7 +102,9 @@ struct UsdAnimXValueTypeTokensType {
 extern ANIMX_API TfStaticData<UsdAnimXValueTypeTokensType> UsdAnimXValueTypeTokens;
 
 const SdfValueTypeName& AnimXGetSdfValueTypeNameFromToken(const TfToken& token);
+const TfToken& AnimXGetTokenFromSdfValueTypeName(const TfType& type);
 const TfToken& AnimXGetSerializationTypeNameFromToken(const TfToken& token);
+const TfToken& AnimXGetSerializationTypeNameFromSdfValueTypeName(const TfType& type);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
