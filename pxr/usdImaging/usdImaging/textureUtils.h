@@ -55,13 +55,6 @@ UsdImaging_GetUdimTiles(
     int tileLimit,
     SdfLayerHandle const& layerHandle = SdfLayerHandle());
 
-USDIMAGING_API
-bool
-UsdImaging_UdimTilesExist(
-    std::string const& basePath,
-    int tileLimit,
-    SdfLayerHandle const& layerHandle = SdfLayerHandle());
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_TEXTURE_UTILS_H

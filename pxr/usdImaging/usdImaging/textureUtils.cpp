@@ -65,34 +65,4 @@ UsdImaging_GetUdimTiles(
     return ret;
 }
 
-bool
-UsdImaging_UdimTilesExist(
-    std::string const& basePath,
-    int tileLimit,
-    SdfLayerHandle const& layerHandle) {
-    const std::string::size_type pos = basePath.find("<UDIM>");
-    if (pos == std::string::npos) {
-        return false;
-    }
-    std::string formatString = basePath;
-    formatString.replace(pos, 6, "%i");
-
-    ArResolverScopedCache resolverCache;
-    ArResolver& resolver = ArGetResolver();
-
-    constexpr int startTile = 1001;
-    const int endTile = startTile + tileLimit;
-    for (int t = startTile; t <= endTile; ++t) {
-        const std::string path =
-            layerHandle
-            ? SdfComputeAssetPathRelativeToLayer(
-                layerHandle, TfStringPrintf(formatString.c_str(), t))
-            : TfStringPrintf(formatString.c_str(), t);
-        if (!resolver.Resolve(path).empty()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
