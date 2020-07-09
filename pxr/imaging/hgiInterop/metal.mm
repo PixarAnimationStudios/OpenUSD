@@ -761,7 +761,13 @@ HgiInteropMetal::_RestoreOpenGlState()
     if (!_restoreVao) {
         for (int i = 0; i < 2; i++) {
             VertexAttribState &state(_restoreVertexAttribState[i]);
-            
+            if (state.enabled) {
+                glVertexAttribPointer(state.bufferBinding, state.size,
+                    state.type, state.normalized, state.stride, state.pointer);
+                glEnableVertexAttribArray(state.bufferBinding);
+            } else {
+                glDisableVertexAttribArray(state.bufferBinding);
+            }
         }
     }
     

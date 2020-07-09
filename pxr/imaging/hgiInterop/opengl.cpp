@@ -248,6 +248,8 @@ HgiInteropOpenGL::CompositeToInterop(
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // Restore state and verify gl errors
+    glDisableVertexAttribArray(locPosition);
+    glDisableVertexAttribArray(locUv);
     glBindBuffer(GL_ARRAY_BUFFER, restoreArrayBuffer);
     
     if (!blendEnabled) {
@@ -271,6 +273,11 @@ HgiInteropOpenGL::CompositeToInterop(
     glViewport(restoreVp[0], restoreVp[1], restoreVp[2], restoreVp[3]);
 
     glUseProgram(0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
 #if defined(GL_KHR_debug)
     if (GLEW_KHR_debug) {
