@@ -24,6 +24,8 @@
 
 #include "pxr/pxr.h"
 #include "data.h"
+#include "types.h"
+#include "curve.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
@@ -256,68 +258,71 @@ UsdAnimXData::AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op)
 {
     _PrimData& primData = _animatedPrimDatas[primPath];
     _OpData opData;
-    opData.name = op.name;
+    //opData.name = op.name;
     opData.target = op.target;
-    opData.dataType = op.defaultValue.GetType();
-    if(opData.dataType.GetTypeid() == typeid(GfHalf)) {
+    if(op.dataType == UsdAnimXValueTypeTokens->bool_) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateBool;
+    } else if(op.dataType == UsdAnimXValueTypeTokens->int_) {
+        opData.func = (InterpolateFunc)UsdAnimXInterpolateInt;
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateHalf;
-    } else if(opData.dataType.GetTypeid() == typeid(float)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateFloat;
-    } else if(opData.dataType.GetTypeid() == typeid(double)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateDouble;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec2h)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half2_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2h;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec2f)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float2_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2f;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec2d)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double2_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2d;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec3h)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half3_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3h;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec3f)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float3_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3f;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec3d)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double3_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3d;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec4h)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half4_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4h;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec4f)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float4_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4f;
-    } else if(opData.dataType.GetTypeid() == typeid(GfVec4d)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double4_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4d;
-    } else if(opData.dataType.GetTypeid() == typeid(GfQuath)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quath_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuath;
-    } else if(opData.dataType.GetTypeid() == typeid(GfQuatf)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quatf_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatf;
-    } else if(opData.dataType.GetTypeid() == typeid(GfQuatd)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quatd_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatd;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfHalf>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateHalfArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<float>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateFloatArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<double>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateDoubleArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2h>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half2_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2hArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2f>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float2_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2fArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec2d>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double2_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector2dArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3h>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half3_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3hArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3f>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float3_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3fArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec3d>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double3_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector3dArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4h>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->half4_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4hArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4f>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->float4_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4fArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfVec4d>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->double4_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateVector4dArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuath>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quath_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuathArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuatf>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quatf_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatfArray;
-    } else if(opData.dataType.GetTypeid() == typeid(VtArray<GfQuatd>)) {
+    } else if(op.dataType == UsdAnimXValueTypeTokens->quatd_Array) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateQuatdArray;
     } else {
         opData.func = NULL;
@@ -365,9 +370,7 @@ UsdAnimXData::Has(const SdfPath& path,
 {
     // If property spec, check property field
     if (path.IsPropertyPath()) {         
-        if (field == SdfFieldKeys->TypeName) {
-            return _HasPropertyTypeNameValue(path, value);
-        } else if (field == SdfFieldKeys->Default) {
+        if (field == SdfFieldKeys->Default) {
             return _HasPropertyDefaultValue(path, value);
         } /*else if (field == SdfFieldKeys->TimeSamples) {
             // Only animated properties have time samples.
@@ -447,34 +450,6 @@ UsdAnimXData::Has(const SdfPath& path,
 
     return false;
 }
-/*
-bool
-UsdAnimXData::HasSpecAndField(
-    const SdfPath &path, const TfToken &fieldName,
-    SdfAbstractDataValue *value, SdfSpecType *specType) const
-{
-    if (VtValue const *v =
-        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
-        return !value || value->StoreValue(*v);
-    }
-    return false;
-}
-
-bool
-UsdAnimXData::HasSpecAndField(
-    const SdfPath &path, const TfToken &fieldName,
-    VtValue *value, SdfSpecType *specType) const
-{
-    if (VtValue const *v =
-        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
-        if (value) {
-            *value = *v;
-        }
-        return true;
-    }
-    return false;
-}
-*/
  
 VtValue
 UsdAnimXData::Get(const SdfPath& path, 
@@ -732,10 +707,6 @@ UsdAnimXData::Write(
    return true;
 }
 
-namespace { // anonymous namespace
-
-}
-
 std::vector<UsdAnimXPrimDesc> 
 UsdAnimXData::BuildDescription() const
 {
@@ -751,12 +722,31 @@ UsdAnimXData::BuildDescription() const
         const _PrimData *primData =
             TfMapLookupPtr(_animatedPrimDatas, sortedPath);
         if (primData) {
-            std::cout << sortedPath << " HAS ANIMATION !!!" << std::endl;
-            for(auto& op: primData->ops) {
+            for(const auto& op: primData->ops) {
                 UsdAnimXOpDesc opDesc;
-                opDesc.name = op.name;
+                opDesc.name = _GetOpName(op.target);
                 opDesc.target = op.target;
-                opDesc.dataType = op.dataType;
+                opDesc.dataType = 
+                    AnimXGetSerializationTypeNameFromSdfValueTypeName(
+                        op.defaultValue.GetType());
+                opDesc.defaultValue = op.defaultValue;
+                primDesc.ops.push_back(opDesc);
+                UsdAnimXOpDesc *currentOp = &primDesc.ops.back();
+                for(auto& curve: op.curves) {
+                    UsdAnimXCurveDesc curveDesc;
+                    curveDesc.name = TfToken(curve.getName());
+                    UsdAnimXKeyframe keyframe;
+                    for(size_t k=0;k<curve.keyframeCount();++k) {
+                        curve.keyframeAtIndex(k, keyframe);
+                        UsdAnimXKeyframeDesc keyframeDesc = keyframe.GetDesc();
+                        curveDesc.keyframes.push_back(keyframeDesc);
+                    }
+                    curveDesc.preInfinityType = 
+                        _ResolveInfinityType(curve.preInfinityType());
+                    curveDesc.postInfinityType = 
+                        _ResolveInfinityType(curve.postInfinityType());
+                    currentOp->curves.push_back(curveDesc);
+                }
             }
         }
         if(sortedPath.GetParentPath().IsAbsoluteRootPath()) {
@@ -816,30 +806,6 @@ UsdAnimXData::_HasPropertyDefaultValue(
             const _OpData *op = data->GetAnimatedOp(path.GetNameToken());
             if(op) {
                 *value = op->defaultValue;
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool 
-UsdAnimXData::_HasPropertyTypeNameValue(
-    const SdfPath &path, VtValue *value) const
-{
-    // Check that it is a property id.
-    if (!path.IsPropertyPath()) {
-        return false;
-    }
-
-    // Check that it belongs to a animated prim before getting the type name value
-    const _PrimData *data = 
-        TfMapLookupPtr(_animatedPrimDatas, path.GetAbsoluteRootOrPrimPath());
-    if (data) {
-        if (value) {
-            const _OpData *op = data->GetAnimatedOp(path.GetNameToken());
-            if(op) {
-                *value = VtValue(op->dataType);
                 return true;
             }
         }

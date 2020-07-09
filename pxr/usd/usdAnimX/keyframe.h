@@ -38,9 +38,12 @@ struct UsdAnimXKeyframe : public adsk::Keyframe {
     UsdAnimXKeyframe(){};
     UsdAnimXKeyframe(const UsdAnimXKeyframeDesc &desc, size_t index);
     UsdAnimXKeyframe(double time, VtValue &value, size_t index);
+
+    UsdAnimXKeyframeDesc GetDesc();
 };
 
 ANIMX_API std::ostream& operator<<(std::ostream&, const UsdAnimXKeyframe&);
+ANIMX_API std::ostream& operator<<(std::ostream&, const UsdAnimXKeyframeDesc&);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

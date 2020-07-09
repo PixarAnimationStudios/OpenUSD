@@ -29,22 +29,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static void PrintReadState(size_t state){
-    switch(state) {
-        case ANIMX_READ_PRIM:
-            std::cout << "READ STATE : PRIM" << std::endl;
-            break;
-        case ANIMX_READ_OP:
-            std::cout << "READ STATE : OP" << std::endl;
-            break;
-        case ANIMX_READ_CURVE:
-            std::cout << "READ STATE : CURVE" << std::endl;
-            break;
-        default:
-            std::cout << "READ STATE : OUT OF BOUND!!!" << std::endl;
-    }
-}
-
 UsdAnimXReader::UsdAnimXReader()
   : _currentPrim(NULL)
   , _currentOp(NULL)
@@ -58,23 +42,19 @@ UsdAnimXReader::~UsdAnimXReader()
 
 void UsdAnimXReader::_ReadPrim(const std::string& s)
 {
-    if(_IsPrim(s, &_primDesc))
-    {
+    if(_IsPrim(s, &_primDesc)) {
         _primDepth++;
-        if(_currentPrim){
+        if(_currentPrim) {
             _primDesc.parent = _currentPrim;
             _currentPrim->children.push_back(_primDesc);
             _currentPrim = &_currentPrim->children.back();
-        }
-        else {
+        } else {
             _primDesc.parent = NULL;
             _rootPrims.push_back(_primDesc);
             _currentPrim = &_rootPrims.back();
         }
         _readState = ANIMX_READ_PRIM;
-    }
-    else if(_IsOp(s, &_opDesc))
-    {
+    } else if(_IsOp(s, &_opDesc)) {
         _currentPrim->ops.push_back(_opDesc);
         _currentOp = &_currentPrim->ops.back();
         _readState = ANIMX_READ_OP;
@@ -84,21 +64,17 @@ void UsdAnimXReader::_ReadPrim(const std::string& s)
 void UsdAnimXReader::_ReadOp(const std::string& s)
 { 
     if(_HasOpeningBrace(s))return;
-    if(_IsCurve(s, &_curveDesc))
-    {
+    if(_IsCurve(s, &_curveDesc)) {
         _curveDesc.preInfinityType = UsdAnimXTokens->constant;
         _curveDesc.postInfinityType = UsdAnimXTokens->constant;
         _currentOp->curves.push_back(_curveDesc);
         _currentCurve = &_currentOp->curves.back();
         _readState = ANIMX_READ_CURVE;
-    }
-    else if(_HasSpec(s, UsdAnimXTokens->target)) {
+    } else if(_HasSpec(s, UsdAnimXTokens->target)) {
         _currentOp->target = _GetNameToken(s);
-    }
-    else if(_HasSpec(s, UsdAnimXTokens->dataType)) {
+    } else if(_HasSpec(s, UsdAnimXTokens->dataType)) {
         _currentOp->dataType = _GetNameToken(s);
-    }
-    else if(_HasSpec(s, UsdAnimXTokens->defaultValue)) {
+    } else if(_HasSpec(s, UsdAnimXTokens->defaultValue)) {
         _currentOp->defaultValue = _GetValue(s, _currentOp->dataType);
     }
 }
@@ -334,6 +310,11 @@ bool  UsdAnimXReader::Read(const std::string& resolvedPath)
                     break;
                 case ANIMX_READ_OP:
                     _readState = ANIMX_READ_PRIM;
+                    break;
+                case ANIMX_READ_PRIM:
+                    if(_currentPrim) {
+                        _currentPrim = _currentPrim->parent;
+                    }
                     break;
             }
         } else {

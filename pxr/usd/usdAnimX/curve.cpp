@@ -3,23 +3,6 @@
 #include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace { // anonymous namespace
-static void _ResolveInfinityType(const TfToken &src, adsk::InfinityType *dst)
-{
-    if(src == UsdAnimXTokens->constant) {
-        *dst = adsk::InfinityType::Constant;
-    } else if(src == UsdAnimXTokens->cycle) {
-        *dst = adsk::InfinityType::Cycle;
-    } else if(src == UsdAnimXTokens->cycleRelative) {
-        *dst = adsk::InfinityType::CycleRelative;
-    } else if(src == UsdAnimXTokens->linear) {
-        *dst = adsk::InfinityType::Linear;
-    } else if(src == UsdAnimXTokens->oscillate) {
-        *dst = adsk::InfinityType::Oscillate;
-    }
-}
-} // end anonymous namespace
-
 UsdAnimXCurve::UsdAnimXCurve() 
 { 
 };
@@ -27,6 +10,7 @@ UsdAnimXCurve::UsdAnimXCurve()
 UsdAnimXCurve::UsdAnimXCurve(const UsdAnimXCurveDesc &desc)
 {
     size_t keyframeIndex = 0;
+    _name = desc.name.GetString();
     _ResolveInfinityType(desc.preInfinityType, &_preInfinityType);
     _ResolveInfinityType(desc.postInfinityType, &_postInfinityType);
     for(const auto& keyframe: desc.keyframes) {
@@ -281,6 +265,16 @@ std::set<double> UsdAnimXCurve::computeSamples() const
         samples.insert(keyframe.time);
     }
     return samples;
+}
+
+const std::string& UsdAnimXCurve::getName() const
+{
+    return _name;
+}
+
+void UsdAnimXCurve::setName(const std::string& name)
+{
+    _name = name;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
