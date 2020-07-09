@@ -2686,28 +2686,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         return _GetUsdPrimAttribute(cachePath, paramName);
     }
 
-    // Special handling of non-attribute parameters and textureResources
-    if (paramName == HdLightTokens->textureResource) {
-        // This can be moved to a separate function as we add support for 
-        // other light types that use textures in multiple ways
-        
-        // if we were able to get the texture file attribute from the prim
-        if (UsdAttribute textureFileAttr = prim.GetAttribute(
-                                                HdLightTokens->textureFile)) {
-
-            _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-            if (TF_VERIFY(primInfo)) {
-                SdfPath textureFilePath = ConvertIndexPathToCachePath(
-                                                textureFileAttr.GetPath());
-
-                // return the laoded texture
-                return VtValue(primInfo->adapter->GetTextureResource(
-                                                primInfo->usdPrim, 
-                                                textureFilePath, _time));
-            }
-        } 
-        return VtValue();
-    } else if (paramName == HdTokens->transform) {
+    if (paramName == HdTokens->transform) {
         _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
         if (TF_VERIFY(primInfo)) {
             return VtValue(primInfo->adapter->GetTransform(primInfo->usdPrim, 
