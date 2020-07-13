@@ -151,6 +151,15 @@ HdxDrawTargetRenderPass::Execute(
     HdRenderPassStateSharedPtr const &renderPassState,
     TfTokenVector const &renderTags)
 {
+    {
+        // We expect that there is either a GlfDrawTarget to bind (for
+        // old-style draw targets) or AOV bindings (for draw targets
+        // using the storm texture system).
+        const bool hasDrawTarget(_drawTarget);
+        const bool hasAovs(!renderPassState->GetAovBindings().empty());
+        TF_VERIFY(hasDrawTarget ^ hasAovs);
+    }
+
     if (_drawTarget) {
         _drawTarget->Bind();
         // The draw target task is already settings flags on
