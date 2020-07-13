@@ -2895,6 +2895,18 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 /* isBindless = */ false);
 
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
+            accessors 
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->scale << "\n"
+                << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale << "();\n"
+                << "#endif\n"
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->bias << "\n"
+                << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->bias << "();\n"
+                << "#endif\n";
+                
             // a function returning sampler requires bindless_texture
             if (caps.bindlessTextureEnabled) {
                 accessors
@@ -2903,7 +2915,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                     << "  return sampler2DArray(shaderData[shaderCoord]."
                     << it->second.name << ");\n"
-                    << "  }\n";
+                    << "}\n";
             }
             accessors
                 << it->second.dataType
@@ -2927,11 +2939,35 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "  vec3 c = vec3(0.0, 0.0, 0.0);\n";
             }
             accessors
-                << "if (c.z < -0.5) { return vec4(0, 0, 0, 0)" << swizzle
-                << "; } else { \n"
-                << "  return texture(sampler2DArray(shaderData[shaderCoord]."
-                << it->second.name << "), c)" << swizzle << ";}\n}\n";
+                << "  vec4 ret = vec4(0, 0, 0, 0);\n"
+                << "  if (c.z >= -0.5) {"
+                << " ret = texture(sampler2DArray(shaderData[shaderCoord]."
+                << it->second.name << "), c); }\n"
+                << "  return (ret\n"
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->scale << "\n"
+                << "    * HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale << "()\n"
+                << "#endif\n" 
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->bias << "\n"
+                << "    + HdGet_" << it->second.name << "_" 
+                << HdStTokens->bias  << "()\n"
+                << "#endif\n"
+                << "  )" << swizzle << ";\n}\n";
         } else if (bindingType == HdBinding::TEXTURE_UDIM_ARRAY) {
+            accessors 
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->scale << "\n"
+                << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale << "();\n"
+                << "#endif\n"
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->bias << "\n"
+                << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->bias << "();\n"
+                << "#endif\n";
+
             declarations
                 << LayoutQualifier(it->first)
                 << "uniform sampler2DArray sampler2dArray_"
@@ -2951,8 +2987,16 @@ HdSt_CodeGen::_GenerateShaderParameters()
             }
             // vec4 HdGet_name(vec2 coord) { vec3 c = hd_sample_udim(coord);
             // c.z = texelFetch(sampler1d_name_layout, int(c.z), 0).x - 1;
-            // if (c.z < -0.5) { return vec4(0, 0, 0, 0).xyz; } else {
-            // return texture(sampler2dArray_name, c).xyz;}}
+            // vec4 ret = vec4(0, 0, 0, 0);
+            // if (c.z >= -0.5) { ret = texture(sampler2dArray_name, c); }
+            // return (ret
+            // #ifdef HD_HAS_name_scale
+            //   * HdGet_name_scale()
+            // #endif
+            // #ifdef HD_HAS_name_bias
+            //   + HdGet_name_bias()
+            // #endif
+            // ).xyz; }
             accessors
                 << it->second.dataType
                 << " HdGet_" << it->second.name
@@ -2960,10 +3004,21 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  c.z = texelFetch(sampler1d_"
                 << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
                 << ", int(c.z), 0).x - 1;\n"
-                << "if (c.z < -0.5) { return vec4(0, 0, 0, 0)"
-                << swizzle << "; } else {\n"
-                << "  return texture(sampler2dArray_"
-                << it->second.name << ", c)" << swizzle << ";}}\n";
+                << "  vec4 ret = vec4(0, 0, 0, 0);\n"
+                << "  if (c.z >= -0.5) { ret = texture(sampler2dArray_"
+                << it->second.name << ", c); }\n  return (ret\n"
+                << "#ifdef HD_HAS_" << it->second.name << "_"
+                << HdStTokens->scale << "\n"
+                << "    * HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale << "()\n"
+                << "#endif\n" 
+                << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->bias << "\n"
+                << "    + HdGet_" << it->second.name << "_" 
+                << HdStTokens->bias  << "()\n"
+                << "#endif\n"
+                << "  )" << swizzle << ";\n}\n";
+
             // vec4 HdGet_name() { return HdGet_name(HdGet_st().xy); }
             accessors
                 << it->second.dataType
