@@ -242,8 +242,7 @@ _GetPrimvarNameAttributeValue(
 
 static void
 _ExtractPrimvarsFromNode(
-    UsdShadeShader const & shadeNode,
-    HdMaterialNode const & node,
+    HdMaterialNode const& node,
     HdMaterialNetwork *materialNetwork,
     TfToken const& networkSelector)
 {
@@ -362,9 +361,7 @@ void _WalkGraph(
         // the number of primvars send to the render delegate. We extract the
         // primvar names from the material node to ensure these primvars are
         // not filtered-out by GprimAdapter.
-
-        _ExtractPrimvarsFromNode(
-            shadeNode, node, materialNetwork, networkSelector);
+        _ExtractPrimvarsFromNode(node, materialNetwork, networkSelector);
     } 
     
     materialNetwork->nodes.push_back(node);
