@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "tokens.h"
+#include "pxr/usd/usdAnimX/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,8 +33,12 @@ UsdAnimXTokensType::UsdAnimXTokensType() :
     target("target", TfToken::Immortal),
     dataType("dataType", TfToken::Immortal),
     defaultValue("defaultValue", TfToken::Immortal),
-    curveInterpolationMethod("curveInterpolationMethod", TfToken::Immortal),
-    curveRotationInterpolationMethod("curveRotationInterpolationMethod", TfToken::Immortal),
+    interpolationMethod("interpolationMethod", TfToken::Immortal),
+    none("none", TfToken::Immortal),
+    euler("euler", TfToken::Immortal),
+    slerp("slerp", TfToken::Immortal),
+    quaternion("quaternion", TfToken::Immortal),
+    squad("squad", TfToken::Immortal),
     constant("constant", TfToken::Immortal),
     linear("linear", TfToken::Immortal),
     cycle("cycle", TfToken::Immortal),
@@ -61,8 +65,12 @@ UsdAnimXTokensType::UsdAnimXTokensType() :
         target,
         dataType,
         defaultValue,
-        curveInterpolationMethod,
-        curveRotationInterpolationMethod,
+        interpolationMethod,
+        none,
+        euler,
+        slerp,
+        quaternion,
+        squad,
         constant,
         linear,
         cycle,

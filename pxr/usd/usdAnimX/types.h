@@ -35,7 +35,7 @@
 #include <boost/preprocessor/stringize.hpp> 
 #include <vector>
 #include <typeinfo>
-#include "api.h"
+#include "pxr/usd/usdAnimX/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,10 +101,21 @@ struct UsdAnimXValueTypeTokensType {
 /// \var UsdAnimXValueTypeTokens
 extern ANIMX_API TfStaticData<UsdAnimXValueTypeTokensType> UsdAnimXValueTypeTokens;
 
-const SdfValueTypeName& AnimXGetSdfValueTypeNameFromToken(const TfToken& token);
-const TfToken& AnimXGetTokenFromSdfValueTypeName(const TfType& type);
-const TfToken& AnimXGetSerializationTypeNameFromToken(const TfToken& token);
-const TfToken& AnimXGetSerializationTypeNameFromSdfValueTypeName(const TfType& type);
+ANIMX_API 
+const SdfValueTypeName& 
+AnimXGetSdfValueTypeNameFromToken(const TfToken& token);
+
+ANIMX_API 
+const TfToken& 
+AnimXGetTokenFromSdfValueTypeName(const TfType& type);
+
+ANIMX_API 
+const TfToken& 
+AnimXGetSerializationTypeNameFromToken(const TfToken& token);
+
+ANIMX_API 
+const TfToken& 
+AnimXGetSerializationTypeNameFromSdfValueTypeName(const TfType& type);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "types.h"
+#include "pxr/usd/usdAnimX/types.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/timeCode.h"
 

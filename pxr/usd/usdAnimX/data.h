@@ -25,9 +25,9 @@
 #define PXR_USD_PLUGIN_ANIMX_DATA_H
 
 #include "pxr/pxr.h"
-#include "interpolation.h"
-#include "desc.h"
-#include "curve.h"
+#include "pxr/usd/usdAnimX/interpolation.h"
+#include "pxr/usd/usdAnimX/desc.h"
+#include "pxr/usd/usdAnimX/curve.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -44,6 +44,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXData);
 
+typedef std::vector<pxr::UsdAnimXCurve*> AnimXCurves;
+typedef pxr::TfHashMap< pxr::SdfPath, 
+                        AnimXCurves, 
+                        pxr::SdfPath::Hash> AnimXCurvesMap;
+
+// Animated Op definition
+struct UsdAnimXOpData
+{
+    TfToken target;
+    VtValue defaultValue;
+    std::vector<UsdAnimXCurve> curves;
+    InterpolateFunc func;
+};
+
+// Animated Prim definition
+struct UsdAnimXPrimData
+{
+    std::vector<UsdAnimXOpData> ops;
+
+    UsdAnimXOpData* GetMutableAnimatedOp(const TfToken& name);
+    const UsdAnimXOpData* GetAnimatedOp(const TfToken& name) const;
+    TfTokenVector GetAnimatedOpNames() const;
+    bool HasAnimatedOp(const TfToken& name) const;
+    std::set<double> ComputeTimeSamples() const;
+};
+
 /// \class UsdAnimXData
 ///
 /// This is the derived class of SdfAbstractData that 
@@ -59,7 +85,6 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXData);
 /// 
 class UsdAnimXData : public SdfAbstractData
 {
-struct _OpData;
 public:
     static UsdAnimXDataRefPtr New();
 
@@ -81,6 +106,13 @@ public:
     void MoveSpec(const SdfPath& oldPath, 
                   const SdfPath& newPath) override;
     SdfSpecType GetSpecType(const SdfPath& path) const override;
+
+
+    bool HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+        SdfAbstractDataValue *value, SdfSpecType *specType) const override;
+
+    bool HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+        VtValue *value, SdfSpecType *specType) const override;
 
     bool Has(const SdfPath& path, const TfToken &fieldName,
              SdfAbstractDataValue* value) const override;
@@ -121,44 +153,35 @@ public:
 
     void EraseTimeSample(const SdfPath& path, double time) override;
 
-    void SetRootPrimPath(const SdfPath& rootPrimPath);
-    const SdfPath& GetRootPrimPath() const;
+    void SetRootPrimPaths(const SdfPathVector& rootPrimPaths);
+    ANIMX_API
+    const SdfPathVector& GetRootPrimPaths() const;
     
+    ANIMX_API
     void AddPrim(const SdfPath& primPath);
-    _OpData* AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op);
+    ANIMX_API
+    void AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op);
+    ANIMX_API
     void AddFCurve(const SdfPath& primPath, const TfToken& opName,
         const UsdAnimXCurveDesc& curve);
 
+    ANIMX_API
+    void GetAnimatedPrims(std::vector<SdfPath>& paths);
+
+    ANIMX_API
+    void GetCurves(const SdfPath& primPath, 
+        TfHashMap<SdfPath, std::vector<UsdAnimXCurve*>, SdfPath::Hash>& io);
+
+    ANIMX_API
     std::vector<UsdAnimXPrimDesc> BuildDescription() const;
-
-private:
-    // Animated Operator definition
-    struct _OpData
-    {
-        TfToken target;
-        VtValue defaultValue;
-        std::vector<UsdAnimXCurve> curves;
-        InterpolateFunc func;
-    };
-
-    // Animated Prim definition
-    struct _PrimData
-    {
-        std::vector<_OpData> ops;
-
-        _OpData* GetMutableAnimatedOp(const TfToken& name);
-        const _OpData* GetAnimatedOp(const TfToken& name) const;
-        TfTokenVector GetAnimatedOpNames() const;
-        bool HasAnimatedOp(const TfToken& name) const;
-        std::set<double> ComputeTimeSamples() const;
-    };
 
 protected:
     // SdfAbstractData overrides
     void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const override;
 
-    const _OpData* _HasAnimatedProperty(const SdfPath &path) const;  
+    bool _HasAnimatedProperty(const SdfPath &path) const;  
     bool _HasPropertyDefaultValue(const SdfPath &path, VtValue *value) const;
+    bool _HasPropertyTypeNameValue(const SdfPath &path, VtValue *value) const;
 
 private:
     // Private constructor for factory New
@@ -166,10 +189,10 @@ private:
     
     // Cached set of all paths with a generated prim spec.
     TfHashSet<SdfPath, SdfPath::Hash> _primPaths;
-    SdfPath _rootPrimPath;
+    SdfPathVector _rootPrimPaths;
     
     // Animated prims datas map
-    TfHashMap<SdfPath, _PrimData, SdfPath::Hash> _animatedPrimDatas;
+    TfHashMap<SdfPath, UsdAnimXPrimData, SdfPath::Hash> _animatedPrimDatas;
 };
 
 namespace { // anonymous namespace

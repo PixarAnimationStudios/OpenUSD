@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
-#include "api.h"
+#include "pxr/usd/usdAnimX/api.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -70,17 +70,34 @@ struct UsdAnimXTokensType {
     /// 
     /// Op defaultValue
     const TfToken defaultValue;
-
+    /// \brief "constant"
+    /// 
     /// Constant pre/post infinity type.
     const TfToken constant;
     /// \brief "curveInterpolationMethod"
     /// 
-    /// Defines interpolation function within  curve segments for non-rotation curves.
-    const TfToken curveInterpolationMethod;
-    /// \brief "curveRotationInterpolationMethod"
-    /// 
     /// Defines interpolation mode for the  rotation curves.
-    const TfToken curveRotationInterpolationMethod;
+    const TfToken interpolationMethod;
+    /// \brief "none"
+    /// 
+    /// Non-rotational curves or non-sync Euler
+    const TfToken none;
+    /// \brief "euler"
+    /// 
+    /// Sync rotation curves & use Euler angles
+    const TfToken euler;
+    /// \brief "slerp"
+    /// 
+    /// Use quaternion cubic interpolation
+    const TfToken slerp;
+    /// \brief "quaternion"
+    /// 
+    /// Use quaternion tangent dependent interpolation
+    const TfToken quaternion;
+    /// \brief "squad"
+    /// 
+    /// Use quaternion spherical interpolation
+    const TfToken squad;
     /// \brief "postInfinityType"
     /// 
     /// Defines the post-infinity type of the fcurve.

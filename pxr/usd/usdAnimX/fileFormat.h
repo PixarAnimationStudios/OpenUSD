@@ -27,17 +27,17 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/fileFormat.h"
+//#include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/value.h"
 #include <vector>
 #include <string>
 #include <iostream>
-#include "api.h"
-#include "desc.h"
+#include "pxr/usd/usdAnimX/api.h"
+#include "pxr/usd/usdAnimX/desc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define USD_ANIMX_FILE_FORMAT_TOKENS \
     ((Id,      "animx"))             \
@@ -54,6 +54,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXFileFormat);
 /// File format used by textual animx files.
 ///
 class UsdAnimXFileFormat : public SdfFileFormat
+/*, public PcpDynamicFileFormatInterface */
 {
 public:
     /// Override this function from SdfFileFormat to provide our own procedural
@@ -69,6 +70,23 @@ public:
     ANIMX_API
     bool CanRead(const std::string& filePath) const override;
 
+    ANIMX_API
+    SdfAbstractDataConstPtr GetData(SdfLayer* layer) const;
+
+    /*
+     // Required PcpDynamicFileFormatInterface overrides
+    void ComposeFieldsForFileFormatArguments(
+        const std::string& assetPath, 
+        const PcpDynamicFileFormatContext& context,
+        FileFormatArguments* args,
+        VtValue *dependencyContextData) const override;
+    bool CanFieldChangeAffectFileFormatArguments(
+        const TfToken& field,
+        const VtValue& oldValue,
+        const VtValue& newValue,
+        const VtValue &dependencyContextData) const override;
+    */
+    
 
 private:
     SDF_FILE_FORMAT_FACTORY_ACCESS;

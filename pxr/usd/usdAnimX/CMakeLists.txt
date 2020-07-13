@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdAnimX)
 
-pxr_plugin(${PXR_PACKAGE}
+pxr_library(${PXR_PACKAGE}
     LIBRARIES
         arch
         tf
@@ -17,6 +17,8 @@ pxr_plugin(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         fileFormat
+        keyframe
+        curve
         
     PUBLIC_HEADERS
         api.h
@@ -25,13 +27,13 @@ pxr_plugin(${PXR_PACKAGE}
         animx.h
         desc.h
         keyframe.h
+        interpolation.h
+        data.h
 
     PRIVATE_CLASSES
         tokens
         types
         animx
-        keyframe
-        curve
         data
         reader
         writer

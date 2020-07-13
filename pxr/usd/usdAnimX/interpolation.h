@@ -25,7 +25,6 @@
 #define PXR_USD_PLUGIN_ANIMX_INTERPOLATION_H
 
 #include "pxr/pxr.h"
-#include "curve.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
@@ -46,6 +45,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
 #include "pxr/usd/sdf/timeCode.h"
+#include "pxr/usd/usdAnimX/curve.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
 
@@ -114,10 +114,10 @@ struct UsdAnimXSupportedTraits
 
 /// \cond INTERNAL
 #define _USD_ANIMX_DECLARE_INTERPOLATION_TRAITS(r, unused, type)    \
-template <>                                                     \
-struct UsdAnimXSupportedTraits<type>                            \
-{                                                               \
-    static const bool isSupported = true;                       \
+template <>                                                         \
+struct UsdAnimXSupportedTraits<type>                                \
+{                                                                   \
+    static const bool isSupported = true;                           \
 };
 
 BOOST_PP_SEQ_FOR_EACH(_USD_ANIMX_DECLARE_INTERPOLATION_TRAITS, ~, 

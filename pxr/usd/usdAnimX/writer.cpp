@@ -24,13 +24,13 @@
 /// \file usdAnimX/writer.cpp
 
 #include <pxr/usd/sdf/data.h>
-#include "tokens.h"
-#include "writer.h"
-#include "curve.h"
-#include "keyframe.h"
-#include "data.h"
-#include "desc.h"
-#include "fileFormat.h"
+#include "pxr/usd/usdAnimX/tokens.h"
+#include "pxr/usd/usdAnimX/writer.h"
+#include "pxr/usd/usdAnimX/curve.h"
+#include "pxr/usd/usdAnimX/keyframe.h"
+#include "pxr/usd/usdAnimX/data.h"
+#include "pxr/usd/usdAnimX/desc.h"
+#include "pxr/usd/usdAnimX/fileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

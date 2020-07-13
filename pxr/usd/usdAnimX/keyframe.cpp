@@ -1,8 +1,26 @@
-#include "keyframe.h"
+#include "pxr/usd/usdAnimX/keyframe.h"
 #include <iostream>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/value.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_REGISTRY_FUNCTION(TfType) {
+    TfType::Define<UsdAnimXKeyframe>();
+}
+
+UsdAnimXKeyframe::UsdAnimXKeyframe()
+{
+    time = 1.0;
+    index = 0;
+    value = 0.0;
+    tanIn = {adsk::TangentType::Auto, (adsk::seconds)1.f, (adsk::seconds)0.f};
+    tanOut = {adsk::TangentType::Auto, (adsk::seconds)-1.f, (adsk::seconds)0.f};
+    quaternionW = 1.0;
+    linearInterpolation = false;
+}
 
 UsdAnimXKeyframe::UsdAnimXKeyframe(const UsdAnimXKeyframeDesc &desc, 
     size_t idx)
@@ -54,6 +72,21 @@ UsdAnimXKeyframe::GetDesc()
     desc.data[6] = (double)tanOut.y;
     desc.data[7] = quaternionW;
     return desc;
+}
+
+VtValue
+UsdAnimXKeyframe::GetAsSample()
+{
+    VtArray<double> result(8);
+    result[0] = value;
+    result[1] = (double)tanIn.type;
+    result[2] = (double)tanIn.x;
+    result[3] = (double)tanIn.y;
+    result[4] = (double)tanOut.type;
+    result[5] = (double)tanOut.x;
+    result[6] = (double)tanOut.y;
+    result[7] = (double)quaternionW;
+    return VtValue(result);
 }
 
 std::ostream&

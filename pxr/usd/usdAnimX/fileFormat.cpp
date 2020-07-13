@@ -39,11 +39,11 @@
 #include <iostream>
 #include <fstream>
 
-#include "animx.h"
-#include "fileFormat.h"
-#include "data.h"
-#include "reader.h"
-#include "writer.h"
+#include "pxr/usd/usdAnimX/animx.h"
+#include "pxr/usd/usdAnimX/fileFormat.h"
+#include "pxr/usd/usdAnimX/data.h"
+#include "pxr/usd/usdAnimX/reader.h"
+#include "pxr/usd/usdAnimX/writer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -72,6 +72,12 @@ UsdAnimXFileFormat::InitData(
     const FileFormatArguments &args) const
 {
     return UsdAnimXData::New();
+}
+
+SdfAbstractDataConstPtr 
+UsdAnimXFileFormat::GetData(SdfLayer *layer) const
+{
+    return _GetLayerData(*layer);
 }
 
 static

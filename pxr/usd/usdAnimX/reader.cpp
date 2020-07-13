@@ -24,8 +24,8 @@
 /// \file usdAnimX/reader.cpp
 
 #include "pxr/pxr.h"
-#include "animx.h"
-#include "reader.h"
+#include "pxr/usd/usdAnimX/animx.h"
+#include "pxr/usd/usdAnimX/reader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -364,9 +364,12 @@ void _PopulatePrim(UsdAnimXDataRefPtr& datas, const UsdAnimXPrimDesc& prim,
 void UsdAnimXReader::PopulateDatas(UsdAnimXDataRefPtr& datas)
 {
     SdfPath rootPath("/");
+    SdfPathVector rootPaths;
     for(const auto& prim: _rootPrims) {
+        rootPaths.push_back(rootPath.AppendChild(prim.name));
         _PopulatePrim(datas, prim, rootPath);
     }
+    datas->SetRootPrimPaths(rootPaths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
