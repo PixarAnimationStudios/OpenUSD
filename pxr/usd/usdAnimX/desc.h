@@ -59,6 +59,12 @@ struct UsdAnimXPrimDesc {
     UsdAnimXPrimDesc* parent;
 };
 
+struct UsdAnimXDesc {
+    std::vector<UsdAnimXPrimDesc> prims;
+    double startTimeCode;
+    double endTimeCode;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_USD_ANIMX_DESC_H

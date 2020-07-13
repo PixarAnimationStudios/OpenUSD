@@ -25,10 +25,11 @@
 #define PXR_USD_PLUGIN_USD_ANIMX_CURVE_H
 
 #include "pxr/pxr.h"
-#include "animx.h"
-#include "tokens.h"
-#include "keyframe.h"
-#include "desc.h"
+#include "pxr/usd/usdAnimX/api.h"
+#include "pxr/usd/usdAnimX/animx.h"
+#include "pxr/usd/usdAnimX/tokens.h"
+#include "pxr/usd/usdAnimX/keyframe.h"
+#include "pxr/usd/usdAnimX/desc.h"
 #include <vector>
 #include <set>
 
@@ -60,6 +61,8 @@ public:
     double evaluate(double time) const;
     const std::string& getName() const;
     void setName(const std::string& name);
+    ANIMX_API
+    void setKeyframeAtIndex(size_t index, const adsk::Keyframe& key);
 
 private:
     std::string                             _name;

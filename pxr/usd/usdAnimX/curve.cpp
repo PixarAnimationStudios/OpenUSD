@@ -1,9 +1,11 @@
-#include "curve.h"
-#include "tokens.h"
+#include "pxr/usd/usdAnimX/curve.h"
+#include "pxr/usd/usdAnimX/tokens.h"
 #include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAnimXCurve::UsdAnimXCurve() 
+  : _weighted(false)
+  , _static(true)
 { 
 };
 
@@ -211,15 +213,20 @@ void UsdAnimXCurve::addKeyframe(const UsdAnimXKeyframe& key)
     } else {
         _keyframes.push_back(key);
     }
+    if(_keyframes.size() > 1) {
+      _static = false;
+      _weighted = true;
+    }
+
     reindexKeys();
 }
 
 void UsdAnimXCurve::addKeyframe(double time, double value)
 {
     adsk::Tangent tanIn = { 
-        adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
+        adsk::TangentType::Auto, (adsk::seconds)-1, (adsk::seconds)0};
     adsk::Tangent tanOut = { 
-        adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
+        adsk::TangentType::Auto, (adsk::seconds)1, (adsk::seconds)0};
 
     UsdAnimXKeyframe key;
     key.time = time;                        // Time
@@ -251,6 +258,12 @@ void UsdAnimXCurve::removeKeyframe(size_t index)
 {
     if(index >= 0 && index < _keyframes.size())
         _keyframes.erase(_keyframes.begin() + index);
+}
+
+void UsdAnimXCurve::setKeyframeAtIndex(size_t index, const adsk::Keyframe& k)
+{
+    if(index > 0 && index < _keyframes.size())
+        _keyframes[index] = *(UsdAnimXKeyframe*)&k;
 }
 
 double UsdAnimXCurve::evaluate(double time) const

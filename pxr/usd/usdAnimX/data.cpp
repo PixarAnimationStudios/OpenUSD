@@ -23,9 +23,10 @@
 //
 
 #include "pxr/pxr.h"
-#include "data.h"
-#include "types.h"
-#include "curve.h"
+#include "pxr/usd/usdAnimX/data.h"
+#include "pxr/usd/usdAnimX/types.h"
+#include "pxr/usd/usdAnimX/tokens.h"
+#include "pxr/usd/usdAnimX/curve.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
@@ -41,15 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     if (value) { *value = VtValue(val); } \
     return true;
 
-// Helper function for getting the root prim path.
-static const SdfPath &_GetRootPrimPath()
-{
-    static const SdfPath rootPrimPath("/Animation");
-    return rootPrimPath;
-}
-
 TfTokenVector 
-UsdAnimXData::_PrimData::GetAnimatedOpNames() const
+UsdAnimXPrimData::GetAnimatedOpNames() const
 {
     TfTokenVector names;
     for(auto& op: ops) {
@@ -59,7 +53,7 @@ UsdAnimXData::_PrimData::GetAnimatedOpNames() const
 }
 
 bool 
-UsdAnimXData::_PrimData::HasAnimatedOp(const TfToken& name) const
+UsdAnimXPrimData::HasAnimatedOp(const TfToken& name) const
 {
     for(const auto& op: ops) {
         if(op.target == name) return true;
@@ -68,7 +62,7 @@ UsdAnimXData::_PrimData::HasAnimatedOp(const TfToken& name) const
 }
 
 std::set<double> 
-UsdAnimXData::_PrimData::ComputeTimeSamples() const
+UsdAnimXPrimData::ComputeTimeSamples() const
 {
     std::set<double> samples;
     for(const auto& op: ops) {
@@ -81,8 +75,8 @@ UsdAnimXData::_PrimData::ComputeTimeSamples() const
     return samples;
 }
 
-const UsdAnimXData::_OpData* 
-UsdAnimXData::_PrimData::GetAnimatedOp(const TfToken& name) const
+const UsdAnimXOpData* 
+UsdAnimXPrimData::GetAnimatedOp(const TfToken& name) const
 {
     for(auto& op: ops) {
         if(op.target == name) return &op;
@@ -90,8 +84,8 @@ UsdAnimXData::_PrimData::GetAnimatedOp(const TfToken& name) const
     return NULL;
 }
 
-UsdAnimXData::_OpData* 
-UsdAnimXData::_PrimData::GetMutableAnimatedOp(const TfToken& name)
+UsdAnimXOpData* 
+UsdAnimXPrimData::GetMutableAnimatedOp(const TfToken& name)
 {
     for(auto& op: ops) {
         if(op.target == name) return &op;
@@ -132,6 +126,22 @@ bool
 UsdAnimXData::HasSpec(const SdfPath& path) const
 {
     return GetSpecType(path) != SdfSpecTypeUnknown;
+}
+
+bool 
+UsdAnimXData::HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+    SdfAbstractDataValue *value, SdfSpecType *specType) const
+{
+    *specType = GetSpecType(path);
+    return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
+}
+
+bool 
+UsdAnimXData::HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+    VtValue *value, SdfSpecType *specType) const
+{
+    *specType = GetSpecType(path);
+    return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
 }
 
 void
@@ -175,7 +185,7 @@ UsdAnimXData::GetSpecType(const SdfPath& path) const
     if (path.IsPropertyPath()) {
         SdfPath primPath = path.GetAbsoluteRootOrPrimPath();
         if(_animatedPrimDatas.count(primPath)) {
-            const _PrimData *data = 
+            const UsdAnimXPrimData *data = 
                 TfMapLookupPtr(_animatedPrimDatas, primPath);
             if(data->HasAnimatedOp(path.GetNameToken())) {
                 return SdfSpecTypeAttribute;
@@ -199,20 +209,16 @@ void
 UsdAnimXData::CreateSpec(const SdfPath& path,
                                         SdfSpecType specType)
 {
-    std::cout << "ANIMX CREATE SPEC : " << path << std::endl;
     if (!TF_VERIFY(specType != SdfSpecTypeUnknown)) {
         return;
     }
     if(specType == SdfSpecType::SdfSpecTypePrim)
         _primPaths.insert(path);
-    
-    //TF_RUNTIME_ERROR("UsdAnimX file CreateSpec() not supported");
 }
 
 void
 UsdAnimXData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 {
-    std::cout << "VISIT SPECS !!!" << std::endl;
     // Visit the pseudoroot.
     if (!visitor->VisitSpec(*this, SdfPath::AbsoluteRootPath())) {
         return;
@@ -235,30 +241,33 @@ UsdAnimXData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 }
 
 void 
-UsdAnimXData::SetRootPrimPath(const SdfPath& rootPrimPath)
+UsdAnimXData::SetRootPrimPaths(const SdfPathVector& rootPrimPaths)
 {
-  _rootPrimPath = rootPrimPath;
+  _rootPrimPaths = rootPrimPaths;
 }
 
-const SdfPath& 
-UsdAnimXData::GetRootPrimPath() const
+const SdfPathVector& 
+UsdAnimXData::GetRootPrimPaths() const
 {
-  return _rootPrimPath;
+  return _rootPrimPaths;
 }
 
 
 void 
 UsdAnimXData::AddPrim(const SdfPath& primPath)
 {
-    _primPaths.insert(primPath);
+    if(_primPaths.find(primPath) == _primPaths.end())
+        _primPaths.insert(primPath);
 }
 
-UsdAnimXData::_OpData* 
+void
 UsdAnimXData::AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op) 
 {
-    _PrimData& primData = _animatedPrimDatas[primPath];
-    _OpData opData;
-    //opData.name = op.name;
+    UsdAnimXPrimData& primData = _animatedPrimDatas[primPath];
+    for(const auto &opData: primData.ops) {
+        if(opData.target == op.target) return;
+    }
+    UsdAnimXOpData opData;
     opData.target = op.target;
     if(op.dataType == UsdAnimXValueTypeTokens->bool_) {
         opData.func = (InterpolateFunc)UsdAnimXInterpolateBool;
@@ -330,17 +339,40 @@ UsdAnimXData::AddOp(const SdfPath& primPath, const UsdAnimXOpDesc &op)
     
     opData.defaultValue = op.defaultValue;
     primData.ops.push_back(opData);
-    return &primData.ops.back();
 }
 
 void 
 UsdAnimXData::AddFCurve(const SdfPath& primPath, const TfToken& opName, 
     const UsdAnimXCurveDesc& desc)
 {
-    _PrimData& primData = _animatedPrimDatas[primPath];
-    _OpData* opData = primData.GetMutableAnimatedOp(opName);
+    UsdAnimXPrimData &primData = _animatedPrimDatas[primPath];
+    UsdAnimXOpData *opData = primData.GetMutableAnimatedOp(opName);
     if(opData) {
         opData->curves.push_back(UsdAnimXCurve(desc));
+    }
+}
+
+void
+UsdAnimXData::GetAnimatedPrims(std::vector<SdfPath>& paths)
+{
+  for(auto& primData: _animatedPrimDatas) {
+    paths.push_back(primData.first);
+  }
+}
+
+void
+UsdAnimXData::GetCurves(const SdfPath& primPath, 
+    TfHashMap<SdfPath, std::vector<UsdAnimXCurve*>, SdfPath::Hash>& io)
+{
+    UsdAnimXPrimData *primData = TfMapLookupPtr(_animatedPrimDatas, primPath);
+    if(primData) {
+        for(auto& opData: primData->ops) {
+            std::vector<UsdAnimXCurve*>& curves = 
+                io[primPath.AppendProperty(opData.target)];
+            for(auto& curve: opData.curves) {
+                curves.push_back(&curve);
+            }
+        }
     }
 }
 
@@ -372,7 +404,9 @@ UsdAnimXData::Has(const SdfPath& path,
     if (path.IsPropertyPath()) {         
         if (field == SdfFieldKeys->Default) {
             return _HasPropertyDefaultValue(path, value);
-        } /*else if (field == SdfFieldKeys->TimeSamples) {
+        } else if (field == SdfFieldKeys->TypeName) {
+            return _HasPropertyTypeNameValue(path, value);      
+        }/*else if (field == SdfFieldKeys->TimeSamples) {
             // Only animated properties have time samples.
             if (_HasAnimatedProperty(path)) {
                 // Will need to generate the full SdfTimeSampleMap with a 
@@ -398,14 +432,21 @@ UsdAnimXData::Has(const SdfPath& path,
         // Special case check for the pseudoroot prim spec.
         if (field == SdfChildrenKeys->PrimChildren) {
             // Pseudoroot only has the root prim as a child
-            static TfTokenVector rootChildren(
-                {_GetRootPrimPath().GetNameToken()});
+            TfTokenVector rootChildren;
+            for(const auto& rootPath: _rootPrimPaths) {
+                rootChildren.push_back(rootPath.GetNameToken());
+            }
+            /*(
+                {_rootPrimPath.GetNameToken()});*/
             RETURN_TRUE_WITH_OPTIONAL_VALUE(rootChildren);
         }
-        // Default prim is always the root prim.
+        // Default prim is always the first root prim.
         if (field == SdfFieldKeys->DefaultPrim) {
-            if (path == SdfPath::AbsoluteRootPath() ) {
-                RETURN_TRUE_WITH_OPTIONAL_VALUE(_GetRootPrimPath().GetNameToken());
+            if (path == SdfPath::AbsoluteRootPath() && 
+                _rootPrimPaths.size()) {
+                RETURN_TRUE_WITH_OPTIONAL_VALUE(_rootPrimPaths[0].GetNameToken());
+            } else {
+                return false;
             }
         }
         // Start time code is always 0
@@ -431,17 +472,18 @@ UsdAnimXData::Has(const SdfPath& path,
         }
         
         if (field == SdfChildrenKeys->PrimChildren) {
-          
-            if(path == _GetRootPrimPath()) {
+          /*
+            if(path == _rootPrimPath) {
                 std::vector<TfToken> primChildNames;
                 primChildNames.push_back(TfToken("cube"));
                 RETURN_TRUE_WITH_OPTIONAL_VALUE(primChildNames);
             }
+          */
         }
         
         if (field == SdfChildrenKeys->PropertyChildren) {
             if(_animatedPrimDatas.count(path.GetPrimPath())) {
-                const _PrimData *data =
+                const UsdAnimXPrimData *data =
                     TfMapLookupPtr(_animatedPrimDatas, path);
                 RETURN_TRUE_WITH_OPTIONAL_VALUE(data->GetAnimatedOpNames());
             }
@@ -455,8 +497,6 @@ VtValue
 UsdAnimXData::Get(const SdfPath& path, 
                                  const TfToken & field) const
 {
-  std::cout << "ANIMX DATA GET : " << path <<  "." << field << std::endl;
-
     VtValue value;
     Has(path, field, &value);
     return value;
@@ -466,7 +506,25 @@ void
 UsdAnimXData::Set(const SdfPath& path, 
                                  const TfToken & field, const VtValue& value)
 {
-    std::cout << "ANIMX DATA SET : " << path <<  "." << field << "=" << value << std::endl;
+    SdfPath primPath = path.GetPrimPath();
+    UsdAnimXPrimData *primData = 
+          TfMapLookupPtr(_animatedPrimDatas, primPath);
+    if(!primData) {
+        AddPrim(primPath);
+        primData = &_animatedPrimDatas[primPath];
+    }
+    
+    
+    if(!_HasAnimatedProperty(primPath.AppendProperty(field))) {
+        UsdAnimXOpDesc opDesc;
+        opDesc.name = _GetOpName(field);
+        opDesc.target = field;
+        opDesc.defaultValue = value;
+        opDesc.dataType = AnimXGetTokenFromSdfValueTypeName(value.GetType());
+        AddOp(primPath, opDesc);
+        
+    }
+    UsdAnimXOpData *opData = primData->GetMutableAnimatedOp(field);
     /*
     TfAutoMallocTag2 tag("Sdf", "SdfData::Set");
 
@@ -525,7 +583,7 @@ UsdAnimXData::List(const SdfPath& path) const
     std::cout << "### LIST " << path << std::endl;
     if (path.IsPropertyPath()) {
         // For properties, check that it's a valid animated prim property
-        const _PrimData *data = 
+        const UsdAnimXPrimData *data = 
           TfMapLookupPtr(_animatedPrimDatas, path.GetAbsoluteRootOrPrimPath());
         if (_animatedPrimDatas.count(path.GetAbsoluteRootOrPrimPath())) {
             // Include time sample field in the property is animated.
@@ -566,25 +624,60 @@ UsdAnimXData::List(const SdfPath& path) const
 std::set<double>
 UsdAnimXData::ListAllTimeSamples() const
 {
+    std::vector<double> perFrameSamples(2);
+    perFrameSamples[0] = -0.1;
+    perFrameSamples[1] = 0.2;
+    VtValue value;
+    Has( SdfPath::AbsoluteRootPath(), 
+      SdfFieldKeys->StartTimeCode, &value);
+    double startTimeCode = value.Get<double>();
+    std::cout << "START TIME CODE : " << value << std::endl;
+    Has( SdfPath::AbsoluteRootPath(), 
+      SdfFieldKeys->EndTimeCode, &value);
+    double endTimeCode = value.Get<double>();
+    std::cout << "END TIME CODE : " << value << std::endl;
+    /*
+    Has( SdfPath::AbsoluteRootPath(), 
+      SdfFieldKeys->TimeSamples, &value);
+    std::cout << "TimeSamples : " << value << std::endl;
+    */
     //return _animTimeSampleTimes;
     std::set<double> samples;
+    /*
     for(const auto& prim: _animatedPrimDatas) {
-        std::set<double> primSamples = prim.second.ComputeTimeSamples();
-        samples.insert(primSamples.begin(), primSamples.end());
+        //std::set<double> primSamples = prim.second.ComputeTimeSamples();
+        //samples.insert(primSamples.begin(), primSamples.end());
     }
+    */
+   for(size_t s=0;s<endTimeCode - startTimeCode; ++s) {
+     samples.insert(startTimeCode + s + perFrameSamples[0]);
+     samples.insert(startTimeCode + s + perFrameSamples[1]);
+   }
     return samples;
 }
 
 std::set<double>
 UsdAnimXData::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    const UsdAnimXData::_OpData *op = _HasAnimatedProperty(path);
-    if(op) {
+    std::vector<double> perFrameSamples(1);
+    perFrameSamples[0] = -0;
+    std::cout << "LIST TIME SAMPELS FOR PATh :" << path << std::endl;
+    VtValue value;
+    Has( SdfPath::AbsoluteRootPath(), 
+      SdfFieldKeys->StartTimeCode, &value);
+    double startTimeCode = value.Get<double>();
+    std::cout << "START TIME CODE : " << value << std::endl;
+    Has( SdfPath::AbsoluteRootPath(), 
+      SdfFieldKeys->EndTimeCode, &value);
+    double endTimeCode = value.Get<double>();
+    std::cout << "END TIME CODE : " << value << std::endl;
+    if(_HasAnimatedProperty(path)) {
         std::set<double> samples;
-        for(const auto& curve: op->curves) {
-            std::set<double> curveSamples = curve.computeSamples();
-            if(curveSamples.size())
-                samples.insert(curveSamples.begin(), curveSamples.end());
+   
+        for(size_t s=0;s<endTimeCode - startTimeCode; ++s) {
+          for(size_t t=0;t<perFrameSamples.size();++t) {
+            samples.insert(startTimeCode + s + perFrameSamples[t]);
+          }
         }
         return samples;
     }
@@ -631,12 +724,11 @@ UsdAnimXData::QueryTimeSample(const SdfPath& path,
                                              double time, VtValue *value) const
 {
     // Only animated prim properties have time samples
-    const _PrimData *primData =
+    const UsdAnimXPrimData *primData =
         TfMapLookupPtr(_animatedPrimDatas, path.GetPrimPath());
     if (!primData) return false;
-
-    const _OpData* opData = primData->GetAnimatedOp(path.GetNameToken());
-    
+    const UsdAnimXOpData *opData = 
+        primData->GetAnimatedOp(path.GetNameToken());
     if(opData && opData->func) {
         return opData->func(opData->curves, value, time, 1);
     }
@@ -662,6 +754,7 @@ void
 UsdAnimXData::SetTimeSample(const SdfPath& path, 
                                            double time, const VtValue& value)
 {
+    std::cout << "ANIMX SET TIME SAMPLE : " << time << ": " << value << std::endl; 
     /*
     if (value.IsEmpty()) {
         EraseTimeSample(path, time);
@@ -719,7 +812,7 @@ UsdAnimXData::BuildDescription() const
     for(auto& sortedPath: sortedPaths) {
         UsdAnimXPrimDesc primDesc;
         primDesc.name = sortedPath.GetNameToken();
-        const _PrimData *primData =
+        const UsdAnimXPrimData *primData =
             TfMapLookupPtr(_animatedPrimDatas, sortedPath);
         if (primData) {
             for(const auto& op: primData->ops) {
@@ -766,7 +859,7 @@ UsdAnimXData::BuildDescription() const
     return rootPrims;
 }
 
-const UsdAnimXData::_OpData* 
+bool
 UsdAnimXData::_HasAnimatedProperty(
     const SdfPath &path) const
 {
@@ -779,13 +872,13 @@ UsdAnimXData::_HasAnimatedProperty(
         for(auto& op: data->ops) {
             if(op.target == path.GetNameToken()) {
                 if(op.curves.size()) {
-                    return &op;
+                    return true;
                 }
-                else return NULL;
+                else return false;
             }
         }
     }
-    return NULL;
+    return false;
 }
 
 bool 
@@ -798,12 +891,12 @@ UsdAnimXData::_HasPropertyDefaultValue(
     }
 
     // Check that it belongs to an animated prim before getting the default value
-    const _PrimData *data = 
+    const UsdAnimXPrimData *data = 
         TfMapLookupPtr(_animatedPrimDatas, path.GetAbsoluteRootOrPrimPath());
 
     if (data) {
         if (value) {
-            const _OpData *op = data->GetAnimatedOp(path.GetNameToken());
+            const UsdAnimXOpData *op = data->GetAnimatedOp(path.GetNameToken());
             if(op) {
                 *value = op->defaultValue;
                 return true;
@@ -812,5 +905,39 @@ UsdAnimXData::_HasPropertyDefaultValue(
     }
     return false;
 }
+
+bool 
+UsdAnimXData::_HasPropertyTypeNameValue(
+    const SdfPath &path, VtValue *value) const
+{
+    // Check that it is a property id.
+    if (!path.IsPropertyPath()) {
+        return false;
+    }
+
+    // Check that it belongs to a animated prim before getting the type name value
+    const UsdAnimXPrimData *data = 
+        TfMapLookupPtr(_animatedPrimDatas, path.GetAbsoluteRootOrPrimPath());
+    if (data) {
+        if (value) {
+            const UsdAnimXOpData *op = data->GetAnimatedOp(path.GetNameToken());
+            if(op) {
+                /*
+                *value = 
+                    VtValue(SdfSchema::GetInstance().FindType(
+                        op->defaultValue).GetAsToken());
+                */
+                //VtArray<double> keyframe;
+                UsdAnimXKeyframe keyframe;
+                *value = VtValue(SdfSchema::GetInstance().FindType(
+                    VtValue(keyframe)).GetAsToken());
+                
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

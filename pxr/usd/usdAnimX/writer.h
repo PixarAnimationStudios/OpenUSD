@@ -35,9 +35,9 @@
 #include <fstream>
 #include <iostream>
 #include <typeinfo>
-#include "api.h"
-#include "types.h"
-#include "desc.h"
+#include "pxr/usd/usdAnimX/api.h"
+#include "pxr/usd/usdAnimX/types.h"
+#include "pxr/usd/usdAnimX/desc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
