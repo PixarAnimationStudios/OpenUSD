@@ -47,6 +47,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfUdimTexture);
 class Hgi;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
 class HdSt_TextureObjectRegistry;
+struct HgiTextureDesc;
+class HdStTextureCpuData;
 
 using HdStTextureObjectSharedPtr = std::shared_ptr<class HdStTextureObject>;
 
@@ -61,13 +63,11 @@ class HdStTextureObject :
 public:
     /// Get texture identifier
     ///
-    HDST_API
     const HdStTextureIdentifier &
     GetTextureIdentifier() const { return _textureId; }
 
     /// Get the target memory for the texture.
     ///
-    HDST_API
     size_t GetTargetMemory() const { return _targetMemory; }
 
     /// Set the target memory (in bytes).
@@ -126,12 +126,15 @@ private:
 class HdStUvTextureObject : public HdStTextureObject
 {
 public:
+    ~HdStUvTextureObject() override;
+
     /// Get the handle to the actual GPU resource.
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
-    virtual HgiTextureHandle const &GetTexture() const = 0;
+    HgiTextureHandle const &GetTexture() const {
+        return _gpuTexture;
+    }
 
     /// Opinion about wrapS and wrapT parameters from the texture file.
     ///
@@ -146,6 +149,16 @@ protected:
     HdStUvTextureObject(
         const HdStTextureIdentifier &textureId,
         HdSt_TextureObjectRegistry * textureObjectRegistry);
+
+    void _SetCpuData(std::unique_ptr<HdStTextureCpuData> &&);
+    HdStTextureCpuData * _GetCpuData() const;
+
+    void _CreateTexture(const HgiTextureDesc &desc);
+    void _DestroyTexture();
+
+private:
+    std::unique_ptr<HdStTextureCpuData> _cpuData;
+    HgiTextureHandle _gpuTexture;
 };
 
 /// \class HdAssetStUvTextureObject
@@ -162,15 +175,6 @@ public:
 
     HDST_API
     ~HdStAssetUvTextureObject() override;
-
-    /// Get the handle to the actual GPU resource.
-    ///
-    /// Only valid after commit phase.
-    ///
-    HDST_API
-    HgiTextureHandle const &GetTexture() const override {
-        return _gpuTexture;
-    }
 
     /// Opinion about wrapS and wrapT parameters from the texture file.
     ///
@@ -191,8 +195,6 @@ protected:
     void _Commit() override;
 
 private:
-    std::unique_ptr<class HdSt_TextureObjectCpuData> _cpuData;
-    HgiTextureHandle _gpuTexture;
     std::pair<HdWrap, HdWrap> _wrapParameters;
 };
 
@@ -215,7 +217,6 @@ public:
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     HgiTextureHandle const &GetTexture() const {
         return _gpuTexture;
     }
@@ -224,14 +225,12 @@ public:
     ///
     /// Only valid after the commit phase.
     ///
-    HDST_API
     const GfBBox3d &GetBoundingBox() const { return _bbox; }
 
     /// The sampling transform.
     ///
     /// Only valid after the commit phase.
     ///
-    HDST_API
     const GfMatrix4d &GetSamplingTransform() const {
         return _samplingTransform;
     }
@@ -250,7 +249,7 @@ protected:
     void _Commit() override;
 
 private:
-    std::unique_ptr<class HdSt_TextureObjectCpuData> _cpuData;
+    std::unique_ptr<HdStTextureCpuData> _cpuData;
     GfBBox3d _bbox;
     GfMatrix4d _samplingTransform;
     HgiTextureHandle _gpuTexture;
@@ -277,14 +276,12 @@ public:
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     uint32_t GetTexelGLTextureName() const { return _texelGLTextureName; }
 
     /// Get the GL texture name for the layout
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
 
     HDST_API
@@ -330,14 +327,12 @@ public:
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     uint32_t GetTexelGLTextureName() const { return _texelGLTextureName; }
 
     /// Get the GL texture name for the layout
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     uint32_t GetLayoutGLTextureName() const { return _layoutGLTextureName; }
 
     HDST_API

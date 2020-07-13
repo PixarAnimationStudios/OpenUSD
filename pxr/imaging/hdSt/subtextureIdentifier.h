@@ -33,6 +33,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStDynamicUvTextureImplementation;
+
 ///
 /// \class HdStSubtextureIdentifier
 ///
@@ -125,8 +127,23 @@ private:
 /// HdStDynamicUvTextureObject that is populated by a client rather
 /// than by the Storm texture system.
 ///
-class HdStDynamicUvSubtextureIdentifier final
-                                : public HdStSubtextureIdentifier
+/// Clients can subclass this class and provide their own
+/// HdStDynamicUvTextureImplementation to create UV texture with custom
+/// load and commit behavior.
+///
+/// testHdStDynamicUvTexture.cpp is an example of how custom load and
+/// commit behavior can be implemented.
+///
+/// AOV's are another example. In presto, these are baked by
+/// HdStDynamicUvTextureObject's. In this case, the
+/// HdStDynamicUvTextureObject's do not provide custom load or commit
+/// behavior (null-ptr returned by GetTextureImplementation). Instead,
+/// GPU memory is allocated by explicitly calling
+/// HdStDynamicUvTextureObject::CreateTexture in
+/// HdStRenderBuffer::Sync/Allocate and the texture is filled by using
+/// it as render target in various render passes.
+///
+class HdStDynamicUvSubtextureIdentifier : public HdStSubtextureIdentifier
 {
 public:
     HDST_API
@@ -137,6 +154,11 @@ public:
     
     HDST_API
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    /// Textures can return their own HdStDynamicUvTextureImplementation
+    /// to customize the load and commit behavior.
+    HDST_API
+    virtual HdStDynamicUvTextureImplementation *GetTextureImplementation() const;
 
     HDST_API
     ID Hash() const override;

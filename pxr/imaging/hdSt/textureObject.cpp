@@ -25,6 +25,8 @@
 
 #include "pxr/imaging/hdSt/textureObject.h"
 
+#include "pxr/imaging/hdSt/textureCpuData.h"
+
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
@@ -83,7 +85,8 @@ HdStTextureObject::~HdStTextureObject() = default;
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-static
+namespace {
+
 std::string
 _GetDebugName(const HdStTextureIdentifier &textureId)
 {
@@ -108,7 +111,6 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
         textureId.GetFilePath().GetString();
 }
 
-static
 HgiTextureType
 _GetTextureType(int numDimensions)
 {
@@ -129,18 +131,18 @@ _GetTextureType(int numDimensions)
 // of the CPU buffers (either by keeping GlfBaseTextureData or its own
 // buffer alive).
 // 
-class HdSt_TextureObjectCpuData
+class _AssetCpuData : public HdStTextureCpuData
 {
 public:
     // Created using texture data and a debug name used for the
     // texture descriptor.
-    HdSt_TextureObjectCpuData(GlfBaseTextureDataRefPtr const &textureData,
+    _AssetCpuData(GlfBaseTextureDataRefPtr const &textureData,
                               const std::string &debugName,
                               bool generateMips = false,
                               GlfImage::ImageOriginLocation originLocation
                                           = GlfImage::OriginUpperLeft);
 
-    ~HdSt_TextureObjectCpuData() = default;
+    ~_AssetCpuData() = default;
 
     // Texture descriptor, including initialData pointer.
     const HgiTextureDesc &GetTextureDesc() const { return _textureDesc; }
@@ -173,7 +175,6 @@ private:
 
 // Compute the number of mip levels given the dimensions of a texture using
 // the same formula as OpenGL.
-static
 uint16_t _ComputeNumMipLevels(const GfVec3i &dimensions)
 {
     const int dim = std::max({dimensions[0], dimensions[1], dimensions[2]});
@@ -189,7 +190,6 @@ uint16_t _ComputeNumMipLevels(const GfVec3i &dimensions)
     return 1;
 }
 
-static
 bool
 _IsValid(GlfBaseTextureDataRefPtr const &textureData)
 {
@@ -200,7 +200,7 @@ _IsValid(GlfBaseTextureDataRefPtr const &textureData)
         textureData->HasRawBuffer();
 }
 
-HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
+_AssetCpuData::_AssetCpuData(
     GlfBaseTextureDataRefPtr const &textureData,
     const std::string &debugName,
     const bool generateMips,
@@ -261,7 +261,6 @@ HdSt_TextureObjectCpuData::HdSt_TextureObjectCpuData(
 }
 
 template<typename T>
-static
 std::unique_ptr<const unsigned char[]>
 _ConvertRGBToRGBA(
     const unsigned char * const data,
@@ -293,7 +292,6 @@ _ConvertRGBToRGBA(
 // they are not available on MTL. Guard against us trying to use
 // formats that are no longer available.
 template<HgiFormat f>
-static
 constexpr HgiFormat _CheckValid()
 {
     static_assert(f != HgiFormatInvalid, "Invalid HgiFormat");
@@ -301,7 +299,7 @@ constexpr HgiFormat _CheckValid()
 }
 
 HgiFormat
-HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
+_AssetCpuData::_DetermineFormatAndConvertIfNecessary(
     const GLenum glFormat,
     const GLenum glType,
     const GLenum glInternalFormat)
@@ -410,6 +408,8 @@ HdSt_TextureObjectCpuData::_DetermineFormatAndConvertIfNecessary(
     }
 }
 
+} // anonymous namespace
+
 ///////////////////////////////////////////////////////////////////////////////
 // Uv texture
 
@@ -425,6 +425,50 @@ HdTextureType
 HdStUvTextureObject::GetTextureType() const
 {
     return HdTextureType::Uv;
+}
+
+HdStUvTextureObject::~HdStUvTextureObject()
+{
+    _DestroyTexture();
+}
+
+void
+HdStUvTextureObject::_SetCpuData(
+    std::unique_ptr<HdStTextureCpuData> &&cpuData)
+{
+    _cpuData = std::move(cpuData);
+}
+
+HdStTextureCpuData *
+HdStUvTextureObject::_GetCpuData() const
+{
+    return _cpuData.get();
+}
+
+void
+HdStUvTextureObject::_CreateTexture(const HgiTextureDesc &desc)
+{
+    Hgi * const hgi = _GetHgi();
+    if (!TF_VERIFY(hgi)) {
+        return;
+    }
+
+    _DestroyTexture();
+ 
+    _gpuTexture = hgi->CreateTexture(desc);
+    if (desc.mipLevels > 1 && desc.initialData) {
+        HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+        blitCmds->GenerateMipMaps(_gpuTexture);
+        hgi->SubmitCmds(blitCmds.get());
+    }
+}
+
+void
+HdStUvTextureObject::_DestroyTexture()
+{
+    if (Hgi * hgi = _GetHgi()) {
+        hgi->DestroyTexture(&_gpuTexture);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -500,12 +544,7 @@ HdStAssetUvTextureObject::HdStAssetUvTextureObject(
 {
 }
 
-HdStAssetUvTextureObject::~HdStAssetUvTextureObject()
-{
-    if (Hgi * hgi = _GetHgi()) {
-        hgi->DestroyTexture(&_gpuTexture);
-    }
-}
+HdStAssetUvTextureObject::~HdStAssetUvTextureObject() = default;
 
 void
 HdStAssetUvTextureObject::_Load()
@@ -518,21 +557,22 @@ HdStAssetUvTextureObject::_Load()
             GetTargetMemory(),
             /* borders */ 0, 0, 0, 0);
 
-    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
-        textureData,
-        _GetDebugName(GetTextureIdentifier()),
-        /* generateMips = */ true,
-        _GetImageOriginLocation(
-            GetTextureIdentifier().GetSubtextureIdentifier()));
+    _SetCpuData(
+        std::make_unique<_AssetCpuData>(
+            textureData,
+            _GetDebugName(GetTextureIdentifier()),
+            /* generateMips = */ true,
+            _GetImageOriginLocation(
+                GetTextureIdentifier().GetSubtextureIdentifier())));
 
-    if (_cpuData->IsValid()) {
-        if (_cpuData->GetTextureDesc().type != HgiTextureType2D) {
+    if (_GetCpuData()->IsValid()) {
+        if (_GetCpuData()->GetTextureDesc().type != HgiTextureType2D) {
             TF_CODING_ERROR("Wrong texture type for uv");
         }
     }
 
     // _GetWrapParameters can only be called after the texture has
-    // been loaded by HdSt_TextureObjectCpuData.
+    // been loaded by _AssetCpuData.
     _wrapParameters = _GetWrapParameters(textureData);
 }
 
@@ -541,35 +581,23 @@ HdStAssetUvTextureObject::_Commit()
 {
     TRACE_FUNCTION();
 
-    Hgi * const hgi = _GetHgi();
-    if (!hgi) {
-        return;
-    }
+    _DestroyTexture();
 
-    // Free previously allocated texture
-    hgi->DestroyTexture(&_gpuTexture);
-
-    // Upload to GPU only if we have valid CPU data
-    if (_cpuData && _cpuData->IsValid()) {
-        const HgiTextureDesc &desc = _cpuData->GetTextureDesc();
-
-        // Upload to GPU
-        _gpuTexture = hgi->CreateTexture(desc);
-        if (desc.mipLevels > 1) {
-            HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
-            blitCmds->GenerateMipMaps(_gpuTexture);
-            hgi->SubmitCmds(blitCmds.get());
+    if (HdStTextureCpuData * const cpuData = _GetCpuData()) {
+        if (cpuData->IsValid()) {
+            // Upload to GPU
+            _CreateTexture(cpuData->GetTextureDesc());
         }
     }
 
     // Free CPU memory after transfer to GPU
-    _cpuData.reset();
+    _SetCpuData(nullptr);
 }
 
 bool
 HdStAssetUvTextureObject::IsValid() const
 {
-    return bool(_gpuTexture);
+    return bool(GetTexture());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -643,7 +671,7 @@ HdStFieldTextureObject::_Load()
             vdbSubtextureId->GetGridName(),
             GetTargetMemory());
 
-    _cpuData = std::make_unique<HdSt_TextureObjectCpuData>(
+    _cpuData = std::make_unique<_AssetCpuData>(
         texData,
         _GetDebugName(GetTextureIdentifier()));
 

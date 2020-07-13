@@ -31,8 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiTextureDesc;
-class HdSt_TextureObjectRegistry;
+class HdStDynamicUvTextureImplementation;
 
 /// \class HdStDynamicUvTextureObject
 ///
@@ -66,15 +65,35 @@ public:
     /// if data are given in the descriptor.
     /// 
     HDST_API
-    void CreateTexture(const HgiTextureDesc &desc);
+    void CreateTexture(const HgiTextureDesc &desc) {
+        _CreateTexture(desc);
+    }
 
-    /// Get the handle to the actual GPU resource.
+    /// Release GPU resource.
+    HDST_API
+    void DestroyTexture() {
+        _DestroyTexture();
+    }
+
+    /// Save CPU data for this texture (transfering ownership).
     ///
-    /// Only valid after CreateTexture has been called.
+    /// This is typically called from HdStDynamicUvTextureImplementation::Load
+    /// so that the CPU data can be uploaded during commit.
+    ///
+    /// To free the CPU data, call with nullptr.
     ///
     HDST_API
-    HgiTextureHandle const &GetTexture() const override {
-        return _gpuTexture;
+    void SetCpuData(std::unique_ptr<HdStTextureCpuData> &&cpuData) {
+        _SetCpuData(std::move(cpuData));
+    }
+
+    /// Get the CPU data stored for this texture.
+    ///
+    /// Typically used in HdStDynamicUvTextureImplementation::Commit to
+    /// commit CPU data to GPU.
+    HDST_API
+    HdStTextureCpuData * GetCpuData() const {
+        return _GetCpuData();
     }
 
     /// Just returns HdWrapNoOpinion.
@@ -96,7 +115,7 @@ protected:
     void _Commit() override;
 
 private:
-    HgiTextureHandle _gpuTexture;
+    HdStDynamicUvTextureImplementation * _GetImpl() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

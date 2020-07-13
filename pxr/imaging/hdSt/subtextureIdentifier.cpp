@@ -117,4 +117,10 @@ HdStDynamicUvSubtextureIdentifier::Hash() const
     return result;
 }
 
+HdStDynamicUvTextureImplementation *
+HdStDynamicUvSubtextureIdentifier::GetTextureImplementation() const
+{
+    return nullptr;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
