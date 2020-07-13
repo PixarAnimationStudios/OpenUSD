@@ -14,3 +14,20 @@ def "SubrootRef" (
 {
 }
 
+# Tests a bug previously encountered with ancestral variant selections.
+# /RootRef's reference to /Model brings in a variant set 'v' with variant
+# selection 'x'.
+# /RootRef/Child's reference to /Group/Model has an ancestral variant in that
+# /Group also has a variant set 'v' but with a variant selection 'y'.
+# This case is verifying that /Group/Model is composed with the variant
+# selection of v=y, not v=x.
+def "RootRef" (
+    references = @./model.sdf@</Model>
+)
+{
+    def "Child" (
+        references = @./group.sdf@</Group/Model>
+    )
+    {
+    }
+}

@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+def "Model" (
+    variantSets = "v"
+    variants = {
+        string "v" = "x"
+    }
+)
+{
+    variantSet "v" = {
+        "x" {
+            custom string modelAttr = "v=x"
+        }
+        "y" {
+            custom string modelAttr = "v=y"
+        }
+    }
+}

@@ -3512,27 +3512,6 @@ _ComposeVariantSelection(
     TF_VERIFY(!pathInNode.ContainsPrimVariantSelection(),
               "%s", pathInNode.GetText());
 
-    // First check if we have already resolved this variant set.
-    // Try all nodes in all parent frames; ancestorRecursionDepth
-    // accounts for any ancestral recursion.
-    {
-        PcpNodeRef rootNode = node.GetRootNode();
-        PcpPrimIndex_StackFrame *prevFrame = previousFrame;
-        while (rootNode) {
-            if (_FindPriorVariantSelection(rootNode,
-                                           ancestorRecursionDepth,
-                                           vset, vsel, nodeWithVsel)) {
-                return;
-            } 
-            if (prevFrame) {
-                rootNode = prevFrame->parentNode.GetRootNode();
-                prevFrame = prevFrame->previousFrame;
-            } else {
-                break;
-            }
-        }
-    }
-
     // We want to look for variant selections in all nodes that have been 
     // added up to this point.  Note that Pcp may pick up variant
     // selections from weaker locations than the node for which
@@ -3561,6 +3540,15 @@ _ComposeVariantSelection(
             pathInRoot = rootNode.
                 GetMapToParent().MapSourceToTarget(pathInRoot);
             rootNode = rootNode.GetParentNode();
+        }
+
+        // First check if we have already resolved this variant set.
+        // Try all nodes in all parent frames; ancestorRecursionDepth
+        // accounts for any ancestral recursion.
+        if (_FindPriorVariantSelection(rootNode,
+                                       ancestorRecursionDepth,
+                                       vset, vsel, nodeWithVsel)) {
+            return;
         }
 
         if (!previousFrame) {
