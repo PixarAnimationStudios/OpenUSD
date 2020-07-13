@@ -2592,59 +2592,6 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     return vtMatResource;
 }
 
-HdTextureResource::ID
-UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
-{
-    SdfPath cachePath = ConvertIndexPathToCachePath(textureId);
-    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-    if (primInfo) {
-        return primInfo->adapter
-            ->GetTextureResourceID(primInfo->usdPrim, cachePath, _time,
-                                   (size_t) &GetRenderIndex() );
-    } 
-
-    return HdTextureResource::ID(-1);
-}
-
-HdTextureResourceSharedPtr
-UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
-{
-    // PERFORMANCE: We should schedule this to be updated during Sync, rather
-    // than pulling values on demand.
-
-    // Check if we can find primInfo for the path directly.
-    // This only works if a prim was inserted for this path.
-    SdfPath cachePath = ConvertIndexPathToCachePath(textureId);
-    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-
-    if (!primInfo) {
-        // For texture nodes we may have only inserted an Sprim for the material
-        // not for the texture itself. There is only primInfo for the material.
-        //
-        // UsdShade has the rule that a UsdShade node must be nested inside the
-        // UsdMaterial scope. We traverse the parent paths to find the material.
-        //
-        // Example for texture prim:
-        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
-        // We want to find Sprim:
-        //    /Materials/Woody/BootMaterial
-
-        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
-        // adapter with prototypes.
-        SdfPath parentPath = cachePath;
-        while (!primInfo && !parentPath.IsRootPrimPath()) {
-            parentPath = parentPath.GetParentPath();
-            primInfo = _GetHdPrimInfo(parentPath);
-        }
-    }
-
-    if (TF_VERIFY(primInfo, textureId.GetText())) {
-        return primInfo->adapter
-            ->GetTextureResource(primInfo->usdPrim, cachePath, _time);
-    }
-    return nullptr;
-}
-
 VtValue 
 UsdImagingDelegate::GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName)

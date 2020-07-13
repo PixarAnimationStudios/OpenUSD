@@ -367,12 +367,6 @@ public:
     USDIMAGING_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
 
-    // Texture Support
-    USDIMAGING_API
-    HdTextureResource::ID GetTextureResourceID(SdfPath const &id) override;
-    USDIMAGING_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id) override;
-
     // Light Support
     USDIMAGING_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 

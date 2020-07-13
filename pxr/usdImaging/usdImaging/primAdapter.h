@@ -324,20 +324,6 @@ public:
         HdSelectionSharedPtr const &result) const;
 
     // ---------------------------------------------------------------------- //
-    /// \name Texture resources
-    // ---------------------------------------------------------------------- //
-
-    USDIMAGING_API
-    virtual HdTextureResource::ID
-    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id,
-                         UsdTimeCode time, size_t salt) const;
-
-    USDIMAGING_API
-    virtual HdTextureResourceSharedPtr
-    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id,
-                       UsdTimeCode time) const;
-
-    // ---------------------------------------------------------------------- //
     /// \name Volume field information
     // ---------------------------------------------------------------------- //
 
