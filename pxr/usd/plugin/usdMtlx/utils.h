@@ -29,12 +29,18 @@
 #include "pxr/usd/plugin/usdMtlx/api.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/value.h"
 #include <MaterialXCore/Document.h>
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#define USD_MTLX_TOKENS \
+    ((DefaultOutputName, "out"))
+
+TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_LOCAL, USD_MTLX_TOKENS);
 
 /// Return the contents of a search path environment variable named
 /// \p name as a vector of strings.  The path is split on the platform's

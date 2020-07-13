@@ -139,7 +139,6 @@ static const _AttributeNames names;
 TF_DEFINE_PRIVATE_TOKENS(
     tokens,
 
-    ((defaultOutputName, "out"))
     ((light, "light"))
 );
 
@@ -922,7 +921,7 @@ _NodeGraphBuilder::_AddOutput(
     const auto outputName =
         isAnOutput
             ? _MakeName(mtlxTyped)
-            : tokens->defaultOutputName;
+            : UsdMtlxTokens->DefaultOutputName;
 
     // Get the node name.
     auto& nodeName = _Name(mtlxOwner);
@@ -952,7 +951,7 @@ _NodeGraphBuilder::_ConnectPorts(
         const auto outputAttr = _Attr(mtlxDownstream, names.output);
         const auto outputName = outputAttr ? 
             _MakeName(outputAttr.str()) : 
-            tokens->defaultOutputName;
+            UsdMtlxTokens->DefaultOutputName;
         auto i = _outputs.find(nodeName.str() + "." + outputName.GetText());
         if (i == _outputs.end()) {
             TF_WARN("Output for <%s> missing",
@@ -1082,7 +1081,7 @@ _NodeGraph::GetOutputByName(const std::string& name) const
                 : UsdShadeShader::Get(_usdOwnerPrim.GetStage(),
                                       _referencer.AppendChild(i->second));
         if (child) {
-            return child.GetOutput(tokens->defaultOutputName);
+            return child.GetOutput(UsdMtlxTokens->DefaultOutputName);
         }
     }
 

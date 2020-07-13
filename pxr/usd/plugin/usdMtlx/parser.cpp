@@ -46,9 +46,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
-
-    // The name to use for unnamed outputs.
-    ((defaultOutputName, "out"))
 );
 
 // A builder for shader nodes.  We find it convenient to build the
@@ -194,7 +191,7 @@ ShaderBuilder::AddProperty(
     // multiple outputs.  The default name would be the name of the
     // nodedef itself, which seems wrong.  We pick a different name.
     if (auto nodeDef = element->asA<mx::NodeDef>()) {
-        name = _tokens->defaultOutputName.GetString();
+        name = UsdMtlxTokens->DefaultOutputName.GetString();
     }
 
     // Remap property name.
