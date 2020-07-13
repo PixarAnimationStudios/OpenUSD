@@ -34,6 +34,8 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -73,6 +75,23 @@ TfHashAppend(HashState &h, T fp)
         memcpy(&intbuf, &fp, sizeof(T));
     }
     h.Append(intbuf);
+}
+
+// Support std::pair.
+template <class HashState, class T, class U>
+inline void
+TfHashAppend(HashState &h, std::pair<T, U> const &p)
+{
+    h.Append(p.first);
+    h.Append(p.second);
+}
+
+// Support std::vector.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, std::vector<T> const &vec)
+{
+    h.AppendContiguous(vec.data(), vec.size());
 }
 
 // Support for hashing std::string.
@@ -375,6 +394,26 @@ public:
         Tf_HashImpl(h, std::forward<T>(obj), 0);
         return h._GetCode();
     }
+
+    /// Produce a hash code by combining the hash codes of several objects.
+    template <class... Args>
+    static size_t Combine(Args &&... args) {
+        Tf_HashState h;
+        _CombineImpl(h, args...);
+        return h._GetCode();
+    }
+
+private:
+    template <class HashState, class T, class... Args>
+    static void _CombineImpl(HashState &h, T &&obj, Args &&... rest) {
+        Tf_HashImpl(h, std::forward<T>(obj), 0);
+        _CombineImpl(h, rest...);
+    }
+    
+    template <class HashState>
+    static void _CombineImpl(HashState &h) {
+        // base case does nothing
+    }        
 };
 
 /// A hash function object that hashes the address of a char pointer.

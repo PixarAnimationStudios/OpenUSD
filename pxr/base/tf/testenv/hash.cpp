@@ -269,6 +269,18 @@ Test_TfHash()
         }
     }
 
+    std::vector<int> vint = {1, 2, 3, 4, 5};
+    printf("hash(vector<int>): %zu\n", h(vint));
+
+    std::pair<int, float> intfloat = {1, 2.34};
+    printf("hash(pair<int, float>): %zu\n", h(intfloat));
+
+    std::vector<std::pair<int, float>> vp { intfloat, intfloat, intfloat };
+    printf("hash(vector<pair<int, float>>): %zu\n", h(vp));
+
+    printf("combine hash of the 3: %zu\n",
+           TfHash::Combine(vint, intfloat, vp));
+
     TfHasher tfh;
     //BoostHasher bh;
 
