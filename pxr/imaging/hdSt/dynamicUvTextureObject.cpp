@@ -45,14 +45,6 @@ HdStDynamicUvTextureObject::~HdStDynamicUvTextureObject()
     _DestroyTexture();
 }
 
-const std::pair<HdWrap, HdWrap> &
-HdStDynamicUvTextureObject::GetWrapParameters() const
-{
-    static const std::pair<HdWrap, HdWrap> result = {
-        HdWrapNoOpinion, HdWrapNoOpinion };
-    return result;
-}
-
 HdStDynamicUvTextureImplementation *
 HdStDynamicUvTextureObject::_GetImpl() const
 {

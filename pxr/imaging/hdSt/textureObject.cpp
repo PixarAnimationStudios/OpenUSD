@@ -417,6 +417,7 @@ HdStUvTextureObject::HdStUvTextureObject(
     const HdStTextureIdentifier &textureId,
     HdSt_TextureObjectRegistry * textureObjectRegistry)
   : HdStTextureObject(textureId, textureObjectRegistry)
+  , _wrapParameters{HdWrapNoOpinion, HdWrapNoOpinion}
 {
 }
 
@@ -430,6 +431,13 @@ HdStUvTextureObject::GetTextureType() const
 HdStUvTextureObject::~HdStUvTextureObject()
 {
     _DestroyTexture();
+}
+
+void
+HdStUvTextureObject::_SetWrapParameters(
+    const std::pair<HdWrap, HdWrap> &wrapParameters)
+{
+    _wrapParameters = wrapParameters;
 }
 
 void
@@ -540,7 +548,6 @@ HdStAssetUvTextureObject::HdStAssetUvTextureObject(
     const HdStTextureIdentifier &textureId,
     HdSt_TextureObjectRegistry * const textureObjectRegistry)
   : HdStUvTextureObject(textureId, textureObjectRegistry)
-  , _wrapParameters{HdWrapUseMetadata, HdWrapUseMetadata}
 {
 }
 
@@ -573,7 +580,7 @@ HdStAssetUvTextureObject::_Load()
 
     // _GetWrapParameters can only be called after the texture has
     // been loaded by _AssetCpuData.
-    _wrapParameters = _GetWrapParameters(textureData);
+    _SetWrapParameters(_GetWrapParameters(textureData));
 }
 
 void

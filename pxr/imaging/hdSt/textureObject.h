@@ -139,8 +139,9 @@ public:
     /// Opinion about wrapS and wrapT parameters from the texture file.
     ///
     /// Only valid after commit phase. Can be HdWrapNoOpinion.
-    HDST_API
-    virtual const std::pair<HdWrap, HdWrap> &GetWrapParameters() const = 0;
+    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const {
+        return _wrapParameters;
+    }
 
     HDST_API
     HdTextureType GetTextureType() const override final;
@@ -150,6 +151,9 @@ protected:
         const HdStTextureIdentifier &textureId,
         HdSt_TextureObjectRegistry * textureObjectRegistry);
 
+    void _SetWrapParameters(
+        const std::pair<HdWrap, HdWrap> &wrapParameters);
+
     void _SetCpuData(std::unique_ptr<HdStTextureCpuData> &&);
     HdStTextureCpuData * _GetCpuData() const;
 
@@ -157,6 +161,7 @@ protected:
     void _DestroyTexture();
 
 private:
+    std::pair<HdWrap, HdWrap> _wrapParameters;
     std::unique_ptr<HdStTextureCpuData> _cpuData;
     HgiTextureHandle _gpuTexture;
 };
@@ -176,14 +181,6 @@ public:
     HDST_API
     ~HdStAssetUvTextureObject() override;
 
-    /// Opinion about wrapS and wrapT parameters from the texture file.
-    ///
-    /// Only valid after commit phase. Can be HdWrapNoOpinion.
-    HDST_API
-    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const override {
-        return _wrapParameters;
-    }
-
     HDST_API
     bool IsValid() const override;
 
@@ -193,9 +190,6 @@ protected:
 
     HDST_API
     void _Commit() override;
-
-private:
-    std::pair<HdWrap, HdWrap> _wrapParameters;
 };
 
 /// \class HdStFieldTextureObject

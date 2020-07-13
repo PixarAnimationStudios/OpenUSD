@@ -64,15 +64,22 @@ public:
     /// Allocate GPU resource using the texture descriptor. Populate
     /// if data are given in the descriptor.
     /// 
-    HDST_API
     void CreateTexture(const HgiTextureDesc &desc) {
         _CreateTexture(desc);
     }
 
     /// Release GPU resource.
-    HDST_API
     void DestroyTexture() {
         _DestroyTexture();
+    }
+
+    /// Set wrap mode hints used when a texture node's wrap mode
+    /// is use metadata.
+    ///
+    /// This is typically called from HdStDynamicUvTextureImplementation::Load
+    /// when the texture file has wrap mode hints.
+    void SetWrapParameters(const std::pair<HdWrap, HdWrap> &wrapParameters) {
+        _SetWrapParameters(wrapParameters);
     }
 
     /// Save CPU data for this texture (transfering ownership).
@@ -82,7 +89,6 @@ public:
     ///
     /// To free the CPU data, call with nullptr.
     ///
-    HDST_API
     void SetCpuData(std::unique_ptr<HdStTextureCpuData> &&cpuData) {
         _SetCpuData(std::move(cpuData));
     }
@@ -91,15 +97,9 @@ public:
     ///
     /// Typically used in HdStDynamicUvTextureImplementation::Commit to
     /// commit CPU data to GPU.
-    HDST_API
     HdStTextureCpuData * GetCpuData() const {
         return _GetCpuData();
     }
-
-    /// Just returns HdWrapNoOpinion.
-    ///
-    HDST_API
-    const std::pair<HdWrap, HdWrap> &GetWrapParameters() const override;
 
     /// Always returns true - so that samplers for this texture are
     /// created.
