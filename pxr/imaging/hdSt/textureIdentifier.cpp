@@ -84,6 +84,30 @@ HdStTextureIdentifier::Hash() const
          boost::hash_combine(result, _subtextureId->Hash());
      }
      return result;
- }
+}
+
+static
+std::pair<bool, HdStTextureIdentifier::ID>
+_OptionalSubidentifierHash(const HdStTextureIdentifier &id)
+{
+    if (const HdStSubtextureIdentifier * subId = id.GetSubtextureIdentifier()) {
+        return {true, subId->Hash()};
+    }
+    return {false, 0};
+}
+
+bool
+HdStTextureIdentifier::operator==(const HdStTextureIdentifier &other) const
+{
+    return
+        _filePath == other._filePath &&
+        _OptionalSubidentifierHash(*this) == _OptionalSubidentifierHash(other);
+}
+
+bool
+HdStTextureIdentifier::operator!=(const HdStTextureIdentifier &other) const
+{
+    return !(*this == other);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

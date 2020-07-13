@@ -835,11 +835,18 @@ _MakeMaterialParamsForTexture(
         }
     }
 
+    // Determine the texture type
+    texParam.textureType = HdTextureType::Uv;
+    if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
+        texParam.textureType = HdTextureType::Ptex;
+    }
+
     // Extract texture file path
-    std::string filePath;
     bool useTexturePrimToFindTexture = true;
     
     SdfPath texturePrimPathForSceneDelegate;
+
+    HdStTextureIdentifier textureId;
 
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
@@ -855,39 +862,54 @@ _MakeMaterialParamsForTexture(
             // prim (by path) to query the file attribute value for filepath.
             // The reason for this re-direct is to support other texture uses
             // such as render-targets.
-            filePath = _ResolveAssetPath(v);
             texturePrimPathForSceneDelegate = nodePath;
 
+            // Use the type of the filePath attribute to determine
+            // whether to use the Storm texture system (for
+            // SdfAssetPath/std::string/ HdStTextureIdentifier) or use
+            // the HdSceneDelegate::GetTextureResource/ID (for all
+            // other types). The
+            // HdSceneDelegate::GetTextureResource/ID path will be
+            // obsoleted and probably removed at some point.
+
+            if (v.IsHolding<HdStTextureIdentifier>()) {
+                //
+                // Clients can explicitly give an HdStTextureIdentifier for
+                // more direct control since they can give an instance of
+                // HdStSubtextureIdentifier.
+                //
+                // Examples are, e.g., HdStUvOrientationSubtextureIdentifier
+                // allowing clients to flip the texture. Clients can even
+                // subclass from HdStDynamicUvSubtextureIdentifier and
+                // HdStDynamicUvTextureImplementation to implement their own
+                // texture loading and commit.
+                //
+                useTexturePrimToFindTexture = false;
+                textureId = v.UncheckedGet<HdStTextureIdentifier>();
+            } else if (v.IsHolding<std::string>() ||
+                       v.IsHolding<SdfAssetPath>()) {
+                const std::string filePath = _ResolveAssetPath(v);
+
+                if (GlfIsSupportedUdimTexture(filePath)) {
+                    texParam.textureType = HdTextureType::Udim;
+                }
+                
+                useTexturePrimToFindTexture = false;
+                textureId = HdStTextureIdentifier(
+                    TfToken(filePath),
+                    _GetSubtextureIdentifier(
+                        texParam.textureType, node.nodeTypeId));
             // If the file attribute is an SdfPath, interpret it as path
             // to a prim holding the texture resource (e.g., a render buffer).
-            if (HdStDrawTarget::GetUseStormTextureSystem()) {
-                if (v.IsHolding<SdfPath>()) {
-                    texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
-                }
-            }
-            
-            // Use the type of the filePath attribute to determine whether
-            // to use the Storm texture system (for SdfAssetPath/std::string)
-            // or use the HdSceneDelegate::GetTextureResource/ID (for all other
-            // types). The HdSceneDelegate::GetTextureResource/ID path will
-            // be obsoleted and probably removed at some point.
-            if (v.IsHolding<SdfAssetPath>() || v.IsHolding<std::string>()) {
-                useTexturePrimToFindTexture = false;
+            } else if (HdStDrawTarget::GetUseStormTextureSystem() &&
+                       v.IsHolding<SdfPath>()) {
+                texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
             }
         }
     } else {
         TF_WARN("Invalid number of asset identifier input names: %s", 
                 nodePath.GetText());
     }
-
-    // Determine the texture type
-    HdTextureType textureType = HdTextureType::Uv;
-    if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
-        textureType = HdTextureType::Ptex;
-    } else if (GlfIsSupportedUdimTexture(filePath)) {
-        textureType = HdTextureType::Udim;
-    }
-    texParam.textureType = textureType;
 
     // Check to see if a primvar or transform2d node is connected to 'st' or 
     // 'uv'.
@@ -1014,10 +1036,8 @@ _MakeMaterialParamsForTexture(
     //
     textureDescriptors->push_back(
         { paramName,
-          HdStTextureIdentifier(
-              TfToken(filePath),
-              _GetSubtextureIdentifier(textureType, node.nodeTypeId)),
-          textureType,
+          textureId,
+          texParam.textureType,
           _GetSamplerParameters(nodePath, node, sdrNode),
           memoryRequest,
           useTexturePrimToFindTexture,
