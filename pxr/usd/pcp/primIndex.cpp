@@ -2034,43 +2034,81 @@ _EvalNodePayloads(
     // However, only process the payload if it's been requested.
     index->GetGraph()->SetHasPayloads(true);
 
-    const PcpPrimIndexInputs::PayloadSet* includedPayloads = 
-        indexer->inputs.includedPayloads;
+    // First thing we check is if this payload arc is being composed because it
+    // will be an ancestral payload arc for a subgraph being being built for a 
+    // subroot reference or payload.
+    // The prim index stack frame tells us whether we're building a subgraph 
+    // for a reference or payload and we can compare the stack frame
+    // arc's requested site against the site we're building to check if this 
+    // we're building an ancestor of the actual target site.
+    const bool isAncestralPayloadOfSubrootReference =
+        indexer->previousFrame &&
+        (indexer->previousFrame->arcToParent->type == PcpArcTypePayload ||
+         indexer->previousFrame->arcToParent->type == PcpArcTypeReference) &&
+        index->GetRootNode().GetSite() != indexer->previousFrame->requestedSite;
 
-    // If includedPayloads is nullptr, we never include payloads.  Otherwise if
-    // it does not have this path, we invoke the predicate.  If the predicate
-    // returns true we set the output bit includedDiscoveredPayload and we
-    // compose it.
-    if (!includedPayloads) {
-        PCP_INDEXING_MSG(indexer, node, "Payload was not included, skipping");
-        return;
-    }
-    SdfPath const &path = indexer->rootSite.path;
+    // If this payload arc is an ancestral arc of the target of a subroot 
+    // reference/payload, then we always compose this payload. This is because 
+    // this ancestral prim index is not necessarily a one that would be 
+    // present on its own in the PcpCache and there may be no explicit way to 
+    // include it. So our policy is to always include the payload in this 
+    // context.
+    //
+    // Example:
+    // Prim </A> in layer1 has a payload to another prim </B> in layer2
+    // Prim </B> has a child prim </B/C>
+    // Prim </B/C> has a payload to another prim </D> in layer3 
+    // Prim </E> on the root layer has a subroot reference to </A/C> in layer1
+    //
+    // When composing the reference arc for prim </E> we build a prim index for
+    // </A/C> which builds the ancestral prim index for </A> first. In order for
+    // </A/C> to exist, the ancestral payload for </A> to </B> must be included.
+    // Because it will be an ancestral arc of a subroot reference subgraph, the
+    // payload will always be included.
+    // 
+    // However when we continue to compose </A/C> -> </B/C> and we encounter the
+    // payload to </D>, this payload is NOT automatically included as it is a 
+    // direct arc from the subroot reference arc and can be included or excluded
+    // via including/excluding </E>
+    if (!isAncestralPayloadOfSubrootReference) {
+        const PcpPrimIndexInputs::PayloadSet* includedPayloads = 
+            indexer->inputs.includedPayloads;
 
-    // If there's a payload predicate, we invoke that to decide whether or not
-    // this payload should be included.
-    bool composePayload = false;
-    if (auto const &pred = indexer->inputs.includePayloadPredicate) {
-        composePayload = pred(path);
-        indexer->outputs->payloadState = composePayload ?
-            PcpPrimIndexOutputs::IncludedByPredicate : 
-            PcpPrimIndexOutputs::ExcludedByPredicate;
-    }
-    else {
-        tbb::spin_rw_mutex::scoped_lock lock;
-        auto *mutex = indexer->inputs.includedPayloadsMutex;
-        if (mutex) { lock.acquire(*mutex, /*write=*/false); }
-        composePayload = includedPayloads->count(path);
-        indexer->outputs->payloadState = composePayload ?
-            PcpPrimIndexOutputs::IncludedByIncludeSet : 
-            PcpPrimIndexOutputs::ExcludedByIncludeSet;
-    }
-     
-    if (!composePayload) {
-        PCP_INDEXING_MSG(indexer, node,
-                         "Payload <%s> was not included, skipping",
-                         path.GetText());
-        return;
+        // If includedPayloads is nullptr, we never include payloads.  Otherwise if
+        // it does not have this path, we invoke the predicate.  If the predicate
+        // returns true we set the output bit includedDiscoveredPayload and we
+        // compose it.
+        if (!includedPayloads) {
+            PCP_INDEXING_MSG(indexer, node, "Payload was not included, skipping");
+            return;
+        }
+        SdfPath const &path = indexer->rootSite.path;
+
+        // If there's a payload predicate, we invoke that to decide whether or not
+        // this payload should be included.
+        bool composePayload = false;
+        if (auto const &pred = indexer->inputs.includePayloadPredicate) {
+            composePayload = pred(path);
+            indexer->outputs->payloadState = composePayload ?
+                PcpPrimIndexOutputs::IncludedByPredicate : 
+                PcpPrimIndexOutputs::ExcludedByPredicate;
+        }
+        else {
+            tbb::spin_rw_mutex::scoped_lock lock;
+            auto *mutex = indexer->inputs.includedPayloadsMutex;
+            if (mutex) { lock.acquire(*mutex, /*write=*/false); }
+            composePayload = includedPayloads->count(path);
+            indexer->outputs->payloadState = composePayload ?
+                PcpPrimIndexOutputs::IncludedByIncludeSet : 
+                PcpPrimIndexOutputs::ExcludedByIncludeSet;
+        }
+         
+        if (!composePayload) {
+            PCP_INDEXING_MSG(indexer, node,
+                             "Payload <%s> was not included, skipping",
+                             path.GetText());
+            return;
+        }
     }
 
     _EvalRefOrPayloadArcs<SdfPayload, PcpArcTypePayload>(

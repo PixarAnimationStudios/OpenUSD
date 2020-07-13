@@ -469,11 +469,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # payloads. Note that the depth is one less than actually defined on 
         # /RootMulti as the reference is to a child of RootMulti.
         payloads = self._GeneratePrimIndexPaths("/Root", 2, 4, 5, payloadId=1)
-
-        # XXX: Because an outstanding bug with subroot referercing prim inside
-        # of ancestor payloads, we need to request payloads for /RootMulti as
-        # well.
-        cache.RequestPayloads(payloads + ["/RootMulti"],[])
+        cache.RequestPayloads(payloads, [])
 
         assert not cache.HasAnyDynamicFileFormatArgumentDependencies()
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius", "TestPcp_argDict"]:
@@ -523,7 +519,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # There will now be an extra dynamic payload available under root.
         # Verify that we can compute all the new prim indices.
         newPayloads = self._GeneratePrimIndexPaths("/Root", 2, 5, 6, payloadId=1)
-        cache.RequestPayloads(newPayloads + ["/RootMulti"],[])
+        cache.RequestPayloads(newPayloads, [])
         self._VerifyComputeDynamicPayloads(cache, newPayloads, hasPayloadId=True)
 
         # XXX: Todo: Add another case here for making a metadata change in 
@@ -533,6 +529,11 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # provided by params.sdf to be culled from the subroot ref tree.
 
         print ("Computing prim index for " + "/SubrootGeomRef")
+        # /SubrootGeomRef directly references a child prim of the dynamic 
+        # /RootMulti. Note that we do not have to request payloads on 
+        # /SubrootGeomRef nor /RootMulti as ancestral payloads of the target of 
+        # a subroot reference are always included.
+
         # Verify each dynamic payload's prim index is computed 
         # without errors and has dynamic file arguments
         (primIndex, err) = cache.ComputePrimIndex("/SubrootGeomRef")

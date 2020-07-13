@@ -591,5 +591,121 @@ class TestUsdPayloads(unittest.TestCase):
             self.assertTrue(stage.GetPrimAtPath("/Root").IsLoaded())
             self.assertTrue(stage.GetPrimAtPath("/Ref/Child").IsLoaded())
 
+    def test_SubrootReferencePayloads(self):
+        """Tests the behavior of subroot references to prims with both direct
+           and ancestral payloads."""
+
+        for fmt in allFormats:
+            # Layer1 prim /A
+            layer1 = Sdf.Layer.CreateAnonymous("layer1." + fmt)
+            primA = Sdf.PrimSpec(layer1, "A", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primA, "AChild", Sdf.SpecifierDef)
+
+            # Layer2, prims /B/C
+            layer2 = Sdf.Layer.CreateAnonymous("layer2." + fmt)
+            primB = Sdf.PrimSpec(layer2, "B", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primB, "BChild", Sdf.SpecifierDef)
+            primC = Sdf.PrimSpec(primB, "C", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primC, "CChild", Sdf.SpecifierDef)
+
+            # Layer3, prim /D
+            layer3 = Sdf.Layer.CreateAnonymous("layer3." + fmt)
+            primD = Sdf.PrimSpec(layer3, "D", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primD, "DChild", Sdf.SpecifierDef)
+
+            # Root layer, prim /E
+            root = Sdf.Layer.CreateAnonymous("root." + fmt)
+            primE = Sdf.PrimSpec(root, "E", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primE, "EChild", Sdf.SpecifierDef)
+
+            # Prim /A has a payload to prim /B
+            primA.payloadList.Prepend(Sdf.Payload(layer2.identifier, "/B"))
+
+            # Root prim /E has a subroot reference to /A/C which comes from /A's
+            # reference to /B
+            primE.referenceList.Prepend(Sdf.Reference(layer1.identifier, "/A/C"))
+
+            # Open the stage and get the root prim /E
+            stage = Usd.Stage.Open(root)
+            rootPrim = stage.GetPrimAtPath("/E")
+
+            # Prim /E has no payloads for load/unload. An ancestral payload arc
+            # from /A to /B is brought into the prim index with the reference
+            # arc from /E to /A/C giving the prim stack:
+            #
+            # /E (root)
+            # /A/C (ref)
+            # /B/C (ancestral payload)
+            #   
+            # But this does not mark the prim index for /E as having a payload 
+            # which is consistent with all ancestral payloads.
+            # This ancestral payload arc, that is necessary to build the subroot
+            # reference, is always included and can't be unloaded as it is not 
+            # from a loadable ancestor of /E, but rather is internal to the 
+            # subroot reference itself.
+            self.assertTrue(rootPrim)
+            self.assertFalse(rootPrim.HasPayload())
+            self.assertTrue(rootPrim.IsLoaded())
+
+            # Verify the children come from root E and referenced C.
+            self.assertEqual(rootPrim.GetChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Unload rootPrim /E and note that it can't be unloaded. Children
+            # and load state stay the same.
+            rootPrim.Unload()
+            self.assertTrue(rootPrim.IsLoaded())
+            self.assertEqual(rootPrim.GetChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Now add a payload from the prim /B/C in layer1 to the prim /D.
+            # The composed prim stack for /E will now be:
+            #
+            # /E (root)
+            # /A/C (ref)
+            # /B/C (ancestral payload)
+            # /D (payload)
+            primC.payloadList.Prepend(Sdf.Payload(layer3.identifier, "/D"))
+
+            # Root prim now DOES have a payload as the payload to /D from /B/C
+            # is a direct payload of /B/C. /E now a payload and should not be
+            # loaded 
+            rootPrim = stage.GetPrimAtPath("/E")
+            self.assertTrue(rootPrim)
+            self.assertTrue(rootPrim.HasPayload())
+            self.assertFalse(rootPrim.IsLoaded())
+
+            # Because /E is unloaded, GetChildren() returns empty, now 
+            # GetAllChildren still returns the CChild and EChild as this does 
+            # not unload the ancestral payload from the reference.
+            self.assertTrue(stage.GetPrimAtPath("/E"))
+            self.assertEqual(stage.GetPrimAtPath("/E").GetChildren(), [])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Now load /E. GetChildren() and GetAllChildren() return the same
+            # and both lists now include the DChild from the extra payload.
+            rootPrim.Load()
+            self.assertTrue(rootPrim.IsLoaded())
+            self.assertTrue(stage.GetPrimAtPath("/E"))
+            self.assertEqual(stage.GetPrimAtPath("/E").GetChildren(),
+                             [stage.GetPrimAtPath("/E/DChild"),
+                              stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/DChild"),
+                              stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+
 if __name__ == "__main__":
     unittest.main()
