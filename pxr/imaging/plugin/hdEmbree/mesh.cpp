@@ -81,20 +81,14 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
                 delete it->second;
             }
             delete _GetPrototypeContext();
+            rtcReleaseGeometry(_geometry);
+            _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
         }
-        //
-        // When the scene release it will take care of cleaning up
-        // the geometry data allocated by embree. Doesn't seem to
-        // be a need to detach it here.
-        //
+        // Note: rtcReleaseScene implicitly detaches the geometry. The
+        // geometry is refcounted, and rtcMeshScene will hold the last refcount.
         rtcReleaseScene(_rtcMeshScene);
+        _rtcMeshScene = nullptr;
     }
-
-    if(_rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
-        rtcReleaseGeometry(_geometry);
-        _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
-    }
-    _rtcMeshScene = nullptr;
 }
 
 HdDirtyBits
@@ -172,54 +166,66 @@ HdEmbreeMesh::Sync(HdSceneDelegate *sceneDelegate,
 /* static */
 void HdEmbreeMesh::_EmbreeCullFaces(const RTCFilterFunctionNArguments* args)
 {
-    // -1 = valid, 0 = invalid
-    if (*(args->valid) != -1) return;
-    // For now this only handles single Filter tests
-    if( args->N != 1 ){
-        TF_CODING_ERROR("Someone called RtcIntersectN");
+    if ( !args ) {
+        // This breaks the Embree API spec so we shouldn't get here.
+        TF_CODING_ERROR("_EmbreeCullFaces got NULL args pointer");
         return;
     }
 
-    // Pull out from args for parsing
-    const RTCRay& ray = *(const RTCRay* ) args->ray;
-    const RTCHit& hit = *(const RTCHit* ) args->hit;
-    void* userData = args->geometryUserPtr;
-
-    // Note: this is called to filter every candidate ray hit
-    // with the bound object, so this function should be fast.
-
+    // Pull out the prototype context.
     // Only HdEmbreeMesh gets HdEmbreeMesh::_EmbreeCullFaces bound
     // as an intersection filter. The filter is bound to the prototype,
     // whose context's rprim always points back to the original HdEmbreeMesh.
     HdEmbreePrototypeContext *ctx =
-        static_cast<HdEmbreePrototypeContext*>(userData);
+        static_cast<HdEmbreePrototypeContext*>(args->geometryUserPtr);
+    if (!ctx || !ctx->rprim) {
+        TF_CODING_ERROR("_EmbreeCullFaces got NULL prototype context");
+        return;
+    }
     HdEmbreeMesh *mesh = static_cast<HdEmbreeMesh*>(ctx->rprim);
 
-    // Calculate whether the provided hit is a front-face or back-face.
-    bool isFrontFace = (hit.Ng_x * ray.dir_x +
-                        hit.Ng_y * ray.dir_y +
-                        hit.Ng_z * ray.dir_z) > 0;
+    // Note: this is called to filter every candidate ray hit
+    // with the bound object, so this function should be fast.
+    for (unsigned int i = 0; i < args->N; ++i) {
+        // -1 = valid, 0 = invalid.
+        // If it's already been marked invalid, skip our own opinion.
+        if (args->valid[i] != -1) {
+            continue;
+        }
 
-    // Determine if we should ignore this hit. HdCullStyleBack means
-    // cull back faces.
-    bool cull = false;
-    switch(mesh->_cullStyle) {
-        case HdCullStyleBack:
-            cull = !isFrontFace; break;
-        case HdCullStyleFront:
-            cull =  isFrontFace; break;
+        // Calculate whether the provided hit is a front-face or back-face.
+        // This is verbose because of SOA struct access, but it's just
+        // dot(hit.Ng, ray.dir).
+        bool isFrontFace = (
+            RTCHitN_Ng_x(args->hit, args->N, i) *
+                RTCRayN_dir_x(args->ray, args->N, i) +
+            RTCHitN_Ng_y(args->hit, args->N, i) *
+                RTCRayN_dir_y(args->ray, args->N, i) +
+            RTCHitN_Ng_z(args->hit, args->N, i) *
+                RTCRayN_dir_z(args->ray, args->N, i)
+            ) > 0;
 
-        case HdCullStyleBackUnlessDoubleSided:
-            cull = !isFrontFace && !mesh->_doubleSided; break;
-        case HdCullStyleFrontUnlessDoubleSided:
-            cull =  isFrontFace && !mesh->_doubleSided; break;
+        // Determine if we should ignore this hit. HdCullStyleBack means
+        // cull back faces.
+        bool cull = false;
+        switch(mesh->_cullStyle) {
+            case HdCullStyleBack:
+                cull = !isFrontFace; break;
+            case HdCullStyleFront:
+                cull =  isFrontFace; break;
 
-        default: break;
-    }
-    if (cull) {
-        // This is how you reject a hit in embree3 instead of setting
-        // geomId to invalid on the ray
-        *(args->valid) = 0;
+            case HdCullStyleBackUnlessDoubleSided:
+                cull = !isFrontFace && !mesh->_doubleSided; break;
+            case HdCullStyleFrontUnlessDoubleSided:
+                cull =  isFrontFace && !mesh->_doubleSided; break;
+
+            default: break;
+        }
+        if (cull) {
+            // This is how you reject a hit in embree3 instead of setting
+            // geomId to invalid on the ray
+            args->valid[i] = 0;
+        }
     }
 }
 
@@ -676,14 +682,14 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         newMesh = true;
 
         // Destroy the old mesh, if it exists.
-        if (_rtcMeshScene != nullptr &&
-            _rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
+        if (_rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
             // Delete the prototype context first...
             TF_FOR_ALL(it, _GetPrototypeContext()->primvarMap) {
                 delete it->second;
             }
             delete _GetPrototypeContext();
             // then the prototype geometry.
+            rtcDetachGeometry(_rtcMeshScene, _rtcMeshId);
             rtcReleaseGeometry(_geometry);
             _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
         }
