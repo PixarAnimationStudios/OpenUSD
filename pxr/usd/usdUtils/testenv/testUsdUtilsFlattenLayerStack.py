@@ -136,8 +136,14 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
                 resolveAssetPathFn=replaceWithFoo)
         result_stage = Usd.Stage.Open(layer)
 
-        # Confirm clip asset paths have been updated.
+        # Confirm offsets have been folded into value clips.
         p = layer.GetPrimAtPath('/SphereUsingClip')
+        self.assertEqual( p.GetInfo('clips')['default']['active'],
+           Vt.Vec2dArray(1, [(-9.0, 0)]) )
+        self.assertEqual( p.GetInfo('clips')['default']['times'],
+           Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
+
+        # And confirm clip asset paths have been updated.
         self.assertEqual( p.GetInfo('clips')['default']['manifestAssetPath'],
            Sdf.AssetPath('foo') )
         self.assertEqual( list(p.GetInfo('clips')['default']['assetPaths']),
