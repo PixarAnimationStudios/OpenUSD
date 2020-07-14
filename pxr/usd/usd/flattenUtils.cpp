@@ -247,8 +247,9 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
                 const std::string& clipSetName = entry.first;
                 VtValue& clipInfoVal = entry.second;
                 if (!clipInfoVal.IsHolding<VtDictionary>()) {
-                    TF_WARN("Expected dictionary for entry '%s' in 'clips'",
-                            clipSetName.c_str());
+                    // No point is adding a warning here, as if we hit this
+                    // condition here, we will also hit it in _FixAssetPaths
+                    // which will generate the warning.
                     continue;
                 }
                 VtDictionary clipInfo =
@@ -392,6 +393,39 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
                     resolveAssetPathFn, sourceLayer, std::placeholders::_1));
         val->Swap(pls);
         return;
+    }
+    else if (field == UsdTokens->clips) {
+        if (val->IsHolding<VtDictionary>()) {
+            VtDictionary clips = val->UncheckedGet<VtDictionary>();
+            for (auto &entry: clips) {
+                const std::string& clipSetName = entry.first;
+                VtValue& clipInfoVal = entry.second;
+                if (!clipInfoVal.IsHolding<VtDictionary>()) {
+                    TF_WARN("Expected dictionary for entry '%s' in 'clips'",
+                            clipSetName.c_str());
+                    continue;
+                }
+                VtDictionary clipInfo =
+                    clipInfoVal.UncheckedGet<VtDictionary>();
+                VtValue* v;
+                v = TfMapLookupPtr(clipInfo,
+                    UsdClipsAPIInfoKeys->assetPaths);
+                if (v && v->IsHolding<VtArray<SdfAssetPath>>()) {
+                    _FixAssetPaths(sourceLayer,
+                        UsdClipsAPIInfoKeys->assetPaths,
+                        resolveAssetPathFn, v);
+                }
+                v = TfMapLookupPtr(clipInfo,
+                    UsdClipsAPIInfoKeys->manifestAssetPath);
+                if (v && v->IsHolding<SdfAssetPath>()) {
+                    _FixAssetPaths(sourceLayer,
+                        UsdClipsAPIInfoKeys->manifestAssetPath,
+                        resolveAssetPathFn, v);
+                }
+                clipInfoVal = VtValue(clipInfo);
+            }
+            val->Swap(clips);
+        }
     }
 }
 
