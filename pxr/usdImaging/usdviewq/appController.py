@@ -4574,23 +4574,32 @@ class AppController(QtCore.QObject):
                             prim = model
                         instanceIndex = ALL_INSTANCES
 
-                    # Prim picking selects the top level boundable: either a
-                    # gprim, or the top-level point instancer of a point
-                    # instanced gprim.  It discards the instance index.
+                    # Prim picking selects the top level boundable: either the
+                    # gprim, the top-level point instancer (if it's point
+                    # instanced), or the top level USD instance (if it's marked
+                    # instantiable), whichever is closer to namespace root.
+                    # It discards the instance index.
                     elif self._dataModel.viewSettings.pickMode == PickModes.PRIMS:
                         topLevelPrim = self._dataModel.stage.GetPrimAtPath(topLevelPath)
                         if topLevelPrim:
                             prim = topLevelPrim
+                        while prim.IsInstanceProxy():
+                            prim = prim.GetParent()
                         instanceIndex = ALL_INSTANCES
 
-                    # Instance picking is like prim picking, but selects a
-                    # particular instance of the top-level point instancer
-                    # (if applicable).
+                    # Instance picking selects the top level boundable, like
+                    # prim picking; but if that prim is a point instancer or
+                    # a USD instance, it selects the particular instance
+                    # containing the picked object.
                     elif self._dataModel.viewSettings.pickMode == PickModes.INSTANCES:
                         topLevelPrim = self._dataModel.stage.GetPrimAtPath(topLevelPath)
                         if topLevelPrim:
                             prim = topLevelPrim
                             instanceIndex = topLevelInstanceIndex
+                        if prim.IsInstanceProxy():
+                            while prim.IsInstanceProxy():
+                                prim = prim.GetParent()
+                            instanceIndex = ALL_INSTANCES
 
                     # Prototype picking selects a specific instance of the
                     # actual picked gprim, if the gprim is point-instanced.
