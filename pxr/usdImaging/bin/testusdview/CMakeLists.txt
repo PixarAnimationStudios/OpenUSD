@@ -13,210 +13,210 @@ pxr_python_bin(testusdview
 if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_install_test_dir(
         SRC testenv/testUsdviewAlive
-        DEST testusdviewAlive
+        DEST testUsdviewAlive
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments1
+        DEST testUsdviewFileArguments1
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments2
+        DEST testUsdviewFileArguments2
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments3
+        DEST testUsdviewFileArguments3
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments4
+        DEST testUsdviewFileArguments4
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments5
+        DEST testUsdviewFileArguments5
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments6
+        DEST testUsdviewFileArguments6
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewFileArguments
-        DEST testusdviewFileArguments7
+        DEST testUsdviewFileArguments7
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
-        DEST testusdviewWrapper1
+        DEST testUsdviewWrapper1
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
-        DEST testusdviewWrapper2
+        DEST testUsdviewWrapper2
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
-        DEST testusdviewWrapper3
+        DEST testUsdviewWrapper3
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
-        DEST testusdviewWrapper4
+        DEST testUsdviewWrapper4
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
-        DEST testusdviewWrapper5
+        DEST testUsdviewWrapper5
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewPrimPathBar
-        DEST testusdviewPrimPathBar
+        DEST testUsdviewPrimPathBar
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewPrimSearch
-        DEST testusdviewPrimSearch
+        DEST testUsdviewPrimSearch
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewPropertySearch
-        DEST testusdviewPropertySearch
+        DEST testUsdviewPropertySearch
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewMetadatatabSelect
-        DEST testusdviewMetadatatabSelect
+        DEST testUsdviewMetadatatabSelect
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewTimeSamples
-        DEST testusdviewTimeSamples
+        DEST testUsdviewTimeSamples
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewNavigationKeys
-        DEST testusdviewNavigationKeys
+        DEST testUsdviewNavigationKeys
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewReloadReopen
-        DEST testusdviewReloadReopen
+        DEST testUsdviewReloadReopen
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewNoPlugins
-        DEST testusdviewNoPlugins
+        DEST testUsdviewNoPlugins
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewInterpreterNoRender
-        DEST testusdviewInterpreterNoRender
+        DEST testUsdviewInterpreterNoRender
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewLoadPlugins
-        DEST testusdviewLoadPlugins_alive
+        DEST testUsdviewLoadPlugins_alive
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewLoadPlugins
-        DEST testusdviewLoadPlugins_multipleContainers
+        DEST testUsdviewLoadPlugins_multipleContainers
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewLoadPlugins
-        DEST testusdviewLoadPlugins_missingContainer
+        DEST testUsdviewLoadPlugins_missingContainer
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewLoadPlugins
-        DEST testusdviewLoadPlugins_duplicateCommand
+        DEST testUsdviewLoadPlugins_duplicateCommand
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewLoadPlugins
-        DEST testusdviewLoadPlugins_chained
+        DEST testUsdviewLoadPlugins_chained
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewUpAxis
-        DEST testusdviewUpAxis_zUp
+        DEST testUsdviewUpAxis_zUp
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewUpAxis
-        DEST testusdviewUpAxis_yUp
+        DEST testUsdviewUpAxis_yUp
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewDeactivate
-        DEST testusdviewDeactivate
+        DEST testUsdviewDeactivate
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewSkinning
-        DEST testusdviewSkinning
+        DEST testUsdviewSkinning
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewPrimTreeExpansion
-        DEST testusdviewPrimTreeExpansion
+        DEST testUsdviewPrimTreeExpansion
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewInfGeom
-        DEST testusdviewInfGeom
+        DEST testUsdviewInfGeom
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewShaderEdits
-        DEST testusdviewShaderEdits
+        DEST testUsdviewShaderEdits
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewPrimvarEdits
-        DEST testusdviewPrimvarEdits
+        DEST testUsdviewPrimvarEdits
     )
 
     pxr_install_test_dir(
         SRC testenv/testUsdviewInstancingEdits
-        DEST testusdviewInstancingEdits
+        DEST testUsdviewInstancingEdits
     )
 
-    pxr_register_test(testusdviewAlive                                               
+    pxr_register_test(testUsdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testAlive.py test.usda"   
         EXPECTED_RETURN_CODE 0                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments1
+    pxr_register_test(testUsdviewFileArguments1
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usda" 
         EXPECTED_RETURN_CODE 0                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments2
+    pxr_register_test(testUsdviewFileArguments2
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usd" 
         EXPECTED_RETURN_CODE 0                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments3
+    pxr_register_test(testUsdviewFileArguments3
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usdc" 
         EXPECTED_RETURN_CODE 0                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments4
+    pxr_register_test(testUsdviewFileArguments4
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py test.py" 
         STDERR_REDIRECT py_test_out
@@ -224,7 +224,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 1                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments5
+    pxr_register_test(testUsdviewFileArguments5
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda" 
         CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
@@ -233,7 +233,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 1 
     )
 
-    pxr_register_test(testusdviewFileArguments6
+    pxr_register_test(testUsdviewFileArguments6
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py test.txt" 
         STDERR_REDIRECT txt_test_out
@@ -241,7 +241,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 1                                                       
     )
 
-    pxr_register_test(testusdviewFileArguments7
+    pxr_register_test(testUsdviewFileArguments7
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py missing" 
         STDERR_REDIRECT missing_test_out
@@ -249,170 +249,170 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 1                                                       
     )
 
-    pxr_register_test(testusdviewWrapper1
+    pxr_register_test(testUsdviewWrapper1
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback.py"
         EXPECTED_RETURN_CODE 2
     )
 
-    pxr_register_test(testusdviewWrapper2
+    pxr_register_test(testUsdviewWrapper2
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_1.py test.usda"
         EXPECTED_RETURN_CODE 1
     )
 
-    pxr_register_test(testusdviewWrapper3
+    pxr_register_test(testUsdviewWrapper3
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_2.py test.usda"
         EXPECTED_RETURN_CODE 1
     )
 
-    pxr_register_test(testusdviewWrapper4
+    pxr_register_test(testUsdviewWrapper4
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_3.py test.usda"
         EXPECTED_RETURN_CODE 1
     )
 
-    pxr_register_test(testusdviewWrapper5
+    pxr_register_test(testUsdviewWrapper5
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview test.usda"
         EXPECTED_RETURN_CODE 2
     )
 
-    pxr_register_test(testusdviewPrimPathBar
+    pxr_register_test(testUsdviewPrimPathBar
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimPathBar.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewPrimSearch
+    pxr_register_test(testUsdviewPrimSearch
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimSearch.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewPropertySearch
+    pxr_register_test(testUsdviewPropertySearch
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPropertySearch.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewMetadatatabSelect
+    pxr_register_test(testUsdviewMetadatatabSelect
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMetadatatabSelect.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewTimeSamples
+    pxr_register_test(testUsdviewTimeSamples
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewTimeSamples.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewNavigationKeys
+    pxr_register_test(testUsdviewNavigationKeys
         RUN_SERIAL
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNavigationKeys.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewReloadReopen
+    pxr_register_test(testUsdviewReloadReopen
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewReloadReopen.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewNoPlugins
+    pxr_register_test(testUsdviewNoPlugins
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNoPlugins.py --noplugins test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewInterpreterNoRender
+    pxr_register_test(testUsdviewInterpreterNoRender
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInterpreterNoRender.py --norender test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewLoadPlugins_alive
+    pxr_register_test(testUsdviewLoadPlugins_alive
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_alive.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewLoadPlugins_multipleContainers
+    pxr_register_test(testUsdviewLoadPlugins_multipleContainers
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_multipleContainers.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewLoadPlugins_missingContainer
+    pxr_register_test(testUsdviewLoadPlugins_missingContainer
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_missingContainer.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewLoadPlugins_duplicateCommand
+    pxr_register_test(testUsdviewLoadPlugins_duplicateCommand
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_duplicateCommand.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewLoadPlugins_chained
+    pxr_register_test(testUsdviewLoadPlugins_chained
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_chained.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewUpAxis_zUp
+    pxr_register_test(testUsdviewUpAxis_zUp
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_zUp.py testZUp.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewUpAxis_yUp
+    pxr_register_test(testUsdviewUpAxis_yUp
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_yUp.py testYUp.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewDeactivate
+    pxr_register_test(testUsdviewDeactivate
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDeactivate.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewSkinning
+    pxr_register_test(testUsdviewSkinning
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSkinning.py arm.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewPrimTreeExpansion
+    pxr_register_test(testUsdviewPrimTreeExpansion
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimTreeExpansion.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewInfGeom
+    pxr_register_test(testUsdviewInfGeom
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInfGeom.py infGeom.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewShaderEdits
+    pxr_register_test(testUsdviewShaderEdits
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewShaderEdits.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     
-    pxr_register_test(testusdviewPrimvarEdits
+    pxr_register_test(testUsdviewPrimvarEdits
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimvarEdits.py primvars.usda"
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testusdviewInstancingEdits
+    pxr_register_test(testUsdviewInstancingEdits
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
         EXPECTED_RETURN_CODE 0
