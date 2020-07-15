@@ -132,15 +132,19 @@ HgiGLGraphicsCmds::DrawIndexed(
 void
 HgiGLGraphicsCmds::PushDebugGroup(const char* label)
 {
-    _pushStack++;
-    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    if (HgiGLDebugEnabled()) {
+        _pushStack++;
+        _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    }
 }
 
 void
 HgiGLGraphicsCmds::PopDebugGroup()
 {
-    _pushStack--;
-    _ops.push_back( HgiGLOps::PopDebugGroup() );
+    if (HgiGLDebugEnabled()) {
+        _pushStack--;
+        _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
 }
 
 bool

@@ -80,15 +80,19 @@ HgiGLComputeCmds::Dispatch(int dimX, int dimY)
 void
 HgiGLComputeCmds::PushDebugGroup(const char* label)
 {
-    _pushStack++;
-    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    if (HgiGLDebugEnabled()) {
+        _pushStack++;
+        _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    }
 }
 
 void
 HgiGLComputeCmds::PopDebugGroup()
 {
-    _pushStack--;
-    _ops.push_back( HgiGLOps::PopDebugGroup() );
+    if (HgiGLDebugEnabled()) {
+        _pushStack--;
+        _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
 }
 
 bool

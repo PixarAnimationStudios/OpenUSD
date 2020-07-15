@@ -46,15 +46,19 @@ HgiGLBlitCmds::~HgiGLBlitCmds() = default;
 void
 HgiGLBlitCmds::PushDebugGroup(const char* label)
 {
-    _pushStack++;
-    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    if (HgiGLDebugEnabled()) {
+        _pushStack++;
+        _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    }
 }
 
 void
 HgiGLBlitCmds::PopDebugGroup()
 {
-    _pushStack--;
-    _ops.push_back( HgiGLOps::PopDebugGroup() );
+    if (HgiGLDebugEnabled()) {
+        _pushStack--;
+        _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
 }
 
 void
