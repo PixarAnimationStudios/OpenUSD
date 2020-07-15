@@ -304,9 +304,6 @@ enum HgiPipelineType
 /// <li>HgiBindResourceTypeSampler:
 ///   Sampler.
 ///   Glsl example: uniform sampler samplerOnly</li>
-/// <li>HgiBindResourceTypeCombinedImageSampler:
-///   Image and sampler combined in one.
-///   Glsl example: uniform sampler2D combined</li>
 /// <li>HgiBindResourceTypeSamplerImage:
 ///   Image for use with sampling ops.
 ///   Glsl example: uniform texture2D textureOnly
@@ -322,7 +319,6 @@ enum HgiPipelineType
 enum HgiBindResourceType
 {
     HgiBindResourceTypeSampler = 0,
-    HgiBindResourceTypeCombinedImageSampler,
     HgiBindResourceTypeSamplerImage,
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,

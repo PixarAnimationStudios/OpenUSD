@@ -57,6 +57,7 @@ HdxFullscreenShader::HdxFullscreenShader(
     , _shaderProgram()
     , _resourceBindings()
     , _pipeline()
+    , _sampler()
     , _blendingEnabled(false)
     , _srcColorBlendFactor(HgiBlendFactorZero)
     , _dstColorBlendFactor(HgiBlendFactorZero)
@@ -106,6 +107,10 @@ HdxFullscreenShader::~HdxFullscreenShader()
 
     if (_pipeline) {
         _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    if (_sampler) {
+        _hgi->DestroySampler(&_sampler);
     }
 }
 
@@ -319,9 +324,9 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         if (!texHandle) continue;
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
-        texBind.resourceType = HgiBindResourceTypeCombinedImageSampler;
         texBind.stageUsage = HgiShaderStageFragment;
         texBind.textures.push_back(texHandle);
+        texBind.samplers.push_back(_sampler);
         resourceDesc.textures.emplace_back(std::move(texBind));
     }
 
@@ -447,6 +452,27 @@ HdxFullscreenShader::_CreatePipeline(
     return true;
 }
 
+bool
+HdxFullscreenShader::_CreateSampler()
+{
+    if (_sampler) {
+        return true;
+    }
+
+    HgiSamplerDesc sampDesc;
+
+    sampDesc.magFilter = HgiSamplerFilterLinear;
+    sampDesc.minFilter = HgiSamplerFilterLinear;
+
+    sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
+    sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
+
+    _sampler = _hgi->CreateSampler(sampDesc);
+
+    return true;
+}
+
+
 void
 HdxFullscreenShader::Draw(
     HgiTextureHandle const& colorDst,
@@ -487,6 +513,9 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
+
+    // create a default texture sampler (first time)
+    _CreateSampler();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);

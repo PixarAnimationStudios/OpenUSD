@@ -62,11 +62,9 @@ HgiGLResourceBindings::BindResources()
         HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(texHandle.Get());
         textures[texDesc.bindingIndex] = glTexture->GetTextureId();
 
-        if (!texDesc.samplers.empty()) {
-            HgiSamplerHandle const& smpHandle = texDesc.samplers.front();
-            HgiGLSampler* glSmp = static_cast<HgiGLSampler*>(smpHandle.Get());
-            samplers[texDesc.bindingIndex] = glSmp->GetSamplerId();
-        }
+        HgiSamplerHandle const& smpHandle = texDesc.samplers.front();
+        HgiGLSampler* glSmp = static_cast<HgiGLSampler*>(smpHandle.Get());
+        samplers[texDesc.bindingIndex] = glSmp->GetSamplerId();
     }
 
     if (!textures.empty()) {

@@ -94,6 +94,9 @@ private:
     // Utility to create a pipeline
     bool _CreatePipeline(HgiTextureHandle const& aovTexture);
 
+    // Utility to create a texture sampler
+    bool _CreateSampler();
+
     // Apply color correction to the currently bound framebuffer.
     void _ApplyColorCorrection(HgiTextureHandle const& aovTexture);
 
@@ -107,6 +110,7 @@ private:
     HgiBufferHandle _indexBuffer;
     HgiBufferHandle _vertexBuffer;
     HgiTextureHandle _texture3dLUT;
+    HgiSamplerHandle _sampler;
     HgiShaderProgramHandle _shaderProgram;
     HgiResourceBindingsHandle _resourceBindings;
     HgiGraphicsPipelineHandle _pipeline;
