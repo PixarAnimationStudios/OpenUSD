@@ -1740,10 +1740,14 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         // has a value, we're responding to "AddSelected(/World/PI, N)";
         // we can treat it as an instance index for this PI, rather than
         // treating it as an absolute instance index for an rprim.
-        if (usdPrim.GetPath() == cachePath.GetAbsoluteRootOrPrimPath()) {
+        // (/World/PI, -1) still corresponds to select-all-instances.
+        if (usdPrim.GetPath() == cachePath.GetAbsoluteRootOrPrimPath() &&
+            hydraInstanceIndex != -1) {
             // "N" here refers to the instance index in the protoIndices array,
             // which may be different than the actual hydra index, so we need
             // to find the correct prototype/instance pair.
+
+            bool added = false;
             for (auto const& pair : instrData->protoPrimMap) {
                 VtIntArray const& indices =
                     instanceMap[pair.second.protoRootPath];
@@ -1769,10 +1773,11 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
                 UsdPrim selectionPrim =
                     _GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
 
-                return pair.second.adapter->PopulateSelection(
+                added |= pair.second.adapter->PopulateSelection(
                     highlightMode, pair.first, selectionPrim,
                     -1, instanceIndices, result);
             }
+            return added;
         }
 
         bool added = false;
