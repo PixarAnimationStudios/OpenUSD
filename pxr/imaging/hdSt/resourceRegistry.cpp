@@ -610,6 +610,27 @@ HdStResourceRegistry::FindTextureResourceHandle(
     return _textureResourceHandleRegistry.FindInstance(id, found);
 }
 
+HdInstance<HgiResourceBindingsSharedPtr>
+HdStResourceRegistry::RegisterResourceBindings(
+    HdInstance<HgiResourceBindingsSharedPtr>::ID id)
+{
+    return _resourceBindingsRegistry.GetInstance(id);
+}
+
+HdInstance<HgiGraphicsPipelineSharedPtr>
+HdStResourceRegistry::RegisterGraphicsPipeline(
+    HdInstance<HgiGraphicsPipelineSharedPtr>::ID id)
+{
+    return _graphicsPipelineRegistry.GetInstance(id);
+}
+
+HdInstance<HgiComputePipelineSharedPtr>
+HdStResourceRegistry::RegisterComputePipeline(
+    HdInstance<HgiComputePipelineSharedPtr>::ID id)
+{
+    return _computePipelineRegistry.GetInstance(id);
+}
+
 std::ostream &operator <<(
     std::ostream &out,
     const HdStResourceRegistry& self)
@@ -871,6 +892,11 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _textureResourceHandleRegistry.GarbageCollect();
+
+    // Cleanup Hgi resources bindings and pipelines
+    _resourceBindingsRegistry.GarbageCollect();
+    _graphicsPipelineRegistry.GarbageCollect();
+    _computePipelineRegistry.GarbageCollect();
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be

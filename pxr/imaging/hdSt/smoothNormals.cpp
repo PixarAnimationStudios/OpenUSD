@@ -44,9 +44,69 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HgiResourceBindingsSharedPtr
+_CreateResourceBindings(
+    Hgi* hgi,
+    HgiBufferHandle const& points,
+    HgiBufferHandle const& normals,
+    HgiBufferHandle const& adjacency)
+{
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "SmoothNormals";
+    resourceDesc.pipelineType = HgiPipelineTypeCompute;
+
+    if (points) {
+        HgiBufferBindDesc bufBind0;
+        bufBind0.bindingIndex = 0;
+        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.offsets.push_back(0);
+        bufBind0.buffers.push_back(points);
+        resourceDesc.buffers.push_back(std::move(bufBind0));
+    }
+
+    if (normals) {
+        HgiBufferBindDesc bufBind1;
+        bufBind1.bindingIndex = 1;
+        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.offsets.push_back(0);
+        bufBind1.buffers.push_back(normals);
+        resourceDesc.buffers.push_back(std::move(bufBind1));
+    }
+
+    if (adjacency) {
+        HgiBufferBindDesc bufBind2;
+        bufBind2.bindingIndex = 2;
+        bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.offsets.push_back(0);
+        bufBind2.buffers.push_back(adjacency);
+        resourceDesc.buffers.push_back(std::move(bufBind2));
+    }
+
+    return std::make_shared<HgiResourceBindingsHandle>(
+        hgi->CreateResourceBindings(resourceDesc));
+}
+
+static HgiComputePipelineSharedPtr
+_CreatePipeline(
+    Hgi* hgi,
+    uint32_t constantValuesSize,
+    HgiShaderProgramHandle const& program)
+{
+    HgiComputePipelineDesc desc;
+    desc.debugName = "SmoothNormals";
+    desc.shaderProgram = program;
+    desc.shaderConstantsDesc.byteSize = constantValuesSize;
+    return std::make_shared<HgiComputePipelineHandle>(
+        hgi->CreateComputePipeline(desc));
+}
 
 HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
     Hd_VertexAdjacency const *adjacency,
@@ -162,58 +222,46 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 
-    // XXX We create a hgi pipeline and resource bindings on-the-fly here and
-    // destroy it when done. This won't affect HgiGL, but will be less ideal
-    // for Metal/Vulkan. We may want to cache these on HdStResourceRegistry.
-    // We may also want to share the ComputeCmds across multiple computations
-    // to have a more efficient command buffer submission.
+    // Generate hash for resource bindings and pipeline.
+    // XXX Needs fingerprint hash to avoid collisions
+    uint64_t rbHash = (uint64_t) TfHash::Combine(
+        points->GetId().Get(),
+        normals->GetId().Get(),
+        adjacency->GetId().Get());
 
-    HgiComputePipelineDesc desc;
-    desc.debugName = "SmoothNormals";
-    desc.shaderProgram = computeProgram->GetProgram();
-    desc.shaderConstantsDesc.byteSize = sizeof(uniform);
-    HgiComputePipelineHandle pipeline = hgi->CreateComputePipeline(desc);
+    uint64_t pHash = (uint64_t) TfHash::Combine(
+        HgiPipelineTypeCompute,
+        computeProgram->GetProgram().Get(),
+        sizeof(uniform));
 
-    // Begin the resource set
-    HgiResourceBindingsDesc resourceDesc;
-    resourceDesc.debugName = "SmoothNormals";
-    resourceDesc.pipelineType = HgiPipelineTypeCompute;
-
-    if (points->GetId()) {
-        HgiBufferBindDesc bufBind0;
-        bufBind0.bindingIndex = 0;
-        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
-        bufBind0.stageUsage = HgiShaderStageCompute;
-        bufBind0.offsets.push_back(0);
-        bufBind0.buffers.push_back(points->GetId());
-        resourceDesc.buffers.push_back(std::move(bufBind0));
+    // Get or add resource bindings in registry.
+    HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
+        hdStResourceRegistry->RegisterResourceBindings(rbHash);
+    if (resourceBindingsInstance.IsFirstInstance()) {
+        HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
+            hgi, points->GetId(), normals->GetId(), adjacency->GetId());
+        resourceBindingsInstance.SetValue(rb);
     }
 
-    if (normals->GetId()) {
-        HgiBufferBindDesc bufBind1;
-        bufBind1.bindingIndex = 1;
-        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
-        bufBind1.stageUsage = HgiShaderStageCompute;
-        bufBind1.offsets.push_back(0);
-        bufBind1.buffers.push_back(normals->GetId());
-        resourceDesc.buffers.push_back(std::move(bufBind1));
+    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+        resourceBindingsInstance.GetValue();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+
+    // Get or add pipeline in registry.
+    HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
+        hdStResourceRegistry->RegisterComputePipeline(pHash);
+    if (computePipelineInstance.IsFirstInstance()) {
+        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+            hgi, sizeof(uniform), computeProgram->GetProgram());
+        computePipelineInstance.SetValue(pipe);
     }
 
-    if (adjacency->GetId()) {
-        HgiBufferBindDesc bufBind2;
-        bufBind2.bindingIndex = 2;
-        bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
-        bufBind2.stageUsage = HgiShaderStageCompute;
-        bufBind2.offsets.push_back(0);
-        bufBind2.buffers.push_back(adjacency->GetId());
-        resourceDesc.buffers.push_back(std::move(bufBind2));
-    }
-
-    HgiResourceBindingsHandle resourceBindings =
-        hgi->CreateResourceBindings(resourceDesc);
+    HgiComputePipelineSharedPtr const& pipelinePtr =
+        computePipelineInstance.GetValue();
+    HgiComputePipelineHandle pipeline = *pipelinePtr.get();
 
     HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
-    computeCmds->PushDebugGroup("Smooth Normals Encoder");
+    computeCmds->PushDebugGroup("Smooth Normals Cmds");
     computeCmds->BindResources(resourceBindings);
     computeCmds->BindPipeline(pipeline);
 
@@ -226,9 +274,6 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     // submit the work
     computeCmds->PopDebugGroup();
     hgi->SubmitCmds(computeCmds.get());
-    
-    hgi->DestroyComputePipeline(&pipeline);
-    hgi->DestroyResourceBindings(&resourceBindings);
 }
 
 void
