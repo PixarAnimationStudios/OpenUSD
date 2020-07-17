@@ -334,6 +334,22 @@ struct {
     {HgiMipFilterLinear,       MTLSamplerMipFilterLinear}
 };
 
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
+    || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+struct {
+    HgiComponentSwizzle hgiComponentSwizzle;
+    MTLTextureSwizzle metalCS;
+} static const _componentSwizzleTable[HgiComponentSwizzleCount] =
+{
+    {HgiComponentSwizzleZero, MTLTextureSwizzleZero},
+    {HgiComponentSwizzleOne,  MTLTextureSwizzleOne},
+    {HgiComponentSwizzleR,    MTLTextureSwizzleRed},
+    {HgiComponentSwizzleG,    MTLTextureSwizzleGreen},
+    {HgiComponentSwizzleB,    MTLTextureSwizzleBlue},
+    {HgiComponentSwizzleA,    MTLTextureSwizzleAlpha}
+};
+#endif
+
 MTLPixelFormat
 HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
 {
@@ -445,5 +461,14 @@ HgiMetalConversions::GetMipFilter(HgiMipFilter mf)
 {
     return _mipFilterTable[mf].metalMF;
 }
+
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
+    || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+MTLTextureSwizzle
+HgiMetalConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
+{
+    return _componentSwizzleTable[componentSwizzle].metalCS;
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

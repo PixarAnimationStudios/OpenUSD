@@ -85,6 +85,12 @@ public:
 
     HGIMETAL_API
     static MTLSamplerMipFilter GetMipFilter(HgiMipFilter mf);
+
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
+    || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+    HGIMETAL_API
+    static MTLTextureSwizzle GetComponentSwizzle(HgiComponentSwizzle);
+#endif
 };
 
 

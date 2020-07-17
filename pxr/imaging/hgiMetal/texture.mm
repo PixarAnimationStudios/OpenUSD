@@ -96,11 +96,20 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
             size_t numChannels = HgiGetComponentCount(desc.format);
 
             if (usage == MTLTextureUsageShaderRead && numChannels == 1) {
+                MTLTextureSwizzle s = HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.r);
+                texDesc.swizzle = MTLTextureSwizzleChannelsMake(s, s, s, s);
+            }
+            else {
                 texDesc.swizzle = MTLTextureSwizzleChannelsMake(
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleOne);
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.r),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.g),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.b),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.a));
             }
         }
 #endif
