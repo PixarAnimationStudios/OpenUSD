@@ -163,19 +163,19 @@ SdrShaderNode::GetDefaultInput() const
     return nullptr;
 }
 
-const std::string&
+std::string
 SdrShaderNode::GetHelp() const
 {
     return StringVal(SdrNodeMetadata->Help, _metadata);
 }
 
-const std::string&
+std::string
 SdrShaderNode::GetImplementationName() const
 {
     return StringVal(SdrNodeMetadata->ImplementationName, _metadata, GetName());
 }
 
-const std::string&
+std::string
 SdrShaderNode::GetRole() const
 {
     return StringVal(SdrNodeMetadata->Role, _metadata, GetName());

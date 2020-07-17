@@ -81,15 +81,14 @@ void wrapShaderProperty()
     class_<This, ThisPtr, bases<NdrProperty>,
            boost::noncopyable>("ShaderProperty", no_init)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
-        .def("GetHelp", &This::GetHelp, copyRefPolicy)
+        .def("GetHelp", &This::GetHelp)
         .def("GetPage", &This::GetPage, copyRefPolicy)
         .def("GetWidget", &This::GetWidget, copyRefPolicy)
         .def("GetHints", &This::GetHints,
             return_value_policy<TfPyMapToDictionary>())
         .def("GetOptions", &This::GetOptions,
             return_value_policy<TfPySequenceToList>())
-        .def("GetImplementationName",
-            &This::GetImplementationName, copyRefPolicy)
+        .def("GetImplementationName", &This::GetImplementationName)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
         .def("GetVStructConditionalExpr",
