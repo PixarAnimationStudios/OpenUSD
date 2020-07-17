@@ -411,6 +411,28 @@ _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
                 glType);
             return HgiFormatInvalid;
         }
+    case GL_COMPRESSED_RGBA_BPTC_UNORM:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            return _CheckValid<HgiFormatBC7UNorm8Vec4>();
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGBA_BPTC_UNORM 0x%04x",
+                glType);
+            return HgiFormatInvalid;
+        }
+    case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            return _CheckValid<HgiFormatBC7UNorm8Vec4srgb>();
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM 0x%04x",
+                glType);
+            return HgiFormatInvalid;
+        }
     default:
         TF_CODING_ERROR("Unsupported texture format 0x%04x 0x%04x",
                         glFormat, glType);

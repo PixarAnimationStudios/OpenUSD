@@ -60,10 +60,13 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatRGBA32Sint,   // HgiFormatInt32Vec4,
     
     //MTLPixelFormatRGB8Unorm_sRGB, // Unsupported by HgiFormat
-    MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4sRGB,
+    MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4srgb,
 
     MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
     MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
+
+    MTLPixelFormatBC7_RGBAUnorm,      // HgiFormatBC7UNorm8Vec4
+    MTLPixelFormatBC7_RGBAUnorm_sRGB, // HgiFormatBC7UNorm8Vec4srgb
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
     
@@ -119,6 +122,9 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
 
     MTLVertexFormatInvalid,             // HgiFormatBC6FloatVec3
     MTLVertexFormatInvalid,             // HgiFormatBC6UFloatVec3
+
+    MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4
+    MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4srgb
 
     MTLVertexFormatInvalid,             // HgiFormatFloat32UInt8
 };
