@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hgiGL/scopedStateHolder.h"
 #include "pxr/imaging/hgiGL/conversions.h"
@@ -137,6 +138,9 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
     } else {
         glDisable(GL_RASTERIZER_DISCARD);
     }
+
+    static const GLuint samplers[8] = {0};
+    glBindSamplers(0, TfArraySize(samplers), samplers);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
