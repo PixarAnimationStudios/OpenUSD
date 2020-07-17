@@ -105,6 +105,9 @@ void wrapUsdCollectionAPI()
             (arg("prim"), arg("name")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
+        .staticmethod("Apply")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,

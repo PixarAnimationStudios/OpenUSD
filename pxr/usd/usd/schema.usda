@@ -238,7 +238,6 @@ class "CollectionAPI"
 #include "pxr/usd/usd/tokens.h"
 """
         token apiSchemaType = "multipleApply"
-        bool isPrivateApply  = true
         token propertyNamespacePrefix  = "collection"
         dictionary schemaTokens = {
             dictionary exclude = {

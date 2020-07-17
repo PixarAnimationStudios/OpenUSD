@@ -125,7 +125,7 @@ UsdSchemaType UsdCollectionAPI::_GetSchemaType() const {
 
 /* static */
 UsdCollectionAPI
-UsdCollectionAPI::_Apply(const UsdPrim &prim, const TfToken &name)
+UsdCollectionAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
     if (prim.ApplyAPI<UsdCollectionAPI>(name)) {
         return UsdCollectionAPI(prim, name);
@@ -336,7 +336,7 @@ UsdCollectionAPI::ApplyCollection(
         return UsdCollectionAPI();
     }
 
-    UsdCollectionAPI collection = UsdCollectionAPI::_Apply(prim, name);
+    UsdCollectionAPI collection = UsdCollectionAPI::Apply(prim, name);
     collection.CreateExpansionRuleAttr(VtValue(expansionRule));
     return collection;
 }
