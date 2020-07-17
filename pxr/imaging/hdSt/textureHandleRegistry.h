@@ -157,9 +157,9 @@ private:
     // the texture).
     tbb::concurrent_vector<HdStShaderCodePtr> _dirtyShaders;
 
-    std::unique_ptr<_TextureToHandlesMap> _textureToHandlesMap;
     std::unique_ptr<class HdSt_SamplerObjectRegistry> _samplerObjectRegistry;
     std::unique_ptr<class HdSt_TextureObjectRegistry> _textureObjectRegistry;
+    std::unique_ptr<_TextureToHandlesMap> _textureToHandlesMap;
 
 };
 
