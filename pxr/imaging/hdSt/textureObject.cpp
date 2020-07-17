@@ -326,7 +326,7 @@ _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
+            TF_CODING_ERROR("Unsupported texture format GL_RED 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
@@ -339,7 +339,7 @@ _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32Vec2>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
+            TF_CODING_ERROR("Unsupported texture format GL_RG 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
@@ -368,7 +368,7 @@ _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
         case GL_FLOAT:
             return _CheckValid<HgiFormatFloat32Vec3>();
         default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
+            TF_CODING_ERROR("Unsupported texture format GL_RGB 0x%04x",
                             glType);
             return HgiFormatInvalid;
         }
