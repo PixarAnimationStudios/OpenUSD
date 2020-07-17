@@ -37,15 +37,15 @@ from .freeCamera import FreeCamera
 from .common import ClearColors, HighlightColors
 
 
-# Map of clear color names to rgba color tuples.
+# Map of clear color names to rgba color tuples in linear space.
 _CLEAR_COLORS_DICT = {
     ClearColors.BLACK:       (0.0, 0.0, 0.0, 1.0),
-    ClearColors.DARK_GREY:   (0.3, 0.3, 0.3, 1.0),
-    ClearColors.LIGHT_GREY:  (0.7, 0.7, 0.7, 1.0),
+    ClearColors.DARK_GREY:   (0.07074, 0.07074, 0.07074, 1.0),
+    ClearColors.LIGHT_GREY:  (0.45626, 0.45626, 0.45626, 1.0),
     ClearColors.WHITE:       (1.0, 1.0, 1.0, 1.0)}
 
 
-# Map of highlight color names to rgba color tuples.
+# Map of highlight color names to rgba color tuples in linear space.
 _HIGHLIGHT_COLORS_DICT = {
     HighlightColors.WHITE:   (1.0, 1.0, 1.0, 0.5),
     HighlightColors.YELLOW:  (1.0, 1.0, 0.0, 0.5),

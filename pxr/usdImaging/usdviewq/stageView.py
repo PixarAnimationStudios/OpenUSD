@@ -1136,9 +1136,12 @@ class StageView(QtOpenGL.QGLWidget):
 
     def DrawBBox(self, viewProjectionMatrix):
         col = self._dataModel.viewSettings.clearColor
-        color = Gf.Vec3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
-                         col[1]-.5 if col[1]>0.5 else col[1]+.5,
-                         col[2]-.5 if col[2]>0.5 else col[2]+.5)
+        color = Gf.Vec3f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
+                         col[1]-.6 if col[1]>0.5 else col[1]+.6,
+                         col[2]-.6 if col[2]>0.5 else col[2]+.6)
+        color[0] = Gf.Clamp(color[0], 0, 1); 
+        color[1] = Gf.Clamp(color[1], 0, 1); 
+        color[2] = Gf.Clamp(color[2], 0, 1);                 
 
         # Draw axis-aligned bounding box
         if self._dataModel.viewSettings.showAABBox:
@@ -1396,7 +1399,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
-        self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+        self._renderParams.clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
@@ -1725,10 +1728,19 @@ class StageView(QtOpenGL.QGLWidget):
                         UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-                    # Use display space for the second clear because we
+
+                    # Use display space for the second clear when color 
+                    # correction is performed by the engine because we
                     # composite the framebuffer contents with the
                     # color-corrected (i.e., display space) aov contents.
-                    clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
+                    clearColor = Gf.ConvertLinearToDisplay(Gf.Vec4f(
+                        self._dataModel.viewSettings.clearColor))
+
+                    if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                        # Use linear color when using the sRGB extension
+                        clearColor = Gf.Vec4f(
+                            self._dataModel.viewSettings.clearColor)
+
                     GL.glClearColor(*clearColor)
                     GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 

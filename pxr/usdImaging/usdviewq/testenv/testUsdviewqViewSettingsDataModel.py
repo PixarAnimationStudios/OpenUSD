@@ -179,7 +179,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
 
         # Check default.
         self.assertEquals(vsDM.clearColorText, ClearColors.DARK_GREY)
-        self.assertEquals(vsDM.clearColor, (0.3, 0.3, 0.3, 1.0))
+        self.assertEquals(vsDM.clearColor, (0.07074, 0.07074, 0.07074, 1.0))
 
         # Switch to a valid color.
         vsDM.clearColorText = ClearColors.BLACK
