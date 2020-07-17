@@ -310,5 +310,19 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(Usd.SchemaRegistry().IsMultipleApplyAPISchema(
                             collectionAPI))
 
+    def test_GetTypeAndInstance(self):
+        # test multiplyapply api schema token
+        typeAndInstance = Usd.SchemaRegistry.GetTypeAndInstance(
+                "CollectionAPI:lightlink")
+        self.assertEqual(typeAndInstance[0], 'CollectionAPI')
+        self.assertEqual(typeAndInstance[1], 'lightlink')
+
+        # test singleapply api schema token
+        typeAndInstance = Usd.SchemaRegistry.GetTypeAndInstance(
+                "SingleApplyAPI")
+        self.assertEqual(typeAndInstance[0], "SingleApplyAPI")
+        self.assertEqual(typeAndInstance[1], "")
+
+
 if __name__ == "__main__":
     unittest.main()

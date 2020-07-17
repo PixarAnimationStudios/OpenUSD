@@ -170,6 +170,26 @@ public:
     USD_API
     static TfType GetTypeFromName(const TfToken& typeName);
 
+    /// Returns the schema type name and the instance name parsed from the 
+    /// given \p apiSchemaName
+    ///
+    /// \p apiSchemaName is the name of an applied schema as it appears in 
+    /// the list of applied schemas on a prim. For single-apply API schemas 
+    /// the name will just be the schema type name. For multiple-apply schemas 
+    /// the name should include the schema type name and the applied instance
+    /// name separated by a namespace delimiter, for example 
+    /// 'CollectionAPI:plasticStuff'.
+    ///
+    /// This function returns the separated schema type name and instance name 
+    /// component tokens if possible, otherwise it returns the \p apiSchemaName 
+    /// as the type name and an empty instance name.
+    ///
+    /// \sa UsdPrim::AddAppliedSchema(const TfToken&) const
+    /// \sa UsdPrim::GetAppliedSchemas() const
+    USD_API
+    static std::pair<TfToken, TfToken> GetTypeAndInstance(
+            const TfToken &apiSchemaName);
+
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
     /// it is not.
@@ -194,7 +214,7 @@ public:
     }
 
     /// Composes and returns a new UsdPrimDefinition from the given \p primType
-    /// and list of \p applieSchemas. This prim definition will contain a union
+    /// and list of \p appliedSchemas. This prim definition will contain a union
     /// of properties from the registered prim definitions of each of the 
     /// provided types. 
     USD_API
