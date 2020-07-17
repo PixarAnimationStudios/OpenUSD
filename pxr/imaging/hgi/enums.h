@@ -457,6 +457,22 @@ enum HgiCompareFunction
     HgiCompareFunctionCount
 };
 
+/// \enum HgiComponentSwizzle
+///
+/// Swizzle for a component.
+///
+enum HgiComponentSwizzle
+{
+    HgiComponentSwizzleZero = 0,
+    HgiComponentSwizzleOne,
+    HgiComponentSwizzleR,
+    HgiComponentSwizzleG,
+    HgiComponentSwizzleB,
+    HgiComponentSwizzleA,
+
+    HgiComponentSwizzleCount
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

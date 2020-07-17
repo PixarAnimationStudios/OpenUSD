@@ -251,6 +251,16 @@ _AssetCpuData::_AssetCpuData(
         textureData->GLType(),
         textureData->GLInternalFormat());
 
+    // Handle grayscale textures by expanding value to green and blue.
+    if (HgiGetComponentCount(_textureDesc.format) == 1) {
+        _textureDesc.componentMapping = {
+            HgiComponentSwizzleR,
+            HgiComponentSwizzleR,
+            HgiComponentSwizzleR,
+            HgiComponentSwizzleOne
+        };
+    }
+
     // Size of initial data (note that textureData->ComputeBytesUSed()
     // includes the mip maps).
     _textureDesc.pixelsByteSize =

@@ -181,6 +181,17 @@ _samplerAddressModeTable[HgiSamplerAddressModeCount][2] =
     {HgiSamplerAddressModeClampToBorderColor, GL_CLAMP_TO_BORDER}
 };
 
+static const uint32_t
+_componentSwizzleTable[HgiComponentSwizzleCount][2] =
+{
+    {HgiComponentSwizzleZero, GL_ZERO},
+    {HgiComponentSwizzleOne,  GL_ONE},
+    {HgiComponentSwizzleR,    GL_RED},
+    {HgiComponentSwizzleG,    GL_GREEN},
+    {HgiComponentSwizzleB,    GL_BLUE},
+    {HgiComponentSwizzleA,    GL_ALPHA}
+};
+
 void
 HgiGLConversions::GetFormat(
         HgiFormat inFormat,
@@ -326,6 +337,12 @@ HgiGLConversions::GetMinFilter(
 
     TF_CODING_ERROR("Unsupported sampler options");
     return GL_NONE;
+}
+
+GLenum
+HgiGLConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
+{
+    return _componentSwizzleTable[componentSwizzle][1];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -273,6 +273,17 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             GL_TRUE);
     }
 
+    const GLint swizzleMask[] = {
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.r)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.g)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.b)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.a)) };
+
+    glTextureParameteriv(
+        _textureId,
+        GL_TEXTURE_SWIZZLE_RGBA,
+        swizzleMask);
+
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
