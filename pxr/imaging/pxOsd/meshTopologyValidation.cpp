@@ -274,7 +274,7 @@ PxOsdMeshTopologyValidation::_ValidateHoles(
     if (holeIndices.empty()) return;
     const auto holeIndexRange =
         std::minmax_element(holeIndices.cbegin(), holeIndices.cend());
-    if ((*holeIndexRange.first >= 0)) {
+    if (*holeIndexRange.first < 0) {
         _AppendInvalidation({Code::InvalidHoleIndicesElement,
                              "Hole indices cannot be negative."});
     }
