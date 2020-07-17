@@ -1657,17 +1657,10 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            cam_pos = frustum.position
-            cam_up = frustum.ComputeUpVector()
-            cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
-
-            # not using the actual camera dist ...
-            cam_light_dist = self._dist
-            
-            sceneCam = self.getActiveSceneCamera()
             renderer.SetRenderViewport(viewport)
             renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
+            sceneCam = self.getActiveSceneCamera()
             if sceneCam:
                 # When using a USD camera, simply set it as the active camera.
                 # Window policy conformance is handled in the engine/hydra.
@@ -1681,8 +1674,6 @@ class StageView(QtOpenGL.QGLWidget):
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())
 
-
-            GL.glViewport(*windowViewport)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
             # ensure viewport is right for the camera framing
@@ -1693,6 +1684,7 @@ class StageView(QtOpenGL.QGLWidget):
                                             gfCamera.clippingPlanes]
 
             if len(self._dataModel.selection.getLCDPrims()) > 0:
+                cam_pos = frustum.position
                 sceneAmbient = (0.01, 0.01, 0.01, 1.0)
                 material = Glf.SimpleMaterial()
                 lights = []
