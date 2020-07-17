@@ -755,7 +755,7 @@ def InstallBoost(context, force, buildArgs):
     except:
         versionHeader = os.path.join(context.instDir, BOOST_VERSION_FILE)
         if os.path.isfile(versionHeader):
-            try: os.path.remove(versionHeader)
+            try: os.remove(versionHeader)
             except: pass
         raise
 
