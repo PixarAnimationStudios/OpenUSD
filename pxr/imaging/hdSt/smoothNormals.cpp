@@ -58,7 +58,6 @@ _CreateResourceBindings(
     // Begin the resource set
     HgiResourceBindingsDesc resourceDesc;
     resourceDesc.debugName = "SmoothNormals";
-    resourceDesc.pipelineType = HgiPipelineTypeCompute;
 
     if (points) {
         HgiBufferBindDesc bufBind0;
@@ -230,7 +229,6 @@ HdSt_SmoothNormalsComputationGPU::Execute(
         adjacency->GetId().Get());
 
     uint64_t pHash = (uint64_t) TfHash::Combine(
-        HgiPipelineTypeCompute,
         computeProgram->GetProgram().Get(),
         sizeof(uniform));
 

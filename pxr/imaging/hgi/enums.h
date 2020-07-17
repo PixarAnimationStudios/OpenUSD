@@ -277,25 +277,6 @@ enum HgiShaderStageBits : HgiBits
 };
 using HgiShaderStage = HgiBits;
 
-/// \enum HgiPipelineType
-///
-/// Describes the intended bind point for this pipeline.
-///
-/// <ul>
-/// <li>HgiPipelineTypeGraphics:
-///   The pipeline is meant to be bound to the graphics pipeline.</li>
-/// <li>HgiPipelineTypeCompute:
-///   The pipeline is meant to be bound to the compute pipeline.</li>
-/// </ul>
-///
-enum HgiPipelineType
-{
-    HgiPipelineTypeGraphics = 0,
-    HgiPipelineTypeCompute,
-
-    HgiPipelineTypeCount
-};
-
 /// \enum HgiBindResourceType
 ///
 /// Describes the type of the resource to be bound.

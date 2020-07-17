@@ -311,7 +311,6 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
     // Begin the resource set
     HgiResourceBindingsDesc resourceDesc;
     resourceDesc.debugName = "HdxFullscreenShader";
-    resourceDesc.pipelineType = HgiPipelineTypeGraphics;
 
     // XXX OpenGL / Metal both re-use slot indices between buffers and textures.
     // Vulkan uses unique slot indices in descriptor set.

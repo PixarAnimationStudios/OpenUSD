@@ -140,8 +140,6 @@ bool operator!=(
 /// Describes a set of resources that are bound to the GPU during encoding.
 ///
 /// <ul>
-/// <li>pipelineType:
-///   Bind point for pipeline.</li>
 /// <li>buffers:
 ///   The buffers to be bound (E.g. uniform or shader storage).</li>
 /// <li>textures:
@@ -154,7 +152,6 @@ struct HgiResourceBindingsDesc
     HgiResourceBindingsDesc();
 
     std::string debugName;
-    HgiPipelineType pipelineType;
     HgiBufferBindDescVector buffers;
     HgiTextureBindDescVector textures;
 };

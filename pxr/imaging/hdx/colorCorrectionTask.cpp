@@ -312,7 +312,6 @@ HdxColorCorrectionTask::_CreateResourceBindings(
     // Begin the resource set
     HgiResourceBindingsDesc resourceDesc;
     resourceDesc.debugName = "ColorCorrection";
-    resourceDesc.pipelineType = HgiPipelineTypeGraphics;
 
     HgiTextureBindDesc texBind0;
     texBind0.bindingIndex = 0;
