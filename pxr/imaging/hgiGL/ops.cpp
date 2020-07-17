@@ -203,123 +203,6 @@ HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 }
 
 HgiGLOpsFn
-HgiGLOps::ResolveImage(
-    HgiTextureHandle const& src,
-    HgiTextureHandle const& dst,
-    GfVec4i const& region,
-    bool isDepthResolve)
-{
-    return [src, dst, region, isDepthResolve] {
-        // Create framebuffers for resolve.
-        uint32_t readFramebuffer;
-        uint32_t writeFramebuffer;
-        glCreateFramebuffers(1, &readFramebuffer);
-        glCreateFramebuffers(1, &writeFramebuffer);
-
-        // Gather source and destination textures
-        HgiGLTexture* glSrcTexture = static_cast<HgiGLTexture*>(src.Get());
-        HgiGLTexture* glDstTexture = static_cast<HgiGLTexture*>(dst.Get());
-
-        if (!glSrcTexture || !glDstTexture) {
-            TF_CODING_ERROR("No textures provided for resolve");
-            return;
-        }
-
-        uint32_t readAttachment = glSrcTexture->GetTextureId();
-        TF_VERIFY(glIsTexture(readAttachment), "Source is not a texture");
-        uint32_t writeAttachment = glDstTexture->GetTextureId();
-        TF_VERIFY(glIsTexture(writeAttachment), "Destination is not a texture");
-
-        // Update framebuffer bindings
-        if (isDepthResolve) {
-            // Depth-only, so no color attachments for read or write
-            // Clear previous color attachment since all attachments must be
-            // written to from fragment shader or texels will be undefined.
-            GLenum drawBufs[1] = {GL_NONE};
-            glNamedFramebufferDrawBuffers(
-                readFramebuffer, 1, drawBufs);
-            glNamedFramebufferDrawBuffers(
-                writeFramebuffer, 1, drawBufs);
-
-            glNamedFramebufferTexture(
-                readFramebuffer, GL_COLOR_ATTACHMENT0, 0, /*level*/0);
-            glNamedFramebufferTexture(
-                writeFramebuffer, GL_COLOR_ATTACHMENT0, 0, /*level*/0);
-
-            glNamedFramebufferTexture(
-                readFramebuffer,
-                GL_DEPTH_ATTACHMENT,
-                readAttachment,
-                /*level*/ 0);
-            glNamedFramebufferTexture(
-                writeFramebuffer,
-                GL_DEPTH_ATTACHMENT,
-                writeAttachment,
-                /*level*/ 0);
-        } else {
-            // Color-only, so no depth attachments for read or write.
-            // Clear previous depth attachment since all attachments must be
-            // written to from fragment shader or texels will be undefined.
-            GLenum drawBufs[1] = {GL_COLOR_ATTACHMENT0};
-            glNamedFramebufferDrawBuffers(
-                readFramebuffer, 1, drawBufs);
-            glNamedFramebufferDrawBuffers(
-                writeFramebuffer, 1, drawBufs);
-
-            glNamedFramebufferTexture(
-                readFramebuffer, GL_DEPTH_ATTACHMENT, 0, /*level*/0);
-            glNamedFramebufferTexture(
-                writeFramebuffer, GL_DEPTH_ATTACHMENT, 0, /*level*/0);
-
-            glNamedFramebufferTexture(
-                readFramebuffer,
-                GL_COLOR_ATTACHMENT0,
-                readAttachment,
-                /*level*/ 0);
-            glNamedFramebufferTexture(
-                writeFramebuffer,
-                GL_COLOR_ATTACHMENT0,
-                writeAttachment,
-                /*level*/ 0);
-        }
-
-        GLenum status = glCheckNamedFramebufferStatus(readFramebuffer,
-                                                      GL_READ_FRAMEBUFFER);
-        TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
-
-        status = glCheckNamedFramebufferStatus(writeFramebuffer,
-                                               GL_DRAW_FRAMEBUFFER);
-        TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
-
-        // Resolve MSAA fbo to a regular fbo
-        GLbitfield mask = isDepthResolve ?
-            GL_DEPTH_BUFFER_BIT : GL_COLOR_BUFFER_BIT;
-
-        // Bind resolve framebuffer
-        GLint restoreRead, restoreWrite;
-        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreRead);
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreWrite);
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer); // MS
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, writeFramebuffer);// regular
-
-        glBlitFramebuffer(
-            region[0], region[1], region[2], region[3], // src region
-            region[0], region[1], region[2], region[3], // dst region
-            mask,
-            GL_NEAREST);
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreRead);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreWrite);
-
-        glDeleteFramebuffers(1, &readFramebuffer);
-        glDeleteFramebuffers(1, &writeFramebuffer);
-
-        HGIGL_POST_PENDING_GL_ERRORS();
-    };
-}
-
-HgiGLOpsFn
 HgiGLOps::SetViewport(GfVec4i const& vp)
 {
     return [vp] {
@@ -552,6 +435,38 @@ HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
             glGenerateTextureMipmap(glTex->GetTextureId());
             HGIGL_POST_PENDING_GL_ERRORS();
         }
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::ResolveFramebuffer(
+    HgiGLDevice* device,
+    HgiGraphicsCmdsDesc const &graphicsCmds)
+{
+    return [device, graphicsCmds] {
+        const uint32_t resolvedFramebuffer = device->AcquireFramebuffer(
+            graphicsCmds, /* resolved = */ true);
+        if (!resolvedFramebuffer) {
+            return;
+        }
+
+        const uint32_t framebuffer = device->AcquireFramebuffer(
+            graphicsCmds);
+        
+        GLbitfield mask = 0;
+        if (!graphicsCmds.colorResolveTextures.empty()) {
+            mask |= GL_COLOR_BUFFER_BIT;
+        }
+        if (graphicsCmds.depthResolveTexture) {
+            mask |= GL_DEPTH_BUFFER_BIT;
+        }
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFramebuffer);
+        glBlitFramebuffer(0, 0, graphicsCmds.width, graphicsCmds.height,
+                          0, 0, graphicsCmds.width, graphicsCmds.height,
+                          mask,
+                          GL_NEAREST);
     };
 }
 

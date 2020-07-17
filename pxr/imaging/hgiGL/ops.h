@@ -86,11 +86,9 @@ public:
     static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 
     HGIGL_API
-    static HgiGLOpsFn ResolveImage(
-        HgiTextureHandle const& src,
-        HgiTextureHandle const& dst,
-        GfVec4i const& region,
-        bool isDepthResolve);
+    static HgiGLOpsFn ResolveFramebuffer(
+        HgiGLDevice* device,
+        HgiGraphicsCmdsDesc const &graphicsCmds);
     
     HGIGL_API
     static HgiGLOpsFn SetViewport(GfVec4i const& vp);

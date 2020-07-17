@@ -41,9 +41,11 @@ HgiGLDevice::~HgiGLDevice()
 }
 
 uint32_t
-HgiGLDevice::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
+HgiGLDevice::AcquireFramebuffer(
+    HgiGraphicsCmdsDesc const& desc,
+    bool resolved)
 {
-    return _framebufferCache.AcquireFramebuffer(desc);
+    return _framebufferCache.AcquireFramebuffer(desc, resolved);
 }
 
 void
