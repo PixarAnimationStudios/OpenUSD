@@ -38,6 +38,7 @@ void
 Tf_HashState::_AppendBytes(char const *bytes, size_t numBytes)
 {
     _state = ArchHash64(bytes, numBytes, _state);
+    _didOne = true;
 }
 
 size_t
