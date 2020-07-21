@@ -3502,17 +3502,15 @@ _ComposeVariantSelectionAcrossStackFrames(
 static bool
 _ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
 {
-    while (node->GetParentNode()) {
-        *path = node->GetMapToParent().MapSourceToTarget(*path);
-        *node = node->GetParentNode();
-        // This function assumes the given path is not empty to begin with which
-        // is why we only check for empty after mapping across a node.
-        if (path->IsEmpty()) {
-            // Return false if the path doesn't translate up to the root node.
-            return false;
-        }
+    // This function assumes the given path is not empty to begin with so 
+    // return true if this is already the root node.
+    if (!node->GetParentNode()) {
+        return true;
     }
-    return true;
+    *path = node->GetMapToRoot().MapSourceToTarget(*path);
+    *node = node->GetRootNode();
+    // Return whether the path translates fully up to the root node.
+    return !path->IsEmpty();
 }
 
 static void
@@ -3548,8 +3546,7 @@ _ComposeVariantSelection(
     //
     // Translate the given path up to the root node of the *entire* 
     // prim index under construction, keeping track of when we need
-    // to hop across a stack frame. Note that _ConvertToRootNodeAndPath cannot 
-    // use mapToRoot here, since it is not valid until the graph is finalized.
+    // to hop across a stack frame.
     _StackFrameAndChildNodeVector previousStackFrames;
     PcpNodeRef rootNode = node;
     SdfPath pathInRoot = pathInNode;
