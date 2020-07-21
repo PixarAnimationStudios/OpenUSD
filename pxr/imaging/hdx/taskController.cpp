@@ -187,15 +187,9 @@ _IsStormRenderingBackend(HdRenderIndex const *index)
 static GfVec3i
 _ViewportToAovDimension(const GfVec4d& viewport)
 {
-    // Get the viewport dimensions (for renderbuffer allocation)
-    // XXX Sometimes viewport is set very large to do cam-zooming tricks.
-    // That would result in extra-large / incorrect Aov dimensions.
-    // What we really want here is the window size, but non of the hydra 
-    // clients currently pass in window size.
-    // The viewport XY (lower left corner) may also have been modified for e.g.
-    // a 'camera mask border'.
-    int w = viewport[2] + viewport[0];
-    int h = viewport[3] + viewport[1];
+    // Ignore the viewport offset and use its size as the aov size.
+    int w = viewport[2];
+    int h = viewport[3];
     return GfVec3i(w, h, 1);
 }
 
@@ -1607,26 +1601,24 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 void
 HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
 {
-    bool viewportChanged = false;
+    // Suppress the viewport offset from the rendering tasks. This is relevant
+    // only for the composition step (i.e. present task),
+    GfVec4d zeroOffsetViewport(0, 0, viewport[2], viewport[3]);
+    HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
 
     for (SdfPath const& renderTaskId : _renderTaskIds) {
         HdxRenderTaskParams params =
             _delegate.GetParameter<HdxRenderTaskParams>(
                 renderTaskId, HdTokens->params);
 
-        if (params.viewport == viewport) {
+        if (params.viewport == zeroOffsetViewport) {
             continue;
         }
 
-        viewportChanged = true;
-        params.viewport = viewport;
+        params.viewport = zeroOffsetViewport;
         _delegate.SetParameter(renderTaskId, HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+        changeTracker.MarkTaskDirty(
             renderTaskId, HdChangeTracker::DirtyParams);
-    }
-
-    if (!viewportChanged) {
-        return;
     }
 
     if (!_shadowTaskId.IsEmpty()) {
@@ -1635,21 +1627,41 @@ HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
         HdxShadowTaskParams params =
             _delegate.GetParameter<HdxShadowTaskParams>(
                 _shadowTaskId, HdTokens->params);
-        params.viewport = viewport;
-        _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _shadowTaskId, HdChangeTracker::DirtyParams);
+        if (params.viewport != zeroOffsetViewport) {
+            params.viewport = zeroOffsetViewport;
+            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _shadowTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 
     if (!_pickFromRenderBufferTaskId.IsEmpty()) {
         HdxPickFromRenderBufferTaskParams params =
             _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
                 _pickFromRenderBufferTaskId, HdTokens->params);
-        params.viewport = viewport;
-        _delegate.SetParameter(
-            _pickFromRenderBufferTaskId, HdTokens->params, params);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        if (params.viewport != zeroOffsetViewport) {
+            params.viewport = zeroOffsetViewport;
+            _delegate.SetParameter(
+                _pickFromRenderBufferTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_presentTaskId.IsEmpty()) {
+        HdxPresentTaskParams params =
+            _delegate.GetParameter<HdxPresentTaskParams>(
+                _presentTaskId, HdTokens->params);
+        // The composition step uses the viewport passed in by the application,
+        // which may have a non-zero offset for things like camera masking.
+        GfVec4i iViewport = GfVec4i(int(viewport[0]), int(viewport[1]),
+                                    int(viewport[2]), int(viewport[3]));
+        if (params.compRegion != iViewport) {
+            params.compRegion = iViewport;
+            _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _presentTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 
     // Update all of the render buffer sizes as well.
@@ -1661,7 +1673,7 @@ HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
         if (desc.dimensions != dimensions) {
             desc.dimensions = dimensions;
             _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
-            GetRenderIndex()->GetChangeTracker().MarkBprimDirty(id,
+            changeTracker.MarkBprimDirty(id,
                 HdRenderBuffer::DirtyDescription);
         }
     }

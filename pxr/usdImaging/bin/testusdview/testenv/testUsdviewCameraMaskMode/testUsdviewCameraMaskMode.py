@@ -24,6 +24,7 @@
 #
 
 from pxr.Usdviewq.qt import QtWidgets
+import string
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
@@ -40,30 +41,44 @@ def _setCameraMaskModeAction(appController, action, outline=False):
 
     QtWidgets.QApplication.processEvents()
 
+def _getRendererAppendedImageName(appController, filename):
+    rendererName = appController._stageView.rendererDisplayName.lower()
+    imageName = filename + "_" + rendererName + ".png"
+    return imageName
+
 # Take a shot of the viewport and save it to a file.
 def _takeShot(appController, fileName):
+    # Wait until the image is converged
+    if appController._stageView._renderer:
+        while not appController._stageView._renderer.IsConverged():
+            QtWidgets.QApplication.processEvents()
+    
     viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with no masking.
 def _testNoMask(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None)
-    _takeShot(appController, "none.png")
+    imgName = _getRendererAppendedImageName(appController, "none")
+    _takeShot(appController, imgName)
 
 # Test with outline enabled but no masking.
 def _testOutline(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None, outline=True)
-    _takeShot(appController, "outline.png")
+    imgName = _getRendererAppendedImageName(appController, "outline")
+    _takeShot(appController, imgName)
 
 # Test with partial masking.
 def _testPartial(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Partial)
-    _takeShot(appController, "partial.png")
+    imgName = _getRendererAppendedImageName(appController, "partial")
+    _takeShot(appController, imgName)
 
 # Test with full masking.
 def _testFull(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Full)
-    _takeShot(appController, "full.png")
+    imgName = _getRendererAppendedImageName(appController, "full")
+    _takeShot(appController, imgName)
 
 # Test that the complexity setting works properly in usdview.
 def testUsdviewInputFunction(appController):

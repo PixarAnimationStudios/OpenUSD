@@ -35,7 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxTask(id)
-    , _interopDst(HgiTokens->OpenGL)
 {
 }
 
@@ -56,7 +55,7 @@ HdxPresentTask::_Sync(
         HdxPresentTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
-            _interopDst = params.interopDst;
+            _params = params;
         }
     }
     *dirtyBits = HdChangeTracker::Clean;
@@ -92,7 +91,8 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     // framebuffer contents.
     // Eg. This allows us to render with HgiMetal and present the images
     // into a opengl based application (such as usdview).
-    _interop.TransferToApp(_hgi, _interopDst, aovTexture, depthTexture);
+    _interop.TransferToApp(_hgi, _params.interopDst, _params.compRegion,
+                            aovTexture, depthTexture);
 }
 
 
@@ -110,7 +110,8 @@ std::ostream& operator<<(std::ostream& out, const HdxPresentTaskParams& pv)
 bool operator==(const HdxPresentTaskParams& lhs,
                 const HdxPresentTaskParams& rhs)
 {
-    return lhs.interopDst == rhs.interopDst;
+    return lhs.interopDst == rhs.interopDst &&
+           lhs.compRegion == rhs.compRegion;
 }
 
 bool operator!=(const HdxPresentTaskParams& lhs,

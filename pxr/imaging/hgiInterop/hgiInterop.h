@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiInterop/api.h"
 #include "pxr/imaging/hgi/texture.h"
 
@@ -53,7 +54,7 @@ public:
     HGIINTEROP_API
     ~HgiInterop();
 
-    /// Composite the provided textures with the application / viewer's
+    /// Composite the provided textures over the application / viewer's
     /// framebuffer contents.
     /// `hgi`: 
     ///     Determines the source format/platform of the textures.
@@ -62,6 +63,10 @@ public:
     ///     Determines what target format/platform the application is using.
     ///     E.g. If hgi==HgiMetal and interopDst==OpenGL then TransferToApp
     ///     will present the metal textures to the gl application.
+    /// `compRegion`:
+    ///     Subrect region of the framebuffer over which to composite.
+    ///     Coordinates are (left, BOTTOM, width, height) which is the same
+    ///     convention as OpenGL viewport coordinates.
     /// `color`: is the source color aov texture to composite to screen.
     /// `depth`: (optional) is the depth aov texture to composite to screen.
     ///
@@ -76,7 +81,8 @@ public:
     HGIINTEROP_API
     void TransferToApp(
         Hgi *hgi,
-        TfToken const& interopDst,
+        TfToken const &interopDst,
+        GfVec4i const &compRegion,
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth);
 
