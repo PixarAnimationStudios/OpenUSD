@@ -50,61 +50,6 @@
           case STBI__PNG_TYPE('I','D','A','T'): {
              if (first) return stbi__err("first not IHDR", "Corrupt PNG");
              if (pal_img_n && !pal_len) return stbi__err("no PLTE","Corrupt PNG");
-@@ -4900,6 +4908,38 @@
-    }
- }
- 
-+// XXX PIXAR:
-+// Helper functions for associating alpha values with colors
-+static void pxr__associate_alpha(unsigned char *data, int x, int y, int n)
-+{
-+    STBI_ASSERT(n == 4);
-+    stbi__uint32 i, pixel_count = x * y;
-+    for (i=0; i < pixel_count; ++i) {
-+        float alpha = (float)data[3] / 255.0f;
-+        if (alpha < 1.0) {
-+            data[0] = data[0] * alpha + 0.5;
-+            data[1] = data[1] * alpha + 0.5;
-+            data[2] = data[2] * alpha + 0.5;
-+        }
-+        data += 4;
-+    }
-+}
-+
-+static void pxr__associate_alpha16(stbi__uint16 *data, int x, int y, int n)
-+{
-+    STBI_ASSERT(n == 4);
-+    stbi__uint32 i, pixel_count = x * y;
-+    for (i=0; i < pixel_count; ++i) {
-+        float alpha = (float)data[3] / 65535.0f;
-+        if (alpha < 1.0) {
-+            data[0] = data[0] * alpha + 0.5;
-+            data[1] = data[1] * alpha + 0.5;
-+            data[2] = data[2] * alpha + 0.5;
-+        }
-+        data += 4;
-+    }
-+}
-+
- static void *stbi__do_png(stbi__png *p, int *x, int *y, int *n, int req_comp, stbi__result_info *ri)
- {
-    void *result=NULL;
-@@ -4922,6 +4962,15 @@
-       *x = p->s->img_x;
-       *y = p->s->img_y;
-       if (n) *n = p->s->img_n;
-+
-+      // XXX PIXAR: 
-+      // Associate alpha to accommodate client code. 
-+      if (p->s->img_n == 4) {
-+          if (ri->bits_per_channel == 8)
-+              pxr__associate_alpha((unsigned char *) result, *x, *y, p->s->img_n);
-+          else
-+              pxr__associate_alpha16((stbi__uint16 *) result, *x, *y, p->s->img_n);
-+      }
-    }
-    STBI_FREE(p->out);      p->out      = NULL;
-    STBI_FREE(p->expanded); p->expanded = NULL;
 @@ -4945,7 +4994,7 @@
     return r;
  }
