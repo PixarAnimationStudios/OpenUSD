@@ -141,8 +141,6 @@ private:
 
     class _TextureToHandlesMap;
 
-    bool _samplerGarbageCollectionNeeded;
-
     // Handles that are new or for which the underlying texture has
     // changed: samplers might need to be (re-)allocated and the
     // corresponding shader code might need to update the shader bar.

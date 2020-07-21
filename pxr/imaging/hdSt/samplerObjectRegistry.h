@@ -76,6 +76,9 @@ public:
     HDST_API 
     void GarbageCollect();
 
+    HDST_API
+    void MarkGarbageCollectionNeeded();
+
     /// Get Hgi instance
     ///
     HDST_API
@@ -84,6 +87,7 @@ public:
 private:
     std::vector<HdStSamplerObjectSharedPtr> _samplerObjects;
     
+    bool _garbageCollectionNeeded;
     Hgi *_hgi;
 };
 
