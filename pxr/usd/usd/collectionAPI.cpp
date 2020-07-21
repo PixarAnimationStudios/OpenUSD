@@ -127,6 +127,23 @@ UsdSchemaType UsdCollectionAPI::_GetSchemaType() const {
 UsdCollectionAPI
 UsdCollectionAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
+    // Ensure that the instance name is valid.
+    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
+
+    if (tokens.empty()) {
+        TF_CODING_ERROR("Invalid CollectionAPI name '%s'.", 
+                        name.GetText());
+        return UsdCollectionAPI();
+    }
+
+    const TfToken &baseName = tokens.back();
+    if (IsSchemaPropertyBaseName(baseName)) {
+        TF_CODING_ERROR("Invalid CollectionAPI name '%s'. "
+                        "The base-name '%s' is a schema property name.", 
+                        name.GetText(), baseName.GetText());
+        return UsdCollectionAPI();
+    }
+
     if (prim.ApplyAPI<UsdCollectionAPI>(name)) {
         return UsdCollectionAPI(prim, name);
     }
@@ -321,23 +338,10 @@ UsdCollectionAPI::ApplyCollection(
     const TfToken &name, 
     const TfToken &expansionRule /*=UsdTokens->expandPrims*/) 
 {
-    // Ensure that the collection name is valid.
-    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
-
-    if (tokens.empty()) {
-        TF_CODING_ERROR("Invalid collection name '%s'.", name.GetText());
-        return UsdCollectionAPI();
-    }
-
-    TfToken baseName = *tokens.rbegin();
-    if (IsSchemaPropertyBaseName(baseName)) {
-        TF_CODING_ERROR("Invalid collection name '%s'. The base-name '%s' is a "
-            "schema property name.", name.GetText(), baseName.GetText());
-        return UsdCollectionAPI();
-    }
-
     UsdCollectionAPI collection = UsdCollectionAPI::Apply(prim, name);
-    collection.CreateExpansionRuleAttr(VtValue(expansionRule));
+    if (collection) {
+        collection.CreateExpansionRuleAttr(VtValue(expansionRule));
+    }
     return collection;
 }
 

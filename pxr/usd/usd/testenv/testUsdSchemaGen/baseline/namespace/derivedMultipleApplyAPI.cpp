@@ -124,6 +124,23 @@ UsdSchemaType UsdContrivedDerivedMultipleApplyAPI::_GetSchemaType() const {
 UsdContrivedDerivedMultipleApplyAPI
 UsdContrivedDerivedMultipleApplyAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
+    // Ensure that the instance name is valid.
+    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
+
+    if (tokens.empty()) {
+        TF_CODING_ERROR("Invalid DerivedMultipleApplyAPI name '%s'.", 
+                        name.GetText());
+        return UsdContrivedDerivedMultipleApplyAPI();
+    }
+
+    const TfToken &baseName = tokens.back();
+    if (IsSchemaPropertyBaseName(baseName)) {
+        TF_CODING_ERROR("Invalid DerivedMultipleApplyAPI name '%s'. "
+                        "The base-name '%s' is a schema property name.", 
+                        name.GetText(), baseName.GetText());
+        return UsdContrivedDerivedMultipleApplyAPI();
+    }
+
     if (prim.ApplyAPI<UsdContrivedDerivedMultipleApplyAPI>(name)) {
         return UsdContrivedDerivedMultipleApplyAPI(prim, name);
     }

@@ -186,6 +186,23 @@ UsdSchemaType {{ cls.cppClassName }}::_GetSchemaType() const {
 {% endif %}
 {
 {% if cls.isMultipleApply %}
+    // Ensure that the instance name is valid.
+    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
+
+    if (tokens.empty()) {
+        TF_CODING_ERROR("Invalid {{ cls.usdPrimTypeName }} name '%s'.", 
+                        name.GetText());
+        return {{ cls.cppClassName }}();
+    }
+
+    const TfToken &baseName = tokens.back();
+    if (IsSchemaPropertyBaseName(baseName)) {
+        TF_CODING_ERROR("Invalid {{ cls.usdPrimTypeName }} name '%s'. "
+                        "The base-name '%s' is a schema property name.", 
+                        name.GetText(), baseName.GetText());
+        return {{ cls.cppClassName }}();
+    }
+
     if (prim.ApplyAPI<{{ cls.cppClassName }}>(name)) {
         return {{ cls.cppClassName }}(prim, name);
     }
