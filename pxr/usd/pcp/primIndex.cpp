@@ -3496,6 +3496,25 @@ _ComposeVariantSelectionAcrossStackFrames(
     return false;
 }
 
+// Convert from the given node and the given path at the node to the
+// root node and the path mapped to the root node by traversing up the 
+// parent nodes. 
+static bool
+_ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
+{
+    while (node->GetParentNode()) {
+        *path = node->GetMapToParent().MapSourceToTarget(*path);
+        *node = node->GetParentNode();
+        // This function assumes the given path is not empty to begin with which
+        // is why we only check for empty after mapping across a node.
+        if (path->IsEmpty()) {
+            // Return false if the path doesn't translate up to the root node.
+            return false;
+        }
+    }
+    return true;
+}
+
 static void
 _ComposeVariantSelection(
     int ancestorRecursionDepth,
@@ -3529,32 +3548,23 @@ _ComposeVariantSelection(
     //
     // Translate the given path up to the root node of the *entire* 
     // prim index under construction, keeping track of when we need
-    // to hop across a stack frame. Note that we cannot use mapToRoot 
-    // here, since it is not valid until the graph is finalized.
+    // to hop across a stack frame. Note that _ConvertToRootNodeAndPath cannot 
+    // use mapToRoot here, since it is not valid until the graph is finalized.
     _StackFrameAndChildNodeVector previousStackFrames;
     PcpNodeRef rootNode = node;
     SdfPath pathInRoot = pathInNode;
+    _ConvertToRootNodeAndPath(&rootNode, &pathInRoot);
 
-    while (1) {
-        while (rootNode.GetParentNode()) {
-            pathInRoot = rootNode.
-                GetMapToParent().MapSourceToTarget(pathInRoot);
-            rootNode = rootNode.GetParentNode();
-        }
+    // First check if we have already resolved this variant set in the current
+    // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
+    // accounts for any ancestral recursion.
+    if (_FindPriorVariantSelection(rootNode,
+                                   ancestorRecursionDepth,
+                                   vset, vsel, nodeWithVsel)) {
+        return;
+    }
 
-        // First check if we have already resolved this variant set.
-        // Try all nodes in all parent frames; ancestorRecursionDepth
-        // accounts for any ancestral recursion.
-        if (_FindPriorVariantSelection(rootNode,
-                                       ancestorRecursionDepth,
-                                       vset, vsel, nodeWithVsel)) {
-            return;
-        }
-
-        if (!previousFrame) {
-            break;
-        }
-
+    while (previousFrame) {
         // There may not be a valid mapping for the current path across 
         // the previous stack frame. For example, this may happen when
         // trying to compose ancestral variant selections on a sub-root
@@ -3563,18 +3573,42 @@ _ComposeVariantSelection(
         // variant selection opinions across this stack frame. In this case, 
         // we break out of the loop and only search the portion of the prim
         // index we've traversed.
-        const SdfPath pathInPreviousFrame = 
+        SdfPath pathInPreviousFrame =
             previousFrame->arcToParent->mapToParent.MapSourceToTarget(
                 pathInRoot);
-        if (pathInPreviousFrame.IsEmpty()) {
+        PcpNodeRef rootNodeInPreviousFrame = previousFrame->parentNode;
+        // Note that even if the path can be mapped across the stack frame it 
+        // may not map all the way up to the root of the previous stack frame. 
+        // This can happen when composing an ancestor with a variant set for a 
+        // subroot inherit. Inherit arcs always have an identity mapping so an 
+        // ancestral prim path can still map across the inherit's stack frame, 
+        // but it may not map across other arcs, like references, on the way up 
+        // to the root. In this case we break out of the loop and only search 
+        // the the portion of the index before the stack frame jump.
+        if (pathInPreviousFrame.IsEmpty() ||
+            !_ConvertToRootNodeAndPath(&rootNodeInPreviousFrame, 
+                                       &pathInPreviousFrame)) {
             break;
         }
 
+        // Check if we have already resolved this variant set in this previous
+        // stack as well.
+        if (_FindPriorVariantSelection(rootNodeInPreviousFrame,
+                                       ancestorRecursionDepth,
+                                       vset, vsel, nodeWithVsel)) {
+            return;
+        }
+
+        // rootNode is still set to be child of the previous frame's arc which
+        // is why do this first.
         previousStackFrames.push_back(
             _StackFrameAndChildNode(previousFrame, rootNode));
 
+        // Update the root node and path to be the root of this previous stack
+        // frame.
+        rootNode = rootNodeInPreviousFrame;
         pathInRoot = pathInPreviousFrame;
-        rootNode = previousFrame->parentNode;
+
         previousFrame = previousFrame->previousFrame;
     }
 
