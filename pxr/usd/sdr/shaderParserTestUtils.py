@@ -245,7 +245,7 @@ def TestShadingProperties(node):
         assert properties["vstruct1_bump"].IsVStructMember()
 
 
-def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
+def TestBasicNode(node, nodeSourceType, nodeDefinitionURI, nodeImplementationURI):
     """
     Test basic, non-shader-specific correctness on the specified node.
     """
@@ -277,9 +277,6 @@ def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
                     "$invalidPrimvarNamingProperty",
         "uncategorizedMetadata": "uncategorized"
     }
-    info = "TestNode%s (context: '%s', version: '<invalid version>', family: ''); URI: '%s'" % (
-        "OSL" if isOSL else "ARGS", nodeContext, nodeURI
-    )
 
     if not isOSL:
         metadata.pop("category")
@@ -300,10 +297,9 @@ def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
     assert node.GetContext() == nodeContext
     assert node.GetSourceType() == nodeSourceType
     assert node.GetFamily() == ""
-    assert node.GetSourceURI() == nodeURI
-    assert node.GetResolvedSourceURI() == resolvedNodeURI
+    assert node.GetResolvedDefinitionURI() == nodeDefinitionURI
+    assert node.GetResolvedImplementationURI() == nodeImplementationURI
     assert node.IsValid()
-    assert node.GetInfoString().startswith(info)
     assert len(nodeInputs) == 17
     assert len(nodeOutputs) == numOutputs
     assert nodeInputs["inputA"] is not None

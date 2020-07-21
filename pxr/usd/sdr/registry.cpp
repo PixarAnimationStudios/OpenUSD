@@ -150,17 +150,6 @@ SdrRegistry::GetShaderNodeByNameAndType(
     );
 }
 
-SdrShaderNodeConstPtr
-SdrRegistry::GetShaderNodeByURI(const std::string& uri)
-{
-    // XXX Remove trace function when function performance has improved
-    TRACE_FUNCTION();
-
-    return NdrNodeToShaderNode(
-        GetInstance().GetNodeByURI(uri)
-    );
-}
-
 SdrShaderNodePtrVec
 SdrRegistry::GetShaderNodesByIdentifier(const NdrIdentifier& identifier)
 {

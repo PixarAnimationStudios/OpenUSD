@@ -35,10 +35,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStExtCompGpuComputationResource> 
-    HdStExtCompGpuComputationResourceSharedPtr;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
-typedef std::vector<HdBufferArrayRangeSharedPtr> HdBufferArrayRangeSharedPtrVector;
+using HdStExtCompGpuComputationResourceSharedPtr =
+    std::shared_ptr<class HdStExtCompGpuComputationResource>;
+using HdStGLSLProgramSharedPtr= std::shared_ptr<class HdStGLSLProgram>;
+using HdBufferArrayRangeSharedPtrVector =
+    std::vector<HdBufferArrayRangeSharedPtr>;
 
 /// \class HdStExtCompGpuComputationResource
 ///

@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdClipsAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "Usd.ClipsAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdClipsAPI()
@@ -79,6 +88,7 @@ void wrapUsdClipsAPI()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);
@@ -102,6 +112,8 @@ void wrapUsdClipsAPI()
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/base/tf/makePyConstructor.h"
 
 namespace {
 
@@ -207,6 +219,15 @@ static SdfAssetPath _GetClipManifestAssetPath(const UsdClipsAPI &self,
 }
 
 template <class... Args>
+static bool _GetInterpolateMissingClipValues(const UsdClipsAPI &self, 
+                                             const Args&... args) 
+{
+    bool interpolate = false;
+    self.GetInterpolateMissingClipValues(&interpolate, args...);
+    return interpolate;
+}
+
+template <class... Args>
 static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal,
                                       const Args&... args) 
 {
@@ -293,6 +314,16 @@ WRAP_CUSTOM {
                  (&_SetClipAssetPaths), 
              (arg("assetPaths"), arg("clipSet")))
 
+        .def("ComputeClipAssetPaths",
+            (VtArray<SdfAssetPath>(UsdClipsAPI::*)() const)
+                (&UsdClipsAPI::ComputeClipAssetPaths),
+             return_value_policy<TfPySequenceToList>())
+        .def("ComputeClipAssetPaths",
+            (VtArray<SdfAssetPath>(UsdClipsAPI::*)(const std::string&) const)
+                (&UsdClipsAPI::ComputeClipAssetPaths),
+             arg("clipSet"),
+             return_value_policy<TfPySequenceToList>())
+
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&))
                 (&_GetClipPrimPath))
@@ -357,6 +388,39 @@ WRAP_CUSTOM {
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
              (arg("manifestAssetPath"), arg("clipSet")))
 
+        .def("GenerateClipManifest", 
+             (SdfLayerRefPtr(UsdClipsAPI::*)(bool) const)
+                 (&UsdClipsAPI::GenerateClipManifest),
+             arg("writeBlocksForClipsWithMissingValues") = false,
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("GenerateClipManifest", 
+             (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&, bool) const)
+                 (&UsdClipsAPI::GenerateClipManifest),
+             (arg("clipSet"),
+              arg("writeBlocksForClipsWithMissingValues") = false),
+             return_value_policy<TfPyRefPtrFactory<> >())
+
+        .def("GenerateClipManifestFromLayers", 
+             &UsdClipsAPI::GenerateClipManifestFromLayers,
+             (arg("clipLayers"), arg("clipPrimPath")),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .staticmethod("GenerateClipManifestFromLayers")
+
+        .def("GetInterpolateMissingClipValues", 
+             (bool(*)(const UsdClipsAPI&))
+                 (&_GetInterpolateMissingClipValues))
+        .def("GetInterpolateMissingClipValues", 
+             (bool(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetInterpolateMissingClipValues),
+             arg("clipSet"))
+        .def("SetInterpolateMissingClipValues", 
+             (bool(UsdClipsAPI::*)(bool))
+                 (&UsdClipsAPI::SetInterpolateMissingClipValues), 
+             arg("interpolate"))
+        .def("SetInterpolateMissingClipValues", 
+             (bool(UsdClipsAPI::*)(bool, const std::string&))
+                 (&UsdClipsAPI::SetInterpolateMissingClipValues), 
+             (arg("interpolate"), arg("clipSet")))
 
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&))

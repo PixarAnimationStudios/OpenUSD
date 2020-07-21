@@ -78,9 +78,11 @@ enum HgiTextureType
 ///
 /// <ul>
 /// <li>HgiTextureUsageBitsColorTarget:
-///   The texture is an color attachment rendered into via a render pass.</li>
+///   The texture is a color attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsDepthTarget:
-///   The texture is an depth attachment rendered into via a render pass.</li>
+///   The texture is a depth attachment rendered into via a render pass.</li>
+/// <li>HgiTextureUsageBitsStencilTarget:
+///   The texture is a stencil attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsShaderRead:
 ///   The texture is sampled from in a shader (image load / sampling)</li>
 /// <li>HgiTextureUsageBitsShaderWrite:
@@ -93,15 +95,72 @@ enum HgiTextureType
 ///
 enum HgiTextureUsageBits : HgiBits
 {
-    HgiTextureUsageBitsColorTarget = 1 << 0,
-    HgiTextureUsageBitsDepthTarget = 1 << 1,
-    HgiTextureUsageBitsShaderRead  = 1 << 2,
-    HgiTextureUsageBitsShaderWrite = 1 << 3,
+    HgiTextureUsageBitsColorTarget   = 1 << 0,
+    HgiTextureUsageBitsDepthTarget   = 1 << 1,
+    HgiTextureUsageBitsStencilTarget = 1 << 2,
+    HgiTextureUsageBitsShaderRead    = 1 << 3,
+    HgiTextureUsageBitsShaderWrite   = 1 << 4,
 
-    HgiTextureUsageCustomBitsBegin = 1 << 4,
+    HgiTextureUsageCustomBitsBegin = 1 << 5,
 };
 
 using HgiTextureUsage = HgiBits;
+
+/// \enum HgiSamplerAddressMode
+///
+/// Various modes used during sampling of a texture.
+///
+enum HgiSamplerAddressMode
+{
+    HgiSamplerAddressModeClampToEdge = 0,
+    HgiSamplerAddressModeMirrorClampToEdge,
+    HgiSamplerAddressModeRepeat,
+    HgiSamplerAddressModeMirrorRepeat,
+    HgiSamplerAddressModeClampToBorderColor,
+
+    HgiSamplerAddressModeCount
+};
+
+/// \enum HgiSamplerFilter
+///
+/// Sampler filtering modes that determine the pixel value that is returned.
+///
+/// <ul>
+/// <li>HgiSamplerFilterNearest:
+///   Returns the value of a single mipmap level.</li>
+/// <li>HgiSamplerFilterLinear:
+///   Combines the values of multiple mipmap levels.</li>
+/// </ul>
+///
+enum HgiSamplerFilter
+{
+    HgiSamplerFilterNearest = 0,
+    HgiSamplerFilterLinear  = 1,
+
+    HgiSamplerFilterCount
+};
+
+/// \enum HgiMipFilter
+///
+/// Sampler filtering modes that determine the pixel value that is returned.
+///
+/// <ul>
+/// <li>HgiMipFilterNotMipmapped:
+///   Texture is always sampled at mipmap level 0. (ie. max lod=0)</li>
+/// <li>HgiMipFilterNearest:
+///   Returns the value of a single mipmap level.</li>
+/// <li>HgiMipFilterLinear:
+///   Linear interpolates the values of up to two mipmap levels.</li>
+/// </ul>
+///
+enum HgiMipFilter
+{
+    HgiMipFilterNotMipmapped = 0,
+    HgiMipFilterNearest      = 1,
+    HgiMipFilterLinear       = 2,
+
+    HgiMipFilterCount
+};
 
 /// \enum HgiSampleCount
 ///
@@ -196,13 +255,25 @@ using HgiBufferUsage = HgiBits;
 ///   Fragment Shader.</li>
 /// <li>HgiShaderStageCompute:
 ///   Compute Shader.</li>
+/// <li>HgiShaderStageTessellationControl:
+///   Transforms the control points of the low order surface (patch).
+///   This runs before the tessellator fixed function stage.</li>
+/// <li>HgiShaderStageTessellationEval:
+///   Generates the surface geometry (the points) from the transformed control
+///   points for every coordinate coming out of the tessellator fixed function
+///  stage. </li>
+/// <li>HgiShaderStageGeometry:
+///   Governs the processing of Primitives.</li>
 /// </ul>
 ///
 enum HgiShaderStageBits : HgiBits
 {
-    HgiShaderStageVertex   = 1 << 0,
-    HgiShaderStageFragment = 1 << 1,
-    HgiShaderStageCompute  = 1 << 2
+    HgiShaderStageVertex               = 1 << 0,
+    HgiShaderStageFragment             = 1 << 1,
+    HgiShaderStageCompute              = 1 << 2,
+    HgiShaderStageTessellationControl  = 1 << 3,
+    HgiShaderStageTessellationEval     = 1 << 4,
+    HgiShaderStageGeometry             = 1 << 5,
 };
 using HgiShaderStage = HgiBits;
 
@@ -231,11 +302,15 @@ enum HgiPipelineType
 ///
 /// <ul>
 /// <li>HgiBindResourceTypeSampler:
-///   Sampler</li>
+///   Sampler.
+///   Glsl example: uniform sampler samplerOnly</li>
 /// <li>HgiBindResourceTypeCombinedImageSampler:
-///   Image and sampler combined in one.</li>
+///   Image and sampler combined in one.
+///   Glsl example: uniform sampler2D combined</li>
 /// <li>HgiBindResourceTypeSamplerImage:
-///   Image for use with sampling ops.</li>
+///   Image for use with sampling ops.
+///   Glsl example: uniform texture2D textureOnly
+///   texture(sampler2D(textureOnly, samplerOnly))</li>
 /// <li>HgiBindResourceTypeStorageImage:
 ///   Storage image used for image store/load ops (Unordered Access View).</li>
 /// <li>HgiBindResourceTypeUniformBuffer:

@@ -30,8 +30,6 @@
 
 #include "pxr/imaging/hd/task.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,8 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdBufferArrayRangeSharedPtr = 
     std::shared_ptr<class HdBufferArrayRange>;
 
-typedef boost::shared_ptr<class HdStRenderPassShader>
-    HdStRenderPassShaderSharedPtr;
+using HdStRenderPassShaderSharedPtr =
+    std::shared_ptr<class HdStRenderPassShader>;
 
 /// Class for OIT render tasks to access the OIT buffers.
 class HdxOitBufferAccessor {

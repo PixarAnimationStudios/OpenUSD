@@ -24,32 +24,21 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
-//#include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/arch/hash.h"
 
 #include <cstring>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-size_t
-TfHash::operator()(const TfEnum& e) const
+void
+Tf_HashState::_AppendBytes(char const *bytes, size_t numBytes)
 {
-    return TfHashCString()(e.GetType().name()) * 31 + e.GetValueAsInt();
-}
-
-size_t
-TfHash::operator()(const TfType& t) const
-{
-    return (*this)(t._info);
-}
-
-size_t
-TfHash::operator()(const TfToken& t) const
-{
-    return t.Hash();
+    _state = ArchHash64(bytes, numBytes, _state);
+    _didOne = true;
 }
 
 size_t

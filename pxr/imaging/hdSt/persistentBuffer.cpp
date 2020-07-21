@@ -29,59 +29,32 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/buffer.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStPersistentBuffer::HdStPersistentBuffer(
-    TfToken const &role, size_t dataSize, void* data)
-    : HdStResourceGL(role)
-    , _mappedAddress(0)
+    Hgi* hgi, TfToken const &role, size_t dataSize, void* data)
+    : HdResource(role)
+    , _hgi(hgi)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    GLuint newId = 0;
-
-    if (caps.bufferStorageEnabled) {
-        GLbitfield access = 
-            GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
-            GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-
-        if (caps.directStateAccessEnabled) {
-            glCreateBuffers(1, &newId);
-            glNamedBufferStorage(newId, dataSize, data, access);
-            _mappedAddress = glMapNamedBufferRange(newId, 0, dataSize, access);
-        } else {
-            glGenBuffers(1, &newId);
-            glBindBuffer(GL_ARRAY_BUFFER, newId);
-            glBufferStorage(GL_ARRAY_BUFFER, dataSize, data, access);
-            _mappedAddress = glMapBufferRange(GL_ARRAY_BUFFER, 0, dataSize, access);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-    } else {
-        if (caps.directStateAccessEnabled) {
-            glCreateBuffers(1, &newId);
-            glNamedBufferData(newId, dataSize, data, GL_DYNAMIC_DRAW);
-        } else {
-            glGenBuffers(1, &newId);
-            glBindBuffer(GL_ARRAY_BUFFER, newId);
-            glBufferData(GL_ARRAY_BUFFER, dataSize, data, GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-    }
-
-    SetAllocation(newId, dataSize);
+    HgiBufferDesc bufDesc;
+    bufDesc.byteSize = dataSize;
+    bufDesc.usage = HgiBufferUsageUniform;
+    bufDesc.initialData = data;
+    _buffer = _hgi->CreateBuffer(bufDesc);
+    
+    SetSize(dataSize);
 }
 
 HdStPersistentBuffer::~HdStPersistentBuffer()
 {
-    GLuint id = GetId();
-    if (id) {
-        glDeleteBuffers(1, &id);
-    }
-    SetAllocation(0, 0);
+    _hgi->DestroyBuffer(&_buffer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

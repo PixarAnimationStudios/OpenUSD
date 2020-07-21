@@ -186,6 +186,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewPrimvarEdits
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewInstancingEdits
+        DEST testusdviewInstancingEdits
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -404,6 +409,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewPrimvarEdits
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimvarEdits.py primvars.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewInstancingEdits
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 

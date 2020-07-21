@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPickFromRenderBufferTask::HdxPickFromRenderBufferTask(
         HdSceneDelegate* delegate, SdfPath const& id)
-    : HdxProgressiveTask(id)
+    : HdxTask(id)
     , _index(nullptr)
     , _primId(nullptr)
     , _instanceId(nullptr)
@@ -47,9 +47,9 @@ HdxPickFromRenderBufferTask::IsConverged() const
 }
 
 void
-HdxPickFromRenderBufferTask::Sync(HdSceneDelegate* delegate,
-                                  HdTaskContext* ctx,
-                                  HdDirtyBits* dirtyBits)
+HdxPickFromRenderBufferTask::_Sync(HdSceneDelegate* delegate,
+                                   HdTaskContext* ctx,
+                                   HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

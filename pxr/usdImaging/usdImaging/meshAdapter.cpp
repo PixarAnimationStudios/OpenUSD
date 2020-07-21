@@ -264,6 +264,8 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                         _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
                         HdPrimvarRoleTokens->normal);
                     valueCache->GetNormals(cachePath) = VtValue(normals);
+                } else {
+                    _RemovePrimvar(&primvars, UsdGeomTokens->normals);
                 }
             }
         }

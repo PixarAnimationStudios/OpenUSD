@@ -70,6 +70,15 @@ _CreateFieldIndexAttr(UsdVolField3DAsset &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdVolField3DAsset &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdVol.Field3DAsset(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdVolField3DAsset()
@@ -124,6 +133,7 @@ void wrapUsdVolField3DAsset()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

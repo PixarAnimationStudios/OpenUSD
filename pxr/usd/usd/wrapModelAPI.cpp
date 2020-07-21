@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdModelAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "Usd.ModelAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdModelAPI()
@@ -79,6 +88,7 @@ void wrapUsdModelAPI()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

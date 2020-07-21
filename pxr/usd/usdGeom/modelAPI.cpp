@@ -70,8 +70,10 @@ UsdSchemaType UsdGeomModelAPI::_GetSchemaType() const {
 UsdGeomModelAPI
 UsdGeomModelAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdGeomModelAPI>(
-            prim, _schemaTokens->GeomModelAPI);
+    if (prim.ApplyAPI<UsdGeomModelAPI>()) {
+        return UsdGeomModelAPI(prim);
+    }
+    return UsdGeomModelAPI();
 }
 
 /* static */

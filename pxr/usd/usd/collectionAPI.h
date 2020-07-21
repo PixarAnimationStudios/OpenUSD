@@ -247,11 +247,13 @@ private:
     /// 
     /// \return A valid UsdCollectionAPI object is returned upon success. 
     /// An invalid (or empty) UsdCollectionAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// failure. See \ref UsdPrim::ApplyAPI() for 
     /// conditions resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     static UsdCollectionAPI 
     _Apply(const UsdPrim &prim, const TfToken &name);

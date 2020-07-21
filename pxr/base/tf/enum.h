@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -37,8 +38,6 @@
 
 #include <boost/operators.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <iosfwd>
 #include <string>
@@ -149,7 +148,7 @@ public:
     /// Initializes value to enum variable \c value of enum type \c T.
     template <class T>
     TfEnum(T value,
-           typename boost::enable_if<boost::is_enum<T> >::type * = 0)
+           std::enable_if_t<std::is_enum<T>::value> * = 0)
         : _typeInfo(&typeid(T)), _value(int(value))
     {
     }
@@ -181,28 +180,28 @@ public:
 
     /// True if \c *this has been assigned with \c value.
     template <class T>
-    typename boost::enable_if<boost::is_enum<T>, bool>::type
+    std::enable_if_t<std::is_enum<T>::value, bool>
     operator==(T value) const {
         return int(value) == _value && IsA<T>();
     }
 
     /// False if \c *this has been assigned with \c value.
     template <class T>
-    typename boost::enable_if<boost::is_enum<T>, bool>::type
+    std::enable_if_t<std::is_enum<T>::value, bool>
     operator!=(T value) const {
         return int(value) != _value || !IsA<T>();
     }
 
     /// Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
     template <class T>
-    friend typename boost::enable_if<boost::is_enum<T>, bool>::type
+    friend std::enable_if_t<std::is_enum<T>::value, bool>
     operator==(T val, TfEnum const &e) {
         return e == val;
     }
 
     /// Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
     template <class T>
-    friend typename boost::enable_if<boost::is_enum<T>, bool>::type
+    friend std::enable_if_t<std::is_enum<T>::value, bool>
     operator!=(T val, TfEnum const &e) {
         return e != val;
     }
@@ -406,6 +405,17 @@ private:
     const std::type_info* _typeInfo;
     int _value;
 };
+
+// TfHash support.  Make the enum parameter be a deduced template type but
+// enable the overload only for TfEnum.  This disables implicit conversion from
+// ordinary enum types to TfEnum.
+template <class HashState, class Enum>
+std::enable_if_t<std::is_same<Enum, TfEnum>::value>
+TfHashAppend(HashState &h, Enum const &e)
+{
+    h.Append(TfHashAsCStr(e.GetType().name()));
+    h.Append(e.GetValueAsInt());
+}
 
 /// Output a TfEnum value.
 /// \ingroup group_tf_DebuggingOutput

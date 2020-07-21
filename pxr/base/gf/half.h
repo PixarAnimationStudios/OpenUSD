@@ -33,6 +33,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/ilmbase_half.h"
 #include "pxr/base/gf/ilmbase_halfLimits.h"
+#include "pxr/base/gf/traits.h"
 
 #include <type_traits>
 
@@ -49,12 +50,9 @@ namespace pxr_half {
     hash_value(const Half& h) { return h.bits(); }
 }
 
-/// Returns the dot (inner) product of two vectors.
-/// For scalar types, this is just the regular product.
-/// \ingroup group_gf_BasicMath
-inline GfHalf GfDot(GfHalf a, GfHalf b) {
-    return a * b;
-}
+template <>
+struct GfIsFloatingPoint<GfHalf> : 
+    public std::integral_constant<bool, true>{};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

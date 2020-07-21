@@ -260,7 +260,7 @@ struct UsdGeomTokensType {
     const TfToken height;
     /// \brief "hermite"
     /// 
-    /// Possible value for UsdGeomBasisCurves::GetBasisAttr()
+    /// A deprecated basis token for UsdGeomBasisCurves. Consumers of USD should transition to using the UsdGeomHermiteCurves schema.
     const TfToken hermite;
     /// \brief "holeIndices"
     /// 
@@ -452,7 +452,7 @@ struct UsdGeomTokensType {
     const TfToken positions;
     /// \brief "power"
     /// 
-    /// Possible value for UsdGeomBasisCurves::GetBasisAttr()
+    /// A deprecated basis token for UsdGeomBasisCurves.
     const TfToken power;
     /// \brief "primvars:displayColor"
     /// 

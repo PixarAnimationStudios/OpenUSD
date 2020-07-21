@@ -70,8 +70,10 @@ UsdSchemaType UsdRiTextureAPI::_GetSchemaType() const {
 UsdRiTextureAPI
 UsdRiTextureAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiTextureAPI>(
-            prim, _schemaTokens->RiTextureAPI);
+    if (prim.ApplyAPI<UsdRiTextureAPI>()) {
+        return UsdRiTextureAPI(prim);
+    }
+    return UsdRiTextureAPI();
 }
 
 /* static */

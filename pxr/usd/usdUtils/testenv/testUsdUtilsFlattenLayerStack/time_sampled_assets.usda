@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    doc = """Generated from Composed Stage of root layer /home/mtucker/USD/pxr/usd/usdUtils/testenv/testUsdUtilsFlattenLayerStack/combined.usda
+"""
+    endTimeCode = 2
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Volume "volume"
+{
+    custom rel field:density = </volume/density>
+
+    def OpenVDBAsset "density"
+    {
+        token fieldName.timeSamples = {
+            1: "density",
+            2: "density",
+        }
+        asset filePath.timeSamples = {
+            1: @/home/mtucker/USD/pxr/usd/usdUtils/testenv/volumes/vol.1.vdb@,
+            2: @/home/mtucker/USD/pxr/usd/usdUtils/testenv/volumes/vol.2.vdb@,
+        }
+    }
+}
+
+def Cube "cube"
+{
+    rel material:binding = </materials/usdpreviewsurface1>
+    double size = 2
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "materials"
+{
+    def Material "usdpreviewsurface1"
+    {
+        token outputs:displacement.connect = </materials/usdpreviewsurface1/usdpreviewsurface1.outputs:displacement>
+        token outputs:surface.connect = </materials/usdpreviewsurface1/usdpreviewsurface1.outputs:surface>
+
+        def Shader "usdpreviewsurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </materials/usdpreviewsurface1/usduvtexture1.outputs:rgb>
+            token outputs:displacement
+            token outputs:surface
+        }
+
+        def Shader "usduvtexture1"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset[] inputs:file.timeSamples = {
+                1: [@/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.1.png@, @/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.1.png@],
+                2: [@/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.2.png@, @/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.2.png@],
+            }
+            vector3f outputs:rgb
+        }
+    }
+}
+

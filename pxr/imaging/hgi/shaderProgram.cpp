@@ -30,9 +30,7 @@ HgiShaderProgram::HgiShaderProgram(HgiShaderProgramDesc const& desc)
 {
 }
 
-HgiShaderProgram::~HgiShaderProgram()
-{
-}
+HgiShaderProgram::~HgiShaderProgram() = default;
 
 HgiShaderProgramDesc const&
 HgiShaderProgram::GetDescriptor() const

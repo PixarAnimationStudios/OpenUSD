@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import division
 
 import sys
 import math
@@ -146,6 +147,15 @@ class TestGfMath(unittest.TestCase):
     def test_Dot(self):
         self.assertEqual(Dot(2.0, 3.0), 6.0)
         self.assertEqual(Dot(-2.0, 3.0), -6.0)
+
+    def test_CompMult(self):
+        self.assertEqual(CompMult(2.0, 3.0), 6.0)
+        self.assertEqual(CompMult(-2.0, 3.0), -6.0)
+
+    def test_CompDiv(self):
+        self.assertEqual(CompDiv(6.0, 3.0), 2.0)
+        self.assertEqual(CompDiv(-6.0, 3.0), -2.0)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -463,7 +463,6 @@ struct Tf_SupportsUniqueChanged<Tf_Remnant> {
     static const bool Value = false;
 };
 
-class TfHash;
 class TfWeakBase;
 
 template <class T> class TfWeakPtr;
@@ -1018,8 +1017,9 @@ public:
 
 private:
     const TfRefBase* _refBase;
-
-    friend class TfHash;
+    
+    template <class HashState, class U>
+    friend inline void TfHashAppend(HashState &, const TfRefPtr<U>&);
     template <class U>
     friend inline size_t hash_value(const TfRefPtr<U>&);
 
@@ -1384,6 +1384,13 @@ hash_value(const TfRefPtr<T>& ptr)
     // boost::hash.
     auto refBase = ptr._refBase;
     return boost::hash<decltype(refBase)>()(refBase);
+}
+
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const TfRefPtr<T> &ptr)
+{
+    h.Append(get_pointer(ptr));
 }
 
 #endif // !doxygen

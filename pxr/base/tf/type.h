@@ -697,7 +697,13 @@ private:
     friend struct Tf_AddBases;
     friend struct _TypeInfo;
     friend class Tf_TypeRegistry;
-    friend class TfHash;
+
+    // TfHash support.
+    template <class HashState>
+    friend void
+    TfHashAppend(HashState &h, TfType const &type) {
+        h.Append(type._info);
+    }
 
     // Construct a TfType with the given _TypeInfo.
     explicit TfType(_TypeInfo *info) : _info(info) {}

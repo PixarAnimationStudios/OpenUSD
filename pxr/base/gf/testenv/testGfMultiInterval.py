@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from __future__ import print_function
+from __future__ import division
 
 import sys
 import unittest

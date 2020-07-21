@@ -1157,7 +1157,24 @@ TfType::_ExecuteDefinitionCallback() const
 string
 TfType::GetCanonicalTypeName(const std::type_info &t)
 {
-    return ArchGetDemangled(t);
+    TfAutoMallocTag2 tag("Tf", "TfType::GetCanonicalTypeName");
+
+    using LookupMap =
+        TfHashMap<std::type_index, std::string, std::hash<std::type_index>>;
+    static LookupMap lookupMap;
+
+    static RWMutex mutex;
+    ScopedLock lock(mutex, /* write = */ false);
+
+    const std::type_index typeIndex(t);
+    const LookupMap &map = lookupMap;
+    const LookupMap::const_iterator iter = map.find(typeIndex);
+    if (iter != lookupMap.end()) {
+        return iter->second;
+    }
+
+    lock.upgrade_to_writer();
+    return lookupMap.insert({typeIndex, ArchGetDemangled(t)}).first->second;
 }
 
 void

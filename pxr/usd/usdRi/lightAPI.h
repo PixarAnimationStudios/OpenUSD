@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light settings will move to a
+/// new schema in a future release.
+/// 
 /// RiLightAPI is an API schema that provides an interface
 /// to add Renderman-specific attributes to lights.
 ///
@@ -111,11 +115,13 @@ public:
     /// 
     /// \return A valid UsdRiLightAPI object is returned upon success. 
     /// An invalid (or empty) UsdRiLightAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDRI_API
     static UsdRiLightAPI 

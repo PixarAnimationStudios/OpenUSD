@@ -34,31 +34,37 @@
             "ColorCorrectionFragment": {
                 "source": [ "ColorCorrection.Fragment" ]
             }
+        },
+        "Metal": {
+            "ColorCorrectionVertex": {
+                "source": [ 
+                    "ColorCorrection.Metal.Common",
+                    "ColorCorrection.Metal.Vertex"
+                ]
+            },
+            "ColorCorrectionFragment": {
+                "source": [
+                    "ColorCorrection.Metal.Common",
+                    "ColorCorrection.Metal.Fragment"
+                ]
+            }
         }
     }
 }
 
 -- glsl ColorCorrection.Vertex
 
-#version 120
-
-attribute vec4 position;
-attribute vec2 uvIn;
-
-varying vec2 uv;
+layout(location = 0) in vec4 position;
 
 void main(void)
 {
     gl_Position = position;
-    uv = uvIn;
 }
 
 -- glsl ColorCorrection.Fragment
 
-varying vec2 uv;
-
-uniform sampler2D colorIn;
-uniform sampler3D LUT3dIn;
+layout (binding=0) uniform sampler2D colorIn;
+layout (binding=1) uniform sampler3D LUT3dIn;
 
 // Similar to D3DX_DXGIFormatConvert.inl, but branchless
 // https://www.shadertoy.com/view/wds3zM
@@ -72,12 +78,14 @@ vec3 FloatToSRGB(vec3 val)
 
 // Forward declare because C++ code will append the OCIO fn at end of shader
 #if defined(GLSLFX_USE_OCIO)
-    vec4 OCIODisplay(vec4 inPixel, sampler3D lut3d);
+    vec4 OCIODisplay(in vec4 inPixel, const sampler3D lut3d);
 #endif
+
+layout(location = 0) out vec4 outputColor;
 
 void main(void)
 {
-    vec4 color = texture2D(colorIn, uv);
+    vec4 color = texelFetch(colorIn, ivec2(gl_FragCoord.xy), 0);
 
     #if defined(GLSLFX_USE_OCIO)
         color = OCIODisplay(color, LUT3dIn);
@@ -86,5 +94,61 @@ void main(void)
         color.rgb = FloatToSRGB(color.rgb);
     #endif
 
-    gl_FragColor = color;
+    outputColor = color;
+}
+
+-- glsl ColorCorrection.Metal.Common
+
+typedef struct {
+    float4 position [[position]];
+} Interpolated;
+
+-- glsl ColorCorrection.Metal.Vertex
+
+typedef struct {
+    float4 position [[attribute(0)]];
+} Vertex;
+
+// Vertex shader function
+vertex Interpolated vertexEntryPoint(Vertex v [[stage_in]])
+{
+    Interpolated out;
+    
+    out.position = v.position;
+
+    return out;
+}
+
+-- glsl ColorCorrection.Metal.Fragment
+
+// Similar to D3DX_DXGIFormatConvert.inl, but branchless
+// https://www.shadertoy.com/view/wds3zM
+vec3 FloatToSRGB(vec3 val)
+{
+    val = mix((val * 12.92),
+              (1.055 * pow(val, vec3(1.0/2.4)) - 0.055),
+              step(0.0031308, val));
+    return val;
+}
+
+// Forward declare because C++ code will append the OCIO fn at end of shader
+#if defined(GLSLFX_USE_OCIO)
+vec4 OCIODisplay(vec4 inPixel, texture3d<float> lut3d);
+#endif
+
+fragment half4 fragmentEntryPoint(
+    Interpolated input[[stage_in]],
+    texture2d<float> colorIn[[texture(0)]],
+    texture3d<float> LUT3dIn[[texture(1)]])
+{
+    vec4 color = colorIn.read(uint2(input.position.xy));
+
+    #if defined(GLSLFX_USE_OCIO)
+        color = OCIODisplay(color, LUT3dIn);
+    #else
+        // Only color, not alpha is gamma corrected!
+        color.rgb = FloatToSRGB(color.rgb);
+    #endif
+
+    return half4(color.xyzw);
 }

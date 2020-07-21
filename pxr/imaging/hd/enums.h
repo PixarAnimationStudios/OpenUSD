@@ -167,67 +167,6 @@ enum HdPointsGeomStyle {
     HdPointsGeomStylePoints
 };
 
-/// \enum HdWrap
-///
-/// Enumerates wrapping attributes type values.
-///
-/// <ul>
-///     <li>\b HdWrapClamp               Clamp coordinate to range [1/(2N),1-1/(2N)] where N is the size of the texture in the direction of clamping</li>
-///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
-///     <li>\b HdWrapBlack               Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
-///     <li>\b HdWrapMirror              Creates a mirrored repeating pattern.</li>
-///     <li>\b HdWrapUseMetadata         Data Texture can define its own wrap mode, if not defined by the texture it will use HdWrapBlack</li>
-///     <li>\b HdWrapLegacy              (deprecated) Texture can define its own wrap mode, if not defined by the texture it will use HdWrapRepeat</li>
-/// </ul>
-///
-enum HdWrap 
-{
-    HdWrapClamp,
-    HdWrapRepeat,
-    HdWrapBlack,
-    HdWrapMirror,
-    HdWrapUseMetadata,
-    HdWrapLegacy,
-};
-
-/// \enum HdMinFilter
-///
-/// Enumerates minFilter attribute type values.
-///
-/// <ul>
-///     <li>\b HdMinFilterNearest                Nearest to center of the pixel</li>
-///     <li>\b HdMinFilterLinear                 Weighted average od the four texture elements closest to the pixel</li>
-///     <li>\b HdMinFilterNearestMipmapNearest   Nearest to center of the pixel from the nearest mipmaps</li>
-///     <li>\b HdMinFilterLinearMipmapNeares     Weighted average using texture elements from the nearest mipmaps</li>
-///     <li>\b HdMinFilterNearestMipmapLinear    Weighted average of the nearest pixels from the two nearest mipmaps</li>
-///     <li>\b HdMinFilterLinearMipmapLinear     WeightedAverage of the weighted averages from the nearest mipmaps</li>
-/// </ul>
-///
-enum HdMinFilter 
-{
-    HdMinFilterNearest,
-    HdMinFilterLinear,
-    HdMinFilterNearestMipmapNearest,
-    HdMinFilterLinearMipmapNearest,
-    HdMinFilterNearestMipmapLinear,
-    HdMinFilterLinearMipmapLinear,
-};
-
-/// \enum HdMagFilter
-///
-/// Enumerates magFilter attribute type values.
-///
-/// <ul>
-///     <li>HdFilterNearest       Nearest to center of the pixel</li>
-///     <li>HdFilterLinear        Weighted average of the four texture elements closest to the pixel</li>
-/// </ul>
-///
-enum HdMagFilter 
-{
-    HdMagFilterNearest,
-    HdMagFilterLinear,
-};
-
 ///
 /// \enum HdInterpolation
 ///
@@ -268,20 +207,21 @@ enum HdInterpolation
 /// \enum HdTextureType
 /// Enumerates Hydra's supported texture types.
 ///
-/// Uv:   Sample the uv coordinates and accesses a single 2d texture.
+/// Uv:    Sample the uv coordinates and accesses a single 2d texture.
 ///
-/// Uvw:  Sample the uvw coordinates and accesses a single 3d texture.
+/// Field: Transform coordinates by matrix before accessing a single 3d
+///        texture.
 ///
-/// Ptex: Use the ptex connectivity information to sample a ptex texture.
+/// Ptex:  Use the ptex connectivity information to sample a ptex texture.
 ///
-/// Udim: Remap the uv coordinates into udim coordinates using a maximum
-///       tile width of 10 and sample all the udim tiles found in the
-///       file system.
+/// Udim:  Remap the uv coordinates into udim coordinates using a maximum
+///        tile width of 10 and sample all the udim tiles found in the
+///        file system.
 ///
 enum class HdTextureType
 {
     Uv,
-    Uvw,
+    Field,
     Ptex,
     Udim
 };

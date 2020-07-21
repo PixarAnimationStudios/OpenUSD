@@ -31,6 +31,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferResource.h"
 
+#include "pxr/imaging/hgi/buffer.h"
+
 #include "pxr/base/tf/token.h"
 
 #include <cstddef>
@@ -67,22 +69,17 @@ public:
     /// Sets the OpenGL name/identifier for this resource and its size.
     /// also caches the gpu address of the buffer.
     HDST_API
-    void SetAllocation(GLuint id, size_t size);
+    void SetAllocation(HgiBufferHandle const& id, size_t size);
 
-    /// Returns the OpenGL id for this GPU resource
-    GLuint GetId() const { return _id; }
+    /// Returns the Hgi id for this GPU resource
+    HgiBufferHandle& GetId() { return _id; }
 
     /// Returns the gpu address (if available. otherwise returns 0).
     uint64_t GetGPUAddress() const { return _gpuAddr; }
 
-    /// Returns the texture buffer view
-    HDST_API
-    GLuint GetTextureBuffer();
-
 private:
     uint64_t _gpuAddr;
-    GLuint _texId;
-    GLuint _id;
+    HgiBufferHandle _id;
 };
 
 

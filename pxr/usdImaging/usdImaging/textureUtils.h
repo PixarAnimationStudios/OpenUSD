@@ -37,6 +37,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// The functions below are used by the old texture system where the
+/// scene delegates creates the texture resource in
+/// GetTextureResource.
+///
+/// Note: these functions are also not binding the Usd stage's
+/// resolver context and thus don't handle some cases (e.g., model
+/// search paths) correctly.
+///
+/// The corresponding functions for the new texture system are in
+/// usdImaging/materialParamUtils.cpp and HdStUdimTextureObject.
+///
 USDIMAGING_API
 std::vector<std::tuple<int, TfToken>>
 UsdImaging_GetUdimTiles(

@@ -23,36 +23,51 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-size_t HgiGetComponentCount(HgiFormat f)
+size_t HgiGetComponentCount(const HgiFormat f)
 {
     switch (f) {
+    case HgiFormatUNorm8:
+    case HgiFormatSNorm8:
+    case HgiFormatFloat16:
+    case HgiFormatFloat32:
+    case HgiFormatInt32:
+    case HgiFormatFloat32UInt8: // treat as a single component
+        return 1;
     case HgiFormatUNorm8Vec2:
     case HgiFormatSNorm8Vec2:
     case HgiFormatFloat16Vec2:
     case HgiFormatFloat32Vec2:
     case HgiFormatInt32Vec2:
         return 2;
-    case HgiFormatUNorm8Vec3:
-    case HgiFormatSNorm8Vec3:
+    // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     case HgiFormatFloat16Vec3:
     case HgiFormatFloat32Vec3:
     case HgiFormatInt32Vec3:
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
         return 3;
     case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8Vec4:
     case HgiFormatFloat16Vec4:
     case HgiFormatFloat32Vec4:
     case HgiFormatInt32Vec4:
+    case HgiFormatUNorm8Vec4srgb:
         return 4;
-    default:
-        return 1;
+    case HgiFormatCount:
+    case HgiFormatInvalid:
+        TF_CODING_ERROR("Invalid Format");
+        return 0;
     }
+    TF_CODING_ERROR("Missing Format");
+    return 0;
 }
 
-size_t HgiDataSizeOfFormat(HgiFormat f)
+size_t HgiDataSizeOfFormat(const HgiFormat f)
 {
     switch(f) {
     case HgiFormatUNorm8:
@@ -61,11 +76,12 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     case HgiFormatUNorm8Vec2:
     case HgiFormatSNorm8Vec2:
         return 2;
-    case HgiFormatUNorm8Vec3:
-    case HgiFormatSNorm8Vec3:
-        return 3;
+    // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
+    //     return 3;
     case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8Vec4:
+    case HgiFormatUNorm8Vec4srgb:
         return 4;
     case HgiFormatFloat16:
         return 2;
@@ -80,6 +96,7 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
         return 4;
     case HgiFormatFloat32Vec2:
     case HgiFormatInt32Vec2:
+    case HgiFormatFloat32UInt8: // XXX: implementation dependent
         return 8;
     case HgiFormatFloat32Vec3:
     case HgiFormatInt32Vec3:
@@ -87,8 +104,26 @@ size_t HgiDataSizeOfFormat(HgiFormat f)
     case HgiFormatFloat32Vec4:
     case HgiFormatInt32Vec4:
         return 16;
-    default:
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
+        return 1;
+    case HgiFormatCount:
+    case HgiFormatInvalid:
+        TF_CODING_ERROR("Invalid Format");
         return 0;
+    }
+    TF_CODING_ERROR("Missing Format");
+    return 0;
+}
+
+bool HgiIsCompressed(const HgiFormat f)
+{
+    switch(f) {
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
+        return true;
+    default:
+        return false;
     }
 }
 

@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "Clip"
+{
+    def "A"
+    {
+        double z.timeSamples = {
+            0: 1.0,
+            1: 2.0
+        }
+    }
+    
+    def "B"
+    {
+        double y.timeSamples = {
+            0: 1.0,
+            1: 2.0
+        }
+    }
+}

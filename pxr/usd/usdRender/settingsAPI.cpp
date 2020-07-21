@@ -70,8 +70,10 @@ UsdSchemaType UsdRenderSettingsAPI::_GetSchemaType() const {
 UsdRenderSettingsAPI
 UsdRenderSettingsAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRenderSettingsAPI>(
-            prim, _schemaTokens->RenderSettingsAPI);
+    if (prim.ApplyAPI<UsdRenderSettingsAPI>()) {
+        return UsdRenderSettingsAPI(prim);
+    }
+    return UsdRenderSettingsAPI();
 }
 
 /* static */

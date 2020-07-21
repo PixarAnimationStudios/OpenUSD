@@ -104,6 +104,9 @@ public:
     HF_API
     bool IsRegisteredPlugin(const TfToken &pluginId);
 
+    HF_API
+    TfToken GetPluginId(const HfPluginBase *plugin) const;
+
 protected:
     // Must be derived.
 

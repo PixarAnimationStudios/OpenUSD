@@ -28,7 +28,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderThread.h"
 
-#include <embree2/rtcore.h>
+#include <embree3/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

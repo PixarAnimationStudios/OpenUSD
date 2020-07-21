@@ -81,8 +81,6 @@ void wrapRegistry()
              args("nodeType"),
              args("filter") = NdrVersionFilterDefaultOnly),
             return_internal_reference<>())
-        .def("GetShaderNodeByURI", &This::GetShaderNodeByURI,
-            return_internal_reference<>())
         .def("GetShaderNodesByIdentifier", &This::GetShaderNodesByIdentifier,
             (args("identifier")))
         .def("GetShaderNodesByName", &This::GetShaderNodesByName,

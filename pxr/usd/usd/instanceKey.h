@@ -25,7 +25,7 @@
 #define PXR_USD_USD_INSTANCE_KEY_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/clipSetDefinition.h"
 #include "pxr/usd/usd/primData.h"
 #include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
@@ -71,7 +71,7 @@ private:
     size_t _ComputeHash() const;
 
     PcpInstanceKey _pcpInstanceKey;
-    std::vector<Usd_ResolvedClipInfo> _clipInfo;
+    std::vector<Usd_ClipSetDefinition> _clipDefs;
     UsdStagePopulationMask _mask;
     UsdStageLoadRules _loadRules;
     size_t _hash;

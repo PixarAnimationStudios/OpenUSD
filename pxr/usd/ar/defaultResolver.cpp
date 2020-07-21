@@ -295,6 +295,14 @@ ArDefaultResolver::OpenAsset(
 }
 
 bool
+ArDefaultResolver::CreatePathForLayer(
+    const std::string& path)
+{
+    const std::string layerDir = TfGetPathName(path);
+    return layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir);
+}
+
+bool
 ArDefaultResolver::CanWriteLayerToPath(
     const std::string& path,
     std::string* whyNot)

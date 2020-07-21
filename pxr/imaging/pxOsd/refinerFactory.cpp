@@ -59,8 +59,7 @@ Converter::GetType() const {
     TfToken const scheme = topology.GetScheme();
 
     SchemeType type = SCHEME_CATMARK;
-    if (scheme==PxOsdOpenSubdivTokens->catmark
-                              || scheme==PxOsdOpenSubdivTokens->catmullClark) {
+    if (scheme==PxOsdOpenSubdivTokens->catmullClark) {
         type = SCHEME_CATMARK;
     } else if (scheme==PxOsdOpenSubdivTokens->loop) {
         type = SCHEME_LOOP;
@@ -178,8 +177,7 @@ Converter::GetOptions() const {
         topology.GetSubdivTags().GetTriangleSubdivision();
 
     if (!triangleSubdivision.IsEmpty()) {
-        if (triangleSubdivision==PxOsdOpenSubdivTokens->catmark || 
-                triangleSubdivision==PxOsdOpenSubdivTokens->catmullClark) {
+        if (triangleSubdivision==PxOsdOpenSubdivTokens->catmullClark) {
             options.SetTriangleSubdivision(Options::TRI_SUB_CATMARK);
         } else if (triangleSubdivision==PxOsdOpenSubdivTokens->smooth) {
             options.SetTriangleSubdivision(Options::TRI_SUB_SMOOTH);

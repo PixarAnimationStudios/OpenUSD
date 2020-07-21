@@ -254,12 +254,14 @@ def Xform "GroundTruth"
     }
 }
 
-def SkelRoot "TestPlane"
+def SkelRoot "TestPlane" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     rel skel:skeleton = <Skel>
 
     def Mesh "Mesh" (
-        apiSchemas = ["BindingAPI"]
+        apiSchemas = ["SkelBindingAPI"]
     )
     {
         color3f[] primvars:displayColor = [(0,1,0)] (
@@ -332,7 +334,9 @@ def SkelRoot "TestPlane"
         }
     }
 
-    def Skeleton "Skel"
+    def Skeleton "Skel" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = <Anim>
 

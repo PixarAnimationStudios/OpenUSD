@@ -111,6 +111,14 @@ that depend on GL, including:
 - usdview
 - Hydra GL imaging
 
+##### Metal
+
+To build USD with Metal enabled requires macOS Mojave (10.14) or newer.
+Support for Metal can optionally be disabled by specifying the cmake flag
+```PXR_ENABLE_METAL_SUPPORT=FALSE```.  This will skip components and libraries
+that depend on Metal, including:
+- Hydra imaging
+
 ##### OSL (OpenShadingLanguage)
 
 Support for OSL is disabled by default, and can optionally be enabled by

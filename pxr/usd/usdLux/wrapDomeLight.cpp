@@ -63,6 +63,15 @@ _CreateTextureFormatAttr(UsdLuxDomeLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxDomeLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.DomeLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxDomeLight()
@@ -115,6 +124,7 @@ void wrapUsdLuxDomeLight()
              &This::GetPortalsRel)
         .def("CreatePortalsRel",
              &This::CreatePortalsRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

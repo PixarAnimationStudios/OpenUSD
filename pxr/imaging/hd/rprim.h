@@ -153,9 +153,8 @@ public:
     /// These draw items should be constructed and cached beforehand by Sync().
     /// If no draw items exist, or reprToken cannot be found, nullptr will be
     /// returned.
-    using HdDrawItemPtrVector = std::vector<HdDrawItem*>;
     HD_API
-    const HdDrawItemPtrVector*
+    const HdRepr::DrawItemUniquePtrVector &
     GetDrawItems(TfToken const& reprToken) const;
 
     // ---------------------------------------------------------------------- //

@@ -99,8 +99,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         // be allocated, so the check for resource allocation has been moved
         // until after the copy size check.
 
-        GLint srcId = srcRes->GetId();
-        GLint dstId = dstRes->GetId();
+        GLint srcId = srcRes->GetId()->GetRawResource();
+        GLint dstId = dstRes->GetId()->GetRawResource();
 
         if (!TF_VERIFY(srcId)) {
             return;

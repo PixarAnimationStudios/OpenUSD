@@ -52,8 +52,11 @@ class SdfAssetPath;
 
 /// \class UsdRiRisOslPattern
 ///
+/// 
 /// \deprecated Specialized RIS shader schemas have been deprecated in 
 /// favor of all shader prims being simple UsdShadeShader.
+/// This schema will be removed in a future release.
+/// 
 /// Represents a ris osl pattern object.
 ///
 class UsdRiRisOslPattern : public UsdRiRisPattern

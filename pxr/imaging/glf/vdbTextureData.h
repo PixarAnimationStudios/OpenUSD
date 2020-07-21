@@ -108,6 +108,7 @@ private:
     size_t _targetMemory;
 
     int _nativeWidth, _nativeHeight, _nativeDepth;
+    int _resizedWidth, _resizedHeight, _resizedDepth;
     int _bytesPerPixel;
 
     GLenum  _glInternalFormat, _glFormat, _glType;

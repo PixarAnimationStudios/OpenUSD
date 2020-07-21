@@ -41,6 +41,8 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/imaging/hgiGL/shaderProgram.h"
+
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4i.h"
 
@@ -444,7 +446,8 @@ HdSt_QuadrangulateComputationGPU::Execute(
         
     if (!computeProgram) return;
 
-    GLuint program = computeProgram->GetProgram().GetId();
+    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
+    GLuint program = hgiProgram->GetRawResource();
 
     HdStBufferArrayRangeGLSharedPtr range_ =
         std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
@@ -494,19 +497,26 @@ HdSt_QuadrangulateComputationGPU::Execute(
         HdGetComponentCount(primvar->GetTupleType().type);
 
     // transfer uniform buffer
-    GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
+    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
+    // GfxCmds.
+    const size_t uboSize = sizeof(uniform);
+    HgiGLShaderProgram * const hgiGLProgram =
+        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
+    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     if (caps.directStateAccessEnabled) {
-        glNamedBufferData(ubo, sizeof(uniform), &uniform, GL_STATIC_DRAW);
+        glNamedBufferData(ubo, uboSize, &uniform, GL_STATIC_DRAW);
     } else {
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(uniform), &uniform, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, uboSize, &uniform, GL_STATIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, primvar->GetId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, quadrangulateTable->GetId());
+    glBindBufferBase(
+        GL_SHADER_STORAGE_BUFFER, 0, primvar->GetId()->GetRawResource());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1,
+                     quadrangulateTable->GetId()->GetRawResource());
 
     // dispatch compute kernel
     glUseProgram(program);

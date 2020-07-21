@@ -63,6 +63,15 @@ _CreateGofur_GeomOnHairdensityAttr(UsdContrivedTestHairman &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdContrivedTestHairman &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdContrived.TestHairman(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedTestHairman()
@@ -115,6 +124,7 @@ void wrapUsdContrivedTestHairman()
              &This::GetGofur_GeomOnHairdensityRel)
         .def("CreateGofur_GeomOnHairdensityRel",
              &This::CreateGofur_GeomOnHairdensityRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

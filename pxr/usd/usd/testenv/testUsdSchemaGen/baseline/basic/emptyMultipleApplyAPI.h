@@ -132,11 +132,13 @@ public:
     /// 
     /// \return A valid UsdContrivedEmptyMultipleApplyAPI object is returned upon success. 
     /// An invalid (or empty) UsdContrivedEmptyMultipleApplyAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// failure. See \ref UsdPrim::ApplyAPI() for 
     /// conditions resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDCONTRIVED_API
     static UsdContrivedEmptyMultipleApplyAPI 

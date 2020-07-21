@@ -41,7 +41,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdSt_UnitTestWindow : public GarchGLDebugWindow {
+class HdSt_UnitTestWindow : public GarchGLDebugWindow
+{
 public:
     typedef HdSt_UnitTestWindow This;
 
@@ -116,6 +117,7 @@ void
 HdSt_UnitTestWindow::OnUninitializeGL()
 {
     _drawTarget = GlfDrawTargetRefPtr();
+    _unitTest->UninitTest();
 }
 
 /* virtual */
@@ -201,21 +203,21 @@ HdSt_UnitTestWindow::OnKeyRelease(int key)
 void
 HdSt_UnitTestWindow::OnMousePress(int button, int x, int y, int modKeys)
 {
-    _unitTest->MousePress(button, x, y);
+    _unitTest->MousePress(button, x, y, modKeys);
 }
 
 /* virtual */
 void
 HdSt_UnitTestWindow::OnMouseRelease(int button, int x, int y, int modKeys)
 {
-    _unitTest->MouseRelease(button, x, y);
+    _unitTest->MouseRelease(button, x, y, modKeys);
 }
 
 /* virtual */
 void
 HdSt_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 {
-    _unitTest->MouseMove(x, y);
+    _unitTest->MouseMove(x, y, modKeys);
 }
 
 ////////////////////////////////////////////////////////////
@@ -295,8 +297,14 @@ HdSt_UnitTestGLDrawing::ParseArgs(int argc, char *argv[])
 }
 
 /* virtual */
+void 
+HdSt_UnitTestGLDrawing::UninitTest()
+{
+}
+
+/* virtual */
 void
-HdSt_UnitTestGLDrawing::MousePress(int button, int x, int y)
+HdSt_UnitTestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
     _mouseButton[button] = true;
     _mousePos[0] = x;
@@ -305,26 +313,28 @@ HdSt_UnitTestGLDrawing::MousePress(int button, int x, int y)
 
 /* virtual */
 void
-HdSt_UnitTestGLDrawing::MouseRelease(int button, int x, int y)
+HdSt_UnitTestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 {
     _mouseButton[button] = false;
 }
 
 /* virtual */
 void
-HdSt_UnitTestGLDrawing::MouseMove(int x, int y)
+HdSt_UnitTestGLDrawing::MouseMove(int x, int y, int modKeys)
 {
     int dx = x - _mousePos[0];
     int dy = y - _mousePos[1];
 
-    if (_mouseButton[0]) {
-        _rotate[1] += dx;
-        _rotate[0] += dy;
-    } else if (_mouseButton[1]) {
-        _translate[0] += 0.1*dx;
-        _translate[1] -= 0.1*dy;
-    } else if (_mouseButton[2]) {
-        _translate[2] += 0.1*dx;
+    if (modKeys & GarchGLDebugWindow::Alt) {
+        if (_mouseButton[0]) {
+            _rotate[1] += dx;
+            _rotate[0] += dy;
+        } else if (_mouseButton[1]) {
+            _translate[0] += 0.1*dx;
+            _translate[1] -= 0.1*dy;
+        } else if (_mouseButton[2]) {
+            _translate[2] += 0.1*dx;
+        }
     }
 
     _mousePos[0] = x;

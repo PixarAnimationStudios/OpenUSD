@@ -32,6 +32,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -138,22 +139,14 @@ public:
     GLF_API
     void SetIsDomeLight(bool isDomeLight);
 
-    // the following Id's are GL resource handles for the precomputed textures
-    // created by HdStLight 
+    /// The path to the (unprocessed) environment map texture.
+    ///
+    /// All textures actually used by the dome light (irradiance, prefilter,
+    /// brdf) are derived from this texture in a pre-calculation step.
     GLF_API
-    uint32_t const & GetIrradianceId() const;
+    const SdfAssetPath &GetDomeLightTextureFile() const;
     GLF_API
-    void SetIrradianceId(uint32_t const & irradianceId);
-
-    GLF_API
-    uint32_t const & GetPrefilterId() const;
-    GLF_API
-    void SetPrefilterId(uint32_t const & prefilterId);
-
-    GLF_API
-    uint32_t const & GetBrdfId() const;
-    GLF_API
-    void SetBrdfId(uint32_t const & brdfId);
+    void SetDomeLightTextureFile(const SdfAssetPath &);
 
     GLF_API
     bool operator ==(GlfSimpleLight const & other) const;
@@ -186,10 +179,8 @@ private:
 
     // domeLight specific parameters 
     bool _isDomeLight;
-    // handles for the resource bindings from HdStSimpleLightingShader
-    uint32_t _irradianceId; // pre-computed irradiance map
-    uint32_t _prefilterId;  // pre-computed preFiltered map
-    uint32_t _brdfId;       // pre-computed BRDF look up texture
+    // path to texture for dome light.
+    SdfAssetPath _domeLightTextureFile;
 
     SdfPath _id;
 };

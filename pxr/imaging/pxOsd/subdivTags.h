@@ -43,6 +43,10 @@ class PxOsdSubdivTags {
 public:
 
     PxOsdSubdivTags() = default;
+    PxOsdSubdivTags(PxOsdSubdivTags const&) = default;
+    PxOsdSubdivTags(PxOsdSubdivTags&&) = default;
+    PxOsdSubdivTags& operator=(PxOsdSubdivTags const&) = default;
+    PxOsdSubdivTags& operator=(PxOsdSubdivTags&&) = default;
 
     PxOsdSubdivTags(
         const TfToken& vertexInterpolationRule,

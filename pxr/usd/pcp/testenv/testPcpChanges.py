@@ -126,7 +126,6 @@ class TestPcpChanges(unittest.TestCase):
 
         self.assertTrue(pcp.FindPrimIndex('/Root'))
 
-
     def test_SublayerOffsetChanges(self):
         rootLayerPath = 'TestSublayerOffsetChanges/root.sdf'
         rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.sdf'
@@ -186,6 +185,336 @@ class TestPcpChanges(unittest.TestCase):
 
             self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(200.0))
             self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(400.0))
+
+    def _RunTcpsChangesForLayer(self, pcpCache, layer, tcpsToExpecteOffsetsMap, 
+                                affectedPaths):
+        """ 
+        Helper function for test_TcpsChanges to run a suite of various TCPS and
+        FPS metadata changes on a particular layer and verifying that the 
+        correct change processing is run for every change.
+        """
+
+        # Helper function for a making a TCPS and/or FPS change and verify the
+        # expected change processing, prim index invalidation, and new computed
+        # values.
+        def _ChangeAndVerify(newValDict, expectSignificantChange, expectedTcps):
+
+            # Just verify we have a tcps value and/or fps value to set
+            self.assertTrue('tcps' in newValDict or 'fps' in newValDict)
+            with Pcp._TestChangeProcessor(pcpCache) as cp:
+                # Change block for when we're setting both fps and tcps
+                with Sdf.ChangeBlock():
+                    # Set the tcps value if present (None -> Clear)
+                    if 'tcps' in newValDict:
+                        val = newValDict['tcps']
+                        if val is None:
+                            layer.ClearTimeCodesPerSecond()
+                            self.assertFalse(layer.HasTimeCodesPerSecond())
+                        else:
+                            layer.timeCodesPerSecond = val
+                            self.assertTrue(layer.HasTimeCodesPerSecond())
+
+                    # Set the fps value if present (None -> Clear)
+                    if 'fps' in newValDict:
+                        val = newValDict['fps']
+                        if val is None:
+                            layer.ClearFramesPerSecond()
+                            self.assertFalse(layer.HasFramesPerSecond())
+                        else:
+                            layer.framesPerSecond = val
+                            self.assertTrue(layer.HasFramesPerSecond())
+
+                # Verify whether the change processor logged a significant
+                # change for the expected affected paths or not based on 
+                # whether we expect a significant change.
+                if expectSignificantChange:
+                    self.assertEqual(cp.GetSignificantChanges(), affectedPaths)
+                    # A significant change will have invalidated our 
+                    # prim's prim index.
+                    self.assertFalse(pcpCache.FindPrimIndex('/A'))
+                    # Recompute the new prim index
+                    (pi, err) = pcpCache.ComputePrimIndex('/A')
+                else:
+                    # No significant should leave our prim's prim index 
+                    # valid.
+                    self.assertEqual(cp.GetSignificantChanges(), [])
+                    pi = pcpCache.FindPrimIndex('/A')
+                    self.assertTrue(pi)
+
+                refNode = pi.rootNode.children[0]
+                ref2Node = refNode.children[0]
+
+                # Verify the layer has the expected computed TCPS
+                self.assertEqual(layer.timeCodesPerSecond, expectedTcps)
+                # Verify the ref node offesets match the expected offsets
+                # for the layer's expected computed TCPS.
+                expectedOffsets = tcpsToExpecteOffsetsMap[expectedTcps]
+                self.assertEqual(refNode.mapToRoot.timeOffset, 
+                                 expectedOffsets[0])
+                self.assertEqual(ref2Node.mapToRoot.timeOffset, 
+                                 expectedOffsets[1])
+
+        # Expect the layer to start with no authored TCPS of FPS. Verify
+        # various changes to authored timeCodesPerSecond
+        self.assertFalse(layer.HasTimeCodesPerSecond())
+        self.assertFalse(layer.HasFramesPerSecond())
+        _ChangeAndVerify({'tcps' : 24.0}, False, 24.0)
+        _ChangeAndVerify({'tcps' : None}, False, 24.0)
+        _ChangeAndVerify({'tcps' : 48.0}, True, 48.0)
+        _ChangeAndVerify({'tcps' : 12.0}, True, 12.0)
+        _ChangeAndVerify({'tcps' : None}, True, 24.0)
+
+        # Expect the layer to start with no authored TCPS of FPS again. 
+        # Verify various changes to authored framesPerSecond
+        self.assertFalse(layer.HasTimeCodesPerSecond())
+        self.assertFalse(layer.HasFramesPerSecond())
+        _ChangeAndVerify({'fps' : 24.0}, False, 24.0)
+        _ChangeAndVerify({'fps' : None}, False, 24.0)
+        _ChangeAndVerify({'fps' : 48.0}, True, 48.0)
+        _ChangeAndVerify({'fps' : 12.0}, True, 12.0)
+        _ChangeAndVerify({'fps' : None}, True, 24.0)
+
+        # Change the layer to have an authored non-default framesPerSecond.
+        # Verify various changes to timeCodesPerSecond.
+        _ChangeAndVerify({'fps' : 48.0}, True, 48.0)
+        self.assertFalse(layer.HasTimeCodesPerSecond())
+        self.assertTrue(layer.HasFramesPerSecond())
+        self.assertEqual(layer.timeCodesPerSecond, 48.0)
+        _ChangeAndVerify({'tcps' : 48.0}, False, 48.0)
+        _ChangeAndVerify({'tcps' : None}, False, 48.0)
+        _ChangeAndVerify({'tcps' : 12.0}, True, 12.0)
+        _ChangeAndVerify({'tcps' : 24.0}, True, 24.0)
+        _ChangeAndVerify({'tcps' : None}, True, 48.0)
+
+        # Change the layer to have an authored timeCodesPerSecond.
+        # Verify that various changes to framesPerSecond have no effect.
+        _ChangeAndVerify({'tcps' : 24.0, 'fps' : None}, True, 24.0)
+        self.assertTrue(layer.HasTimeCodesPerSecond())
+        self.assertFalse(layer.HasFramesPerSecond())
+        self.assertEqual(layer.timeCodesPerSecond, 24.0)
+        _ChangeAndVerify({'fps' : 24.0}, False, 24.0)
+        _ChangeAndVerify({'fps' : None}, False, 24.0)
+        _ChangeAndVerify({'fps' : 48.0}, False, 24.0)
+        _ChangeAndVerify({'fps' : 12.0}, False, 24.0)
+        _ChangeAndVerify({'fps' : None}, False, 24.0)
+
+        # Change the layer to start with an unauthored timeCodesPerSecond 
+        # and a non-default framesPerSecond
+        # Verify various changes to timeCodesPerSecond and framesPerSecond
+        # at the same time.
+        _ChangeAndVerify({'tcps' : None, 'fps' : 48.0}, True, 48.0)
+        self.assertFalse(layer.HasTimeCodesPerSecond())
+        self.assertTrue(layer.HasFramesPerSecond())
+        self.assertEqual(layer.timeCodesPerSecond, 48.0)
+        _ChangeAndVerify({'tcps' : 48.0, 'fps' : None}, False, 48.0)
+        _ChangeAndVerify({'tcps' : None, 'fps' : 48.0}, False, 48.0)
+        _ChangeAndVerify({'tcps' : 24.0, 'fps' : None}, True, 24.0)
+        _ChangeAndVerify({'tcps' : None, 'fps' : 48.0}, True, 48.0)
+        _ChangeAndVerify({'tcps' : 12.0, 'fps' : None}, True, 12.0)
+        _ChangeAndVerify({'tcps' : 48.0, 'fps' : 12.0}, True, 48.0)
+        _ChangeAndVerify({'tcps' : 12.0, 'fps' : 48.0}, True, 12.0)
+        _ChangeAndVerify({'tcps' : None, 'fps' : 12.0}, False, 12.0)
+        _ChangeAndVerify({'tcps' : 24.0, 'fps' : 24.0}, True, 24.0)
+        _ChangeAndVerify({'tcps' : None, 'fps' : None}, False, 24.0)
+
+    @unittest.skipIf(
+        Tf.GetEnvSetting('PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS'),
+        "Test requires layer TCPS time scaling enabled")
+    def test_TcpsChanges(self):
+        """
+        Tests change processing for changes that affect the time codes per
+        second of all layers in the layer stacks of a PcpCache.
+        """
+
+        # Use the same layers as the sublayer offset test case.
+        rootLayerPath = 'TestSublayerOffsetChanges/root.sdf'
+        rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.sdf'
+        refLayerPath = 'TestSublayerOffsetChanges/ref.sdf'
+        refSublayerPath = 'TestSublayerOffsetChanges/ref-sublayer.sdf'
+        ref2LayerPath = 'TestSublayerOffsetChanges/ref2.sdf'
+
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerPath)
+        sessionLayer = Sdf.Layer.CreateAnonymous()
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer, sessionLayer))
+
+        (pi, err) = pcp.ComputePrimIndex('/A')
+        self.assertTrue(pi)
+        self.assertEqual(len(err), 0)
+
+        rootSublayer = Sdf.Layer.Find(rootSublayerPath)
+        refLayer = Sdf.Layer.Find(refLayerPath)
+        refSublayer = Sdf.Layer.Find(refSublayerPath)
+        ref2Layer = Sdf.Layer.Find(ref2LayerPath)
+
+        # Verify the expected structure of the test asset. It should simply be
+        # a chain of two references, with layer offsets of 100.0 and 50.0
+        # respectively.
+        self.assertEqual(pi.rootNode.layerStack.layers, 
+                         [sessionLayer, rootLayer, rootSublayer])
+
+        refNode = pi.rootNode.children[0]
+        self.assertEqual(refNode.layerStack.layers, [refLayer, refSublayer])
+        self.assertEqual(refNode.arcType, Pcp.ArcTypeReference)
+        self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(100.0))
+        for layer in refNode.layerStack.layers:
+            self.assertFalse(layer.HasTimeCodesPerSecond())
+            self.assertEqual(layer.timeCodesPerSecond, 24.0)
+
+        ref2Node = refNode.children[0]
+        self.assertEqual(ref2Node.layerStack.layers, [ref2Layer])
+        self.assertEqual(ref2Node.arcType, Pcp.ArcTypeReference)
+        self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(150.0))
+        for layer in ref2Node.layerStack.layers:
+            self.assertFalse(layer.HasTimeCodesPerSecond())
+            self.assertEqual(layer.timeCodesPerSecond, 24.0)
+
+        # Run the TCPS change suite on the root layer. 
+        tcpsToOffsets = {12.0: (Sdf.LayerOffset(100.0, 0.5),
+                                Sdf.LayerOffset(125.0, 0.5)),
+                         24.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         48.0: (Sdf.LayerOffset(100.0, 2.0),
+                                Sdf.LayerOffset(200.0, 2.0))
+                         }
+        self._RunTcpsChangesForLayer(pcp, rootLayer, tcpsToOffsets, ['/'])
+
+        # Run the TCPS change suite on the first reference layer. 
+        tcpsToOffsets = {12.0: (Sdf.LayerOffset(100.0, 2.0),
+                                Sdf.LayerOffset(200.0)),
+                         24.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         48.0: (Sdf.LayerOffset(100.0, 0.5),
+                                Sdf.LayerOffset(125.0))
+                         }
+        self._RunTcpsChangesForLayer(pcp, refLayer, tcpsToOffsets, ['/A'])
+
+        # Run the TCPS change suite on the second reference layer. 
+        tcpsToOffsets = {12.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0, 2.0)),
+                         24.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         48.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0, 0.5))
+                         }
+        self._RunTcpsChangesForLayer(pcp, ref2Layer, tcpsToOffsets, ['/A'])
+
+        # Run the TCPS change suite on the sublayers of the root and reference 
+        # layers. In the particular setup of these layer, TCPS of either 
+        # sublayer doesn't change the layer offsets applied to the reference 
+        # nodes, but will still cause change management to report significant
+        # changes to prim indexes.
+        tcpsToOffsets = {12.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         24.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         48.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0))
+                         }
+        self._RunTcpsChangesForLayer(pcp, rootSublayer, tcpsToOffsets, ['/'])
+        self._RunTcpsChangesForLayer(pcp, refSublayer, tcpsToOffsets, ['/A'])
+
+        # Run the TCPS change suite on the session layer.
+        tcpsToOffsets = {12.0: (Sdf.LayerOffset(50.0, 0.5),
+                                Sdf.LayerOffset(75.0, 0.5)),
+                         24.0: (Sdf.LayerOffset(100.0),
+                                Sdf.LayerOffset(150.0)),
+                         48.0: (Sdf.LayerOffset(200.0, 2.0),
+                                Sdf.LayerOffset(300.0, 2.0))
+                         }
+        self._RunTcpsChangesForLayer(pcp, sessionLayer, tcpsToOffsets, ['/'])
+
+        # Special cases for the session layer when root layer has a tcps value
+        rootLayer.timeCodesPerSecond = 24.0
+        self.assertTrue(rootLayer.HasTimeCodesPerSecond())
+        self.assertFalse(sessionLayer.HasTimeCodesPerSecond())
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            # Set the session layer's FPS. This will change the session layer's
+            # computed TCPS and is a significant change even though the overall
+            # TCPS of the root layer stack is 24 as it is authored on the root 
+            # layer.
+            sessionLayer.framesPerSecond = 48.0
+            self.assertEqual(sessionLayer.timeCodesPerSecond, 48.0)
+            self.assertEqual(cp.GetSignificantChanges(), ['/'])
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Recompute the new prim index
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
+            # The reference layer offsets are still the same as authored as
+            # the root layer TCPS still matches its layer stack's overall TCPS
+            self.assertEqual(refNode.mapToRoot.timeOffset, 
+                             Sdf.LayerOffset(100.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset, 
+                             Sdf.LayerOffset(150.0))
+
+        # Continuing from the previous case, root layer has TCPS set to 24 and
+        # session layer has FPS set to 48. Now we set the session TCPS to 48.
+        # While this does not cause a TCPS change to session layer taken by 
+        # itself, this does mean that the session now overrides the overall
+        # TCPS of the layer stack which used to come the root. We verify here
+        # that this is a significant change and that it scales the layer offsets
+        # to the references.
+        self.assertFalse(sessionLayer.HasTimeCodesPerSecond())
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            sessionLayer.timeCodesPerSecond = 48.0
+            self.assertEqual(sessionLayer.timeCodesPerSecond, 48.0)
+            self.assertEqual(cp.GetSignificantChanges(), ['/'])
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Recompute the new prim index
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
+            self.assertEqual(refNode.mapToRoot.timeOffset,
+                             Sdf.LayerOffset(200.0, 2.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset,
+                             Sdf.LayerOffset(300.0, 2.0))
+
+        # And as a parallel to the previous case, we now clear the session TCPS
+        # again. This is still no effective change to the session layer TCPS
+        # itself, but root layer's TCPS is once again the overall layer stack
+        # TCPS. This is significant changes and the layer offsets return to
+        # their original values.
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            sessionLayer.ClearTimeCodesPerSecond()
+            self.assertEqual(sessionLayer.timeCodesPerSecond, 48.0)
+            self.assertEqual(cp.GetSignificantChanges(), ['/'])
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Recompute the new prim index
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
+            # The reference layer offsets are still the same as authored as
+            # the root layer TCPS still matches its layer stack's overall TCPS
+            self.assertEqual(refNode.mapToRoot.timeOffset, 
+                             Sdf.LayerOffset(100.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset, 
+                             Sdf.LayerOffset(150.0))
+
+        # One more special case. Neither session or root layers have TCPS set.
+        # Root layer has FPS set to 48, session layer has FPS set to 24. Overall
+        # computed TCPS of the layer stack will be 24, matching session FPS.
+        # We then author a TCPS value of 48 to the root layer, matching its FPS
+        # value. There is no effective change to the root layer's TCPS itself
+        # but we do end up with a significant change as the overall layer stack
+        # TCPS will now compute to 48.
+        sessionLayer.ClearTimeCodesPerSecond()
+        rootLayer.ClearTimeCodesPerSecond()
+        sessionLayer.framesPerSecond = 24.0
+        rootLayer.framesPerSecond = 48.0
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            rootLayer.timeCodesPerSecond = 48.0
+            self.assertEqual(rootLayer.timeCodesPerSecond, 48.0)
+            self.assertEqual(cp.GetSignificantChanges(), ['/'])
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Recompute the new prim index
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
+            self.assertEqual(refNode.mapToRoot.timeOffset,
+                             Sdf.LayerOffset(100.0, 2.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset,
+                             Sdf.LayerOffset(200.0, 2.0))
+
 
     def test_DefaultReferenceTargetChanges(self):
         # create a layer, set DefaultPrim, then reference it.

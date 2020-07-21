@@ -63,9 +63,15 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
         // Delete the instance context first...
         delete _GetInstanceContext(scene, i);
         // ...then the instance object in the top-level scene.
-        rtcDeleteGeometry(scene, _rtcInstanceIds[i]);
+        //
+        // I think this should probably actually be a detach from the
+        // above scene
+        //
+        rtcDetachGeometry(scene,_rtcInstanceIds[i]);
+        rtcReleaseGeometry(_rtcInstanceGeometries[i]);
     }
     _rtcInstanceIds.clear();
+    _rtcInstanceGeometries.clear();
 
     // Delete the prototype geometry and the prototype scene.
     if (_rtcMeshScene != nullptr) {
@@ -75,14 +81,14 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
                 delete it->second;
             }
             delete _GetPrototypeContext();
-            // ... then the geometry object in the prototype scene...
-            rtcDeleteGeometry(_rtcMeshScene, _rtcMeshId);
+            rtcReleaseGeometry(_geometry);
+            _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
         }
-        // ... then the prototype scene.
-        rtcDeleteScene(_rtcMeshScene);
+        // Note: rtcReleaseScene implicitly detaches the geometry. The
+        // geometry is refcounted, and rtcMeshScene will hold the last refcount.
+        rtcReleaseScene(_rtcMeshScene);
+        _rtcMeshScene = nullptr;
     }
-    _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
-    _rtcMeshScene = nullptr;
 }
 
 HdDirtyBits
@@ -158,49 +164,73 @@ HdEmbreeMesh::Sync(HdSceneDelegate *sceneDelegate,
 }
 
 /* static */
-void
-HdEmbreeMesh::_EmbreeCullFaces(void *userData, RTCRay &ray)
+void HdEmbreeMesh::_EmbreeCullFaces(const RTCFilterFunctionNArguments* args)
 {
-    // Note: this is called to filter every candidate ray hit
-    // with the bound object, so this function should be fast.
+    if ( !args ) {
+        // This breaks the Embree API spec so we shouldn't get here.
+        TF_CODING_ERROR("_EmbreeCullFaces got NULL args pointer");
+        return;
+    }
 
+    // Pull out the prototype context.
     // Only HdEmbreeMesh gets HdEmbreeMesh::_EmbreeCullFaces bound
     // as an intersection filter. The filter is bound to the prototype,
     // whose context's rprim always points back to the original HdEmbreeMesh.
     HdEmbreePrototypeContext *ctx =
-        static_cast<HdEmbreePrototypeContext*>(userData);
+        static_cast<HdEmbreePrototypeContext*>(args->geometryUserPtr);
+    if (!ctx || !ctx->rprim) {
+        TF_CODING_ERROR("_EmbreeCullFaces got NULL prototype context");
+        return;
+    }
     HdEmbreeMesh *mesh = static_cast<HdEmbreeMesh*>(ctx->rprim);
 
-    // Calculate whether the provided hit is a front-face or back-face.
-    bool isFrontFace = (ray.Ng[0] * ray.dir[0] + 
-                        ray.Ng[1] * ray.dir[1] +
-                        ray.Ng[2] * ray.dir[2]) > 0;
+    // Note: this is called to filter every candidate ray hit
+    // with the bound object, so this function should be fast.
+    for (unsigned int i = 0; i < args->N; ++i) {
+        // -1 = valid, 0 = invalid.
+        // If it's already been marked invalid, skip our own opinion.
+        if (args->valid[i] != -1) {
+            continue;
+        }
 
-    // Determine if we should ignore this hit. HdCullStyleBack means
-    // cull back faces.
-    bool cull = false;
-    switch(mesh->_cullStyle) {
-        case HdCullStyleBack:
-            cull = !isFrontFace; break;
-        case HdCullStyleFront:
-            cull =  isFrontFace; break;
+        // Calculate whether the provided hit is a front-face or back-face.
+        // This is verbose because of SOA struct access, but it's just
+        // dot(hit.Ng, ray.dir).
+        bool isFrontFace = (
+            RTCHitN_Ng_x(args->hit, args->N, i) *
+                RTCRayN_dir_x(args->ray, args->N, i) +
+            RTCHitN_Ng_y(args->hit, args->N, i) *
+                RTCRayN_dir_y(args->ray, args->N, i) +
+            RTCHitN_Ng_z(args->hit, args->N, i) *
+                RTCRayN_dir_z(args->ray, args->N, i)
+            ) > 0;
 
-        case HdCullStyleBackUnlessDoubleSided:
-            cull = !isFrontFace && !mesh->_doubleSided; break;
-        case HdCullStyleFrontUnlessDoubleSided:
-            cull =  isFrontFace && !mesh->_doubleSided; break;
+        // Determine if we should ignore this hit. HdCullStyleBack means
+        // cull back faces.
+        bool cull = false;
+        switch(mesh->_cullStyle) {
+            case HdCullStyleBack:
+                cull = !isFrontFace; break;
+            case HdCullStyleFront:
+                cull =  isFrontFace; break;
 
-        default: break;
-    }
-    if (cull) {
-        // Setting ray.geomId to null tells embree to discard this hit and
-        // keep tracing...
-        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+            case HdCullStyleBackUnlessDoubleSided:
+                cull = !isFrontFace && !mesh->_doubleSided; break;
+            case HdCullStyleFrontUnlessDoubleSided:
+                cull =  isFrontFace && !mesh->_doubleSided; break;
+
+            default: break;
+        }
+        if (cull) {
+            // This is how you reject a hit in embree3 instead of setting
+            // geomId to invalid on the ray
+            args->valid[i] = 0;
+        }
     }
 }
 
-void
-HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
+RTCGeometry
+HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene, RTCDevice device)
 {
     const PxOsdSubdivTags &subdivTags = _topology.GetSubdivTags();
 
@@ -235,44 +265,64 @@ HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
     }
 
     // Populate an embree subdiv object.
-    _rtcMeshId = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_DEFORMABLE,
-        // numFaces is the size of RTC_FACE_BUFFER, which contains
-        // the number of indices for each face. This is equivalent to
-        // HdMeshTopology's GetFaceVertexCounts().
-        _topology.GetFaceVertexCounts().size(),
-        // numEdges is the size of RTC_INDEX_BUFFER, which contains
-        // the vertex indices for each face (grouped into faces by the
-        // face buffer). This is equivalent to HdMeshTopology's
-        // GetFaceVertexIndices(). Note this is more properly a count
-        // of half-edges.
-        _topology.GetFaceVertexIndices().size(),
-        // numVertices is the size of RTC_VERTEX_BUFFER, or vertex
-        // positions.
-        _points.size(),
-        // numEdgeCreases is the size of RTC_EDGE_CREASE_WEIGHT_BUFFER,
-        // and half the size of RTC_EDGE_CREASE_INDEX_BUFFER. See
-        // the calculation of numEdgeCreases above.
-        numEdgeCreases,
-        // numVertexCreases is the size of
-        // RTC_VERTEX_CREASE_WEIGHT_BUFFER and _INDEX_BUFFER.
-        numVertexCreases,
-        // numHoles is the size of RTC_HOLE_BUFFER.
-        _topology.GetHoleIndices().size());
+    // Note this geometry is committed outside this function, but that
+    // is not "enforced"
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+
+    // Uses a BVH refitting approach when changing only the vertex buffer.
+    rtcSetGeometryBuildQuality(geom, RTC_BUILD_QUALITY_REFIT);
+    rtcSetGeometryTimeStepCount(geom,1);
+    _rtcMeshId = rtcAttachGeometry(scene,geom);
 
     // Fill the topology buffers.
-    rtcSetBuffer(scene, _rtcMeshId, RTC_FACE_BUFFER,
-        _topology.GetFaceVertexCounts().cdata(), 0, sizeof(int));
-    rtcSetBuffer(scene, _rtcMeshId, RTC_INDEX_BUFFER,
-        _topology.GetFaceVertexIndices().cdata(), 0, sizeof(int));
-    rtcSetBuffer(scene, _rtcMeshId, RTC_HOLE_BUFFER,
-        _topology.GetHoleIndices().cdata(), 0, sizeof(int));
+    rtcSetSharedGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_FACE,
+        0, /* unsigned int slot */
+        RTC_FORMAT_UINT,
+        _topology.GetFaceVertexCounts().cdata(),
+        0, /* size_t byteOffset */
+        sizeof(int),  /*must be 4 byte aligned */
+        _topology.GetFaceVertexCounts().size());
+    rtcSetSharedGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_INDEX,
+        0, /* unsigned int slot */
+        RTC_FORMAT_UINT,
+        _topology.GetFaceVertexIndices().cdata(),
+        0, /* size_t byteOffset */
+        sizeof(int),  /*must be 4 byte aligned */
+        _topology.GetFaceVertexIndices().size());
+
+    if (_topology.GetHoleIndices().size()>0) {
+        // PSA : creating a hole buffer with 0 length has very unexpected
+        // behavior in Embree (things draw wrong, but not determinisitcally)
+        rtcSetSharedGeometryBuffer(geom,
+            RTC_BUFFER_TYPE_HOLE,
+            0, /* unsigned int slot */
+            RTC_FORMAT_UINT,
+            _topology.GetHoleIndices().cdata(),
+            0, /* size_t byteOffset */
+            sizeof(unsigned int),  /*must be 4 byte aligned */
+            _topology.GetHoleIndices().size());
+    }
 
     // If this topology has edge creases, unroll the edge crease buffer.
     if (numEdgeCreases > 0) {
-        int *embreeCreaseIndices = static_cast<int*>(rtcMapBuffer(
-            scene, _rtcMeshId, RTC_EDGE_CREASE_INDEX_BUFFER));
-        float *embreeCreaseWeights = static_cast<float*>(rtcMapBuffer(
-            scene, _rtcMeshId, RTC_EDGE_CREASE_WEIGHT_BUFFER));
+        int *embreeCreaseIndices = static_cast<int*>(
+            rtcSetNewGeometryBuffer(
+                geom,
+                RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,
+                0, /* unsigned int slot */
+                RTC_FORMAT_UINT2,
+                2*sizeof(int), /*must be 4 byte aligned */
+                numEdgeCreases));
+        float *embreeCreaseWeights = static_cast<float*>(
+            rtcSetNewGeometryBuffer(
+                geom,
+                RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,
+                0, /* unsigned int slot */
+                RTC_FORMAT_FLOAT,
+                sizeof(float), /*must be 4 byte aligned */
+                numEdgeCreases));
         int embreeEdgeIndex = 0;
 
         VtIntArray const creaseIndices = subdivTags.GetCreaseIndices();
@@ -302,21 +352,34 @@ HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
             }
             creaseIndexStart += creaseLengths[i];
         }
-
-        rtcUnmapBuffer(scene, _rtcMeshId, RTC_EDGE_CREASE_INDEX_BUFFER);
-        rtcUnmapBuffer(scene, _rtcMeshId, RTC_EDGE_CREASE_WEIGHT_BUFFER);
     }
 
     if (numVertexCreases > 0) {
-        rtcSetBuffer(scene, _rtcMeshId, RTC_VERTEX_CREASE_INDEX_BUFFER,
-            subdivTags.GetCornerIndices().cdata(), 0, sizeof(int));
-        rtcSetBuffer(scene, _rtcMeshId, RTC_VERTEX_CREASE_WEIGHT_BUFFER,
-            subdivTags.GetCornerWeights().cdata(), 0, sizeof(float));
+        rtcSetSharedGeometryBuffer(
+            geom,
+            RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,
+            0, /* unsigned int slot */
+            RTC_FORMAT_UINT,
+            subdivTags.GetCornerIndices().cdata(),
+            0, /* size_t byteOffset */
+            sizeof(int), /*must be 4 byte aligned */
+            numVertexCreases);
+        rtcSetSharedGeometryBuffer(
+            geom,
+            RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT,
+            0, /* unsigned int slot */
+            RTC_FORMAT_FLOAT,
+            subdivTags.GetCornerWeights().cdata(),
+            0, /* size_t byteOffset */
+            sizeof(float), /*must be 4 byte aligned */
+            numVertexCreases);
     }
+
+    return geom;
 }
 
-void
-HdEmbreeMesh::_CreateEmbreeTriangleMesh(RTCScene scene)
+RTCGeometry
+HdEmbreeMesh::_CreateEmbreeTriangleMesh(RTCScene scene, RTCDevice device)
 {
     // Triangulate the input faces.
     HdMeshUtil meshUtil(&_topology, GetId());
@@ -324,16 +387,28 @@ HdEmbreeMesh::_CreateEmbreeTriangleMesh(RTCScene scene)
         &_trianglePrimitiveParams);
 
     // Create the new mesh.
-    _rtcMeshId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_DEFORMABLE,
-            _triangulatedIndices.size(), _points.size());
+    // geometry will be committed in the calling function
+    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    // Uses a BVH refitting approach when changing only the vertex buffer.
+    rtcSetGeometryBuildQuality(geom,RTC_BUILD_QUALITY_REFIT);
+    rtcSetGeometryTimeStepCount(geom,1);
+    _rtcMeshId = rtcAttachGeometry(scene,geom);
+
     if (_rtcMeshId == RTC_INVALID_GEOMETRY_ID) {
         TF_CODING_ERROR("Couldn't create RTC mesh");
-        return;
     }
 
     // Populate topology.
-    rtcSetBuffer(scene, _rtcMeshId, RTC_INDEX_BUFFER,
-        _triangulatedIndices.cdata(), 0, sizeof(GfVec3i));
+    rtcSetSharedGeometryBuffer(geom,
+        RTC_BUFFER_TYPE_INDEX,
+        0, /* unsigned int slot */
+        RTC_FORMAT_UINT3,
+        _triangulatedIndices.cdata(),
+        0, /* size_t byteOffset */
+        sizeof(GfVec3i), /*must be 4 byte aligned */
+        _triangulatedIndices.size());
+
+    return geom;
 }
 
 void
@@ -451,7 +526,7 @@ HdEmbreeMesh::_CreatePrimvarSampler(TfToken const& name, VtValue const& data,
         case HdInterpolationVertex:
             if (refined) {
                 sampler = new HdEmbreeSubdivVertexSampler(name, data,
-                    _rtcMeshScene, _rtcMeshId, &_embreeBufferAllocator);
+                    _rtcMeshScene, _rtcMeshId, &_embreeBufferAllocator );
             } else {
                 sampler = new HdEmbreeTriangleVertexSampler(name, data,
                     _triangulatedIndices);
@@ -607,47 +682,58 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         newMesh = true;
 
         // Destroy the old mesh, if it exists.
-        if (_rtcMeshScene != nullptr &&
-            _rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
+        if (_rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
             // Delete the prototype context first...
             TF_FOR_ALL(it, _GetPrototypeContext()->primvarMap) {
                 delete it->second;
             }
             delete _GetPrototypeContext();
             // then the prototype geometry.
-            rtcDeleteGeometry(_rtcMeshScene, _rtcMeshId);
+            rtcDetachGeometry(_rtcMeshScene, _rtcMeshId);
+            rtcReleaseGeometry(_geometry);
             _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
         }
 
         // Create the prototype mesh scene, if it doesn't exist yet.
         if (_rtcMeshScene == nullptr) {
-            _rtcMeshScene = rtcDeviceNewScene(device, RTC_SCENE_DYNAMIC,
-                RTC_INTERSECT1 | RTC_INTERPOLATE);
+            _rtcMeshScene = rtcNewScene(device);
+            // RTC_SCENE_FLAG_DYNAMIC: Provides better build performance for dynamic
+            // scenes (but also higher memory consumption).
+            rtcSetSceneFlags(_rtcMeshScene, RTC_SCENE_FLAG_DYNAMIC);
+
+            // RTC_BUILD_QUALITY_LOW: Create lower quality data structures,
+            // e.g. for dynamic scenes. A two-level spatial index structure is built
+            // when enabling this mode, which supports fast partial scene updates,
+            // and allows for setting a per-geometry build quality through
+            // the rtcSetGeometryBuildQuality function.
+            rtcSetSceneBuildQuality(_rtcMeshScene, RTC_BUILD_QUALITY_LOW);
         }
 
         // Populate either a subdiv or a triangle mesh object. The helper
         // functions will take care of populating topology buffers.
         if (doRefine) {
-            _CreateEmbreeSubdivMesh(_rtcMeshScene);
+            _geometry = _CreateEmbreeSubdivMesh(_rtcMeshScene, device);
         } else {
-            _CreateEmbreeTriangleMesh(_rtcMeshScene);
+            _geometry = _CreateEmbreeTriangleMesh(_rtcMeshScene, device);
         }
+        if( _rtcMeshId == RTC_INVALID_GEOMETRY_ID ){
+            TF_CODING_ERROR("Unable to create a mesh for the requested geometry");
+            return;
+        }
+
         _refined = doRefine;
         // In both cases, RTC_VERTEX_BUFFER will be populated below.
 
         // Prototype geometry gets tagged with a prototype context, that the
         // ray-hit algorithm can use to look up data.
-        rtcSetUserData(_rtcMeshScene, _rtcMeshId,
-            new HdEmbreePrototypeContext);
+        rtcSetGeometryUserData(_geometry,new HdEmbreePrototypeContext);
         _GetPrototypeContext()->rprim = this;
         _GetPrototypeContext()->primitiveParams = (_refined ?
             _trianglePrimitiveParams : VtIntArray());
 
         // Add _EmbreeCullFaces as a filter function for backface culling.
-        rtcSetIntersectionFilterFunction(_rtcMeshScene, _rtcMeshId,
-            _EmbreeCullFaces);
-        rtcSetOcclusionFilterFunction(_rtcMeshScene, _rtcMeshId,
-            _EmbreeCullFaces);
+        rtcSetGeometryIntersectFilterFunction(_geometry,_EmbreeCullFaces);
+        rtcSetGeometryOccludedFilterFunction(_geometry,_EmbreeCullFaces);
 
         // Force the smooth normals code to rebuild the "normals" primvar the
         // next time smooth normals is enabled.
@@ -670,8 +756,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             if (tessellationRate == 1) {
                 tessellationRate++;
             }
-            rtcSetTessellationRate(_rtcMeshScene, _rtcMeshId,
-                static_cast<float>(tessellationRate));
+            rtcSetGeometryTessellationRate(_geometry,static_cast<float>(tessellationRate));
         }
     }
 
@@ -683,14 +768,11 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 _topology.GetSubdivTags().GetVertexInterpolationRule();
 
             if (vertexRule == PxOsdOpenSubdivTokens->none) {
-                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
-                    RTC_BOUNDARY_NONE);
+                rtcSetGeometrySubdivisionMode(_geometry,0,RTC_SUBDIVISION_MODE_NO_BOUNDARY);
             } else if (vertexRule == PxOsdOpenSubdivTokens->edgeOnly) {
-                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
-                    RTC_BOUNDARY_EDGE_ONLY);
+                rtcSetGeometrySubdivisionMode(_geometry,0,RTC_SUBDIVISION_MODE_SMOOTH_BOUNDARY);
             } else if (vertexRule == PxOsdOpenSubdivTokens->edgeAndCorner) {
-                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
-                    RTC_BOUNDARY_EDGE_AND_CORNER);
+                rtcSetGeometrySubdivisionMode(_geometry,0,RTC_SUBDIVISION_MODE_PIN_CORNERS);
             } else {
                 if (!vertexRule.IsEmpty()) {
                     TF_WARN("Unknown vertex interpolation rule: %s",
@@ -749,23 +831,27 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     // Populate points in the RTC mesh.
     if (newMesh || 
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
-        rtcSetBuffer(_rtcMeshScene, _rtcMeshId, RTC_VERTEX_BUFFER,
-            _points.cdata(), 0, sizeof(GfVec3f));
+        rtcSetSharedGeometryBuffer(
+            _geometry,
+            RTC_BUFFER_TYPE_VERTEX,
+            0, /* unsigned int slot */
+            RTC_FORMAT_FLOAT3,
+            _points.cdata(),
+            0, /* size_t byteOffset */
+            sizeof(GfVec3f),
+            _points.size());
+
+        rtcCommitGeometry(_geometry);
     }
 
     // Update visibility by pulling the object into/out of the embree BVH.
     if (_sharedData.visible) {
-        rtcEnable(_rtcMeshScene, _rtcMeshId);
+        rtcEnableGeometry(_geometry);
     } else {
-        rtcDisable(_rtcMeshScene, _rtcMeshId);
+        rtcDisableGeometry(_geometry);
     }
 
-    // Mark embree objects dirty and rebuild the bvh.
-    if (newMesh ||
-        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
-        rtcUpdate(_rtcMeshScene, _rtcMeshId);
-    }
-    rtcCommit(_rtcMeshScene);
+    rtcCommitScene(_rtcMeshScene);
 
     ////////////////////////////////////////////////////////////////////////
     // 4. Populate embree instance objects.
@@ -776,7 +862,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     // pulls them every frame.
     if (!GetInstancerId().IsEmpty()) {
 
-        // Retrieve instance transforms from the instancer.
+        // // Retrieve instance transforms from the instancer.
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
         HdInstancer *instancer =
             renderIndex.GetInstancer(GetInstancerId());
@@ -792,32 +878,39 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             // Delete instance context first...
             delete _GetInstanceContext(scene, i);
             // Then Embree instance.
-            rtcDeleteGeometry(scene, _rtcInstanceIds[i]);
+            rtcDetachGeometry(scene,_rtcInstanceIds[i]);
+            rtcReleaseGeometry(_rtcInstanceGeometries[i]);
         }
         _rtcInstanceIds.resize(newSize);
+        _rtcInstanceGeometries.resize(newSize);
 
         // Size up (if necessary).
         for(size_t i = oldSize; i < newSize; ++i) {
             // Create the new instance.
-            _rtcInstanceIds[i] = rtcNewInstance(scene, _rtcMeshScene);
+            RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+            rtcSetGeometryInstancedScene(geom,_rtcMeshScene);
+            rtcSetGeometryTimeStepCount(geom,1);
+            _rtcInstanceIds[i] = rtcAttachGeometry(scene,geom);
+
             // Create the instance context.
             HdEmbreeInstanceContext *ctx = new HdEmbreeInstanceContext;
             ctx->rootScene = _rtcMeshScene;
-            rtcSetUserData(scene, _rtcInstanceIds[i], ctx);
+            rtcSetGeometryUserData(geom,ctx);
+            _rtcInstanceGeometries[i] = geom;
         }
 
-        // Update transforms.
+        // Update transform
         for (size_t i = 0; i < transforms.size(); ++i) {
             // Combine the local transform and the instance transform.
             GfMatrix4f matf = _transform * GfMatrix4f(transforms[i]);
+
             // Update the transform in the BVH.
-            rtcSetTransform(scene, _rtcInstanceIds[i],
-                RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, matf.GetArray());
-            // Update the transform in the instance context.
+            rtcSetGeometryTransform(rtcGetGeometry(scene,_rtcInstanceIds[i]),0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,matf.GetArray());
+            // // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
             _GetInstanceContext(scene, i)->instanceId = i;
-            // Mark the instance as updated in the BVH.
-            rtcUpdate(scene, _rtcInstanceIds[i]);
+            // // Mark the instance as updated in the BVH.
+            rtcCommitGeometry(_rtcInstanceGeometries[i]);
         }
     }
     // Otherwise, create our single instance (if necessary) and update
@@ -826,30 +919,47 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         bool newInstance = false;
         if (_rtcInstanceIds.size() == 0) {
             // Create our single instance.
-            _rtcInstanceIds.push_back(rtcNewInstance(scene, _rtcMeshScene));
+            RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+            rtcSetGeometryInstancedScene(geom,_rtcMeshScene);
+            rtcSetGeometryTimeStepCount(geom,1);
+            _rtcInstanceIds.push_back(rtcAttachGeometry(scene,geom));
+
             // Create the instance context.
             HdEmbreeInstanceContext *ctx = new HdEmbreeInstanceContext;
             ctx->rootScene = _rtcMeshScene;
-            rtcSetUserData(scene, _rtcInstanceIds[0], ctx);
-            // Update the flag to force-set the transform.
+            rtcSetGeometryUserData(geom,ctx);
+
+            rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,_transform.GetArray());
+
+            // Update the transform in the render context.
+            _rtcInstanceGeometries.push_back(geom);
+
+            ctx->objectToWorldMatrix = _transform;
+            ctx->instanceId = 0;
+
             newInstance = true;
-        }
-        if (newInstance || HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+        }else if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
             // Update the transform in the BVH.
-            rtcSetTransform(scene, _rtcInstanceIds[0],
-                RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, _transform.GetArray());
+            rtcSetGeometryTransform(_rtcInstanceGeometries[0],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,_transform.GetArray());
             // Update the transform in the render context.
             _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
             _GetInstanceContext(scene, 0)->instanceId = 0;
         }
+
         if (newInstance || newMesh ||
             HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
             HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
                                             HdTokens->points)) {
             // Mark the instance as updated in the top-level BVH.
-            rtcUpdate(scene, _rtcInstanceIds[0]);
+            rtcCommitGeometry(_rtcInstanceGeometries[0]);
         }
     }
+
+    //
+    // We are relying on the code calling this to commit the scene
+    // since there are a bunch of commits to instances of geom
+    // in the root scene
+    //
 
     // Clean all dirty bits.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
@@ -859,14 +969,14 @@ HdEmbreePrototypeContext*
 HdEmbreeMesh::_GetPrototypeContext()
 {
     return static_cast<HdEmbreePrototypeContext*>(
-        rtcGetUserData(_rtcMeshScene, _rtcMeshId));
+        rtcGetGeometryUserData(_geometry));
 }
 
 HdEmbreeInstanceContext*
 HdEmbreeMesh::_GetInstanceContext(RTCScene scene, size_t i)
 {
     return static_cast<HdEmbreeInstanceContext*>(
-        rtcGetUserData(scene, _rtcInstanceIds[i]));
+        rtcGetGeometryUserData(_rtcInstanceGeometries[i]));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdShadeCoordSysAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdShade.CoordSysAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdShadeCoordSysAPI()
@@ -79,6 +88,7 @@ void wrapUsdShadeCoordSysAPI()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

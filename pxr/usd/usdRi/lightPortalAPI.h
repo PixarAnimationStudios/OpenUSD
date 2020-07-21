@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightPortalAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light portal settings will move to a
+/// new schema in a future release.
+/// 
 /// Renderman-specific attributes for light portals.
 ///
 class UsdRiLightPortalAPI : public UsdAPISchemaBase
@@ -110,11 +114,13 @@ public:
     /// 
     /// \return A valid UsdRiLightPortalAPI object is returned upon success. 
     /// An invalid (or empty) UsdRiLightPortalAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDRI_API
     static UsdRiLightPortalAPI 

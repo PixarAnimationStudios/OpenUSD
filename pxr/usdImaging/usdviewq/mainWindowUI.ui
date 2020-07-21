@@ -1458,6 +1458,7 @@
      <addaction name="actionPick_Prims"/>
      <addaction name="actionPick_Models"/>
      <addaction name="actionPick_Instances"/>
+     <addaction name="actionPick_Prototypes"/>
     </widget>
     <widget class="QMenu" name="menuSelection_Highlighting">
      <property name="title">
@@ -2594,6 +2595,14 @@
    </property>
    <property name="text">
     <string>Instances</string>
+   </property>
+  </action>
+  <action name="actionPick_Prototypes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Prototypes</string>
    </property>
   </action>
   <action name="actionToggle_Viewer_Mode">

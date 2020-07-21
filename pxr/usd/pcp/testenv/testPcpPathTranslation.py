@@ -84,7 +84,7 @@ class TestPcpPathTranslation(unittest.TestCase):
                    "/World/Ref3/RefChild.localParentAbs" : "/World/Ref3"}
 
         for (path, expectedTargetPath) in pathMap.items():
-            (curTargetPaths, curErrors) = \
+            (curTargetPaths, _, curErrors) = \
                 pcpCache.ComputeRelationshipTargetPaths(path)
 
             for err in curErrors:
@@ -121,7 +121,8 @@ class TestPcpPathTranslation(unittest.TestCase):
 
         for (path, expectedTargetPath) in pathMap.items():
             relPath = Sdf.Path(path)
-            (curTargetPaths, curErrors) = pcpCache.ComputeRelationshipTargetPaths(relPath)
+            (curTargetPaths, _, curErrors) = \
+                pcpCache.ComputeRelationshipTargetPaths(relPath)
 
             for err in curErrors:
                 print(err, file=sys.stderr)
@@ -154,7 +155,7 @@ class TestPcpPathTranslation(unittest.TestCase):
                    "/World/Ref3/RefChild.refParentAbs" : "/World/Ref3"}
 
         for (path, expectedTargetPath) in pathMap.items():
-            (curTargetPaths, curErrors) = \
+            (curTargetPaths, _, curErrors) = \
                 pcpCache.ComputeRelationshipTargetPaths(path)
 
             for err in curErrors:
@@ -188,7 +189,8 @@ class TestPcpPathTranslation(unittest.TestCase):
 
         for (path, expectedTargetPath) in pathMap.items():
             relPath = Sdf.Path(path)
-            (curTargetPaths, curErrors) = pcpCache.ComputeRelationshipTargetPaths(relPath)
+            (curTargetPaths, _, curErrors) = \
+                pcpCache.ComputeRelationshipTargetPaths(relPath)
 
             for err in curErrors:
                 print(err, file=sys.stderr)
@@ -221,7 +223,7 @@ class TestPcpPathTranslation(unittest.TestCase):
                  "/World/Ref3/RefChild.refBadRel"]
         
         for path in paths:
-            (targetPaths, curErrors) = \
+            (targetPaths, _, curErrors) = \
                 pcpCache.ComputeRelationshipTargetPaths(path)
             errors += curErrors
 

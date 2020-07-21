@@ -35,6 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 
 /// \class HdStVBOSimpleMemoryManager
 ///
@@ -44,6 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdStVBOSimpleMemoryManager : public HdAggregationStrategy {
 public:
+    HdStVBOSimpleMemoryManager(Hgi* hgi): _hgi(hgi) {}
+    
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOSimpleMemoryManager.
     HDST_API
@@ -213,7 +216,8 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _SimpleBufferArray(TfToken const &role,
+        _SimpleBufferArray(Hgi* hgi,
+                           TfToken const &role,
                            HdBufferSpecVector const &bufferSpecs,
                            HdBufferArrayUsageHint usageHint);
 
@@ -284,6 +288,7 @@ protected:
                                                    int offset,
                                                    int stride);
     private:
+        Hgi* _hgi;
         int _capacity;
         size_t _maxBytesPerElement;
 
@@ -295,6 +300,8 @@ protected:
                 : _SimpleBufferArrayRangeSharedPtr();
         }
     };
+    
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

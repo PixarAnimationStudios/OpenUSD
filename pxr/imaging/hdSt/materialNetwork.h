@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hdSt/textureIdentifier.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,7 +40,8 @@ using HdSt_MaterialParamVector =
 ///
 /// Helps HdStMaterial process a Hydra material network into shader source code
 /// and parameters values.
-class HdStMaterialNetwork final {
+class HdStMaterialNetwork final
+{
 public:
     HDST_API
     HdStMaterialNetwork();
@@ -69,6 +71,42 @@ public:
     HDST_API
     HdSt_MaterialParamVector const& GetMaterialParams() const;
 
+    // Information necessary to allocate a texture.
+    struct TextureDescriptor
+    {
+        // Name by which the texture will be accessed, i.e., the name
+        // of the accesor for thexture will be HdGet_name(...).
+        // It is generated from the input name the corresponding texture
+        // node is connected to.
+        TfToken name;
+        HdStTextureIdentifier textureId;
+        HdTextureType type;
+        HdSamplerParameters samplerParameters;
+        // Memory request in bytes.
+        size_t memoryRequest;
+
+        // The texture is not just identified by a file path attribute
+        // on the texture prim but there is special API to texture prim
+        // to obtain the texture.
+        //
+        // This is used for draw targets and for scene delegates that
+        // provide textures through
+        // HdSceneDelegate::GetTextureResourceID and
+        // HdSceneDelegate::GetTextureResource.
+        bool useTexturePrimToFindTexture;
+        // The value passed to HdSceneDelegate::GetTextureResourceID.
+        SdfPath texturePrim;
+        // Fallback value from texture node used when the texture
+        // file does not exist - only used in the implementation of
+        // HdStMaterial::_GetTextureResourceHandleFromSceneDelegate.
+        VtValue fallbackValue;
+    };
+
+    using TextureDescriptorVector = std::vector<TextureDescriptor>;
+
+    HDST_API
+    TextureDescriptorVector const& GetTextureDescriptors() const;
+
     /// Primarily used during reload of the material (glslfx may have changed)
     HDST_API
     void ClearGlslfx();
@@ -79,6 +117,7 @@ private:
     std::string _geometrySource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
+    TextureDescriptorVector _textureDescriptors;
     HioGlslfxUniquePtr _surfaceGfx;
 };
 

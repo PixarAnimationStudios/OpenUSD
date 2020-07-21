@@ -45,7 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdReprSelector allows these opinions to compose/merge into a final composite
 /// representation to be used for rendering.
 ///
-class HdReprSelector {
+class HdReprSelector
+{
 public:
     explicit HdReprSelector()
     : refinedToken()
@@ -144,31 +145,33 @@ private:
 /// When multiple topological representations are required for an rprim, we use
 /// HdReprSelector to compose the individual representations.
 ///
-class HdRepr {
+class HdRepr final
+{
 public:
-    typedef std::vector<HdDrawItem*> DrawItems;
+    using DrawItemUniquePtr = std::unique_ptr<HdDrawItem>;
+    using DrawItemUniquePtrVector = std::vector<DrawItemUniquePtr>;
 
     HD_API
     HdRepr();
     HD_API
-    virtual ~HdRepr();
+    ~HdRepr();
 
     /// Returns the draw items for this representation.
-    const DrawItems& GetDrawItems() {
+    const DrawItemUniquePtrVector& GetDrawItems() const {
         return _drawItems;
     }
 
     /// Transfers ownership of a draw item to this repr.
-    void AddDrawItem(HdDrawItem *item) {
-        _drawItems.push_back(item);
+    void AddDrawItem(std::unique_ptr<HdDrawItem> &&item) {
+        _drawItems.push_back(std::move(item));
     }
 
     /// Returns the draw item at the requested index.
     ///
     /// Note that the pointer returned is owned by this object and must not be
     /// deleted.
-    HdDrawItem* GetDrawItem(size_t index) {
-        return _drawItems[index];
+    HdDrawItem* GetDrawItem(size_t index) const {
+        return _drawItems[index].get();
     }
 
 private:
@@ -177,7 +180,7 @@ private:
     HdRepr& operator=(const HdRepr&) = delete;
 
 private:
-    DrawItems _drawItems;
+    DrawItemUniquePtrVector _drawItems;
 };
 
 

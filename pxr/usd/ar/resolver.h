@@ -264,8 +264,29 @@ public:
     virtual std::shared_ptr<ArAsset> OpenAsset(
         const std::string& resolvedPath) = 0;
 
+    /// Create path needed to write a file to the given \p path. 
+    ///
+    /// For example:
+    /// - A filesystem-based resolver might create the directories specified
+    ///   in \p path.
+    /// - A database-based resolver might create a new table, or it might
+    ///   ignore this altogether.
+    ///
+    /// In practice, when writing a layer, CanWriteLayerToPath will be called
+    /// first to check if writing is permitted. If this returns true, then
+    /// CreatePathForLayer will be called before writing the layer out.
+    ///
+    /// Returns true on success, false otherwise.
+    AR_API
+    virtual bool CreatePathForLayer(
+        const std::string& path) = 0;
+
     /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
+    ///
+    /// In practice, when writing a layer, CanWriteLayerToPath will be called
+    /// first to check if writing is permitted. If this returns true, then
+    /// CreatePathForLayer will be called before writing the layer out.
     /// 
     /// If this function returns false and \p whyNot is not \c nullptr,
     /// it will be filled in with an explanation.

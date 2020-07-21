@@ -52,6 +52,10 @@ class SdfAssetPath;
 
 /// \class UsdRiLightFilterAPI
 ///
+/// 
+/// \deprecated RenderMan-specific light filter settings will move to a
+/// new schema in a future release.
+/// 
 /// Renderman-specific attributes for light filters.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -115,11 +119,13 @@ public:
     /// 
     /// \return A valid UsdRiLightFilterAPI object is returned upon success. 
     /// An invalid (or empty) UsdRiLightFilterAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDRI_API
     static UsdRiLightFilterAPI 

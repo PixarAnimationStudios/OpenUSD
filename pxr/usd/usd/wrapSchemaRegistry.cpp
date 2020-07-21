@@ -56,9 +56,30 @@ void wrapUsdSchemaRegistry()
         .def(TfPySingleton())
 
         .def("GetSchemaTypeName",
-             (TfToken (This::*)(const TfType &) const)
-                &This::GetSchemaTypeName,
-             arg("schemaType"))
+             (TfToken (*)(const TfType &)) &This::GetSchemaTypeName,
+             (arg("schemaType")))
+        .staticmethod("GetSchemaTypeName")
+        .def("GetConcreteSchemaTypeName",
+             (TfToken (*)(const TfType &)) &This::GetConcreteSchemaTypeName,
+             (arg("schemaType")))
+        .staticmethod("GetConcreteSchemaTypeName")
+        .def("GetAPISchemaTypeName",
+             (TfToken (*)(const TfType &)) &This::GetAPISchemaTypeName,
+             (arg("schemaType")))
+        .staticmethod("GetAPISchemaTypeName")
+
+        .def("GetTypeFromSchemaTypeName", 
+             &This::GetTypeFromSchemaTypeName, 
+             (arg("typeName")))
+        .staticmethod("GetTypeFromSchemaTypeName")
+        .def("GetConcreteTypeFromSchemaTypeName", 
+             &This::GetConcreteTypeFromSchemaTypeName, 
+             (arg("typeName")))
+        .staticmethod("GetConcreteTypeFromSchemaTypeName")
+        .def("GetAPITypeFromSchemaTypeName", 
+             &This::GetAPITypeFromSchemaTypeName, 
+             (arg("typeName")))
+        .staticmethod("GetAPITypeFromSchemaTypeName")
 
         .def("IsDisallowedField",
              &This::IsDisallowedField,
@@ -118,5 +139,8 @@ void wrapUsdSchemaRegistry()
         .def("BuildComposedPrimDefinition", 
              &_WrapBuildComposedPrimDefinition,
              return_value_policy<manage_new_object>())
+
+        .def("GetFallbackPrimTypes", &This::GetFallbackPrimTypes, 
+             return_value_policy<return_by_value>())
         ;
 }

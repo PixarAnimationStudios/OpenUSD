@@ -28,9 +28,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/field.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/fieldResource.h"
 
-#include "pxr/base/tf/declarePtrs.h"
+#include "pxr/imaging/hdSt/textureIdentifier.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,13 +54,27 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Initialized by Sync.
-    HdStFieldResourceSharedPtr GetFieldResource() const {
-        return _fieldResource;
+    HDST_API
+    HdStTextureIdentifier const &GetTextureIdentifier() const {
+        return _textureId;
     }
+
+    /// Get memory request for this field
+    size_t GetTextureMemory() const { return _textureMemory; }
+
+    /// Bprim types handled by this class
+    HDST_API
+    static const TfTokenVector &GetSupportedBprimTypes();
+
+    /// Can bprim type be handled by this class
+    HDST_API
+    static bool IsSupportedBprimType(const TfToken &bprimType);
 
 private:
     const TfToken _fieldType;
-    HdStFieldResourceSharedPtr _fieldResource;
+
+    HdStTextureIdentifier _textureId;
+    size_t _textureMemory;
 
     bool _isInitialized : 1;
 };

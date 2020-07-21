@@ -94,14 +94,18 @@ private:
 void
 Plug_ReadPlugInfo(
     const std::vector<std::string>& pathnames,
+    bool pathsAreOrdered,
     const std::function<bool (const std::string&)>& addVisitedPath,
     const std::function<void (const Plug_RegistrationMetadata&)>& addPlugin,
     Plug_TaskArena* taskArena);
 
 /// Sets the paths to the bootstrap plugInfo JSON files, also any diagnostic
 /// messages that should be reported when plugins are registered (if any).
+/// The priority order of elements of the path is honored if pathsAreOrdered.
+/// Defined in registry.cpp.
 void Plug_SetPaths(const std::vector<std::string>&,
-                   const std::vector<std::string>&);
+                   const std::vector<std::string>&,
+                   bool pathsAreOrdered);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

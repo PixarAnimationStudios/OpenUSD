@@ -62,6 +62,16 @@ static bool _WrapIsDerivedMultipleApplyAPIPath(const SdfPath &path) {
         path, &collectionName);
 }
 
+static std::string
+_Repr(const UsdContrivedDerivedMultipleApplyAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    std::string instanceName = self.GetName();
+    return TfStringPrintf(
+        "UsdContrived.DerivedMultipleApplyAPI(%s, '%s')",
+        primRepr.c_str(), instanceName.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedDerivedMultipleApplyAPI()
@@ -114,6 +124,7 @@ void wrapUsdContrivedDerivedMultipleApplyAPI()
 
         .def("IsDerivedMultipleApplyAPIPath", _WrapIsDerivedMultipleApplyAPIPath)
             .staticmethod("IsDerivedMultipleApplyAPIPath")
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

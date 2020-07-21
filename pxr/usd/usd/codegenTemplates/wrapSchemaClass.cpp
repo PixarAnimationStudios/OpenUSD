@@ -71,6 +71,24 @@ static bool _WrapIs{{ cls.usdPrimTypeName }}Path(const SdfPath &path) {
         path, &collectionName);
 }
 {% endif %}
+{% if not cls.isAPISchemaBase %}
+
+static std::string
+_Repr(const {{ cls.cppClassName }} &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+{% if cls.isMultipleApply %}
+    std::string instanceName = self.GetName();
+    return TfStringPrintf(
+        "{{ libraryName[0]|upper }}{{ libraryName[1:] }}.{{ cls.className }}(%s, '%s')",
+        primRepr.c_str(), instanceName.c_str());
+{% else %}
+    return TfStringPrintf(
+        "{{ libraryName[0]|upper }}{{ libraryName[1:] }}.{{ cls.className }}(%s)",
+        primRepr.c_str());
+{% endif %}
+}
+{% endif %}
 {% if useExportAPI %}
 
 } // anonymous namespace
@@ -175,6 +193,9 @@ void wrap{{ cls.cppClassName }}()
 {% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
         .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
             .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
+{% endif %}
+{% if not cls.isAPISchemaBase %}
+        .def("__repr__", ::_Repr)
 {% endif %}
     ;
 

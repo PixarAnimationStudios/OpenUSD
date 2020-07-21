@@ -61,6 +61,7 @@ public:
     bool IsShowGuides() const { return _showGuides; }
     bool IsShowRender() const { return _showRender; }
     bool IsShowProxy() const { return _showProxy; }
+    bool ShouldClearOnce() const { return _clearOnce; }
 
     UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
@@ -139,6 +140,7 @@ private:
     bool _showGuides;
     bool _showRender;
     bool _showProxy;
+    bool _clearOnce;
 };
 
 

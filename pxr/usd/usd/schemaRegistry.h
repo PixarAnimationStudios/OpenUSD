@@ -67,19 +67,43 @@ public:
         return TfSingleton<UsdSchemaRegistry>::GetInstance();
     }
 
-    /// Return the type name in the USD schema for prims of the given registered
-    /// \p primType.
-    TfToken GetSchemaTypeName(const TfType &schemaType) const {
-        auto iter = _typeToUsdTypeNameMap.find(schemaType);
-        return iter != _typeToUsdTypeNameMap.end() ? iter->second : TfToken();
-    }
+    /// Return the type name in the USD schema for prims or API schemas of the 
+    /// given registered \p schemaType.
+    USD_API
+    static TfToken GetSchemaTypeName(const TfType &schemaType);
 
-    /// Return the type name in the USD schema for prims of the given
-    /// \p SchemaType.
+    /// Return the type name in the USD schema for prims or API schemas of the 
+    /// given registered \p SchemaType.
     template <class SchemaType>
-    TfToken GetSchemaTypeName() const {
+    static
+    TfToken GetSchemaTypeName() {
         return GetSchemaTypeName(SchemaType::_GetStaticTfType());
     }
+
+    /// Return the type name in the USD schema for concrete prim types only from
+    /// the given registered \p schemaType.
+    USD_API
+    static TfToken GetConcreteSchemaTypeName(const TfType &schemaType);
+
+    /// Return the type name in the USD schema for API schema types only from
+    /// the given registered \p schemaType.
+    USD_API
+    static TfToken GetAPISchemaTypeName(const TfType &schemaType);
+
+    /// Return the TfType of the schema corresponding to the given prim or API 
+    /// schema name \p typeName. This the inverse of GetSchemaTypeName.
+    USD_API
+    static TfType GetTypeFromSchemaTypeName(const TfToken &typeName);
+
+    /// Return the TfType of the schema corresponding to the given concrete prim
+    /// type name \p typeName. This the inverse of GetConcreteSchemaTypeName.
+    USD_API
+    static TfType GetConcreteTypeFromSchemaTypeName(const TfToken &typeName);
+
+    /// Return the TfType of the schema corresponding to the given API schema
+    /// type name \p typeName. This the inverse of GetAPISchemaTypeNAme.
+    USD_API
+    static TfType GetAPITypeFromSchemaTypeName(const TfToken &typeName);
 
     /// Returns true if the field \p fieldName cannot have fallback values 
     /// specified in schemas. 
@@ -178,6 +202,21 @@ public:
     BuildComposedPrimDefinition(
         const TfToken &primType, const TfTokenVector &appliedAPISchemas) const;
 
+    /// Returns a dictionary mapping concrete schema prim type names to a 
+    /// VtTokenArray of fallback prim type names if fallback types are defined
+    /// for the schema type in its registered schema.
+    /// 
+    /// The standard use case for this to provide schema defined metadata that
+    /// can be saved with a stage to inform an older version of USD - that 
+    /// may not have some schema types - as to which types it can used instead 
+    /// when encountering a prim of one these types.
+    ///
+    /// \sa UsdStage::WriteFallbackPrimTypes
+    /// \sa \ref Usd_OM_FallbackPrimTypes
+    const VtDictionary &GetFallbackPrimTypes() const {
+        return _fallbackPrimTypes;
+    }
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 
@@ -189,11 +228,6 @@ private:
         UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const;
 
     SdfLayerRefPtr _schematics;
-
-    // Registered map of schema class type -> Usd schema type name token.
-    typedef TfHashMap<TfType, TfToken, TfHash> _TypeToTypeNameMap;
-    _TypeToTypeNameMap _typeToUsdTypeNameMap;
-
     typedef TfHashMap<TfToken, UsdPrimDefinition *, 
                       TfToken::HashFunctor> _TypeNameToPrimDefinitionMap;
 
@@ -203,6 +237,8 @@ private:
 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor> 
         _multipleApplyAPISchemaNamespaces;
+
+    VtDictionary _fallbackPrimTypes;
 
     friend class UsdPrimDefinition;
 };

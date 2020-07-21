@@ -63,6 +63,15 @@ _CreateExtentAttr(UsdGeomCube &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomCube &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Cube(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomCube()
@@ -110,6 +119,7 @@ void wrapUsdGeomCube()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

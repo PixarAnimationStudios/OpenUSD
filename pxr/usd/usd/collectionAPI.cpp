@@ -127,8 +127,10 @@ UsdSchemaType UsdCollectionAPI::_GetSchemaType() const {
 UsdCollectionAPI
 UsdCollectionAPI::_Apply(const UsdPrim &prim, const TfToken &name)
 {
-    return UsdAPISchemaBase::_MultipleApplyAPISchema<UsdCollectionAPI>(
-            prim, _schemaTokens->CollectionAPI, name);
+    if (prim.ApplyAPI<UsdCollectionAPI>(name)) {
+        return UsdCollectionAPI(prim, name);
+    }
+    return UsdCollectionAPI();
 }
 
 /* static */

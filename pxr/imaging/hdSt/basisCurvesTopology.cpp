@@ -27,8 +27,6 @@
 
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include <boost/make_shared.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

@@ -99,6 +99,24 @@ public:
     HGI_API
     virtual HgiShaderFunctionHandleVector const& GetShaderFunctions() const = 0;
 
+    /// Returns the byte size of the GPU shader program.
+    /// APIs that do not have programs can return the combined byte size of the
+    /// shader functions used by the program.
+    /// This can be helpful if the application wishes to tally up memory usage.
+    HGI_API
+    virtual size_t GetByteSizeOfResource() const = 0;
+
+    /// This function returns the handle to the Hgi backend's gpu resource, cast
+    /// to a uint64_t. Clients should avoid using this function and instead
+    /// use Hgi base classes so that client code works with any Hgi platform.
+    /// For transitioning code to Hgi, it can however we useful to directly
+    /// access a platform's internal resource handles.
+    /// There is no safety provided in using this. If you by accident pass a
+    /// HgiMetal resource into an OpenGL call, bad things may happen.
+    /// In OpenGL this returns the GLuint resource name.
+    /// In Metal, Vulkan this returns 0.
+    HGI_API
+    virtual uint64_t GetRawResource() const = 0;
 
 protected:
     HGI_API

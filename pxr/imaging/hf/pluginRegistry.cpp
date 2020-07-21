@@ -246,5 +246,16 @@ HfPluginRegistry::_GetEntryForPlugin(HfPluginBase *plugin)
     return &entry;
 }
 
+TfToken
+HfPluginRegistry::GetPluginId(const HfPluginBase * plugin) const
+{
+    for (const Hf_PluginEntry &entry : _pluginEntries) {
+        if (entry.GetInstance() == plugin) {
+            return entry.GetId();
+        }
+    }
+    return TfToken();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

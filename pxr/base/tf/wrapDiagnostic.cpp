@@ -26,7 +26,6 @@
 
 #include <boost/python/def.hpp>
 
-using namespace std;
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE

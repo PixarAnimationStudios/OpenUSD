@@ -56,6 +56,15 @@ _CreateSloPathAttr(UsdRiRslShader &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiRslShader &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.RslShader(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiRslShader()
@@ -96,6 +105,7 @@ void wrapUsdRiRslShader()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

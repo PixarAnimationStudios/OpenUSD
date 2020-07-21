@@ -63,6 +63,15 @@ _CreateWidthsAttr(UsdGeomCurves &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomCurves &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Curves(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomCurves()
@@ -107,6 +116,7 @@ void wrapUsdGeomCurves()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

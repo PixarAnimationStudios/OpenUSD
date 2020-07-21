@@ -188,6 +188,7 @@ public:
     static bool IsXformOp(const TfToken &attrName);
 
     /// Returns the TfToken used to encode the given \p opType.
+    /// Note that an empty TfToken is used to represent TypeInvalid
     USDGEOM_API
     static TfToken const &GetOpTypeToken(Type const opType);
 

@@ -63,6 +63,15 @@ _CreateMaterialBindingPurposesAttr(UsdRenderSettings &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRenderSettings &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRender.Settings(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRenderSettings()
@@ -115,6 +124,7 @@ void wrapUsdRenderSettings()
              &This::GetProductsRel)
         .def("CreateProductsRel",
              &This::CreateProductsRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

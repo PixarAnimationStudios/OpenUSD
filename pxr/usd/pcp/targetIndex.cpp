@@ -327,7 +327,8 @@ _PathTranslateCallback(
     const SdfPath& inPath,
     const SdfPropertySpecHandle& owningProp,
     const SdfSpecType relOrAttrType,
-    PcpCache* cacheForValidation, 
+    PcpCache* cacheForValidation,
+    SdfPathVector *deletedPaths,
     PcpErrorVector* targetPathErrors,
     PcpErrorVector* otherErrors)
 {
@@ -345,6 +346,9 @@ _PathTranslateCallback(
     // in PcpBuildFilteredTargetIndex.
     if (opType == SdfListOpTypeDeleted) {
         if (pathIsMappable && !translatedPath.IsEmpty()) {
+            if (deletedPaths) {
+                deletedPaths->push_back(translatedPath);
+            }
             _RemoveTargetPathErrorsForPath(translatedPath, targetPathErrors);
             return translatedPath;
         }
@@ -443,6 +447,7 @@ PcpBuildFilteredTargetIndex(
     const bool includeStopProperty,
     PcpCache *cacheForValidation,
     PcpTargetIndex *targetIndex,
+    SdfPathVector *deletedPaths,
     PcpErrorVector *allErrors)
 {
     TRACE_FUNCTION();
@@ -503,6 +508,9 @@ PcpBuildFilteredTargetIndex(
             // since the errorneous paths are being overridden.
             if (pathListOps.IsExplicit()) {
                 targetPathErrors.clear();
+                if (deletedPaths) {
+                    deletedPaths->clear();
+                }
             }
 
             SdfPathListOp::ApplyCallback pathTranslationCallback = 
@@ -511,6 +519,7 @@ PcpBuildFilteredTargetIndex(
                           propIt.base().GetNode(), std::placeholders::_2,
                           std::ref(property), relOrAttrType,
                           cacheForValidation, 
+                          deletedPaths,
                           &targetPathErrors, allErrors);
             pathListOps.ApplyOperations(&paths, pathTranslationCallback);
         }
@@ -540,7 +549,9 @@ PcpBuildTargetIndex(
         /* stopProperty = */ SdfSpecHandle(),
         /* includeStopProperty = */ false,
         /* cacheForValidation = */ 0,
-        targetIndex, allErrors );
+        targetIndex,
+        /* deletedPaths = */ nullptr,
+        allErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,6 +26,10 @@
 #include "pxr/imaging/hdSt/mixinShader.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/arch/hash.h"
+
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStMixinShader::HdStMixinShader(
@@ -39,7 +43,8 @@ HdStMixinShader::HdStMixinShader(
 
 HdStMixinShader::~HdStMixinShader() = default;
 
-HdStShaderCode::ID HdStMixinShader::ComputeHash() const 
+HdStShaderCode::ID
+HdStMixinShader::ComputeHash() const 
 {
     HdStShaderCode::ID hash = 0;
     boost::hash_combine(hash, ArchHash(
@@ -49,7 +54,14 @@ HdStShaderCode::ID HdStMixinShader::ComputeHash() const
     return hash;
 }
 
-std::string HdStMixinShader::GetSource(TfToken const &shaderStageKey) const 
+HdStShaderCode::ID
+HdStMixinShader::ComputeTextureSourceHash() const
+{
+    return _baseShader->ComputeTextureSourceHash();
+}
+
+std::string
+HdStMixinShader::GetSource(TfToken const &shaderStageKey) const 
 {
     std::string baseSource = _baseShader->GetSource(shaderStageKey);
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
@@ -58,51 +70,60 @@ std::string HdStMixinShader::GetSource(TfToken const &shaderStageKey) const
     return baseSource;
 }
 
-HdSt_MaterialParamVector const& HdStMixinShader::GetParams() const 
+HdSt_MaterialParamVector const&
+HdStMixinShader::GetParams() const 
 {
     return _baseShader->GetParams();
 }
 
-bool HdStMixinShader:: IsEnabledPrimvarFiltering() const
+bool
+HdStMixinShader:: IsEnabledPrimvarFiltering() const
 {
     return _baseShader->IsEnabledPrimvarFiltering();
 }
 
-TfTokenVector const & HdStMixinShader::GetPrimvarNames() const 
+TfTokenVector const &
+HdStMixinShader::GetPrimvarNames() const 
 {
     return _baseShader->GetPrimvarNames();
 }
 
-HdBufferArrayRangeSharedPtr const& HdStMixinShader::GetShaderData() const 
+HdBufferArrayRangeSharedPtr const&
+HdStMixinShader::GetShaderData() const 
 {
     return _baseShader->GetShaderData();
 }
 
-HdStShaderCode::TextureDescriptorVector HdStMixinShader::GetTextures() const 
+HdStShaderCode::TextureDescriptorVector
+HdStMixinShader::GetTextures() const 
 {
     return _baseShader->GetTextures();
 }
 
-void HdStMixinShader::BindResources(const int program,
-                                    HdSt_ResourceBinder const &binder,
-                                    HdRenderPassState const &state)
+void
+HdStMixinShader::BindResources(const int program,
+                               HdSt_ResourceBinder const &binder,
+                               HdRenderPassState const &state)
 {
     _baseShader->BindResources(program, binder, state);
 }
 
-void HdStMixinShader::UnbindResources(const int program,
-                                      HdSt_ResourceBinder const &binder,
-                                      HdRenderPassState const &state)
+void
+HdStMixinShader::UnbindResources(const int program,
+                                 HdSt_ResourceBinder const &binder,
+                                 HdRenderPassState const &state)
 {
     _baseShader->UnbindResources(program, binder, state);
 }
 
-void HdStMixinShader::AddBindings(HdBindingRequestVector *customBindings)
+void
+HdStMixinShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     _baseShader->AddBindings(customBindings);
 }
 
-TfToken HdStMixinShader::GetMaterialTag() const
+TfToken
+HdStMixinShader::GetMaterialTag() const
 {
     return _baseShader->GetMaterialTag();
 }

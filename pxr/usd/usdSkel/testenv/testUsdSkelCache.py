@@ -120,13 +120,47 @@ class TestUsdSkelCache(unittest.TestCase):
 
         binding1 = cache.ComputeSkelBinding(root, skel1)
         self.assertEqual(binding1.GetSkeleton().GetPrim(), skel1.GetPrim())
-        self.assertEqual([t.GetPrim() for t in binding1.GetSkinningTargets()],
-                         [stage.GetPrimAtPath(("/SkelBinding/Scope/Inherit"))])
+        self.assertEqual(len(binding1.GetSkinningTargets()), 1)
+        skinningQuery1 = binding1.GetSkinningTargets()[0]
+        self.assertEqual(skinningQuery1.GetPrim().GetPath(),
+                         Sdf.Path("/SkelBinding/Scope/Inherit"))
+        # Inherited skinning properties.
+        self.assertEqual(skinningQuery1.GetJointIndicesPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope"))
+        self.assertEqual(skinningQuery1.GetJointWeightsPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope"))
+        self.assertEqual(skinningQuery1.GetJointOrder(),
+                         Vt.TokenArray(["scope"]))
+        # Non-inherited skinning properties.
+        self.assertFalse(skinningQuery1.GetBlendShapesAttr())
+        self.assertFalse(skinningQuery1.GetBlendShapeTargetsRel())
 
         binding2 = cache.ComputeSkelBinding(root, skel2)
         self.assertEqual(binding2.GetSkeleton().GetPrim(), skel2.GetPrim())
-        self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
-                         [stage.GetPrimAtPath(("/SkelBinding/Scope/Override"))])
+        self.assertEqual(len(binding2.GetSkinningTargets()), 1)
+        skinningQuery2 = binding2.GetSkinningTargets()[0]
+        self.assertEqual(skinningQuery2.GetPrim().GetPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
+        # Inherited skinning properties.
+        self.assertEqual(skinningQuery2.GetPrim().GetPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
+        self.assertEqual(skinningQuery2.GetJointIndicesPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
+        self.assertEqual(skinningQuery2.GetJointWeightsPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
+        self.assertEqual(skinningQuery2.GetJointOrder(),
+                         Vt.TokenArray(["override"]))
+        # Non-inherited skinning properties.
+        self.assertEqual(skinningQuery2.GetBlendShapesAttr()
+                         .GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
+        self.assertEqual(skinningQuery2.GetBlendShapeTargetsRel()
+                         .GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Scope/Override"))
 
         allBindings = cache.ComputeSkelBindings(root)
         # Expecting two resolved bindings. This should *not* include bindings
@@ -142,6 +176,7 @@ class TestUsdSkelCache(unittest.TestCase):
                          allBindings[1].GetSkeleton().GetPrim())
         self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
                          [t.GetPrim() for t in allBindings[1].GetSkinningTargets()])
+
 
 
 if __name__ == "__main__":

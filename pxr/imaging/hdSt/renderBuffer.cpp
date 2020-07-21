@@ -23,73 +23,136 @@
 //
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
+#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/blitEncoder.h"
-#include "pxr/imaging/hgi/blitEncoderOps.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static 
+HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
+{
+    if (HdAovHasDepthSemantic(name)) {
+        if (format == HdFormatFloat32UInt8) {
+            return HgiTextureUsageBitsDepthTarget |
+                   HgiTextureUsageBitsStencilTarget;
+        }
+        return HgiTextureUsageBitsDepthTarget;
+    }
 
-HdStRenderBuffer::HdStRenderBuffer(Hgi* hgi, SdfPath const& id)
+    return HgiTextureUsageBitsColorTarget;
+}
+
+HdStRenderBuffer::HdStRenderBuffer(
+            HdStResourceRegistry * const resourceRegistry, SdfPath const& id)
     : HdRenderBuffer(id)
-    , _hgi(hgi)
-    , _dimensions(GfVec3i(0,0,1))
+    , _resourceRegistry(resourceRegistry)
     , _format(HdFormatInvalid)
-    , _usage(HgiTextureUsageBitsColorTarget)
-    , _multiSampled(false)
-    , _texture()
-    , _textureMS()
     , _mappers(0)
     , _mappedBuffer()
 {
 }
 
-HdStRenderBuffer::~HdStRenderBuffer()
+HdStRenderBuffer::~HdStRenderBuffer() = default;
+
+HdStTextureIdentifier
+HdStRenderBuffer::GetTextureIdentifier(const bool multiSampled)
 {
+    // The texture identifier has to be unique across different render
+    // delegates sharing the same resource registry.
+    //
+    // Thus, we cannot just use the path of the render buffer. Adding
+    // "this" pointer to ensure uniqueness.
+    //
+    std::string idStr = GetId().GetString();
+    if (multiSampled) {
+        idStr += " [MSAA]";
+    }
+    idStr += TfStringPrintf("[%p] ", this);
+
+
+    return HdStTextureIdentifier(
+        TfToken(idStr),
+        // Tag as texture not being loaded from an asset by
+        // texture registry but populated by us.
+        std::make_unique<HdStDynamicUvSubtextureIdentifier>());
+}
+
+// Debug name for texture.
+static
+std::string
+_GetDebugName(const HdStDynamicUvTextureObjectSharedPtr &textureObject)
+{
+    return textureObject->GetTextureIdentifier().GetFilePath().GetString();
 }
 
 bool
 HdStRenderBuffer::Allocate(
     GfVec3i const& dimensions,
-    HdFormat format,
-    bool multiSampled)
+    const HdFormat format,
+    const bool multiSampled)
 {
-    if (dimensions[0]<1 || dimensions[1]<1 || dimensions[2]<1) {
-        TF_WARN("Invalid render buffer dimensions for: %s", GetId().GetText());
+    _format = format;
+
+    if (_format == HdFormatInvalid) {
+        _textureObject = nullptr;
+        _textureMSAAObject = nullptr;
         return false;
     }
 
-    _Deallocate();
-
-    _dimensions = dimensions;
-    _format = format;
-    _multiSampled = multiSampled;
-
-    // XXX HdFormat does not have a depth format and neither HdAovDescriptor
-    // nor HdRenderBufferDescriptor have 'Purpose / Usage' flags that tell us
-    // the usage is for depth. Temp hack: do a string-compare the path which
-    // is build out of HdAovTokens.
-    const TfToken& bufferName = GetId().GetNameToken();
-    bool _isDepthBuffer =
-        TfStringEndsWith(bufferName.GetString(), HdAovTokens->depth);
-
-    _usage = _isDepthBuffer ? HgiTextureUsageBitsDepthTarget :
-                              HgiTextureUsageBitsColorTarget;
-
-    // Allocate new GPU resource
+    if (!_textureObject) {
+        // Allocate texture object if necessary.
+        _textureObject =
+            std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
+                _resourceRegistry->AllocateTextureObject(
+                    GetTextureIdentifier(/*multiSampled = */ false),
+                    HdTextureType::Uv));
+        if (!_textureObject) {
+            TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
+            return false;
+        }
+    }
+    
+    if (multiSampled) {
+        if (!_textureMSAAObject) {
+            // Allocate texture object if necesssary
+            _textureMSAAObject =
+                std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
+                    _resourceRegistry->AllocateTextureObject(
+                        GetTextureIdentifier(/*multiSampled = */ true),
+                        HdTextureType::Uv));
+            if (!_textureMSAAObject) {
+                TF_CODING_ERROR("Expected HdStDynamicUvTextureObject");
+                return false;
+            }
+        }
+    } else {
+        // De-allocate texture object
+        _textureMSAAObject = nullptr;
+    }
+            
     HgiTextureDesc texDesc;
-    texDesc.dimensions = _dimensions;
+    texDesc.debugName = _GetDebugName(_textureObject);
+    texDesc.dimensions = dimensions;
     texDesc.type = (dimensions[2] > 1) ? HgiTextureType3D : HgiTextureType2D;
-    texDesc.format = HdStHgiConversions::GetHgiFormat(_format);
-    texDesc.usage = _usage;
+    texDesc.format = HdStHgiConversions::GetHgiFormat(format);
+    texDesc.usage = _GetTextureUsage(format, GetId().GetNameToken());
     texDesc.sampleCount = HgiSampleCount1;
-    _texture = _hgi->CreateTexture(texDesc);
 
-    // Allocate multi-sample texture (optional)
-    if (_multiSampled) {
+    // Allocate actual GPU resource
+    _textureObject->CreateTexture(texDesc);
+
+    if (multiSampled) {
+        texDesc.debugName = _GetDebugName(_textureMSAAObject);
         texDesc.sampleCount = HgiSampleCount4;
-        _textureMS = _hgi->CreateTexture(texDesc);
+
+        // Allocate actual GPU resource
+        _textureMSAAObject->CreateTexture(texDesc);
     }
 
     return true;
@@ -98,21 +161,8 @@ HdStRenderBuffer::Allocate(
 void
 HdStRenderBuffer::_Deallocate()
 {
-    // If the buffer is mapped while we're doing this, there's not a great
-    // recovery path...
-    TF_VERIFY(!IsMapped());
-
-    _dimensions = GfVec3i(0,0,1);
-    _format = HdFormatInvalid;
-    _multiSampled = false;
-    _usage = HgiTextureUsageBitsColorTarget;
-    _mappers.store(0);
-
-    // Deallocate GPU resource that backs this render buffer
-    _hgi->DestroyTexture(&_texture);
-    if (_textureMS) {
-        _hgi->DestroyTexture(&_textureMS);
-    }
+    _textureObject = nullptr;
+    _textureMSAAObject = nullptr;
 }
 
 void*
@@ -120,17 +170,41 @@ HdStRenderBuffer::Map()
 {
     _mappers.fetch_add(1);
 
-    size_t formatByteSize = HdDataSizeOfFormat(_format);
-    size_t dataByteSize = _dimensions[0] *
-                          _dimensions[1] *
-                          _dimensions[2] *
-                          formatByteSize;
+    if (!_textureObject) {
+        return nullptr;
+    }
+
+    HgiTextureHandle const texture = _textureObject->GetTexture();
+    if (!texture) {
+        return nullptr;
+    }
+
+    const HgiTextureDesc &desc = texture->GetDescriptor();
+    const size_t dataByteSize =
+        desc.dimensions[0] * desc.dimensions[1] * desc.dimensions[2] *
+        HgiDataSizeOfFormat(desc.format);
+    
+    if (dataByteSize == 0) {
+        return nullptr;
+    }
 
     _mappedBuffer.resize(dataByteSize);
 
-    if (dataByteSize > 0) {
+    if (!TF_VERIFY(_resourceRegistry)) {
+        return nullptr;
+    }
+
+    Hgi * const hgi = _resourceRegistry->GetHgi();
+    if (!TF_VERIFY(hgi)) {
+        return nullptr;
+    }
+
+    // Use blit work to record resource copy commands.
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+
+    {
         HgiTextureGpuToCpuOp copyOp;
-        copyOp.gpuSourceTexture = _texture;
+        copyOp.gpuSourceTexture = texture;
         copyOp.sourceTexelOffset = GfVec3i(0);
         copyOp.mipLevel = 0;
         copyOp.startLayer = 0;
@@ -138,13 +212,10 @@ HdStRenderBuffer::Map()
         copyOp.cpuDestinationBuffer = _mappedBuffer.data();
         copyOp.destinationByteOffset = 0;
         copyOp.destinationBufferByteSize = dataByteSize;
-
-        // Use blit encoder to record resource copy commands.
-        HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
-
-        blitEncoder->CopyTextureGpuToCpu(copyOp);
-        blitEncoder->Commit();
+        blitCmds->CopyTextureGpuToCpu(copyOp);
     }
+        
+    hgi->SubmitCmds(blitCmds.get());
 
     return _mappedBuffer.data();
 }
@@ -163,35 +234,69 @@ HdStRenderBuffer::Unmap()
 void
 HdStRenderBuffer::Resolve()
 {
-    if (!_multiSampled) {
-        return;
+    // Textures are resolved at the end of a render pass via the graphicsCmds
+    // by supplying the resolve textures to the graphicsCmds descriptor.
+}
+
+static
+VtValue
+_GetResource(const HdStDynamicUvTextureObjectSharedPtr &textureObject)
+{
+    if (textureObject) {
+        return VtValue(textureObject->GetTexture());
+    } else {
+        return VtValue();
     }
-
-    GfVec4i region(0,0, _dimensions[0], _dimensions[1]);
-
-    HgiResolveImageOp resolveOp;
-    resolveOp.usage = _usage;
-    resolveOp.source = _textureMS;
-    resolveOp.destination = _texture;
-    resolveOp.sourceRegion = region;
-    resolveOp.destinationRegion = region;
-
-    // Use blit encoder to record resource copy commands.
-    HgiBlitEncoderUniquePtr blitEncoder = _hgi->CreateBlitEncoder();
-
-    blitEncoder->ResolveImage(resolveOp);
-    blitEncoder->Commit();
 }
 
 VtValue
-HdStRenderBuffer::GetResource(bool multiSampled) const
+HdStRenderBuffer::GetResource(const bool multiSampled) const
 {
-    if (multiSampled && _multiSampled) {
-        return VtValue(_textureMS);
+    if (multiSampled) {
+        return _GetResource(_textureMSAAObject);
     } else {
-        return VtValue(_texture);
+        return _GetResource(_textureObject);
     }
 }
 
+bool
+HdStRenderBuffer::IsMultiSampled() const
+{
+    return bool(_textureMSAAObject);
+}
+
+static
+const GfVec3i &
+_GetDimensions(HdStDynamicUvTextureObjectSharedPtr const &textureObject)
+{
+    static const GfVec3i invalidDimensions(0,0,0);
+
+    if (!textureObject) {
+        return invalidDimensions;
+    }
+    HgiTextureHandle const texture = textureObject->GetTexture();
+    if (!texture) {
+        return invalidDimensions;
+    }
+    return texture->GetDescriptor().dimensions;
+}
+
+unsigned int
+HdStRenderBuffer::GetWidth() const
+{
+    return _GetDimensions(_textureObject)[0];
+}
+
+unsigned int
+HdStRenderBuffer::GetHeight() const
+{
+    return _GetDimensions(_textureObject)[1];
+}
+
+unsigned int
+HdStRenderBuffer::GetDepth() const
+{
+    return _GetDimensions(_textureObject)[2];
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

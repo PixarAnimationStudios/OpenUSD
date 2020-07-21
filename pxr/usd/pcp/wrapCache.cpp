@@ -150,10 +150,12 @@ _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path,
 {
     PcpErrorVector errors;
     SdfPathVector result;
+    SdfPathVector deletedPaths;
     cache.ComputeRelationshipTargetPaths(path, &result, localOnly,
                                          stopProperty, includeStopProperty,
+                                         &deletedPaths,
                                          &errors);
-    return boost::python::make_tuple(result, errors);
+    return boost::python::make_tuple(result, deletedPaths, errors);
 }
 
 static boost::python::tuple
@@ -164,10 +166,12 @@ _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path,
 {
     PcpErrorVector errors;
     SdfPathVector result;
+    SdfPathVector deletedPaths;
     cache.ComputeAttributeConnectionPaths(path, &result, localOnly,
                                           stopProperty, includeStopProperty,
+                                          &deletedPaths,
                                           &errors);
-    return boost::python::make_tuple(result, errors);
+    return boost::python::make_tuple(result, deletedPaths, errors);
 }
 
 static void

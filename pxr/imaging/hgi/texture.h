@@ -59,7 +59,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>sampleCount:
 ///   samples per texel (multi-sampling).</li>
 /// <li>pixelsByteSize:
-///   Byte size (length) of pixel data.</li>
+///   Byte size (length) of pixel data (i.e., initialData).</li>
 /// <li>initialData:
 ///   CPU pointer to initialization pixels of the texture.
 ///   The memory is consumed immediately during the creation of the HgiTexture.
@@ -71,7 +71,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HgiTextureDesc
 {
     HgiTextureDesc()
-    : usage(HgiTextureUsageBitsColorTarget)
+    : usage(0)
     , format(HgiFormatInvalid)
     , type(HgiTextureType2D)
     , dimensions(0)
@@ -124,6 +124,25 @@ public:
     /// The descriptor describes the object.
     HGI_API
     HgiTextureDesc const& GetDescriptor() const;
+
+    /// Returns the byte size of the GPU texture.
+    /// This can be helpful if the application wishes to tally up memory usage.
+    HGI_API
+    virtual size_t GetByteSizeOfResource() const = 0;
+
+    /// This function returns the handle to the Hgi backend's gpu resource, cast
+    /// to a uint64_t. Clients should avoid using this function and instead
+    /// use Hgi base classes so that client code works with any Hgi platform.
+    /// For transitioning code to Hgi, it can however we useful to directly
+    /// access a platform's internal resource handles.
+    /// There is no safety provided in using this. If you by accident pass a
+    /// HgiMetal resource into an OpenGL call, bad things may happen.
+    /// In OpenGL this returns the GLuint resource name.
+    /// In Metal this returns the id<MTLTexture> as uint64_t.
+    /// In Vulkan this returns the VkImage as uint64_t.
+    /// In DX12 this returns the ID3D12Resource pointer as uint64_t.
+    HGI_API
+    virtual uint64_t GetRawResource() const = 0;
 
 protected:
     HGI_API

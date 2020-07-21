@@ -193,13 +193,16 @@ _ConvertNodes(
         return false;
     }
     sn.handle = RtUString(nodePath.GetText());
-    std::string implName = sdrEntry->GetImplementationName();
-    if (sdrEntry->GetSourceType() == _tokens->OSL) {
-        // Explicitly specify the .oso extension to avoid possible
-        // mix-up between C++ and OSL shaders of the same name.
-        implName += ".oso";
+    std::string shaderPath = sdrEntry->GetResolvedImplementationURI();
+    if (shaderPath.empty()){
+        // This can happen if the material accidentally references
+        // a non-shading node type such as a light or light-filter.
+        TF_WARN("Shader '%s' did not provide a valid implementation path.",
+                sdrEntry->GetName().c_str());
+        return false;
     }
-    sn.name = RtUString(implName.c_str());
+        
+    sn.name = RtUString(shaderPath.c_str());
     // Convert params
     for (const auto& param: node.parameters) {
         const SdrShaderProperty* prop = sdrEntry->GetShaderInput(param.first);

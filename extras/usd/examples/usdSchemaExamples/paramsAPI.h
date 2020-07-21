@@ -109,11 +109,13 @@ public:
     /// 
     /// \return A valid UsdSchemaExamplesParamsAPI object is returned upon success. 
     /// An invalid (or empty) UsdSchemaExamplesParamsAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDSCHEMAEXAMPLES_API
     static UsdSchemaExamplesParamsAPI 

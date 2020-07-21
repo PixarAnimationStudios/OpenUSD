@@ -1,0 +1,14 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./ref_s.sdf@,
+        @./ref_s_48tcps.sdf@,
+        @./ref_s_24tcps_12fps.sdf@,
+        @./ref_s_12fps.sdf@
+    ]
+    framesPerSecond = 12
+)
+
+over "Ref" 
+{
+}

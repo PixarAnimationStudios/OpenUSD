@@ -31,6 +31,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/work/threadLimits.h"
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
@@ -223,7 +224,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
         return false;
     }
     TF_DEBUG(PLUG_INFO_SEARCH).
-        Msg("Did read plugin info %s\n", pathname.c_str());
+        Msg(" Did read plugin info %s\n", pathname.c_str());
 
     // Look for our expected keys.
     JsObject::const_iterator i;
@@ -715,11 +716,15 @@ error:
 void
 Plug_ReadPlugInfo(
     const std::vector<std::string>& pathnames,
+    bool pathsAreOrdered,
     const AddVisitedPathCallback& addVisitedPath,
     const AddPluginCallback& addPlugin,
     Plug_TaskArena* taskArena)
 {
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
+    TfStopwatch stopwatch;
+    stopwatch.Start();
+
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
     for (const auto& pathname : pathnames) {
         if (pathname.empty()) {
@@ -727,11 +732,12 @@ Plug_ReadPlugInfo(
         }
 
         // For convenience we allow given paths that are directories but don't
-        // end in "/" to be handled as directories.  Includes in plugInfo
-        // files must still explicitly append '/' to be handled as
-        // directories.
+        // end in "/" to be handled as directories.  Paths containing wildcards
+        // still require an explicit '/' to be handled as directories, as do 
+        // Includes in plugInfo files.
         const bool hasslash = *pathname.rbegin() == '/';
-        if (hasslash || TfIsDir(pathname)) {
+        const bool resolveSymlinks = true;
+        if (hasslash || TfIsDir(pathname, resolveSymlinks)) {
             context.taskArena.Run([&context, pathname, hasslash] {
                 _ReadPlugInfoWithWildcards(&context,
                     hasslash ? pathname : pathname + "/");
@@ -742,10 +748,17 @@ Plug_ReadPlugInfo(
                 _ReadPlugInfoWithWildcards(&context, pathname);
             });
         }
+        if (pathsAreOrdered) {
+            context.taskArena.Wait();
+        }
     }
-
-    context.taskArena.Wait();
-    TF_DEBUG(PLUG_INFO_SEARCH).Msg("Did check plugin info paths\n");
+    if (!pathsAreOrdered) {
+        context.taskArena.Wait();
+    }
+    stopwatch.Stop();
+    TF_DEBUG(PLUG_INFO_SEARCH).
+        Msg(" Did check plugin info paths in %f seconds\n", 
+            stopwatch.GetSeconds());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

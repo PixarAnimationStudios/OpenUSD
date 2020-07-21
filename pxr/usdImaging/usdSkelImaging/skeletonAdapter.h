@@ -327,8 +327,7 @@ private:
                          const SdfPath& skelRootPath);
 
         std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
-        UsdSkelAnimMapper jointMapper;
-        UsdSkelAnimMapper blendShapeMapper;
+        UsdSkelSkinningQuery skinningQuery;
         SdfPath skelPath, skelRootPath;
         bool hasJointInfluences = false;
     };

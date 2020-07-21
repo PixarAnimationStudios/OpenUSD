@@ -117,14 +117,14 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdGeomPrimvar 
-UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& attrName,
+UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& name,
                                 const SdfValueTypeName &typeName,
                                 const TfToken& interpolation,
                                 int elementSize) const
 {
     const UsdPrim &prim = GetPrim();
 
-    UsdGeomPrimvar primvar(prim, attrName, typeName);
+    UsdGeomPrimvar primvar(prim, name, typeName);
 
     if (primvar){
         if (!interpolation.IsEmpty())
@@ -134,6 +134,64 @@ UsdGeomPrimvarsAPI::CreatePrimvar(const TfToken& attrName,
     }
     // otherwise, errors have already been issued
     return primvar;
+}
+
+bool
+UsdGeomPrimvarsAPI::RemovePrimvar(const TfToken& name)
+{
+    const TfToken& attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    if (attrName.IsEmpty()) {
+        return false;
+    }
+
+    UsdPrim prim = GetPrim();
+    if (!prim) {
+        TF_CODING_ERROR("RemovePrimvar called on invalid prim: %s", 
+                        UsdDescribe(prim).c_str());
+        return false;
+    }
+
+    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(attrName));
+    if (!primvar) {
+        return false;
+    }
+
+    const UsdAttribute& indexAttr = primvar.GetIndicesAttr();
+    bool success = true;
+    // If the Primvar is an indexed primvar, also remove the indexAttr
+    if (indexAttr) {
+        success = prim.RemoveProperty(indexAttr.GetName());
+    }
+    return prim.RemoveProperty(attrName) && success;
+}
+
+void
+UsdGeomPrimvarsAPI::BlockPrimvar(const TfToken& name)
+{
+    const TfToken& attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    if (attrName.IsEmpty()) {
+        return;
+    }
+
+    const UsdPrim& prim = GetPrim();
+    if (!prim) {
+        TF_CODING_ERROR("RemovePrimvar called on invalid prim: %s", 
+                        UsdDescribe(prim).c_str());
+        return;
+    }
+
+    const UsdGeomPrimvar &primvar = UsdGeomPrimvar(prim.GetAttribute(name));
+    if (!primvar) {
+        return;
+    }
+
+    // Always block indices attr irrespective of primvar is indexed or not
+    // This prevents leak of indices attr in a composed stage when a stronger
+    // layer has blocked the primvar and at a later time weaker layer adds
+    // indices to the primvar
+    primvar.BlockIndices();
+
+    primvar.GetAttr().Block();
 }
 
 
@@ -169,6 +227,7 @@ _MakePrimvars(std::vector<UsdProperty> const &props,
 std::vector<UsdGeomPrimvar>
 UsdGeomPrimvarsAPI::GetPrimvars() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvars on invalid prim: %s", 
@@ -183,6 +242,7 @@ UsdGeomPrimvarsAPI::GetPrimvars() const
 std::vector<UsdGeomPrimvar>
 UsdGeomPrimvarsAPI::GetAuthoredPrimvars() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetAuthoredPrimvars on invalid prim: %s", 
@@ -198,6 +258,7 @@ UsdGeomPrimvarsAPI::GetAuthoredPrimvars() const
 std::vector<UsdGeomPrimvar> 
 UsdGeomPrimvarsAPI::GetPrimvarsWithValues() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvarsWithValues on invalid prim: %s", 
@@ -213,6 +274,7 @@ UsdGeomPrimvarsAPI::GetPrimvarsWithValues() const
 std::vector<UsdGeomPrimvar> 
 UsdGeomPrimvarsAPI::GetPrimvarsWithAuthoredValues() const
 {
+    TRACE_FUNCTION();
     const UsdPrim &prim = GetPrim();
     if (!prim){
         TF_CODING_ERROR("Called GetPrimvarsWithAuthoredValues on invalid prim: %s", 

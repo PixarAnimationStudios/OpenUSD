@@ -37,6 +37,8 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
 
+#include <unordered_map>
+
 using std::map;
 using std::string;
 using std::vector;
@@ -344,6 +346,356 @@ TfToken
 SdfGetRoleNameForValueTypeName(const TfToken &name)
 {
     return SdfSchema::GetInstance().FindType(name).GetRole();
+}
+
+// Return a human-readable description of the passed value for diagnostic
+// messages.
+static std::string
+_GetDiagnosticStringForValue(VtValue const &value)
+{
+    std::string valueStr = TfStringify(value);
+    // Truncate the value after 32 chars so we don't spam huge diagnostic
+    // strings.
+    if (valueStr.size() > 32) {
+        valueStr.erase(valueStr.begin() + 32, valueStr.end());
+        valueStr += "...";
+    }
+    return TfStringPrintf("<%s> '%s'", value.GetTypeName().c_str(),
+                          valueStr.c_str());
+}
+
+// Return either empty string (if keyPath is empty) or a string indicating the
+// path of keys in a nested dictionary, padded by one space on the left.
+static std::string
+_GetKeyPathText(std::vector<std::string> const &keyPath)
+{
+    return keyPath.empty() ? std::string() :
+        TfStringPrintf(" under key '%s'", TfStringJoin(keyPath, ":").c_str());
+}
+
+// Add a human-readable error to errMsgs indicating that the passed value does
+// not have a valid scene description datatype.
+static void
+_AddInvalidTypeError(
+    char const *prefix,
+    VtValue const &value,
+    std::vector<std::string> *errMsgs,
+    std::vector<std::string> const *keyPath)
+{
+    errMsgs->push_back(
+        TfStringPrintf(
+            "%s%s%s is not a valid scene description "
+            "datatype", prefix,
+            _GetDiagnosticStringForValue(value).c_str(),
+            _GetKeyPathText(*keyPath).c_str()));
+}
+
+// Function pointer type for converting VtValue holding std::vector<VtValue> to
+// VtArray of a specific type T.
+using _ValueVectorToVtArrayFn =
+    bool (*)(VtValue *, std::vector<std::string> *,
+             std::vector<std::string> const *);
+
+// This function template converts value (holding vector<VtValue>) to
+// VtArray<T>.  We instantiate this for every type SDF_VALUE_TYPES and dispatch
+// to the correct one based on the type held by the first element in the
+// vector<VtValue>.
+template <class T>
+bool _ValueVectorToVtArray(VtValue *value,
+                           std::vector<std::string> *errMsgs,
+                           std::vector<std::string> const *keyPath)
+{
+    // Guarantees: value holds std::vector<VtValue>, and that vector is not
+    // empty.  Also, the first element is a T.  The task here is to attempt to
+    // populate a VtArray<T> with all the elements of the vector cast to T.  If
+    // any fail, add a message to errMsgs indicating the failed element.
+    auto const &valVec = value->UncheckedGet<std::vector<VtValue>>();
+    auto begin = valVec.begin(), end = valVec.end();
+    VtArray<T> result(distance(begin, end));
+    
+    bool allValid = true;
+    for (T *e = result.data(); begin != end; ++begin) {
+        VtValue cast = VtValue::Cast<T>(*begin);
+        if (cast.IsEmpty()) {
+            errMsgs->push_back(
+                TfStringPrintf("failed to cast array element "
+                               "%zu: %s%s to <%s>",
+                               std::distance(valVec.begin(), begin),
+                               _GetDiagnosticStringForValue(*begin).c_str(),
+                               _GetKeyPathText(*keyPath).c_str(),
+                               ArchGetDemangled<T>().c_str()));
+            allValid = false;
+        }
+        else {
+            cast.Swap(*e++);
+        }
+    }
+    if (!allValid) {
+        *value = VtValue();
+        return false;
+    }
+    value->Swap(result);
+    return true;
+}
+
+// Look up the function to convert vector<VtValue> to VtArray<T> for type and
+// return it.  The caller guarantees that type is one of SDF_VALUE_TYPES.
+static _ValueVectorToVtArrayFn
+_GetTypedValueVectorToVtArrayFn(TfType const &type)
+{
+    using FnMap = std::unordered_map<
+        TfType, _ValueVectorToVtArrayFn, TfHash>;
+    static FnMap *valueVectorToVtArrayFnMap = []() {
+        FnMap *ret = new FnMap(BOOST_PP_SEQ_SIZE(SDF_VALUE_TYPES));
+
+// Add conversion functions for all SDF_VALUE_TYPES.
+#define _ADD_FN(r, unused, elem)                                        \
+        ret->emplace(TfType::Find<SDF_VALUE_CPP_TYPE(elem)>(),          \
+                     _ValueVectorToVtArray<SDF_VALUE_CPP_TYPE(elem)>);
+
+        BOOST_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
+#undef _ADD_FN
+        return ret;
+    }();
+
+    auto iter = valueVectorToVtArrayFnMap->find(type);
+    if (TF_VERIFY(iter != valueVectorToVtArrayFnMap->end(),
+                  "Value type '%s' returns true from "
+                  "SdfValueHasValidType but does not appear in "
+                  "SDF_VALUE_TYPES.", type.GetTypeName().c_str())) {
+        return iter->second;
+    }
+    return nullptr;
+}
+
+// Try to convert 'value' holding vector<VtValue> to a VtArray, using the type
+// of the first element in the vector.
+static bool
+_ValueVectorToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
+                         std::vector<std::string> const *keyPath)
+{
+    std::vector<VtValue> const &valVec =
+        value->UncheckedGet<std::vector<VtValue>>();
+    // If this is an empty vector, we cannot sensibly choose any type for the
+    // VtArray.  Error.
+    if (valVec.empty()) {
+        errMsgs->push_back(
+            TfStringPrintf(
+                "cannot infer type from empty vector/list%s -- use "
+                "an empty typed array like VtIntArray/VtStringArray instead",
+                _GetKeyPathText(*keyPath).c_str()));
+        *value = VtValue();
+        return false;
+    }
+    // Pull the type from the first element, and try to invoke the conversion
+    // function to convert all elements.
+    if (SdfValueHasValidType(valVec.front())) {
+        return _GetTypedValueVectorToVtArrayFn(
+            valVec.front().GetType())(value, errMsgs, keyPath);
+    }
+    else {
+        _AddInvalidTypeError("first vector/list element ",
+                             valVec.front(), errMsgs, keyPath);
+        *value = VtValue();
+        return false;
+    }
+    return true;
+}
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+
+using _PySeqToVtArrayFn =
+    bool (*)(VtValue *, std::vector<std::string> *,
+             std::vector<std::string> const *);
+
+template <class T>
+bool _PySeqToVtArray(VtValue *value,
+                     std::vector<std::string> *errMsgs,
+                     std::vector<std::string> const *keyPath)
+{
+    using ElemType = T;
+    bool allValid = true;
+    TfPyLock lock;
+    TfPyObjWrapper obj = value->UncheckedGet<TfPyObjWrapper>();
+    Py_ssize_t len = PySequence_Length(obj.ptr());
+    VtArray<T> result(len);
+    ElemType *elem = result.data();
+    for (Py_ssize_t i = 0; i != len; ++i) {
+        boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
+        if (!h) {
+            if (PyErr_Occurred()) {
+                PyErr_Clear();
+            }
+            errMsgs->push_back(
+                TfStringPrintf("failed to obtain element %s from sequence%s",
+                               TfStringify(i).c_str(),
+                               _GetKeyPathText(*keyPath).c_str()));
+            allValid = false;
+        }
+        boost::python::extract<ElemType> e(h.get());
+        if (!e.check()) {
+            errMsgs->push_back(
+                TfStringPrintf("failed to cast sequence element "
+                               "%s: %s%s to <%s>",
+                               TfStringify(i).c_str(),
+                               _GetDiagnosticStringForValue(
+                                   boost::python::extract<VtValue>(
+                                       h.get())).c_str(),
+                               _GetKeyPathText(*keyPath).c_str(),
+                               ArchGetDemangled<ElemType>().c_str()));
+            allValid = false;
+        }
+        else {
+            *elem++ = e();
+        }
+    }
+    if (!allValid) {
+        *value = VtValue();
+        return false;
+    }
+    value->Swap(result);
+    return true;
+}
+
+static _PySeqToVtArrayFn
+_GetTypedPySeqToVtArrayFn(TfType const &type)
+{
+    using FnMap = std::unordered_map<TfType, _PySeqToVtArrayFn, TfHash>;
+    static FnMap *pySeqToVtArrayFnMap = []() {
+        FnMap *ret = new FnMap(BOOST_PP_SEQ_SIZE(SDF_VALUE_TYPES));
+
+// Add conversion functions for all SDF_VALUE_TYPES.
+#define _ADD_FN(r, unused, elem)                                        \
+        ret->emplace(TfType::Find<SDF_VALUE_CPP_TYPE(elem)>(),          \
+                     _PySeqToVtArray<SDF_VALUE_CPP_TYPE(elem)>);
+
+        BOOST_PP_SEQ_FOR_EACH(_ADD_FN, ~, SDF_VALUE_TYPES)
+#undef _ADD_FN
+        return ret;
+    }();
+
+    auto iter = pySeqToVtArrayFnMap->find(type);
+    if (TF_VERIFY(iter != pySeqToVtArrayFnMap->end(),
+                  "Value type '%s' returns true from "
+                  "SdfValueHasValidType but does not appear in "
+                  "SDF_VALUE_TYPES.", type.GetTypeName().c_str())) {
+        return iter->second;
+    }
+    return nullptr;
+}
+
+static bool
+_PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
+                   std::vector<std::string> *keyPath)
+{
+    TfPyLock pyLock;
+    TfPyObjWrapper obj = value->UncheckedGet<TfPyObjWrapper>();
+
+    if (!PySequence_Check(obj.ptr())) {
+        errMsgs->push_back(
+            TfStringPrintf(
+                "cannot convert python object as sequence%s",
+                _GetKeyPathText(*keyPath).c_str()));
+        *value = VtValue();
+        return false;
+    }
+
+    Py_ssize_t len = PySequence_Length(obj.ptr());
+    // If this is an empty sequence, we cannot sensibly choose any type for the
+    // VtArray.  Error.
+    if (len == 0) {
+        errMsgs->push_back(
+            TfStringPrintf(
+                "cannot infer type from empty sequence%s -- use"
+                "an empty typed array like VtIntArray/VtStringArray instead",
+                _GetKeyPathText(*keyPath).c_str()));
+        *value = VtValue();
+        return false;
+    }
+    // Pull the type from the first element, and try to invoke the conversion
+    // function to convert all elements.
+    boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
+    if (!h) {
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+        }
+        errMsgs->push_back(
+            TfStringPrintf("failed to obtain first element from sequence%s",
+                           _GetKeyPathText(*keyPath).c_str()));
+        *value = VtValue();
+        return false;
+    }
+    boost::python::extract<VtValue> e(h.get());
+    if (!e.check()) {
+        errMsgs->push_back(
+            TfStringPrintf("failed to obtain first element from sequence%s",
+                           _GetKeyPathText(*keyPath).c_str()));
+        *value = VtValue();
+        return false;
+    }
+    VtValue firstVal = e();
+    if (SdfValueHasValidType(firstVal)) {
+        return _GetTypedPySeqToVtArrayFn(
+            firstVal.GetType())(value, errMsgs, keyPath);
+    }
+    else {
+        _AddInvalidTypeError("first sequence element ",
+                             firstVal, errMsgs, keyPath);
+        *value = VtValue();
+        return false;
+    }
+    return true;
+}
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
+static bool
+_ConvertToValidMetadataDictValueInternal(
+    VtValue *value, std::vector<std::string> *errMsgs,
+    std::vector<std::string> *keyPath) {
+
+    bool allValid = true;
+
+    if (value->IsHolding<VtDictionary>()) {
+        VtDictionary d;
+        value->UncheckedSwap(d);
+        for (auto &kv: d) {
+            keyPath->push_back(kv.first);
+            allValid &= _ConvertToValidMetadataDictValueInternal(
+                &kv.second, errMsgs, keyPath);
+            keyPath->pop_back();
+        }
+        value->UncheckedSwap(d);
+    }
+    else if (value->IsHolding<std::vector<VtValue>>()) {
+        allValid &= _ValueVectorToAnyVtArray(value, errMsgs, keyPath);
+    }
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+    else if (value->IsHolding<TfPyObjWrapper>()) {
+        allValid &= _PyObjToAnyVtArray(value, errMsgs, keyPath);
+    }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+    else if (!SdfValueHasValidType(*value)) {
+        allValid = false;
+        *value = VtValue();
+    }
+    return allValid;
+}
+
+bool
+SdfConvertToValidMetadataDictionary(VtDictionary *dict, std::string *errMsg)
+{
+    std::vector<std::string> keyPath;
+    std::vector<std::string> errMsgs;
+    bool allValid = true;
+    for (auto &kv: *dict) {
+        keyPath.push_back(kv.first);
+        allValid &= _ConvertToValidMetadataDictValueInternal(
+            &kv.second, &errMsgs, &keyPath);
+        keyPath.pop_back();
+    }
+    *errMsg = TfStringJoin(errMsgs, "; ");
+    return allValid;
 }
 
 std::ostream& operator<<(std::ostream& out, const SdfSpecifier& spec)

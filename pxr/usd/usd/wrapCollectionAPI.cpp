@@ -69,6 +69,16 @@ static bool _WrapIsCollectionAPIPath(const SdfPath &path) {
         path, &collectionName);
 }
 
+static std::string
+_Repr(const UsdCollectionAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    std::string instanceName = self.GetName();
+    return TfStringPrintf(
+        "Usd.CollectionAPI(%s, '%s')",
+        primRepr.c_str(), instanceName.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdCollectionAPI()
@@ -135,6 +145,7 @@ void wrapUsdCollectionAPI()
              &This::CreateExcludesRel)
         .def("IsCollectionAPIPath", _WrapIsCollectionAPIPath)
             .staticmethod("IsCollectionAPIPath")
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

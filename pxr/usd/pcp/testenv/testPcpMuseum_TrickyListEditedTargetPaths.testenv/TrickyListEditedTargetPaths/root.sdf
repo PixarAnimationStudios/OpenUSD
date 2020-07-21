@@ -36,6 +36,9 @@ def "Permissions" (
     child prims that are marked as private. In this layer, we delete
     or override those targets, so the associated permission denied errors
     will be elided.
+
+    Similarly, attribute connections are made to a private attribute
+    in the referenced layer and deleted or explicitly overridden.
     """
     references = @./ref.sdf@</PermissionsRef_1>
 )
@@ -50,4 +53,6 @@ def "Permissions" (
     rel relToPrivateProp2 = </Permissions.PublicProp>
     delete rel relToPrivatePrim = </Permissions/PrivateChild>
     rel relToPrivatePrim2 = </Permissions/PublicChild>
+    delete double attrToPrivateProp.connect = </Permissions.PrivateProp>
+    double attrToPrivateProp2.connect = </Permissions.PublicProp>
 }

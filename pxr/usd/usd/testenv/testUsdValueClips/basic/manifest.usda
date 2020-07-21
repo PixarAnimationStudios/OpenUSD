@@ -1,0 +1,16 @@
+#usda 1.0
+
+over "Model"
+{
+    float cls
+    float local
+    float payload
+    float ref
+    float var
+
+    over "Child"
+    {
+        float attr
+    }
+}
+

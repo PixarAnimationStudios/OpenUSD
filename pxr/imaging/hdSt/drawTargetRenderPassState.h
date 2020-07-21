@@ -34,6 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class VtValue;
+using HdRenderPassAovBindingVector =
+    std::vector<class HdRenderPassAovBinding>;
 
 /// \class HdStDrawTargetRenderPassState
 ///
@@ -50,6 +52,13 @@ public:
     HdStDrawTargetRenderPassState();
     HDST_API
     ~HdStDrawTargetRenderPassState();  // final no need to be virtual
+
+    const HdRenderPassAovBindingVector &GetAovBindings() const {
+        return _aovBindings;
+    }
+
+    HDST_API
+    void SetAovBindings(const HdRenderPassAovBindingVector &aovBindings);
 
     /// Set the number of color buffer's to use.
     HDST_API
@@ -120,6 +129,7 @@ public:
     }
 
 private:
+    HdRenderPassAovBindingVector _aovBindings;
     std::vector<VtValue> _colorClearValues;
     float                _depthClearValue;
     HdDepthPriority      _depthPriority;

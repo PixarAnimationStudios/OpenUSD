@@ -25,9 +25,13 @@
 #define PXR_IMAGING_HDX_COLORIZE_SELECTION_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/fullscreenShader.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
+
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,7 +71,7 @@ struct HdxColorizeSelectionTaskParams
 /// If enableOutline is true then instead of overlaying the ID buffer as is, an
 /// outline with thickness of outlineRadius pixels around the areas with IDs
 /// will be overlaid. Otherwise, the ID buffer will be overlaid as is.
-class HdxColorizeSelectionTask : public HdxProgressiveTask
+class HdxColorizeSelectionTask : public HdxTask
 {
 public:
     HDX_API
@@ -79,12 +83,6 @@ public:
     /// Hooks for progressive rendering.
     virtual bool IsConverged() const override;
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the render pass resources
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
@@ -94,12 +92,48 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
+
 private:
     // The core colorizing logic of this task: given the ID buffers and the
     // selection buffer, produce a color output at each pixel.
     void _ColorizeSelection();
 
     GfVec4f _GetColorForMode(int mode) const;
+
+    // Utility function to create a storage buffer for the shader parameters.
+    void _CreateParameterBuffer();
+
+    // Create a new GPU texture for the provided format and pixel data.
+    // If an old texture exists it will be destroyed first.
+    void _CreateTexture(
+        int width, 
+        int height,
+        HdFormat format,
+        void *data);
+
+    // This struct must match ParameterBuffer in outline.glslfx.
+    // Be careful to remember the std430 rules.
+    struct _ParameterBuffer
+    {
+        // Size of a colorIn texel - to iterate adjacent texels.
+        GfVec2f texelSize;
+        // Draws outline when enabled, or color overlay when disabled.
+        int enableOutline = 0;
+        // The outline radius (thickness). 
+        int radius = 5;
+
+        bool operator==(const _ParameterBuffer& other) const {
+            return texelSize == other.texelSize &&
+                   enableOutline == other.enableOutline &&
+                   radius == other.radius;
+        }
+    };
 
     // Incoming data
     HdxColorizeSelectionTaskParams _params;
@@ -116,7 +150,12 @@ private:
     size_t _outputBufferSize;
     bool _converged;
 
-    HdxFullscreenShader _compositor;
+    std::unique_ptr<HdxFullscreenShader> _compositor;
+
+    _ParameterBuffer _parameterData;
+    HgiBufferHandle _parameterBuffer;
+    HgiTextureHandle _texture;
+    bool _pipelineCreated;
 };
 
 // VtValue requirements

@@ -25,9 +25,14 @@
     <input name="in" type="customtype"/>
     <parameter name="note" type="string" value=""/>
   </nodedef>
-  <nodedef name="nd_surface" node="UsdMtlxTestNode" type="surfaceshader">
+  <!--
+      XXX: Revert 'type' back to 'surfaceShader' once MaterialX 1.37 is the min 
+      version.
+  -->
+  <nodedef name="nd_surface" node="UsdMtlxTestNode" type="multioutput">
     <input name="in" type="string"/>
     <parameter name="note" type="string" value=""/>
+    <output name="out" type="surfaceshader"/>
   </nodedef>
   <!--
      These implementations don't conform to the definitions above.

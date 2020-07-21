@@ -70,8 +70,10 @@ UsdSchemaType UsdRiLightFilterAPI::_GetSchemaType() const {
 UsdRiLightFilterAPI
 UsdRiLightFilterAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiLightFilterAPI>(
-            prim, _schemaTokens->RiLightFilterAPI);
+    if (prim.ApplyAPI<UsdRiLightFilterAPI>()) {
+        return UsdRiLightFilterAPI(prim);
+    }
+    return UsdRiLightFilterAPI();
 }
 
 /* static */

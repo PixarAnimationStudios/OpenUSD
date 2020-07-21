@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -37,6 +37,11 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/buffer.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -60,7 +65,7 @@ HdStVBOSimpleMemoryManager::CreateBufferArray(
     HdBufferArrayUsageHint usageHint)
 {
     return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
-        role, bufferSpecs, usageHint);
+        _hgi, role, bufferSpecs, usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -98,7 +103,7 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
     HdBufferArraySharedPtr const &bufferArray, 
     VtDictionary &result) const 
 { 
-    std::set<GLuint> idSet;
+    std::set<uint64_t> idSet;
     size_t gpuMemoryUsed = 0;
 
     _SimpleBufferArraySharedPtr bufferArray_ =
@@ -107,9 +112,12 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceGLSharedPtr const & resource = resIt->second;
 
+        // XXX Reallocate inserts an empty (invalid) handle for empty buffers.
+        HgiBufferHandle buffer = resource->GetId();
+        uint64_t id = buffer ? buffer->GetRawResource() : 0;
+
         // XXX avoid double counting of resources shared within a buffer
-        GLuint id = resource->GetId();
-        if (idSet.count(id) == 0) {
+        if (id > 0 && idSet.count(id) == 0) {
             idSet.insert(id);
 
             std::string const & role = resource->GetRole().GetString();
@@ -133,10 +141,12 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
 //  _SimpleBufferArray
 // ---------------------------------------------------------------------------
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
+    Hgi* hgi,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
  : HdBufferArray(role, TfToken(), usageHint)
+ , _hgi(hgi)
  , _capacity(0)
  , _maxBytesPerElement(0)
 {
@@ -244,9 +254,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // XXX: make sure glcontext
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
     if (!TF_VERIFY(curRangeOwner == shared_from_this())) {
@@ -271,85 +278,63 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
     int numElements = range->GetNumElements();
 
+    // Use blit work to record resource copy commands.
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+    
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceGLSharedPtr const &bres = bresIt->second;
 
         // XXX:Arrays: We should use HdDataSizeOfTupleType() here, to
         // add support for array types.
         int bytesPerElement = HdDataSizeOfType(bres->GetTupleType().type);
-        GLsizeiptr bufferSize = bytesPerElement * numElements;
+        size_t bufferSize = bytesPerElement * numElements;
 
-        if (glGenBuffers) {
-            // allocate new one
-            GLuint newId = 0;
-            GLuint oldId = bres->GetId();
+        HgiBufferHandle oldId = bres->GetId();
+        HgiBufferHandle newId;
 
-            if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glCreateBuffers(1, &newId);
-                glNamedBufferData(newId,
-                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
-            } else {
-                glGenBuffers(1, &newId);
-                glBindBuffer(GL_ARRAY_BUFFER, newId);
-                glBufferData(GL_ARRAY_BUFFER,
-                             bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-
-            // copy the range. There are three cases:
-            //
-            // 1. src length (capacity) == dst length (numElements)
-            //   Copy the entire range
-            //
-            // 2. src length < dst length
-            //   Enlarging the range. This typically happens when
-            //   applying quadrangulation/subdivision to populate
-            //   additional data at the end of source data.
-            //
-            // 3. src length > dst length
-            //   Shrinking the range. When the garbage collection
-            //   truncates ranges.
-            //
-            int oldSize = range->GetCapacity();
-            int newSize = range->GetNumElements();
-            GLsizeiptr copySize = std::min(oldSize, newSize) * bytesPerElement;
-            if (copySize > 0) {
-                HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
-
-                if (caps.copyBufferEnabled) {
-                    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                        glCopyNamedBufferSubData(oldId, newId, 0, 0, copySize);
-                    } else {
-                        glBindBuffer(GL_COPY_READ_BUFFER, oldId);
-                        glBindBuffer(GL_COPY_WRITE_BUFFER, newId);
-                        glCopyBufferSubData(GL_COPY_READ_BUFFER,
-                                            GL_COPY_WRITE_BUFFER, 0, 0, copySize);
-                        glBindBuffer(GL_COPY_READ_BUFFER, 0);
-                        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-                    }
-                } else {
-                    // driver issues workaround
-                    std::vector<char> data(copySize);
-                    glBindBuffer(GL_ARRAY_BUFFER, oldId);
-                    glGetBufferSubData(GL_ARRAY_BUFFER, 0, copySize, &data[0]);
-                    glBindBuffer(GL_ARRAY_BUFFER, newId);
-                    glBufferSubData(GL_ARRAY_BUFFER, 0, copySize, &data[0]);
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-                }
-            }
-
-            // delete old buffer
-            if (oldId) {
-                glDeleteBuffers(1, &oldId);
-            }
-
-            bres->SetAllocation(newId, bufferSize);
-        } else {
-            // for unit test
-            static int id = 1;
-            bres->SetAllocation(id++, bufferSize);
+        if(bufferSize > 0) {
+            HgiBufferDesc bufDesc;
+            bufDesc.byteSize = bufferSize;
+            bufDesc.usage = HgiBufferUsageUniform;
+            newId = _hgi->CreateBuffer(bufDesc);
         }
+
+        // copy the range. There are three cases:
+        //
+        // 1. src length (capacity) == dst length (numElements)
+        //   Copy the entire range
+        //
+        // 2. src length < dst length
+        //   Enlarging the range. This typically happens when
+        //   applying quadrangulation/subdivision to populate
+        //   additional data at the end of source data.
+        //
+        // 3. src length > dst length
+        //   Shrinking the range. When the garbage collection
+        //   truncates ranges.
+        //
+        int oldSize = range->GetCapacity();
+        int newSize = range->GetNumElements();
+        size_t copySize = std::min(oldSize, newSize) * bytesPerElement;
+        if (copySize > 0 && oldId) {
+            HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
+
+            HgiBufferGpuToGpuOp blitOp;
+            blitOp.gpuSourceBuffer = oldId;
+            blitOp.gpuDestinationBuffer = newId;
+            blitOp.byteSize = copySize;
+            blitCmds->CopyBufferGpuToGpu(blitOp);
+        }
+
+        // delete old buffer
+        if (oldId) {
+            _hgi->DestroyBuffer(&oldId);
+        }
+
+        bres->SetAllocation(newId, bufferSize);
     }
+
+    _hgi->SubmitCmds(blitCmds.get());
 
     _capacity = numElements;
     _needsReallocation = false;
@@ -369,13 +354,7 @@ void
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
 {
     TF_FOR_ALL (it, GetResources()) {
-        GLuint id = it->second->GetId();
-        if (id) {
-            if (glDeleteBuffers) {
-                glDeleteBuffers(1, &id);
-            }
-            it->second->SetAllocation(0, 0);
-        }
+        _hgi->DestroyBuffer(&it->second->GetId());
     }
 }
 
@@ -388,7 +367,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetResource() const
 
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // make sure this buffer array has only one resource.
-        GLuint id = _resourceList.begin()->second->GetId();
+        HgiBufferHandle const& id = _resourceList.begin()->second->GetId();
         TF_FOR_ALL (it, _resourceList) {
             if (it->second->GetId() != id) {
                 TF_CODING_ERROR("GetResource(void) called on"
@@ -456,7 +435,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdStBufferResourceGLSharedPtr VBO =
         _bufferArray->GetResource(bufferSource->GetName());
 
-    if (!VBO || VBO->GetId() == 0) {
+    if (!VBO || !VBO->GetId()) {
         TF_CODING_ERROR("VBO doesn't exist for %s",
                         bufferSource->GetName().GetText());
         return;
@@ -484,12 +463,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
         if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubData(VBO->GetId(),
+            glNamedBufferSubData(VBO->GetId()->GetRawResource(),
                                  vboOffset,
                                  srcSize,
                                  bufferSource->GetData());
         } else {
-            glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
+            glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId()->GetRawResource());
             glBufferSubData(GL_ARRAY_BUFFER,
                             vboOffset,
                             srcSize,
@@ -509,12 +488,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &nam
 
     HdStBufferResourceGLSharedPtr VBO = _bufferArray->GetResource(name);
 
-    if (!VBO || (VBO->GetId() == 0 && _numElements > 0)) {
+    if (!VBO || (!VBO->GetId() && _numElements > 0)) {
         TF_CODING_ERROR("VBO doesn't exist for %s", name.GetText());
         return VtValue();
     }
 
-    return HdStGLUtils::ReadBuffer(VBO->GetId(),
+    return HdStGLUtils::ReadBuffer(VBO->GetId()->GetRawResource(),
                                    VBO->GetTupleType(),
                                  /*offset=*/0,
                                  /*stride=*/0,  // not interleaved.

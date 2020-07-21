@@ -70,8 +70,10 @@ UsdSchemaType UsdUINodeGraphNodeAPI::_GetSchemaType() const {
 UsdUINodeGraphNodeAPI
 UsdUINodeGraphNodeAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdUINodeGraphNodeAPI>(
-            prim, _schemaTokens->NodeGraphNodeAPI);
+    if (prim.ApplyAPI<UsdUINodeGraphNodeAPI>()) {
+        return UsdUINodeGraphNodeAPI(prim);
+    }
+    return UsdUINodeGraphNodeAPI();
 }
 
 /* static */

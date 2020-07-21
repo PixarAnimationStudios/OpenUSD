@@ -112,16 +112,18 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
     if (it != allPluginsByName.end()) {
         TF_VERIFY(it->second);
         TF_DEBUG(PLUG_REGISTRATION).Msg(
-            "Already registered %s plugin '%s' - not registering '%s'.\n",
+            "Already registered %s plugin '%s' at %s - not registering '%s'."
+            "\n\n",
             _GetPluginTypeDisplayName(pluginType),
-            metadata.pluginName.c_str(), pluginCreationPath.c_str());
+            metadata.pluginName.c_str(), it->second->GetPath().c_str(), 
+            pluginCreationPath.c_str());
         // Remove the null entry we added in _allPlugins for the alt path.
         _allPlugins->erase(iresult.first);
         return std::make_pair(it->second, false);
     }
 
     // Go ahead and create a plugin.
-    TF_DEBUG(PLUG_REGISTRATION).Msg("Registering %s plugin '%s' at '%s'.\n",
+    TF_DEBUG(PLUG_REGISTRATION).Msg("Registering %s plugin '%s' at '%s'.\n\n",
                                     _GetPluginTypeDisplayName(pluginType),
                                     metadata.pluginName.c_str(),
                                     pluginCreationPath.c_str());
@@ -129,6 +131,14 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
     PlugPluginRefPtr plugin = TfCreateRefPtr(
         new PlugPlugin(pluginCreationPath, metadata.pluginName,
                        metadata.resourcePath, metadata.plugInfo, pluginType));
+
+    if (TfDebug::IsEnabled(PLUG_REGISTRATION) &&
+        !metadata.pluginPath.empty() &&
+        !TfIsFile(pluginCreationPath, /* resolveSymlinks =*/ true)) {
+            TF_DEBUG(PLUG_REGISTRATION).
+            Msg("Unable to read library plugin '%s' at '%s'.\n\n",
+                metadata.pluginName.c_str(), pluginCreationPath.c_str());
+    }
 
     // Add to _allPlugins.
     iresult.first->second = plugin;
@@ -244,8 +254,8 @@ PlugPlugin::_Load()
                 _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
             }
             if (!_handle ) {
-                TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
-                                _path.c_str(), _name.c_str(), dsoError.c_str());
+                TF_CODING_ERROR("Failed to load plugin '%s': %s in '%s'",  
+                                _name.c_str(), dsoError.c_str(), _path.c_str());
                 isLoaded = false;
             }
         }

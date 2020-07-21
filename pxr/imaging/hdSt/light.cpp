@@ -21,13 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/tokens.h"
-#include "pxr/imaging/hdSt/textureResource.h"
-#include "pxr/imaging/hdSt/domeLightComputations.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -36,34 +31,15 @@
 
 #include "pxr/base/gf/matrix4d.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (domeLightIrradiance)
-    (domeLightPrefilter) 
-    (domeLightBRDF)
-);
 
 HdStLight::HdStLight(SdfPath const &id, TfToken const &lightType)
     : HdLight(id),
-    _lightType(lightType),
-    _irradianceTexture(0),
-    _prefilterTexture(0),
-    _brdfTexture(0)
+    _lightType(lightType)
 {
 }
 
-HdStLight::~HdStLight()
-{
-    glDeleteTextures(1, &_irradianceTexture);
-    glDeleteTextures(1, &_prefilterTexture);
-    glDeleteTextures(1, &_brdfTexture);
-}
+HdStLight::~HdStLight() = default;
 
 GlfSimpleLight
 HdStLight::_ApproximateAreaLight(SdfPath const &id, 
@@ -104,134 +80,38 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
 GlfSimpleLight
 HdStLight::_PrepareDomeLight(
     SdfPath const &id, 
-    HdSceneDelegate *sceneDelegate)
+    HdSceneDelegate * const sceneDelegate)
 {
-    // get/load the environment map texture resource
-    uint32_t textureId = 0;
-    VtValue textureResourceValue = sceneDelegate->GetLightParamValue(id, 
-                                            HdLightTokens->textureResource);
-        
-    TF_VERIFY(textureResourceValue.IsHolding<HdTextureResourceSharedPtr>());
-    if (textureResourceValue.IsHolding<HdTextureResourceSharedPtr>()) {
-        
-        _textureResource = std::dynamic_pointer_cast<HdStTextureResource>(
-                    textureResourceValue.Get<HdTextureResourceSharedPtr>());
-
-        // texture resource would be empty if the path could not be resolved
-        if (_textureResource) {
-
-            // Use the texture resource (environment map) to pre-compute 
-            // the necessary maps (irradiance, pre-filtered, BRDF LUT)
-            textureId = uint32_t(_textureResource->GetTexelsTextureId());
-
-            HdRenderIndex& index = sceneDelegate->GetRenderIndex();
-            HdStResourceRegistry* hdStResourceRegistry =
-                static_cast<HdStResourceRegistry*>(
-                    index.GetResourceRegistry().get());
-
-            // Schedule texture computations
-            _SetupComputations(textureId, hdStResourceRegistry);
-        }
-    } 
-
-    VtValue transform = sceneDelegate->GetLightParamValue(
-                                                id, HdTokens->transform);
-    
     // Create the Glf Simple Light object that will be used by the rest
     // of the pipeline. No support for shadows for dome light.
     GlfSimpleLight l;
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
-    l.SetIrradianceId(_irradianceTexture);
-    l.SetPrefilterId(_prefilterTexture);
-    l.SetBrdfId(_brdfTexture);
-    if (transform.IsHolding<GfMatrix4d>()) {
-        l.SetTransform(transform.UncheckedGet<GfMatrix4d>());
+
+    {
+        const VtValue v = sceneDelegate->GetLightParamValue(
+            id, HdTokens->transform);
+        if (!v.IsEmpty()) {
+            if (v.IsHolding<GfMatrix4d>()) {
+                l.SetTransform(v.UncheckedGet<GfMatrix4d>());
+            } else {
+                TF_CODING_ERROR("Dome light transform not a matrix.");
+            }
+        }
+    }
+
+    {
+        const VtValue v = sceneDelegate->GetLightParamValue(
+                id, HdLightTokens->textureFile);
+        if (!v.IsEmpty()) {
+            if (v.IsHolding<SdfAssetPath>()) {
+                l.SetDomeLightTextureFile(v.UncheckedGet<SdfAssetPath>());
+            } else {
+                TF_CODING_ERROR("Dome light texture file not an asset path.");
+            }
+        }
     }
     return l;
-}
-
-void 
-HdStLight::_SetupComputations(
-    GLuint sourceTexture, 
-    HdStResourceRegistry *resourceRegistry)
-{
-    // verify that the GL version supports compute shaders
-    if (GlfContextCaps::GetInstance().glVersion < 430) {
-        TF_WARN("Need OpenGL version 4.30 or higher to use DomeLight");
-        return;
-    }
-    
-    // get the width and height of the source texture
-    int textureWidth = 0, textureHeight = 0;
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, sourceTexture);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, 
-                            &textureHeight);
-
-
-    // initialize the 3 textures and add computations to the resource registry
-    GLuint numLevels = 1, numPrefilterLevels = 5, level = 0;
-    // make the computed textures half the size of the given environment map
-    textureHeight = textureHeight/2;
-    textureWidth = textureWidth/2;
-
-    // Diffuse Irradiance
-    glGenTextures(1, &_irradianceTexture);
-    glBindTexture(GL_TEXTURE_2D, _irradianceTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexStorage2D(GL_TEXTURE_2D, numLevels, GL_RGBA16F, textureWidth, 
-                    textureHeight);
-    
-    // Add Computation 
-    HdSt_DomeLightComputationGPUSharedPtr irradianceComputation(
-            new HdSt_DomeLightComputationGPU(_tokens->domeLightIrradiance, 
-            sourceTexture, _irradianceTexture, textureWidth, textureHeight,
-            numLevels, level));
-    resourceRegistry->AddComputation(nullptr, irradianceComputation);
-
-    // PreFilter 
-    glGenTextures(1, &_prefilterTexture);
-    glBindTexture(GL_TEXTURE_2D, _prefilterTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, 
-                    GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexStorage2D(GL_TEXTURE_2D, numPrefilterLevels, GL_RGBA16F, 
-                    textureWidth, textureHeight);
-
-    // Add Computation for each of the mipLevels 
-    for (unsigned int mipLevel = 0; mipLevel < numPrefilterLevels; ++mipLevel) {
-
-        float roughness = (float)mipLevel / (float)(numPrefilterLevels - 1);
-        HdSt_DomeLightComputationGPUSharedPtr preFilterComputation(
-                new HdSt_DomeLightComputationGPU(_tokens->domeLightPrefilter, 
-                sourceTexture, _prefilterTexture, textureWidth, textureHeight, 
-                numPrefilterLevels, mipLevel, roughness));
-        resourceRegistry->AddComputation(nullptr, preFilterComputation);
-    }
-
-    // BRDF LUT
-    glGenTextures(1, &_brdfTexture);
-    glBindTexture(GL_TEXTURE_2D, _brdfTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexStorage2D(GL_TEXTURE_2D, numLevels, GL_RGBA16F, 
-                    textureHeight, textureHeight);
-
-    // Add Computation
-    HdSt_DomeLightComputationGPUSharedPtr brdfComputation(
-            new HdSt_DomeLightComputationGPU(_tokens->domeLightBRDF, 
-            sourceTexture, _brdfTexture, textureHeight, textureHeight, 
-            numLevels, level));    
-    resourceRegistry->AddComputation(nullptr, brdfComputation);
 }
 
 /* virtual */

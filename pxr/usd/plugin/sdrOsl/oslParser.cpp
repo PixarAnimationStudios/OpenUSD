@@ -146,8 +146,10 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             _tokens->sourceType,
             _tokens->sourceType,    // OSL shaders don't declare different types
                                     // so use the same type as the source type
-            discoveryResult.uri,
             discoveryResult.resolvedUri,
+            discoveryResult.resolvedUri,    // Definitive assertion that the
+                                            // implementation is the same asset
+                                            // as the definition
             _getNodeProperties(oslQuery, discoveryResult),
             _getNodeMetadata(oslQuery, discoveryResult.metadata),
             discoveryResult.sourceCode

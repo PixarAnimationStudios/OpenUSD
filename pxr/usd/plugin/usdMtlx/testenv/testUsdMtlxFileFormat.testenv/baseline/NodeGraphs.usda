@@ -19,7 +19,7 @@ def "MaterialX"
                     connectability = "interfaceOnly"
                     doc = "foo"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img2"
@@ -28,7 +28,7 @@ def "MaterialX"
                 asset inputs:file = @layer2.tif@ (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img3"
@@ -37,16 +37,16 @@ def "MaterialX"
                 asset inputs:file = @mask1.tif@ (
                     connectability = "interfaceOnly"
                 )
-                float outputs:result
+                float outputs:out
             }
 
             def Shader "n0"
             {
                 uniform token info:id = "ND_mix_color3"
-                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph1/img2.outputs:result>
-                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph1/img1.outputs:result>
-                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph1/img3.outputs:result>
-                color3f outputs:result
+                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph1/img2.outputs:out>
+                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph1/img1.outputs:out>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph1/img3.outputs:out>
+                color3f outputs:out
             }
         }
 
@@ -63,7 +63,7 @@ def "MaterialX"
                 string inputs:layer = "diffuse1" (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img2"
@@ -75,7 +75,7 @@ def "MaterialX"
                 string inputs:layer = "diffuse2" (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img3"
@@ -87,23 +87,23 @@ def "MaterialX"
                 string inputs:layer = "areamask" (
                     connectability = "interfaceOnly"
                 )
-                float outputs:result
+                float outputs:out
             }
 
             def Shader "n3"
             {
                 uniform token info:id = "ND_mix_color3"
-                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph2/img2.outputs:result>
-                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph2/img1.outputs:result>
-                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph2/img3.outputs:result>
-                color3f outputs:result
+                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph2/img2.outputs:out>
+                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph2/img1.outputs:out>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph2/img3.outputs:out>
+                color3f outputs:out
             }
         }
 
         def NodeGraph "nodegraph3"
         {
-            color3f outputs:albedo.connect = </MaterialX/NodeGraphs/nodegraph3/n11.outputs:result>
-            float outputs:areamask.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:result>
+            color3f outputs:albedo.connect = </MaterialX/NodeGraphs/nodegraph3/n11.outputs:out>
+            float outputs:areamask.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:out>
 
             def Shader "img1"
             {
@@ -111,7 +111,7 @@ def "MaterialX"
                 asset inputs:file = @%diffalbedo@ (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "c1"
@@ -120,7 +120,7 @@ def "MaterialX"
                 color3f inputs:value = (0, 0, 0) (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img2"
@@ -129,7 +129,7 @@ def "MaterialX"
                 asset inputs:file = @%dirtcolor@ (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "img3"
@@ -138,7 +138,7 @@ def "MaterialX"
                 asset inputs:file = @%areamask@ (
                     connectability = "interfaceOnly"
                 )
-                float outputs:result
+                float outputs:out
             }
 
             def Shader "img4"
@@ -147,7 +147,7 @@ def "MaterialX"
                 asset inputs:file = @%noisemask@ (
                     connectability = "interfaceOnly"
                 )
-                float outputs:result
+                float outputs:out
             }
 
             def Shader "n5"
@@ -156,78 +156,77 @@ def "MaterialX"
                 color3f inputs:value = (0.8, 1, 1.3) (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "add1"
             {
                 uniform token info:id = "ND_add_color3"
-                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/img1.outputs:result>
-                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/c1.outputs:result>
-                color3f outputs:result
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/img1.outputs:out>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/c1.outputs:out>
+                color3f outputs:out
             }
 
             def Shader "n6"
             {
                 uniform token info:id = "ND_multiply_color3"
-                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/n5.outputs:result>
-                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/add1.outputs:result>
-                color3f outputs:result
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/n5.outputs:out>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/add1.outputs:out>
+                color3f outputs:out
             }
 
             def Shader "n7"
             {
                 uniform token info:id = "ND_contrast_color3"
                 color3f inputs:amount = (0, 0, 0)
-                color3f inputs:in.connect = </MaterialX/NodeGraphs/nodegraph3/img2.outputs:result>
+                color3f inputs:in.connect = </MaterialX/NodeGraphs/nodegraph3/img2.outputs:out>
                 color3f inputs:pivot = (0.5, 0.5, 0.5) (
                     connectability = "interfaceOnly"
                 )
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "n8"
             {
                 uniform token info:id = "ND_mix_color3"
-                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph3/n6.outputs:result>
-                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph3/n7.outputs:result>
-                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:result>
-                color3f outputs:result
+                color3f inputs:bg.connect = </MaterialX/NodeGraphs/nodegraph3/n6.outputs:out>
+                color3f inputs:fg.connect = </MaterialX/NodeGraphs/nodegraph3/n7.outputs:out>
+                float inputs:mix.connect = </MaterialX/NodeGraphs/nodegraph3/img3.outputs:out>
+                color3f outputs:out
             }
 
             def Shader "t1"
             {
                 uniform token info:id = "ND_texcoord_vector2"
-                float2 outputs:result
+                float2 outputs:out
             }
 
             def Shader "n9"
             {
                 uniform token info:id = "ND_noise2d_color3"
-                vector3f inputs:amplitude = (0.03, 0.04, 0.06) (
+                float3 inputs:amplitude = (0.03, 0.04, 0.06) (
                     connectability = "interfaceOnly"
                 )
                 float2 inputs:texcoord
-                color3f outputs:result
+                color3f outputs:out
             }
 
             def Shader "n10"
             {
                 uniform token info:id = "ND_inside_color3"
-                color3f inputs:in.connect = </MaterialX/NodeGraphs/nodegraph3/n9.outputs:result>
-                float inputs:mask.connect = </MaterialX/NodeGraphs/nodegraph3/img4.outputs:result>
-                color3f outputs:result
+                color3f inputs:in.connect = </MaterialX/NodeGraphs/nodegraph3/n9.outputs:out>
+                float inputs:mask.connect = </MaterialX/NodeGraphs/nodegraph3/img4.outputs:out>
+                color3f outputs:out
             }
 
             def Shader "n11"
             {
                 uniform token info:id = "ND_add_color3"
-                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/n10.outputs:result>
-                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/n8.outputs:result>
-                color3f outputs:result
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/nodegraph3/n10.outputs:out>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/nodegraph3/n8.outputs:out>
+                color3f outputs:out
             }
         }
     }
 }
-
 

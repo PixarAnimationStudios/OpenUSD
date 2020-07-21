@@ -36,6 +36,9 @@
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/textureHandleRegistry.h"
+#include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -86,37 +89,28 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
     }
 }
 
-HdStResourceRegistry::HdStResourceRegistry()
-    : _hgi(nullptr)
+HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
+    : _hgi(hgi)
     , _numBufferSourcesToResolve(0)
-    , _nonUniformAggregationStrategy()
-    , _nonUniformImmutableAggregationStrategy()
-    , _uniformUboAggregationStrategy()
-    , _uniformSsboAggregationStrategy()
-    , _singleAggregationStrategy()
-{
     // default aggregation strategies for varying (vertex, varying) primvars
-    SetNonUniformAggregationStrategy(
-        new HdStVBOMemoryManager());
-    SetNonUniformImmutableAggregationStrategy(
-        new HdStVBOMemoryManager());
-
-    // default aggregation strategy for uniform on SSBO (for primvars)
-    SetShaderStorageAggregationStrategy(
-        new HdStInterleavedSSBOMemoryManager());
-
+    , _nonUniformAggregationStrategy(
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
+    , _nonUniformImmutableAggregationStrategy(
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
     // default aggregation strategy for uniform on UBO (for globals)
-    SetUniformAggregationStrategy(
-        new HdStInterleavedUBOMemoryManager());
-
+    , _uniformUboAggregationStrategy(
+        std::make_unique<HdStInterleavedUBOMemoryManager>(_hgi))
+    // default aggregation strategy for uniform on SSBO (for primvars)
+    , _uniformSsboAggregationStrategy(
+        std::make_unique<HdStInterleavedSSBOMemoryManager>(_hgi))
     // default aggregation strategy for single buffers (for nested instancer)
-    SetSingleStorageAggregationStrategy(
-        new HdStVBOSimpleMemoryManager());
-}
-
-HdStResourceRegistry::~HdStResourceRegistry()
+    , _singleAggregationStrategy(
+        std::make_unique<HdStVBOSimpleMemoryManager>(_hgi))
+    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
 {
 }
+
+HdStResourceRegistry::~HdStResourceRegistry() = default;
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
@@ -132,18 +126,18 @@ HdStResourceRegistry::GetResourceAllocation() const
 
     // buffer array allocation
 
-    size_t nonUniformSize   = 
+    const size_t nonUniformSize   = 
         _nonUniformBufferArrayRegistry.GetResourceAllocation(
             _nonUniformAggregationStrategy.get(), result) +
         _nonUniformImmutableBufferArrayRegistry.GetResourceAllocation(
             _nonUniformImmutableAggregationStrategy.get(), result);
-    size_t uboSize          = 
+    const size_t uboSize          = 
         _uniformUboBufferArrayRegistry.GetResourceAllocation(
             _uniformUboAggregationStrategy.get(), result);
-    size_t ssboSize         = 
+    const size_t ssboSize         = 
         _uniformSsboBufferArrayRegistry.GetResourceAllocation(
             _uniformSsboAggregationStrategy.get(), result);
-    size_t singleBufferSize = 
+    const size_t singleBufferSize = 
         _singleBufferArrayRegistry.GetResourceAllocation(
             _singleAggregationStrategy.get(), result);
 
@@ -170,10 +164,10 @@ HdStResourceRegistry::GetResourceAllocation() const
     return result;
 }
 
-void
-HdStResourceRegistry::SetHgi(Hgi* hgi)
+Hgi*
+HdStResourceRegistry::GetHgi()
 {
-    _hgi = hgi;
+    return _hgi;
 }
 
 /// ------------------------------------------------------------------------
@@ -325,7 +319,7 @@ HdStResourceRegistry::UpdateShaderStorageBufferArrayRange(
 /// ------------------------------------------------------------------------
 void
 HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
-                                 HdBufferSourceSharedPtrVector &sources)
+                                 HdBufferSourceSharedPtrVector &&sources)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -372,12 +366,11 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
 
     // Check for no-valid buffer case
     if (!sources.empty()) {
-        _PendingSourceList::iterator it = _pendingSources.emplace_back(range);
-        TF_VERIFY(range.use_count() >=2);
+        _numBufferSourcesToResolve += sources.size();
+        const _PendingSourceList::iterator it = _pendingSources.emplace_back(
+            range, std::move(sources));
 
-        std::swap(it->sources, sources);
-        
-        _numBufferSourcesToResolve += it->sources.size(); // Atomic
+        TF_VERIFY(range.use_count() >=2);
     }
 }
 
@@ -469,8 +462,9 @@ HdStDispatchBufferSharedPtr
 HdStResourceRegistry::RegisterDispatchBuffer(
     TfToken const &role, int count, int commandNumUints)
 {
-    HdStDispatchBufferSharedPtr result(
-        new HdStDispatchBuffer(role, count, commandNumUints));
+    HdStDispatchBufferSharedPtr const result =
+        std::make_shared<HdStDispatchBuffer>(
+            _hgi, role, count, commandNumUints);
 
     _dispatchBufferRegistry.push_back(result);
 
@@ -481,8 +475,9 @@ HdStPersistentBufferSharedPtr
 HdStResourceRegistry::RegisterPersistentBuffer(
         TfToken const &role, size_t dataSize, void *data)
 {
-    HdStPersistentBufferSharedPtr result(
-            new HdStPersistentBuffer(role, dataSize, data));
+    HdStPersistentBufferSharedPtr const result =
+        std::make_shared<HdStPersistentBuffer>(
+            _hgi, role, dataSize, data);
 
     _persistentBufferRegistry.push_back(result);
 
@@ -631,8 +626,30 @@ std::ostream &operator <<(
 }
 
 void
+HdStResourceRegistry::_CommitTextures()
+{
+    HdStShaderCode::ResourceContext ctx(this);
+
+    const std::set<HdStShaderCodeSharedPtr> shaderCodes =
+        _textureHandleRegistry->Commit();
+
+    // Give assoicated HdStShaderCode objects a chance to add buffer
+    // sources that rely on texture sampler handles (bindless) or
+    // texture metadata (e.g., sampling transform for volume fields).
+    for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
+        shaderCode->AddResourcesFromTextures(ctx);
+    }
+}
+
+void
 HdStResourceRegistry::_Commit()
 {
+    // Process textures first before resolving buffer sources since
+    // some computation buffer sources need meta-data from textures
+    // (such as the grid transform for an OpenVDB file) or texture
+    // handles (for bindless textures).
+    _CommitTextures();
+
     // TODO: requests should be sorted by resource, and range.
     {
         HD_TRACE_SCOPE("Resolve");
@@ -947,8 +964,8 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         newBufferSpecs, updatedOrAddedSpecs);
     for (const auto& spec : migrateSpecs) {
         AddComputation(/*dstRange*/newRange,
-                       HdComputationSharedPtr(new HdStCopyComputationGPU(
-                           /*src=*/curRange, spec.name)) );
+                       std::make_shared<HdStCopyComputationGPU>(
+                           /*src=*/curRange, spec.name));
     }
 
     // Increment version of the underlying bufferArray to notify
@@ -1008,12 +1025,12 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         if (!program) {
             continue;
         }
-        size_t size =
-            program->GetProgram().GetSize() +
-            program->GetGlobalUniformBuffer().GetSize();
+
+        HgiShaderProgramHandle const& prgHandle =  program->GetProgram();
+        size_t size = prgHandle ? prgHandle->GetByteSizeOfResource() : 0;
 
         // the role of program and global uniform buffer is always same.
-        std::string const &role = program->GetProgram().GetRole().GetString();
+        std::string const &role = program->GetRole().GetString();
         (*result)[role] = VtDictionaryGet<size_t>(*result, role,
                                                   VtDefault = 0) + size;
 
@@ -1052,5 +1069,34 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 }
+
+HdStTextureHandleSharedPtr
+HdStResourceRegistry::AllocateTextureHandle(
+        HdStTextureIdentifier const &textureId,
+        const HdTextureType textureType,
+        HdSamplerParameters const &samplerParams,
+        const size_t memoryRequest,
+        const bool createBindlessHandle,
+        HdStShaderCodePtr const &shaderCode)
+{
+    return _textureHandleRegistry->AllocateTextureHandle(
+        textureId, textureType,
+        samplerParams, memoryRequest, createBindlessHandle,
+        shaderCode);
+}
+
+HdStTextureObjectSharedPtr
+HdStResourceRegistry::AllocateTextureObject(
+        HdStTextureIdentifier const &textureId,
+        const HdTextureType textureType)
+{
+    HdSt_TextureObjectRegistry * const reg = 
+        _textureHandleRegistry->GetTextureObjectRegistry();
+        
+    return reg->AllocateTextureObject(
+        textureId, textureType);
+            
+}    
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

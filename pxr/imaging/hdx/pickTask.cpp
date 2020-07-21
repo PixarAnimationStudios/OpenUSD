@@ -48,6 +48,8 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/info.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,7 +66,7 @@ _InitIdRenderPassState(HdRenderIndex *index)
             dynamic_cast<HdStRenderPassState*>(
                 rps.get())) {
         extendedState->SetRenderPassShader(
-            boost::make_shared<HdStRenderPassShader>(
+            std::make_shared<HdStRenderPassShader>(
                 HdxPackageRenderPassPickingShader()));
     }
 
@@ -584,6 +586,12 @@ HdxPickResult::HdxPickResult(
     , _bufferSize(bufferSize)
     , _subRect(subRect)
 {
+    // Clamp _subRect [x,y,w,h] to render buffer [0,0,w,h]
+    _subRect[0] = std::max(0, _subRect[0]);
+    _subRect[1] = std::max(0, _subRect[1]);
+    _subRect[2] = std::min(_bufferSize[0]-_subRect[0], _subRect[2]);
+    _subRect[3] = std::min(_bufferSize[1]-_subRect[1], _subRect[3]);
+
     _eyeToWorld = viewMatrix.GetInverse();
     _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }

@@ -49,11 +49,7 @@ HdSt_Subdivision::RefinesToTriangles(TfToken const &scheme)
 bool
 HdSt_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
 {
-    if (scheme == PxOsdOpenSubdivTokens->catmark ||
-        scheme == PxOsdOpenSubdivTokens->catmullClark) {
-        return true;
-    }
-    return false;
+    return scheme == PxOsdOpenSubdivTokens->catmullClark;
 }
 
 bool

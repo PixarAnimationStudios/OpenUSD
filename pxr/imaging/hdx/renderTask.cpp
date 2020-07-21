@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // -------------------------------------------------------------------------- //
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdxProgressiveTask(id)
+    : HdxTask(id)
     , _pass()
     , _renderTags()
     , _setupTask()
@@ -65,9 +65,9 @@ HdxRenderTask::IsConverged() const
 }
 
 void
-HdxRenderTask::Sync(HdSceneDelegate* delegate,
-                    HdTaskContext*   ctx,
-                    HdDirtyBits*     dirtyBits)
+HdxRenderTask::_Sync(HdSceneDelegate* delegate,
+                     HdTaskContext* ctx,
+                     HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
 

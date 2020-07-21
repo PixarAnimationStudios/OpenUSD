@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdContrivedNonAppliedAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdContrived.NonAppliedAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedNonAppliedAPI()
@@ -79,6 +88,7 @@ void wrapUsdContrivedNonAppliedAPI()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

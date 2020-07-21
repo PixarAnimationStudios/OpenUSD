@@ -65,6 +65,8 @@ static const _FormatDesc FORMAT_DESC[] =
     {GL_RG,   GL_INT,           GL_RG32I},   // HdFormatInt32Vec2,
     {GL_RGB,  GL_INT,           GL_RGB32I},  // HdFormatInt32Vec3,
     {GL_RGBA, GL_INT,           GL_RGBA32I}, // HdFormatInt32Vec4,
+
+    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // HdFormatFloat32UInt8
 };
 static_assert(TfArraySize(FORMAT_DESC) ==
         HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
@@ -265,12 +267,16 @@ GLenum
 HdStGLConversions::GetWrap(HdWrap wrap)
 {
     switch (wrap) {
-        case HdWrapClamp : return GL_CLAMP_TO_EDGE;
-        case HdWrapRepeat : return GL_REPEAT;
-        case HdWrapBlack : return GL_CLAMP_TO_BORDER;
-        case HdWrapMirror : return GL_MIRRORED_REPEAT;
-        case HdWrapUseMetadata : return GL_CLAMP_TO_BORDER;
-        case HdWrapLegacy : return GL_REPEAT;
+        case HdWrapClamp:
+            return GL_CLAMP_TO_EDGE;
+        case HdWrapLegacyNoOpinionFallbackRepeat:
+        case HdWrapRepeat:
+            return GL_REPEAT;
+        case HdWrapNoOpinion:
+        case HdWrapBlack:
+            return GL_CLAMP_TO_BORDER;
+        case HdWrapMirror:
+            return GL_MIRRORED_REPEAT;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);

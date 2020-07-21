@@ -56,6 +56,15 @@ _CreateRadiusAttr(UsdLuxDiskLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxDiskLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.DiskLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxDiskLight()
@@ -96,6 +105,7 @@ void wrapUsdLuxDiskLight()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -201,6 +201,7 @@ for layerPath in args.layer:
         propStackMap = {} 
         targetsMap = {}
         connectionsMap = {}
+        deletedTargetPathsMap = {}
 
         properties = [primPath.AppendProperty(child) for child in propNames]
         while properties:
@@ -218,17 +219,21 @@ for layerPath in args.layer:
             propStackMap[propPath] = propIndex.propertyStack
 
             if isinstance(propIndex.propertyStack[0], Sdf.RelationshipSpec):
-                (targets, targetErrors) = \
+                (targets, deletedPaths, targetErrors) = \
                     pcpCache.ComputeRelationshipTargetPaths(propPath)
                 errors += targetErrors
                 if len(targets) > 0:
                     targetsMap[propPath] = targets
+                if deletedPaths:
+                    deletedTargetPathsMap[propPath] = deletedPaths
             elif isinstance(propIndex.propertyStack[0], Sdf.AttributeSpec):
-                (conns, connErrors) = \
+                (conns, deletedPaths, connErrors) = \
                     pcpCache.ComputeAttributeConnectionPaths(propPath)
                 errors += connErrors
                 if len(conns) > 0:
                     connectionsMap[propPath] = conns
+                if deletedPaths:
+                    deletedTargetPathsMap[propPath] = deletedPaths
 
         if len(primIndex.primStack) > 0:
             print('\nPrim Stack:')
@@ -301,6 +306,10 @@ for layerPath in args.layer:
         if len(connectionsMap) > 0:
             print('\nAttribute connections:')
             _PrintTargets(connectionsMap)
+
+        if deletedTargetPathsMap:
+            print('\nDeleted target paths:')
+            _PrintTargets(deletedTargetPathsMap)
             
         # Print out errors encountered while composing this prim.
         if len(errors) > 0:

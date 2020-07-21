@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
 #include <memory>
@@ -182,10 +181,6 @@ public:
     void Invalidate();
 
 private:
-    template <typename T>
-    static bool _IsUnique(boost::shared_ptr<T> const &value) {
-        return value.unique();
-    }
     template <typename T>
     static bool _IsUnique(std::shared_ptr<T> const &value) {
         return value.unique();

@@ -114,7 +114,12 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     _AppendPathList(&result, installLocation, binaryPath);
 #endif // PXR_INSTALL_LOCATION
 
-    Plug_SetPaths(result, debugMessages);
+    // Plugin registration must process these paths in order
+    // to ensure deterministic behavior when the same plugin
+    // exists in different paths.  The first path containing
+    // a particular plug-in will "win".
+    const bool pathsAreOrdered = true;
+    Plug_SetPaths(result, debugMessages, pathsAreOrdered);
 }
 
 }

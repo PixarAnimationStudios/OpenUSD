@@ -77,12 +77,15 @@ pxr_library(usd
     PRIVATE_CLASSES
         clip
         clipCache
+        clipSet
+        clipSetDefinition
         crateData
         crateFile
         instanceCache
         instanceKey
         integerCoding
         interpolators
+        primTypeInfoCache
         usdzResolver
         valueUtils
 
@@ -122,6 +125,7 @@ pxr_library(usd
         wrapPrimDefinition.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
+        wrapPrimTypeInfo.cpp
         wrapProperty.cpp
         wrapReferences.cpp
         wrapRelationship.cpp
@@ -150,7 +154,7 @@ pxr_library(usd
         generatedSchema.usda
         schema.usda:usd/schema.usda
         codegenTemplates/api.h
-        codegenTemplates/plugInfo.json
+        codegenTemplates/plugInfo.json:no_subst
         codegenTemplates/schemaClass.cpp
         codegenTemplates/schemaClass.h
         codegenTemplates/tokens.cpp
@@ -185,6 +189,7 @@ pxr_test_scripts(
     testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
+    testenv/testUsdFallbackPrimTypes.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
@@ -379,6 +384,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdFallbackPrimTypes
+    DEST testUsdFallbackPrimTypes
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdFlatten
     DEST testUsdFlatten
 )
@@ -524,11 +534,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdValueClips_Legacy
-    DEST testUsdValueClips_Legacy
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdVariants
     DEST testUsdVariants
 )
@@ -585,17 +590,6 @@ pxr_register_test(testUsdValueClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
     EXPECTED_RETURN_CODE 0
-)
-
-# This test runs the same test script as testUsdValueClips
-# but uses a different set of test assets that are installed above.
-pxr_register_test(testUsdValueClips_Legacy
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USD_AUTHOR_LEGACY_CLIPS=1
-        USD_READ_LEGACY_CLIPS=1
 )
 
 pxr_register_test(testUsdVariantEditing
@@ -659,6 +653,12 @@ pxr_register_test(testUsdCreateProperties
 
 pxr_register_test(testUsdCreateAttributeCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCreateAttributeCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFallbackPrimTypes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFallbackPrimTypes"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -792,6 +792,8 @@ pxr_register_test(testUsdTimeOffsets
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS=0
 )
 
 pxr_register_test(testUsdPrimRange
@@ -913,11 +915,15 @@ pxr_register_test(testUsdTimeValueAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoring"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS=0
 )
 
 pxr_register_test(testUsdTimeValueAuthoringCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoringCpp"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS=0
 )
 
 pxr_register_test(testUsdUsdzFileFormat

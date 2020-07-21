@@ -56,6 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdPrimvarReader_float3)\
     (UsdPrimvarReader_float4)\
     (UsdPrimvarReader_int)  \
+    (UsdTransform2d)  \
     (pxrBarnLightFilter)    \
     (pxrIntMultLightFilter) \
     (pxrRodLightFilter)

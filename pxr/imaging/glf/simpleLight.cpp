@@ -49,16 +49,11 @@ GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _transform(GfMatrix4d().SetIdentity()),
     _shadowMatrices(std::vector<GfMatrix4d>(1, GfMatrix4d().SetIdentity())),
     _isDomeLight(false),
-    _irradianceId(0),
-    _prefilterId(0),
-    _brdfId(0),
     _id()
 {
 }
 
-GlfSimpleLight::~GlfSimpleLight()
-{
-}
+GlfSimpleLight::~GlfSimpleLight() = default;
 
 GfMatrix4d const &
 GlfSimpleLight::GetTransform() const
@@ -289,34 +284,16 @@ GlfSimpleLight::SetIsDomeLight(bool isDomeLight)
     _isDomeLight = isDomeLight;
 }
 
-uint32_t const & GlfSimpleLight::GetIrradianceId() const
+const SdfAssetPath &
+GlfSimpleLight::GetDomeLightTextureFile() const
 {
-    return _irradianceId;
+    return _domeLightTextureFile;
 }
 
-void GlfSimpleLight::SetIrradianceId(uint32_t const & irradianceId)
+void
+GlfSimpleLight::SetDomeLightTextureFile(const SdfAssetPath &path)
 {
-    _irradianceId = irradianceId;
-}
-
-uint32_t const & GlfSimpleLight::GetPrefilterId() const
-{
-    return _prefilterId;
-}
-
-void GlfSimpleLight::SetPrefilterId(uint32_t const & prefilterId)
-{
-    _prefilterId = prefilterId;
-}
-
-uint32_t const & GlfSimpleLight::GetBrdfId() const
-{
-    return _brdfId;
-}
-
-void GlfSimpleLight::SetBrdfId(uint32_t const & brdfId)
-{
-    _brdfId = brdfId;
+    _domeLightTextureFile = path;
 }
 
 // -------------------------------------------------------------------------- //
@@ -344,9 +321,7 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _shadowMatrices == other._shadowMatrices
         &&  _isCameraSpaceLight == other._isCameraSpaceLight
         &&  _isDomeLight == other._isDomeLight
-        &&  _irradianceId == other._irradianceId
-        &&  _prefilterId == other._prefilterId
-        &&  _brdfId == other._brdfId
+        &&  _domeLightTextureFile == other._domeLightTextureFile
         &&  _id == other._id;
 }
 
@@ -375,9 +350,7 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._transform
         << v._isCameraSpaceLight
         << v._isDomeLight
-        << v._irradianceId
-        << v._prefilterId
-        << v._brdfId
+        << v._domeLightTextureFile
         << v._id;
     for (auto const& m : v._shadowMatrices) {
         out << m;

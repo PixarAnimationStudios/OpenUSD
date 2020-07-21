@@ -31,8 +31,6 @@
 
 #include "pxr/imaging/hdSt/renderPassState.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdxOitVolumeRenderTask
@@ -49,12 +47,6 @@ public:
     HDX_API
     virtual ~HdxOitVolumeRenderTask();
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the tasks resources
     HDX_API
     virtual void Prepare(HdTaskContext* ctx, 
@@ -63,6 +55,13 @@ public:
     /// Execute render pass task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     HdxOitVolumeRenderTask() = delete;

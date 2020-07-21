@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "points"
+{
+    float3[] extent.timeSamples = {
+        3: [(3, 3, 3), (3, 3, 3)],
+    }
+
+    double b.timeSamples = {
+        3: 3
+    }
+}

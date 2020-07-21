@@ -37,7 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 /// This interface provides a simple way for clients to extend a given
 /// shader without mutating the original shader.
-class HdStMixinShader final : public HdStShaderCode {
+class HdStMixinShader final : public HdStShaderCode
+{
 public:
 
     HDST_API
@@ -46,45 +47,56 @@ public:
         HdStShaderCodeSharedPtr baseShader);
 
     HDST_API
-    virtual ~HdStMixinShader();
+    ~HdStMixinShader() override;
 
     /// Returns the hash value of this shader.
-    virtual HdStShaderCode::ID ComputeHash() const override;
+    HDST_API
+    HdStShaderCode::ID ComputeHash() const override;
+
+    HDST_API
+    ID ComputeTextureSourceHash() const override;
 
     /// Returns the shader source provided by this shader
     /// for \a shaderStageKey
-    virtual std::string GetSource(TfToken const &shaderStageKey) const override;
+    HDST_API
+    std::string GetSource(TfToken const &shaderStageKey) const override;
 
-    virtual HdSt_MaterialParamVector const& GetParams() const override;
+    HDST_API
+    HdSt_MaterialParamVector const& GetParams() const override;
 
-    virtual bool IsEnabledPrimvarFiltering() const override;
+    HDST_API
+    bool IsEnabledPrimvarFiltering() const override;
 
-    virtual TfTokenVector const& GetPrimvarNames() const override;
+    HDST_API
+    TfTokenVector const& GetPrimvarNames() const override;
 
-    virtual HdStShaderCode::TextureDescriptorVector GetTextures() const override;
+    HDST_API
+    HdStShaderCode::TextureDescriptorVector GetTextures() const override;
 
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
-    virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
+    HDST_API
+    HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
 
     /// Binds shader-specific resources to \a program
     HDST_API
-    virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) override;
+    void BindResources(int program,
+                       HdSt_ResourceBinder const &binder,
+                       HdRenderPassState const &state) override;
 
     /// Unbinds shader-specific resources.
     HDST_API
-    virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) override;
+    void UnbindResources(int program,
+                         HdSt_ResourceBinder const &binder,
+                         HdRenderPassState const &state) override;
 
     /// Add custom bindings (used by codegen)
-    virtual void AddBindings(HdBindingRequestVector* customBindings) override;
+    HDST_API
+    void AddBindings(HdBindingRequestVector* customBindings) override;
 
     /// Returns the render pass tag of this shader.
     HDST_API
-    virtual TfToken GetMaterialTag() const override;
+    TfToken GetMaterialTag() const override;
 
 private:
     std::string _mixinSource;

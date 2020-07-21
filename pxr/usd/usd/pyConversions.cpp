@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -106,6 +107,20 @@ UsdPythonToMetadataValue(
 
     // Attempt to obtain a fallback value.
     VtValue fallback = fieldDef->GetFallbackValue();
+
+    if (value.IsHolding<VtDictionary>()) {
+        VtDictionary inDict;
+        value.UncheckedSwap(inDict);
+        std::string errMsg;
+        if (!SdfConvertToValidMetadataDictionary(&inDict, &errMsg)) {
+            TfPyThrowValueError(
+                TfStringPrintf(
+                    "Invalid value type for %s%s%s: %s.",
+                    key.GetText(), keyPath.IsEmpty() ? "" : ":",
+                    keyPath.GetText(), errMsg.c_str()));
+        }
+        value.UncheckedSwap(inDict);
+    }
 
     if (!keyPath.IsEmpty() && fallback.IsHolding<VtDictionary>()) {
         if (!fieldDef->IsValidMapValue(value)) {

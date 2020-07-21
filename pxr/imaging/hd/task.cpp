@@ -61,6 +61,14 @@ HdTask::GetInitialDirtyBitsMask() const
            HdChangeTracker::DirtyRenderTags;
 }
 
+bool
+HdTask::_HasTaskContextData(
+    HdTaskContext const* ctx,
+    TfToken const& id)
+{
+    HdTaskContext::const_iterator valueIt = ctx->find(id);
+    return (valueIt != ctx->cend());
+}
 
 TfTokenVector HdTask::_GetTaskRenderTags(HdSceneDelegate* delegate)
 {

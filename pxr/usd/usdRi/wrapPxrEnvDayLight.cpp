@@ -133,6 +133,15 @@ _CreateZoneAttr(UsdRiPxrEnvDayLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiPxrEnvDayLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.PxrEnvDayLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiPxrEnvDayLight()
@@ -250,6 +259,7 @@ void wrapUsdRiPxrEnvDayLight()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

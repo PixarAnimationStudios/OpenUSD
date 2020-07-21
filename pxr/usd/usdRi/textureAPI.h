@@ -52,6 +52,9 @@ class SdfAssetPath;
 
 /// \class UsdRiTextureAPI
 ///
+/// 
+/// \deprecated This API schema will be removed in a future release.
+/// 
 /// RiTextureAPI is an API schema that provides an interface
 /// to add Renderman-specific attributes to adjust textures.
 ///
@@ -111,11 +114,13 @@ public:
     /// 
     /// \return A valid UsdRiTextureAPI object is returned upon success. 
     /// An invalid (or empty) UsdRiTextureAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
     ///
     USDRI_API
     static UsdRiTextureAPI 

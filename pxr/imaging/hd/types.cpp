@@ -105,8 +105,25 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatInt32Vec2);
     TF_ADD_ENUM_NAME(HdFormatInt32Vec3);
     TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
+    TF_ADD_ENUM_NAME(HdFormatFloat32UInt8);
 }
 
+bool
+HdSamplerParameters::operator==(const HdSamplerParameters &other) const
+{
+    return
+        (wrapS == other.wrapS) &&
+        (wrapT == other.wrapT) &&
+        (wrapR == other.wrapR) &&
+        (minFilter == other.minFilter) &&
+        (magFilter == other.magFilter);
+}
+
+bool
+HdSamplerParameters::operator!=(const HdSamplerParameters &other) const
+{
+    return !(*this == other);
+}
 
 template <class T>
 static void const *_GetArrayData(VtValue const &v) {
@@ -381,6 +398,8 @@ HdFormat HdGetComponentFormat(HdFormat f)
     case HdFormatFloat32Vec3:
     case HdFormatFloat32Vec4:
         return HdFormatFloat32;
+    case HdFormatFloat32UInt8:
+        return HdFormatFloat32UInt8; // treat as a single component
     case HdFormatInt32:
     case HdFormatInt32Vec2:
     case HdFormatInt32Vec3:
@@ -445,6 +464,7 @@ size_t HdDataSizeOfFormat(HdFormat f)
         return 4;
     case HdFormatFloat32Vec2:
     case HdFormatInt32Vec2:
+    case HdFormatFloat32UInt8: // XXX: implementation dependent
         return 8;
     case HdFormatFloat32Vec3:
     case HdFormatInt32Vec3:

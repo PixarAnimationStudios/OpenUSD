@@ -1,9 +1,10 @@
 trigger:
-- master
+- release
 - dev
 
 jobs:
 - job: Linux
+  timeoutInMinutes: 90
   pool:
     vmImage: 'Ubuntu-18.04'
   steps:
@@ -22,6 +23,7 @@ jobs:
       targetPath: "/home/vsts/USDinst"
 
 - job: macOS
+  timeoutInMinutes: 90
   pool:
     vmImage: 'macOS-10.14'
   steps:
@@ -45,7 +47,7 @@ jobs:
   steps:
   - script: |
       call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\2.7.17\x64
+      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\2.7.18\x64
       call set PYTHONBIN=%PYTHONLOCATION%\python.exe
       call set PATH=%PYTHONLOCATION%;%PYTHONLOCATION%\Scripts;%PATH%
       call set BOOST_ROOT=

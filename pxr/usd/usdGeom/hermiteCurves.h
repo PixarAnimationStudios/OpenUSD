@@ -59,7 +59,7 @@ class SdfAssetPath;
 /// for interchange, we strongly recommend the use of UsdGeomBasisCurves as
 /// the representation of curves intended to be rendered (ie. hair or grass).
 /// Hermite curves can be converted to a Bezier representation (though not
-/// losslessly).
+/// from Bezier back to Hermite in general).
 /// 
 /// \section UsdGeomHermiteCurves_Interpolation Point Interpolation
 /// 
@@ -211,6 +211,74 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Represents points and tangents of the same size. 
+    /// 
+    /// Utility to interleave point and tangent data. This class is immutable.
+    class PointAndTangentArrays {
+        VtArray<GfVec3f> _points;
+        VtArray<GfVec3f> _tangents;
+
+        explicit PointAndTangentArrays(const VtVec3fArray& interleaved);
+
+    public:
+
+        /// Construct empty points and tangents arrays
+        PointAndTangentArrays() = default;
+        PointAndTangentArrays(const PointAndTangentArrays&) = default;
+        PointAndTangentArrays(PointAndTangentArrays&&) = default;
+        PointAndTangentArrays& operator=(const PointAndTangentArrays&) =
+            default;
+        PointAndTangentArrays& operator=(PointAndTangentArrays&&) = default;
+
+        /// Initializes \p points and \p tangents if they are the same size.
+        ///
+        /// If points and tangents are not the same size, an empty container
+        /// is created.
+        PointAndTangentArrays(const VtVec3fArray& points,
+                              const VtVec3fArray& tangents)
+            : _points(points), _tangents(tangents) {
+            if (_points.size() != _tangents.size()) {
+                TF_RUNTIME_ERROR("Points and tangents must be the same size.");
+                _points.clear();
+                _tangents.clear();
+            }
+        }
+
+        /// Given an \p interleaved points and tangents arrays (P0, T0, ..., Pn,
+        /// Tn), separates them into two arrays (P0, ..., PN) and (T0, ..., Tn).
+        USDGEOM_API static PointAndTangentArrays Separate(const VtVec3fArray& interleaved) {
+            return PointAndTangentArrays(interleaved);
+        }
+
+        /// Interleaves points (P0, ..., Pn) and tangents (T0, ..., Tn)  into
+        /// one array (P0, T0, ..., Pn, Tn).
+        USDGEOM_API VtVec3fArray Interleave() const;
+
+        /// Returns true if the containers are empty
+        bool IsEmpty() const {
+            // we only need to check the points, as we've verified on
+            // construction that _points and _tangents have the same size
+            return _points.empty();
+        }
+
+        /// Returns true if there are values
+        explicit operator bool() const { return !IsEmpty(); }
+
+        /// Get separated points array
+        const VtVec3fArray& GetPoints() const { return _points; }
+
+        /// Get separated tangents array
+        const VtVec3fArray& GetTangents() const { return _tangents; }
+
+        bool operator==(const PointAndTangentArrays& other) {
+            return (GetPoints() == other.GetPoints()) &&
+                   (GetTangents() == other.GetTangents());
+        }
+        bool operator!=(const PointAndTangentArrays& other) {
+            return !((*this) == other);
+        }
+    };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

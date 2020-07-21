@@ -1,0 +1,18 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HgiMetal" : {
+                        "bases": ["Hgi"]
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "hgiMetal",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

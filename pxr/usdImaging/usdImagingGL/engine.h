@@ -40,14 +40,19 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/pickTask.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+
+#include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -66,7 +71,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 class HdRenderIndex;
-class HdRendererPlugin;
 class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
@@ -96,14 +100,20 @@ public:
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
+
+    /// A HdDriver, containing the Hgi of your choice, can be optionally passed
+    /// in during construction. This can be helpful if you application creates
+    /// multiple UsdImagingGLEngine that wish to use the same HdDriver / Hgi.
     USDIMAGINGGL_API
-    UsdImagingGLEngine();
+    UsdImagingGLEngine(const HdDriver& driver = HdDriver());
 
     USDIMAGINGGL_API
     UsdImagingGLEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
+                       const SdfPath& sceneDelegateID =
+                                        SdfPath::AbsoluteRootPath(),
+                       const HdDriver& driver = HdDriver());
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -277,7 +287,8 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        HdInstancerContext *outInstancerContext = NULL);
 
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).
@@ -287,7 +298,8 @@ public:
         unsigned char const instanceIdColor[4],
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        HdInstancerContext *outInstancerContext = NULL);
 
     /// @}
     
@@ -327,6 +339,10 @@ public:
     /// Set the current renderer AOV to \p id.
     USDIMAGINGGL_API
     bool SetRendererAov(TfToken const& id);
+
+    /// Returns an AOV texture handle for the given token.
+    USDIMAGINGGL_API
+    HgiTextureHandle GetAovTexture(TfToken const& name) const;
 
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
@@ -388,13 +404,9 @@ public:
     // ---------------------------------------------------------------------
 
     /// Set \p id to one of the HdxColorCorrectionTokens.
-    /// \p framebufferResolution should be the size of the bound framebuffer
-    /// that will be color corrected. It is recommended that a 16F or higher
-    /// AOV is bound for color correction.
     USDIMAGINGGL_API
     void SetColorCorrectionSettings(
-        TfToken const& id, 
-        GfVec2i const& framebufferResolution);
+        TfToken const& id);
 
     /// @}
 
@@ -417,7 +429,18 @@ public:
 
     /// @}
 
+    // ---------------------------------------------------------------------
+    /// \name HGI
+    /// @{
+    // ---------------------------------------------------------------------
 
+    /// Returns the HGI interface.
+    ///
+    USDIMAGINGGL_API
+    Hgi* GetHgi();
+
+    /// @}
+    
 protected:
 
     /// Open some protected methods for whitebox testing.
@@ -457,31 +480,59 @@ protected:
     static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
                           TfTokenVector *renderTags);
 
-    // This function disposes of: the render index, the render plugin,
-    // the task controller, and the usd imaging delegate.
     USDIMAGINGGL_API
-    void _DeleteHydraResources();
+    void _InitializeHgiIfNecessary();
+
+    USDIMAGINGGL_API
+    void _SetRenderDelegateAndRestoreState(
+        HdPluginRenderDelegateUniqueHandle &&);
+
+    USDIMAGINGGL_API
+    void _SetRenderDelegate(HdPluginRenderDelegateUniqueHandle &&);
+
+    USDIMAGINGGL_API
+    SdfPath _ComputeControllerPath(const HdPluginRenderDelegateUniqueHandle &);
 
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
 
-    HdEngine _engine;
+    USDIMAGINGGL_API
+    UsdImagingDelegate *_GetSceneDelegate() const;
 
-    HdRenderIndex *_renderIndex;
+    USDIMAGINGGL_API
+    HdEngine *_GetHdEngine();
 
-    std::unique_ptr<class Hgi> _hgi;
+    USDIMAGINGGL_API
+    HdxTaskController *_GetTaskController() const;
+
+    USDIMAGINGGL_API
+    bool _IsUsingLegacyImpl() const;
+
+    USDIMAGINGGL_API
+    HdSelectionSharedPtr _GetSelection() const;
+
+protected:
+
+// private:
+    // Note that any of the fields below might become private
+    // in the future and subclasses should use the above getters
+    // to access them instead.
+
+    HgiUniquePtr _hgi;
+    // Similar for HdDriver.
     HdDriver _hgiDriver;
+
+protected:
+    HdPluginRenderDelegateUniqueHandle _renderDelegate;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
+
+    SdfPath const _sceneDelegateId;
+
+    std::unique_ptr<HdxTaskController> _taskController;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;
     HdRprimCollection _intersectCollection;
-
-    SdfPath const _delegateID;
-    UsdImagingDelegate *_delegate;
-
-    HdRendererPlugin *_rendererPlugin;
-    TfToken _rendererId;
-    HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
 
@@ -499,6 +550,12 @@ protected:
     // time we expect this to be null.  When it is not null, none of the other
     // member variables of this class are used.
     std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
+
+private:
+    void _DestroyHydraObjects();
+
+    std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+    std::unique_ptr<HdEngine> _engine;
 };
 
 

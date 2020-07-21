@@ -25,10 +25,162 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakPtr.h"
-#include <boost/functional/hash.hpp>
+
+// We're getting rid of our dependency on boost::hash -- this code is left
+// commented for testing purposes, for now (6/2020).
+//#include <boost/functional/hash.hpp>
+
+#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+struct Two
+{
+    uint32_t x, y;
+};
+
+template <class HashState>
+void TfHashAppend(HashState &h, Two two)
+{
+    h.Append(two.x);
+    h.Append(two.y);
+}
+
+template <class Hasher>
+static inline void
+TestTwo(Hasher const &h, Two t, unsigned *counts)
+{
+    // Hash x, then flip each bit in x and hash again.
+    // For each flipped bit in the resulting hash, increment a counter.
+    uint64_t tHash = h(t);
+    for (int i = 0; i != 32; ++i) {
+        Two tPrime = t;
+        tPrime.x ^= (1 << i);
+        uint64_t tPrimeHash = h(tPrime);
+        uint64_t flips = tHash ^ tPrimeHash;
+        for (int index = 0; flips; ++index, flips >>= 1) {
+            if (flips & 1) {
+                ++counts[index];
+            }
+        }
+    }
+    for (int i = 0; i != 32; ++i) {
+        Two tPrime = t;
+        tPrime.y ^= (1 << i);
+        uint64_t tPrimeHash = h(tPrime);
+        uint64_t flips = tHash ^ tPrimeHash;
+        for (int index = 0; flips; ++index, flips >>= 1) {
+            if (flips & 1) {
+                ++counts[index];
+            }
+        }
+    }
+}
+
+template <class Hasher>
+static inline void
+TestOne(Hasher const &h, uint64_t x, unsigned *counts)
+{
+    // Hash x, then flip each bit in x and hash again.
+    // For each flipped bit in the resulting hash, increment a counter.
+
+    uint64_t xHash = h(x);
+    for (int i = 0; i != 64; ++i) {
+        uint64_t xPrime = x ^ (1 << i);
+        uint64_t xPrimeHash = h(xPrime);
+        uint64_t flips = xHash ^ xPrimeHash;
+        for (int index = 0; flips; ++index, flips >>= 1) {
+            if (flips & 1) {
+                ++counts[index];
+            }
+        }
+    }
+}
+
+template <class Hasher>
+static void
+_TestStatsOne(Hasher const &h, char const *label)
+{
+    TfStopwatch sw;
+    sw.Start();
+
+    constexpr uint64_t NTESTS = 100000;
+    uint64_t numTests = NTESTS;
+
+    unsigned counts[64] {0};
+
+    while (numTests--) {
+        uint64_t num = numTests << 5; //((uint64_t)rand() << 32) + rand();
+        TestOne(h, num, counts);
+    }
+
+    printf("%s One: %zu tests.\n", label, NTESTS * 64);
+    for (int i = 0; i != 64; ++i) {
+        printf("bit %d flipped %d times (%.2f%%)\n", i, counts[i],
+               100.0 * double(counts[i]) / (double(NTESTS) * 64.0));
+    }
+    
+    sw.Stop();
+    printf("took %f seconds\n", sw.GetSeconds());
+}
+
+template <class Hasher>
+static void
+_TestStatsTwo(Hasher const &h, char const *label)
+{
+    TfStopwatch sw;
+    sw.Start();
+
+    constexpr uint64_t NTESTS = 100000;
+    uint64_t numTests = NTESTS;
+
+    unsigned counts[64] {0};
+
+    while (numTests--) {
+        Two t { static_cast<uint32_t>(numTests << 5),
+                static_cast<uint32_t>(numTests >> 5) };
+        TestTwo(h, t, counts);
+    }
+
+    printf("%s Two: %zu tests.\n", label, NTESTS * 64);
+    for (int i = 0; i != 64; ++i) {
+        printf("bit %d flipped %d times (%.2f%%)\n", i, counts[i],
+               100.0 * double(counts[i]) / (double(NTESTS) * 64.0));
+    }
+    sw.Stop();
+    printf("took %f seconds\n", sw.GetSeconds());
+}
+
+/*  See comment at top of file.
+
+struct BoostHasher
+{
+    size_t operator()(uint64_t x) const {
+        return boost::hash<uint64_t>()(x);
+    }
+    
+    size_t operator()(Two t) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, t.x);
+        boost::hash_combine(seed, t.y);
+        return seed;
+    }
+};
+*/
+
+struct TfHasher
+{
+    size_t operator()(uint64_t x) const {
+        return TfHash()(x);
+    }
+    
+    size_t operator()(Two t) const {
+        return TfHash()(t);
+    }
+};
 
 class Dolly : public TfRefBase, public TfWeakBase {
 public:
@@ -47,17 +199,83 @@ public:
 };
 
 
+// Ensure that types that implicitly convert to bool/int will not hash with
+// TfHash.
+struct _NoHashButConvertsToBool
+{
+    operator bool() { return true; }
+};
+
+struct _NoHashButConvertsToInt
+{
+    operator int() { return 123; }
+};
+
+template <class T, class = decltype(TfHash()(std::declval<T>()))>
+constexpr bool _IsHashable(int) { return true; }
+template <class T>
+constexpr bool _IsHashable(...) { return false; }
+
+static_assert(!_IsHashable<_NoHashButConvertsToBool>(0), "");
+static_assert(!_IsHashable<_NoHashButConvertsToInt>(0), "");
+static_assert(_IsHashable<bool>(0), "");
+static_assert(_IsHashable<int>(0), "");
+
 static bool
 Test_TfHash()
 {
     Dolly::DollyRefPtr ref = Dolly::New();
 
-    size_t hash = hash_value(ref);
-    printf("hash(TfRefPtr): %zu\n", hash);
+    TfHash h;
+
+    printf("hash(TfRefPtr): %zu\n", h(ref));
 
     Dolly::DollyPtr weak(ref);
-    hash = hash_value(weak);
-    printf("hash(TfWeakPtr): %zu\n", hash);
+    printf("hash(TfWeakPtr): %zu\n", h(weak));
+
+
+    TfToken tok("hello world");
+    printf("hash(TfToken): %zu\n", h(tok));
+
+    std::string str("hello world");
+    printf("hash(std::string): %zu\n", h(str));
+
+    printf("hash(float zero): %zu\n", h(-0.0f));
+    printf("hash(float neg zero): %zu\n", h(0.0f));
+    printf("hash(double zero): %zu\n", h(-0.0));
+    printf("hash(double neg zero): %zu\n", h(0.0));
+
+    enum {
+        FooA, FooB, FooC
+    } fooEnum;
+
+    static_assert(_IsHashable<decltype(fooEnum)>(0), "");
+    printf("hash(FooEnum): %zu\n", h(FooA));
+    printf("hash(FooEnum): %zu\n", h(FooB));
+    printf("hash(FooEnum): %zu\n", h(FooC));
+
+    enum : char {
+        BarA, BarB, BarC
+    } barEnum;
+
+    static_assert(_IsHashable<decltype(barEnum)>(0), "");
+    printf("hash(BarEnum): %zu\n", h(BarA));
+    printf("hash(BarEnum): %zu\n", h(BarB));
+    printf("hash(BarEnum): %zu\n", h(BarC));
+
+    for (int order = 10; order != 1000000; order *= 10) {
+        for (int i = 0; i != order; i += order / 10) {
+            printf("hash %d: %zu\n", i, h(i));
+        }
+    }
+
+    TfHasher tfh;
+    //BoostHasher bh;
+
+    _TestStatsOne(tfh, "TfHash");
+    _TestStatsTwo(tfh, "TfHash");
+    //_TestStatsOne(bh, "Boost hash");
+    //_TestStatsTwo(bh, "Boost hash");
 
     bool status = true;
     return status;

@@ -68,7 +68,8 @@ using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 /// Rendering backends are expected to specialize this abstract class, and
 /// return the specialized object via HdRenderDelegate::CreateRenderPass
 ///
-class HdRenderPass : boost::noncopyable {
+class HdRenderPass 
+{
 public:
     HD_API
     HdRenderPass(HdRenderIndex *index, HdRprimCollection const& collection);
@@ -139,6 +140,11 @@ protected:
     virtual void _Prepare(TfTokenVector const &renderTags) {}
 
 private:
+
+    // Don't allow copies
+    HdRenderPass(const HdRenderPass &) = delete;
+    HdRenderPass &operator=(const HdRenderPass &) = delete;
+
     // ---------------------------------------------------------------------- //
     // \name Change Tracking State
     // ---------------------------------------------------------------------- //

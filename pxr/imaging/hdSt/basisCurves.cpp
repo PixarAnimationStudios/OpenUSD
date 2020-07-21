@@ -36,6 +36,8 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 
+#include "pxr/base/arch/hash.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"
@@ -66,10 +68,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
 }
 
 
-HdStBasisCurves::~HdStBasisCurves()
-{
-    /*NOTHING*/
-}
+HdStBasisCurves::~HdStBasisCurves() = default;
 
 void
 HdStBasisCurves::Sync(HdSceneDelegate *delegate,
@@ -368,9 +367,10 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                 continue;
             }
 
-            HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            HdRepr::DrawItemUniquePtr drawItem =
+                std::make_unique<HdStDrawItem>(&_sharedData);
             HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-            repr->AddDrawItem(drawItem);
+            repr->AddDrawItem(std::move(drawItem));
             if (desc.geomStyle == HdBasisCurvesGeomStyleWire) {
                 // Why does geom style require this change?
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);
@@ -594,7 +594,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
             // add sources to update queue
-            resourceRegistry->AddSources(range, sources);
+            resourceRegistry->AddSources(range, std::move(sources));
             rangeInstance.SetValue(range);
         }
 
@@ -763,7 +763,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // add sources to update queue
     if (!sources.empty()) {
         resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
-                                     sources);
+                                     std::move(sources));
     }
     if (!computations.empty()) {
         TF_FOR_ALL(it, computations) {
@@ -843,7 +843,7 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     if (!sources.empty()) {
         resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
-                                 sources);
+                                     std::move(sources));
     }
 }
 

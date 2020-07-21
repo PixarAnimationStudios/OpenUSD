@@ -39,8 +39,12 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # Add three Primvars
         u1 = gp_pv.CreatePrimvar('u_1', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse( u1.NameContainsNamespaces() )
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(u1.GetName()), "u_1")
         # Make sure it's OK to manually specify the classifier namespace
         v1 = gp_pv.CreatePrimvar('primvars:v_1', Sdf.ValueTypeNames.FloatArray)
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(v1.GetName()), "v_1")
+        noPrimvarsPrefixName = "noPrimvarPrefixName"
+        self.assertEqual(UsdGeom.Primvar.StripPrimvarsName(noPrimvarsPrefixName), noPrimvarsPrefixName)
         self.assertFalse( v1.NameContainsNamespaces() )
         _3dpmats = gp_pv.CreatePrimvar('projMats', Sdf.ValueTypeNames.Matrix4dArray,
                                     "constant", nPasses)
@@ -49,6 +53,7 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         primvarName = 'skel:jointWeights'
         jointWeights = gp_pv.CreatePrimvar(primvarName, Sdf.ValueTypeNames.FloatArray)
         self.assertTrue( IsPrimvar(jointWeights) )
+        self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(jointWeights.GetName()))
         self.assertTrue( jointWeights.NameContainsNamespaces() )
         self.assertEqual(primvarName, jointWeights.GetPrimvarName())
 
@@ -75,12 +80,22 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
 
         self.assertEqual(len(datas), 5)
         self.assertTrue( IsPrimvar(datas[0]) )
+        self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[0].GetName()))
+        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[0].GetName()))
         self.assertTrue( IsPrimvar(datas[1]) )
+        self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[1].GetName()))
+        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[1].GetName()))
         # For variety, test the explicit Attribute extractor
         self.assertTrue( IsPrimvar(datas[2].GetAttr()) )
+        self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[2].GetAttr().GetName()))
+        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[2].GetAttr().GetName()))
         self.assertFalse( IsPrimvar(p.GetAttribute("myColor")) )
+        self.assertFalse(UsdGeom.Primvar.IsValidPrimvarName("myColor"))
+        self.assertFalse(UsdGeom.Primvar.IsPrimvarRelatedPropertyName("myColor"))
         # Here we're testing that the speculative constructor fails properly
         self.assertFalse( IsPrimvar(UsdGeom.Primvar(p.GetAttribute("myColor"))) )
+        self.assertFalse(UsdGeom.Primvar.IsValidPrimvarName(datas[0].GetIndicesAttr().GetName()))
+        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[0].GetIndicesAttr().GetName()))
         # And here that the speculative constructor succeeds properly
         self.assertTrue( IsPrimvar(UsdGeom.Primvar(p.GetAttribute(v1.GetName()))) )
 
@@ -225,10 +240,8 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertNotEqual(u1.ComputeFlattened(2.0), u1.Get(2.0))
 
         # Ensure that primvars with indices only authored at timeSamples
-        # (i.e. no default) are recognized as such.  Manual name-munging
-        # necessitated by UsdGeomPrimvar's lack of API for accessing
-        # the indices attribute directly!
-        u1Indices = p.GetAttribute(u1.GetName() + ":indices")
+        # (i.e. no default) are recognized as such.
+        u1Indices = u1.GetIndicesAttr()
         self.assertTrue(u1Indices)
         u1Indices.ClearDefault()
         self.assertTrue(u1.IsIndexed())
@@ -320,6 +333,145 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
 
         handleid_array = gp_pv.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
         self.assertTrue(handleid_array.SetIdTarget(gp.GetPath()))
+
+        # Test BlockPrimvar API
+        pv_blocking = gp_pv.CreatePrimvar('pvb', Sdf.ValueTypeNames.FloatArray)
+        pvName = pv_blocking.GetName()
+        pv_blocking.SetInterpolation(UsdGeom.Tokens.vertex)
+        pv_val = Vt.FloatArray([1.1,2.1,3.1])
+        pv_blocking.Set(pv_val)
+        # Block a non-indexed primvar should also construct and block indices attr
+        self.assertFalse(pv_blocking.IsIndexed())
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        gp_pv.BlockPrimvar(pvName)
+        self.assertFalse(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking.IsIndexed())
+        self.assertTrue(pv_blocking.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
+        # re-set pv_blocking
+        pv_blocking.Set(pv_val)
+        pv_indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        pv_blocking.SetIndices(pv_indices)
+
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking.IsIndexed())
+        # Block primvar as well as indices Attr
+        gp_pv.BlockPrimvar(pvName)
+        self.assertFalse(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking.IsIndexed())
+        # re-set pv_blocking for further testing
+        pv_blocking.Set(pv_val)
+        pv_indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        pv_blocking.SetIndices(pv_indices)
+        # test BlockPrimvar on a referenced prim
+        weakLayer = Sdf.Layer.CreateAnonymous()
+        stageWeak = Usd.Stage.Open(weakLayer)
+        ovrMesh = stageWeak.OverridePrim('/myMesh')
+        ovrMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(ovrMesh)
+        pv_blocking_ovr = gp_pv_ovr.GetPrimvar(pvName)
+        self.assertTrue(pv_blocking_ovr.HasAuthoredValue())
+        self.assertTrue(pv_blocking_ovr.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking_ovr.IsIndexed())
+        # should only block primvar and indices attr in the referenced prim
+        gp_pv_ovr.BlockPrimvar(pvName)
+        # ovr primvar will be blocked!
+        self.assertFalse(pv_blocking_ovr.HasAuthoredValue())
+        self.assertTrue(pv_blocking_ovr.HasAuthoredInterpolation())
+        self.assertFalse(pv_blocking_ovr.IsIndexed())
+        # stronger layer wont get affected and original prim should not be blocked
+        self.assertTrue(pv_blocking.HasAuthoredValue())
+        self.assertTrue(pv_blocking.HasAuthoredInterpolation())
+        self.assertTrue(pv_blocking.IsIndexed())
+
+        # Remove a few valid primvar names
+        # without namespace
+        p = gp.GetPrim()
+        self.assertTrue(u1.IsIndexed())
+        u1Name = u1.GetName()
+        u1IndicesAttrName = u1.GetIndicesAttr().GetName()
+
+        # can not remove a primvar across a reference arc
+        weakLayer = Sdf.Layer.CreateAnonymous()
+        stageWeak = Usd.Stage.Open(weakLayer)
+        ovrMesh = stageWeak.OverridePrim('/myMesh')
+        ovrMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(ovrMesh)
+        self.assertTrue(gp_pv_ovr.HasPrimvar(u1Name))
+        self.assertFalse(gp_pv_ovr.RemovePrimvar(u1Name))
+        self.assertTrue(gp_pv_ovr.GetPrim().HasAttribute(u1Name))
+        # remove indexed primvar
+        self.assertTrue(gp_pv.RemovePrimvar(u1Name))
+        self.assertFalse(p.HasAttribute(u1Name))
+        self.assertFalse(p.HasAttribute(u1IndicesAttrName))
+        # with primvars namespace
+        v1Name = v1.GetName()
+        self.assertTrue(gp_pv.RemovePrimvar(v1Name))
+        self.assertFalse(p.HasAttribute(v1Name))
+        # primvar does not exists
+        self.assertFalse(gp_pv.RemovePrimvar('does_not_exist'))
+        self.assertFalse(gp_pv.RemovePrimvar('does_not_exist:does_not_exist'))
+        # try to remove an invalid primvar with restricted tokens, "indices"
+        with self.assertRaises(Tf.ErrorException):
+            gp_pv.RemovePrimvar('indices')
+        with self.assertRaises(Tf.ErrorException):
+            gp_pv.RemovePrimvar('multi:aggregate:indices')
+
+        # create Indices primvar using CreateIndexedPrimvar API
+        uVal = Vt.FloatArray([1.1,2.1,3.1])
+        indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
+        indexedPrimvar = gp_pv.CreateIndexedPrimvar('indexedPrimvar', 
+                Sdf.ValueTypeNames.FloatArray, uVal, indices, 
+                UsdGeom.Tokens.vertex)
+        self.assertTrue(indexedPrimvar.IsIndexed())
+        self.assertTrue(indexedPrimvar.HasAuthoredValue());
+        self.assertTrue(indexedPrimvar.HasAuthoredInterpolation());
+
+        # mimic a Pixar production workflow of creating primvars
+        # 1. show usage with CreatePrimvar
+        # 2. show usage with CreateNonIndexedPrimvar
+        # - create a primvar in base layer
+        # - override this primvar in a stronger layer
+        # - update primvar in base layer to use indices
+        # - test if primvar has indices blocked in strong layer or not!
+
+        # Create primvar in base layer using CreatePrimvar api and set value
+        basePrimvar1 = gp_pv.CreatePrimvar('pv1', Sdf.ValueTypeNames.FloatArray)
+        basePrimvar1.Set(uVal)
+        # Create primvar in base layer using CreatePrimvar api and set value
+        basePrimvar2 = gp_pv.CreatePrimvar('pv2', Sdf.ValueTypeNames.FloatArray)
+        basePrimvar2.Set(uVal)
+        # stronger layer
+        strongLayer = Sdf.Layer.CreateAnonymous()
+        strongStage = Usd.Stage.Open(strongLayer)
+        # over Mesh prim and add reference
+        oMesh = strongStage.OverridePrim('/myMesh')
+        oMesh.GetReferences().AddReference(stage.GetRootLayer().identifier, '/myMesh')
+        # over primvarsApi instance
+        gp_pv_ovr = UsdGeom.PrimvarsAPI(oMesh)
+        # override value for primvar
+        oVal = Vt.FloatArray([2.2,3.2,4.2])
+        # override pv1 using CreatePrimvar api
+        oBasePrimvar1 = gp_pv_ovr.CreatePrimvar('pv1', Sdf.ValueTypeNames.FloatArray)
+        oBasePrimvar1.Set(oVal)
+        # override pv2 using CreateNonIndexedPrimvar api
+        oBasePrimvar2 = gp_pv_ovr.CreateNonIndexedPrimvar('pv2', Sdf.ValueTypeNames.FloatArray, oVal)
+        # test indices attr missing on oBasePrimvar1
+        self.assertFalse(oBasePrimvar1.GetIndicesAttr().IsValid())
+        # test oBasePrimvar2's indices attribute has a block authored
+        self.assertFalse(oBasePrimvar2.IsIndexed())
+        self.assertTrue(oBasePrimvar2.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
+        # update base (weaker) layer primvars to have an indices
+        basePrimvar1.SetIndices(indices)
+        basePrimvar2.SetIndices(indices)
+        # ovr pv1 should now get indices 
+        self.assertTrue(oBasePrimvar1.IsIndexed())
+        # ovr pv2 should still have the block for indices
+        self.assertFalse(oBasePrimvar2.IsIndexed())
+        self.assertTrue(oBasePrimvar2.GetIndicesAttr().GetResolveInfo().ValueIsBlocked())
 
     def test_Bug124579(self):
         from pxr import Usd
@@ -517,6 +669,10 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         # We can't even call GetName, because there is no attribute.
         with self.assertRaises(RuntimeError):
             p.BlockIndices()
+        # UsdGeomPrimvar should be invalid and not defined when attr/prim are
+        # not valid
+        self.assertFalse(p.IsDefined())
+        self.assertFalse(bool(p))
 
         # Now do some tests with a valid prim, but invalid attribute.
         stage = Usd.Stage.CreateInMemory('myTest.usda')

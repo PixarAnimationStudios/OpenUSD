@@ -566,6 +566,51 @@ class TestUsdGeomXformable(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             xformOp = x.AddTransformOp(precision=UsdGeom.XformOp.PrecisionFloat)
 
+        # Test Validity of XformOp with no attr
+        xformOp = UsdGeom.XformOp(Usd.Attribute())
+        self.assertFalse(xformOp.IsDefined())
+        self.assertFalse(bool(xformOp))
+
+    # Test TypeToken to TypeEnum mapping
+    def test_XformOpTypes(self):
+        typeEnums = [
+                UsdGeom.XformOp.TypeScale,
+                UsdGeom.XformOp.TypeInvalid,
+                UsdGeom.XformOp.TypeTranslate,
+                UsdGeom.XformOp.TypeRotateZ,
+                UsdGeom.XformOp.TypeRotateX,
+                UsdGeom.XformOp.TypeRotateY,
+                UsdGeom.XformOp.TypeRotateZYX,
+                UsdGeom.XformOp.TypeRotateXYZ,
+                UsdGeom.XformOp.TypeRotateXZY,
+                UsdGeom.XformOp.TypeRotateYXZ,
+                UsdGeom.XformOp.TypeRotateYZX,
+                UsdGeom.XformOp.TypeRotateZXY,
+                UsdGeom.XformOp.TypeTransform,
+                UsdGeom.XformOp.TypeOrient
+                ]
+        typeTokens = [
+                'scale',
+                '',
+                'translate',
+                'rotateZ',
+                'rotateX',
+                'rotateY',
+                'rotateZYX',
+                'rotateXYZ',
+                'rotateXZY',
+                'rotateYXZ',
+                'rotateYZX',
+                'rotateZXY',
+                'transform',
+                'orient'
+                ]
+        for index in range(len(typeEnums)):
+            testEnum = UsdGeom.XformOp.GetOpTypeEnum(typeTokens[index])
+            self.assertEqual(testEnum, typeEnums[index])
+            testToken = UsdGeom.XformOp.GetOpTypeToken(typeEnums[index])
+            self.assertEqual(testToken, typeTokens[index])
+
     def test_MightBeTimeVarying(self):
         s = Usd.Stage.CreateInMemory()
         x = UsdGeom.Xform.Define(s, '/World')

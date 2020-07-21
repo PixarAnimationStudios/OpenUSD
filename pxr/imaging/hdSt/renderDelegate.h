@@ -140,18 +140,13 @@ public:
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
-    static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
     /// Resource registry used in this render delegate
-    static std::mutex _mutexResourceRegistry;
-    static std::atomic_int _counterResourceRegistry;
-    static HdStResourceRegistrySharedPtr _resourceRegistry;
+    HdStResourceRegistrySharedPtr _resourceRegistry;
 
     HdRenderSettingDescriptorList _settingDescriptors;
 
     Hgi* _hgi;
-
-    void _Initialize();
 
     HdSprim *_CreateFallbackMaterialPrim();
 

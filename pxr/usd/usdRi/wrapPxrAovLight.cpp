@@ -105,6 +105,15 @@ _CreateUseThroughputAttr(UsdRiPxrAovLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiPxrAovLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.PxrAovLight(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiPxrAovLight()
@@ -194,6 +203,7 @@ void wrapUsdRiPxrAovLight()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -20,15 +20,6 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
 endif()
 
-set (optionalCppFiles "")
-set (plugInfo plugInfo_NoOIIO.json)
-if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-    set (plugInfo plugInfo.json)
-    list(APPEND optionalCppFiles oiioImage.cpp)
-    list(APPEND optionalLibs ${OIIO_LIBRARIES} ${OPENEXR_LIBRARY})
-    list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS} ${OPENEXR_INCLUDE_DIRS})
-endif()
-
 if (PXR_ENABLE_OPENVDB_SUPPORT)
     list(APPEND optionalPublicClasses vdbTextureData)
     list(APPEND optionalLibs ${OPENEXR_Half_LIBRARY} ${OPENVDB_LIBRARY})
@@ -88,8 +79,6 @@ pxr_library(glf
         uvTextureData
         uvTextureStorage
         uvTextureStorageData
-        vdbTexture
-        vdbTextureContainer
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -98,14 +87,12 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
-        textureContainer.h
         
     PRIVATE_HEADERS
         rankedTypeMap.h
         stb/stb_image.h
         stb/stb_image_resize.h
         stb/stb_image_write.h
-        textureContainerImpl.h
 
     CPPFILES
         ${optionalCppFiles}
@@ -126,13 +113,12 @@ pxr_library(glf
         wrapTextureRegistry.cpp
         wrapUVTexture.cpp
         wrapUVTextureStorage.cpp
-        wrapVdbTexture.cpp
 
     PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
-        ${plugInfo}:plugInfo.json 
+        plugInfo.json
         shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx

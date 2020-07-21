@@ -29,15 +29,8 @@
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/base/vt/types.h"
 
-#include <embree2/rtcore.h>
-#include <embree2/rtcore_geometry.h>
-
-#include <bitset>
-
-// Old versions of embree didn't define this, and had 2 hardcoded user buffers.
-#ifndef RTC_MAX_USER_VERTEX_BUFFERS
-#define RTC_MAX_USER_VERTEX_BUFFERS 2
-#endif
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_geometry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,21 +41,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdEmbreeRTCBufferAllocator
 {
 public:
-    /// Constructor. By default, set everything to unallocated. 
+    /// Constructor. By default, set everything to unallocated.
     HdEmbreeRTCBufferAllocator()
         : _bitset(0) {}
 
     /// Allocate a buffer by finding the first clear bit, using that as
     /// the buffer number, and setting the bit to mark it as used.
     /// \return An unused RTC user vertex buffer id, or -1 on failure.
-    RTCBufferType Allocate();
+    int Allocate();
 
     /// Free a buffer by clearing its bit.
     /// \param buffer The buffer to mark as unused.
-    void Free(RTCBufferType buffer);
+    void Free(int buffer);
+
+    /// Query how many buffers are currently in user for this geometry
+    unsigned int NumBuffers();
+
+    /// As of Embree3 the number of buffers was greatly increased
+    /// however the maximum is only defined locally to the library
+    /// as of v3.4.0 this was the number.
+    static constexpr int PXR_MAX_USER_VERTEX_BUFFERS = 16;
+
 private:
-    std::bitset<RTC_MAX_USER_VERTEX_BUFFERS> _bitset;
+    std::bitset<PXR_MAX_USER_VERTEX_BUFFERS> _bitset;
 };
+
+
 
 // ----------------------------------------------------------------------
 // The classes below implement the HdEmbreePrimvarSampler interface for
@@ -296,7 +300,7 @@ public:
                         HdTupleType dataType) const;
 
 private:
-    RTCBufferType _embreeBufferId;
+    int _embreeBufferId;
     HdVtBufferSource const _buffer;
     RTCScene _meshScene;
     unsigned _meshId;

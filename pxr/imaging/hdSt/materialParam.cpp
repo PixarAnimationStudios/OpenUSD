@@ -29,19 +29,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_MaterialParam::HdSt_MaterialParam() = default;
+HdSt_MaterialParam::HdSt_MaterialParam()
+    : paramType(ParamTypeFallback)
+    , textureType(HdTextureType::Uv)
+{
+}
 
 HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
                                  TfToken const& name, 
                                  VtValue const& fallbackValue,
-                                 SdfPath const& connection,
                                  TfTokenVector const& samplerCoords,
                                  HdTextureType textureType,
                                  std::string const& swizzle)
     : paramType(paramType)
     , name(name)
     , fallbackValue(fallbackValue)
-    , connection(connection)
     , samplerCoords(samplerCoords)
     , textureType(textureType)
     , swizzle(swizzle)
@@ -55,12 +57,11 @@ HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
     for (HdSt_MaterialParam const& param : params) {
         boost::hash_combine(hash, param.paramType);
         boost::hash_combine(hash, param.name.Hash());
-        boost::hash_combine(hash, param.connection.GetHash());
         for (TfToken const& coord : param.samplerCoords) {
             boost::hash_combine(hash, coord.Hash());
         }
         boost::hash_combine(hash, param.textureType);
-        boost::hash_combine(hash, std::hash<std::string>()(param.swizzle));
+        boost::hash_combine(hash, param.swizzle);
     }
     return hash;
 }

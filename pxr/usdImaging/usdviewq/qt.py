@@ -48,6 +48,9 @@ if PySideModule == 'PySide':
     if not hasattr(QtGui.QApplication, 'devicePixelRatio'):
         QtGui.QApplication.devicePixelRatio = lambda self: 1
 
+    if not hasattr(QtOpenGL.QGLWidget, 'devicePixelRatioF'):
+        QtOpenGL.QGLWidget.devicePixelRatioF = lambda self: 1.0
+
     if not hasattr(QtWidgets.QHeaderView, 'setSectionResizeMode'):
         QtWidgets.QHeaderView.setSectionResizeMode = \
             QtWidgets.QHeaderView.setResizeMode

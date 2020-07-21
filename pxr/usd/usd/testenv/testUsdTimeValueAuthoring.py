@@ -69,9 +69,11 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
 
         # No mapping
         rootEditTarget = Usd.EditTarget(rootLayer)
-        # Composed layer offset: scale = 0.5
+        # Composed layer offset: scale = 0.5 (note that this from a tcps change
+        # from 24 to 48 from the root layer to its sub layer)
         rootSubEditTarget = Usd.EditTarget(rootSubLayer, rootNode)
-        # Composed layer offset: scale = 2, offset = -3.0
+        # Composed layer offset: scale = 2, offset = -3.0 (note that this
+        # includes another tcps change back to 24 across the reference)
         refEditTarget = Usd.EditTarget(refLayer, refNode)
         # Composed layer offset: scale = 2, offset = +3.0
         refSubEditTarget = Usd.EditTarget(refSubLayer, refNode)

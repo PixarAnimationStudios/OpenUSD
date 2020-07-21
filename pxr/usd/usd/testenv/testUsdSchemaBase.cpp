@@ -140,6 +140,22 @@ TestPrimQueries()
 
     TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>(
             /*instanceName*/ TfToken("nonExistentColl")));
+
+    printf("--------Removing UsdCollectionAPI -------\n");
+
+    prim.RemoveAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl"));
+
+    TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>());
+
+    TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
+
+    printf("--------Applying UsdCollectionAPI through UsdPrim API -------\n");
+
+    prim.ApplyAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl"));
+
+    TF_AXIOM(prim.HasAPI<UsdCollectionAPI>());
+
+    TF_AXIOM(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
 }
 
 int main(int argc, char** argv)

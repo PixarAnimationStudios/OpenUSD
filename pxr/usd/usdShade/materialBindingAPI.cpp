@@ -70,8 +70,10 @@ UsdSchemaType UsdShadeMaterialBindingAPI::_GetSchemaType() const {
 UsdShadeMaterialBindingAPI
 UsdShadeMaterialBindingAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdShadeMaterialBindingAPI>(
-            prim, _schemaTokens->MaterialBindingAPI);
+    if (prim.ApplyAPI<UsdShadeMaterialBindingAPI>()) {
+        return UsdShadeMaterialBindingAPI(prim);
+    }
+    return UsdShadeMaterialBindingAPI();
 }
 
 /* static */

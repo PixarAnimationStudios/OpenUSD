@@ -48,13 +48,13 @@ SdrShaderNode::SdrShaderNode(
     const TfToken& family,
     const TfToken& context,
     const TfToken& sourceType,
-    const std::string& uri,
-    const std::string& resolvedUri,
+    const std::string& definitionURI,
+    const std::string& implementationURI,
     NdrPropertyUniquePtrVec&& properties,
     const NdrTokenMap& metadata,
     const std::string &sourceCode)
     : NdrNode(identifier, version, name, family,
-              context, sourceType, uri, resolvedUri, std::move(properties),
+              context, sourceType, definitionURI, implementationURI, std::move(properties),
               metadata, sourceCode)
 {
     // Cast inputs to shader inputs

@@ -42,7 +42,7 @@ def GetScalarTypeFromAttr(attr):
 
 _toStringFnCache = {}
 
-def ToString(v, typeName=None):
+def ToString(v, valueType=None):
     """Returns a string representing a "detailed view" of the value v.
     This string is used in the watch window"""
 
@@ -51,23 +51,25 @@ def ToString(v, typeName=None):
     
     # Check cache.
     t = type(v)
-    fn = _toStringFnCache.get(t)
+    cacheKey = (t, valueType)
+    fn = _toStringFnCache.get(cacheKey)
     if fn:
         return fn(v)
 
-    if not typeName:
-        typeName = str(v.__class__)
+    # Cache miss. Compute string typeName for the given value
+    # using the given valueType as a hint.
+    typeName = ""
 
-    if typeName:
-        from pxr import Sdf
-        if isinstance(typeName, Sdf.ValueTypeName):
-            tfType = typeName.type
-        else:
-            tfType = Sdf.GetTypeForValueTypeName(typeName)
-        if tfType != Tf.Type.Unknown:
-            typeName = tfType.typeName
+    from pxr import Sdf
+    if isinstance(valueType, Sdf.ValueTypeName):
+        tfType = valueType.type
+    else:
+        tfType = Tf.Type.Find(t)
 
-    # Cache miss.
+    if tfType != Tf.Type.Unknown:
+        typeName = tfType.typeName
+
+    # Pretty-print "None"
     if v is None:
         fn = lambda _: 'None'
 
@@ -104,8 +106,8 @@ def ToString(v, typeName=None):
             return result
         fn = lambda m: matrixToString(m)
 
-    # Pretty-print a GfVec*
-    elif typeName.startswith("GfVec"):
+    # Pretty-print a GfVec* or a GfRange*
+    elif typeName.startswith("GfVec") or typeName.startswith("GfRange"):
         fn = lambda v: str(v)
         
     # pretty print an int
@@ -125,7 +127,7 @@ def ToString(v, typeName=None):
         fn = lambda v: pprint.pformat(v)
 
     # Populate cache and invoke function to produce the string.
-    _toStringFnCache[t] = fn
+    _toStringFnCache[cacheKey] = fn
     return fn(v)
 
 def ToClipboard(v, typeName=None):

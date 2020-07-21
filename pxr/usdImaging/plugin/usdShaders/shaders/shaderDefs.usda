@@ -392,3 +392,44 @@ def Shader "UsdPrimvarReader_matrix" (
 
     matrix4d outputs:result
 }
+
+def Shader "UsdTransform2d" (
+    doc = """Transform 2d represents a node that can be used to
+    transform 2d data (for instance, texture coordinates).
+    The node applies the following transformation :
+    in * scale * rotate + translation"""
+    sdrMetadata = {
+        token role = "math"
+    }
+)
+{
+    uniform token info:id = "UsdTransform2d"
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./transform2d.glslfx@
+ 
+    float2 inputs:in = (0.0, 0.0) (
+        doc = """This input provides the data. It is usually
+                connected to a UsdPrimvarReader_float2 that
+                will provide the data."""
+    )
+
+    float inputs:rotation = 0.0 (
+        connectability = "interfaceOnly"
+        doc = """Counter-clockwise rotation in degrees around the origin to be applied
+        to all components of the data."""
+    )
+
+    float2 inputs:scale = (1.0, 1.0) (
+        connectability = "interfaceOnly"
+        doc = """Scale around the origin to be applied to all components of the data."""
+    )
+
+    float2 inputs:translation = (0.0, 0.0) (
+        connectability = "interfaceOnly"
+        doc = """Translation to be applied to all components of the data."""
+    )
+
+    float2 outputs:result (
+        doc = "Outputs transformed float2 values."
+    )
+}

@@ -1,0 +1,29 @@
+#usda 1.0
+
+def "Ref"
+{
+    def "points"
+    {
+        float3[] extent
+    }    
+}
+
+def "World" (
+    add references = </Ref>
+)
+{
+    over "points" (
+        clips = {
+            dictionary default = {
+                string templateAssetPath = "./p.###.usda"
+                double templateStartTime = 1
+                double templateEndTime   = 2
+                double templateStride    = 1
+                string primPath = "/points"
+            }
+        }
+    )
+    {
+    }
+}
+

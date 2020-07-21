@@ -34,14 +34,12 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
+using HdStRenderPassShaderSharedPtr =
+    std::shared_ptr<class HdStRenderPassShader>;
 
 /// \class HdStRenderPassShader
 ///

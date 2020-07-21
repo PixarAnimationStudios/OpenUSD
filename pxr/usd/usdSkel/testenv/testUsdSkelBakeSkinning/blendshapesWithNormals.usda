@@ -4,13 +4,15 @@
     endTimeCode = 17
 )
 
-def SkelRoot "TestPlane"
+def SkelRoot "TestPlane" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     rel skel:skeleton = <Skel>
     rel skel:animationSource = <Skel/Anim>
 
     def Mesh "Mesh" (
-        apiSchemas = ["BindingAPI"]
+        apiSchemas = ["SkelBindingAPI"]
     )
     {
         float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
@@ -72,7 +74,9 @@ def SkelRoot "TestPlane"
         
     }
 
-    def Skeleton "Skel"
+    def Skeleton "Skel" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = <Anim>
 

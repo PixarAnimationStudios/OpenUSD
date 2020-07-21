@@ -249,8 +249,6 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
             // code is broken and needs to be fixed.  When we open up more
             // shaders for customization, we will need to check them as well.
             
-            typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
-
             HioGlslfxSharedPtr glslSurfaceFallback = 
                 HioGlslfxSharedPtr(
                         new HioGlslfx(HdStPackageFallbackSurfaceShader()));
@@ -324,7 +322,8 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                 resourceRegistry->RegisterGLSLProgram(hash);
 
         if (programInstance.IsFirstInstance()) {
-            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile();
+            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile(
+                resourceRegistry.get());
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);

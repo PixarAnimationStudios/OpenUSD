@@ -196,6 +196,13 @@ class TestPython(unittest.TestCase):
         Tf._takesTestEnum(Tf._Alpha)
         Tf._takesTestEnum2(Tf._Enum.One)
 
+        self.assertEqual(Tf._TestScopedEnum.Boron,
+                         Tf._TestScopedEnum.GetValueFromName('Boron'))
+        self.assertEqual(Tf._TestScopedEnum.Hydrogen,
+                         Tf._TestScopedEnum.GetValueFromName('Hydrogen'))
+        self.assertNotEqual(Tf._TestScopedEnum.Hydrogen,
+                            Tf._TestScopedEnum.GetValueFromName('Boron'))
+
         def testRepr(s):
             self.assertEqual(s, repr(eval(s)))
 

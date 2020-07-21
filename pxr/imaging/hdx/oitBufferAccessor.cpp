@@ -30,6 +30,9 @@
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
+// XXX todo tmp needed until we remove direct gl calls below.
+#include "pxr/imaging/hgiGL/buffer.h"
+
 #include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -165,15 +168,24 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     const GLint clearCounter = -1;
 
+    // XXX todo add a Clear() fn on HdStBufferResourceGL so that we do not have
+    // to use direct gl calls. below.
+    HgiBufferHandle& buffer = stCounterResource->GetId();
+    HgiGLBuffer* glBuffer = dynamic_cast<HgiGLBuffer*>(buffer.Get());
+    if (!glBuffer) {
+        TF_CODING_ERROR("Todo: Add HdStBufferResourceGL::Clear");
+        return;
+    }
+
     // Old versions of glew may be missing glClearNamedBufferData
     if (ARCH_LIKELY(caps.directStateAccessEnabled) && glClearNamedBufferData) {
-        glClearNamedBufferData(stCounterResource->GetId(),
+        glClearNamedBufferData(glBuffer->GetBufferId(),
                                 GL_R32I,
                                 GL_RED_INTEGER,
                                 GL_INT,
                                 &clearCounter);
     } else {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, stCounterResource->GetId());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, glBuffer->GetBufferId());
         glClearBufferData(
             GL_SHADER_STORAGE_BUFFER, GL_R32I, GL_RED_INTEGER, GL_INT,
             &clearCounter);

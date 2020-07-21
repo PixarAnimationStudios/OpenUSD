@@ -40,8 +40,7 @@ from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 from .common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
-                     ReportMetricSize, GetInstanceIndicesForIds,
-                     SelectionHighlightModes, DEBUG_CLIPPING)
+                     ReportMetricSize, SelectionHighlightModes, DEBUG_CLIPPING)
 from .rootDataModel import RootDataModel
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from .viewSettingsDataModel import ViewSettingsDataModel
@@ -369,6 +368,8 @@ class Prim2DDrawTask():
     def __init__(self):
         self._prims = []
         self._colors = []
+        self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
+
 
     def Sync(self, ctx):
         for prim in self._prims:
@@ -381,7 +382,8 @@ class Prim2DDrawTask():
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glDisableVertexAttribArray(0)
-        GL.glBindVertexArray(0)
+        if (int(GL.glGetString(GL.GL_VERSION)[0]) >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            GL.glBindVertexArray(0)
         GL.glUseProgram(0)
 
 class Outline(Prim2DDrawTask):
@@ -390,8 +392,8 @@ class Outline(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width())
-        height = float(qglwidget.height())
+        width = float(qglwidget.width()) * self._pixelRatio
+        height = float(qglwidget.height()) * self._pixelRatio
         prims = [ OutlineRect.fromXYWH(croppedViewport) ]
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
                 for p in prims]
@@ -406,8 +408,8 @@ class Reticles(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget, inside, outside):
-        width = float(qglwidget.width())
-        height = float(qglwidget.height())
+        width = float(qglwidget.width()) * self._pixelRatio
+        height = float(qglwidget.height()) * self._pixelRatio
         prims = [ ]
         ascenders = [0, 0]
         descenders = [0, 0]
@@ -447,8 +449,8 @@ class Mask(Prim2DDrawTask):
         self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width())
-        height = float(qglwidget.height())
+        width = float(qglwidget.width()) * self._pixelRatio
+        height = float(qglwidget.height()) * self._pixelRatio
         rect = FilledRect.fromXYWH((0, 0, width, height))
         prims = rect.difference(croppedViewport)
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
@@ -659,14 +661,18 @@ class StageView(QtOpenGL.QGLWidget):
     # First arg is primPath, (which could be empty Path)
     # Second arg is instanceIndex (or UsdImagingGL.ALL_INSTANCES for all
     #  instances)
-    # Third arg is selectedPoint
-    # Fourth and Fifth args represent state at time of the pick
-    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
+    # Third and fourth arg are primPath, instanceIndex, of root level
+    #  boundable (if applicable).
+    # Fifth arg is selectedPoint
+    # Sixth and seventh args represent state at time of the pick
+    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Sdf.Path, int, Gf.Vec3f,
+                                       QtCore.Qt.MouseButton,
                                        QtCore.Qt.KeyboardModifiers)
 
     # Only raised when StageView has been told to do so, setting
     # rolloverPicking to True
-    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
+    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Sdf.Path, int,
+                                       Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
     signalMouseDrag = QtCore.Signal()
     signalErrorMessage = QtCore.Signal(str)
 
@@ -806,7 +812,8 @@ class StageView(QtOpenGL.QGLWidget):
         return self._rendererAovName
 
     def __init__(self, parent=None, dataModel=None, printTiming=False):
-
+        # Note: The default format *disables* the alpha component and so the
+        # default backbuffer uses GL_RGB.
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
@@ -873,6 +880,13 @@ class StageView(QtOpenGL.QGLWidget):
         }
 
         self._renderParams = UsdImagingGL.RenderParams()
+
+        # Optionally override OCIO lut size. Similar env var available for
+        # other apps: ***_OCIO_LUT3D_EDGE_SIZE
+        ocioLutSize = os.getenv("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0)
+        if ocioLutSize > 0:
+            self._renderParams.lut3dSizeOCIO = ocioLutSize
+
         self._dist = 50 
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
@@ -929,6 +943,9 @@ class StageView(QtOpenGL.QGLWidget):
         # This is because ImagingGL / TaskController are spawned via prims in
         # Presto, so we default AOVs OFF until everything is AOV ready.
         self.SetRendererAov(self.rendererAovName)
+
+    def _scaleMouseCoords(self, point):
+        return point * QtWidgets.QApplication.instance().devicePixelRatio()
 
     def closeRenderer(self):
         '''Close the current renderer.'''
@@ -1312,16 +1329,6 @@ class StageView(QtOpenGL.QGLWidget):
                     continue
                 primInstances = allInstances[prim]
                 if primInstances != ALL_INSTANCES:
-
-                    # If the prim is a point instancer and has authored instance
-                    # ids, the selection contains instance ids rather than 
-                    # instance indices. We need to convert these back to indices
-                    # before feeding them to the renderer.
-                    instanceIds = GetInstanceIndicesForIds(prim, primInstances,
-                        self._dataModel.currentFrame)
-                    if instanceIds is not None:
-                        primInstances = instanceIds
-
                     for instanceIndex in primInstances:
                         renderer.AddSelected(prim.GetPath(), instanceIndex)
                 else:
@@ -1390,8 +1397,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
         self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
-        self._renderParams.renderResolution[0] = self.width()
-        self._renderParams.renderResolution[1] = self.height()
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
@@ -1458,8 +1463,8 @@ class StageView(QtOpenGL.QGLWidget):
         return windowPolicy
     
     def computeWindowSize(self):
-         size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
-         return (int(size.width()), int(size.height()))
+        size = self.size() * self.devicePixelRatioF()
+        return (int(size.width()), int(size.height()))
 
     def computeWindowViewport(self):
         return (0, 0) + self.computeWindowSize()
@@ -1628,8 +1633,11 @@ class StageView(QtOpenGL.QGLWidget):
                 from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
                 GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
-            self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
-            GL.glClearColor(*self._renderParams.clearColor)
+            # Clear the default FBO associated with the widget/context to
+            # fully transparent and *not* the bg color.
+            # The bg color is used as the clear color for the aov, and the
+            # results of rendering are composited over the FBO (and not blit).
+            GL.glClearColor(*Gf.Vec4f(0,0,0,0))
 
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glDepthFunc(GL.GL_LESS)
@@ -1725,7 +1733,11 @@ class StageView(QtOpenGL.QGLWidget):
                         UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-                    GL.glDepthFunc(GL.GL_LEQUAL)
+                    # Use display space for the second clear because we
+                    # composite the framebuffer contents with the
+                    # color-corrected (i.e., display space) aov contents.
+                    clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
+                    GL.glClearColor(*clearColor)
                     GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
                 highlightMode = self._dataModel.viewSettings.selHighlightMode
@@ -1955,13 +1967,19 @@ class StageView(QtOpenGL.QGLWidget):
         # initiated by this mouse-press
         self._dragActive = True
 
+        # Note: multiplying by devicePixelRatio is only necessary because this
+        # is a QGLWidget.
+        x = event.x() * self.devicePixelRatioF()
+        y = event.y() * self.devicePixelRatioF()
+
         # Allow for either meta or alt key, since meta maps to Windows and Apple
         # keys on various hardware/os combos, and some windowing systems consume
         # one or the other by default, but hopefully not both.
         if (event.modifiers() & (QtCore.Qt.AltModifier | QtCore.Qt.MetaModifier)):
             if event.button() == QtCore.Qt.LeftButton:
                 self.switchToFreeCamera()
-                self._cameraMode = "tumble"
+                ctrlModifier = event.modifiers() & QtCore.Qt.ControlModifier
+                self._cameraMode = "truck" if ctrlModifier else "tumble"
             if event.button() == QtCore.Qt.MidButton:
                 self.switchToFreeCamera()
                 self._cameraMode = "truck"
@@ -1970,21 +1988,24 @@ class StageView(QtOpenGL.QGLWidget):
                 self._cameraMode = "zoom"
         else:
             self._cameraMode = "pick"
-            self.pickObject(event.x(), event.y(),
-                            event.button(), event.modifiers())
+            self.pickObject(x, y, event.button(), event.modifiers())
 
-        self._lastX = event.x()
-        self._lastY = event.y()
+        self._lastX = x
+        self._lastY = y
 
     def mouseReleaseEvent(self, event):
         self._cameraMode = "none"
         self._dragActive = False
 
-    def mouseMoveEvent(self, event ):
+    def mouseMoveEvent(self, event):
+        # Note: multiplying by devicePixelRatio is only necessary because this
+        # is a QGLWidget.
+        x = event.x() * self.devicePixelRatioF()
+        y = event.y() * self.devicePixelRatioF()
 
         if self._dragActive:
-            dx = event.x() - self._lastX
-            dy = event.y() - self._lastY
+            dx = x - self._lastX
+            dy = y - self._lastY
             if dx == 0 and dy == 0:
                 return
 
@@ -2010,8 +2031,8 @@ class StageView(QtOpenGL.QGLWidget):
                         -dx * pixelsToWorld, 
                          dy * pixelsToWorld)
 
-            self._lastX = event.x()
-            self._lastY = event.y()
+            self._lastX = x
+            self._lastY = y
             self.updateGL()
 
             self.signalMouseDrag.emit()
@@ -2074,9 +2095,9 @@ class StageView(QtOpenGL.QGLWidget):
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quartuple:
+        Returns a quintuple:
           selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex
+          selectedInstanceIndex, selectedInstancerContext
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
@@ -2159,23 +2180,30 @@ class StageView(QtOpenGL.QGLWidget):
             (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
             if inImageBounds:
-                selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex = self.pick(pickFrustum)
+                selectedPoint, selectedPrimPath, \
+                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
+                self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
-                selectedPoint, selectedPrimPath, selectedInstancerPath, \
-                selectedInstanceIndex = \
-                    None, Sdf.Path.emptyPath, None, None
+                selectedPoint, selectedPrimPath, \
+                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
+                    None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
+        
+            # Correct for high DPI displays
+            coord = self._scaleMouseCoords( \
+                QtCore.QPoint(selectedPoint[0], selectedPoint[1]))
+            selectedPoint[0] = coord.x()
+            selectedPoint[1] = coord.y()
 
             if button:
                 self.signalPrimSelected.emit(
-                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
-                    button, modifiers)
+                    selectedPrimPath, selectedInstanceIndex, selectedTLPath,
+                    selectedTLIndex, selectedPoint, button, modifiers)
             else:
                 self.signalPrimRollover.emit(
-                    selectedPrimPath, selectedInstanceIndex, selectedPoint,
-                    modifiers)
+                    selectedPrimPath, selectedInstanceIndex, selectedTLPath,
+                    selectedTLIndex, selectedPoint, modifiers)
         except Tf.ErrorException as e:
             # If we encounter an error, we want to continue running. Just log 
             # the error and continue.

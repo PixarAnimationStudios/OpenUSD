@@ -26,11 +26,11 @@ from __future__ import print_function
 
 import sys, argparse, os
 
-from .qt import QtWidgets
+from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
 
-from pxr import UsdAppUtils
+from pxr import UsdAppUtils, Tf
 
 
 class InvalidUsdviewOption(Exception):
@@ -85,8 +85,17 @@ class Launcher(object):
             totalTimer.PrintTime('open and close usdview')
 
         if traceCollector:
-            Trace.Reporter.globalReporter.ReportChromeTracingToFile(
-                arg_parse_result.traceToFile)
+            if arg_parse_result.traceFormat == 'trace':
+                Trace.Reporter.globalReporter.Report(
+                    arg_parse_result.traceToFile)
+            elif arg_parse_result.traceFormat == 'chrome':
+                Trace.Reporter.globalReporter.ReportChromeTracingToFile(
+                    arg_parse_result.traceToFile)
+            else:
+                Tf.RaiseCodingError("Invalid trace format option provided: %s -"
+                        "trace/chrome are the valid options" %
+                        arg_parse_result.traceFormat)
+
 
     def GetHelpDescription(self):
         '''return the help description'''
@@ -165,7 +174,19 @@ class Launcher(object):
                             type=str,
                             dest='traceToFile',
                             default=None,
-                            help='Start tracing at application startup and write chrome-compatible output to the specified trace file when the application quits')
+                            help='Start tracing at application startup and '
+                            'write --traceFormat specified format output to the '
+                            'specified trace file when the application quits')
+
+        parser.add_argument('--traceFormat', action='store',
+                            type=str,
+                            dest='traceFormat',
+                            default='chrome',
+                            choices=['chrome', 'trace'],
+                            help='Output format for trace file specified by '
+                            '--traceToFile. \'chrome\' files can be read in '
+                            'chrome, \'trace\' files are simple text reports. '
+                            '(default=%(default)s)')
 
         parser.add_argument('--memstats', action='store', default='none',
                             dest='mallocTagStats', type=str,
@@ -303,12 +324,10 @@ class Launcher(object):
         (app, appController) = self.LaunchPreamble(arg_parse_result)
         
         if arg_parse_result.quitAfterStartup:
-            # Before we quit, process events one more time to make sure the
-            # UI is fully populated (and to capture all the timing information
-            # we'd want).
-            app.processEvents()
-            appController._cleanAndClose()
-            return
+            # Enqueue event to shutdown application. We don't use quit() because
+            # it doesn't trigger the closeEvent() on the main window which is
+            # used to orchestrate the shutdown.
+            QtCore.QTimer.singleShot(0, app.instance().closeAllWindows)
 
         app.exec_()
 

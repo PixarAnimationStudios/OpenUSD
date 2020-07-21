@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/rendererPlugin.h"
 
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
+
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
@@ -53,6 +56,26 @@ HdRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
 // the body of the deleter is provided here, so a vtable is created
 // in this compilation unit.
 HdRendererPlugin::~HdRendererPlugin() = default;
+
+HdPluginRenderDelegateUniqueHandle
+HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
+{
+    if (!IsSupported()) {
+        return nullptr;
+    }
+
+    HdRendererPluginRegistry::GetInstance().AddPluginReference(this);
+
+    return HdPluginRenderDelegateUniqueHandle(
+        HdRendererPluginHandle(this),
+        CreateRenderDelegate(settingsMap));
+}
+
+TfToken
+HdRendererPlugin::GetPluginId() const
+{
+    return HdRendererPluginRegistry::GetInstance().GetPluginId(this);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

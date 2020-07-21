@@ -65,7 +65,7 @@ when one changes a variant selection on an existing UsdVariantSet.
 \note <b>USDeeper: Editing Layers Updates Stage.</b> UsdStage recomposes in
 response to mutations of SdfLayer 's that are composed into the stage.  Thus,
 a UsdStage will remain accurate even if one uses the lower-level Sdf API's to
-mutate layers, rather than the Usd object API's.
+mutate layers, rather than the USD object API's.
 
 \subsection Usd_OM_UsdStage_Management UsdStage Lifetime and Management
 
@@ -128,7 +128,7 @@ UsdPrim fx    = stage->GetPrimAtPath(worldPath.AppendChild(TfToken("Fx")));
 \note <b>USDeeper: def vs over?</b> You may have noticed in the example above
 that the prims \</World\> and \</World/Sets\> were declared as \b def, while
 \</World/Fx\> was declared as \b over.  "def" and "over" are two of the three
-possible "prim specifiers" that inform Usd of the intended purpose of the
+possible "prim specifiers" that inform USD of the intended purpose of the
 data authored for a prim in a particular layer.  For a deeper explanation,
 please see \ref Usd_PrimSpecifiers .
 
@@ -196,7 +196,7 @@ information about metadata is that all metadata must be registered with
 USD/Sdf.  The SdfSchema itself registers a set of metadata meaningful to the
 Sdf data model, but any module discoverable by USD's \ref plug_page_front "plugin system"
 can extend the known set of metadata, as described in the \ref sdf_plugin_metadata
-documentation.  Core Usd, and most of the higher-level schema modules use 
+documentation.  Core USD, and most of the higher-level schema modules use 
 this mechanism to good effect.
 
 \li *Metadata is unvarying.* Although metadata values can be overridden in any
@@ -240,6 +240,36 @@ applied API schemas. The prim definition that a prim uses is determined by the
 combination of its type name and the list of any applied API schemas applied to 
 the prim and is generally what we are referring to when we talk about a 
 UsdPrim's "prim definition".
+
+\section Usd_OM_FallbackPrimTypes Fallback Prim Types
+
+When you create a new "IsA" schema to use as a prim type, there may be an 
+expectation that stages containing prims of your new type will be opened using 
+a version of USD that does not have the new schema. You may want to provide 
+these other, typically older, versions of USD with one or more reasonable 
+alternative prim types to use instead of your type when its schema is not 
+available. We provide the following mechanism for this.
+
+You can specify an array of \em fallbackTypes tokens as 
+\ref Usd_PerClassProperties "customData" for your class in the schema.usda. 
+Schema generation will process this list of fallback types and add it to the 
+dictionary of all prim fallback types that the 
+\ref Usd_OM_SchemaDefinitionRegistry "schema registry" provides.
+
+To provide the currently registered prim type fallbacks to a version of USD
+that does not have some of these schemas, they must be recorded into any stages
+that may want to be opened in one of these versions. At any point before saving 
+or exporting a stage, this can be done by calling the function 
+UsdStage::WriteFallbackPrimTypes to write the schema registry's dictionary of 
+fallback prim types to the stage's root layer metadata.
+
+When a stage is opened and a prim with an unrecognized type name is 
+encountered, the stage's fallback prim types metadata is consulted. If the
+unrecognized type has a fallback types list in the metadata, all prims with
+the unrecognized type name will be treated as having the effective schema type
+of the first recognized type in the list.
+
+\sa UsdPrim::GetPrimTypeInfo, UsdPrim::IsA, UsdSchemaRegistry::GetFallbackPrimTypes
 
 \section Usd_OM_OtherObjects Composition Operator Interfaces: UsdReferences, UsdInherits, UsdVariantSets
 

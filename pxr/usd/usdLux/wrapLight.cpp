@@ -105,6 +105,15 @@ _CreateColorTemperatureAttr(UsdLuxLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdLuxLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.Light(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdLuxLight()
@@ -196,6 +205,7 @@ void wrapUsdLuxLight()
              &This::GetFiltersRel)
         .def("CreateFiltersRel",
              &This::CreateFiltersRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

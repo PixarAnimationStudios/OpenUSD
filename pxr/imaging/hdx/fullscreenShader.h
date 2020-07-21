@@ -30,28 +30,31 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/vec2i.h"
-
-#include <boost/shared_ptr.hpp>
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStGLSLProgram;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+class Hgi;
 
 /// \class HdxFullscreenShader
 ///
 /// This class is a utility for rendering deep raytracer or aov output
-/// (color/depth) to the GL framebuffer.  This lets callers composite results
+/// (color/depth) to a hgi texture. This lets callers composite results
 /// into existing scenes.
 ///
 class HdxFullscreenShader {
 public:
-    /// Create a new fullscreen shader object. Creation of GL resources is
-    /// deferred...
+    /// Create a new fullscreen shader object.
+    /// 'debugName' is assigned to the fullscreen pass as gpu debug group that
+    /// is helpful when inspecting the frame on a gpu debugger.
     HDX_API
-    HdxFullscreenShader();
+    HdxFullscreenShader(Hgi* hgi, std::string const& debugName);
 
-    /// Destroy the fullscreen shader object, releasing GL resources.
+    /// Destroy the fullscreen shader object, releasing GPU resources.
     HDX_API
     ~HdxFullscreenShader();
 
@@ -66,66 +69,111 @@ public:
     HDX_API
     void SetProgram(TfToken const& glslfx, TfToken const& technique);
 
-    /// Set the program for the class to use the built-in
-    /// compositing shader, optionally with depth support.
-    ///   \param depthAware Whether the compositor should expect a depth buffer.
+    /// Bind a (externally managed) buffer to the shader program.
+    /// This function can be used to bind buffers to a custom shader program.
+    /// The lifetime of the buffer is managed by the caller. HdxFullscreenShader
+    /// does not take ownership. To update values in the buffer, the client can
+    /// use a blitCmds to copy new data into their buffer.
+    /// If an invalid 'buffer' is passed, the binding will be cleared.
     HDX_API
-    void SetProgramToCompositor(bool depthAware);
+    void BindBuffer(HgiBufferHandle const& buffer, uint32_t bindingIndex);
 
-    /// Add a value to be bound as a uniform.  Currently supported are:
-    /// - float, int, unsigned int
-    /// - GfVec[2-4]i, f
-    /// - GfMatrix[2-4]f
-    /// - Arrays of the above.
-    /// If the VtValue is empty, the binding is removed.
-    ///   \param name The GLSL name of the uniform binding.
-    ///   \param value The data to be bound.
+    /// Bind (externally managed) textures to the shader program.
+    /// This function can be used to bind textures to a custom shader program.
+    /// The lifetime of textures is managed by the caller. HdxFullscreenShader
+    /// does not take ownership.
+    /// If an invalid 'texture' is passed, the binding will be cleared.
     HDX_API
-    void SetUniform(TfToken const& name, VtValue const& data);
+    void BindTextures(
+        TfTokenVector const& names,
+        HgiTextureHandleVector const& textures);
 
-    /// Upload a named texture with a given format. These textures will
-    /// be used by Draw() called with no arguments. If width == 0,
-    /// height == 0, or data == nullptr, the image is removed from the bindings.
-    ///   \param name The name of the texture (used to look up GLSL binding).
-    ///   \param width The width of the image.
-    ///   \param height The height of the image.
-    ///   \param format The data format. Currently supported are:
-    ///                 F32x4, F16x4, Unorm8x4, F32x1.
-    ///   \param data The image data to upload.
+    /// By default HdxFullscreenShader creates a pipeline object that enables
+    /// depth testing and enables depth write if there is a depth texture.
+    /// This function allows you to override the depth and stencil state.
     HDX_API
-    void SetTexture(TfToken const& name, int width, int height,
-                       HdFormat format, void *data);
+    void SetDepthState(HgiDepthStencilState const& state);
 
-    /// Draw the internal textures to the bound framebuffer.
-    /// This will load the GLSL compositing program on-demand.
+    /// By default HdxFullscreenShader uses no blending (opaque).
+    /// This function allows you to override blend state (e.g. alpha blending)
     HDX_API
-    void Draw();
+    void SetBlendState(
+        bool enableBlending,
+        HgiBlendFactor srcColorBlendFactor,
+        HgiBlendFactor dstColorBlendFactor,
+        HgiBlendOp colorBlendOp,
+        HgiBlendFactor srcAlphaBlendFactor,
+        HgiBlendFactor dstAlphaBlendFactor,
+        HgiBlendOp alphaBlendOp);
 
-    typedef std::map<TfToken, GLuint> TextureMap;
-
-    /// Draw the provided textures to the bound framebuffer.
-    /// This will load the GLSL program on-demand.
+    /// Draw the internal textures to the provided destination textures.
+    /// `depth` is optional.
     HDX_API
-    void Draw(TextureMap const& textures);
+    void Draw(HgiTextureHandle const& colorDst,
+              HgiTextureHandle const& depthDst);
 
 private:
-    // Utility function to create a GL texture.
-    void _CreateTextureResources(GLuint *texture);
+    HdxFullscreenShader() = delete;
+
+    using TextureMap = std::map<TfToken, HgiTextureHandle>;
+    using BufferMap = std::map<uint32_t, HgiBufferHandle>;
+
     // Utility function to create buffer resources.
     void _CreateBufferResources();
-    // Utility function to set uniform values.
-    void _SetUniform(GLuint programId,
-                     TfToken const& name, VtValue const& value);
 
-    typedef std::map<TfToken, VtValue> UniformMap;
+    // Destroy shader program and the shader functions it holds.
+    void _DestroyShaderProgram();
 
-    UniformMap _uniforms;
+    // Utility to create resource bindings
+    bool _CreateResourceBindings(TextureMap const& textures);
+
+    // Utility to create default vertex buffer descriptor
+    void _CreateVertexBufferDescriptor();
+
+    // Utility to create a pipeline
+    bool _CreatePipeline(
+        HgiTextureHandle const& colorDst,
+        HgiTextureHandle const& depthDst,
+        bool depthWrite);
+
+    // Internal draw method
+    void _Draw(TextureMap const& textures, 
+              HgiTextureHandle const& colorDst,
+              HgiTextureHandle const& depthDst,
+              bool depthWrite);
+
+    // Print shader compile errors.
+    void _PrintCompileErrors();
+
+    class Hgi* _hgi;
+
+    std::string _debugName;
+
     TextureMap _textures;
+    BufferMap _buffers;
 
-    HdStGLSLProgramSharedPtr _program;
     TfToken _glslfx;
-    TfToken _technique;
-    GLuint _vertexBuffer;
+    TfToken _shaderName;
+
+    HgiBufferHandle _indexBuffer;
+    HgiBufferHandle _vertexBuffer;
+    HgiShaderProgramHandle _shaderProgram;
+    HgiResourceBindingsHandle _resourceBindings;
+    HgiGraphicsPipelineHandle _pipeline;
+    HgiVertexBufferDesc _vboDesc;
+
+    HgiDepthStencilState _depthState;
+
+    bool _blendingEnabled;
+    HgiBlendFactor _srcColorBlendFactor;
+    HgiBlendFactor _dstColorBlendFactor;
+    HgiBlendOp _colorBlendOp;
+    HgiBlendFactor _srcAlphaBlendFactor;
+    HgiBlendFactor _dstAlphaBlendFactor;
+    HgiBlendOp _alphaBlendOp;
+
+    HgiAttachmentDesc _attachment0;
+    HgiAttachmentDesc _depthAttachment;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

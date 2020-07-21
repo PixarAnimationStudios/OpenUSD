@@ -306,6 +306,13 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
 {
     Tf_TypedPyEnumWrapper(std::string const &n, TfEnum const &val) :
         Tf_PyEnumWrapper(n, val) {}
+
+    static boost::python::object GetValueFromName(const std::string& name) {
+        bool found = false;
+        const TfEnum value = TfEnum::GetValueFromName<T>(name, &found);
+        if (found) return boost::python::object(value);
+        return boost::python::object();
+    }
 };
 
 // Removes the MFB package prefix from name if it starts with it, and replaces
@@ -418,6 +425,8 @@ public:
 
         // Make a python type for T.
         _EnumPyClassType enumClass(enumName.c_str(), no_init);
+        enumClass.def("GetValueFromName", &Tf_TypedPyEnumWrapper<T>::GetValueFromName, arg("name"));
+        enumClass.staticmethod("GetValueFromName");
         enumClass.setattr("_baseName", baseName);
 
         // Register conversions for it.

@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/driver.h"
@@ -1073,6 +1074,124 @@ HdRenderIndex::EnqueuePrimsToSync(
     _syncQueue.emplace_back(_SyncQueueEntry{dirtyList, collection});
 }
 
+struct _DirtyFilterParam {
+    const HdRenderIndex* renderIndex;
+    const TfTokenVector& renderTags;
+    HdDirtyBits mask;
+};
+
+static
+bool
+_DirtyRprimIdsFilterPredicate(
+        const SdfPath& rprimID,
+        const void* predicateParam)
+{
+    const _DirtyFilterParam* filterParam =
+        static_cast<const _DirtyFilterParam*>(predicateParam);
+
+    const HdRenderIndex* renderIndex = filterParam->renderIndex;
+    HdDirtyBits mask = filterParam->mask;
+
+    const HdChangeTracker& tracker = renderIndex->GetChangeTracker();
+
+    if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
+        // An empty render tag set means everything passes the filter
+        // Primary user is tests, but some single task render delegates
+        // that don't support render tags yet also use it.
+        if (filterParam->renderTags.empty()) {
+            return true;
+        }
+
+        // As the number of tags is expected to be low (<10)
+        // use a simple linear search.
+        const TfToken& primRenderTag = renderIndex->GetRenderTag(rprimID);
+        const size_t numRenderTags = filterParam->renderTags.size();
+        for (size_t tagNum = 0u; tagNum < numRenderTags; ++tagNum) {
+            if (filterParam->renderTags[tagNum] == primRenderTag) {
+                return true;
+            }
+        }
+   }
+
+   return false;
+}
+
+const SdfPathVector&
+HdRenderIndex::_GetDirtyRprimIds(HdDirtyBits mask)
+{
+    HD_TRACE_FUNCTION();
+
+    if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
+        // In safe mode, we clear the cached lists of dirty IDs, forcing a
+        // fresh list to be generated with every call. This is primarily for
+        // use in unit tests.
+        _dirtyRprimIdsMap.clear();
+    }
+
+    // Look for a cached list of dirty IDs first and return that if we have it.
+    const auto iter = _dirtyRprimIdsMap.find(mask);
+    if (iter != _dirtyRprimIdsMap.cend()) {
+        return iter->second;
+    }
+
+    // No cached list, so we need to generate one.
+    SdfPathVector dirtyRprimIds;
+
+    {
+        HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
+
+        // After exploration, it was determined that the vast majority of cases
+        // if we calculated the union of all the collections used in generating
+        // a frame, the entire render index got Sync'ed.
+        //
+        // With the issue of some tasks needing Sprims to be Sync'ed before they
+        // can know the include/exclude paths.  It be was decided to remove
+        // the task based include/exclude filter.
+        //
+        // We still use the prim gather system to obtain the path list and
+        // run the predicate filter.  As the include path is root and an empty
+        // exclude path.  This should hit the filter's fast path.
+        static const SdfPathVector includePaths = {SdfPath::AbsoluteRootPath()};
+        static const SdfPathVector excludePaths;
+
+        const SdfPathVector& paths = GetRprimIds();
+
+        _DirtyFilterParam filterParam = {this, _activeRenderTags, mask};
+
+        HdPrimGather gather;
+
+        gather.PredicatedFilter(
+            paths,
+            includePaths,
+            excludePaths,
+            _DirtyRprimIdsFilterPredicate,
+            &filterParam,
+            &dirtyRprimIds);
+    }
+
+    if (mask == 0) {
+        // There may be new prims in the list that might have reprs they've not
+        // seen before. Flag these up as needing re-evaluating.
+        for (const SdfPath& dirtyRprimId : dirtyRprimIds) {
+            _tracker.MarkRprimDirty(
+                dirtyRprimId,
+                HdChangeTracker::InitRepr);
+        }
+    }
+
+    if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
+        TF_DEBUG(HD_DIRTY_LIST).Msg("  dirtyRprimIds:\n");
+        for (const SdfPath& dirtyRprimId : dirtyRprimIds) {
+            TF_DEBUG(HD_DIRTY_LIST).Msg("    %s\n", dirtyRprimId.GetText());
+        }
+    }
+
+    const auto inserted = _dirtyRprimIdsMap.emplace(
+        std::make_pair(mask, std::move(dirtyRprimIds)));
+
+    return inserted.first->second;
+}
+
 void
 HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
@@ -1214,8 +1333,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             }
 
             // PERFORMANCE: this loop can be expensive.
-            SdfPathVector const &dirtyPrims
-                               = hdDirtyList->GetDirtyRprims(_activeRenderTags);
+            SdfPathVector const &dirtyPrims = hdDirtyList->GetDirtyRprims();
 
             size_t numDirtyPrims = dirtyPrims.size();
             for (size_t primNum = 0; primNum < numDirtyPrims; ++primNum) {
@@ -1399,6 +1517,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
         // Clear all pending dirty lists
         _syncQueue.clear();
+
+        // Clear the cached dirty rprim ID lists
+        _dirtyRprimIdsMap.clear();
     }
 }
 
@@ -1723,13 +1844,9 @@ HdRenderIndex::_AppendDrawItems(
                 if (reprSelector.IsActiveRepr(i)) {
                     TfToken const& reprToken = reprSelector[i];
 
-                    const HdRprim::HdDrawItemPtrVector* rprimDrawItems =
-                        rprim->GetDrawItems(reprToken);
-
-                    if (TF_VERIFY(rprimDrawItems)) {
-                        drawItems.insert(drawItems.end(),
-                                         rprimDrawItems->begin(),
-                                         rprimDrawItems->end() );
+                    for (const HdRepr::DrawItemUniquePtr &rprimDrawItem
+                             : rprim->GetDrawItems(reprToken)) {
+                        drawItems.push_back(rprimDrawItem.get());
                     }
                 }
             }

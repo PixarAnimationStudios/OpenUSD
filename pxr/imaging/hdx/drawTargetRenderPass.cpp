@@ -71,17 +71,20 @@ HdxDrawTargetRenderPass::HdxDrawTargetRenderPass(HdRenderIndex *index)
 }
 
 
-HdxDrawTargetRenderPass::~HdxDrawTargetRenderPass()
-{
-}
+HdxDrawTargetRenderPass::~HdxDrawTargetRenderPass() = default;
 
 void
 HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 {
-    // XXX: The Draw Target may have been created on a different GL
-    // context, so create a local copy here to use on this context.
-    _drawTarget = GlfDrawTarget::New(drawTarget);
-    _drawTargetContext = GlfGLContext::GetCurrentGLContext();
+    if (drawTarget) {
+        // XXX: The Draw Target may have been created on a different GL
+        // context, so create a local copy here to use on this context.
+        _drawTarget = GlfDrawTarget::New(drawTarget);
+        _drawTargetContext = GlfGLContext::GetCurrentGLContext();
+    } else {
+        _drawTarget = TfNullPtr;
+        _drawTargetContext = nullptr;
+    }
 }
 
 void
@@ -128,8 +131,17 @@ HdxDrawTargetRenderPass::Sync()
 void
 HdxDrawTargetRenderPass::Prepare()
 {
-    // Check the draw target is still valid on the context.
-    if (!TF_VERIFY(_drawTargetContext == GlfGLContext::GetCurrentGLContext())) {
+    if (!_drawTarget) {
+        return;
+    }
+
+    // Check that draw target was created on current context.
+    if (_drawTargetContext != GlfGLContext::GetCurrentGLContext()) {
+
+        // If not, create yet another draw target so that it is valid
+        // on the current context.
+
+        TF_CODING_ERROR("Given draw target was for different GL context");
         SetDrawTarget(_drawTarget);
     }
 }
@@ -139,29 +151,38 @@ HdxDrawTargetRenderPass::Execute(
     HdRenderPassStateSharedPtr const &renderPassState,
     TfTokenVector const &renderTags)
 {
-    if (!_drawTarget) {
-        return;
+    if (_drawTarget) {
+        _drawTarget->Bind();
+        // The draw target task is already settings flags on
+        // HgiGraphicsCmdsDesc to clear the render buffers if the Storm texture
+        // system is used, so clear buffers is only necessary if using
+        // GlfDrawTarget's.
+        _ClearBuffers();
     }
-
-    _drawTarget->Bind();
-
-    _ClearBuffers();
-
-    GfVec2i const &resolution = _drawTarget->GetSize();
 
     // XXX: Should the Raster State or Renderpass set and restore this?
     // save the current viewport
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    glViewport(0, 0, resolution[0], resolution[1]);
+    GLint originalViewport[4];
+    glGetIntegerv(GL_VIEWPORT, originalViewport);
+
+    const GfVec4f viewport = renderPassState->GetViewport();
+    glViewport(GLint(viewport[0]),
+               GLint(viewport[1]),
+               GLint(viewport[2]),
+               GLint(viewport[3]));
 
     // Perform actual draw
     _renderPass.Execute(renderPassState, renderTags);
 
     // restore viewport
-    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    glViewport(originalViewport[0],
+               originalViewport[1],
+               originalViewport[2],
+               originalViewport[3]);
 
-    _drawTarget->Unbind();
+    if (_drawTarget) {
+        _drawTarget->Unbind();
+    }
 }
 
 void 

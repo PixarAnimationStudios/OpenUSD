@@ -34,8 +34,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

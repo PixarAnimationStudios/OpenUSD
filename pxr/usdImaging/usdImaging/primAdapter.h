@@ -31,7 +31,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
-#include "pxr/usdImaging/usdImaging/inheritedCache.h"
+#include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/texture.h"
@@ -286,7 +286,8 @@ public:
 
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
-                                     int instanceIndex) const;
+                                     int instanceIndex,
+                                     HdInstancerContext *instancerCtx) const;
 
     // Add the given usdPrim to the HdSelection object, to mark it for
     // selection highlighting. cachePath is the path of the object referencing
@@ -409,6 +410,15 @@ public:
     USDIMAGING_API
     TfToken GetModelDrawMode(UsdPrim const& prim);
 
+    /// Computes the per-prototype instance indices for a UsdGeomPointInstancer.
+    /// XXX: This needs to be defined on the base class, to have access to the
+    /// delegate, but it's a clear violation of abstraction.  This call is only
+    /// legal for prims of type UsdGeomPointInstancer; in other cases, the
+    /// returned array will be empty and the computation will issue errors.
+    USDIMAGING_API
+    VtArray<VtIntArray> GetPerPrototypeIndices(UsdPrim const& prim,
+                                               UsdTimeCode time) const;
+
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //
@@ -526,6 +536,12 @@ protected:
         HdInterpolation interp,
         TfToken const& role = TfToken()) const;
 
+    // Convenience method for removing a primvar descriptor.
+    USDIMAGING_API
+    void _RemovePrimvar(
+        HdPrimvarDescriptorVector* vec,
+        TfToken const& name) const;
+
     // Convenience method for computing a primvar. THe primvar will only be
     // added to the list in the valueCache if there is no primvar of the same
     // name already present.  Thus, "local" primvars should be merged before
@@ -542,11 +558,6 @@ protected:
     // Returns true if the property name has the "primvars:" prefix.
     USDIMAGING_API
     static bool _HasPrimvarsPrefix(TfToken const& propertyName);
-
-    // Strips the "primvars:" prefix and returns the resulting substring as 
-    // a token.
-    USDIMAGING_API
-    static TfToken _GetStrippedPrimvarName(TfToken const& propertyName);
 
     // Convenience methods to figure out what changed about the primvar and
     // return the appropriate dirty bit.

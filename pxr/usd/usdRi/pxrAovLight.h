@@ -52,6 +52,7 @@ class SdfAssetPath;
 
 /// \class UsdRiPxrAovLight
 ///
+/// \deprecated This schema will be replaced in a future release.
 ///
 class UsdRiPxrAovLight : public UsdLuxLight
 {

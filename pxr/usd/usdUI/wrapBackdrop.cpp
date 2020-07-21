@@ -56,6 +56,15 @@ _CreateDescriptionAttr(UsdUIBackdrop &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdUIBackdrop &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdUI.Backdrop(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdUIBackdrop()
@@ -96,6 +105,7 @@ void wrapUsdUIBackdrop()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

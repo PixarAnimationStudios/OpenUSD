@@ -28,8 +28,6 @@
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
-#include "pxr/usd/usdGeom/xformCache.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -37,54 +35,55 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for the drawMode attribute on UsdGeomModelAPI.
 ///
-class UsdImagingGLDrawModeAdapter : public UsdImagingPrimAdapter {
+class UsdImagingGLDrawModeAdapter : public UsdImagingPrimAdapter
+{
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingGLDrawModeAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGINGGL_API
-    virtual ~UsdImagingGLDrawModeAdapter();
+    ~UsdImagingGLDrawModeAdapter() override;
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more Rprims in the render index using the
     /// given proxy.
-    virtual SdfPath Populate(
+    SdfPath Populate(
             UsdPrim const& prim,
             UsdImagingIndexProxy* index,
             UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     // If the draw mode adapter is applied to a prim, it cuts off traversal of
     // that prim's subtree.
-    virtual bool ShouldCullChildren() const override;
+    bool ShouldCullChildren() const override;
 
     // Because draw mode can change usdImaging topology, we need to handle
     // render index compatibility at a later point than adapter lookup.
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
+    bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // Cards prims can take effect on master prims, so we need to let the
     // UsdImagingInstanceAdapter know we want special handling.
-    virtual bool CanPopulateMaster() const override;
+    bool CanPopulateMaster() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     
     USDIMAGINGGL_API
-    virtual void TrackVariability(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  UsdImagingInstancerContext const* 
+    void TrackVariability(UsdPrim const& prim,
+                          SdfPath const& cachePath,
+                          HdDirtyBits* timeVaryingBits,
+                          UsdImagingInstancerContext const* 
                                       instancerContext = NULL) const override;
 
     USDIMAGINGGL_API
-    virtual void UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
+    void UpdateForTime(UsdPrim const& prim,
+                       SdfPath const& cachePath, 
+                       UsdTimeCode time,
+                       HdDirtyBits requestedBits,
+                       UsdImagingInstancerContext const* 
                                    instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
@@ -92,46 +91,35 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGINGGL_API
-    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
-                                              SdfPath const& cachePath, 
-                                              TfToken const& property) override;
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath, 
+                                      TfToken const& property) override;
 
     USDIMAGINGGL_API
-    virtual void MarkDirty(UsdPrim const& prim,
-                           SdfPath const& cachePath,
-                           HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;
+    void MarkDirty(UsdPrim const& prim,
+                   SdfPath const& cachePath,
+                   HdDirtyBits dirty,
+                   UsdImagingIndexProxy* index) override;
 
     USDIMAGINGGL_API
-    virtual void MarkTransformDirty(UsdPrim const& prim,
-                                    SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index) override;
+    void MarkTransformDirty(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            UsdImagingIndexProxy* index) override;
 
     USDIMAGINGGL_API
-    virtual void MarkVisibilityDirty(UsdPrim const& prim,
-                                     SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index) override;
+    void MarkVisibilityDirty(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) override;
 
     USDIMAGING_API
-    virtual void MarkMaterialDirty(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   UsdImagingIndexProxy* index) override;
-
-
-    // ---------------------------------------------------------------------- //
-    /// \name Texture resources
-    // ---------------------------------------------------------------------- //
-
-    virtual HdTextureResource::ID
-    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time, size_t salt) const override;
-
-    virtual HdTextureResourceSharedPtr
-    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time) const override;
+    void MarkMaterialDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           UsdImagingIndexProxy* index) override;
 
 protected:
     USDIMAGINGGL_API
-    virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) override;
+    void _RemovePrim(SdfPath const& cachePath,
+                     UsdImagingIndexProxy* index) override;
 
 private:
     // For cards rendering, check if we're rendering any faces with 0 area;
@@ -186,8 +174,7 @@ private:
                                      uint8_t axes_mask) const;
 
     // Map from cachePath to what drawMode it was populated as.
-    typedef TfHashMap<SdfPath, TfToken, SdfPath::Hash>
-        _DrawModeMap;
+    using _DrawModeMap = TfHashMap<SdfPath, TfToken, SdfPath::Hash>;
     _DrawModeMap _drawModeMap;
 };
 

@@ -39,7 +39,10 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     }
 
     glCreateBuffers(1, &_bufferId);
-    glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+
+    if (!_descriptor.debugName.empty()) {
+        glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+    }
 
     if ((_descriptor.usage & HgiBufferUsageVertex)  ||
         (_descriptor.usage & HgiBufferUsageIndex32) ||
@@ -60,21 +63,19 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
             _bufferId,
             _descriptor.byteSize,
             _descriptor.initialData,
-            flags);
+            flags | GL_DYNAMIC_STORAGE_BIT);
+
         _mapped = glMapNamedBufferRange(_bufferId, 0, desc.byteSize, flags);
     } else {
         TF_CODING_ERROR("Unknown HgiBufferUsage bit");
     }
 
-    // glBindVertexBuffer (graphics encoder) needs to know the stride of each
+    // glBindVertexBuffer (graphics cmds) needs to know the stride of each
     // vertex buffer. Make sure user provides it.
     if (_descriptor.usage & HgiBufferUsageVertex) {
         TF_VERIFY(desc.vertexStride > 0);
     }
 
-    // Don't hold onto buffer data ptr locally. HgiBufferDesc states that:
-    // "The application may alter or free this memory as soon as the constructor
-    //  of the HgiBuffer has returned."
     _descriptor.initialData = nullptr;
 
     HGIGL_POST_PENDING_GL_ERRORS();
@@ -92,6 +93,18 @@ HgiGLBuffer::~HgiGLBuffer()
     }
 
     HGIGL_POST_PENDING_GL_ERRORS();
+}
+
+size_t
+HgiGLBuffer::GetByteSizeOfResource() const
+{
+    return _descriptor.byteSize;
+}
+
+uint64_t
+HgiGLBuffer::GetRawResource() const
+{
+    return (uint64_t) _bufferId;
 }
 
 

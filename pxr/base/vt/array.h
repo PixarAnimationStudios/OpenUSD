@@ -570,6 +570,82 @@ class VtArray : public Vt_ArrayBase {
         _shapeData.totalSize = 0;
     }
 
+    /// Removes a single element at \p pos from the array
+    /// 
+    /// To match the behavior of std::vector, returns an iterator
+    /// pointing to the position following the removed element.
+    /// 
+    /// Since the returned iterator is mutable, when the array is
+    /// not uniquely owned, a copy will be required.
+    ///
+    /// Erase invalidates all iterators (unlike std::vector
+    /// where iterators prior to \p pos remain valid).
+    ///
+    /// \sa erase(const_iterator, const_iterator)
+    iterator erase(const_iterator pos) {
+        TF_DEV_AXIOM(pos != cend());
+        return erase(pos, pos+1);
+    }
+
+    /// Remove a range of elements [\p first, \p last) from the array.
+    /// 
+    /// To match the behavior of std::vector, returns an iterator
+    /// at the position following the removed element.
+    /// If no elements are removed, a non-const iterator pointing
+    /// to last will be returned.
+    /// 
+    /// Since the returned iterator is mutable, when the array is
+    /// not uniquely owned, a copy will be required even when
+    /// the contents are unchanged.
+    ///
+    /// Erase invalidates all iterators (unlike std::vector
+    /// where iterators prior to \p first remain valid).
+    ///
+    /// \sa erase(const_iterator)
+    iterator erase(const_iterator first, const_iterator last) {
+        if (first == last){
+            return std::next(begin(), std::distance(cbegin(), last));
+        }
+        if ((first == cbegin()) && (last == cend())){
+            clear();
+            return end();
+        }
+        // Given the previous two conditions, we know that we are removing
+        // at least one element and the result array will contain at least one
+        // element.
+        value_type* removeStart = std::next(_data, std::distance(cbegin(), first));
+        value_type* removeEnd = std::next(_data, std::distance(cbegin(), last));
+        value_type* endIt = std::next(_data, size());
+        size_t newSize = size() - std::distance(first, last);
+        if (_IsUnique()){
+            // If the array is unique, we can simply move the tail elements
+            // and free to the end of the array.
+            value_type* deleteIt = std::move(removeEnd, endIt, removeStart);
+            for (; deleteIt != endIt; ++deleteIt) {
+                deleteIt->~value_type();
+            }
+            _shapeData.totalSize = newSize;
+            return iterator(removeStart);
+        } else{
+            // If the array is not unique, we want to avoid copying the
+            // elements in the range we are erasing. We allocate a
+            // new buffer and copy the head and tail ranges, omitting
+            // [first, last)
+            value_type* newData = _AllocateNew(newSize);
+            value_type* newMiddle = std::uninitialized_copy(
+                _data, removeStart, newData);
+            value_type* newEnd = std::uninitialized_copy(
+                removeEnd, endIt, newMiddle);
+            TF_DEV_AXIOM(newEnd == std::next(newData, newSize));
+            TF_DEV_AXIOM(std::distance(newData, newMiddle) == 
+                         std::distance(_data, removeStart));
+            _DecRef();
+            _data = newData;
+            _shapeData.totalSize = newSize;
+            return iterator(newMiddle);
+        }
+    }
+
     /// Assign array contents.
     /// Equivalent to:
     /// \code

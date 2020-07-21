@@ -27,11 +27,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
 #include "pxr/imaging/hdSt/renderPassState.h"
-
-#include <boost/shared_ptr.hpp>
 
 #include <memory>
 
@@ -42,7 +40,7 @@ class HdSceneDelegate;
 
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
-typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
+using HdxRenderSetupTaskSharedPtr = std::shared_ptr<class HdxRenderSetupTask>;
 
 /// \class HdxRenderTask
 ///
@@ -63,7 +61,7 @@ typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 /// setup task you run before the render task, you can change the render
 /// parameters without incurring a hydra sync or rebuilding any resources.
 ///
-class HdxRenderTask : public HdxProgressiveTask
+class HdxRenderTask : public HdxTask
 {
 public:
     HDX_API
@@ -74,12 +72,6 @@ public:
 
     /// Hooks for progressive rendering (delegated to renderpasses).
     virtual bool IsConverged() const override;
-
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
     HDX_API
@@ -95,6 +87,12 @@ public:
     virtual const TfTokenVector &GetRenderTags() const override;
 
 protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
+
     HDX_API
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 

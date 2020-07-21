@@ -63,6 +63,15 @@ _CreateColorSaturationAttr(UsdRiPxrIntMultLightFilter &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiPxrIntMultLightFilter &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.PxrIntMultLightFilter(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiPxrIntMultLightFilter()
@@ -110,6 +119,7 @@ void wrapUsdRiPxrIntMultLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

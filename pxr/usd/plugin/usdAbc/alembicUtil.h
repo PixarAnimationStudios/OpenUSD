@@ -88,6 +88,7 @@ using namespace ::Alembic::Abc;
 #define USD_ABC_PRIM_TYPE_NAMES \
     (BasisCurves) \
     (Camera) \
+    (HermiteCurves) \
     (Mesh) \
     (NurbsCurves) \
     (Points) \

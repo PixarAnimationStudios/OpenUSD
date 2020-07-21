@@ -70,8 +70,10 @@ UsdSchemaType UsdContrivedSingleApplyAPI::_GetSchemaType() const {
 UsdContrivedSingleApplyAPI
 UsdContrivedSingleApplyAPI::Apply(const UsdPrim &prim)
 {
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdContrivedSingleApplyAPI>(
-            prim, _schemaTokens->SingleApplyAPI);
+    if (prim.ApplyAPI<UsdContrivedSingleApplyAPI>()) {
+        return UsdContrivedSingleApplyAPI(prim);
+    }
+    return UsdContrivedSingleApplyAPI();
 }
 
 /* static */

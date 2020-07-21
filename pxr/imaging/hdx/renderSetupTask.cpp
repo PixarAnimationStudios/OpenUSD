@@ -209,9 +209,13 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
             _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(_aovBindings);
 
-    // XXX Tasks that are not RenderTasks (OIT, ColorCorrection etc) also need
-    // access to AOVs, but cannot access SetupTask or RenderPassState.
-    (*ctx)[HdxTokens->aovBindings] = VtValue(_aovBindings);
+    if (!_aovBindings.empty()) {
+        // XXX Tasks that are not RenderTasks (OIT, ColorCorrection etc) also
+        // need access to AOVs, but cannot access SetupTask or RenderPassState.
+        // One option is to let them know about the aovs directly (as task
+        // parameters), but instead we do so via the task context.
+        (*ctx)[HdxTokens->aovBindings] = VtValue(_aovBindings);
+    }
 }
 
 void

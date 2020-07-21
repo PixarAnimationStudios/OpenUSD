@@ -120,6 +120,18 @@ static string _Repr(GfRotation const &self) {
         TfPyRepr(self.GetAngle()) + ")";
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfRotation __truediv__(const GfRotation &self, double value)
+{
+    return self / value;
+}
+
+static GfRotation __itruediv__(GfRotation &self, double value)
+{
+    return self /= value;
+}
+#endif
+
 } // anonymous namespace 
 
 void wrapRotation()
@@ -203,7 +215,14 @@ void wrapRotation()
         .def( double() * self )
         .def( self / double() )
 
-        .def("__repr__", _Repr)
+ #if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
+
+       .def("__repr__", _Repr)
         
         ;
     to_python_converter<std::vector<This>,

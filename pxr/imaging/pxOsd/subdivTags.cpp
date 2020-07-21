@@ -26,6 +26,7 @@
 ///
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
+#include "pxr/base/arch/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -47,9 +47,19 @@ UsdGeomPrimvar::UsdGeomPrimvar(const UsdAttribute &attr)
     _SetIdTargetRelName();
 }
 
-static
+/* static */
+bool 
+UsdGeomPrimvar::IsPrimvar(const UsdAttribute &attr)
+{
+    if (!attr)
+        return false;
+    
+    return IsValidPrimvarName(attr.GetName());
+}
+
+/* static */
 bool
-_IsValidPrimvarName(std::string const& name)
+UsdGeomPrimvar::IsValidPrimvarName(const TfToken& name)
 {
     // All properly namespaced attributes are legal primvars, *except*
     // the "sidecar" attributes we create as part of the schema, like
@@ -59,15 +69,23 @@ _IsValidPrimvarName(std::string const& name)
             !TfStringEndsWith(name, _tokens->indicesSuffix));
 }
 
+/* static */
+bool
+UsdGeomPrimvar::IsPrimvarRelatedPropertyName(const TfToken& name)
+{
+    return TfStringStartsWith(name, _tokens->primvarsPrefix);
+}
 
 /* static */
-bool 
-UsdGeomPrimvar::IsPrimvar(const UsdAttribute &attr)
+TfToken
+UsdGeomPrimvar::StripPrimvarsName(const TfToken& name)
 {
-    if (!attr)
-        return false;
-    
-    return _IsValidPrimvarName(attr.GetName());
+    std::string const & fullName = name.GetString();
+
+    std::pair<std::string, bool> res =
+        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+
+    return res.second ? TfToken(res.first) : name;
 }
 
 /* static */
@@ -89,7 +107,7 @@ UsdGeomPrimvar::_MakeNamespaced(const TfToken& name, bool quiet)
         result = TfToken(_tokens->primvarsPrefix.GetString() + name.GetString());
     }
 
-    if (!_IsValidPrimvarName(result)){
+    if (!IsValidPrimvarName(result)){
         result = TfToken();
         if (!quiet){
             // XXX if we add more reserved keywords we'll need to extract

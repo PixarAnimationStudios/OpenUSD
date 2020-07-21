@@ -4,13 +4,15 @@
     startTimeCode = 1
 )
 
-def Xform "TestPlane"
+def Xform "TestPlane" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     rel skel:animationSource = </TestPlane/Skel/Anim>
     rel skel:skeleton = </TestPlane/Skel>
 
     def Mesh "Mesh" (
-        apiSchemas = ["BindingAPI"]
+        apiSchemas = ["SkelBindingAPI"]
     )
     {
         float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]
@@ -128,7 +130,9 @@ def Xform "TestPlane"
         }
     }
 
-    def Skeleton "Skel"
+    def Skeleton "Skel" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
     {
         rel skel:animationSource = </TestPlane/Skel/Anim>
 

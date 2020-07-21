@@ -59,6 +59,7 @@ pxr_library(hd
         meshTopology
         meshUtil
         perfLog
+        pluginRenderDelegateUniqueHandle
         points
         primGather
         primTypeIndex
@@ -68,6 +69,7 @@ pxr_library(hd
         renderPass
         renderPassState
         rendererPlugin
+        rendererPluginHandle
         rendererPluginRegistry
         renderThread
         repr

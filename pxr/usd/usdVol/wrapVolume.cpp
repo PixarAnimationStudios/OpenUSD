@@ -49,6 +49,15 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdVolVolume &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdVol.Volume(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdVolVolume()
@@ -82,6 +91,7 @@ void wrapUsdVolVolume()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -118,6 +118,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
     testenv/testUsdGeomExtentTransform.py
+    testenv/testUsdGeomHermiteCurves.py
     testenv/testUsdGeomImageable.py
     testenv/testUsdGeomMesh.py
     testenv/testUsdGeomMetrics.py

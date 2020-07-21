@@ -23,11 +23,13 @@
 //
 
 #include "framebuffer.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/tf.h"
 #include "RixDspy.h"
 #include <map>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,6 +73,7 @@ static PtDspyError HydraDspyImageOpen(
     if (!buf) {
         return PkDspyErrorBadParams;
     }
+    std::lock_guard<std::mutex> lock(buf->mutex);
     buf->Resize(width, height);
     *handle_p = buf;
     return PkDspyErrorNone;
@@ -85,84 +88,105 @@ static PtDspyError HydraDspyImageData(
     int entrysize,
     const unsigned char *data)
 {
-    // XXX: This assumes the AOV list is the following:
-    // Ci (offset = 0)
-    // a (offset = 12)
-    // z (offset = 16)
-    // id (offset = 20)
-    // id2 (offset = 24)
-    // __faceindex (offset = 28)
-    // This needs to be kept in sync with hdxPrman/context.cpp.
+    // XXX: This assumes the AOV list matches what was declared to riley
+    // in hdxPrman/context.cpp CreateDisplays
     int nComponents = entrysize / sizeof(float);
-#if 0
-    // FIXME RMAN-13965
-    // RenderMan is passing back too many display channels
-    // when adaptive sampling is enabled.
-    if (nComponents != 8) {
-        return PkDspyErrorBadParams;
-    }
-#endif
 
     HdxPrmanFramebuffer* buf = reinterpret_cast<HdxPrmanFramebuffer*>(handle);
+
     std::lock_guard<std::mutex> lock(buf->mutex);
 
-    if (buf->pendingClear) {
+    if(buf->w == 0 || buf->h == 0)
+    {
+        return PkDspyErrorBadParams;
+    }
+
+    if (buf->pendingClear)
+    {
         buf->pendingClear = false;
-        int size = buf->w * buf->h;
-        float *depth = &buf->depth[0];
-        float *color = buf->color.data();
-        int32_t *id = &buf->primId[0];
-        int32_t *id2 = &buf->instanceId[0];
-        int32_t *id3 = &buf->elementId[0];
-        for (int i = 0; i < size; i++) {
-            color[i*4+0] = buf->clearColor[0];
-            color[i*4+1] = buf->clearColor[1];
-            color[i*4+2] = buf->clearColor[2];
-            color[i*4+3] = buf->clearColor[3];
-            depth[i] = buf->clearDepth;
-            id[i] = buf->clearId;
-            id2[i] = buf->clearId;
-            id3[i] = buf->clearId;
-        }
+        buf->Clear();
     }
 
     float *data_f32 = (float*) data;
     int32_t *data_i32 = (int32_t*) data;
     for (int y=ymin; y < ymax_plusone; y++) {
         // Flip y-axis
-        float* color = &buf->color[((buf->h-1-y)*buf->w+xmin)*4];
-        float* depth = &buf->depth[((buf->h-1-y)*buf->w+xmin)];
-        int32_t* primId = &buf->primId[((buf->h-1-y)*buf->w+xmin)];
-        int32_t* instanceId = &buf->instanceId[((buf->h-1-y)*buf->w+xmin)];
-        int32_t* elementId = &buf->elementId[((buf->h-1-y)*buf->w+xmin)];
+        int offset = (buf->h-1-y)*buf->w+xmin;
+        int pixelOffset = 0;
         for (int x=xmin; x < xmax_plusone; x++) {
-            // Premultiply color with alpha to blend pixels with background.
-            float alphaInv = 1-data_f32[3];
-            color[0] = data_f32[0] + (alphaInv) * buf->clearColor[0]; // R
-            color[1] = data_f32[1] + (alphaInv) * buf->clearColor[1]; // G
-            color[2] = data_f32[2] + (alphaInv) * buf->clearColor[2]; // B
-            color[3] = data_f32[3]; // A
+            int dataIdx = 0;
+            int32_t primIdVal = 0;
+            for(HdxPrmanFramebuffer::HdPrmanAovIt it = buf->aovs.begin();
+                it != buf->aovs.end(); ++it)
+            {
+                int cc = HdGetComponentCount(it->format);
+                if(it->format == HdFormatInt32)
+                {
+                    int32_t* aovData = reinterpret_cast<int32_t*>(
+                        &it->pixels[offset * cc + pixelOffset * cc]);
 
-            if (std::isfinite(data_f32[4])) {
-                // XXX: We shouldn't be getting true inf from prman?
-                depth[0] = buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2];
-            } else {
-                depth[0] = -1.0f;
+                    if(it->name == HdAovTokens->primId)
+                    {
+                        aovData[0] = (data_i32[dataIdx++]-1);
+                        primIdVal = aovData[0];
+                    }
+                    else if((it->name == HdAovTokens->instanceId ||
+                             it->name == HdAovTokens->elementId) &&
+                            // Note, this will always fail if primId
+                            // isn't in the AOV list"
+                            primIdVal == -1)
+                    {
+                        aovData[0] = -1;
+                        dataIdx++;
+                    }
+                    else
+                    {
+                        aovData[0] = data_i32[dataIdx++];
+                    }
+                }
+                else
+                {
+                    float* aovData = reinterpret_cast<float*>(
+                        &it->pixels[offset*cc + pixelOffset * cc]);
+                    if(it->name == HdAovTokens->depth)
+                    {
+                        if(std::isfinite(data_f32[dataIdx]))
+                        {
+                            aovData[0] =
+                                buf->proj.Transform(
+                                    GfVec3f(0,0,-data_f32[dataIdx++]))[2];
+                        }
+                        else
+                        {
+                            aovData[0] = -1.0f;
+                        }
+                    }
+                    else if(cc == 4)
+                    {
+                        // Premultiply color with alpha
+                        // to blend pixels with background.
+                        float alphaInv = 1-data_f32[3];
+                        GfVec4f const& clear = it->clearValue.Get<GfVec4f>();
+                        aovData[0] = data_f32[dataIdx++] +
+                            (alphaInv) * clear[0]; // R
+                        aovData[1] = data_f32[dataIdx++] +
+                            (alphaInv) * clear[1]; // G
+                        aovData[2] = data_f32[dataIdx++] +
+                            (alphaInv) * clear[2]; // B
+                        aovData[3] = data_f32[dataIdx++]; // A
+                    }
+                    else
+                    {
+                        aovData[0] = data_f32[dataIdx++];
+                        if(cc >=3)
+                        {
+                            aovData[1] = data_f32[dataIdx++];
+                            aovData[2] = data_f32[dataIdx++];
+                        }
+                    }
+                }
             }
-
-            primId[0] = (data_i32[5]-1);
-            if (primId[0] == -1) {
-                instanceId[0] = -1;
-                elementId[0] = -1;
-            } else {
-                instanceId[0] = data_i32[6];
-                elementId[0] = data_i32[7];
-            }
-            color += 4;
-            depth += 1;
-            primId += 1;
-            instanceId += 1;
-            elementId += 1;
+            pixelOffset++;
             data_f32 += nComponents;
             data_i32 += nComponents;
         }
@@ -174,8 +198,6 @@ static PtDspyError HydraDspyImageClose (
      PtDspyImageHandle handle)
 {
     TF_UNUSED(handle);
-//    HdxPrmanFramebuffer* buf = reinterpret_cast<HdxPrmanFramebuffer*>(handle);
-//    delete buf;
     return PkDspyErrorNone;
 }
 
@@ -282,21 +304,84 @@ HdxPrmanFramebuffer::GetByID(int32_t id)
 }
 
 void
+HdxPrmanFramebuffer::AddAov(TfToken aovName, HdFormat format,
+                            VtValue clearValue)
+{
+    HdPrmanAov aov;
+    aov.name = aovName;
+    aov.format = format;
+    aov.clearValue = clearValue;
+    aovs.push_back(aov);
+}
+
+void
 HdxPrmanFramebuffer::Resize(int width, int height)
 {
-    std::lock_guard<std::mutex> lock(mutex);
-
     if (w != width || h != height) {
         w = width;
         h = height;
 
-        color.resize(w*h*4);
-        depth.resize(w*h);
-        primId.resize(w*h);
-        instanceId.resize(w*h);
-        elementId.resize(w*h);
-
         pendingClear = true;
+
+        for(HdxPrmanFramebuffer::HdPrmanAovIt it = aovs.begin();
+            it != aovs.end(); ++it)
+        {
+            int cc = HdGetComponentCount(it->format);
+            it->pixels.resize(w*h*cc);
+        }
+    }
+}
+
+void
+HdxPrmanFramebuffer::Clear()
+{
+    int size = w * h;
+
+    for (HdPrmanAovIt it = aovs.begin(); it != aovs.end(); ++it)
+    {
+        if(it->format == HdFormatInt32)
+        {
+            int32_t clear = it->clearValue.Get<int32_t>();
+            int32_t *data = reinterpret_cast<int32_t*>(it->pixels.data());
+            for(int i = 0; i < size; i++ )
+            {
+                data[i] = clear;
+            }
+        }
+        else
+        {
+            float *data = reinterpret_cast<float*>(it->pixels.data());
+            int cc = HdGetComponentCount(it->format);
+            if(cc == 1)
+            {
+                float clear = it->clearValue.Get<float>();
+                for(int i=0; i < size; i++)
+                {
+                    data[i] = clear;
+                }
+            }
+            else if(cc == 3)
+            {
+                GfVec3f const& clear = it->clearValue.Get<GfVec3f>();
+                for(int i=0; i < size; i++)
+                {
+                    data[i*cc+0] = clear[0];
+                    data[i*cc+1] = clear[1];
+                    data[i*cc+2] = clear[2];
+                }
+            }
+            else if(cc == 4)
+            {
+                GfVec4f const& clear = it->clearValue.Get<GfVec4f>();
+                for(int i=0; i < size; i++)
+                {
+                    data[i*cc+0] = clear[0];
+                    data[i*cc+1] = clear[1];
+                    data[i*cc+2] = clear[2];
+                    data[i*cc+3] = clear[3];
+                }
+            }
+        }
     }
 }
 

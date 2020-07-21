@@ -33,8 +33,6 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <vector>
 
@@ -48,8 +46,8 @@ using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 using HdStResourceRegistrySharedPtr = 
         std::shared_ptr<class HdStResourceRegistry>;
 
-typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
-typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
+using HdSt_DrawBatchSharedPtr = std::shared_ptr<class HdSt_DrawBatch>;
+using HdSt_DrawBatchSharedPtrVector = std::vector<HdSt_DrawBatchSharedPtr>;
 
 /// \class HdStCommandBuffer
 ///

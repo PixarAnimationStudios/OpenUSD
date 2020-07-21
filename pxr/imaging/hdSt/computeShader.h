@@ -37,13 +37,11 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStComputeShader> HdStComputeShaderSharedPtr;
+using HdStComputeShaderSharedPtr = std::shared_ptr<class HdStComputeShader>;
 
 /// \class HdStComputeShader
 ///

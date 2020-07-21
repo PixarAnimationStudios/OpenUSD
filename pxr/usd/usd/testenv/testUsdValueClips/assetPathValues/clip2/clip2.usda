@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Model"
+{
+    asset assetPath.timeSamples = {
+        0: @./clip2.usda@
+    }
+    asset[] assetPathArray.timeSamples = {
+        0: [@./clip2.usda@]
+    }
+}

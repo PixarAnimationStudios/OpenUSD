@@ -84,6 +84,15 @@ _CreateInstantaneousShutterAttr(UsdRenderSettingsBase &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRenderSettingsBase &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRender.SettingsBase(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRenderSettingsBase()
@@ -154,6 +163,7 @@ void wrapUsdRenderSettingsBase()
              &This::GetCameraRel)
         .def("CreateCameraRel",
              &This::CreateCameraRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

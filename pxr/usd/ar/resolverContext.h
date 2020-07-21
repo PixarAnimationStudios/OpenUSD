@@ -30,10 +30,9 @@
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 
-#include <boost/utility/enable_if.hpp>
-
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -96,10 +95,10 @@ public:
 
     /// Construct a resolver context using the context object \p context. 
     /// See class documentation for requirements.
-    template <class Context>
-    ArResolverContext(
-        const Context& context,
-        typename boost::enable_if<ArIsContextObject<Context> >::type* = 0)
+    template <class Context,
+              typename std::enable_if<ArIsContextObject<Context>::value>
+                  ::type* = nullptr>
+    ArResolverContext(const Context& context)
         : _context(new _Typed<Context>(context))
     {
     }

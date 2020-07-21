@@ -56,6 +56,15 @@ _CreateXformOpOrderAttr(UsdGeomXformable &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomXformable &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Xformable(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomXformable()
@@ -93,6 +102,7 @@ void wrapUsdGeomXformable()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

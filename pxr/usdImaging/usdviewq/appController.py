@@ -62,9 +62,8 @@ from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      GetPropertyColor, GetPropertyTextFont,
                      Timer, Drange, BusyContext, DumpMallocTags,
-                     GetValueAtFrame, GetShortStringForValue,
-                     GetInstanceIdForIndex,
-                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
+                     GetValueAndDisplayString, ResetSessionVisibility,
+                     InvisRootPrims, GetAssetCreationTime,
                      PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles,
                      RenderModes, ColorCorrectionModes, ShadedRenderModes,
                      PickModes, SelectionHighlightModes, CameraMaskModes,
@@ -269,19 +268,13 @@ class MainWindow(QtWidgets.QMainWindow):
     "This class exists to simplify and streamline the shutdown process."
     "The application may be closed via the File menu, or by closing the main"
     "window, both of which result in the same behavior."
-    def __init__(self, closeFunc, printCloseTiming):
+    def __init__(self, closeFunc):
         super(MainWindow, self).__init__(None) # no parent widget
         self._closeFunc = closeFunc
-        self._printCloseTiming = printCloseTiming
 
     def closeEvent(self, event):
         self._closeFunc()
         
-        with Timer() as t:
-            self.close() # Close the MainWindow widget.
-        if self._printCloseTiming:
-            t.PrintTime('tear down the UI')
-
 class AppController(QtCore.QObject):
 
     HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
@@ -421,8 +414,7 @@ class AppController(QtCore.QObject):
             # start listening for style-related changes.
             self._setStyleSheetUsingState()
 
-            self._mainWindow = MainWindow(lambda: self._cleanAndClose(),
-                                          self._printTiming)
+            self._mainWindow = MainWindow(lambda: self._cleanAndClose())
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self._mainWindow)
 
@@ -667,7 +659,8 @@ class AppController(QtCore.QObject):
             self._pickModeActions = (
                 self._ui.actionPick_Prims,
                 self._ui.actionPick_Models,
-                self._ui.actionPick_Instances)
+                self._ui.actionPick_Instances,
+                self._ui.actionPick_Prototypes)
             for action in self._pickModeActions:
                 self._ui.pickModeActionGroup.addAction(action)
 
@@ -861,10 +854,17 @@ class AppController(QtCore.QObject):
             self._ui.actionStop.triggered.connect(
                 self._toggleStop)
 
-            # Setup quit actions to ensure _cleanAndClose is only invoked once.
-            # Don't register a handler for the 'aboutToQuit' signal,
-            # since the mainWindow's closeEvent handler triggers _cleanAndClose.
+            # Typically, a handler is registered to the 'aboutToQuit' signal
+            # to handle cleanup. However, with PySide2, stageView's GL context
+            # is destroyed by then, making it too late in the shutdown process
+            # to release any GL resources used by the renderer (relevant for 
+            # Storm's GL renderer).
+            # To work around this, orchestrate shutdown via the main window's
+            # closeEvent() handler.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
+
+            # To measure Qt shutdown time, register a handler to stop the timer.
+            QtWidgets.QApplication.instance().aboutToQuit.connect(self._stopQtShutdownTimer)
 
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
@@ -1233,6 +1233,15 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.closeRenderer()
         self._dataModel.stage = None
+
+    def _startQtShutdownTimer(self):
+        self._qtShutdownTimer = Timer()
+        self._qtShutdownTimer.__enter__()
+
+    def _stopQtShutdownTimer(self):
+        self._qtShutdownTimer.__exit__()
+        if self._printTiming:
+            self._qtShutdownTimer.PrintTime('tear down the UI')
 
     def _setPlayShortcut(self):
         self._ui.playButton.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space))
@@ -2523,6 +2532,9 @@ class AppController(QtCore.QObject):
         # Close stage and release renderer resources (if applicable).
         self._closeStage()
 
+        # Start timer to measure Qt shutdown time
+        self._startQtShutdownTimer()
+
     def _openFile(self):
         extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
         builtInFiles = lambda f: f.startswith(".usd")
@@ -2637,10 +2649,11 @@ class AppController(QtCore.QObject):
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
-        try:
-            # Pause the stage view while we update
+        # Pause the stage view while we update
+        if self._stageView:
             self._stageView.setUpdatesEnabled(False)
 
+        try:
             # Clear out any Usd objects that may become invalid.
             self._dataModel.selection.clear()
             self._currentSpec = None
@@ -2663,12 +2676,12 @@ class AppController(QtCore.QObject):
             self._resetView()
 
             self._stepSizeChanged()
-            self._stepSizeChanged()
-            self._stageView.setUpdatesEnabled(True)
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
             traceback.print_exc()
         finally:
+            if self._stageView:
+                self._stageView.setUpdatesEnabled(True)
             QtWidgets.QApplication.restoreOverrideCursor()
 
         self.statusMessage('Stage Reopened')
@@ -3612,10 +3625,9 @@ class AppController(QtCore.QObject):
                     (key, type(primProperty)))
                 continue
 
-            val = GetValueAtFrame(primProperty, frame)
-            attrText = GetShortStringForValue(primProperty, val)
+            valFunc, attrText = GetValueAndDisplayString(primProperty, frame)
             item = QtWidgets.QTreeWidgetItem(["", str(key), attrText])
-            item.rawValue = val
+            item.rawValue = valFunc()
             treeWidget.addTopLevelItem(item)
 
             treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 
@@ -3864,16 +3876,7 @@ class AppController(QtCore.QObject):
         # this.
         compKeys = [# composition related metadata
                     "references", "inheritPaths", "specializes",
-                    "payload", "subLayers",
-
-                    # non-template clip metadata
-                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
-                    "clipActive", "clipPrimPath",
-
-                    # template clip metadata
-                    "clipTemplateAssetPath",
-                    "clipTemplateStartTime", "clipTemplateEndTime",
-                    "clipTemplateStride"]
+                    "payload", "subLayers"]
 
 
         for k in compKeys:
@@ -3981,7 +3984,7 @@ class AppController(QtCore.QObject):
         for key in sortedKeys:
             if key == "clips":
                 for (clip, metadataGroup) in m[key].items():
-                    attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
+                    attrName = QtWidgets.QTableWidgetItem(str('clips:' + clip))
                     tableWidget.setItem(rowIndex, 0, attrName)
                     for metadata in metadataGroup.keys():
                         dataPair = (metadata, metadataGroup[metadata])
@@ -4148,17 +4151,16 @@ class AppController(QtCore.QObject):
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
-                    val = GetValueAtFrame(spec, self._dataModel.currentFrame)
-                    valStr = GetShortStringForValue(spec, val)
+                    _, valStr = GetValueAndDisplayString(spec, 
+                                                    self._dataModel.currentFrame)
                     ttStr = valStr
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
-                    sampleBased = (spec.HasInfo('timeSamples') and
-                        spec.layer.GetNumTimeSamplesForPath(path) != -1)
+                    sampleBased = spec.layer.GetNumTimeSamplesForPath(path) > 0
                     valueItemColor = (UIPropertyValueSourceColors.TIME_SAMPLE if
                         sampleBased else UIPropertyValueSourceColors.DEFAULT)
                     valueItem.setForeground(valueItemColor)
                     valueItem.setToolTip(ttStr)
-
+                    
                 else:
                     metadataKeys = spec.GetMetaDataInfoKeys()
                     metadataDict = {}
@@ -4534,7 +4536,7 @@ class AppController(QtCore.QObject):
     def onStageViewMouseDrag(self):
         return
 
-    def onPrimSelected(self, path, instanceIndex, point, button, modifiers):
+    def onPrimSelected(self, path, instanceIndex, topLevelPath, topLevelInstanceIndex, point, button, modifiers):
 
         # Ignoring middle button until we have something
         # meaningfully different for it to do
@@ -4561,6 +4563,8 @@ class AppController(QtCore.QObject):
                 if path != Sdf.Path.emptyPath:
                     prim = self._dataModel.stage.GetPrimAtPath(path)
 
+                    # Model picking ignores instancing, but selects the enclosing
+                    # model of the picked prim.
                     if self._dataModel.viewSettings.pickMode == PickModes.MODELS:
                         if prim.IsModel():
                             model = prim
@@ -4568,30 +4572,57 @@ class AppController(QtCore.QObject):
                             model = GetEnclosingModelPrim(prim)
                         if model:
                             prim = model
-
-                    if self._dataModel.viewSettings.pickMode != PickModes.INSTANCES:
                         instanceIndex = ALL_INSTANCES
 
-                    instance = instanceIndex
-                    if instanceIndex != ALL_INSTANCES:
-                        instanceId = GetInstanceIdForIndex(prim, instanceIndex,
-                            self._dataModel.currentFrame)
-                        if instanceId is not None:
-                            instance = instanceId
+                    # Prim picking selects the top level boundable: either the
+                    # gprim, the top-level point instancer (if it's point
+                    # instanced), or the top level USD instance (if it's marked
+                    # instantiable), whichever is closer to namespace root.
+                    # It discards the instance index.
+                    elif self._dataModel.viewSettings.pickMode == PickModes.PRIMS:
+                        topLevelPrim = self._dataModel.stage.GetPrimAtPath(topLevelPath)
+                        if topLevelPrim:
+                            prim = topLevelPrim
+                        while prim.IsInstanceProxy():
+                            prim = prim.GetParent()
+                        instanceIndex = ALL_INSTANCES
+
+                    # Instance picking selects the top level boundable, like
+                    # prim picking; but if that prim is a point instancer or
+                    # a USD instance, it selects the particular instance
+                    # containing the picked object.
+                    elif self._dataModel.viewSettings.pickMode == PickModes.INSTANCES:
+                        topLevelPrim = self._dataModel.stage.GetPrimAtPath(topLevelPath)
+                        if topLevelPrim:
+                            prim = topLevelPrim
+                            instanceIndex = topLevelInstanceIndex
+                        if prim.IsInstanceProxy():
+                            while prim.IsInstanceProxy():
+                                prim = prim.GetParent()
+                            instanceIndex = ALL_INSTANCES
+
+                    # Prototype picking selects a specific instance of the
+                    # actual picked gprim, if the gprim is point-instanced.
+                    # This differs from instance picking by selecting the gprim,
+                    # rather than the prototype subtree; and selecting only one
+                    # drawn instance, rather than all sub-instances of a top-level
+                    # instance (for nested point instancers).
+                    # elif self._dataModel.viewSettings.pickMode == PickModes.PROTOTYPES:
+                        # Just pass the selection info through!
 
                     if shiftPressed:
                         # Clicking prim while holding shift adds it to the
                         # selection.
-                        self._dataModel.selection.addPrim(prim, instance)
+                        self._dataModel.selection.addPrim(prim, instanceIndex)
                     elif ctrlPressed:
                         # Clicking prim while holding ctrl toggles it in the
                         # selection.
-                        self._dataModel.selection.togglePrim(prim, instance)
+                        self._dataModel.selection.togglePrim(prim, instanceIndex)
                     else:
                         # Clicking prim with no modifiers sets it as the
                         # selection.
                         self._dataModel.selection.switchToPrimPath(
-                            prim.GetPath(), instance)
+                            prim.GetPath(), instanceIndex)
 
                 elif not shiftPressed and not ctrlPressed:
                     # Clicking the background with no modifiers clears the
@@ -4612,7 +4643,7 @@ class AppController(QtCore.QObject):
                                             QtCore.Qt.KeyboardModifiers())
                 QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
 
-    def onRollover(self, path, instanceIndex, modifiers):
+    def onRollover(self, path, instanceIndex, topLevelPath, topLevelInstanceIndex, modifiers):
         prim = self._dataModel.stage.GetPrimAtPath(path)
         if prim:
             headerStr = ""
@@ -4709,15 +4740,16 @@ class AppController(QtCore.QObject):
             if mesh:
                 propertyStr += "<br> -- <em>subdivisionScheme</em> = %s" %\
                     mesh.GetSubdivisionSchemeAttr().Get()
-            pi = UsdGeom.PointInstancer(prim)
+            topLevelPrim = self._dataModel.stage.GetPrimAtPath(topLevelPath)
+            pi = UsdGeom.PointInstancer(topLevelPrim)
             if pi:
                 indices = pi.GetProtoIndicesAttr().Get(
                     self._dataModel.currentFrame)
                 propertyStr += "<br> -- <em>%d instances</em>" % len(indices)
                 protos = pi.GetPrototypesRel().GetForwardedTargets()
                 propertyStr += "<br> -- <em>%d unique prototypes</em>" % len(protos)
-                if instanceIndex >= 0 and instanceIndex < len(indices):
-                    protoIndex = indices[instanceIndex]
+                if topLevelInstanceIndex >= 0 and topLevelInstanceIndex < len(indices):
+                    protoIndex = indices[topLevelInstanceIndex]
                     if protoIndex < len(protos):
                         currProtoPath = protos[protoIndex]
                         # If, as is common, proto is beneath the PI,
@@ -4772,12 +4804,8 @@ class AppController(QtCore.QObject):
                 instanceStr = "<hr><b>Instancing:</b><br>"
                 instanceStr += "<nobr><small><em>Instance of master:</em></small> %s</nobr>" % \
                     str(prim.GetMaster().GetPath())
-            elif instanceIndex != -1:
-                instanceStr = "<hr><b>Instance Index:</b> %d" % instanceIndex
-                instanceId = GetInstanceIdForIndex(prim, instanceIndex,
-                    self._dataModel.currentFrame)
-                if instanceId is not None:
-                    instanceStr += "<br><b>Instance Id:</b> %d" % instanceId
+            elif topLevelInstanceIndex != -1:
+                instanceStr = "<hr><b>Instance Id:</b> %d" % topLevelInstanceIndex
 
             # Then put it all together
             tip = headerStr + propertyStr + materialStr + instanceStr + aiStr + vsStr

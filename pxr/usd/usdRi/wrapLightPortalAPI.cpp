@@ -63,6 +63,15 @@ _CreateRiPortalTintAttr(UsdRiLightPortalAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiLightPortalAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.LightPortalAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiLightPortalAPI()
@@ -110,6 +119,7 @@ void wrapUsdRiLightPortalAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

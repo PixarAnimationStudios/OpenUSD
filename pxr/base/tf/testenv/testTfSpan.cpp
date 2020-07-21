@@ -116,6 +116,18 @@ int main(int argc, char** argv)
         Tf_TestSpanMatchesContainer(span, constData);
     }
 
+    // Test element accessors.
+    {
+        const TfSpan<const int> span(data);
+
+        for (size_t i = 0; i < data.size(); ++i) {
+            TF_AXIOM(span[i] == data[i]);
+        }
+
+        TF_AXIOM(span.front() == data.front());
+        TF_AXIOM(span.back() == data.back());
+    }
+
     // Test subspans.
     {
         // Should be able to construct subspans from a constant span.
@@ -132,6 +144,18 @@ int main(int argc, char** argv)
         const std::vector<int> expectedSubspan2({3,4});
         TF_AXIOM(std::equal(subspan2.begin(), subspan2.end(),   
                             expectedSubspan2.begin()));
+
+        // Test first.
+        TfSpan<const int> subspan3 = span.first(2);
+        const std::vector<int> expectedSubspan3({1,2});
+        TF_AXIOM(std::equal(subspan3.begin(), subspan3.end(),
+                            expectedSubspan3.begin()));
+
+        // Test last.
+        TfSpan<const int> subspan4 = span.last(2);
+        const std::vector<int> expectedSubspan4({4,5});
+        TF_AXIOM(std::equal(subspan4.begin(), subspan4.end(),
+                            expectedSubspan4.begin()));
     }
 
     // Test span edits.

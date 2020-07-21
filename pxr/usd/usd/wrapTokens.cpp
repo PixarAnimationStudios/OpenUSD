@@ -65,17 +65,8 @@ void wrapUsdTokens()
     boost::python::class_<UsdTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "apiSchemas", UsdTokens->apiSchemas);
-    _AddToken(cls, "clipActive", UsdTokens->clipActive);
-    _AddToken(cls, "clipAssetPaths", UsdTokens->clipAssetPaths);
-    _AddToken(cls, "clipManifestAssetPath", UsdTokens->clipManifestAssetPath);
-    _AddToken(cls, "clipPrimPath", UsdTokens->clipPrimPath);
     _AddToken(cls, "clips", UsdTokens->clips);
     _AddToken(cls, "clipSets", UsdTokens->clipSets);
-    _AddToken(cls, "clipTemplateAssetPath", UsdTokens->clipTemplateAssetPath);
-    _AddToken(cls, "clipTemplateEndTime", UsdTokens->clipTemplateEndTime);
-    _AddToken(cls, "clipTemplateStartTime", UsdTokens->clipTemplateStartTime);
-    _AddToken(cls, "clipTemplateStride", UsdTokens->clipTemplateStride);
-    _AddToken(cls, "clipTimes", UsdTokens->clipTimes);
     _AddToken(cls, "collection", UsdTokens->collection);
     _AddToken(cls, "exclude", UsdTokens->exclude);
     _AddToken(cls, "excludes", UsdTokens->excludes);
@@ -83,6 +74,7 @@ void wrapUsdTokens()
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "expansionRule", UsdTokens->expansionRule);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
+    _AddToken(cls, "fallbackPrimTypes", UsdTokens->fallbackPrimTypes);
     _AddToken(cls, "includeRoot", UsdTokens->includeRoot);
     _AddToken(cls, "includes", UsdTokens->includes);
 }

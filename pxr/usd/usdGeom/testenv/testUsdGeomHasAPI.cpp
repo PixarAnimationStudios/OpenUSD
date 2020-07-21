@@ -44,9 +44,17 @@ TestHasAPI()
     TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>());
     UsdGeomMotionAPI::Apply(prim);
     TF_AXIOM(prim.HasAPI<UsdGeomMotionAPI>());
-
+    prim.RemoveAPI<UsdGeomMotionAPI>();
+    TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>());
+    prim.ApplyAPI<UsdGeomMotionAPI>();
+    TF_AXIOM(prim.HasAPI<UsdGeomMotionAPI>());
+    
     TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>());
     UsdGeomModelAPI::Apply(prim);
+    TF_AXIOM(prim.HasAPI<UsdGeomModelAPI>());
+    prim.RemoveAPI<UsdGeomModelAPI>();
+    TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>());
+    prim.ApplyAPI<UsdGeomModelAPI>();
     TF_AXIOM(prim.HasAPI<UsdGeomModelAPI>());
 
     std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
@@ -60,8 +68,15 @@ TestHasAPI()
     // The following cases won't compile, uncomment them to confirm
     // TF_AXIOM(prim.HasAPI<UsdGeomImageable>()); // can't be typed
     // TF_AXIOM(prim.HasAPI<UsdGeomXform>());     // can't be concrete
-    // TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>()); // can't be non-applied API schema
-
+    // TF_AXIOM(!prim.HasAPI<UsdModelAPI>());     // can't be non-applied API schema
+    // 
+    // // must be derived from UsdAPISchemaBase
+    // TF_AXIOM(prim.ApplyAPI<UsdGeomXform>());   
+    // TF_AXIOM(prim.RemoveAPI<UsdGeomXform>());  
+    // 
+    // // must be multiple apply for instance name
+    // TF_AXIOM(prim.ApplyAPI<UsdGeomModelAPI>(TfToken("instance")));   
+    // TF_AXIOM(prim.RemoveAPI<UsdGeomModelAPI>(TfToken("instance")));
 }
  
 int main()

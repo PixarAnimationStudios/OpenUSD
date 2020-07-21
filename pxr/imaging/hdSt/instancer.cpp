@@ -221,7 +221,8 @@ HdStInstancer::UpdateInstancePrimvarRange(HdRprim *prim,
 
         // schedule to sync gpu
         if (!sources.empty()) {
-            resourceRegistry->AddSources(_instancePrimvarRange, sources);
+            resourceRegistry->AddSources(
+                _instancePrimvarRange, std::move(sources));
         }
     }
 
@@ -396,7 +397,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     source.reset(new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
                                       VtValue(instanceIndices)));
     sources.push_back(source);
-    resourceRegistry->AddSources(indexRange, sources);
+    resourceRegistry->AddSources(indexRange, std::move(sources));
 
     return indexRange;
 }

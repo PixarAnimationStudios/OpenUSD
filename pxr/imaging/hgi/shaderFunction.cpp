@@ -30,9 +30,7 @@ HgiShaderFunction::HgiShaderFunction(HgiShaderFunctionDesc const& desc)
 {
 }
 
-HgiShaderFunction::~HgiShaderFunction()
-{
-}
+HgiShaderFunction::~HgiShaderFunction() = default;
 
 HgiShaderFunctionDesc const&
 HgiShaderFunction::GetDescriptor() const
@@ -42,7 +40,7 @@ HgiShaderFunction::GetDescriptor() const
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc()
     : shaderStage(0)
-    , shaderCode(std::string())
+    , shaderCode(nullptr)
 {
 }
 
@@ -51,8 +49,9 @@ bool operator==(
     const HgiShaderFunctionDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.shaderStage == rhs.shaderStage &&
-           lhs.shaderCode == rhs.shaderCode;
+           lhs.shaderStage == rhs.shaderStage;
+           // Omitted. Only used tmp during shader compile
+           // lhs.shaderCode == rhs.shaderCode
 }
 
 bool operator!=(

@@ -192,6 +192,10 @@ _fatalSignalHandler(int signo)
         msg = "received SIGABRT";
         break;
 
+    case SIGILL:
+        msg = "received SIGILL";
+        break;
+
 #if defined(_GNU_SOURCE)
     default:
         msg = strsignal(signo);
@@ -227,6 +231,7 @@ TfInstallTerminateAndCrashHandlers()
     signal(SIGSEGV, &_fatalSignalHandler);
     signal(SIGFPE,  &_fatalSignalHandler);
     signal(SIGABRT, &_fatalSignalHandler);
+    signal(SIGILL,  &_fatalSignalHandler);
 #else
     // Catch segvs and bus violations
     struct sigaction act;
@@ -247,11 +252,13 @@ TfInstallTerminateAndCrashHandlers()
     sigaddset(&act.sa_mask, SIGSEGV);
     sigaddset(&act.sa_mask, SIGBUS);
     sigaddset(&act.sa_mask, SIGFPE);
+    sigaddset(&act.sa_mask, SIGILL);
 
     sigaction(SIGSEGV, &act, NULL);
     sigaction(SIGBUS,  &act, NULL);
     sigaction(SIGFPE,  &act, NULL);
     sigaction(SIGABRT, &act, NULL);
+    sigaction(SIGILL,  &act, NULL);
 #endif
 }
 

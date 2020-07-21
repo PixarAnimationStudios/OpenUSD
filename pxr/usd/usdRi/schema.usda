@@ -74,6 +74,10 @@ class "StatementsAPI" (
 
 class RslShader "RslShader" (
     inherits = [</Shader>]
+    doc = """
+    \\deprecated RSL shaders have been deprecated in RenderMan.  This
+    schema will be removed in a future release.
+    """
 ) {
     asset info:sloPath (
         customData = {
@@ -86,8 +90,11 @@ class RslShader "RslShader" (
 
 class RisObject "RisObject" (
     inherits = [</Shader>]
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris object with connectable parameters. """ 
 ) {
     asset info:filePath (
@@ -104,16 +111,22 @@ class RisObject "RisObject" (
 
 class RisPattern "RisPattern" (
     inherits = [</RisObject>]
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris pattern object. Multiple of these can be assigned.""" 
 ) {
 }
 
 class RisOslPattern "RisOslPattern" (
     inherits = [</RisPattern>]
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
+    This schema will be removed in a future release.
+
     Represents a ris osl pattern object.""" 
 ) {
     asset info:filePath = @PxrOSL@ (
@@ -131,15 +144,23 @@ class RisOslPattern "RisOslPattern" (
 
 class RisBxdf "RisBxdf" (
     inherits = [</RisObject>]
-    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    doc = """
+    \\deprecated Specialized RIS shader schemas have been deprecated in 
     favor of all shader prims being simple UsdShadeShader.
-    Represents a ris bxdf object. One of these is assigned at one time.""" 
+    This schema will be removed in a future release.
+
+    Represents a ris bxdf object. One of these is assigned at one time.
+    """ 
 ) {
 }
 
 class RisIntegrator "RisIntegrator" (
     inherits = </Typed>
-    doc = """Integrator. Only one can be declared in a rib scene.""" 
+    doc = """
+    \\deprecated RIS integrator settings will be replaced
+    with a new schema in a future release.
+
+    Integrator. Only one can be declared in a rib scene."""
 ) {
     asset filePath
     asset argsPath
@@ -149,7 +170,11 @@ class RisIntegrator "RisIntegrator" (
 
 class "RiMaterialAPI" (
     inherits = </APISchemaBase>
-    doc = """This API provides outputs that connect a material prim to prman 
+    doc = """
+    \\deprecated Materials should use UsdShadeMaterial instead.
+    This schema will be removed in a future release.
+
+    This API provides outputs that connect a material prim to prman 
     shaders and RIS objects."""
     customData = {
         # We want the class name to be UsdRiMaterialAPI
@@ -187,7 +212,11 @@ class "RiMaterialAPI" (
 
 class "RiLightAPI" (
     inherits = </APISchemaBase>
-    doc = """RiLightAPI is an API schema that provides an interface
+    doc = """
+    \\deprecated RenderMan-specific light settings will move to a
+    new schema in a future release.
+
+    RiLightAPI is an API schema that provides an interface
     to add Renderman-specific attributes to lights."""
     customData = {
         string className = "LightAPI"
@@ -245,7 +274,11 @@ class "RiLightAPI" (
 
 class "RiLightFilterAPI" (
     inherits = </APISchemaBase>
-    doc = """Renderman-specific attributes for light filters."""
+    doc = """
+    \\deprecated RenderMan-specific light filter settings will move to a
+    new schema in a future release.
+
+    Renderman-specific attributes for light filters."""
     customData = {
         string className = "LightFilterAPI"
     }
@@ -297,7 +330,11 @@ class "RiLightFilterAPI" (
 
 class "RiLightPortalAPI" (
     inherits = </APISchemaBase>
-    doc = """Renderman-specific attributes for light portals."""
+    doc = """
+    \\deprecated RenderMan-specific light portal settings will move to a
+    new schema in a future release.
+
+    Renderman-specific attributes for light portals."""
     customData = {
         string className = "LightPortalAPI"
     }
@@ -317,7 +354,10 @@ class "RiLightPortalAPI" (
 
 class "RiSplineAPI" (
     inherits = </APISchemaBase>
-    doc = """RiSplineAPI is a general purpose API schema used to describe
+    doc = """
+    \\deprecated This API schema will be removed in a future release.
+
+    RiSplineAPI is a general purpose API schema used to describe
     a named spline stored as a set of attributes on a prim.
     
     It is an add-on schema that can be applied many times to a prim with
@@ -341,7 +381,10 @@ class "RiSplineAPI" (
 
 class "RiTextureAPI" (
     inherits = </APISchemaBase>
-    doc = """RiTextureAPI is an API schema that provides an interface
+    doc = """
+    \\deprecated This API schema will be removed in a future release.
+
+    RiTextureAPI is an API schema that provides an interface
     to add Renderman-specific attributes to adjust textures."""
     customData = {
         string className = "TextureAPI"
@@ -360,6 +403,7 @@ class "RiTextureAPI" (
 
 class PxrEnvDayLight "PxrEnvDayLight" (
     inherits = </Light>
+    doc = """\\deprecated This schema will be replaced in a future release."""
 )
 {
     int day = 1 (
@@ -450,6 +494,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
 
 class PxrAovLight "PxrAovLight" (
     inherits = </Light>
+    doc = """\\deprecated This schema will be replaced in a future release."""
 )
 {
     string aovName = "" (
@@ -511,7 +556,10 @@ class PxrAovLight "PxrAovLight" (
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     inherits = </LightFilter>
-    doc = """Multiplies the intensity of a given light."""
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Multiplies the intensity of a given light.
+    """
 ) {
     # override the class defn in RiLightFilterAPI because the class default is 0.0
     float ri:intensity = 1 (
@@ -526,7 +574,10 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (
     inherits = </LightFilter>
-    doc = """Simulated geometric barn doors that control the spread of light."""
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Simulated geometric barn doors that control the spread of light.
+    """
 ) {
     token barnMode = "physical" (
         allowedTokens = ["physical", "analytic"]
@@ -622,7 +673,10 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 
 class PxrCookieLightFilter "PxrCookieLightFilter" (
     inherits = </LightFilter>
-    doc = """A textured surface that filters light."""
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    A textured surface that filters light.
+    """
 ) {
     token cookieMode = "physical" (
         allowedTokens = ["physical", "analytic"]
@@ -786,7 +840,10 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 
 class PxrRampLightFilter "PxrRampLightFilter" (
     inherits = </LightFilter>
-    doc = """A ramp to modulate how a light falls off with distance."""
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    A ramp to modulate how a light falls off with distance.
+    """
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdRi/splineAPI.h"
@@ -835,7 +892,10 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 
 class PxrRodLightFilter "PxrRodLightFilter" (
     inherits = </LightFilter>
-    doc = """Simulates a rod or capsule-shaped region to modulate light."""
+    doc = """
+    \\deprecated This schema will be replaced in a future release.
+    Simulates a rod or capsule-shaped region to modulate light.
+    """
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdRi/splineAPI.h"

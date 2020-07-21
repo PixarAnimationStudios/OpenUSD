@@ -34,15 +34,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStResourceRegistry;
+class HdStTextureIdentifier;
+using HdStDynamicUvTextureObjectSharedPtr =
+    std::shared_ptr<class HdStDynamicUvTextureObject>;
 
 class HdStRenderBuffer : public HdRenderBuffer
 {
 public:
     HDST_API
-    HdStRenderBuffer(Hgi* hgi, SdfPath const& id);
+    HdStRenderBuffer(HdStResourceRegistry *resourceRegistry, SdfPath const& id);
 
     HDST_API
-    ~HdStRenderBuffer();
+    ~HdStRenderBuffer() override;
 
     HDST_API
     bool Allocate(GfVec3i const& dimensions,
@@ -50,19 +54,19 @@ public:
                   bool multiSampled) override;
 
     HDST_API
-    unsigned int GetWidth() const override {return _dimensions[0];}
+    unsigned int GetWidth() const override;
 
     HDST_API
-    unsigned int GetHeight() const override {return _dimensions[1];}
+    unsigned int GetHeight() const override;
 
     HDST_API
-    unsigned int GetDepth() const override {return _dimensions[2];}
+    unsigned int GetDepth() const override;
 
     HDST_API
     HdFormat GetFormat() const override {return _format;}
 
     HDST_API
-    bool IsMultiSampled() const override {return _multiSampled;}
+    bool IsMultiSampled() const override;
 
     /// Map the buffer for reading. The control flow should be Map(),
     /// before any I/O, followed by memory access, followed by Unmap() when
@@ -98,22 +102,30 @@ public:
     HDST_API
     VtValue GetResource(bool multiSampled) const override;
 
-private:
-    // Release any allocated resources.
+    /// The identifier that can be passed to, e.g.,
+    /// HdStResourceRegistry::AllocateTextureHandle so that a
+    /// shader can bind this buffer as texture.
+    HDST_API
+    HdStTextureIdentifier GetTextureIdentifier(
+        bool multiSampled);
+
+protected:
     void _Deallocate() override;
 
-    Hgi* _hgi;
+private:
+    // HdRenderBuffer::Allocate should take a scene delegate or
+    // resource registry so that we do not need to save it here.
+    HdStResourceRegistry * _resourceRegistry;
 
-    GfVec3i _dimensions;
+    // Format saved here (somewhat redundantely) since the
+    // Hgi texture descriptor holds an HgiFormat instead of HdFormat.
     HdFormat _format;
-    HgiTextureUsageBits _usage;
-    bool _multiSampled;
 
     // The GPU texture resource
-    HgiTextureHandle _texture;
+    HdStDynamicUvTextureObjectSharedPtr _textureObject;
 
     // The GPU multi-sample texture resource (optional)
-    HgiTextureHandle _textureMS;
+    HdStDynamicUvTextureObjectSharedPtr _textureMSAAObject;
 
     // The number of callers mapping this buffer.
     std::atomic<int> _mappers;

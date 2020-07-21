@@ -90,14 +90,10 @@ inline bool operator!=(
 ///
 /// \class HgiBuffer
 ///
-/// Represents a graphics platform independent GPU buffer resource.
+/// Represents a graphics platform independent GPU buffer resource (base class).
 /// Buffers should be created via Hgi::CreateBuffer.
 /// The fill the buffer with data you supply `initialData` in the descriptor.
-/// To update the data in a buffer later, use a blitEncoder.
-///
-/// Base class for Hgi buffers.
-/// To the client (HdSt) buffer resources are referred to via
-/// opaque, stateless handles (HgBufferHandle).
+/// To update the data inside the buffer later on, use blitCmds.
 ///
 class HgiBuffer
 {
@@ -108,6 +104,25 @@ public:
     /// The descriptor describes the object.
     HGI_API
     HgiBufferDesc const& GetDescriptor() const;
+
+    /// Returns the byte size of the GPU buffer.
+    /// This can be helpful if the application wishes to tally up memory usage.
+    HGI_API
+    virtual size_t GetByteSizeOfResource() const = 0;
+
+    /// This function returns the handle to the Hgi backend's gpu resource, cast
+    /// to a uint64_t. Clients should avoid using this function and instead
+    /// use Hgi base classes so that client code works with any Hgi platform.
+    /// For transitioning code to Hgi, it can however we useful to directly
+    /// access a platform's internal resource handles.
+    /// There is no safety provided in using this. If you by accident pass a
+    /// HgiMetal resource into an OpenGL call, bad things may happen.
+    /// In OpenGL this returns the GLuint resource name.
+    /// In Metal this returns the id<MTLBuffer> as uint64_t.
+    /// In Vulkan this returns the VkBuffer as uint64_t.
+    /// In DX12 this returns the ID3D12Resource pointer as uint64_t.
+    HGI_API
+    virtual uint64_t GetRawResource() const = 0;
 
 protected:
     HGI_API

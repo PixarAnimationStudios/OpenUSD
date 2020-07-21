@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/progressiveTask.h"
+#include "pxr/imaging/hdx/task.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
@@ -66,7 +66,7 @@ struct HdxPickFromRenderBufferTaskParams
 /// to the camera frustum used to generate the ID buffers.  It then runs the
 /// pick query against the subset of the ID buffers contained by the pick
 /// frustum.
-class HdxPickFromRenderBufferTask : public HdxProgressiveTask
+class HdxPickFromRenderBufferTask : public HdxTask
 {
 public:
     HDX_API
@@ -78,12 +78,6 @@ public:
     /// Hooks for progressive rendering.
     virtual bool IsConverged() const override;
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
     /// Prepare the pick task
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
@@ -92,6 +86,13 @@ public:
     /// Execute the pick task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
 
 private:
     HdxPickFromRenderBufferTaskParams _params;

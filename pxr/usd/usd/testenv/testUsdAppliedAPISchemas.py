@@ -25,7 +25,7 @@
 import os, unittest
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
-class TestUsdSchemaRegistry(unittest.TestCase):
+class TestUsdAppliedAPISchemas(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         pr = Plug.Registry()
@@ -34,6 +34,10 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "Failed to load expected test plugin"
         assert testPlugins[0].name == "testUsdAppliedAPISchemas", \
             "Failed to load expected test plugin"
+        cls.SingleApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")
+        cls.MultiApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")
     
     def test_SimpleTypedSchemaPrimDefinition(self):
         """
@@ -182,18 +186,21 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         untypedPrim = stage.DefinePrim("/Untyped")
         self.assertEqual(untypedPrim.GetTypeName(), '')
         self.assertEqual(untypedPrim.GetAppliedSchemas(), [])
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         [])
         self.assertEqual(untypedPrim.GetPropertyNames(), [])
 
         # Add an api schema to the prim's metadata.
-        l = Sdf.TokenListOp()
-        l.explicitItems = ["TestSingleApplyAPI"]
-        untypedPrim.SetMetadata("apiSchemas", l)
+        untypedPrim.ApplyAPI(self.SingleApplyAPIType)
 
         # Prim still has no type but does have applied schemas
         self.assertEqual(untypedPrim.GetTypeName(), '')
         self.assertEqual(untypedPrim.GetAppliedSchemas(), ["TestSingleApplyAPI"])
-        self.assertTrue(untypedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(untypedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestSingleApplyAPI"])
+        self.assertTrue(untypedPrim.HasAPI(self.SingleApplyAPIType))
 
         # The prim has properties from the applied schema and value resolution
         # returns the applied schema's property fallback value.
@@ -225,22 +232,28 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         typedPrim = stage.DefinePrim("/TypedPrim", "TestTypedSchema")
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), [])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestTypedSchema')
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
         self.assertEqual(typedPrim.GetPropertyNames(), ["testAttr", "testRel"])
 
         # Add an api schemas to the prim's metadata.
-        l = Sdf.TokenListOp()
-        l.explicitItems = ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"]
-        typedPrim.SetMetadata("apiSchemas", l)
+        typedPrim.ApplyAPI(self.SingleApplyAPIType)
+        typedPrim.ApplyAPI(self.MultiApplyAPIType, "garply")
 
         # Prim has the same type and now has API schemas. The properties have
         # been expanded to include properties from the API schemas
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"])
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")))
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestTypedSchema')
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"])
+
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
             "multi:garply:bool_attr", 
             "multi:garply:relationship", 
@@ -294,10 +307,15 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")))
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
             "multi:fallback:bool_attr", 
             "multi:fallback:relationship",
@@ -309,23 +327,27 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "testRel"])
 
         # Add a new api schemas to the prim's metadata.
-        l = Sdf.TokenListOp()
-        l.explicitItems = ["TestMultiApplyAPI:garply"]
-        typedPrim.SetMetadata("apiSchemas", l)
+        typedPrim.ApplyAPI(self.MultiApplyAPIType, "garply")
 
         # Prim has the same type and now has both its original API schemas and
         # the new one. Note that the new schema was added using an explicit 
-        # list op but was still appended to the original list. Fallback API 
+        # list op but was still prepended to the original list. Fallback API 
         # schemas cannot be deleted and any authored API schemas will always be
-        # appended to the fallbacks.
+        # prepended to the fallbacks.
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
-            ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI", 
-             "TestMultiApplyAPI:garply"])
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")))
+            ["TestMultiApplyAPI:garply", 
+             "TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestMultiApplyAPI:garply"])
+
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
 
         # Properties have been expanded to include the new API schema
         self.assertEqual(typedPrim.GetPropertyNames(), [
@@ -391,10 +413,15 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestWithFallbackAppliedSchema')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")))
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
             "multi:fallback:bool_attr", 
             "multi:fallback:relationship",
@@ -422,9 +449,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                          Usd.ResolveInfoSourceFallback)
 
         # Add the fallback api schemas again to the prim's metadata.
-        l = Sdf.TokenListOp()
-        l.explicitItems = ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"]
-        typedPrim.SetMetadata("apiSchemas", l)
+        typedPrim.ApplyAPI(self.MultiApplyAPIType, "fallback")
+        typedPrim.ApplyAPI(self.SingleApplyAPIType)
 
         # Prim has the same type and now has both its original API schemas and
         # plus the same schemas again appended to the list (i.e. both schemas
@@ -433,10 +459,16 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
             ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI", 
              "TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")))
-        self.assertTrue(typedPrim.HasAPI(
-            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")))
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
+                         'TestWithFallbackAppliedSchema')
+        # Note that prim type info does NOT contain the fallback applied API
+        # schemas from the concrete type's prim definition as these are not part
+        # of the type identity.
+        self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"])
+
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
 
         # The list of properties hasn't changed as there are no "new" schemas,
         # however the defaults may have changed.
@@ -481,6 +513,253 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # schemas applied.
         self.assertEqual(typedPrim.GetMetadata("documentation"), 
                          "Test with fallback API schemas")
+
+    def test_ApplyRemoveAPI(self):
+        """
+        Tests the detail of the Apply and Remove API for API schemas.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        self.assertTrue(rootLayer)
+        self.assertTrue(sessionLayer)
+
+        # Add a basic prim with no type. It has no applied schemas or properties.
+        prim = stage.DefinePrim("/Prim")
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+
+        # Helper function for verifying the state of the 'apiSchemas' list op
+        # field in the prim spec for the test prim on the specified layer.
+        def _VerifyListOp(layer, explicit = [], prepended = [],
+                          appended = [], deleted = []):
+            spec = layer.GetPrimAtPath('/Prim')
+            listOp = spec.GetInfo('apiSchemas')
+            self.assertEqual(listOp.explicitItems, explicit)
+            self.assertEqual(listOp.prependedItems, prepended)
+            self.assertEqual(listOp.appendedItems, appended)
+            self.assertEqual(listOp.deletedItems, deleted)
+
+        # Apply a single api schema withe default edit target. Adds to the end
+        # prepend list.
+        prim.ApplyAPI(self.SingleApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), ["TestSingleApplyAPI"])
+        self.assertTrue(prim.HasAPI(self.SingleApplyAPIType))
+        _VerifyListOp(rootLayer, prepended = ["TestSingleApplyAPI"])
+
+        # Apply the same API schema again. This will not update the list.
+        prim.ApplyAPI(self.SingleApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), ["TestSingleApplyAPI"])
+        self.assertTrue(prim.HasAPI(self.SingleApplyAPIType))
+        _VerifyListOp(rootLayer, prepended = ["TestSingleApplyAPI"])
+
+        # Remove the API schema. This removes the schema from the prepend and
+        # puts in it the deleted list.
+        prim.RemoveAPI(self.SingleApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer, deleted = ["TestSingleApplyAPI"])
+
+        # Remove the same API again. This is a no op.
+        prim.RemoveAPI(self.SingleApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer, deleted = ["TestSingleApplyAPI"])
+
+        # Remove a multi apply schema which is not currently in the list. The
+        # This schema instance name is still added to the deleted list.
+        prim.RemoveAPI(self.MultiApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer, 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:foo"])
+
+        # Apply the same instance of the multi-apply schema we just deleted. It
+        # is added to the prepended but is NOT removed from the deleted list.
+        # It still ends up in the composed API schemas since deletes are 
+        # processed before prepends in the same list op.
+        prim.ApplyAPI(self.MultiApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), ["TestMultiApplyAPI:foo"])
+        _VerifyListOp(rootLayer,
+                      prepended = ["TestMultiApplyAPI:foo"], 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:foo"])
+
+        # Apply a different instance of the multi-apply schema. Its is added to
+        # the end of the prepends list.
+        prim.ApplyAPI(self.MultiApplyAPIType, "bar")
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"])
+        _VerifyListOp(rootLayer,
+                      prepended = ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"], 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:foo"])
+
+        # Remove the "bar" instance of the multi-apply schema on the session
+        # layer. The schema is added to the deleted list on the session layer
+        # and root layer remains the same. It does not show up in the composed
+        # API schemas after composition
+        with Usd.EditContext(stage, sessionLayer):
+            prim.RemoveAPI(self.MultiApplyAPIType, "bar")
+        self.assertEqual(prim.GetAppliedSchemas(), ["TestMultiApplyAPI:foo"])
+        _VerifyListOp(rootLayer,
+                      prepended = ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"], 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:foo"])
+        _VerifyListOp(sessionLayer,
+                      deleted = ["TestMultiApplyAPI:bar"])
+
+        # Re-apply the "bar" instance of the multi-apply schema on the session
+        # layer. It is added to the prepend list in the session layer but still
+        # remains in the delete list. Note that the "bar" instance is back in
+        # the composed API schemas list but now it is first instead of second
+        # like it was before as it get deleted and prepended by the session 
+        # layer.
+        with Usd.EditContext(stage, sessionLayer):
+            prim.ApplyAPI(self.MultiApplyAPIType, "bar")
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestMultiApplyAPI:bar", "TestMultiApplyAPI:foo"])
+        _VerifyListOp(rootLayer,
+                      prepended = ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"], 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:foo"])
+        _VerifyListOp(sessionLayer,
+                      prepended = ["TestMultiApplyAPI:bar"], 
+                      deleted = ["TestMultiApplyAPI:bar"])
+
+        # These next few cases verifies the behavior when the list op has 
+        # appends or explicit entries. (Note that we don't define behaviors for
+        # add or reorder). 
+        # Update the session layer to have an appended API schema.
+        with Usd.EditContext(stage, sessionLayer):
+            appendedListOp = Sdf.TokenListOp()
+            appendedListOp.appendedItems = ["TestMultiApplyAPI:bar"]
+            prim.SetMetadata('apiSchemas', appendedListOp)
+        # Update the root layer to have an explicit list op.
+        explicitListOp = Sdf.TokenListOp()
+        explicitListOp.explicitItems = ["TestMultiApplyAPI:foo"]
+        prim.SetMetadata('apiSchemas', explicitListOp)
+        # Verify the initial authored and composed lists.
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"])
+        _VerifyListOp(rootLayer,
+                      explicit = ["TestMultiApplyAPI:foo"])
+        _VerifyListOp(sessionLayer,
+                      appended = ["TestMultiApplyAPI:bar"])
+
+        # On the session and root layers, try to apply the API schema that 
+        # is already in each respective list. This will be a no op even though
+        # the schemas aren't in the prepended lists.
+        with Usd.EditContext(stage, sessionLayer):
+            prim.ApplyAPI(self.MultiApplyAPIType, "bar")
+        prim.ApplyAPI(self.MultiApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestMultiApplyAPI:foo", "TestMultiApplyAPI:bar"])
+        _VerifyListOp(rootLayer,
+                      explicit = ["TestMultiApplyAPI:foo"])
+        _VerifyListOp(sessionLayer,
+                      appended = ["TestMultiApplyAPI:bar"])
+
+        # Apply the single apply schema to both layers. The root layer adds it
+        # to the end of its explicit list while the session layer will add it
+        # the prepends. The composed API schemas will only contain the schema
+        # once with the prepend from the stronger session layer winning for 
+        # ordering.
+        with Usd.EditContext(stage, sessionLayer):
+            prim.ApplyAPI(self.SingleApplyAPIType)
+        prim.ApplyAPI(self.SingleApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestSingleApplyAPI", "TestMultiApplyAPI:foo", 
+                          "TestMultiApplyAPI:bar"])
+        _VerifyListOp(rootLayer,
+                      explicit = ["TestMultiApplyAPI:foo", "TestSingleApplyAPI"])
+        _VerifyListOp(sessionLayer,
+                      prepended = ["TestSingleApplyAPI"],
+                      appended = ["TestMultiApplyAPI:bar"])
+
+        # Remove the starting API schemas from the root and session layers. In
+        # the root layer it is just removed from the explicit list. In the 
+        # session layer it is removed from appends and added to the deletes.
+        with Usd.EditContext(stage, sessionLayer):
+            prim.RemoveAPI(self.MultiApplyAPIType, "bar")
+        prim.RemoveAPI(self.MultiApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestSingleApplyAPI"])
+        _VerifyListOp(rootLayer,
+                      explicit = ["TestSingleApplyAPI"])
+        _VerifyListOp(sessionLayer,
+                      prepended = ["TestSingleApplyAPI"],
+                      deleted = ["TestMultiApplyAPI:bar"])
+
+        # Clear the apiSchemas in both layers for the next tests.
+        # XXX: Should we have additional API for clearing the list op like we 
+        # do for other list op fields?
+        with Usd.EditContext(stage, sessionLayer):
+            prim.SetMetadata('apiSchemas', Sdf.TokenListOp())
+        prim.SetMetadata('apiSchemas', Sdf.TokenListOp())
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+        _VerifyListOp(sessionLayer)
+
+        # Trying to apply or remove a multi-apply schema with no instance name 
+        # is an error.
+        with self.assertRaises(Tf.ErrorException):
+            prim.ApplyAPI(self.MultiApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+        with self.assertRaises(Tf.ErrorException):
+            prim.RemoveAPI(self.MultiApplyAPIType)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+
+        # Trying to apply or remove a single apply schema with an instance name 
+        # is an error.
+        with self.assertRaises(Tf.ErrorException):
+            prim.ApplyAPI(self.SingleApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+        with self.assertRaises(Tf.ErrorException):
+            prim.RemoveAPI(self.SingleApplyAPIType, "foo")
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+
+        # Trying to apply or remove a no apply schema is an error.
+        with self.assertRaises(Tf.ErrorException):
+            prim.ApplyAPI(Usd.ModelAPI)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+        with self.assertRaises(Tf.ErrorException):
+            prim.RemoveAPI(Usd.ModelAPI)
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer)
+
+        # AddAPITypeName will just add by schema type name with no validity 
+        # checks. But it still won't add duplicates.
+        #
+        # Valid type names
+        prim.AddAppliedSchema("TestSingleApplyAPI")
+        prim.AddAppliedSchema("TestMultiApplyAPI:bar")
+        # Invalid type names.
+        prim.AddAppliedSchema("BogusTypeName")
+        prim.AddAppliedSchema("TestMultiApplyAPI")
+        # Duplicate.
+        prim.AddAppliedSchema("TestSingleApplyAPI")
+        self.assertEqual(prim.GetAppliedSchemas(), 
+                         ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
+                          "BogusTypeName", "TestMultiApplyAPI"])
+        _VerifyListOp(rootLayer, 
+                      prepended = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
+                                   "BogusTypeName", "TestMultiApplyAPI"])
+
+        # RemoveAPITypeName will just delete by schema type name with no 
+        # validity checks. But it still won't add duplicate delete entries.
+        #
+        # Valid type names
+        prim.RemoveAppliedSchema("TestSingleApplyAPI")
+        prim.RemoveAppliedSchema("TestMultiApplyAPI:bar")
+        # Invalid type names.
+        prim.RemoveAppliedSchema("BogusTypeName")
+        prim.RemoveAppliedSchema("TestMultiApplyAPI")
+        # Duplicate.
+        prim.RemoveAppliedSchema("TestSingleApplyAPI")
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+        _VerifyListOp(rootLayer, 
+                      deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
+                                 "BogusTypeName", "TestMultiApplyAPI"])
+
 
 if __name__ == "__main__":
     unittest.main()

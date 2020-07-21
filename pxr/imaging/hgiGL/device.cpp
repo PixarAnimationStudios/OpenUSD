@@ -41,13 +41,13 @@ HgiGLDevice::~HgiGLDevice()
 }
 
 uint32_t
-HgiGLDevice::AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc)
+HgiGLDevice::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
 {
     return _framebufferCache.AcquireFramebuffer(desc);
 }
 
 void
-HgiGLDevice::Commit(HgiGLOpsVector const & ops)
+HgiGLDevice::SubmitOps(HgiGLOpsVector const& ops)
 {
     for(HgiGLOpsFn const& f : ops) {
         f();

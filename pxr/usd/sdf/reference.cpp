@@ -65,6 +65,12 @@ SdfReference::SetCustomData(const std::string &name, const VtValue &value)
 }
 
 bool
+SdfReference::IsInternal() const
+{
+    return _assetPath.empty();
+}
+
+bool
 SdfReference::operator==(const SdfReference &rhs) const
 {
     return _assetPath   == rhs._assetPath   &&
@@ -76,11 +82,14 @@ SdfReference::operator==(const SdfReference &rhs) const
 bool
 SdfReference::operator<(const SdfReference &rhs) const
 {
-    return (_assetPath   <  rhs._assetPath) || (
-           (_assetPath   == rhs._assetPath && _primPath    <rhs._primPath)    || (
-           (_primPath    == rhs._primPath  && _layerOffset <rhs._layerOffset) || (
-           (_layerOffset == rhs._layerOffset) &&
-               (_customData.size() < rhs._customData.size()))));
+    // XXX: This would be much cleaner and less error prone if we used 
+    // std::tie for comparison, however, it's not ideal given the awkward 
+    // (and not truly correct) comparison of customData size. If customData 
+    // is ever removed this should be updated to use the cleaner std::tie.
+    return (_assetPath < rhs._assetPath || (_assetPath == rhs._assetPath && 
+        (_primPath < rhs._primPath || (_primPath == rhs._primPath && 
+        (_layerOffset < rhs._layerOffset || (_layerOffset == rhs._layerOffset &&
+        (_customData.size() < rhs._customData.size())))))));
 }
 
 int

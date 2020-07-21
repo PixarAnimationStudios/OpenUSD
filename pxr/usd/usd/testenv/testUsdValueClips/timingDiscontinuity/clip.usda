@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "World"
+{
+    double value.timeSamples = {
+        0: 0,
+        3: 3,
+        6: 6,
+        10: 10,
+    }    
+}

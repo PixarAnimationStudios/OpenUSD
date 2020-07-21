@@ -179,18 +179,18 @@ class TestViewSettingsDataModel(unittest.TestCase):
 
         # Check default.
         self.assertEquals(vsDM.clearColorText, ClearColors.DARK_GREY)
-        self.assertEquals(vsDM.clearColor, (0.3, 0.3, 0.3, 0.0))
+        self.assertEquals(vsDM.clearColor, (0.3, 0.3, 0.3, 1.0))
 
         # Switch to a valid color.
         vsDM.clearColorText = ClearColors.BLACK
         self.assertEquals(vsDM.clearColorText, ClearColors.BLACK)
-        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 0.0))
+        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
 
         # Switch to an invalid color.
         with self.assertRaises(ValueError):
             vsDM.clearColorText = "Octarine"
         self.assertEquals(vsDM.clearColorText, ClearColors.BLACK)
-        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 0.0))
+        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
 
     def test_HighlightColor(self):
         """Test that setting highlightColorName changes the value of

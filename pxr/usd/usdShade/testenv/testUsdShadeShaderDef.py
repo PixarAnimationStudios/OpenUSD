@@ -134,9 +134,9 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                  'someColor', 'someVector'])
             self.assertEqual(n.GetOutputNames(), ['result', 'result2'])
             if n.GetSourceType() == "OSL":
-                self.assertEqual(n.GetSourceURI(), osoPath)
+                self.assertEqual(n.GetResolvedImplementationURI(), osoPath)
             elif n.GetSourceType() == "glslfx":
-                self.assertEqual(n.GetSourceURI(), glslfxPath)
+                self.assertEqual(n.GetResolvedImplementationURI(), glslfxPath)
 
         # Clean-up files.
         os.remove("shaderDef.usda")

@@ -38,32 +38,33 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Drawing batch that is executed immediately.
 ///
-class HdSt_ImmediateDrawBatch : public HdSt_DrawBatch {
+class HdSt_ImmediateDrawBatch : public HdSt_DrawBatch
+{
 public:
     HDST_API
     HdSt_ImmediateDrawBatch(HdStDrawItemInstance * drawItemInstance);
     HDST_API
-    virtual ~HdSt_ImmediateDrawBatch();
+    ~HdSt_ImmediateDrawBatch() override;
 
     // HdSt_DrawBatch overrides
     HDST_API
-    virtual bool Validate(bool deepValidation) override;
+    bool Validate(bool deepValidation) override;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
-    virtual void PrepareDraw(
+    void PrepareDraw(
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
-    virtual void ExecuteDraw(
+    void ExecuteDraw(
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
 protected:
     HDST_API
-    virtual void _Init(HdStDrawItemInstance * drawItemInstance) override;
+    void _Init(HdStDrawItemInstance * drawItemInstance) override;
 
 private:
     size_t _bufferArraysHash;

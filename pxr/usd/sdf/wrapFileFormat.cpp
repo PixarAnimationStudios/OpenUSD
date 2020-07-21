@@ -139,9 +139,17 @@ void wrapFileFormat()
         .def("FindById", &This::FindById)
         .staticmethod("FindById")
 
-        .def("FindByExtension", &This::FindByExtension,
+        .def("FindByExtension",
+             (SdfFileFormatConstPtr(*)(const std::string&, const std::string&))
+                &This::FindByExtension,
              ( arg("extension"),
                arg("target") = std::string() ))
+        .def("FindByExtension",
+             (SdfFileFormatConstPtr(*)
+                (const std::string&, const SdfFileFormat::FileFormatArguments&))
+                &This::FindByExtension,
+             ( arg("extension"),
+               arg("args") ))
         .staticmethod("FindByExtension")
 
         .def("RegisterFileFormat", &_RegisterFileFormat)

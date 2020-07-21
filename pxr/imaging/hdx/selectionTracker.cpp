@@ -44,7 +44,7 @@ HdxSelectionTracker::HdxSelectionTracker()
 
 /*virtual*/
 void
-HdxSelectionTracker::Prepare(HdRenderIndex* index)
+HdxSelectionTracker::UpdateSelection(HdRenderIndex* index)
 {
 }
 
@@ -91,6 +91,7 @@ namespace {
 /*virtual*/
 bool
 HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
+                                              bool enableSelection,
                                               VtIntArray* offsets) const
 {
     TRACE_FUNCTION();
@@ -100,12 +101,6 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     // be handled by Hydra. Update all uses of minSize below when resolved.
     const int minSize = 8;
     offsets->resize(minSize);
-
-    // We expect the collection of selected items to be created externally and
-    // set via SetSelection. Exit early if the tracker doesn't have one set.
-    if (!_selection) {
-        return false;
-    }
 
     // Populate a selection offset buffer that holds offset data per selection
     // highlight mode. See 'Buffer Layout' for the per-mode layout.
@@ -130,8 +125,9 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     bool hasSelection = false;
     const size_t numHighlightModes = 
         static_cast<size_t>(HdSelection::HighlightModeCount);
-    const size_t headerSize = numHighlightModes /*per mode offsets*/
-                              + 1               /*num modes*/;
+    // 1 for num modes, plus one per each mode for mode offset.
+    const size_t headerSize = numHighlightModes + 1;
+    const int SELECT_NONE = 0;
 
     if (ARCH_UNLIKELY(numHighlightModes >= minSize)) {
         // allocate enough to hold the header
@@ -140,7 +136,19 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
 
     (*offsets)[0] = numHighlightModes;
 
-    const int SELECT_NONE = 0;
+    // We expect the collection of selected items to be created externally and
+    // set via SetSelection. Exit early if the tracker doesn't have one set,
+    // or it's empty. Likewise if enableSelection is false.
+    if (!_selection || !enableSelection || _selection->IsEmpty()) {
+        for (int mode = HdSelection::HighlightModeSelect;
+                 mode < HdSelection::HighlightModeCount;
+                 mode++) {
+            (*offsets)[mode + 1] = SELECT_NONE;
+        }
+        _DebugPrintArray("nothing selected", *offsets);
+        return false;
+    }
+
     size_t copyOffset = headerSize;
 
     for (int mode = HdSelection::HighlightModeSelect;
@@ -170,13 +178,8 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
         }
     }
 
-    if (!hasSelection) {
-        return false;
-    }
-
     _DebugPrintArray("final output", *offsets);
-
-    return true;
+    return hasSelection;
 }
 
 /*virtual*/

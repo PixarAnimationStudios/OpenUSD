@@ -49,6 +49,16 @@ namespace {
 WRAP_CUSTOM;
 
 
+static std::string
+_Repr(const UsdContrivedEmptyMultipleApplyAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    std::string instanceName = self.GetName();
+    return TfStringPrintf(
+        "UsdContrived.EmptyMultipleApplyAPI(%s, '%s')",
+        primRepr.c_str(), instanceName.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedEmptyMultipleApplyAPI()
@@ -92,6 +102,7 @@ void wrapUsdContrivedEmptyMultipleApplyAPI()
         .def(!self)
 
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

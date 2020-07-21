@@ -34,13 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 static size_t _Hash(HdBufferSpecVector const &specs) {
     size_t result = 0;
     for (HdBufferSpec const &spec : specs) {
-        size_t const params[] = { 
-            spec.name.Hash(),
-            (size_t) spec.tupleType.type,
-            spec.tupleType.count
-        };
-        boost::hash_combine(result,
-                ArchHash((char const*)params, sizeof(size_t) * 3));
+        boost::hash_combine(result, spec.Hash());
     }
     return result;
 }
@@ -116,7 +110,7 @@ HdStExtCompGpuComputationResource::Resolve()
 
             if (programInstance.IsFirstInstance()) {
                 HdStGLSLProgramSharedPtr glslProgram =
-                                                codeGen.CompileComputeProgram();
+                    codeGen.CompileComputeProgram(_registry.get());
                 if (!TF_VERIFY(glslProgram)) {
                     return false;
                 }
@@ -124,7 +118,7 @@ HdStExtCompGpuComputationResource::Resolve()
                 if (!glslProgram->Link()) {
                     std::string logString;
                     HdStGLUtils::GetProgramLinkStatus(
-                        glslProgram->GetProgram().GetId(),
+                        glslProgram->GetProgram()->GetRawResource(),
                         &logString);
                     TF_WARN("Failed to link compute shader: %s",
                             logString.c_str());

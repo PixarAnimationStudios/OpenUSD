@@ -27,27 +27,28 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/resourceGL.h"
-
-#include <boost/shared_ptr.hpp>
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/enums.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStResourceRegistry;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
+
+using HgiShaderProgramHandle = HgiHandle<class HgiShaderProgram>;
 
 /// \class HdStGLSLProgram
 ///
 /// An instance of a glsl program.
 ///
-// XXX: this design is transitional and will be revised soon.
-class HdStGLSLProgram
+class HdStGLSLProgram final
 {
 public:
     typedef size_t ID;
 
     HDST_API
-    HdStGLSLProgram(TfToken const &role);
+    HdStGLSLProgram(TfToken const &role, HdStResourceRegistry*const registry);
     HDST_API
     ~HdStGLSLProgram();
 
@@ -55,9 +56,9 @@ public:
     HDST_API
     static ID ComputeHash(TfToken const & sourceFile);
 
-    /// Compile shader source of type
+    /// Compile shader source for a shader stage.
     HDST_API
-    bool CompileShader(GLenum type, std::string const & source);
+    bool CompileShader(HgiShaderStage stage, std::string const & source);
 
     /// Link the compiled shaders together.
     HDST_API
@@ -68,12 +69,7 @@ public:
     bool Validate() const;
 
     /// Returns HdResource of the program object.
-    HdStResourceGL const &GetProgram() const { return _program; }
-
-    /// Returns HdResource of the global uniform buffer object for this program.
-    HdStResourceGL const &GetGlobalUniformBuffer() const {
-        return _uniformBuffer;
-    }
+    HgiShaderProgramHandle const &GetProgram() const { return _program; }
 
     /// Convenience method to get a shared compute shader program
     HDST_API
@@ -87,9 +83,16 @@ public:
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry);
 
+    /// Returns the role of the GPU data in this resource.
+    TfToken const & GetRole() const {return _role;}
+
 private:
-    HdStResourceGL _program;
-    HdStResourceGL _uniformBuffer;
+    HdStResourceRegistry *const _registry;
+    TfToken _role;
+
+    HgiShaderProgramDesc _programDesc;
+    HgiShaderProgramHandle _program;
+
     // An identifier for uniquely identifying the program, for debugging
     // purposes - programs that fail to compile for one reason or another
     // will get deleted, and their GL program IDs reused, so we can't use

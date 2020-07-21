@@ -62,6 +62,13 @@ size_t hash_value(const HdRenderPassAovBinding &b) {
     return b.renderBufferId.GetHash();
 }
 
+bool HdAovHasDepthSemantic(TfToken const& aovName)
+{
+    // XXX: Expect depth aov's to end with (case-insensitive) "depth".
+    return TfStringEndsWith(
+                TfStringToLower(aovName.GetString()), HdAovTokens->depth);
+}
+
 HdParsedAovToken::HdParsedAovToken()
     : name(), isPrimvar(false), isLpe(false), isShader(false)
 {

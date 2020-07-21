@@ -25,25 +25,22 @@
 #define PXR_USD_USD_CLIP_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/pcp/layerStack.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
-
-#include <boost/optional.hpp>
+#include "pxr/base/tf/declarePtrs.h"
 
 #include <iosfwd>
-#include <map>
 #include <memory>
 #include <mutex>
-#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PcpPrimIndex;
+TF_DECLARE_WEAK_PTRS(PcpLayerStack);
+
 class Usd_InterpolatorBase;
 
 /// Returns true if the given scene description metadata \p fieldName is
@@ -54,84 +51,6 @@ UsdIsClipRelatedField(const TfToken& fieldName);
 /// Returns list of all field names associated with value clip functionality.
 std::vector<TfToken>
 UsdGetClipRelatedFields();
-
-/// \class Usd_ResolvedClipInfo
-///
-/// Object containing resolved clip metadata for a prim in a LayerStack.
-///
-struct Usd_ResolvedClipInfo
-{
-    Usd_ResolvedClipInfo() : indexOfLayerWhereAssetPathsFound(0) { }
-
-    bool operator==(const Usd_ResolvedClipInfo& rhs) const
-    {
-        return (clipAssetPaths == rhs.clipAssetPaths
-            && clipManifestAssetPath == rhs.clipManifestAssetPath
-            && clipPrimPath == rhs.clipPrimPath
-            && clipActive == rhs.clipActive
-            && clipTimes == rhs.clipTimes
-            && sourceLayerStack == rhs.sourceLayerStack
-            && sourcePrimPath == rhs.sourcePrimPath
-            && indexOfLayerWhereAssetPathsFound 
-                    == rhs.indexOfLayerWhereAssetPathsFound);
-    }
-
-    bool operator!=(const Usd_ResolvedClipInfo& rhs) const
-    {
-        return !(*this == rhs);
-    }
-
-    size_t GetHash() const
-    {
-        size_t hash = indexOfLayerWhereAssetPathsFound;
-        boost::hash_combine(hash, sourceLayerStack);
-        boost::hash_combine(hash, sourcePrimPath);
-
-        if (clipAssetPaths) {
-            for (const auto& assetPath : *clipAssetPaths) {
-                boost::hash_combine(hash, assetPath.GetHash());
-            }
-        }
-        if (clipManifestAssetPath) {
-            boost::hash_combine(hash, clipManifestAssetPath->GetHash());
-        }
-        if (clipPrimPath) {
-            boost::hash_combine(hash, *clipPrimPath);
-        }               
-        if (clipActive) {
-            for (const auto& active : *clipActive) {
-                boost::hash_combine(hash, active[0]);
-                boost::hash_combine(hash, active[1]);
-            }
-        }
-        if (clipTimes) {
-            for (const auto& time : *clipTimes) {
-                boost::hash_combine(hash, time[0]);
-                boost::hash_combine(hash, time[1]);
-            }
-        }
-
-        return hash;
-    }
-
-    boost::optional<VtArray<SdfAssetPath> > clipAssetPaths;
-    boost::optional<SdfAssetPath> clipManifestAssetPath;
-    boost::optional<std::string> clipPrimPath;
-    boost::optional<VtVec2dArray> clipActive;
-    boost::optional<VtVec2dArray> clipTimes;
-
-    PcpLayerStackPtr sourceLayerStack;
-    SdfPath sourcePrimPath;
-    size_t indexOfLayerWhereAssetPathsFound;
-};
-
-/// Resolves clip metadata values for the prim index \p primIndex.
-/// Returns true if clip info was found and \p clipInfo was populated,
-/// false otherwise.
-bool
-Usd_ResolveClipInfo(
-    const PcpPrimIndex& primIndex,
-    std::vector<Usd_ResolvedClipInfo>* clipInfo);
 
 /// Sentinel values authored on the edges of a clipTimes range.
 constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();
@@ -174,11 +93,13 @@ public:
     struct TimeMapping {
         ExternalTime externalTime;
         InternalTime internalTime;
+        bool isJumpDiscontinuity;
 
         TimeMapping() {}
         TimeMapping(const ExternalTime e, const InternalTime i) 
-            : externalTime(e),
-              internalTime(i)
+            : externalTime(e)
+            , internalTime(i)
+            , isJumpDiscontinuity(false)
         {}
     };
 
@@ -191,6 +112,7 @@ public:
         size_t clipSourceLayerIndex,
         const SdfAssetPath& clipAssetPath,
         const SdfPath& clipPrimPath,
+        ExternalTime clipAuthoredStartTime,
         ExternalTime clipStartTime,
         ExternalTime clipEndTime,
         const TimeMappings& timeMapping);
@@ -210,17 +132,6 @@ public:
 
     size_t GetNumTimeSamplesForPath(const SdfPath& path) const;
 
-    // Internal function used during value resolution. When determining
-    // resolve info sources, value resolution needs to determine when clipTimes
-    // are mapping into an empty clip with no samples, so it can continue
-    // searching for value sources. 
-    size_t _GetNumTimeSamplesForPathInLayerForClip(
-        const SdfPath& path) const 
-    {
-        return _GetLayerForClip()->GetNumTimeSamplesForPath(
-            _TranslatePathToClip(path));
-    }
-
     std::set<ExternalTime>
     ListTimeSamplesForPath(const SdfPath& path) const;
 
@@ -232,6 +143,21 @@ public:
     bool QueryTimeSample(
         const SdfPath& path, ExternalTime time, 
         Usd_InterpolatorBase* interpolator, T* value) const;
+
+    /// Return true if this clip has authored time samples for the attribute
+    /// corresponding to the given \p path. Clips may add time sample times
+    /// at their boundaries and time mappings even if there are no samples
+    /// in the clip. This method ignores these time samples and returns
+    /// whether there truly is a time sample value for the attribute.
+    bool HasAuthoredTimeSamples(const SdfPath& path) const;
+
+    /// Return true if a value block is authored for the attribute
+    /// corresponding to the given \p path at \p time.
+    bool IsBlocked(const SdfPath& path, ExternalTime time) const;
+
+    /// Return the layer associated with this clip, opening it if it hasn't
+    /// been opened already.
+    SdfLayerHandle GetLayer() const;
 
     /// Return the layer associated with this clip iff it has already been
     /// opened successfully.
@@ -252,7 +178,19 @@ public:
     SdfAssetPath assetPath;
     SdfPath primPath;
 
-    /// A clip is active in the time range [startTime, endTime).
+    /// The authored start time for this clip. This generally is equivalent
+    /// to the clip's startTime, but for the earliest active clip:
+    ///
+    /// - authoredStartTime: the stage time value authored in the clip set's 
+    ///   active metadata
+    /// - startTime: Usd_ClipTimesEarliest
+    ///
+    /// This distinction is needed for time samples for the earliest clip.
+    ExternalTime authoredStartTime;
+
+    /// A clip is active in the time range [startTime, endTime). For the
+    /// earliest clip in a clip set, startTime will be Usd_ClipTimesEarliest,
+    /// for the latest clip in a clip set, endTime will be Usd_ClipTimesLatest.
     ExternalTime startTime;
     ExternalTime endTime;
 
@@ -262,14 +200,17 @@ public:
 private:
     friend class UsdStage;
 
-    std::set<InternalTime>
-    _GetMergedTimeSamplesForPath(const SdfPath& path) const;
-
+    // Helpers for retrieving time sample information from within
+    // clip layers and translating them to external times.
     bool 
-    _GetBracketingTimeSamplesForPathInternal(const SdfPath& path, 
-                                             ExternalTime time, 
-                                             ExternalTime* tLower, 
-                                             ExternalTime* tUpper) const;
+    _GetBracketingTimeSamplesForPathFromClipLayer(
+        const SdfPath& path, 
+        ExternalTime time, ExternalTime* tLower, ExternalTime* tUpper) const;
+
+    void
+    _ListTimeSamplesForPathFromClipLayer(
+        const SdfPath& path,
+        std::set<ExternalTime>* samples) const;
 
     SdfPath _TranslatePathToClip(const SdfPath &path) const;
 
@@ -277,7 +218,7 @@ private:
     InternalTime _TranslateTimeToInternal(
         ExternalTime extTime) const;
     ExternalTime _TranslateTimeToExternal(
-        InternalTime clipTime, TimeMapping m1, TimeMapping m2) const;
+        InternalTime clipTime, size_t i1, size_t i2) const;
 
     SdfLayerRefPtr _GetLayerForClip() const;
 

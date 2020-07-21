@@ -66,22 +66,6 @@ struct UsdTokensType {
     /// 
     ///  A listop metadata containing the API schemas which have been applied to this prim, using the Apply() method on the particular schema class.  
     const TfToken apiSchemas;
-    /// \brief "clipActive"
-    /// 
-    ///  List of pairs (time, clip index) indicating the time on the stage at which the clip specified by the clip index is active. For instance, a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active at time 0 and clip 1 is active at time 20. 
-    const TfToken clipActive;
-    /// \brief "clipAssetPaths"
-    /// 
-    ///  List of asset paths to the clips for this prim. This list is unordered, but elements in this list are referred to by index in other clip-related fields. 
-    const TfToken clipAssetPaths;
-    /// \brief "clipManifestAssetPath"
-    /// 
-    ///  Asset path for the clip manifest. The clip manifest indicates which attributes have time samples authored in the clips specified on this prim. During value resolution, we will only look for time samples  in clips if the attribute exists and is declared as varying in the manifest. Note that the clip manifest is only consulted to check check if an attribute exists and what its variability is. Other values and metadata authored in the manifest will be ignored.  For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim', and we want values for the attribute '/Prim_1.size', we will only look within this prims' clips if the attribute '/Prim.size' exists and is varying in the manifest. 
-    const TfToken clipManifestAssetPath;
-    /// \brief "clipPrimPath"
-    /// 
-    ///  Path to the prim in the clips from which time samples will be read. This prim's path will be substituted with this value to determine the final path in the clip from which to read data. For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim',  and we want to get values for the attribute '/Prim_1.size'. The clip prim path will be substituted in, yielding '/Prim.size', and each clip will be examined for values at that path. 
-    const TfToken clipPrimPath;
     /// \brief "clips"
     /// 
     ///  Dictionary that contains the definition of the clip sets on this prim. See \ref UsdClipsAPI::GetClips. 
@@ -90,26 +74,6 @@ struct UsdTokensType {
     /// 
     ///  ListOp that may be used to affect how opinions from clip sets are applied during value resolution.  See \ref UsdClipsAPI::GetClipSets. 
     const TfToken clipSets;
-    /// \brief "clipTemplateAssetPath"
-    /// 
-    ///  A template string representing a set of assets. This string can be of two forms: path/basename.###.usd and path/basename.##.##.usd. In either case, the number of hash marks in each section is variable. These control the amount of padding USD will supply when looking up  the assets. For instance, a value of 'foo.###.usd',  with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1: USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd. 
-    const TfToken clipTemplateAssetPath;
-    /// \brief "clipTemplateEndTime"
-    /// 
-    ///  A double which indicates the end of the range USD will use to to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
-    const TfToken clipTemplateEndTime;
-    /// \brief "clipTemplateStartTime"
-    /// 
-    ///  A double which indicates the start of the range USD will use  to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
-    const TfToken clipTemplateStartTime;
-    /// \brief "clipTemplateStride"
-    /// 
-    ///  A double representing the increment value USD will use when searching for asset paths. For example usage see clipTemplateAssetPath. 
-    const TfToken clipTemplateStride;
-    /// \brief "clipTimes"
-    /// 
-    ///  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
-    const TfToken clipTimes;
     /// \brief "collection"
     /// 
     /// Property namespace prefix for the UsdCollectionAPI schema.
@@ -138,6 +102,10 @@ struct UsdTokensType {
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken explicitOnly;
+    /// \brief "fallbackPrimTypes"
+    /// 
+    ///  A dictionary metadata that maps the name of a concrete schema prim type to an ordered list of schema prim types to use instead if the schema prim type doesn't exist in version of USD being used. 
+    const TfToken fallbackPrimTypes;
     /// \brief "includeRoot"
     /// 
     /// UsdCollectionAPI

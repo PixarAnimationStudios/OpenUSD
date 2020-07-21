@@ -22,62 +22,31 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/field.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
-#include "pxr/imaging/hd/volume.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/glf/textureRegistry.h"
-#include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/glf/vdbTexture.h"
-#include "pxr/imaging/glf/vdbTextureContainer.h"
 
-#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (fieldName)
+    (textureMemory)
+
+    (openvdbAsset)
 );
 
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
   : HdField(id)
   , _fieldType(fieldType)
+  , _textureMemory(0)
   , _isInitialized(false)
 {
 }
 
 HdStField::~HdStField() = default;
-
-// Obtain texture handle for grid with name fieldName in OpenVDB file at
-// given path.
-static
-GlfTextureHandleRefPtr
-_GetVdbTexture(std::string const &path,
-               TfToken const &fieldName)
-{
-    // First query the texture registry for the texture container for
-    // the OpenVDB file.
-    GlfTextureHandleRefPtr const containerHandle = 
-        GlfTextureRegistry::GetInstance().GetTextureHandle(
-            TfToken(path));
-    if (!containerHandle) {
-        return TfNullPtr;
-    }
-    
-    GlfVdbTextureContainerPtr const container =
-        TfDynamic_cast<GlfVdbTextureContainerPtr>(
-            containerHandle->GetTexture());
-    if (!container) {
-        TF_CODING_ERROR("When trying to create texture for VDB grid, "
-                        "texture handle does not contain vdb texture "
-                        "container.");
-        return TfNullPtr;
-    }
-
-    // Then get the texture handle from the container.
-    return container->GetTextureHandle(fieldName);
-}
 
 void
 HdStField::Sync(HdSceneDelegate *sceneDelegate,
@@ -89,88 +58,38 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
 
         // Get asset path from scene delegate.
         //
-        const VtValue filePath = sceneDelegate->Get(GetId(),
-                                                    HdFieldTokens->filePath);
-        const SdfAssetPath fileAssetPath = filePath.Get<SdfAssetPath>();
-
-        const VtValue fieldNameValue = sceneDelegate->Get(GetId(),
-                                                          _tokens->fieldName);
-        const TfToken fieldName = fieldNameValue.Get<TfToken>();
+        const VtValue filePathValue = sceneDelegate->Get(
+            GetId(), HdFieldTokens->filePath);
+        const SdfAssetPath filePath = filePathValue.Get<SdfAssetPath>();
 
         // Resolve asset path
         //
         // Assuming that correct resolve context is set when HdStField::Sync is
         // called.
-        const std::string &resolvedPath = fileAssetPath.GetResolvedPath();
+        const TfToken resolvedFilePath = TfToken(filePath.GetResolvedPath());
 
-        // Using resolved path and field name for key
-        size_t hash = 0;
-        boost::hash_combine(hash, resolvedPath);
-        boost::hash_combine(hash, fieldName);
-        HdResourceRegistry::TextureKey texID = hash;
+        if (_fieldType == _tokens->openvdbAsset) {
 
-        // Note that unlike HdTexture::Sync, we do not use
-        // renderIndex.GetTextureKey(texID) to convert a local texture id
-        // into a global texture key.
-        // That way, a field resource is shared accross different render
-        // indices/delegates.
+            const VtValue fieldNameValue = sceneDelegate->Get(
+                GetId(), _tokens->fieldName);
+            const TfToken fieldName = fieldNameValue.Get<TfToken>();
 
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
-        HdStResourceRegistrySharedPtr const &resourceRegistry =
-            std::static_pointer_cast<HdStResourceRegistry>(
-                renderIndex.GetResourceRegistry());
-
-        // Check with resource registry whether the field resource
-        // for this file has already been created.
-        HdInstance<HdStTextureResourceSharedPtr> texInstance =
-                resourceRegistry->RegisterTextureResource(texID);
-
-
-        // Has the texture really changed.
-        // The safest thing to do is assume it has, so that's the default used
-        bool isNewTexture = true;
-
-        if (texInstance.IsFirstInstance()) {
-            // Get texture for respective grid in VDB file to create field
-            // resource.
-            //
-            // Note that creating the field resource also does the necessary
-            // OpenGL calls to create the sampler and (if bindless) the OpenGL
-            // texture handle.
-            // We have to do this here in the regLock scope since this Sync call
-            // as well as the Sync call of the client HdStVolume are
-            // concurrently with the Sync calls of other bprims or rprims.
-            //
-            // This is different from HdStMaterial that can create the OpenGL
-            // sampler and texture handle in Sync without lock since it is an
-            // sprim and is not run multi-threadedly.
-            // 
-            _fieldResource = std::make_shared<HdStFieldResource>(
-                _GetVdbTexture(resolvedPath, fieldName));
-            texInstance.SetValue(_fieldResource);
+            _textureId = HdStTextureIdentifier(
+                resolvedFilePath,
+                std::make_unique<HdStVdbSubtextureIdentifier>(fieldName));
         } else {
-            HdStFieldResourceSharedPtr const fieldResource =
-                std::dynamic_pointer_cast<HdStFieldResource>(
-                                                texInstance.GetValue());
-            if (_fieldResource == fieldResource) {
-                isNewTexture = false;
-            } else {
-                _fieldResource = fieldResource;
-            }
+            TF_CODING_ERROR(
+                "FieldAsset of type %s not supported by Storm.",
+                _fieldType.GetString().c_str());
         }
 
-        // The texture resource may have been cleared, so we need to release the
-        // old one.
-        //
-        // This is particularly important if the update is on the memory
-        // request.
-        // As the cache may be still holding on to the resource with a larger
-        // memory request.
-        if (isNewTexture) {
-            renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
-        }
-
+        const VtValue textureMemoryValue = sceneDelegate->Get(
+            GetId(), _tokens->textureMemory);
+        // Note that the memory request is apparently authored as
+        // float even though it is in bytes and thus should be an
+        // integral type.
+        _textureMemory = textureMemoryValue.GetWithDefault<float>(0.0f);
+        
         if (_isInitialized) {
             // Force volume prim to pick up the new field resource and
             // recompute bounding box.
@@ -193,6 +112,21 @@ HdDirtyBits
 HdStField::GetInitialDirtyBitsMask() const 
 {
     return DirtyBits::AllDirty;
+}
+
+const TfTokenVector &
+HdStField::GetSupportedBprimTypes()
+{
+    static const TfTokenVector result = {
+        _tokens->openvdbAsset
+    };
+    return result;
+}
+
+bool
+HdStField::IsSupportedBprimType(const TfToken &bprimType)
+{
+    return bprimType == _tokens->openvdbAsset;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

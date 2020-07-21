@@ -55,6 +55,18 @@ static string _Repr(GfRange3f const &self) {
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfRange3f __truediv__(const GfRange3f &self, double value)
+{
+    return self / value;
+}
+
+static GfRange3f __itruediv__(GfRange3f &self, double value)
+{
+    return self /= value;
+}
+#endif
+
 static size_t __hash__(GfRange3f const &r) { return hash_value(r); }
 
 } // anonymous namespace 
@@ -127,6 +139,13 @@ void wrapRange3f()
         .def(self == self)
         .def(self != self)
     
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+        .def("__itruediv__", __itruediv__ )
+#endif
+
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
 

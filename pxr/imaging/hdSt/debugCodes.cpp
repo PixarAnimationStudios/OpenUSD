@@ -49,8 +49,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print generated shader source code");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCEFILE,
         "Write out generated shader source code to files");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_BINARY,
-        "Write out compiled GLSL shader binary to files");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MATERIAL_ADDED,
         "Report when a material is added");

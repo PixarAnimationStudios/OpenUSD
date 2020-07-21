@@ -833,7 +833,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     // Is the property a primvar?
-    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
+    if (UsdGeomPrimvar::IsPrimvarRelatedPropertyName(propertyName)) {
         // Ignore local constant/uniform primvars.
         UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
         if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||
@@ -858,128 +858,51 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index,
                                              SdfPathVector* instancersToReload)
 {
-    // If prim data exists at this path, we'll drop it now.
-    _InstancerDataMap::iterator instIt = _instancerData.find(cachePath);
-    SdfPathVector instancersToUnload;
+    SdfPath affectedInstancer;
 
-    if (instIt != _instancerData.end()) {
-        while (instIt != _instancerData.end()) {
-            SdfPath parentInstancerCachePath =
-                instIt->second.parentInstancerCachePath;
-            instancersToUnload.push_back(instIt->first);
-
-            // Setup the next iteration.
-            if (parentInstancerCachePath.IsEmpty()) {
-                break;
-            }
-
-            // Note that the parent may be owned by a different adapter, so we
-            // might not find it here.
-            instIt = _instancerData.find(parentInstancerCachePath);
-        }
+    // cachePath is from the _dependencyInfo map in the delegate, and points to
+    // either a hydra instancer or a hydra prototype (the latter in the case of
+    // adapter forwarding).  For hydra prototypes, their name is mangled by the
+    // immediate instancer parent: if /World/PI/PI2 has cache path
+    // /World/PI/PI2{0}, then /World/PI/PI2/cube will have cache path
+    // /World/PI/PI2{0}.proto0_cube_id0 (see _PopulatePrototype). This, then,
+    // gives us an easy route to the affected instancer.
+    if (IsChildPath(cachePath)) {
+        affectedInstancer = cachePath.GetParentPath();
     } else {
-        if (!IsChildPath(cachePath)) {
-            // This is a path that is neither an instancer or a child path,
-            // which means it was only tracked for change processing at an
-            // instance root.
-            return;
-        }
+        affectedInstancer = cachePath;
     }
 
-    // Otherwise, the cachePath must be a path to one of the prototype rprims.
+    // If the affected instancer is populated, delete it by finding the
+    // top-level instancer and calling _UnloadInstancer on that.
+    // XXX: It would be nice if we could just remove *this* prim and rely on
+    // the resync code to propertly resync it with the right parent instancer.
 
-    // The prim in the Usd scenegraph could be shared among many instancers, so
-    // we search each instancer for the presence of the given cachePath. Any
-    // instancer that references this prim must be rebuilt, we don't currently
-    // support incrementally rebuilding an instancer.
+    _InstancerDataMap::iterator instIt = _instancerData.find(affectedInstancer);
 
-    // Scan all instancers for dependencies
-    if (instancersToUnload.empty()) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-
-            if (inst.parentInstancerCachePath == cachePath) {
-                instancersToUnload.push_back(instancerPath);
-                continue;
-            }
-
-            // Check if this is a new prim under an existing proto root.
-            // Once the prim is found, we know the entire instancer will be
-            // unloaded so we can stop searching.
-            bool foundPrim = false;
-            for (SdfPath const& protoPath : inst.prototypePaths) {
-                if (cachePath.HasPrefix(protoPath)) {
-                    // Append this instancer to the unload list (we can't modify
-                    // the structure while iterating).
-                    instancersToUnload.push_back(instancerPath);
-                    foundPrim = true;
-                    break;
-                }
-            }
-
-            // Check if this is a populated prototype prim with a name-mangled
-            // path...
-            if (inst.protoPrimMap.find(cachePath) != inst.protoPrimMap.end()) {
-                instancersToUnload.push_back(instancerPath);
-                foundPrim = true;
-            }
-
-            if (foundPrim) {
-                continue;
-            }
-        }
+    if (instIt == _instancerData.end()) {
+        // Invalid cache path.
+        return;
     }
 
-    // Propagate changes from the parent instancers down to the children.
-    SdfPathVector moreToUnload;
-    TF_FOR_ALL(i, instancersToUnload) {
-        TF_FOR_ALL(instIt, _instancerData) {
-            SdfPath const& instancerPath = instIt->first;
-            _InstancerData& inst = instIt->second;
-            if (inst.parentInstancerCachePath == *i) {
-                moreToUnload.push_back(instancerPath);
-            }
-        }
-    }
-    instancersToUnload.insert(instancersToUnload.end(), moreToUnload.begin(),
-            moreToUnload.end());
-    moreToUnload.clear();
-
-    if (instancersToReload) {
-        instancersToReload->reserve(instancersToUnload.size());
-    }
-
-    TF_FOR_ALL(i, instancersToUnload) {
-        _InstancerDataMap::iterator instIt = _instancerData.find(*i);
-        // we expect duplicated instancer entries in instacersToUnload.
-        // continue if it's already removed.
-        if (instIt == _instancerData.end()) continue;
+    while (instIt != _instancerData.end()) {
+        affectedInstancer = instIt->first;
         SdfPath parentInstancerCachePath =
             instIt->second.parentInstancerCachePath;
-
-        _UnloadInstancer(*i, index);
-
-        // If the caller doesn't need to know what to reload, we're done in this
-        // loop.
-        if (!instancersToReload) {
-            continue;
+        if (parentInstancerCachePath.IsEmpty()) {
+            break;
         }
+        instIt = _instancerData.find(parentInstancerCachePath);
+    }
 
-        // Never repopulate child instancers directly, they are only repopulated
-        // by populating the parent.
-        if (!parentInstancerCachePath.IsEmpty()) {
-            continue;
-        }
-
-        // It's an error to request an invalid prim to be Repopulated, so be
-        // sure the prim still exists before requesting Repopulation.
-        if (UsdPrim p = _GetPrim(*i)) {
-            if (p.IsActive()) {
-                instancersToReload->push_back(*i);
-            }
+    // Should we reload affected instancer?
+    if (instancersToReload) {
+        UsdPrim p = _GetPrim(affectedInstancer.GetPrimPath());
+        if (p && p.IsActive()) {
+            instancersToReload->push_back(affectedInstancer);
         }
     }
+    _UnloadInstancer(affectedInstancer, index);
 }
 
 void
@@ -1132,26 +1055,19 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
 
-    // XXX: There's a nasty catch-22 where PI's ProcessPrimRemoval tries to
-    // remove that point instancer as well as any parents (since we don't have
-    // good invalidation for a parent PI when a child PI is removed/resynced,
-    // we resync the whole tree); and _UnloadInstancer tries to remove
-    // children.  This would cause an infinite loop, except that calling
-    // ProcessPrimRemoval on a child a second time is a no-op.  However,
-    // if a parent PI has multiple child PIs, the parent PI will be removed
-    // several times (usually resulting in a segfault).
-    //
-    // To guard against that, we remove instancerPath from _instancerData
-    // before traversing children, so that the parent PI is only removed once.
+    // Note: If any of the prototype children is a point instancer, their
+    // ProcessPrimRemoval will try to forward the removal call to the
+    // top-level instancer that has an entry in _instancerData.  This means,
+    // to avoid infinite loops, that we need to remove the _instancerData
+    // entry for this instancer before removing prototypes.
+
     const _ProtoPrimMap protoPrimMap = instIt->second.protoPrimMap;
     _instancerData.erase(instIt);
 
     // First, we need to make sure all proto rprims are removed.
-    TF_FOR_ALL(protoPrimIt, protoPrimMap) {
-        SdfPath     const& cachePath = protoPrimIt->first;
-        _ProtoPrim const& proto     = protoPrimIt->second;
-
-        proto.adapter->ProcessPrimRemoval(cachePath, index);
+    for (auto const& pair : protoPrimMap) {
+        // pair: <cache path, _ProtoPrim>
+        pair.second.adapter->ProcessPrimRemoval(pair.first, index);
     }
 
     // Blow away the instancer and the associated local data.
@@ -1237,57 +1153,26 @@ UsdImagingPointInstancerAdapter::_ComputeInstanceMap(
                     _InstancerData const& instrData,
                     UsdTimeCode time) const
 {
-    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
+    TRACE_FUNCTION();
 
     TF_DEBUG(USDIMAGING_INSTANCER).Msg(
         "[PointInstancer::_ComputeInstanceMap] %s\n",
         instancerPath.GetText());
 
-    UsdGeomPointInstancer instancer(instancerPrim);
-    if (!instancer) {
-        TF_WARN("Instancer prim <%s> is not a valid PointInstancer\n",
-                instancerPath.GetText());
-        return _InstanceMap();
+    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
+    VtArray<VtIntArray> indices =
+        GetPerPrototypeIndices(instancerPrim, time);
+
+    if (indices.size() > instrData.prototypePaths.size()) {
+        TF_WARN("ProtoIndex %lu out of bounds (prototypes size = %lu)",
+                indices.size() - 1, instrData.prototypePaths.size());
     }
+    indices.resize(instrData.prototypePaths.size());
 
-    UsdAttribute indicesAttr = instancer.GetProtoIndicesAttr();
-    VtIntArray indices;
-
-    if (!indicesAttr.Get(&indices, time)) {
-        TF_RUNTIME_ERROR("Failed to read point cloud indices");
-        return _InstanceMap();
-    }
-
-    // Initialize all of the indices to empty.
     _InstanceMap instanceMap;
-    for (SdfPath const& proto : instrData.prototypePaths) {
-        instanceMap[proto] = VtIntArray();
+    for (size_t i = 0; i < instrData.prototypePaths.size(); ++i) {
+        instanceMap[instrData.prototypePaths[i]] = indices[i];
     }
-
-    // Fetch the "mask", a bit array of enabled/disabled state per instance.
-    // If no value is available, mask will be ignored below.
-    std::vector<bool> mask = instancer.ComputeMaskAtTime(time);
-
-    for (size_t instanceId = 0; instanceId < indices.size(); ++instanceId) {
-        size_t protoIndex = indices[instanceId];
-
-        if (protoIndex >= instrData.prototypePaths.size()) {
-            TF_WARN("Invalid index (%lu) found in <%s.%s> for time (%s)\n",
-                    protoIndex, instancer.GetPath().GetText(), 
-                    indicesAttr.GetName().GetText(),
-                    TfStringify(time).c_str());
-            continue;
-        }
-        SdfPath const& protoPath = instrData.prototypePaths[protoIndex];
-
-        if (mask.size() == 0 || mask[instanceId]) {
-            instanceMap[protoPath].push_back(instanceId);
-        }
-    }
-
-    TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
-        "[Instancer Updated]: <%s>\n",
-        instancerPrim.GetPath().GetText());
 
     return instanceMap;
 }
@@ -1433,8 +1318,11 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
 SdfPath
 UsdImagingPointInstancerAdapter::GetScenePrimPath(
     SdfPath const& cachePath,
-    int instanceIndex) const
+    int instanceIndex,
+    HdInstancerContext *instancerContext) const
 {
+    HD_TRACE_FUNCTION();
+
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "GetScenePrimPath: proto = %s\n", cachePath.GetText());
 
@@ -1496,6 +1384,44 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     // Finally:
     // - fqPrimPath = instancePath + primPath
     //   = /World/Bar/Instance/Instancer/protos/A
+    //
+    // We also recurse here to fill in instancerContext.
+
+    // Look up the parent instancer of this instancer.
+    _InstancerDataMap::const_iterator it =
+        _instancerData.find(instancerPath);
+    if (it == _instancerData.end()) {
+        return SdfPath();
+    }
+    SdfPath parentPath = it->second.parentInstancerCachePath;
+
+    // Compute the local & parent instance index.
+    _InstanceMap instanceMap = _ComputeInstanceMap(
+            instancerPath, it->second, _GetTimeWithOffset(0.0));
+    VtIntArray const& indices = instanceMap[proto.protoRootPath];
+    // instanceIndex = parentIndex * indices.size() + i.
+    int parentIndex = instanceIndex / indices.size();
+    // indices[i] gives the offset into the index buffers (i.e. protoIndices).
+    int localIndex = indices[instanceIndex % indices.size()];
+
+    // Find out the fully-qualified parent path. If there is none, the
+    // one we have is fully qualified.
+    SdfPath fqInstancerPath = instancerPath;
+    UsdPrim parentInstancerUsdPrim =
+        _GetPrim(parentPath.GetAbsoluteRootOrPrimPath());
+    if (parentInstancerUsdPrim) {
+        UsdImagingPrimAdapterSharedPtr parentAdapter =
+            _GetPrimAdapter(parentInstancerUsdPrim);
+        fqInstancerPath =
+            parentAdapter->GetScenePrimPath(instancerPath, parentIndex,
+                                            instancerContext);
+    }
+
+    // Append to the instancer context.
+    if (instancerContext != nullptr) {
+        instancerContext->push_back(
+            std::make_pair(fqInstancerPath, localIndex));
+    }
 
     // Check if primPath is in master, and if so check if the instancer
     // is in the same master...
@@ -1511,30 +1437,6 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
                         instancerPath.GetText());
         return SdfPath();
     }
-
-    // Look up the parent instancer of this instancer.
-    _InstancerDataMap::const_iterator it =
-        _instancerData.find(instancerPath);
-    if (it == _instancerData.end()) {
-        return SdfPath();
-    }
-    SdfPath parentPath = it->second.parentInstancerCachePath;
-
-    // Compute the parent instance index.
-    _InstanceMap instanceMap = _ComputeInstanceMap(
-            cachePath, it->second, _GetTimeWithOffset(0.0));
-    VtIntArray const& indices = instanceMap[proto.protoRootPath];
-    // instanceIndex = parentIndex * indices.size() + i,
-    // so parentIndex = instanceIndex / indices.size().
-    int parentIndex = instanceIndex / indices.size();
-
-    // Find out the fully-qualified parent path.
-    UsdPrim parentInstancerUsdPrim =
-        _GetPrim(parentPath.GetAbsoluteRootOrPrimPath());
-    UsdImagingPrimAdapterSharedPtr parentAdapter =
-        _GetPrimAdapter(parentInstancerUsdPrim);
-    SdfPath fqInstancerPath =
-        parentAdapter->GetScenePrimPath(instancerPath, parentIndex);
 
     // Stitch the paths together.
     UsdPrim fqInstancer = _GetPrim(fqInstancerPath);
@@ -1830,6 +1732,54 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         }
         selectionPathVec.push_front(p.GetPath());
 
+        // Precompute the instance map.
+        _InstanceMap instanceMap = _ComputeInstanceMap(
+                cachePath, *instrData, _GetTimeWithOffset(0.0));
+
+        // If "cachePath" and "usdPrim" are equal, and hydraInstanceIndex
+        // has a value, we're responding to "AddSelected(/World/PI, N)";
+        // we can treat it as an instance index for this PI, rather than
+        // treating it as an absolute instance index for an rprim.
+        // (/World/PI, -1) still corresponds to select-all-instances.
+        if (usdPrim.GetPath() == cachePath.GetAbsoluteRootOrPrimPath() &&
+            hydraInstanceIndex != -1) {
+            // "N" here refers to the instance index in the protoIndices array,
+            // which may be different than the actual hydra index, so we need
+            // to find the correct prototype/instance pair.
+
+            bool added = false;
+            for (auto const& pair : instrData->protoPrimMap) {
+                VtIntArray const& indices =
+                    instanceMap[pair.second.protoRootPath];
+                int foundIndex = -1;
+                for (size_t i = 0; i < indices.size(); ++i) {
+                    if (indices[i] == hydraInstanceIndex) {
+                        foundIndex = int(i);
+                        break;
+                    }
+                }
+                if (foundIndex == -1) {
+                    continue;
+                }
+                VtIntArray instanceIndices;
+                if (parentInstanceIndices.size() > 0) {
+                    for (const int pi : parentInstanceIndices) {
+                        instanceIndices.push_back(pi * indices.size() +
+                            foundIndex);
+                    }
+                } else {
+                    instanceIndices.push_back(foundIndex);
+                }
+                UsdPrim selectionPrim =
+                    _GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
+
+                added |= pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, selectionPrim,
+                    -1, instanceIndices, result);
+            }
+            return added;
+        }
+
         bool added = false;
         for (auto const& pair : instrData->protoPrimMap) {
 
@@ -1885,17 +1835,19 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
                 continue;
             }
 
-            // Compose instance indices, if we don't have an explicit index.
+            // Compose instance indices.
             VtIntArray instanceIndices;
-            if (hydraInstanceIndex == -1 && parentInstanceIndices.size() != 0) {
-                _InstanceMap instanceMap = _ComputeInstanceMap(
-                    cachePath, *instrData, _GetTimeWithOffset(0.0));
-                VtIntArray const& indices =
-                    instanceMap[pair.second.protoRootPath];
+            VtIntArray const& indices =
+                instanceMap[pair.second.protoRootPath];
+            if (parentInstanceIndices.size() > 0) {
                 for (const int pi : parentInstanceIndices) {
                     for (size_t i = 0; i < indices.size(); ++i) {
                         instanceIndices.push_back(pi * indices.size() + i);
                     }
+                }
+            } else {
+                for (size_t i = 0; i < indices.size(); ++i) {
+                    instanceIndices.push_back(i);
                 }
             }
 

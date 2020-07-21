@@ -63,6 +63,15 @@ _CreateExtentAttr(UsdGeomSphere &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomSphere &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Sphere(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomSphere()
@@ -110,6 +119,7 @@ void wrapUsdGeomSphere()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

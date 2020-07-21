@@ -37,8 +37,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class SdfPath;
-
 using HdSelectionSharedPtr = std::shared_ptr<class HdSelection>;
 
 /// \class HdSelection
@@ -46,14 +44,17 @@ using HdSelectionSharedPtr = std::shared_ptr<class HdSelection>;
 /// HdSelection holds a collection of selected items per selection mode.
 /// The items may be rprims, instances of an rprim and subprimitives of an
 /// rprim, such as elements (faces for meshes, individual curves for basis
-/// curves), edges & points.
-/// 
+/// curves), edges & points. Each item is referred to by the render index path.
+///
+/// It current supports active and rollover selection modes, and may be
+/// inherited for customization.
+///
 class HdSelection {
 public:
     /// Selection modes allow differentiation in selection highlight behavior.
     enum HighlightMode {
-        HighlightModeSelect = 0,
-        HighlightModeLocate,
+        HighlightModeSelect = 0, // Active selection
+        HighlightModeLocate,     // Rollover selection
         
         HighlightModeCount
     };
@@ -61,33 +62,38 @@ public:
     HdSelection() = default;
 
     HD_API
-    void AddRprim(HighlightMode const& mode,
-                  SdfPath const &path);
+    virtual ~HdSelection();
+
+    /// ------------------------ Population API --------------------------------
+    HD_API
+    void AddRprim(HighlightMode const &mode,
+                  SdfPath const &renderIndexPath);
 
     HD_API
-    void AddInstance(HighlightMode const& mode,
-                     SdfPath const &path,
+    void AddInstance(HighlightMode const &mode,
+                     SdfPath const &renderIndexPath,
                      VtIntArray const &instanceIndex=VtIntArray());
 
     HD_API
-    void AddElements(HighlightMode const& mode,
-                     SdfPath const &path,
+    void AddElements(HighlightMode const &mode,
+                     SdfPath const &renderIndexPath,
                      VtIntArray const &elementIndices);
     
     HD_API
-    void AddEdges(HighlightMode const& mode,
-                  SdfPath const &path,
+    void AddEdges(HighlightMode const &mode,
+                  SdfPath const &renderIndexPath,
                   VtIntArray const &edgeIndices);
     
     HD_API
-    void AddPoints(HighlightMode const& mode,
-                   SdfPath const &path,
+    void AddPoints(HighlightMode const &mode,
+                   SdfPath const &renderIndexPath,
                    VtIntArray const &pointIndices);
+
     // Special handling for points: we allow a set of selected point indices to
     // also specify a color to use for highlighting.
     HD_API
-    void AddPoints(HighlightMode const& mode,
-                   SdfPath const &path,
+    void AddPoints(HighlightMode const &mode,
+                   SdfPath const &renderIndexPath,
                    VtIntArray const &pointIndices,
                    GfVec4f const &pointColor);
 
@@ -97,9 +103,10 @@ public:
     // the same subprim highlighting.
     struct PrimSelectionState {
         PrimSelectionState() : fullySelected(false) {}
+
         bool fullySelected;
-        // We use a vector of VtIntArray, to avoid any copy of indices data.
-        // This way, we support multiple  Add<Subprim> operations, without 
+        // Use a vector of VtIntArray to avoid copying the indices data.
+        // This way, we support multiple Add<Subprim> operations without 
         // having to consolidate the indices each time.
         std::vector<VtIntArray> instanceIndices;
         std::vector<VtIntArray> elementIndices;
@@ -108,11 +115,22 @@ public:
         std::vector<int>        pointColorIndices;
     };
 
-    HD_API
-    PrimSelectionState const*
-    GetPrimSelectionState(HighlightMode const &mode,
-                          SdfPath const &path) const;
+    /// ---------------------------- Query API ---------------------------------
 
+    // Returns a pointer to the selection state for the rprim path if selected.
+    // Returns nullptr otherwise.
+    HD_API
+    PrimSelectionState const *
+    GetPrimSelectionState(HighlightMode const &mode,
+                          SdfPath const &renderIndexPath) const;
+
+    // Returns the selected rprim render index paths for all the selection
+    // modes. The vector returned may contain duplicates. 
+    HD_API
+    SdfPathVector
+    GetAllSelectedPrimPaths() const;
+
+    // Returns the selected rprim render index paths for the given mode.
     HD_API
     SdfPathVector
     GetSelectedPrimPaths(HighlightMode const &mode) const;
@@ -120,12 +138,18 @@ public:
     HD_API
     std::vector<GfVec4f> const& GetSelectedPointColors() const;
 
-private:
+    // Returns true if nothing is selected.
     HD_API
-    void _AddPoints(HighlightMode const& mode,
-                    SdfPath const &path,
+    bool IsEmpty() const;
+
+private:
+    void _AddPoints(HighlightMode const &mode,
+                    SdfPath const &renderIndexPath,
                     VtIntArray const &pointIndices,
                     int pointColorIndex);
+
+    void _GetSelectionPrimPathsForMode(HighlightMode const &mode,
+                                       SdfPathVector *paths) const;
 
 protected:
     typedef std::unordered_map<SdfPath, PrimSelectionState, SdfPath::Hash>

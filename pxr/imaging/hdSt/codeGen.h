@@ -30,18 +30,15 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <map>
 #include <vector>
 #include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
+using HdSt_GeometricShaderPtr = std::shared_ptr<class HdSt_GeometricShader>;
 
 /// \class HdSt_CodeGen
 ///
@@ -70,7 +67,8 @@ public:
 
     /// Generate shader source and compile it.
     HDST_API
-    HdStGLSLProgramSharedPtr Compile();
+    HdStGLSLProgramSharedPtr Compile(
+        HdStResourceRegistry*const registry);
 
     /// Generate compute shader source and compile it.
     /// It uses the compute information in the meta data to determine
@@ -88,7 +86,8 @@ public:
     /// \see GetComputeShaderSource
     /// \see HdSt_ResourceBinder::ResolveBindings
     HDST_API
-    HdStGLSLProgramSharedPtr CompileComputeProgram();
+    HdStGLSLProgramSharedPtr CompileComputeProgram(
+        HdStResourceRegistry*const registry);
     
     /// Return the generated vertex shader source
     const std::string &GetVertexShaderSource() const { return _vsSource; }

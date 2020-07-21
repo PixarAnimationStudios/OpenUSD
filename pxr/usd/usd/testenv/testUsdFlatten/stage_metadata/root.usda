@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sub.usda@
+    ]
+    startTimeCode = 0
+    endTimeCode = 24
+)
+
+over "TimeSamples"
+{
+    double rootAttr.timeSamples = {
+        0: 100,
+        24: 101,
+    }
+}

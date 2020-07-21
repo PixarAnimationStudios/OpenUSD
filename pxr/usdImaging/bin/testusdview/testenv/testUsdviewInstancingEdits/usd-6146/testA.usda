@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "bgMomGenBaseA"
+{
+    def "payload" (
+        prepend payload = @./usd-6146/payload.usda@</payload>
+    )
+    {
+    }
+}
+

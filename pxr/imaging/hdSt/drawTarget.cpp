@@ -26,7 +26,10 @@
 #include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
 #include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -35,12 +38,16 @@
 
 #include "pxr/imaging/glf/glContext.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-static const std::string DEPTH_ATTACHMENT_NAME = "depth";
+TF_DEFINE_ENV_SETTING(HDST_USE_STORM_TEXTURE_SYSTEM_FOR_DRAW_TARGETS, true,
+                      "Use Storm texture system for draw targets.");
 
 TF_DEFINE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_DRAW_TARGET_TOKENS);
 
@@ -48,18 +55,20 @@ HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
     : HdSprim(id)
     , _version(1) // Clients tacking start at 0.
     , _enabled(true)
-    , _cameraId()
     , _resolution(512, 512)
-    , _collection()
-    , _renderPassState()
-    , _drawTargetContext()
-    , _drawTarget()
-
+    , _depthClearValue(1.0)
 {
 }
 
-HdStDrawTarget::~HdStDrawTarget()
+HdStDrawTarget::~HdStDrawTarget() = default;
+
+/*static*/
+bool
+HdStDrawTarget::GetUseStormTextureSystem()
 {
+    static bool result =
+        TfGetEnvSetting(HDST_USE_STORM_TEXTURE_SYSTEM_FOR_DRAW_TARGETS);
+    return result;
 }
 
 /*virtual*/
@@ -78,7 +87,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    HdDirtyBits bits = *dirtyBits;
+    const HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyDTEnable) {
         VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->enable);
@@ -94,41 +103,68 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyDTResolution) {
-        VtValue vtValue =
-                        sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
-
+        const VtValue vtValue =
+            sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
+        
+        // The resolution is needed to set the viewport and compute the
+        // camera projection matrix (more precisely, to do the aspect ratio
+        // adjustment).
+        //
+        // Note that it is also stored in the render buffers. This is
+        // somewhat redundant but it would be complicated for the draw
+        // target to reach through to the render buffers to get the
+        // resolution and that conceptually, the view port and camera
+        // projection matrix are different from the texture
+        // resolution.
         _resolution = vtValue.Get<GfVec2i>();
 
-        // No point in Resizing the textures if new ones are going to
-        // be created (see _SetAttachments())
-        if (_drawTarget && ((bits & DirtyDTAttachment) == Clean)) {
-            _ResizeDrawTarget();
+        if (!GetUseStormTextureSystem()) {
+            // No point in Resizing the textures if new ones are going to
+            // be created (see _SetAttachments())
+            if (_drawTarget && ((bits & DirtyDTAttachment) == Clean)) {
+                _ResizeDrawTarget();
+            }
         }
     }
 
-    if (bits & DirtyDTAttachment) {
-        // Depends on resolution being set correctly.
-        VtValue vtValue =
-                       sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
+    if (GetUseStormTextureSystem()) {
+        if (bits & DirtyDTAovBindings) {
+            const VtValue aovBindingsValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
+            _renderPassState.SetAovBindings(
+                aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
+                    {}));
+        }
 
-
-        const HdStDrawTargetAttachmentDescArray &attachments =
-            vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
+        if (bits & DirtyDTDepthPriority) {
+            const VtValue depthPriorityValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->depthPriority);
+            _renderPassState.SetDepthPriority(
+                depthPriorityValue.GetWithDefault<HdDepthPriority>(
+                    HdDepthPriorityNearest));
+        }
+    } else {
+        if (bits & DirtyDTAttachment) {
+            // Depends on resolution being set correctly.
+            const VtValue vtValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
+            
+            const HdStDrawTargetAttachmentDescArray &attachments =
+                vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
                     HdStDrawTargetAttachmentDescArray());
+            
+            _SetAttachments(sceneDelegate, attachments);
+        }
 
-        _SetAttachments(sceneDelegate, attachments);
+        if (bits & DirtyDTDepthClearValue) {
+            const VtValue vtValue =
+                sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
+            
+            _depthClearValue = vtValue.GetWithDefault<float>(1.0f);
+            _renderPassState.SetDepthClearValue(_depthClearValue);
+        }
     }
-
-
-    if (bits & DirtyDTDepthClearValue) {
-        VtValue vtValue =
-                  sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
-
-        float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
-
-        _renderPassState.SetDepthClearValue(depthClearValue);
-    }
-
+        
     if (bits & DirtyDTCollection) {
         VtValue vtValue =
                        sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
@@ -186,7 +222,7 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
         return false;
     }
 
-    const HdCamera *camera = _GetCamera(renderIndex);
+    const HdCamera * const camera = _GetCamera(renderIndex);
     if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
@@ -199,11 +235,12 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
 
     // Make sure all draw target operations happen on the same
     // context.
-    GlfGLContextSharedPtr oldContext = GlfGLContext::GetCurrentGLContext();
+    GlfGLContextSharedPtr const oldContext =
+        GlfGLContext::GetCurrentGLContext();
     GlfGLContext::MakeCurrent(_drawTargetContext);
 
-    bool result = _drawTarget->WriteToFile(attachment, path,
-                                           viewMatrix, projMatrix);
+    const bool result = _drawTarget->WriteToFile(attachment, path,
+                                                 viewMatrix, projMatrix);
 
     GlfGLContext::MakeCurrent(oldContext);
 
@@ -297,21 +334,23 @@ HdStDrawTarget::_SetAttachments(
     // Always add depth texture
     // XXX: GlfDrawTarget requires the depth texture be added last,
     // otherwise the draw target indexes are off-by-1.
-    _drawTarget->AddAttachment(DEPTH_ATTACHMENT_NAME,
+    _drawTarget->AddAttachment(HdStDrawTargetTokens->depth.GetString(),
                                GL_DEPTH_COMPONENT,
                                GL_FLOAT,
                                GL_DEPTH_COMPONENT32F);
 
     _RegisterTextureResourceHandle(sceneDelegate,
-                             DEPTH_ATTACHMENT_NAME,
-                             &_depthTextureResourceHandle);
+                                   HdStDrawTargetTokens->depth.GetString(),
+                                   &_depthTextureResourceHandle);
 
 
     HdSt_DrawTargetTextureResource *depthResource =
                 static_cast<HdSt_DrawTargetTextureResource *>(
                     _depthTextureResourceHandle->GetTextureResource().get());
 
-    depthResource->SetAttachment(_drawTarget->GetAttachment(DEPTH_ATTACHMENT_NAME));
+    depthResource->SetAttachment(
+        _drawTarget->GetAttachment(
+            HdStDrawTargetTokens->depth.GetString()));
     depthResource->SetSampler(attachments.GetDepthWrapS(),
                               attachments.GetDepthWrapT(),
                               attachments.GetDepthMinFilter(),
@@ -413,25 +452,22 @@ HdStDrawTarget::_RegisterTextureResourceHandle(
 
 /*static*/
 void
-HdStDrawTarget::GetDrawTargets(HdRenderIndex* renderIndex,
-                               HdStDrawTargetPtrConstVector *drawTargets)
+HdStDrawTarget::GetDrawTargets(HdRenderIndex* const renderIndex,
+                               HdStDrawTargetPtrVector * const drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    SdfPathVector sprimPaths;
-
-    if (renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
-        sprimPaths = renderIndex->GetSprimSubtree(HdPrimTypeTokens->drawTarget,
-            SdfPath::AbsoluteRootPath());
+    if (!renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        return;
     }
 
-    TF_FOR_ALL (it, sprimPaths) {
-        HdSprim const *drawTarget =
-                        renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, *it);
+    const SdfPathVector paths = renderIndex->GetSprimSubtree(
+        HdPrimTypeTokens->drawTarget, SdfPath::AbsoluteRootPath());
 
-        if (drawTarget != nullptr)
-        {
-            drawTargets->push_back(static_cast<HdStDrawTarget const *>(drawTarget));
+    for (const SdfPath &path : paths) {
+        if (HdSprim * const drawTarget =
+                renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, path)) {
+            drawTargets->push_back(static_cast<HdStDrawTarget *>(drawTarget));
         }
     }
 }

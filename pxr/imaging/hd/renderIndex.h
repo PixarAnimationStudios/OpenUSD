@@ -42,10 +42,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/smart_ptr.hpp>
-
 #include <tbb/enumerable_thread_specific.h>
 
 #include <vector>
@@ -118,7 +114,8 @@ using HdDriverVector = std::vector<HdDriver*>;
 /// If two viewers use different HdRenderDelegate's, then it may unfortunately 
 /// require populating two HdRenderIndex's.
 ///
-class HdRenderIndex final : public boost::noncopyable {
+class HdRenderIndex final 
+{
 public:
     typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
 
@@ -127,7 +124,7 @@ public:
     /// The render delegate and render tasks may require access to a renderer's
     /// device provided by the application. The objects can be
     /// passed in as 'drivers'. Hgi is an example of a HdDriver.
-    //    hgi = Hgi::GetPlatformDefaultHgi()
+    //    hgi = Hgi::CreatePlatformDefaultHgi()
     //    hgiDriver = new HdDriver<Hgi*>(HgiTokens→renderDriver, hgi)
     //    HdRenderIndex::New(_renderDelegate, {_hgiDriver})
     HD_API
@@ -467,6 +464,23 @@ private:
     typedef std::vector<_SyncQueueEntry> _SyncQueue;
     _SyncQueue _syncQueue;
 
+    /// With the removal of task-based collection include/exclude path
+    /// filtering, HdDirtyLists were generating their lists of dirty rprim IDs
+    /// by looking through every rprim in the render index. When the number of
+    /// tasks/render passes/dirty lists grew large, this resulted in
+    /// significant overhead and lots of duplication of work.
+    /// Instead, the render index itself now takes care of generating the
+    /// complete list of dirty rprim IDs when requested by the HdDirtyList.
+    /// During SyncAll(), the first HdDirtyList to request the list of dirty
+    /// IDs for a given HdDirtyBits mask triggers the render index to produce
+    /// that list and cache it in a map. Subsequent requests reuse the cached
+    /// list. At the end of SyncAll(), the map is cleared in preparation for
+    /// the next sync.
+    std::unordered_map<HdDirtyBits, const SdfPathVector> _dirtyRprimIdsMap;
+
+    friend class HdDirtyList;
+    const SdfPathVector& _GetDirtyRprimIds(HdDirtyBits mask);
+
     HdRenderDelegate *_renderDelegate;
     HdDriverVector _drivers;
 
@@ -503,6 +517,11 @@ private:
 
     // Remove default constructor
     HdRenderIndex() = delete;
+
+    // Don't allow copies
+    HdRenderIndex(const HdRenderIndex &) = delete;
+    HdRenderIndex &operator=(const HdRenderIndex &) = delete; 
+
 };
 
 template <typename T>

@@ -34,12 +34,12 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
-#include "pxr/imaging/hdx/unitTestGLDrawing.h"
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -64,11 +64,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pickables)
 );
 
-class My_TestGLDrawing : public Hdx_UnitTestGLDrawing {
+class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     My_TestGLDrawing()
-        : _hgi(Hgi::GetPlatformDefaultHgi())
-        , _driver{HgiTokens->renderDriver, VtValue(_hgi.get())}
     {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
@@ -78,15 +76,15 @@ public:
     void DrawScene();
     void DrawMarquee();
 
-    // Hdx_UnitTestGLDrawing overrides
-    virtual void InitTest();
-    virtual void UninitTest();
-    virtual void DrawTest();
-    virtual void OffscreenTest();
+    // HdSt_UnitTestGLDrawing overrides
+    void InitTest() override;
+    void UninitTest() override;
+    void DrawTest() override;
+    void OffscreenTest() override;
 
-    virtual void MousePress(int button, int x, int y, int modKeys);
-    virtual void MouseRelease(int button, int x, int y, int modKeys);
-    virtual void MouseMove(int x, int y, int modKeys);
+    void MousePress(int button, int x, int y, int modKeys) override;
+    void MouseRelease(int button, int x, int y, int modKeys) override;
+    void MouseMove(int x, int y, int modKeys) override;
 
 protected:
     void _InitScene();
@@ -94,9 +92,10 @@ protected:
     HdSelectionSharedPtr _Pick(GfVec2i const& startPos, GfVec2i const& endPos);
 
 private:
-    std::unique_ptr<Hgi> _hgi;
-    HdDriver _driver;
-
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
+    std::unique_ptr<HdDriver> _driver;
     HdEngine _engine;
     HdStRenderDelegate _renderDelegate;
     HdRenderIndex *_renderIndex;
@@ -129,7 +128,9 @@ My_TestGLDrawing::~My_TestGLDrawing()
 void
 My_TestGLDrawing::InitTest()
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_driver});
+    _hgi = Hgi::CreatePlatformDefaultHgi();
+    _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
     _selTracker.reset(new HdxSelectionTracker);
@@ -402,14 +403,14 @@ My_TestGLDrawing::DrawMarquee()
 void
 My_TestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
     _startPos = _endPos = GetMousePos();
 }
 
 void
 My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
         HdSelectionSharedPtr selection = _Pick(_startPos, _endPos);
@@ -421,7 +422,7 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 void
 My_TestGLDrawing::MouseMove(int x, int y, int modKeys)
 {
-    Hdx_UnitTestGLDrawing::MouseMove(x, y, modKeys);
+    HdSt_UnitTestGLDrawing::MouseMove(x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
         _endPos = GetMousePos();

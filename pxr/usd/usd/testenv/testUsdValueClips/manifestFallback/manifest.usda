@@ -1,0 +1,9 @@
+#usda 1.0
+
+over "Model"
+{
+    double fallbackInManifest = 50.0
+    double fallbackBlockInManifest = None
+    double noFallbackInManifest
+}
+

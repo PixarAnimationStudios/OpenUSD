@@ -45,15 +45,9 @@ public:
     /// Destructor.
     ~HdPrmanInstancer();
 
-    /// Computes all instance transforms for the provided prototype id,
+    /// Sample the instance transforms for the given prototype,
     /// taking into account the scene delegate's instancerTransform and the
     /// instance primvars "instanceTransform", "translate", "rotate", "scale".
-    /// Computes and flattens nested transforms, if necessary.
-    ///   \param prototypeId The prototype to compute transforms for.
-    ///   \return One transform per instance, to apply when drawing.
-    VtMatrix4dArray ComputeInstanceTransforms(SdfPath const &prototypeId);
-
-    /// Sample the instance transforms for the given prototype.
     void SampleInstanceTransforms(
         SdfPath const& prototypeId,
         VtIntArray const& instanceIndices,
@@ -69,11 +63,11 @@ public:
     // Checks the change tracker to determine whether instance primvars are
     // dirty, and if so pulls them. Since primvars can only be pulled once,
     // and are cached, this function is not re-entrant. However, this function
-    // is called by ComputeInstanceTransforms, which is called (potentially)
-    // by HdPrmanMesh::Sync(), which is dispatched in parallel, so it needs
-    // to be guarded by _instanceLock.
+    // is called by HdPrman_Gprim::Sync, which is dispatched in parallel, so
+    // it needs to be guarded by _instanceLock.
     //
-    // Pulled primvars are cached in _primvarMap.
+    // Pulled primvars are cached in _primvarMap.  This function skips pulling
+    // primvars that are pulled explicitly in SampleInstanceTransforms.
     void SyncPrimvars();
 
 private:

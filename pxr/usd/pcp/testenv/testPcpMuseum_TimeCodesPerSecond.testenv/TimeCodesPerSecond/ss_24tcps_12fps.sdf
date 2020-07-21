@@ -1,0 +1,17 @@
+#sdf 1.4.32
+(
+    timeCodesPerSecond = 24
+    framesPerSecond = 12
+)
+
+def "SS3" 
+(
+    prepend references = [
+        @./ref.sdf@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_48tcps.sdf@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_24tcps_12fps.sdf@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_12fps.sdf@</Ref> (offset = 10.0; scale = 2.0)
+    ]
+)
+{
+}

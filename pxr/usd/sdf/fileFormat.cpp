@@ -307,6 +307,34 @@ SdfFileFormat::FindByExtension(
     return _FileFormatRegistry->FindByExtension(extension, target);
 }
 
+/* static */
+SdfFileFormatConstPtr
+SdfFileFormat::FindByExtension(
+    const std::string &path,
+    const FileFormatArguments &args)
+{
+    // Find a file format that can handle this extension and the
+    // specified target (if any).
+    const std::string* targets = 
+        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
+    if (targets) {
+        for (std::string& target : TfStringTokenize(*targets, ",")) {
+            target = TfStringTrim(target);
+            if (target.empty()) {
+                continue;
+            }
+
+            if (const SdfFileFormatConstPtr format = 
+                SdfFileFormat::FindByExtension(path, target)) {
+                return format;
+            }
+        }
+        return TfNullPtr;
+    }
+
+    return SdfFileFormat::FindByExtension(path);
+}
+
 bool
 SdfFileFormat::_ShouldSkipAnonymousReload() const
 {

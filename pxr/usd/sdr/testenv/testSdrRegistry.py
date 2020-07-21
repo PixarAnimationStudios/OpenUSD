@@ -134,7 +134,6 @@ class TestShaderNode(unittest.TestCase):
             "TestNodeGLSLFX"
         }
 
-        assert id(reg.GetShaderNodeByURI(nodes[0].GetSourceURI())) == id(nodes[0])
         assert id(reg.GetShaderNodeByName(nodes[0].GetName())) == id(nodes[0])
 
         # Ensure that the registry can retrieve two nodes of the same name but

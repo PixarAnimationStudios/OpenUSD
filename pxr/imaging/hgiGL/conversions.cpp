@@ -36,44 +36,54 @@ struct _FormatDesc {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
-    uint8_t channelCount;
 };
 
 static const _FormatDesc FORMAT_DESC[] =
 {
-    // format,  type,        internal format  elements
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8,          1}, // HdFormatUNorm8,
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8,         2}, // HdFormatUNorm8Vec2,
-    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8,        3}, // HdFormatUNorm8Vec3,
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8,       4}, // HdFormatUNorm8Vec4,
+    // format,  type,             internal format
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8          }, // UNorm8
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8         }, // UNorm8Vec2
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8       }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8       }, // UNorm8Vec4
 
-    {GL_RED,  GL_BYTE,          GL_R8_SNORM,    1}, // HdFormatSNorm8,
-    {GL_RG,   GL_BYTE,          GL_RG8_SNORM,   2}, // HdFormatSNorm8Vec2,
-    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM,  3}, // HdFormatSNorm8Vec3,
-    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM, 4}, // HdFormatSNorm8Vec4,
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM    }, // SNorm8
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM   }, // SNorm8Vec2
+    // {GL_RGB,  GL_BYTE,         GL_RGB8_SNORM  }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM }, // SNorm8Vec4
 
-    {GL_RED,  GL_HALF_FLOAT,    GL_R16F,        1}, // HdFormatFloat16,
-    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F,       2}, // HdFormatFloat16Vec2,
-    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F,      3}, // HdFormatFloat16Vec3,
-    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F,     4}, // HdFormatFloat16Vec4,
+    {GL_RED,  GL_HALF_FLOAT,    GL_R16F        }, // Float16
+    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F       }, // Float16Vec2
+    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F      }, // Float16Vec3
+    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F     }, // Float16Vec4
 
-    {GL_RED,  GL_FLOAT,         GL_R32F,        1}, // HdFormatFloat32,
-    {GL_RG,   GL_FLOAT,         GL_RG32F,       2}, // HdFormatFloat32Vec2,
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F,      3}, // HdFormatFloat32Vec3,
-    {GL_RGBA, GL_FLOAT,         GL_RGBA32F,     4}, // HdFormatFloat32Vec4,
+    {GL_RED,  GL_FLOAT,         GL_R32F        }, // Float32
+    {GL_RG,   GL_FLOAT,         GL_RG32F       }, // Float32Vec2
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F      }, // Float32Vec3
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F     }, // Float32Vec4
 
-    {GL_RED,  GL_INT,           GL_R32I,        1}, // HdFormatInt32,
-    {GL_RG,   GL_INT,           GL_RG32I,       2}, // HdFormatInt32Vec2,
-    {GL_RGB,  GL_INT,           GL_RGB32I,      3}, // HdFormatInt32Vec3,
-    {GL_RGBA, GL_INT,           GL_RGBA32I,     4}, // HdFormatInt32Vec4,
+    {GL_RED,  GL_INT,           GL_R32I        }, // Int32
+    {GL_RG,   GL_INT,           GL_RG32I       }, // Int32Vec2
+    {GL_RGB,  GL_INT,           GL_RGB32I      }, // Int32Vec3
+    {GL_RGBA, GL_INT,           GL_RGBA32I     }, // Int32Vec4
+
+    // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8      }, // Unsupported by HgiFormat
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8}, // UNorm8Vec4sRGB,
+
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT  }, // BC6FloatVec3
+    {GL_RGB, GL_FLOAT, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT}, // BC6UFloatVec3
+
+    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // HdFormatFloat32UInt8
+
 };
 
+// A few random format validations to make sure out GL table stays aligned
+// with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
     return (TfArraySize(FORMAT_DESC) == HgiFormatCount &&
             HgiFormatUNorm8 == 0 &&
-            HgiFormatFloat16Vec4 == 11 &&
-            HgiFormatFloat32Vec4 == 15 &&
-            HgiFormatInt32Vec4 == 19) ? true : false;
+            HgiFormatFloat16Vec4 == 9 &&
+            HgiFormatFloat32Vec4 == 13 &&
+            HgiFormatUNorm8Vec4srgb == 18) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 
@@ -82,9 +92,12 @@ static_assert(_CompileTimeValidateHgiFormatTable(),
 static const uint32_t
 _ShaderStageTable[][2] =
 {
-    {HgiShaderStageVertex,   GL_VERTEX_SHADER},
-    {HgiShaderStageFragment, GL_FRAGMENT_SHADER},
-    {HgiShaderStageCompute,  GL_COMPUTE_SHADER}
+    {HgiShaderStageVertex,              GL_VERTEX_SHADER},
+    {HgiShaderStageFragment,            GL_FRAGMENT_SHADER},
+    {HgiShaderStageCompute,             GL_COMPUTE_SHADER},
+    {HgiShaderStageTessellationControl, GL_TESS_CONTROL_SHADER},
+    {HgiShaderStageTessellationEval,    GL_TESS_EVALUATION_SHADER},
+    {HgiShaderStageGeometry,            GL_GEOMETRY_SHADER}
 };
 
 static const uint32_t
@@ -153,9 +166,19 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
 static uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
-    {HgiTextureType1D,           GL_TEXTURE_1D},
-    {HgiTextureType2D,           GL_TEXTURE_2D},
-    {HgiTextureType3D,           GL_TEXTURE_3D}
+    {HgiTextureType1D, GL_TEXTURE_1D},
+    {HgiTextureType2D, GL_TEXTURE_2D},
+    {HgiTextureType3D, GL_TEXTURE_3D}
+};
+
+static uint32_t
+_samplerAddressModeTable[HgiSamplerAddressModeCount][2] =
+{
+    {HgiSamplerAddressModeClampToEdge,        GL_CLAMP_TO_EDGE},
+    {HgiSamplerAddressModeMirrorClampToEdge,  GL_MIRROR_CLAMP_TO_EDGE},
+    {HgiSamplerAddressModeRepeat,             GL_REPEAT},
+    {HgiSamplerAddressModeMirrorRepeat,       GL_MIRRORED_REPEAT},
+    {HgiSamplerAddressModeClampToBorderColor, GL_CLAMP_TO_BORDER}
 };
 
 void
@@ -167,18 +190,29 @@ HgiGLConversions::GetFormat(
 {
     if ((inFormat < 0) || (inFormat >= HgiFormatCount))
     {
-        TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
-        *outFormat = GL_RGBA;
-        *outType = GL_BYTE;
-        *outInternalFormat = GL_RGBA8;
+        TF_CODING_ERROR("Unexpected  %d", inFormat);
+        if (outFormat) {
+            *outFormat = GL_RGBA;
+        }
+        if (outType) {
+            *outType = GL_BYTE;
+        }
+        if (outInternalFormat) {
+            *outInternalFormat = GL_RGBA8;
+        }
         return;
     }
 
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
-
-    *outFormat = desc.format;
-    *outType = desc.type;
-    *outInternalFormat = desc.internalFormat;
+    if (outFormat) {
+        *outFormat = desc.format;
+    }
+    if (outType) {
+        *outType = desc.type;
+    }
+    if (outInternalFormat) {
+        *outInternalFormat = desc.internalFormat;
+    }
 }
 
 GLenum
@@ -186,13 +220,6 @@ HgiGLConversions::GetFormatType(HgiFormat inFormat)
 {
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
     return desc.type;
-}
-
-int8_t
-HgiGLConversions::GetElementCount(HgiFormat inFormat)
-{
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
-    return desc.channelCount;
 }
 
 std::vector<GLenum>
@@ -243,6 +270,62 @@ GLenum
 HgiGLConversions::GetTextureType(HgiTextureType tt)
 {
     return _textureTypeTable[tt][1];
+}
+
+GLenum
+HgiGLConversions::GetSamplerAddressMode(HgiSamplerAddressMode am)
+{
+    return _samplerAddressModeTable[am][1];
+}
+
+GLenum
+HgiGLConversions::GetMagFilter(HgiSamplerFilter sf)
+{
+    switch(sf) {
+        case HgiSamplerFilterNearest: return GL_NEAREST;
+        case HgiSamplerFilterLinear: return GL_LINEAR;
+        default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GL_NONE;
+}
+
+GLenum
+HgiGLConversions::GetMinFilter(
+    HgiSamplerFilter minFilter, 
+    HgiMipFilter mipFilter)
+{
+    switch(mipFilter) {
+    // No mip-filter supplied (no mipmapping), return min-filter
+    case HgiMipFilterNotMipmapped : 
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST;
+            case HgiSamplerFilterLinear: return GL_LINEAR;
+            default: TF_CODING_ERROR("Unsupported type"); break;
+        }
+
+    // Mip filter is nearest, combine min and mip filter into one enum
+    case HgiMipFilterNearest:
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST_MIPMAP_NEAREST;
+            case HgiSamplerFilterLinear: return GL_LINEAR_MIPMAP_NEAREST;
+            default: TF_CODING_ERROR("Unsupported typr"); break;
+        }
+
+    // Mip filter is linear, combine min and mip filter into one enum
+    case HgiMipFilterLinear:
+        switch(minFilter) {
+            case HgiSamplerFilterNearest: return GL_NEAREST_MIPMAP_LINEAR;
+            case HgiSamplerFilterLinear: return GL_LINEAR_MIPMAP_LINEAR;
+            default: TF_CODING_ERROR("Unsupported typr"); break;
+        }
+
+    default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GL_NONE;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

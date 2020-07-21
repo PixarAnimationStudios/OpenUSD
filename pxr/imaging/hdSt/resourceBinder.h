@@ -29,27 +29,38 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/staticTokens.h"
 
-#include <boost/shared_ptr.hpp>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdStDrawItem;
-class HdStShaderCode;
-class HdStResourceGL;
 
 using HdStBufferResourceGLSharedPtr = 
     std::shared_ptr<class HdStBufferResourceGL>;
 using HdStBufferArrayRangeGLSharedPtr =
     std::shared_ptr<class HdStBufferArrayRangeGL>;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
-typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
+using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
+using HdBindingRequestVector = std::vector<class HdBindingRequest>;
+
+/// Suffixes appended to material param names for a binding name.
+///
+#define HDST_RESOURCE_BINDING_SUFFIX_TOKENS     \
+    ((fallback, "_fallback"))                   \
+    ((samplingTransform, "_samplingTransform")) \
+    ((layout, "_layout"))                       \
+    ((texture, "_texture"))                     \
+    ((valid, "_valid"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdSt_ResourceBindingSuffixTokens,
+                         HDST_RESOURCE_BINDING_SUFFIX_TOKENS);
 
 /// \class HdSt_ResourceBinder
 /// 
@@ -204,33 +215,25 @@ public:
              ShaderParameterAccessor(TfToken const &name,
                                      TfToken const &dataType,
                                      std::string const &swizzle=std::string(),
-                                     TfTokenVector const &inPrimvars=TfTokenVector())
+                                     TfTokenVector const &inPrimvars=TfTokenVector(),
+                                     bool const processTextureFallbackValue = false)
                  : name(name), dataType(dataType), swizzle(swizzle),
-                   inPrimvars(inPrimvars) {}
+                  inPrimvars(inPrimvars),
+                  processTextureFallbackValue(processTextureFallbackValue) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
              std::string swizzle; // e.g. xyzw
-             TfTokenVector inPrimvars;  // for primvar renaming and texture coordinates,
+             TfTokenVector inPrimvars; // for primvar renaming and texture
+                                       // coordinates,
+             bool processTextureFallbackValue; // use NAME_fallback from shader
+                                               // bar if texture is not valid
+                                               // (determineed from bool
+                                               // NAME_valid or bindless
+                                               // handle), only supported for
+                                               // material shader and for uv
+                                               // and field textures.
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
-
-        // -------------------------------------------------------------------
-        // for accessor with fallback value sampling a 3d texture at
-        // coordinates transformed by an associated matrix
-        // 
-        // The accessor will be named NAME (i.e., vec3 HdGet_NAME(vec3 p)) and
-        // will sample FIELDNAMETexture at the coordinate obtained by transforming
-        // p by FIELDNAMESamplineTransform. If FIELDNAMETexture does not exist,
-        // NAMEFallback is used.
-        struct FieldRedirectAccessor {
-            FieldRedirectAccessor() {}
-            FieldRedirectAccessor(TfToken const &name,
-                                  TfToken const &fieldName)
-                : name(name), fieldName(fieldName) {}
-            TfToken name;
-            TfToken fieldName;
-        };
-        typedef std::map<HdBinding, FieldRedirectAccessor> FieldRedirectBinding;
 
         // -------------------------------------------------------------------
         // for specific buffer array (drawing coordinate, instance indices)
@@ -259,7 +262,6 @@ public:
         int instancerNumLevels;
 
         ShaderParameterBinding shaderParameterBinding;
-        FieldRedirectBinding fieldRedirectBinding;
 
         BindingDeclaration drawingCoord0Binding;
         BindingDeclaration drawingCoord1Binding;
@@ -301,7 +303,7 @@ public:
     /// in case if explicit resource location qualifier is not available
     /// (GL 4.2 or before)
     HDST_API
-    void IntrospectBindings(HdStResourceGL const & programResource);
+    void IntrospectBindings(HgiShaderProgramHandle const & hgiProgram);
 
     HDST_API
     void Bind(HdBindingRequest const& req) const;

@@ -35,8 +35,8 @@ NdrNode::NdrNode(
     const TfToken& family,
     const TfToken& context,
     const TfToken& sourceType,
-    const std::string& uri,
-    const std::string& resolvedUri,
+    const std::string& definitionURI,
+    const std::string& implementationURI,
     NdrPropertyUniquePtrVec&& properties,
     const NdrTokenMap& metadata,
     const std::string &sourceCode)
@@ -46,8 +46,8 @@ NdrNode::NdrNode(
       _family(family),
       _context(context),
       _sourceType(sourceType),
-      _uri(uri),
-      _resolvedUri(resolvedUri),
+      _definitionURI(definitionURI),
+      _implementationURI(implementationURI),
       _properties(std::move(properties)),
       _metadata(metadata),
       _sourceCode(sourceCode)
@@ -82,9 +82,11 @@ std::string
 NdrNode::GetInfoString() const
 {
     return TfStringPrintf(
-        "%s (context: '%s', version: '%s', family: '%s'); URI: '%s'",
+        "%s (context: '%s', version: '%s', family: '%s'); definition URI: '%s';"
+        " implementation URI: '%s'",
         NdrGetIdentifierString(_identifier).c_str(), _context.GetText(),
-        _version.GetString().c_str(), _family.GetText(), _uri.c_str()
+        _version.GetString().c_str(), _family.GetText(), 
+        _definitionURI.c_str(), _implementationURI.c_str()
     );
 }
 

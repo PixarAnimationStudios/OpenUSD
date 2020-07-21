@@ -84,6 +84,15 @@ _CreateBlendShapesAttr(UsdSkelBindingAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSkelBindingAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSkel.BindingAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSkelBindingAPI()
@@ -167,6 +176,7 @@ void wrapUsdSkelBindingAPI()
              &This::GetBlendShapeTargetsRel)
         .def("CreateBlendShapeTargetsRel",
              &This::CreateBlendShapeTargetsRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

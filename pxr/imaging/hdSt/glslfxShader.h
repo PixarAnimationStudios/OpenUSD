@@ -27,33 +27,23 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/base/tf/token.h"
-
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class HdStGLSLFXShader> HdStGLSLFXShaderSharedPtr;
-typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
+using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 
 // XXX: DOCS!
-class HdStGLSLFXShader : public HdStSurfaceShader {
+class HdStGLSLFXShader final : public HdStSurfaceShader {
 public:
     HDST_API
     HdStGLSLFXShader(HioGlslfxSharedPtr const& glslfx);
     HDST_API
-    virtual ~HdStGLSLFXShader();
+    ~HdStGLSLFXShader() override;
 
     /// If the prim is based on asset, reload that asset.
     HDST_API
-    virtual void Reload();
+    void Reload() override;
 
 private:
     HioGlslfxSharedPtr _glslfx;

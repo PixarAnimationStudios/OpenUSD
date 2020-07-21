@@ -2,7 +2,7 @@
 
 def "Model"
 {
-    double size.timeSamples = {
+    float size.timeSamples = {
         101.5: 201.5,
         101.75: 201.75,
         102: 202

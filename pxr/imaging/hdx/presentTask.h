@@ -25,18 +25,22 @@
 #define PXR_IMAGING_HDX_PRESENT_TASK_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/fullscreenShader.h"
+#include "pxr/imaging/hdx/task.h"
+#include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 /// \class HdxPresentTask
 ///
-/// A task for taking output AOV data of a HdSt render buffer and rendering it 
-/// to the current GL buffer.
+/// A task for taking the final result of the aovs and compositing it over the 
+/// currently bound framebuffer.
+/// This task uses the 'color' and optionally 'depth' aov's in the task
+/// context.
 ///
-class HdxPresentTask : public HdTask
+class HdxPresentTask : public HdxTask
 {
 public:
     HDX_API
@@ -45,29 +49,22 @@ public:
     HDX_API
     virtual ~HdxPresentTask();
 
-    /// Sync the render pass resources
-    HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
-    /// Prepare the colorize task
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
                          HdRenderIndex* renderIndex) override;
 
-    /// Execute the colorize task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+protected:
+    HDX_API
+    virtual void _Sync(HdSceneDelegate* delegate,
+                       HdTaskContext* ctx,
+                       HdDirtyBits* dirtyBits) override;
+
 private:
-    SdfPath _aovBufferPath;
-    SdfPath _depthBufferPath;
-
-    HdRenderBuffer *_aovBuffer;
-    HdRenderBuffer *_depthBuffer;
-
-    HdxFullscreenShader _compositor;
+    TfToken _interopDst;
+    HgiInterop _interop;
 
     HdxPresentTask() = delete;
     HdxPresentTask(const HdxPresentTask &) = delete;
@@ -81,13 +78,13 @@ private:
 ///
 struct HdxPresentTaskParams
 {
-    HdxPresentTaskParams()
-        : aovBufferPath()
-        , depthBufferPath()
-        {}
+    HdxPresentTaskParams() 
+        : interopDst(HgiTokens->OpenGL)
+    {}
 
-    SdfPath aovBufferPath;
-    SdfPath depthBufferPath;
+    // The graphics lib that is used by the application / viewer.
+    // (The 'interopSrc' is determined by checking Hgi->GetAPIName)
+    TfToken interopDst;
 };
 
 // VtValue requirements

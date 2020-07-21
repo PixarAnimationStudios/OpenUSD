@@ -25,6 +25,7 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,12 +39,17 @@ Hgi::Hgi()
 {
 }
 
-Hgi::~Hgi()
+Hgi::~Hgi() = default;
+
+void
+Hgi::SubmitCmds(HgiCmds* cmds)
 {
+    TRACE_FUNCTION();
+    _SubmitCmds(cmds);
 }
 
-Hgi*
-Hgi::GetPlatformDefaultHgi()
+static Hgi*
+_MakeNewPlatformDefaultHgi()
 {
     // We use the plugin system to construct derived Hgi classes to avoid any
     // linker complications.
@@ -53,7 +59,7 @@ Hgi::GetPlatformDefaultHgi()
     #if defined(ARCH_OS_LINUX)
         const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
     #elif defined(ARCH_OS_DARWIN)
-        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiMetal");
     #elif defined(ARCH_OS_WINDOWS)
         const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
     #else
@@ -86,11 +92,31 @@ Hgi::GetPlatformDefaultHgi()
     return instance;
 }
 
+Hgi*
+Hgi::GetPlatformDefaultHgi()
+{
+    TF_WARN("GetPlatformDefaultHgi is deprecated. "
+            "Please use CreatePlatformDefaultHgi");
+
+    return _MakeNewPlatformDefaultHgi();
+}
+
+HgiUniquePtr
+Hgi::CreatePlatformDefaultHgi()
+{
+    return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
+}
+
 uint64_t
 Hgi::GetUniqueId()
 {
     return _uniqueIdCounter.fetch_add(1);
 }
 
+bool
+Hgi::_SubmitCmds(HgiCmds* cmds)
+{
+    return cmds->_Submit(this);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

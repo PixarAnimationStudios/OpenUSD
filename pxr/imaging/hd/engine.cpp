@@ -51,7 +51,7 @@ HdEngine::~HdEngine()
 }
 
 void 
-HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
+HdEngine::SetTaskContextData(const TfToken &id, const VtValue &data)
 {
     // See if the token exists in the context and if not add it.
     std::pair<HdTaskContext::iterator, bool> result =
@@ -60,6 +60,22 @@ HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
         // Item wasn't new, so need to update it
         result.first->second = data;
     }
+}
+
+bool
+HdEngine::GetTaskContextData(const TfToken &id, VtValue *data) const
+{
+    if (!TF_VERIFY(data)) {
+        return false;
+    }
+
+    auto const& it = _taskContext.find(id);
+    if (it != _taskContext.end()) {
+        *data = it->second;
+        return true;
+    }
+
+    return false;
 }
 
 void

@@ -148,6 +148,12 @@ public:
         _customData.swap(customData);
     }
 
+    /// Returns \c true in the case of an internal reference.
+    ///
+    /// An internal reference is a reference with an empty asset path.
+    ///
+    SDF_API bool IsInternal() const;
+
     friend inline size_t hash_value(const SdfReference &r) {
         size_t h = 0;
         boost::hash_combine(h, r._assetPath);

@@ -127,7 +127,7 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     _useGpuCulling = IsEnabledGPUFrustumCulling();
 
     // note: _useInstancing condition is not necessary. it can be removed
-    //       if we decide always to use instance culling instead of XFB.
+    //       if we decide always to use instance culling.
     _useGpuInstanceCulling = _useInstancing &&
         _useGpuCulling && IsEnabledGPUInstanceFrustumCulling();
 
@@ -179,11 +179,13 @@ bool
 HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
 {
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    // GPU XFB frustum culling should work since GL 4.0, but for now
-    // the shader frustumCull.glslfx requires explicit uniform location
+
+    // GPU frustum culling requires SSBO of bindless buffer
+
     static bool isEnabledGPUFrustumCulling =
         TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
-        (caps.explicitUniformLocation);
+        (caps.shaderStorageBufferEnabled ||
+         caps.bindlessBufferEnabled);
     return isEnabledGPUFrustumCulling &&
        !TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING);
 }
@@ -228,13 +230,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     int drawCount = _drawItemInstances.size();
     if (_drawItemInstances.empty()) return;
 
-    // note that when changing struct definition of XFB culling,
-    // HdSt_IndirectDrawBatch::_CullingProgram::_CustomLink should also be
-    // changed accordingly.
-
     // drawcommand is configured as one of followings:
     //
-    // DrawArrays + XFB culling  : 14 integers (+ numInstanceLevels)
+    // DrawArrays + non-instance culling  : 14 integers (+ numInstanceLevels)
     struct _DrawArraysCommand {
         GLuint count;
         GLuint instanceCount;
@@ -278,7 +276,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint topologyVisibilityDC;
     };
 
-    // DrawElements + XFB culling : 14 integers (+ numInstanceLevels)
+    // DrawElements + non-instance culling : 14 integers (+ numInstanceLevels)
     struct _DrawElementsCommand {
         GLuint count;
         GLuint instanceCount;
@@ -711,8 +709,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // READ THIS CAREFULLY whenever you try to add/remove/shuffle
         // the drawing coordinate struct.
         //
-        // We use (GL_INT, 3) as a type of drawingCoord1 for GPU culling.
-        // Because drawingCoord1 is defined as 4 integers struct,
+        // We use vec2 as a type of drawingCoord1 for GPU culling:
+        //
+        // DrawingCoord1 is defined as 4 integers struct:
         //   GLuint fvarDC;
         //   GLuint instanceIndexDC;
         //   GLuint shaderDC;
@@ -722,12 +721,13 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         //
         //  int GetInstanceIndexCoord() { return GetDrawingCoord1().y; }
         //
-        // so the instanceIndex coord must be the second element.
+        // So the instanceIndex coord must be the second element.
+        // That is why we need to add, at minimum, vec2 for drawingCoord1.
         //
-        // We prefer smaller number of attributes to be processed in
-        // the vertex input assembler, which in general gives a better
-        // performance especially in older hardware. In this case we can't
-        // skip fvarDC without changing CodeGen logic, but we can
+        // We don't add a vec4, since we prefer smaller number of attributes
+        // to be processed in the vertex input assembler, which in general gives
+        // better performance especially in older hardware. In this case we
+        // can't skip fvarDC without changing CodeGen logic, but we can
         // skip shaderDC and vertexDC for culling.
         //
         // XXX: Reorder members of drawingCoord0 and drawingCoord1 in CodeGen,
@@ -771,6 +771,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 _dispatchBufferCullInput->AddBufferResourceView(
                     HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawArraysCommand, modelDC));
+                // cull draw index
+                _dispatchBufferCullInput->AddBufferResourceView(
+                    _tokens->drawCommandIndex, {HdTypeInt32, 1},
+                    offsetof(_DrawArraysCommand, baseInstance));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
                     _tokens->instanceCountInput, {HdTypeInt32, 1},
@@ -811,6 +815,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 _dispatchBufferCullInput->AddBufferResourceView(
                     HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawElementsCommand, modelDC));
+                // cull draw index
+                _dispatchBufferCullInput->AddBufferResourceView(
+                    _tokens->drawCommandIndex, {HdTypeInt32, 1},
+                    offsetof(_DrawElementsCommand, baseInstance));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
                     _tokens->instanceCountInput, {HdTypeInt32, 1},
@@ -1007,9 +1015,11 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
     if (gpuCulling && !freezeCulling) {
         if (_useGpuInstanceCulling) {
-            _GPUFrustumCulling(batchItem, renderPassState, resourceRegistry);
+            _GPUFrustumInstanceCulling(
+                batchItem, renderPassState, resourceRegistry);
         } else {
-            _GPUFrustumCullingXFB(batchItem, renderPassState, resourceRegistry);
+            _GPUFrustumNonInstanceCulling(
+                batchItem, renderPassState, resourceRegistry);
         }
     }
 
@@ -1026,13 +1036,13 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
         GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         if (gpuCulling) {
+            HgiBufferHandle const& buffer =
+                _dispatchBuffer->GetEntireResource()->GetId();
             if (caps.directStateAccessEnabled) {
                 bufferData = glMapNamedBuffer(
-                    _dispatchBuffer->GetEntireResource()->GetId(),
-                    GL_READ_ONLY);
+                    buffer->GetRawResource(), GL_READ_ONLY);
             } else {
-                glBindBuffer(GL_ARRAY_BUFFER,
-                             _dispatchBuffer->GetEntireResource()->GetId());
+                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
                 bufferData = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
@@ -1068,12 +1078,12 @@ HdSt_IndirectDrawBatch::PrepareDraw(
         }
 
         if (gpuCulling) {
+            HgiBufferHandle const& buffer =
+                _dispatchBuffer->GetEntireResource()->GetId();
             if (caps.directStateAccessEnabled) {
-                glUnmapNamedBuffer(
-                        _dispatchBuffer->GetEntireResource()->GetId());
+                glUnmapNamedBuffer(buffer->GetRawResource());
             } else {
-                glBindBuffer(GL_ARRAY_BUFFER,
-                             _dispatchBuffer->GetEntireResource()->GetId());
+                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
                 glUnmapBuffer(GL_ARRAY_BUFFER);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
             }
@@ -1124,7 +1134,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     TF_VERIFY(programId);
 
     GlfDebugLabelProgram(programId, "DrawingProgram");
@@ -1302,7 +1312,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
 }
 
 void
-HdSt_IndirectDrawBatch::_GPUFrustumCulling(
+HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     HdStDrawItem const *batchItem,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -1337,14 +1347,14 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
-    // We perform frustum culling on the GPU using transform feedback,
+    // We perform frustum culling on the GPU with the rasterizer disabled,
     // stomping the instanceCount of each drawing command in the
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
     const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
     // bind buffers
@@ -1452,7 +1462,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
 }
 
 void
-HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
+HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     HdStDrawItem const *batchItem,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -1472,12 +1482,12 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
-    // We perform frustum culling on the GPU using transform feedback,
+    // We perform frustum culling on the GPU with the rasterizer disabled,
     // stomping the instanceCount of each drawing command in the
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
-    GLuint programId = glslProgram->GetProgram().GetId();
+    GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
     const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
@@ -1492,30 +1502,40 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     }
 
     // set cull parameters
+    unsigned int drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
+    binder.BindUniformui(_tokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
     if (_useTinyPrimCulling) {
         binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
     }
 
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0,
-                     _dispatchBuffer->GetEntireResource()->GetId());
-    glBeginTransformFeedback(GL_POINTS);
+    // bind destination buffer (using entire buffer bind to start from offset=0)
+    binder.BindBuffer(_tokens->dispatchBuffer,
+                      _dispatchBuffer->GetEntireResource());
 
     glEnable(GL_RASTERIZER_DISCARD);
     glDrawArrays(GL_POINTS, 0, _dispatchBufferCullInput->GetCount());
     glDisable(GL_RASTERIZER_DISCARD);
 
+    // unbind destination dispatch buffer
+    binder.UnbindBuffer(_tokens->dispatchBuffer,
+                        _dispatchBuffer->GetEntireResource());
+
+    // make sure the culling results (instanceCount)
+    // are synchronized for the next drawing.
+    glMemoryBarrier(
+        GL_COMMAND_BARRIER_BIT |      // instanceCount for MDI
+        GL_SHADER_STORAGE_BARRIER_BIT // instanceCount for shader
+    );
+
+    // a fence has to be added after the memory barrier.
     if (IsEnabledGPUCountVisibleInstances()) {
-        glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
         _cullResultSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     } else {
         _cullResultSync = 0;
     }
-
-    glEndTransformFeedback();
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
 
     // unbind all
     binder.UnbindConstantBuffer(constantBar);
@@ -1534,9 +1554,9 @@ HdSt_IndirectDrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* inst
         int numLevels = instance->GetDrawItem()->GetInstancePrimvarNumLevels();
         int instanceIndexWidth = numLevels + 1;
 
-        // When XFB culling is being used, cullcommand points the same location
-        // as drawcommands. Then we update the same place twice, it would be ok
-        // than branching.
+        // When non-instance culling is being used, cullcommand points the same 
+        // location as drawcommands. Then we update the same place twice, it 
+        // might be better than branching.
         std::vector<GLuint>::iterator instanceCountIt =
             _drawCommandBuffer.begin()
             + batchIndex * commandNumUints
@@ -1582,26 +1602,16 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     }
 
     // Reset visible item count
-    if (_resultBuffer->GetMappedAddress()) {
-        *((GLint *)_resultBuffer->GetMappedAddress()) = 0;
-    } else {
-        GLint count = 0;
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (caps.directStateAccessEnabled) {
-            glNamedBufferSubData(_resultBuffer->GetId(), 0,
-                                 sizeof(count), &count);
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, _resultBuffer->GetId());
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(count), &count);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-    }
+    int32_t count = 0;
+    glNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
+        sizeof(count), &count);
 
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
     int binding = _cullingProgram.GetBinder().GetBinding(
         _tokens->drawIndirectResult).GetLocation();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, _resultBuffer->GetId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding,
+        _resultBuffer->GetBuffer()->GetRawResource());
 }
 
 void
@@ -1618,21 +1628,10 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t *
     }
 
     // Return visible item count
-    if (_resultBuffer->GetMappedAddress()) {
-        *result = *((GLint *)_resultBuffer->GetMappedAddress());
-    } else {
-        GLint count = 0;
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (caps.directStateAccessEnabled) {
-            glGetNamedBufferSubData(_resultBuffer->GetId(), 0,
-                                    sizeof(count), &count);
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, _resultBuffer->GetId());
-            glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(count), &count);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-        *result = count;
-    }
+    int32_t count = 0;
+    glGetNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
+                            sizeof(count), &count);
+    *result = count;
 
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
@@ -1686,68 +1685,22 @@ HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
             HdBindingRequest(HdBinding::UNIFORM,
                 _tokens->ulocResetPass));
     } else {
-        // XFB culling
+        // non-instance culling
+        customBindings->push_back(
+            HdBindingRequest(HdBinding::DRAW_INDEX,
+                _tokens->drawCommandIndex));
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX,
                 _tokens->instanceCountInput));
+        customBindings->push_back(
+            HdBindingRequest(HdBinding::UNIFORM,
+                _tokens->ulocDrawCommandNumUints));
     }
 
     // set instanceDraw true if instanceCulling is enabled.
     // this value will be used to determine if glVertexAttribDivisor needs to
     // be enabled or not.
     *enableInstanceDraw = _useInstanceCulling;
-}
-
-/* virtual */
-bool
-HdSt_IndirectDrawBatch::_CullingProgram::_Link(
-        HdStGLSLProgramSharedPtr const & glslProgram)
-{
-    if (!TF_VERIFY(glslProgram)) return false;
-    if (!glTransformFeedbackVaryings) return false; // glew initialized
-
-    if (!_useInstanceCulling) {
-        // This must match the layout of draw command.
-        // (WBN to encode this in the shader using GL_ARB_enhanced_layouts
-        // but that's not supported in 319.32)
-
-        // CAUTION: this is currently padded to match drawElementsOutputs, since
-        // our shader hash cannot take the XFB varying configuration into
-        // account.
-        const char *drawArraysOutputs[] = {
-            "gl_SkipComponents1",  // count
-            "resultInstanceCount", // instanceCount
-            "gl_SkipComponents4",  // firstIndex - modelDC
-                                   // (includes __reserved_0 to match drawElementsOutput)
-            "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents4",  // instanceIndexDC - topologyVisibilityDC
-        };
-        const char *drawElementsOutputs[] = {
-            "gl_SkipComponents1",  // count
-            "resultInstanceCount", // instanceCount
-            "gl_SkipComponents4",  // firstIndex - modelDC
-            "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents4",  // instanceIndexDC - topologyVisibilityDC
-        };
-        const char **outputs = _useDrawArrays
-            ? drawArraysOutputs
-            : drawElementsOutputs;
-
-        const int nOutputs = 5;
-        static_assert(
-            sizeof(drawArraysOutputs)/sizeof(drawArraysOutputs[0])
-            == nOutputs,
-            "Size of drawArraysOutputs element must equal nOutputs.");
-        static_assert(
-            sizeof(drawElementsOutputs)/sizeof(drawElementsOutputs[0])
-            == nOutputs,
-            "Size of drawElementsOutputs element must equal nOutputs.");
-        glTransformFeedbackVaryings(glslProgram->GetProgram().GetId(),
-                                    nOutputs,
-                                    outputs, GL_INTERLEAVED_ATTRIBS);
-    }
-
-    return HdSt_DrawBatch::_DrawingProgram::_Link(glslProgram);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

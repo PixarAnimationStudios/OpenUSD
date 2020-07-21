@@ -65,12 +65,6 @@ public:
     /// Override with *HDEMBREE_AMBIENT_OCCLUSION_SAMPLES*.
     unsigned int ambientOcclusionSamples;
 
-    /// How many bytes should we allocate for the embree subdivision
-    /// surface cache?
-    ///
-    /// Override with *HDEMBREE_SUBDIVISION_CACHE*.
-    unsigned int subdivisionCache;
-
     /// Should the renderpass jitter camera rays for antialiasing?
     ///
     /// Override with *HDEMBREE_JITTER_CAMERA*. Integer values greater than

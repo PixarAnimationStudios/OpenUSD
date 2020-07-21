@@ -218,7 +218,7 @@ public:
             return HdGetComponentCount(_resource->GetTupleType().type);
         }
         GLuint BindVBO() {
-            return _resource->GetId();
+            return _resource->GetId()->GetRawResource();
         }
         HdStBufferResourceGLSharedPtr _resource;
     };

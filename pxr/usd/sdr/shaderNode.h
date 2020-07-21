@@ -67,7 +67,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define SDR_NODE_ROLE_TOKENS         \
     ((Primvar, "primvar"))           \
     ((Texture, "texture"))           \
-    ((Field, "field"))
+    ((Field, "field"))               \
+    ((Math, "math"))                 \
 
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_API, SDR_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeContext, SDR_API, SDR_NODE_CONTEXT_TOKENS);
@@ -88,8 +89,8 @@ public:
                   const TfToken& family,
                   const TfToken& context,
                   const TfToken& sourceType,
-                  const std::string& uri,
-                  const std::string& resolvedUri,
+                  const std::string& definitionURI,
+                  const std::string& implementationURI,
                   NdrPropertyUniquePtrVec&& properties,
                   const NdrTokenMap& metadata = NdrTokenMap(),
                   const std::string &sourceCode = std::string());

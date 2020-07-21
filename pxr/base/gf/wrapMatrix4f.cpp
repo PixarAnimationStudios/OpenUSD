@@ -250,6 +250,13 @@ static bool __contains__vector( const GfMatrix4f &self, GfVec4f value ) {
     return false;
 }
 
+#if PY_MAJOR_VERSION == 2
+static GfMatrix4f __truediv__(const GfMatrix4f &self, GfMatrix4f value)
+{
+    return self / value;
+}
+#endif
+
 static GfMatrix4f *__init__() {
     // Default constructor produces identity from python.
     return new GfMatrix4f(1);
@@ -409,6 +416,12 @@ void wrapMatrix4f()
         .def( self / self )
         .def( self * GfVec4f() )
         .def( GfVec4f() * self )
+
+#if PY_MAJOR_VERSION == 2
+        // Needed only to support "from __future__ import division" in
+        // python 2. In python 3 builds boost::python adds this for us.
+        .def("__truediv__", __truediv__ )
+#endif
 
         .def("SetTransform",
 	     (This & (This::*)( const GfRotation &,

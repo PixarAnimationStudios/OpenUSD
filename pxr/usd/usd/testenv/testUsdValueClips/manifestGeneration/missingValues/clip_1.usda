@@ -1,0 +1,41 @@
+#usda 1.0
+
+def "Clip"
+{
+    def "A"
+    {
+        double a.timeSamples = {
+            0: 1.0,
+            1: 2.0
+        }
+    
+        double b.timeSamples = {
+            0: 3.0,
+            1: 4.0
+        }
+
+        variantSet "v" = {
+            "a" {
+                double c.timeSamples = {
+                    0: 5.0,
+                    1: 6.0
+                }
+            }
+        }
+
+        double d
+    }
+
+    def "B"
+    {
+        double g.timeSamples = {
+            0: 1.0,
+            1: 2.0
+        }
+    
+        double h.timeSamples = {
+            0: 3.0,
+            1: 4.0
+        }
+    }
+}

@@ -26,8 +26,10 @@
 ///
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
+#include "pxr/imaging/pxOsd/meshTopologyValidation.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
+#include "pxr/base/arch/hash.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/debug.h"
@@ -43,18 +45,10 @@ PxOsdMeshTopology::PxOsdMeshTopology() :
     _holeIndices(),
     _subdivTags() { }
 
-PxOsdMeshTopology::PxOsdMeshTopology(PxOsdMeshTopology const & src) :
-    _scheme(src._scheme),
-    _orientation(src._orientation),
-    _faceVertexCounts(src._faceVertexCounts),
-    _faceVertexIndices(src._faceVertexIndices),
-    _holeIndices(src._holeIndices),
-    _subdivTags(src._subdivTags) { }
-
-PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
-                                     TfToken orientation,
-                                     VtIntArray faceVertexCounts,
-                                     VtIntArray faceVertexIndices) :
+PxOsdMeshTopology::PxOsdMeshTopology(TfToken const& scheme,
+                                     TfToken const& orientation,
+                                     VtIntArray const& faceVertexCounts,
+                                     VtIntArray const& faceVertexIndices) :
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
@@ -62,24 +56,43 @@ PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
     _holeIndices(),
     _subdivTags() { }
 
-PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
-                                     TfToken orientation,
-                                     VtIntArray faceVertexCounts,
-                                     VtIntArray faceVertexIndices,
-                                     VtIntArray holeIndices) :
+PxOsdMeshTopology::PxOsdMeshTopology(TfToken const& scheme,
+                                     TfToken const& orientation,
+                                     VtIntArray const& faceVertexCounts,
+                                     VtIntArray const& faceVertexIndices,
+                                     VtIntArray const& holeIndices) :
+    _scheme(scheme),
+    _orientation(orientation),
+    _faceVertexCounts(faceVertexCounts),
+    _faceVertexIndices(faceVertexIndices),
+    _holeIndices(holeIndices),
+    _subdivTags() { }
+
+PxOsdMeshTopology::PxOsdMeshTopology(TfToken const& scheme,
+                                     TfToken const& orientation,
+                                     VtIntArray const& faceVertexCounts,
+                                     VtIntArray const& faceVertexIndices,
+                                     VtIntArray const& holeIndices,
+                                     PxOsdSubdivTags const& subdivTags) :
+    _scheme(scheme),
+    _orientation(orientation),
+    _faceVertexCounts(faceVertexCounts),
+    _faceVertexIndices(faceVertexIndices),
+    _holeIndices(holeIndices),
+    _subdivTags(subdivTags) { }
+
+PxOsdMeshTopology::PxOsdMeshTopology(TfToken const& scheme,
+                                     TfToken const& orientation,
+                                     VtIntArray const& faceVertexCounts,
+                                     VtIntArray const& faceVertexIndices,
+                                     PxOsdSubdivTags const& subdivTags) :
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
     _faceVertexIndices(faceVertexIndices),
     _holeIndices(),
-    _subdivTags()
-{
-    SetHoleIndices(holeIndices);
-}
-
-
-PxOsdMeshTopology::~PxOsdMeshTopology() { }
-
+    _subdivTags(subdivTags)
+{ }
 
 PxOsdMeshTopology::ID
 PxOsdMeshTopology::ComputeHash() const {
@@ -109,6 +122,19 @@ PxOsdMeshTopology::operator==(PxOsdMeshTopology const &other) const {
             _faceVertexIndices == other._faceVertexIndices  && 
             _subdivTags == other._subdivTags                && 
             _holeIndices == other._holeIndices);
+}
+
+PxOsdMeshTopologyValidation
+PxOsdMeshTopology::Validate() const
+{
+    TRACE_FUNCTION();
+    if (_validated.value){
+        return PxOsdMeshTopologyValidation();
+    }
+
+    PxOsdMeshTopologyValidation validation(*this);
+    _validated.value.store(bool(validation));
+    return validation;
 }
 
 std::ostream&

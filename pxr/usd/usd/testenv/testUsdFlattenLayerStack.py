@@ -94,10 +94,6 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
                 self.assertTrue(stage.GetPrimAtPath(childPath))
 
             # Confirm time samples coming from (offset) clips.
-            p = stage.GetPrimAtPath('/SphereUsingClip_LegacyForm')
-            a = p.GetAttribute('xformOp:translate')
-            self.assertEqual( a.GetResolveInfo(5).GetSource(),
-                    Usd.ResolveInfoSourceValueClips )
             p = stage.GetPrimAtPath('/SphereUsingClip')
             a = p.GetAttribute('xformOp:translate')
             self.assertEqual( a.GetResolveInfo(5).GetSource(),
@@ -178,15 +174,10 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
                 ['/Del_sub', '/Del_root'])
 
         # Confirm offsets have been folded into value clips.
-        p1 = layer.GetPrimAtPath('/SphereUsingClip_LegacyForm')
-        p2 = layer.GetPrimAtPath('/SphereUsingClip')
-        self.assertEqual( p1.GetInfo('clipActive'),
-           Vt.Vec2dArray(1, [(-9.0, 0.0)]) )
-        self.assertEqual( p1.GetInfo('clipTimes'),
-           Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
-        self.assertEqual( p2.GetInfo('clips')['default']['active'],
+        p = layer.GetPrimAtPath('/SphereUsingClip')
+        self.assertEqual( p.GetInfo('clips')['default']['active'],
            Vt.Vec2dArray(1, [(-9.0, 0)]) )
-        self.assertEqual( p2.GetInfo('clips')['default']['times'],
+        self.assertEqual( p.GetInfo('clips')['default']['times'],
            Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
 
         # Confirm nested variant sets still exist
@@ -266,6 +257,19 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         # strong time samples will override a weaker value block
         d = prim.GetAttribute('d')
         self.assertEqual(d.Get(1), 789)
+
+    def test_ValueTypeMismatch(self):
+        src_stage = Usd.Stage.Open('valueTypeMismatch_root.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='valueBlocks')
+        print(layer.ExportToString())
+        result_stage = Usd.Stage.Open(layer)
+
+        # Verify that the strongest value type prevailed
+        prim = result_stage.GetPrimAtPath('/p')
+        a = prim.GetAttribute('x')
+        self.assertEqual(a.Get(), Vt.IntArray(1, (0,)))
+
 
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.

@@ -1,0 +1,4 @@
+#usda 1.0
+def "p" {
+    int x = 0
+}

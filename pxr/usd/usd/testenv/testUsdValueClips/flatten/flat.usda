@@ -1,8 +1,6 @@
 #usda 1.0
 
-def "Model_1" (
-    kind = "model"
-)
+def "Model_1"
 {
     float size = 1
     float size.timeSamples = {
@@ -10,11 +8,12 @@ def "Model_1" (
         5: -5,
         10: -10,
         15: -15,
+        15.999999995559108: -15,
         16: -23,
         19: -23,
         22: -26,
         25: -29,
-        31: -29,
+        32: -29,
     }
 }
 

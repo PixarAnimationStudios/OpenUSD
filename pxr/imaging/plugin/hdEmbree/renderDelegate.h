@@ -31,7 +31,7 @@
 #include "pxr/base/tf/staticTokens.h"
 
 #include <mutex>
-#include <embree2/rtcore.h>
+#include <embree3/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -286,7 +286,7 @@ private:
 
     // A callback that interprets embree error codes and injects them into
     // the hydra logging system.
-    static void HandleRtcError(const RTCError code, const char *msg);
+    static void HandleRtcError(void* userPtr, RTCError code, const char *msg);
 };
 
 

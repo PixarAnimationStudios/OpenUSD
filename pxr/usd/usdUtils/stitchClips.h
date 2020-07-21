@@ -67,7 +67,13 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///                           highest endTimeCode authored from the 
 ///                           \p clipLayers.
 ///
-/// \p clipSet            The name of the clipSet in which the
+/// \p interpolateMissingClipValues
+///                           Whether values for clips without samples are
+///                           interpolated from surrounding clips. See
+///                           UsdClipsAPI::GetInterpolateMissingClipValues
+///                           for more details.
+///
+/// \p clipSet                The name of the clipSet in which the
 ///                           aforementioned metadata will be authored.
 ///                           \note If this parameter is omitted, the default
 ///                           clipSet name will be authored.
@@ -114,6 +120,8 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                         = std::numeric_limits<double>::max(),
                     const double endTimeCode
                         = std::numeric_limits<double>::max(),
+                    const bool interpolateMissingClipValues
+                        = false,
                     const TfToken& clipSet
                         = UsdClipsAPISetNames->default_);
 
@@ -164,6 +172,12 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 ///                           \note If this parameter is omitted, no value 
 ///                           will be authored as the metadata is optional. 
 ///
+/// \p interpolateMissingClipValues
+///                           Whether values for clips without samples are
+///                           interpolated from surrounding clips. See
+///                           UsdClipsAPI::GetInterpolateMissingClipValues
+///                           for more details.
+///
 /// \p clipSet                The name of the clipSet in which the
 ///                           aforementioned metadata will be authored.
 ///                           \note If this parameter is omitted, the default
@@ -182,6 +196,8 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const double stride,
                             const double activeOffset
                                 = std::numeric_limits<double>::max(),
+                            const bool interpolateMissingClipValues
+                                = false,
                             const TfToken& clipSet
                                 = UsdClipsAPISetNames->default_);
 

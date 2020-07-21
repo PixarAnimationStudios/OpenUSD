@@ -70,6 +70,15 @@ _CreatePointIndicesAttr(UsdSkelBlendShape &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSkelBlendShape &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSkel.BlendShape(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSkelBlendShape()
@@ -124,6 +133,7 @@ void wrapUsdSkelBlendShape()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

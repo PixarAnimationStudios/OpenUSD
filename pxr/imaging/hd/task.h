@@ -39,7 +39,6 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,6 +161,11 @@ public:
 
 
 protected:
+    /// Check if the shared context contains a value for the given id.
+    HD_API
+    static bool _HasTaskContextData(HdTaskContext const* ctx,
+                                    TfToken const& id);
+
     /// Extracts a typed value out of the task context at the given id.
     /// If the id is missing or of the wrong type, the code will
     /// throw a verify error, return false and outValue will be unmodified.

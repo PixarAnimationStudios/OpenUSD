@@ -31,6 +31,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/math.h"
 #include "pxr/base/gf/api.h"
+#include "pxr/base/gf/traits.h"
+
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -232,15 +235,36 @@ inline T GfMax(T a1, T a2, T a3, T a4, T a5) {
 /// Returns the dot (inner) product of two vectors.
 /// For scalar types, this is just the regular product.
 /// \ingroup group_gf_BasicMath
-inline float GfDot(float a, float b) {
-    return a * b;
+template <typename Left, typename Right,
+          std::enable_if_t<GfIsArithmetic<Left>::value &&
+                           GfIsArithmetic<Right>::value, int> = 0>
+inline decltype(std::declval<Left>() * std::declval<Right>())
+GfDot(Left left, Right right) {
+    return left * right;
 }
-/// Returns the dot (inner) product of two vectors.
+
+/// Returns component-wise multiplication of vectors.
 /// For scalar types, this is just the regular product.
 /// \ingroup group_gf_BasicMath
-inline double GfDot(double a, double b) {
-    return a * b;
+template <typename Left, typename Right,
+          std::enable_if_t<GfIsArithmetic<Left>::value &&
+                           GfIsArithmetic<Right>::value, int> = 0>
+inline decltype(std::declval<Left>() * std::declval<Right>())
+GfCompMult(Left left, Right right) {
+    return left * right;
 }
+
+/// Returns component-wise quotient of vectors.
+/// For scalar types, this is just the regular quotient.
+/// \ingroup group_gf_BasicMath
+template <typename Left, typename Right,
+          std::enable_if_t<GfIsArithmetic<Left>::value &&
+                           GfIsArithmetic<Right>::value, int> = 0>
+inline decltype(std::declval<Left>() / std::declval<Right>())
+GfCompDiv(Left left, Right right) {
+    return left / right;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

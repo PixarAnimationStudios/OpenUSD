@@ -31,8 +31,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <atomic>
 #include <memory>
 #include <vector>
@@ -54,7 +52,8 @@ using HdBufferSourceWeakPtr = std::weak_ptr<HdBufferSource>;
 /// resource registry with the buffer array range that specifies the
 /// destination resource.
 ///
-class HdBufferSource : public boost::noncopyable {
+class HdBufferSource 
+{
 public:
     HdBufferSource() : _state(UNRESOLVED) { }
 
@@ -195,6 +194,10 @@ protected:
     virtual bool _CheckValid() const = 0;
 
 private:
+    // Don't allow copies
+    HdBufferSource(const HdBufferSource &) = delete;
+    HdBufferSource &operator=(const HdBufferSource &) = delete;
+
     enum State { UNRESOLVED=0, BEING_RESOLVED, RESOLVED,  RESOLVE_ERROR};
     std::atomic<State> _state;
 };

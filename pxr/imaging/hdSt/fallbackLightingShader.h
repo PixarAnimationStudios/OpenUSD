@@ -34,8 +34,6 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <vector>
 

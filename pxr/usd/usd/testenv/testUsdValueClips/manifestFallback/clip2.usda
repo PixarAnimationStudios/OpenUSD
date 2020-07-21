@@ -1,0 +1,22 @@
+#usda 1.0
+
+def "Model"
+{
+    double fallbackInManifest.timeSamples = {
+        0: 20.0,
+        1: 22.0,
+        2: 24.0
+    }
+
+    double fallbackBlockInManifest.timeSamples = {
+        0: 20.0,
+        1: 22.0,
+        2: 24.0
+    }
+
+    double noFallbackInManifest.timeSamples = {
+        0: 20.0,
+        1: 22.0,
+        2: 24.0
+    }
+}

@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    fallbackPrimTypes = {
+        token[] ValidType_2 = ["ValidType_1"]
+        token[] InvalidType_2 = ["ValidType_2"]
+        token[] InvalidType_3 = ["ValidType_1", "ValidType_2"]
+        token[] InvalidType_4 = ["InvalidType_3", "ValidType_2"]
+        token[] InvalidType_5 = ["InvalidType_3", "InvalidType_2"]
+    }
+)
+
+def ValidType_1 "ValidPrim_1" (
+    apiSchemas = []
+) 
+{
+}
+
+def ValidType_2 "ValidPrim_2" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_1 "InvalidPrim_1" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_2 "InvalidPrim_2" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_3 "InvalidPrim_3" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_4 "InvalidPrim_4" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_5 "InvalidPrim_5" (
+    apiSchemas = []
+) 
+{
+}
+
+def InvalidType_1 "InvalidPrim_WithAPISchemas_1" (
+    apiSchemas = ["CollectionAPI:foo"]
+) 
+{
+}
+
+def InvalidType_2 "InvalidPrim_WithAPISchemas_2" (
+    apiSchemas = ["CollectionAPI:foo"]
+) 
+{
+}

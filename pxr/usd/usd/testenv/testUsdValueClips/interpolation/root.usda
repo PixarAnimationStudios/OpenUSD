@@ -13,3 +13,31 @@ def "InterpolationTest" (
 )
 {
 }
+
+def "ClipInterpolationTest" (
+    clips = {
+        dictionary "default" = {
+            asset[] assetPaths = [@./interp_1.usda@, @./interp_2.usda@]
+            string primPath = "/Clip"
+            double2[] active = [(0, 0), (1, 1)]
+            double2[] times = [(0, 0), (3, 3)]
+        }
+    }
+    references = @./ref.usda@</Ref>
+)
+{
+}
+
+def "ClipInterpolationTest2" (
+    clips = {
+        dictionary "default" = {
+            asset[] assetPaths = [@./interp_1.usda@, @./interp_2.usda@]
+            string primPath = "/Clip"
+            double2[] active = [(0, 0), (1, 1)]
+            double2[] times = [(0, 0), (1, 1), (1, 1), (3, 3)]
+        }
+    }
+    references = @./ref.usda@</Ref>
+)
+{
+}

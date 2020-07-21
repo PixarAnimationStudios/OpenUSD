@@ -56,6 +56,15 @@ _CreateExtentAttr(UsdGeomBoundable &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomBoundable &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Boundable(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomBoundable()
@@ -93,6 +102,7 @@ void wrapUsdGeomBoundable()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

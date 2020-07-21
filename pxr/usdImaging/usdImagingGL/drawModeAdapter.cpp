@@ -23,17 +23,12 @@
 //
 #include "pxr/usdImaging/usdImagingGL/drawModeAdapter.h"
 #include "pxr/usdImaging/usdImagingGL/package.h"
-#include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
-#include "pxr/usdImaging/usdImaging/debugCodes.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/material.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -72,6 +67,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (rgba)
     (fallback)
+    (minFilter)
+    (magFilter)
+    (linear)
+    (linearMipmapLinear)
 
     (varname)
     (result)
@@ -176,8 +175,8 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         drawMode == UsdGeomTokens->bounds) {
         // Origin and bounds both draw as basis curves
         if (!index->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves)) {
-            TF_WARN("Unable to load cards for model %s, "
-                    "basis curves not supported", cachePath.GetText());
+            TF_WARN("Unable to display origin or bounds draw mode for model "
+                    "%s, basis curves not supported", cachePath.GetText());
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
@@ -186,7 +185,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
         if (!index->IsRprimTypeSupported(HdPrimTypeTokens->mesh)) {
-            TF_WARN("Unable to load cards for model %s, "
+            TF_WARN("Unable to display cards draw mode for model %s, "
                     "meshes not supported", cachePath.GetText());
             return SdfPath();
         }
@@ -407,7 +406,9 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
 
             for (int i = 0; i < 6; ++i) {
-                if (UsdAttribute attr = prim.GetAttribute(textureAttrs[i])) {
+                UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
+                SdfAssetPath textureFile;
+                if (attr && attr.Get(&textureFile, time)) {
                     SdfPath textureNodePath = _GetMaterialPath(prim)
                         .AppendProperty(textureAttrs[i]);
 
@@ -417,10 +418,11 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     textureNode.identifier = UsdImagingTokens->UsdUVTexture;
                     textureNode.parameters[_tokens->st] = _tokens->cardsUv;
                     textureNode.parameters[_tokens->fallback] = fallback;
-                    VtValue textureFile;
-                    if (attr && attr.Get(&textureFile, time)) {
-                        textureNode.parameters[_tokens->file] = textureFile;
-                    }
+                    textureNode.parameters[_tokens->file] = textureFile;
+                    textureNode.parameters[_tokens->minFilter] =
+                        _tokens->linearMipmapLinear;
+                    textureNode.parameters[_tokens->magFilter] =
+                        _tokens->linear;
 
                     // Insert connection between texture node and terminal
                     HdMaterialRelationship rel;
@@ -569,12 +571,24 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             } else {
                 // Generate mask for suppressing axes with no textures
                 uint8_t axes_mask = 0;
-                if (model.GetModelCardTextureXPosAttr()) axes_mask |= xPos;
-                if (model.GetModelCardTextureXNegAttr()) axes_mask |= xNeg;
-                if (model.GetModelCardTextureYPosAttr()) axes_mask |= yPos;
-                if (model.GetModelCardTextureYNegAttr()) axes_mask |= yNeg;
-                if (model.GetModelCardTextureZPosAttr()) axes_mask |= zPos;
-                if (model.GetModelCardTextureZNegAttr()) axes_mask |= zNeg;
+                const TfToken textureAttrs[6] = {
+                    UsdGeomTokens->modelCardTextureXPos,
+                    UsdGeomTokens->modelCardTextureYPos,
+                    UsdGeomTokens->modelCardTextureZPos,
+                    UsdGeomTokens->modelCardTextureXNeg,
+                    UsdGeomTokens->modelCardTextureYNeg,
+                    UsdGeomTokens->modelCardTextureZNeg,
+                };
+                const uint8_t mask[6] = {
+                    xPos, yPos, zPos, xNeg, yNeg, zNeg,
+                };
+                for (int i = 0; i < 6; ++i) {
+                    UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
+                    SdfAssetPath asset;
+                    if (attr && attr.Get(&asset, time)) {
+                        axes_mask |= mask[i];
+                    }
+                }
 
                 // If no textures are bound, generate the full geometry.
                 if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }
@@ -919,10 +933,12 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     VtIntArray faceCounts = VtIntArray(faces.size());
     VtIntArray faceIndices = VtIntArray(faces.size() * 4);
 
-    GfVec3f corners[4] = { GfVec3f(-1, -1, 0), GfVec3f(-1, 1, 0),
-                           GfVec3f(1, 1, 0), GfVec3f(1, -1, 0) };
-    GfVec2f std_uvs[4] = { GfVec2f(0,0), GfVec2f(0,1),
-                           GfVec2f(1,1), GfVec2f(1,0) };
+    static const std::array<GfVec3f, 4> corners = {
+        GfVec3f(-1, -1,  0), GfVec3f(-1,  1,  0),
+        GfVec3f( 1,  1,  0), GfVec3f( 1, -1,  0) };
+    static const std::array<GfVec2f, 4> std_uvs = 
+        std::array<GfVec2f, 4>(
+            {GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1) });
 
     for(size_t i = 0; i < faces.size(); ++i) {
         GfMatrix4d screenToWorld = faces[i].first.GetInverse();
@@ -1032,6 +1048,17 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     return false;
 }
 
+static
+std::array<GfVec2f, 4>
+_GetUVsForQuad(const bool flipU, bool flipV)
+{
+    return {
+        GfVec2f(flipU ? 0.0 : 1.0, flipV ? 0.0 : 1.0),
+        GfVec2f(flipU ? 1.0 : 0.0, flipV ? 0.0 : 1.0),
+        GfVec2f(flipU ? 1.0 : 0.0, flipV ? 1.0 : 0.0),
+        GfVec2f(flipU ? 0.0 : 1.0, flipV ? 1.0 : 0.0) };
+}
+
 void
 UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
         VtValue *uv, VtValue *assign, uint8_t axes_mask) const
@@ -1042,35 +1069,41 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
     // This function generates face-varying UVs, and also uniform indices
     // for each face specifying which texture to sample.
 
-    const GfVec2f uv_normal[4] =
-        { GfVec2f(1,0), GfVec2f(0,0), GfVec2f(0,1), GfVec2f(1,1) };
-    const GfVec2f uv_flipped_s[4] =
-        { GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1), GfVec2f(0,1) };
-    const GfVec2f uv_flipped_t[4] =
-        { GfVec2f(1,1), GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0) };
-    const GfVec2f uv_flipped_st[4] =
-        { GfVec2f(0,1), GfVec2f(1,1), GfVec2f(1,0), GfVec2f(0,0) };
+    static const std::array<GfVec2f, 4> uv_normal =
+        _GetUVsForQuad(false, false);
+    static const std::array<GfVec2f, 4> uv_flipped_s =
+        _GetUVsForQuad(true, false);
+    static const std::array<GfVec2f, 4> uv_flipped_t =
+        _GetUVsForQuad(false, true);
+    static const std::array<GfVec2f, 4> uv_flipped_st =
+        _GetUVsForQuad(true, true);
 
-    std::vector<const GfVec2f*> uv_faces;
+    std::vector<const GfVec2f *> uv_faces;
     std::vector<int> face_assign;
     if (axes_mask & xAxis) {
-        uv_faces.push_back((axes_mask & xPos) ? uv_normal : uv_flipped_s);
+        uv_faces.push_back(
+            (axes_mask & xPos) ? uv_normal.data() : uv_flipped_s.data());
         face_assign.push_back((axes_mask & xPos) ? xPos : xNeg);
-        uv_faces.push_back((axes_mask & xNeg) ? uv_normal : uv_flipped_s);
+        uv_faces.push_back(
+            (axes_mask & xNeg) ? uv_normal.data() : uv_flipped_s.data());
         face_assign.push_back((axes_mask & xNeg) ? xNeg : xPos);
     }
     if (axes_mask & yAxis) {
-        uv_faces.push_back((axes_mask & yPos) ? uv_normal : uv_flipped_s);
+        uv_faces.push_back(
+            (axes_mask & yPos) ? uv_normal.data() : uv_flipped_s.data());
         face_assign.push_back((axes_mask & yPos) ? yPos : yNeg);
-        uv_faces.push_back((axes_mask & yNeg) ? uv_normal : uv_flipped_s);
+        uv_faces.push_back(
+            (axes_mask & yNeg) ? uv_normal.data() : uv_flipped_s.data());
         face_assign.push_back((axes_mask & yNeg) ? yNeg : yPos);
     }
     if (axes_mask & zAxis) {
         // (Z+) and (Z-) need to be flipped on the (t) axis instead of the (s)
         // axis when we're borrowing a texture from the other side of the axis.
-        uv_faces.push_back((axes_mask & zPos) ? uv_normal : uv_flipped_t);
+        uv_faces.push_back(
+            (axes_mask & zPos) ? uv_normal.data() : uv_flipped_t.data());
         face_assign.push_back((axes_mask & zPos) ? zPos : zNeg);
-        uv_faces.push_back((axes_mask & zNeg) ? uv_flipped_st : uv_flipped_s);
+        uv_faces.push_back(
+            (axes_mask & zNeg) ? uv_flipped_st.data() : uv_flipped_s.data());
         face_assign.push_back((axes_mask & zNeg) ? zNeg : zPos);
     }
 
@@ -1145,35 +1178,6 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         }
         return extent;
     }
-}
-
-HdTextureResource::ID
-UsdImagingGLDrawModeAdapter::GetTextureResourceID(UsdPrim const& usdPrim,
-                                                       SdfPath const &id,
-                                                       UsdTimeCode time,
-                                                       size_t salt) const
-{
-    return UsdImagingGL_GetTextureResourceID(usdPrim, id, time, salt);
-}
-
-HdTextureResourceSharedPtr
-UsdImagingGLDrawModeAdapter::GetTextureResource(UsdPrim const& usdPrim,
-                                                     SdfPath const &id,
-                                                     UsdTimeCode time) const
-{
-    // When we inserted the material network, the texture node used a path
-    // that inserted the material Sprim path so we can find the primInfo.
-    //    /World/MyPIXform/PI/Protos/P1/material.model:cardTextureXPos
-    // The actual textures are authored on the prim, so convert path to:
-    //    /World/MyPIXform/PI/Protos/P1.model:cardTextureXPos
-
-    SdfPath materialPath = id.GetParentPath();
-    SdfPath primPath = materialPath.GetParentPath();
-    SdfPath textureAttrPath = primPath.AppendProperty(id.GetNameToken());
-
-    UsdPrim texturePrim = _GetPrim(primPath);
-
-    return UsdImagingGL_GetTextureResource(texturePrim, textureAttrPath, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

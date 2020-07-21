@@ -1,0 +1,35 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+    doc = """Test for hermite curve conversion to and from Abc."""
+)
+
+def Scope "Cubic"{
+    def Scope "Ribbons"{
+        def HermiteCurves "VaryingWidth" (){
+            int[] curveVertexCounts = [3]
+            point3f[] points = [(0, 0, 0), (1, 1, 0), (2, 0, 0)]
+            vector3f[] tangents = [(0, 1, 0), (1, 0, 0), (0, -1, 0)]
+            float[] widths = [0, .5, 0] (interpolation = "varying")
+            normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                interpolation = "varying"
+            )
+            color3f[] primvars:displayColor = [(1, 1, 0)] (
+                interpolation = "constant"
+            )
+        }
+    }
+    def Scope "Tubes"{
+        def HermiteCurves "WithVelocities" (){
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 0)]
+            vector3f[] tangents = [(0, 1, 0), (1, 0, 0)]
+            vector3f[] velocities = [(0, 1, 0), (1, 0, 0)]
+            float[] widths = [0, .5] (interpolation = "varying")
+            color3f[] primvars:displayColor = [(1, 1, 0)] (
+                interpolation = "constant"
+            )
+        }
+    }
+}

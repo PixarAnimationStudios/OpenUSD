@@ -74,7 +74,9 @@ int main(int argc, char *argv[])
     GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
     GLfloat clearDepth[1] = { 1.0f };
 
-    std::unique_ptr<Hgi> hgi(Hgi::GetPlatformDefaultHgi());
+    // Hgi and HdDriver should be constructed before HdEngine to ensure they
+    // are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
     HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
 
     HdStRenderDelegate renderDelegate;

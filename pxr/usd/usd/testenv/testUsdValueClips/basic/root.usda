@@ -15,6 +15,7 @@ def "Model_1" (
     clips = {
         dictionary default = {
             asset[] assetPaths = [@./clip.usda@]
+            asset manifestAssetPath = @./manifest.usda@
             string primPath = "/Model"
             double2[] active = [(10.0, 0)]
         }

@@ -40,7 +40,9 @@
 // 30 -> 31: added pre-chained buffer sources
 // 31 -> 32: renamed HdShader{Param} to HdMaterial{Param}
 // 32 -> 33: Deleted GetPathForInstanceIndex; added GetScenePrimPath.
-#define HD_API_VERSION 33
+// 32 -> 34: Added HdInstancerContext to GetScenePrimPath.
+// 34 -> 35: HdRepr is using std::unique_ptr<HdDrawItem>
+#define HD_API_VERSION 35
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

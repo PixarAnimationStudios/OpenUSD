@@ -8,12 +8,21 @@ def "ModelGroup"
         15: -15.0
     }
 
-    def "Model"
+    def "Subgroup"
     {
         float attr.timeSamples = {
             5: -5.0,
             10: -10.0,
             15: -15.0
+        }
+
+        def "Model"
+        {
+            float attr.timeSamples = {
+                5: -5.0,
+                10: -10.0,
+                15: -15.0
+            }
         }
     }
 }

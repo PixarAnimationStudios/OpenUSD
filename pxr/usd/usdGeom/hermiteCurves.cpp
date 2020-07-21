@@ -159,3 +159,58 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdGeomHermiteCurves::PointAndTangentArrays::PointAndTangentArrays(
+    const VtArray<GfVec3f>& interleaved)
+{
+    if (interleaved.empty()){
+        return;
+    }
+    if (interleaved.size() % 2 != 0) {
+        TF_CODING_ERROR(
+            "Cannot separate odd-shaped interleaved points and tangents "
+            "data.");
+        return;
+    }
+    _points.resize(interleaved.size() / 2);
+    _tangents.resize(interleaved.size() / 2);
+    auto interleavedIt = interleaved.cbegin();
+    auto pointsIt = _points.begin();
+    auto tangentsIt = _tangents.begin();
+    while (interleavedIt != interleaved.end()) {
+        *pointsIt = *interleavedIt;
+        std::advance(pointsIt, 1);
+        std::advance(interleavedIt, 1);
+        *tangentsIt = *interleavedIt;
+        std::advance(tangentsIt, 1);
+        std::advance(interleavedIt, 1);
+    }
+    TF_VERIFY(pointsIt == _points.end());
+    TF_VERIFY(tangentsIt == _tangents.end());
+}
+
+VtVec3fArray UsdGeomHermiteCurves::PointAndTangentArrays::Interleave() const
+{
+    if (IsEmpty()) {
+        return VtVec3fArray();
+    }
+    VtVec3fArray interleaved(GetPoints().size() * 2);
+    auto interleavedIt = interleaved.begin();
+    auto pointsIt = GetPoints().cbegin();
+    auto tangentsIt = GetTangents().cbegin();
+    while (interleavedIt != interleaved.end()) {
+        *interleavedIt = *pointsIt;
+        std::advance(pointsIt, 1);
+        std::advance(interleavedIt, 1);
+        *interleavedIt = *tangentsIt;
+        std::advance(tangentsIt, 1);
+        std::advance(interleavedIt, 1);
+    }
+    TF_VERIFY(pointsIt == GetPoints().cend());
+    TF_VERIFY(tangentsIt == GetTangents().cend());
+    return interleaved;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -144,6 +144,10 @@ public:
         const std::string& resolvedPath) override;
 
     AR_API
+    virtual bool CreatePathForLayer(
+        const std::string& path) override;
+
+    AR_API
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override;

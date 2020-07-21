@@ -25,19 +25,15 @@
 #define PXR_IMAGING_HGIGL_DEVICE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgiGL/api.h"
 #include "pxr/imaging/hgiGL/framebufferCache.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 
-#include <functional>
-#include <ostream>
 #include <fstream>
-#include <vector>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using HgiGLOpsFn = std::function<void(void)>;
-using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
 
 
 /// \class HgiGlDevice
@@ -57,12 +53,11 @@ public:
     /// Do not hold onto the framebuffer Id. Instead re0acquire it every frame.
     /// Framebuffer are internally managed in a framebuffer cache.
     HGIGL_API
-    uint32_t AcquireFramebuffer(HgiGraphicsEncoderDesc const& desc);
+    uint32_t AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc);
 
-    /// Helper function used by encoders to execute all their deferred
-    /// command functions ('ops') during the encoder commit phase.
+    /// Execute the provided functions / ops. This will emit the GL calls.
     HGIGL_API
-    static void Commit(HgiGLOpsVector const& ops);
+    void SubmitOps(HgiGLOpsVector const& ops);
 
 private:
     HgiGLDevice & operator=(const HgiGLDevice&) = delete;

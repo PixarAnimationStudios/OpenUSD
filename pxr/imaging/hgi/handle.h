@@ -58,7 +58,7 @@ public:
     }
 
     // Note this only checks if a ptr is set, it does not offer weak_ptr safety.
-    operator bool() const {return _ptr;}
+    explicit operator bool() const {return _ptr!=nullptr;}
 
     // Pointer access operator
     T* operator ->() const {return _ptr;}
@@ -77,13 +77,6 @@ private:
     // This function is in-accessible by clients using this handle, but
     // accessible by the Hgi friend class that created the handle. 
     friend class Hgi;
-
-    HGI_API
-    void _Destroy() {
-        delete _ptr;
-        _ptr = nullptr;
-        _id = 0;
-    }
 
     T* _ptr;
     uint64_t _id;

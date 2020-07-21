@@ -17,6 +17,7 @@ pxr_library(pxOsd
 
     PUBLIC_CLASSES
         meshTopology
+        meshTopologyValidation
         refinerFactory
         subdivTags
         tokens
@@ -27,7 +28,9 @@ pxr_library(pxOsd
     PYMODULE_CPPFILES
         module.cpp
         wrapMeshTopology.cpp
+        wrapMeshTopologyValidation.cpp
         wrapSubdivTags.cpp
+        wrapTokens.cpp
 
     PYMODULE_FILES
         __init__.py

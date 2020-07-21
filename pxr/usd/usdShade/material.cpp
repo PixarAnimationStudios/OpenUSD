@@ -400,7 +400,7 @@ SdfPath
 UsdShadeMaterial::GetBaseMaterialPath() const 
 {
     SdfPath parentMaterialPath = FindBaseMaterialPathInPrimIndex(
-        GetPrim().GetPrimIndex(), [=](const SdfPath &p) {
+        GetPrim().GetPrimIndex(), [this](const SdfPath &p) {
             return bool(_GetMaterialAtPath(GetPrim(), p));
         });
 

@@ -41,20 +41,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
 enum HgiFormat
 {
-    HgiFormatInvalid=-1,
+    HgiFormatInvalid = -1,
 
     // UNorm8 - a 1-byte value representing a float between 0 and 1.
     // float value = (unorm / 255.0f);
-    HgiFormatUNorm8=0,
+    HgiFormatUNorm8 = 0,
     HgiFormatUNorm8Vec2,
-    HgiFormatUNorm8Vec3,
+    /* HgiFormatUNorm8Vec3 */ // Unsupported Metal (MTLPixelFormat)
     HgiFormatUNorm8Vec4,
 
     // SNorm8 - a 1-byte value representing a float between -1 and 1.
     // float value = max(snorm / 127.0f, -1.0f);
     HgiFormatSNorm8,
     HgiFormatSNorm8Vec2,
-    HgiFormatSNorm8Vec3,
+    /* HgiFormatSNorm8Vec3 */ // Unsupported Metal (MTLPixelFormat)
     HgiFormatSNorm8Vec4,
 
     // Float16 - a 2-byte IEEE half-precision float.
@@ -75,6 +75,23 @@ enum HgiFormat
     HgiFormatInt32Vec3,
     HgiFormatInt32Vec4,
 
+    // UNorm8 SRGB - a 1-byte value representing a float between 0 and 1.
+    // Gamma compression/decompression happens during read/write.
+    // Alpha component is linear.
+    /* HgiFormatUNorm8srgb */     // Unsupported by OpenGL
+    /* HgiFormatUNorm8Vec2srgb */ // Unsupported by OpenGL
+    /* HgiFormatUNorm8Vec3srgb */ // Unsupported Metal (MTLPixelFormat)
+    HgiFormatUNorm8Vec4srgb,
+
+    // BPTC compressed. 3-component, 4x4 blocks, signed floating-point
+    HgiFormatBC6FloatVec3,
+
+    // BPTC compressed. 3-component, 4x4 blocks, unsigned floating-point
+    HgiFormatBC6UFloatVec3,
+
+    // Depth stencil format (Float32 can be used for just depth)
+    HgiFormatFloat32UInt8,
+
     HgiFormatCount
 };
 
@@ -83,9 +100,16 @@ HGI_API
 size_t HgiGetComponentCount(HgiFormat f);
 
 /// Return the size of a single element of the given format.
-/// For block formats, this will return 0.
+///
+/// Returns the bytes-per-pixel even for blocked formats such as
+/// BC6 since - luckily - the number still happens to be integral for supported
+/// compression formats.
 HGI_API
 size_t HgiDataSizeOfFormat(HgiFormat f);
+
+/// Return whether the given format uses compression.
+HGI_API
+bool HgiIsCompressed(HgiFormat f);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

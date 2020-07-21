@@ -452,6 +452,13 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
         glPolygonOffset(.5, 1.0);
     }
 
+    // Clear the FBO with the bg color. This is necessary since when using
+    // Hydra, the aov is cleared to the bg color to aid compositing back to
+    // the FBO.
+    GfVec4f const &cc = _params.clearColor; // linear color
+    glClearColor(cc[0], cc[1], cc[2], cc[3]);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     // Draw polygons & curves.
     _DrawPolygons(drawID);
 

@@ -232,14 +232,6 @@ public:
                                          NdrVersionFilter filter =
                                              NdrVersionFilterDefaultOnly);
 
-    /// Gets the node matching the specified URI (eg, a filesystem path). The
-    /// URI specified here must match the node's URI _exactly_ (eg, a relative
-    /// filesystem path would not match an absolute path). Only runs the parsing
-    /// process for the single node matching the specified URI. Returns
-    /// `nullptr` if a node matching the URI does not exist.
-    NDR_API
-    NdrNodeConstPtr GetNodeByURI(const std::string& uri);
-
     /// Get all nodes matching the specified identifier (multiple nodes of
     /// the same identifier, but different source types, may exist). Only
     /// nodes matching the specified identifier will be parsed. If no nodes

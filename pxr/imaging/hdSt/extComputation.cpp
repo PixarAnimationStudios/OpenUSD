@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/base/arch/hash.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtComputation::HdStExtComputation(SdfPath const &id)
@@ -63,7 +65,7 @@ _ComputeSharedComputationInputId(uint64_t baseId,
 
 static HdBufferArrayRangeSharedPtr
 _AllocateComputationDataRange(
-        HdBufferSourceSharedPtrVector & inputs,
+        HdBufferSourceSharedPtrVector && inputs,
         HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
     HdBufferSpecVector bufferSpecs;
@@ -74,7 +76,7 @@ _AllocateComputationDataRange(
                                               HdPrimTypeTokens->extComputation,
                                               bufferSpecs,
                                               HdBufferArrayUsageHint());
-    resourceRegistry->AddSources(inputRange, inputs);
+    resourceRegistry->AddSources(inputRange, std::move(inputs));
 
     return inputRange;
 }
@@ -129,7 +131,9 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    _inputRange.reset();
+    // Store the current range to know if garbage collection  is necessary.
+    HdBufferArrayRangeSharedPtr const prevRange = _inputRange;
+    
     if (!inputs.empty()) {
         if (_IsEnabledSharedExtComputationData() && IsInputAggregation()) {
             uint64_t inputId = _ComputeSharedComputationInputId(0, inputs);
@@ -139,7 +143,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
             if (barInstance.IsFirstInstance()) {
                 // Allocate the first buffer range for this input key
-                _inputRange = _AllocateComputationDataRange(inputs,
+                _inputRange = _AllocateComputationDataRange(std::move(inputs),
                                                             resourceRegistry);
                 barInstance.SetValue(_inputRange);
 
@@ -156,13 +160,56 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
             }
 
         } else {
-            // We're not sharing, so go ahead and allocate new buffer range.
-            _inputRange = _AllocateComputationDataRange(inputs,
-                                                        resourceRegistry);
+            // We're not sharing.
+        
+            // We don't yet have the ability to track dirtiness per scene input.
+            // Each time DirtySceneInput is set, we pull and upload _all_ the
+            // scene inputs.
+            // This means that BAR migration isn't necessary, and so we avoid
+            // using the Update*BufferArrayRange flavor of methods in
+            // HdStResourceRegistry and handle allocation/upload manually.
+        
+            if (!_inputRange || !_inputRange->IsValid()) {
+                // Allocate a new BAR if we haven't already.
+                _inputRange = _AllocateComputationDataRange(
+                    std::move(inputs), resourceRegistry);
+                TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
+                    "Allocated unshared ExtComputation buffer range: %s: %p\n",
+                    GetId().GetText(), (void *)_inputRange.get());
+
+            } else {
+                HdBufferSpecVector inputSpecs;
+                HdBufferSpec::GetBufferSpecs(inputs, &inputSpecs);
+                HdBufferSpecVector barSpecs;
+                _inputRange->GetBufferSpecs(&barSpecs);
+
+                bool useExistingRange =
+                    HdBufferSpec::IsSubset(/*subset*/inputSpecs,
+                                           /*superset*/barSpecs);
+                if (useExistingRange) {
+                    resourceRegistry->AddSources(
+                        _inputRange, std::move(inputs));
+
+                    TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
+                        "Reused unshared ExtComputation buffer range: "
+                        "%s: %p\n",
+                        GetId().GetText(), (void *)_inputRange.get());
+
+                } else {
+                    _inputRange = _AllocateComputationDataRange(
+                        std::move(inputs), resourceRegistry);
+                    TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
+                        "Couldn't reuse existing unshared range. Allocated a "
+                        "new one.%s: %p\n",
+                        GetId().GetText(), (void *)_inputRange.get());
+                }
+            }
         }
 
-        // Make sure that we also release any stale input range data
-        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+        if (prevRange && (prevRange != _inputRange)) {
+            // Make sure that we also release any stale input range data
+            renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+        }
     }
 
     *dirtyBits &= ~DirtySceneInput;

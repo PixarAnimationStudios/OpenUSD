@@ -130,17 +130,9 @@ HdReprSelector::operator[](size_t topologyIndex) const
     }
 }
 
-HdRepr::HdRepr()
-{
-    /*NOTHING*/
-}
+HdRepr::HdRepr() = default;
 
-HdRepr::~HdRepr()
-{
-    for (HdDrawItem* item : _drawItems) {
-        delete item;
-    }
-}
+HdRepr::~HdRepr() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

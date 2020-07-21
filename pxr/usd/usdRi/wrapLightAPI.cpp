@@ -91,6 +91,15 @@ _CreateRiTraceLightPathsAttr(UsdRiLightAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdRiLightAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdRi.LightAPI(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdRiLightAPI()
@@ -166,6 +175,7 @@ void wrapUsdRiLightAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

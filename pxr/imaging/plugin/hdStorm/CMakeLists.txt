@@ -1,9 +1,9 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdStorm)
 
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
+if (NOT ${PXR_BUILD_GPU_SUPPORT})
     message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
     return()
 endif()
 

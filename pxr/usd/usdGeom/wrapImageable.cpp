@@ -63,6 +63,15 @@ _CreatePurposeAttr(UsdGeomImageable &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdGeomImageable &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdGeom.Imageable(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomImageable()
@@ -112,6 +121,7 @@ void wrapUsdGeomImageable()
              &This::GetProxyPrimRel)
         .def("CreateProxyPrimRel",
              &This::CreateProxyPrimRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);
