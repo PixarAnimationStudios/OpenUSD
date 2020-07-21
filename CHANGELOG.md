@@ -1,6 +1,6 @@
 # Change Log
 
-## [20.08] - 2020-07-16
+## [20.08] - 2020-07-21
 
 ### Build
 - The "master" branch on GitHub has been renamed "release".
