@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
+#include "pxr/base/tf/hash.h"
+
 #include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -67,36 +69,32 @@ HdStVdbSubtextureIdentifier::Hash() const
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// HdStUvOrientationSubtextureIdentifier
+// HdStAssetUvSubtextureIdentifier
 
-HdStUvOrientationSubtextureIdentifier::HdStUvOrientationSubtextureIdentifier(
-    const bool flipVertically)
- : _flipVertically(flipVertically)
+HdStAssetUvSubtextureIdentifier::HdStAssetUvSubtextureIdentifier(
+    const bool flipVertically, const bool premultiplyAlpha)
+ : _flipVertically(flipVertically), _premultiplyAlpha(premultiplyAlpha)
 {
 }
 
-HdStUvOrientationSubtextureIdentifier::~HdStUvOrientationSubtextureIdentifier()
+HdStAssetUvSubtextureIdentifier::~HdStAssetUvSubtextureIdentifier()
     = default;
 
 std::unique_ptr<HdStSubtextureIdentifier>
-HdStUvOrientationSubtextureIdentifier::Clone() const
+HdStAssetUvSubtextureIdentifier::Clone() const
 {
-    return std::make_unique<HdStUvOrientationSubtextureIdentifier>(
-        GetFlipVertically());
+    return std::make_unique<HdStAssetUvSubtextureIdentifier>(
+        GetFlipVertically(), GetPremultiplyAlpha());
 }
 
 HdStSubtextureIdentifier::ID
-HdStUvOrientationSubtextureIdentifier::Hash() const
+HdStAssetUvSubtextureIdentifier::Hash() const
 {
-    static ID vertFlipFalse = TfToken("notVerticallyFlipped").Hash();
-    static ID vertFlipTrue = TfToken("verticallyFlipped").Hash();
-
-    if (GetFlipVertically()) {
-        return vertFlipTrue;
-    } else {
-        return vertFlipFalse;
-    }
+    return TfHash()(*this);
 }
+
+////////////////////////////////////////////////////////////////////////////
+// HdStDynamicUvSubtextureIdentifier
 
 HdStDynamicUvSubtextureIdentifier::HdStDynamicUvSubtextureIdentifier()
     = default;
@@ -121,6 +119,70 @@ HdStDynamicUvTextureImplementation *
 HdStDynamicUvSubtextureIdentifier::GetTextureImplementation() const
 {
     return nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// HdStUdimSubtextureIdentifier
+
+HdStUdimSubtextureIdentifier::HdStUdimSubtextureIdentifier(
+    const bool premultiplyAlpha)
+ : _premultiplyAlpha(premultiplyAlpha)
+{
+}
+
+HdStUdimSubtextureIdentifier::~HdStUdimSubtextureIdentifier()
+    = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStUdimSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStUdimSubtextureIdentifier>(
+        GetPremultiplyAlpha());
+}
+
+HdStSubtextureIdentifier::ID
+HdStUdimSubtextureIdentifier::Hash() const
+{
+    static ID premultiplyAlphaTrue = TfToken("premultiplyAlpha").Hash();
+    static ID premultiplyAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
+
+    if (GetPremultiplyAlpha()) {
+        return premultiplyAlphaTrue;
+    } else {
+        return premultiplyAlphaFalse;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// HdStPtexSubtextureIdentifier
+
+HdStPtexSubtextureIdentifier::HdStPtexSubtextureIdentifier(
+    const bool premultiplyAlpha)
+ : _premultiplyAlpha(premultiplyAlpha)
+{
+}
+
+HdStPtexSubtextureIdentifier::~HdStPtexSubtextureIdentifier()
+    = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStPtexSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStPtexSubtextureIdentifier>(
+        GetPremultiplyAlpha());
+}
+
+HdStSubtextureIdentifier::ID
+HdStPtexSubtextureIdentifier::Hash() const
+{
+    static ID premultiplyAlphaTrue = TfToken("premultiplyAlpha").Hash();
+    static ID premultiplyAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
+
+    if (GetPremultiplyAlpha()) {
+        return premultiplyAlphaTrue;
+    } else {
+        return premultiplyAlphaFalse;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

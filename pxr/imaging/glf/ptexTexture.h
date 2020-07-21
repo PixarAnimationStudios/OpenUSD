@@ -86,7 +86,8 @@ public:
 
     /// Creates a new instance.
     GLF_API
-    static GlfPtexTextureRefPtr New(const TfToken &imageFilePath);
+    static GlfPtexTextureRefPtr New(const TfToken &imageFilePath, 
+                                    const bool premultiplyAlpha=false);
 
     /// GlfTexture overrides
     GLF_API
@@ -117,7 +118,7 @@ public:
 
 protected:
     GLF_API
-    GlfPtexTexture(const TfToken &imageFilePath);
+    GlfPtexTexture(const TfToken &imageFilePath, const bool premultiplyAlpha);
 
     GLF_API
     void _FreePtexTextureObject();
@@ -139,6 +140,8 @@ private:
     static int _gutterWidth, _pageMargin;
 
     const TfToken	_imageFilePath;
+
+    const bool _premultiplyAlpha;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

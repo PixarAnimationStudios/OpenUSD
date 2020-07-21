@@ -98,13 +98,33 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
             vdbSubtextureId->GetGridName().GetString();
     }
 
-    if (const HdStUvOrientationSubtextureIdentifier * const subId =
-            dynamic_cast<const HdStUvOrientationSubtextureIdentifier*>(
+    if (const HdStAssetUvSubtextureIdentifier * const subId =
+            dynamic_cast<const HdStAssetUvSubtextureIdentifier*>(
                 textureId.GetSubtextureIdentifier())) {
         return
             textureId.GetFilePath().GetString()
             + " - flipVertically="
-            + std::to_string(int(subId->GetFlipVertically()));
+            + std::to_string(int(subId->GetFlipVertically()))
+            + + " - premultiplyAlpha="
+            + std::to_string(int(subId->GetPremultiplyAlpha()));
+    }
+
+    if (const HdStPtexSubtextureIdentifier * const subId =
+            dynamic_cast<const HdStPtexSubtextureIdentifier*>(
+                textureId.GetSubtextureIdentifier())) {
+        return
+            textureId.GetFilePath().GetString()
+            + + " - premultiplyAlpha="
+            + std::to_string(int(subId->GetPremultiplyAlpha()));
+    }
+
+    if (const HdStUdimSubtextureIdentifier * const subId =
+            dynamic_cast<const HdStUdimSubtextureIdentifier*>(
+                textureId.GetSubtextureIdentifier())) {
+        return
+            textureId.GetFilePath().GetString()
+            + + " - premultiplyAlpha="
+            + std::to_string(int(subId->GetPremultiplyAlpha()));
     }
      
     return
@@ -125,6 +145,41 @@ _GetTextureType(int numDimensions)
     }
 }
 
+// Read from the HdStSubtextureIdentifier whether we need
+// to pre-multiply the texture by alpha
+//
+static
+bool
+_GetPremultiplyAlpha(const HdStSubtextureIdentifier * const subId, 
+                     const HdTextureType textureType)
+{    
+    switch (textureType) {
+        case HdTextureType::Uv:
+            if (const HdStAssetUvSubtextureIdentifier* const uvSubId = 
+                dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
+                return uvSubId->GetPremultiplyAlpha();
+            } 
+            return false;
+
+        case HdTextureType::Ptex:
+            if (const HdStPtexSubtextureIdentifier* const ptexSubId = 
+                dynamic_cast<const HdStPtexSubtextureIdentifier *>(subId)) {
+            return ptexSubId->GetPremultiplyAlpha();
+            }
+            return false;
+
+        case HdTextureType::Udim:
+            if (const HdStUdimSubtextureIdentifier* const udimSubId = 
+                    dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
+                return udimSubId->GetPremultiplyAlpha();
+            }
+            return false;
+
+        default:
+            return false;
+    }
+}
+
 // A helper class that creates an HgiTextureDesc from GlfBaseTextureData.
 //
 // It will convert RGB to RGBA if necessary and manages the life time
@@ -139,8 +194,9 @@ public:
     _AssetCpuData(GlfBaseTextureDataRefPtr const &textureData,
                               const std::string &debugName,
                               bool generateMips = false,
+                              bool premultiplyAlpha = true,
                               GlfImage::ImageOriginLocation originLocation
-                                          = GlfImage::OriginUpperLeft);
+                                = GlfImage::OriginUpperLeft);
 
     ~_AssetCpuData() = default;
 
@@ -153,14 +209,15 @@ public:
 private:
     // Determine format for texture descriptor.
     //
-    // If necessary, converts the RGB to RGBA data updating 
-    // _textureDesc.initialData to point to the newly allocated data
+    // If necessary, converts the RGB to RGBA data or pre-multiplies by alpha,
+    // updating _textureDesc.initialData to point to the newly allocated data
     // (and dropping _textureData).
     //
     HgiFormat _DetermineFormatAndConvertIfNecessary(
         const GLenum glFormat,
         const GLenum glType,
-        const GLenum glInternalFormat);
+        const GLenum glInternalFormat,
+        const bool premultiplyAlpha);
 
     // The result, including a pointer to the potentially
     // converted texture data in _textureDesc.initialData.
@@ -169,6 +226,7 @@ private:
     // To avoid a copy, hold on to original data if we
     // can use them.
     GlfBaseTextureDataRefPtr _textureData;
+
     // Buffer if we had to convert the data.
     std::unique_ptr<const unsigned char[]> _convertedRawData;
 };
@@ -204,6 +262,7 @@ _AssetCpuData::_AssetCpuData(
     GlfBaseTextureDataRefPtr const &textureData,
     const std::string &debugName,
     const bool generateMips,
+    const bool premultiplyAlpha,
     const GlfImage::ImageOriginLocation originLocation)
   : _textureData(textureData)
 {
@@ -249,7 +308,8 @@ _AssetCpuData::_AssetCpuData(
     _textureDesc.format = _DetermineFormatAndConvertIfNecessary(
         textureData->GLFormat(),
         textureData->GLType(),
-        textureData->GLInternalFormat());
+        textureData->GLInternalFormat(),
+        premultiplyAlpha);
 
     // Handle grayscale textures by expanding value to green and blue.
     if (HgiGetComponentCount(_textureDesc.format) == 1) {
@@ -298,6 +358,125 @@ _ConvertRGBToRGBA(
     return std::move(result);
 }
 
+namespace {
+enum _ColorSpaceTransform
+{
+     _SRGBToLinear,
+     _LinearToSRGB
+};
+
+// Convert a [0, 1] value between color spaces
+template<_ColorSpaceTransform colorSpaceTransform>
+static
+float _ConvertColorSpace(const float in)
+{
+    TRACE_FUNCTION();
+
+    float out = in;
+    if (colorSpaceTransform == _SRGBToLinear) {
+        if (in <= 0.04045) {
+            out = in / 12.92;
+        } else {
+            out = pow((in + 0.055) / 1.055, 2.4);
+        }
+    } else if (colorSpaceTransform == _LinearToSRGB) {
+        if (in <= 0.0031308) {
+            out = 12.92 * in;
+        } else {
+            out = 1.055 * pow(in, 1.0 / 2.4) - 0.055;
+        }
+    }
+
+    return GfClamp(out, 0.f, 1.f);
+}
+
+// Pre-multiply alpha function to be used for integral types
+template<typename T, bool isSRGB>
+static
+std::unique_ptr<const unsigned char[]>
+_PremultiplyAlpha(
+    const void * const data,
+    const GfVec3i &dimensions)
+{
+    TRACE_FUNCTION();
+
+    static_assert(std::numeric_limits<T>::is_integer, "Requires integral type");
+
+    const T * const typedData = reinterpret_cast<const T*>(data);
+
+    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
+
+    std::unique_ptr<unsigned char[]> result =
+        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+
+    T * const typedConvertedData = reinterpret_cast<T*>(result.get());
+
+    // Perform all operations using floats.
+    const float max = static_cast<float>(std::numeric_limits<T>::max());    
+
+    for (size_t i = 0; i < num; i++) {
+        const float alpha = static_cast<float>(typedData[4 * i + 3]) / max;
+
+        for (size_t j = 0; j < 3; j++) {
+            float p = static_cast<float>(typedData[4 * i + j]);
+
+            if (isSRGB) {
+                // Convert value from sRGB to linear.
+                p = max * _ConvertColorSpace<_SRGBToLinear>(p / max);
+            }  
+            
+            // Pre-multiply RGB values with alpha in linear space.
+            p *= alpha;
+
+            if (isSRGB) {
+                // Convert value from linear to sRGB.
+                p = max * _ConvertColorSpace<_LinearToSRGB>(p / max);
+            }
+
+            // Add 0.5 when converting float to integral type.
+            typedConvertedData[4 * i + j] = p + 0.5f;  
+        }
+        typedConvertedData[4 * i + 3] = typedData[4 * i + 3];
+    }
+
+    return std::move(result);
+}
+
+// Pre-multiply alpha function to be used for floating point types
+template<typename T>
+static
+std::unique_ptr<const unsigned char[]>
+_PremultiplyAlphaFloat(
+    const void * const data,
+    const GfVec3i &dimensions)
+{
+    TRACE_FUNCTION();
+
+    static_assert(GfIsFloatingPoint<T>::value, "Requires floating point type");
+
+    const T * const typedData = reinterpret_cast<const T*>(data);
+
+    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
+
+    std::unique_ptr<unsigned char[]> result =
+        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+
+    T * const typedConvertedData = reinterpret_cast<T*>(result.get());
+
+    for (size_t i = 0; i < num; i++) {
+        const float alpha = typedData[4 * i + 3];
+
+        // Pre-multiply RGB values with alpha.
+        for (size_t j = 0; j < 3; j++) {
+            typedConvertedData[4 * i + j] = typedData[4 * i + j] * alpha;
+        }
+        typedConvertedData[4 * i + 3] = typedData[4 * i + 3];
+    }
+
+    return std::move(result);
+}
+}
+
 // Some of these formats have been aliased to HgiFormatInvalid because
 // they are not available on MTL. Guard against us trying to use
 // formats that are no longer available.
@@ -312,7 +491,8 @@ HgiFormat
 _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
     const GLenum glFormat,
     const GLenum glType,
-    const GLenum glInternalFormat)
+    const GLenum glInternalFormat,
+    const bool premultiplyAlpha)
 {
     // Format dispatch, mostly we can just use the CPU buffer from
     // the texture data provided.
@@ -374,15 +554,56 @@ _AssetCpuData::_DetermineFormatAndConvertIfNecessary(
         }
     case GL_RGBA:
         switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            if (glInternalFormat == GL_SRGB8_ALPHA8) {
+        case GL_UNSIGNED_BYTE: 
+        {
+            const bool isSRGB = (glInternalFormat == GL_SRGB8_ALPHA8);
+
+            if (premultiplyAlpha) {
+                if (isSRGB) {
+                    _convertedRawData = _PremultiplyAlpha<unsigned char, 
+                        /* isSRGB = */ true>(_textureDesc.initialData, 
+                        _textureDesc.dimensions);
+                } else {
+                    _convertedRawData = _PremultiplyAlpha<unsigned char, 
+                        /* isSRGB = */ false>(_textureDesc.initialData,
+                        _textureDesc.dimensions);
+                }
+
+                // Point to the buffer with the converted data.
+                _textureDesc.initialData = _convertedRawData.get();  
+                // Drop the old buffer.
+                _textureData = TfNullPtr;
+            }
+
+            if (isSRGB) {
                 return _CheckValid<HgiFormatUNorm8Vec4srgb>();
             } else {
                 return _CheckValid<HgiFormatUNorm8Vec4>();
             }
+        }
         case GL_HALF_FLOAT:
+            if (premultiplyAlpha) {
+                _convertedRawData = _PremultiplyAlphaFloat<GfHalf>(
+                    _textureDesc.initialData, _textureDesc.dimensions);
+
+                // Point to the buffer with the converted data.
+                _textureDesc.initialData = _convertedRawData.get();
+                // Drop the old buffer.
+                _textureData = TfNullPtr;
+            }
+
             return _CheckValid<HgiFormatFloat16Vec4>();
         case GL_FLOAT:
+            if (premultiplyAlpha) {
+                _convertedRawData = _PremultiplyAlphaFloat<float>(
+                    _textureDesc.initialData, _textureDesc.dimensions);
+
+                // Point to the buffer with the converted data.
+                _textureDesc.initialData = _convertedRawData.get();
+                // Drop the old buffer.
+                _textureData = TfNullPtr;
+            }
+
             return _CheckValid<HgiFormatFloat32Vec4>();
         default:
             TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
@@ -556,7 +777,7 @@ _GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
              _GetWrapParameter(wrapInfo.hasWrapModeT, wrapInfo.wrapModeT) };
 }
 
-// Read from the HdStUvOrientationSubtextureIdentifier whether we need
+// Read from the HdStAssetUvSubtextureIdentifier whether we need
 // to flip the image.
 //
 // This is to support the legacy HwUvTexture_1 shader node which has the
@@ -566,7 +787,7 @@ static
 GlfImage::ImageOriginLocation
 _GetImageOriginLocation(const HdStSubtextureIdentifier * const subId)
 {
-    using SubId = const HdStUvOrientationSubtextureIdentifier;
+    using SubId = const HdStAssetUvSubtextureIdentifier;
     
     if (SubId* const uvSubId = dynamic_cast<SubId*>(subId)) {
         if (uvSubId->GetFlipVertically()) {
@@ -601,6 +822,9 @@ HdStAssetUvTextureObject::_Load()
             textureData,
             _GetDebugName(GetTextureIdentifier()),
             /* generateMips = */ true,
+	        _GetPremultiplyAlpha(
+                GetTextureIdentifier().GetSubtextureIdentifier(), 
+                GetTextureType()),
             _GetImageOriginLocation(
                 GetTextureIdentifier().GetSubtextureIdentifier())));
 
@@ -790,7 +1014,10 @@ HdStPtexTextureObject::_Commit()
 {
 #ifdef PXR_PTEX_SUPPORT_ENABLED
     _gpuTexture = GlfPtexTexture::New(
-        GetTextureIdentifier().GetFilePath());
+        GetTextureIdentifier().GetFilePath(),
+        _GetPremultiplyAlpha(
+            GetTextureIdentifier().GetSubtextureIdentifier(), 
+            GetTextureType()));
     _gpuTexture->SetMemoryRequested(GetTargetMemory());
 
     _texelGLTextureName = _gpuTexture->GetGlTextureName();
@@ -915,6 +1142,9 @@ HdStUdimTextureObject::_Commit()
         GlfImage::OriginLowerLeft,
         std::move(_tiles));
     _gpuTexture->SetMemoryRequested(GetTargetMemory());
+
+    // XXX: Udim textures currently cannot not pre-multiplied. This should be 
+    // fixed in an upcoming change.
 
     _layoutGLTextureName = _gpuTexture->GetGlLayoutName();
     _texelGLTextureName = _gpuTexture->GetGlTextureName();

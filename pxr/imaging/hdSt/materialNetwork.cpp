@@ -784,7 +784,8 @@ _GetSamplerParameters(
 }
 
 //
-// We need to flip the image for the legacy HwUvTexture_1 shader node.
+// We need to flip the image for the legacy HwUvTexture_1 shader node and 
+// pre-multiply textures by their alpha if applicable
 //
 static
 std::unique_ptr<HdStSubtextureIdentifier>
@@ -792,15 +793,18 @@ _GetSubtextureIdentifier(
     const HdTextureType textureType,
     const TfToken &nodeType)
 {
-    if (textureType != HdTextureType::Uv) {
-        return nullptr;
+    if (textureType == HdTextureType::Uv) {
+        const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
+        return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
+                                                                 true);
+    } 
+    if (textureType == HdTextureType::Udim) {
+        return std::make_unique<HdStUdimSubtextureIdentifier>(true);
     }
-
-    const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
-
-    return
-        std::make_unique<HdStUvOrientationSubtextureIdentifier>(
-            flipVertically);
+    if (textureType == HdTextureType::Ptex) {
+        return std::make_unique<HdStPtexSubtextureIdentifier>(true);
+    }
+    return nullptr;
 }
 
 static void

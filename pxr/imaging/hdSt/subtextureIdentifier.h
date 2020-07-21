@@ -87,22 +87,26 @@ private:
 };
 
 ///
-/// \class HdStUvOrientationSubtextureIdentifier
+/// \class HdStAssetUvSubtextureIdentifier
 ///
-/// Specifies whether a UV texture should be loaded flipped vertically.
+/// Specifies whether a UV texture should be loaded with 
+/// pre-multiplied alpha values and whether it should be loaded flipped 
+/// vertically 
 ///
-/// This class is here for the texture system to support both the
+/// The latter functionality allows the texture system to support both the
 /// legacy HwUvTexture_1 (flipVertically = true) and UsdUvTexture
 /// (flipVertically = false) which have opposite conventions for the
 /// vertical orientation.
 ///
-class HdStUvOrientationSubtextureIdentifier final
+class HdStAssetUvSubtextureIdentifier final
                                 : public HdStSubtextureIdentifier
 {
 public:
-    /// C'tor takes bool whether flipping vertically
+    /// C'tor takes bool whether flipping vertically and whether to pre-multiply
+    /// by alpha
     HDST_API
-    explicit HdStUvOrientationSubtextureIdentifier(bool flipVertically);
+    explicit HdStAssetUvSubtextureIdentifier(bool flipVertically, 
+                                             bool premultiplyAlpha);
 
     HDST_API
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
@@ -112,13 +116,30 @@ public:
 
     HDST_API
     bool GetFlipVertically() const { return _flipVertically; }
+
+    HDST_API
+    bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
     
     HDST_API
-    ~HdStUvOrientationSubtextureIdentifier() override;
+    ~HdStAssetUvSubtextureIdentifier() override;
 
 private:
     bool _flipVertically;
+    bool _premultiplyAlpha;
 };
+
+template <class HashState>
+void
+TfHashAppend(HashState &h, HdStAssetUvSubtextureIdentifier const &subId) {
+    static size_t vertFlipFalse = TfToken("notVerticallyFlipped").Hash();
+    static size_t vertFlipTrue = TfToken("verticallyFlipped").Hash();
+
+    static size_t premulAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
+    static size_t premulAlphaTrue = TfToken("premultiplyAlpha").Hash();
+
+    h.Append(subId.GetFlipVertically() ? vertFlipTrue : vertFlipFalse);
+    h.Append(subId.GetPremultiplyAlpha() ? premulAlphaTrue :  premulAlphaFalse);
+}
 
 ///
 /// \class HdStDynamicUvSubtextureIdentifier
@@ -163,6 +184,67 @@ public:
     HDST_API
     ID Hash() const override;
 };
+
+///
+/// \class HdStPtexSubtextureIdentifier
+///
+/// Specifies whether a Ptex texture should be loaded with pre-multiplied alpha
+/// values.
+///
+class HdStPtexSubtextureIdentifier final
+                                : public HdStSubtextureIdentifier
+{
+public:
+    /// C'tor takes bool whether to pre-multiply by alpha
+    HDST_API
+    explicit HdStPtexSubtextureIdentifier(bool premultiplyAlpha);
+
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    HDST_API
+    ID Hash() const override;
+
+    HDST_API
+    bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
+    
+    HDST_API
+    ~HdStPtexSubtextureIdentifier() override;
+
+private:
+    bool _premultiplyAlpha;
+};
+
+///
+/// \class HdStUdimSubtextureIdentifier
+///
+/// Specifies whether a Udim texture should be loaded with pre-multiplied alpha
+/// values.
+///
+class HdStUdimSubtextureIdentifier final
+                                : public HdStSubtextureIdentifier
+{
+public:
+    /// C'tor takes bool whether to pre-multiply by alpha
+    HDST_API
+    explicit HdStUdimSubtextureIdentifier(bool premultiplyAlpha);
+
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    HDST_API
+    ID Hash() const override;
+
+    HDST_API
+    bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
+    
+    HDST_API
+    ~HdStUdimSubtextureIdentifier() override;
+
+private:
+    bool _premultiplyAlpha;
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

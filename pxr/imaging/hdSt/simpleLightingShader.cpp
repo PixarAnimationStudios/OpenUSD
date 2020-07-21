@@ -344,8 +344,9 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
 
     const HdStTextureIdentifier textureId(
         TfToken(resolvedPath),
-        std::make_unique<HdStUvOrientationSubtextureIdentifier>(
-            /* flipVertically = */ true));
+        std::make_unique<HdStAssetUvSubtextureIdentifier>(
+            /* flipVertically = */ true,
+            /* premultiplyAlpha = */ false));
 
     static const HdSamplerParameters envSamplerParameters{
         HdWrapRepeat, HdWrapRepeat, HdWrapRepeat,
