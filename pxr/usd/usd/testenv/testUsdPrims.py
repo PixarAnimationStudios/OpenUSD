@@ -853,7 +853,7 @@ class TestUsdPrim(unittest.TestCase):
             world= s.OverridePrim('/world')
             self.assertEqual([], world.GetAppliedSchemas())
 
-            rootCollAPI = Usd.CollectionAPI.ApplyCollection(world, "root")
+            rootCollAPI = Usd.CollectionAPI.Apply(world, "root")
             self.assertTrue(rootCollAPI)
 
             world = rootCollAPI.GetPrim()
@@ -879,7 +879,7 @@ class TestUsdPrim(unittest.TestCase):
 
             # Switch the edit target to the session layer and test bug 156929
             s.SetEditTarget(Usd.EditTarget(s.GetSessionLayer()))
-            sessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, "session")
+            sessionCollAPI = Usd.CollectionAPI.Apply(world, "session")
             self.assertTrue(sessionCollAPI)
             self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
                              world.GetAppliedSchemas())
@@ -887,8 +887,7 @@ class TestUsdPrim(unittest.TestCase):
             self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
             # Ensure duplicates aren't picked up
-            anotherSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, 
-                                                                       "session")
+            anotherSessionCollAPI = Usd.CollectionAPI.Apply(world, "session")
             self.assertTrue(anotherSessionCollAPI)
             self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
                              world.GetAppliedSchemas())
@@ -896,8 +895,7 @@ class TestUsdPrim(unittest.TestCase):
             # Add a duplicate in the root layer and ensure that there are no 
             # duplicates in the composed result.
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
-            rootLayerSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world,
-                    "session")
+            rootLayerSessionCollAPI = Usd.CollectionAPI.Apply(world, "session")
             self.assertTrue(rootLayerSessionCollAPI)
             self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
                              world.GetAppliedSchemas())

@@ -1667,8 +1667,7 @@ _Context::_AddCollection(
     // Create the collection.
     auto& usdCollection =
         _collections[_Name(mtlxCollection)] =
-            UsdCollectionAPI::ApplyCollection(usdPrim,
-                                    _MakeName(mtlxCollection));
+            UsdCollectionAPI::Apply(usdPrim, _MakeName(mtlxCollection));
     _SetCoreUIAttributes(usdCollection.CreateIncludesRel(), mtlxCollection);
 
     // Add the included collections (recursively creating them if necessary)
@@ -1738,8 +1737,7 @@ _Context::_AddGeomExpr(const mx::ConstGeomElementPtr& mtlxGeomElement)
     // Create the collection.
     auto& usdCollection =
         i.first->second =
-            UsdCollectionAPI::ApplyCollection(usdPrim,
-                                    TfToken(name + std::to_string(k)));
+            UsdCollectionAPI::Apply(usdPrim, TfToken(name + std::to_string(k)));
 
     // Add the geometry expressions.
     auto& geomprefix = mtlxGeomElement->getActiveGeomPrefix();
