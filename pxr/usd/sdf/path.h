@@ -854,37 +854,21 @@ public:
         return _LessThanInternal(*this, rhs);
     }
 
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, SdfPath const &path) {
+        // The hash function is pretty sensitive performance-wise.  Be
+        // careful making changes here, and run tests.
+        uint32_t primPart, propPart;
+        memcpy(&primPart, &path._primPart, sizeof(primPart));
+        memcpy(&propPart, &path._propPart, sizeof(propPart));
+        h.Append(primPart);
+        h.Append(propPart);
+    }
+
     // For hash maps and sets
     struct Hash {
         inline size_t operator()(const SdfPath& path) const {
-            // The hash function is pretty sensitive performance-wise.  Be
-            // careful making changes here, and run tests.
-            uint32_t primPart, propPart;
-            memcpy(&primPart, &path._primPart, sizeof(primPart));
-            memcpy(&propPart, &path._propPart, sizeof(propPart));
-
-            // Important considerations here:
-            // - It must be fast to execute.
-            // - It must do well in hash tables that find indexes by taking
-            //   the remainder divided by a prime number of buckets.
-            // - It must do well in hash tables that find indexes by taking
-            //   just the low-order bits.
-
-            // This hash function maps the (primPart, propPart) pair to a single
-            // value by using triangular numbers.  So the first few path hash
-            // values would look like this, for primPart as X increasing
-            // left-to-right and for propPart as Y increasing top-to-bottom.
-            //
-            //  0  2  5  9 14 20
-            //  1  4  8 13 19 26
-            //  3  7 12 18 25 33
-            //  6 11 17 24 32 41
-            // 10 16 23 31 40 50
-            // 15 22 30 39 49 60
-
-            uint64_t x = primPart >> 8;
-            uint64_t y = x + (propPart >> 8);
-            return x + (y * (y + 1)) / 2;
+            return TfHash()(path);
         }
     };
 
