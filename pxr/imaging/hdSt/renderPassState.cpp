@@ -325,10 +325,6 @@ HdStRenderPassState::Bind()
     _lightingShader->SetCamera(GetWorldToViewMatrix(),
                                GetProjectionMatrix());
 
-    // XXX: viewport should be set.
-    // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
-    //            (GLsizei)_viewport[2], (GLsizei)_viewport[3]);
-
     // when adding another GL state change here, please document
     // which states to be altered at the comment in the header file
 

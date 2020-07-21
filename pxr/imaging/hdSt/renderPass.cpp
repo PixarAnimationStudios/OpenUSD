@@ -141,6 +141,10 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     gfxCmds->PushDebugGroup(passName.c_str());
 
     // Draw
+    GfVec4f const& viewport = renderPassState->GetViewport();
+    gfxCmds->SetViewport(GfVec4i(int(viewport[0]), int(viewport[1]), 
+                                 int(viewport[2]), int(viewport[3])));
+
     HdStCommandBuffer* cmdBuffer = &_cmdBuffer;
     HgiGLGraphicsCmds* glGfxCmds = 
         dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());

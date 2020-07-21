@@ -112,6 +112,7 @@ int main(int argc, char *argv[])
     VtValue vParam = delegate->GetTaskParam(renderSetupTask1, HdTokens->params);
     HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
     param.overrideColor = GfVec4f(1, 0, 0, 1);
+    param.viewport = GfVec4d(0, 0, 256, 256);
     delegate->SetTaskParam(renderSetupTask1, HdTokens->params, VtValue(param));
 
     // draw #2
