@@ -46,7 +46,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
         DIFF_COMPARE flattenedContents.usda newFlattenedContents.usda
         EXPECTED_RETURN_CODE 0
         ENV
-            PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources
+            ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources
     )
 else()
     pxr_register_test(testUsdRecursivePayloadsExample
@@ -54,6 +54,6 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample"
         EXPECTED_RETURN_CODE 0
         ENV
-            PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources
+            ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources
     )
 endif()

@@ -36,7 +36,7 @@ if (APPLE)
     pxr_register_test(testHdTiny
         ENV
             DYLD_INSERT_LIBRARIES=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.dylib
-            PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
+            ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
@@ -45,7 +45,7 @@ elseif (UNIX)
     pxr_register_test(testHdTiny
         ENV
             LD_PRELOAD=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.so
-            PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
+            ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
@@ -53,7 +53,7 @@ elseif (UNIX)
 elseif (WIN32)
     pxr_register_test(testHdTiny
         ENV
-            PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
+            ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
