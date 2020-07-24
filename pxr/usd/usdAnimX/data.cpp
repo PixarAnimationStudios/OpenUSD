@@ -914,7 +914,7 @@ UsdAnimXData::_HasPropertyTypeNameValue(
     if (!path.IsPropertyPath()) {
         return false;
     }
-
+    
     // Check that it belongs to a animated prim before getting the type name value
     const UsdAnimXPrimData *data = 
         TfMapLookupPtr(_animatedPrimDatas, path.GetAbsoluteRootOrPrimPath());
@@ -922,16 +922,9 @@ UsdAnimXData::_HasPropertyTypeNameValue(
         if (value) {
             const UsdAnimXOpData *op = data->GetAnimatedOp(path.GetNameToken());
             if(op) {
-                /*
-                *value = 
-                    VtValue(SdfSchema::GetInstance().FindType(
-                        op->defaultValue).GetAsToken());
-                */
-                //VtArray<double> keyframe;
                 UsdAnimXKeyframe keyframe;
                 *value = VtValue(SdfSchema::GetInstance().FindType(
-                    VtValue(keyframe)).GetAsToken());
-                
+                    op->defaultValue).GetAsToken());
                 return true;
             }
         }
