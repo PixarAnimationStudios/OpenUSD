@@ -123,7 +123,7 @@ UsdSchemaType UsdContrivedMultipleApplyAPI::_GetSchemaType() const {
 
 /* static */
 UsdContrivedMultipleApplyAPI
-UsdContrivedMultipleApplyAPI::_Apply(const UsdPrim &prim, const TfToken &name)
+UsdContrivedMultipleApplyAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
     // Ensure that the instance name is valid.
     TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);

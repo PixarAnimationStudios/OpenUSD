@@ -88,11 +88,6 @@ SINGLE_APPLY = "singleApply"
 MULTIPLE_APPLY = "multipleApply"
 API_SCHEMA_TYPE_TOKENS = [NON_APPLIED, SINGLE_APPLY, MULTIPLE_APPLY]
 
-# Custom-data key authored on an applied API schema class prim in the schema 
-# definition to indicate whether the auto-generated Apply method should be 
-# public or private. 
-IS_PRIVATE_APPLY = "isPrivateApply"
-
 # Custom-data key authored on a multiple-apply API schema class prim in the 
 # schema definition, to define prefix for properties created by the API schema. 
 PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
@@ -464,7 +459,6 @@ class ClassInfo(object):
         self.isAppliedAPISchema = \
             self.apiSchemaType in [SINGLE_APPLY, MULTIPLE_APPLY]
         self.isMultipleApply = self.apiSchemaType == MULTIPLE_APPLY
-        self.isPrivateApply = self.customData.get(IS_PRIVATE_APPLY, False)
 
         if self.isApi and not self.isAppliedAPISchema:
             self.schemaType = "UsdSchemaType::NonAppliedAPI";
@@ -491,11 +485,6 @@ class ClassInfo(object):
                         'API schemas must be named with an API suffix.', 
                         sdfPrim.path)
         
-
-        if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
-            raise _GetSchemaDefException("Non-applied API schema cannot be "
-                                "tagged as private-apply", sdfPrim.path)
-
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             (not self.parentCppClassName):
             raise _GetSchemaDefException(
@@ -506,14 +495,6 @@ class ClassInfo(object):
             raise _GetSchemaDefException(
                 'Non API schemas cannot have non-empty apiSchemaType value.', 
                 sdfPrim.path)
-
-        if (not self.isApi or not self.isAppliedAPISchema) and \
-                self.isPrivateApply:
-            raise _GetSchemaDefException('Non API schemas or non-applied API '
-                                'schemas cannot be marked with '
-                                'isPrivateApply, only applied API schemas '
-                                'have an Apply() method generated. ',
-                                sdfPrim.path)
         
         if self.fallbackPrimTypes and not self.isConcrete:
             raise _GetSchemaDefException(

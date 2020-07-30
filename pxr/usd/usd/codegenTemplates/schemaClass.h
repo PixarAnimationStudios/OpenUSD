@@ -246,9 +246,6 @@ public:
     static bool
     Is{{ cls.usdPrimTypeName }}Path(const SdfPath &path, TfToken *name);
 {% endif %}
-{% if cls.isPrivateApply %}
-private:
-{% endif %}
 {% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
@@ -265,15 +262,11 @@ private:
     /// \sa UsdPrim::ApplyAPI()
     /// \sa UsdPrim::RemoveAPI()
     ///
-    {% if useExportAPI and not cls.isPrivateApply -%}
+    {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
-{% if cls.isPrivateApply %}
-    _Apply(const UsdPrim &prim);
-{% else %}
     Apply(const UsdPrim &prim);
-{% endif %}
 {% endif %}
 {% if cls.isAppliedAPISchema and cls.isMultipleApply %}
 
@@ -299,11 +292,7 @@ private:
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
-{% if cls.isPrivateApply %}
-    _Apply(const UsdPrim &prim, const TfToken &name);
-{% else %}
     Apply(const UsdPrim &prim, const TfToken &name);
-{% endif %}
 {% endif %}
 
 protected:

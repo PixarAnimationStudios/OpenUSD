@@ -171,18 +171,10 @@ UsdSchemaType {{ cls.cppClassName }}::_GetSchemaType() const {
 
 /* static */
 {{ cls.cppClassName }}
-{% if cls.isPrivateApply %}
-{% if not cls.isMultipleApply %}
-{{ cls.cppClassName }}::_Apply(const UsdPrim &prim)
-{% else %}
-{{ cls.cppClassName }}::_Apply(const UsdPrim &prim, const TfToken &name)
-{% endif %}
-{% else %}
 {% if not cls.isMultipleApply %}
 {{ cls.cppClassName }}::Apply(const UsdPrim &prim)
 {% else %}
 {{ cls.cppClassName }}::Apply(const UsdPrim &prim, const TfToken &name)
-{% endif %}
 {% endif %}
 {
 {% if cls.isMultipleApply %}
