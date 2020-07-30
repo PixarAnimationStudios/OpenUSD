@@ -56,16 +56,20 @@ HdExtCompPrimvarBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
     specs->emplace_back(_primvarName, _tupleType);
 }
 
-size_t
-HdExtCompPrimvarBufferSource::ComputeHash() const
+template <class HashState>
+void TfHashAppend(HashState &h, HdExtCompPrimvarBufferSource const &bs)
 {
     // Simply return a hash based on the computation and primvar names, 
     // instead of hashing the contents of the inputs to the computation.
     // This effectively disables primvar sharing when using computed primvars.
-    size_t hash = 0;
-    boost::hash_combine(hash, _source->GetName());
-    boost::hash_combine(hash, _primvarName);
-    return hash;
+    h.Append(bs._source->GetName(),
+             bs._primvarName);
+}
+
+size_t
+HdExtCompPrimvarBufferSource::ComputeHash() const
+{
+    return TfHash()(*this);
 }
 
 bool

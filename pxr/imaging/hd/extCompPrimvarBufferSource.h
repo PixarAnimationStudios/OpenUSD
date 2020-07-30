@@ -93,6 +93,11 @@ protected:
     virtual bool _CheckValid() const override;
 
 private:
+    // TfHash support.
+    template <class HashState>
+    friend void TfHashAppend(HashState &h,
+                             HdExtCompPrimvarBufferSource const &);
+
     TfToken                          _primvarName;
     HdExtCompCpuComputationSharedPtr _source;
     size_t                           _sourceOutputIdx;
