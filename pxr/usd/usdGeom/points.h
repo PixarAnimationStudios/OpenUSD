@@ -268,6 +268,15 @@ public:
     static bool ComputeExtent(const VtVec3fArray& points,
         const VtFloatArray& widths, const GfMatrix4d& transform,
         VtVec3fArray* extent);
+
+    /// Returns the number of points as defined by the size of the
+    /// _points_ array at _timeCode_.
+    ///
+    /// \snippetdoc snippets.dox GetCount
+    /// \sa GetPointsAttr()
+    USDGEOM_API
+    size_t GetPointCount(UsdTimeCode timeCode = UsdTimeCode::Default()) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

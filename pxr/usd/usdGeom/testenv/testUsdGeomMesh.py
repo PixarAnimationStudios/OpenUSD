@@ -78,6 +78,42 @@ class TestUsdGeomMesh(unittest.TestCase):
         # Shoult not have set a reason.
         self.assertFalse(why)
 
+    def test_ComputeFaceCount(self):
+        stage = Usd.Stage.Open('mesh.usda')
+        unset = UsdGeom.Mesh.Get(stage, '/UnsetVertexCounts')
+        blocked = UsdGeom.Mesh.Get(stage, '/BlockedVertexCounts')
+        empty = UsdGeom.Mesh.Get(stage, '/EmptyVertexCounts')
+        timeSampled = UsdGeom.Mesh.Get(stage, '/TimeSampledVertexCounts')
+        timeSampledAndDefault = UsdGeom.Mesh.Get(stage, '/TimeSampledAndDefaultVertexCounts')
+
+        testTimeSamples = [
+            (unset, Usd.TimeCode.EarliestTime(), 0),
+            (blocked, Usd.TimeCode.EarliestTime(), 0),
+            (empty, Usd.TimeCode.EarliestTime(), 0),
+            (timeSampled, Usd.TimeCode.EarliestTime(), 3),
+            (timeSampledAndDefault, Usd.TimeCode.EarliestTime(), 5)]
+        testDefaults = [
+            (unset, 0),
+            (blocked, 0),
+            (empty, 0),
+            (timeSampled, 0),
+            (timeSampledAndDefault, 4)]
+
+        for (schema, timeCode, expected) in testTimeSamples:
+            self.assertTrue(schema)
+            self.assertEqual(schema.GetFaceCount(timeCode), expected)
+        for (schema, expected) in testDefaults:
+            self.assertTrue(schema)
+            self.assertEqual(schema.GetFaceCount(), expected) 
+
+        invalid = UsdGeom.Mesh(Usd.Prim())
+        self.assertFalse(invalid)
+        with self.assertRaises(RuntimeError):
+            self.assertEqual(invalid.GetFaceCount(), 0)
+        with self.assertRaises(RuntimeError):
+            self.assertEqual(invalid.GetFaceCount(
+                Usd.TimeCode.EarliestTime()), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -241,6 +241,14 @@ public:
     static bool ComputeExtent(const VtVec3fArray& points,
         const VtFloatArray& widths, const GfMatrix4d& transform,
         VtVec3fArray* extent);
+
+    /// Returns the number of curves as defined by the size of the
+    /// _curveVertexCounts_ array at _timeCode_.
+    ///
+    /// \snippetdoc snippets.dox GetCount
+    /// \sa GetCurveVertexCountsAttr()
+    USDGEOM_API
+    size_t GetCurveCount(UsdTimeCode timeCode = UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

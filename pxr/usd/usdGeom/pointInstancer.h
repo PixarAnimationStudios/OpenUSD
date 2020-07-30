@@ -1067,6 +1067,14 @@ public:
                         const UsdTimeCode baseTime,
                         const GfMatrix4d& transform) const;
 
+    /// Returns the number of instances as defined by the size of the
+    /// _protoIndices_ array at _timeCode_.
+    ///
+    /// \snippetdoc snippets.dox GetCount
+    /// \sa GetProtoIndicesAttr()
+    USDGEOM_API
+    size_t GetInstanceCount(UsdTimeCode timeCode = UsdTimeCode::Default()) const;
+
 private:
 
     bool _ComputeExtentAtTimePreamble(

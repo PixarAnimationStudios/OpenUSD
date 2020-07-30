@@ -299,4 +299,13 @@ TF_REGISTRY_FUNCTION(UsdGeomBoundable)
         _ComputeExtentForCurves);
 }
 
+size_t
+UsdGeomCurves::GetCurveCount(UsdTimeCode timeCode) const
+{
+    UsdAttribute vertexCountsAttr = GetCurveVertexCountsAttr();
+    VtIntArray vertexCounts;
+    vertexCountsAttr.Get(&vertexCounts, timeCode);
+    return vertexCounts.size();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

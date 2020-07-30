@@ -209,6 +209,10 @@ pxr_install_test_dir(
     SRC testenv/testUsdGeomImageable
     DEST testUsdGeomImageable)
 
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomMesh
+    DEST testUsdGeomMesh)
+
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves"

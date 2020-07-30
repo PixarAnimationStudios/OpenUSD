@@ -1,0 +1,30 @@
+#usda 1.0
+
+def PointInstancer "UnsetIndices"
+{
+}
+
+def PointInstancer "BlockedIndices"
+{
+    int[] protoIndices = None
+}
+
+def PointInstancer "EmptyIndices"
+{
+    int[] protoIndices = []
+}
+
+def PointInstancer "TimeSampledIndices"
+{
+    int[] protoIndices.timeSamples = {
+        1: [4, 4, 4]
+    }
+}
+
+def PointInstancer "TimeSampledAndDefaultIndices"
+{
+    int[] protoIndices = [4, 4, 4, 4]
+    int[] protoIndices.timeSamples = {
+        1: [4, 4, 4, 4, 4]
+    }
+}

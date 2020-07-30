@@ -12,3 +12,32 @@ def BasisCurves "BezierCubic"
         interpolation = "constant"
     )
 }
+
+def BasisCurves "UnsetVertexCounts"
+{
+}
+
+def BasisCurves "BlockedVertexCounts"
+{
+    int[] curveVertexCounts = None
+}
+
+def BasisCurves "EmptyVertexCounts"
+{
+    int[] curveVertexCounts = []
+}
+
+def BasisCurves "TimeSampledVertexCounts"
+{
+    int[] curveVertexCounts.timeSamples = {
+        1: [4, 4, 4]
+    }
+}
+
+def BasisCurves "TimeSampledAndDefaultVertexCounts"
+{
+    int[] curveVertexCounts = [4, 4, 4, 4]
+    int[] curveVertexCounts.timeSamples = {
+        1: [4, 4, 4, 4, 4]
+    }
+}

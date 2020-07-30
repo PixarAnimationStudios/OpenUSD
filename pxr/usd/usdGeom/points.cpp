@@ -320,4 +320,13 @@ TF_REGISTRY_FUNCTION(UsdGeomBoundable)
         _ComputeExtentForPoints);
 }
 
+size_t
+UsdGeomPoints::GetPointCount(UsdTimeCode timeCode) const
+{
+    UsdAttribute pointsAttr = GetPointsAttr();
+    VtVec3fArray points;
+    pointsAttr.Get(&points, timeCode);
+    return points.size();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
