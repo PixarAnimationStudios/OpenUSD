@@ -102,9 +102,8 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    uint32_t layerCnt = copyOp.startLayer + copyOp.numLayers;
-    if (!TF_VERIFY(texDesc.layerCount >= layerCnt,
-        "Texture has less layers than attempted to be copied")) {
+    if (!TF_VERIFY(texDesc.layerCount > copyOp.sourceLayer,
+        "Trying to copy an invalid texture layer/slice")) {
         return;
     }
 
@@ -145,8 +144,8 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
     _CreateEncoder();
 
     [_blitEncoder copyFromTexture:srcTexture->GetTextureId()
-                      sourceSlice:0
-                      sourceLevel:copyOp.startLayer
+                      sourceSlice:copyOp.sourceLayer
+                      sourceLevel:copyOp.mipLevel
                      sourceOrigin:origin
                        sourceSize:size
                          toBuffer:cpuBuffer

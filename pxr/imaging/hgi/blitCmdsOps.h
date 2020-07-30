@@ -41,14 +41,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 //// \struct HgiTextureGpuToCpuOp
 ///
 /// Describes the properties needed to copy texture data from GPU to CPU.
+/// If the texture is an texture-array, this copies one layer (slice).
 ///
 /// It is the responsibility of the caller to:
 ///   - ensure the destination buffer is large enough to receive the data
 ///     (keep in mind the destinationByteOffset, mipLevel, numLayers, etc).
 ///   - ensure the source texture and destination buffer are valid at the time
 ///     the command is executed.
-///   - insert the appropriate barriers in the command buffer prior to
-///     reading/writing to/from the resources.
 ///
 /// <ul>
 /// <li>gpuSourceTexture:
@@ -57,10 +56,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The texel offset (width, height, depth) of where to start copying.</li>
 /// <li>mipLevel:
 ///   Mip level to copy from.</li>
-/// <li>startLayer:
-///   The first layer to start copying from.</li>
-/// <li>numLayers:
-///   The number of layers to copy.</li>
+/// <li>sourceLayer:
+///   The layer / slice to copy from.</li>
 /// <li>cpuDestinationBuffer:
 ///   The copy destination cpu buffer.</li>
 /// <li>destinationByteOffset:
@@ -75,8 +72,7 @@ struct HgiTextureGpuToCpuOp
     : gpuSourceTexture()
     , sourceTexelOffset(GfVec3i(0))
     , mipLevel(0)
-    , startLayer(0)
-    , numLayers(1)
+    , sourceLayer(0)
     , cpuDestinationBuffer(nullptr)
     , destinationByteOffset(0)
     , destinationBufferByteSize(0)
@@ -85,8 +81,7 @@ struct HgiTextureGpuToCpuOp
     HgiTextureHandle gpuSourceTexture;
     GfVec3i sourceTexelOffset;
     uint32_t mipLevel;
-    uint32_t startLayer;
-    uint32_t numLayers;
+    uint32_t sourceLayer;
     void* cpuDestinationBuffer;
     size_t destinationByteOffset;
     size_t destinationBufferByteSize;
@@ -101,8 +96,6 @@ struct HgiTextureGpuToCpuOp
 ///     (keep in mind the destinationByteOffset).
 ///   - ensure the source buffer and destination buffer are valid at the time
 ///     the command is executed.
-///   - insert the appropriate barriers in the command buffer prior to
-///     reading/writing to/from the resources.
 ///
 /// <ul>
 /// <li>gpuSourceBuffer:
@@ -143,8 +136,6 @@ struct HgiBufferGpuToGpuOp
 ///   - ensure the destination buffer is large enough to receive the data.
 ///   - ensure the source buffer and destination buffer are valid at the time
 ///     the command is executed.
-///   - insert the appropriate barriers in the command buffer prior to
-///     reading/writing to/from the resources.
 ///
 /// <ul>
 /// <li>cpuSourceBuffer:

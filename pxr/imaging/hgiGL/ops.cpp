@@ -81,11 +81,10 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
 
         HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-        uint32_t layerCnt = copyOp.startLayer + copyOp.numLayers;
-        if (!TF_VERIFY(texDesc.layerCount >= layerCnt,
-            "Texture has less layers than attempted to be copied")) {
-            return;
-        }
+    if (!TF_VERIFY(texDesc.layerCount > copyOp.sourceLayer,
+        "Trying to copy an invalid texture layer/slice")) {
+        return;
+    }
 
         GLenum glFormat = 0;
         GLenum glPixelType = 0;

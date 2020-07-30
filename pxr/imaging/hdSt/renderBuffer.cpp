@@ -207,8 +207,7 @@ HdStRenderBuffer::Map()
         copyOp.gpuSourceTexture = texture;
         copyOp.sourceTexelOffset = GfVec3i(0);
         copyOp.mipLevel = 0;
-        copyOp.startLayer = 0;
-        copyOp.numLayers = 1;
+        copyOp.sourceLayer = 0;
         copyOp.cpuDestinationBuffer = _mappedBuffer.data();
         copyOp.destinationByteOffset = 0;
         copyOp.destinationBufferByteSize = dataByteSize;

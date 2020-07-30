@@ -147,8 +147,7 @@ _ReadbackTexture(Hgi* const hgi,
     copyOp.gpuSourceTexture = textureHandle;
     copyOp.sourceTexelOffset = GfVec3i(0);
     copyOp.mipLevel = 0;
-    copyOp.startLayer = 0;
-    copyOp.numLayers = 1;
+    copyOp.sourceLayer = 0;
     copyOp.cpuDestinationBuffer = buffer.data();
     copyOp.destinationByteOffset = 0;
     copyOp.destinationBufferByteSize = alignedByteSize;
