@@ -124,10 +124,18 @@ public:
     TfToken const &operator[](size_t topologyIndex) const;
     
 private:
+    // TfHash support.
+    template <class HashState>
+    friend void
+    TfHashAppend(HashState &h, HdReprSelector const &rs) {
+        h.Append(rs.refinedToken, rs.unrefinedToken, rs.pointsToken);
+    }
+
     TfToken refinedToken;
     TfToken unrefinedToken;
     TfToken pointsToken;
 };
+
 
 /// \class HdRepr
 ///
