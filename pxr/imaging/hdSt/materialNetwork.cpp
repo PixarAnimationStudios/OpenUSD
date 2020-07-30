@@ -1026,10 +1026,10 @@ _MakeMaterialParamsForTexture(
                                                            GfVec4f(0.0f)));
     params->push_back(std::move(texBiasParam));
 
-    // Note that the memory request is apparently authored as
-    // float even though it is in bytes and thus should be an integral
-    // type.
+    // Attribute is in Mebibytes, but Storm texture system expects
+    // bytes.
     const size_t memoryRequest =
+        1048576 *
         _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
 
     // Given to HdSceneDelegate::GetTextureResourceID.

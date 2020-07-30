@@ -85,10 +85,8 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
 
         const VtValue textureMemoryValue = sceneDelegate->Get(
             GetId(), _tokens->textureMemory);
-        // Note that the memory request is apparently authored as
-        // float even though it is in bytes and thus should be an
-        // integral type.
-        _textureMemory = textureMemoryValue.GetWithDefault<float>(0.0f);
+        _textureMemory =
+            1048576 * textureMemoryValue.GetWithDefault<float>(0.0f);
         
         if (_isInitialized) {
             // Force volume prim to pick up the new field resource and
