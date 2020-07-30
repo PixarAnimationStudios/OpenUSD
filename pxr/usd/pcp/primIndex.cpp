@@ -3400,30 +3400,55 @@ _ComposeVariantSelectionForNode(
 }
 
 // Check the tree of nodes rooted at the given node for any node
-// representing a prior selection for the given variant set.
+// representing a prior selection for the given variant set for the path.
 static bool
 _FindPriorVariantSelection(
     const PcpNodeRef& node,
+    const SdfPath &pathInNode,
     int ancestorRecursionDepth,
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel)
 {
+    // The path of the variant arc we're searching for a selection for has been 
+    // mapped up to the parent of this node. So we have to map it back down to 
+    // this node to correctly check if the node's path can provide us an already 
+    // composed variant selection.
+    // 
+    // If the path can't be mapped to the node, skip it and its children. This
+    // can happen while recursively building namespace ancestors for a subgraph
+    // being composed for subroot inherit arc. In _ComposeVariantSelection, 
+    // these ancestor paths may succesfully be mapped across the inherit's stack 
+    // frame into the parent graph because of the identity mapping in all 
+    // inherits. But it may not be able to be mapped back down through reference
+    // arcs that may exist in the parent graph as we traverse to find a prior 
+    // variant selection.
+    const SdfPath sourcePath = 
+        node.GetMapToParent().MapTargetToSource(pathInNode);
+    if (sourcePath.IsEmpty()) {
+        return false;
+    }
     if (node.GetArcType() == PcpArcTypeVariant &&
         node.GetDepthBelowIntroduction() == ancestorRecursionDepth) {
+        const SdfPath pathAtIntroduction = node.GetPathAtIntroduction();
         // If this node represents a variant selection at the same
-        // effective depth of namespace, check its selection.
-        const std::pair<std::string, std::string> nodeVsel =
-            node.GetPathAtIntroduction().GetVariantSelection();
-        if (nodeVsel.first == vset) {
-            *vsel = nodeVsel.second;
-            *nodeWithVsel = node;
-            return true;
+        // effective depth of namespace, and the path that introduced the 
+        // variant matches the path which we're choosing the selection for, 
+        // then check its selection.
+        if (pathAtIntroduction.GetPrimPath() == sourcePath) {
+            const std::pair<std::string, std::string> nodeVsel =
+                pathAtIntroduction.GetVariantSelection();
+            if (nodeVsel.first == vset) {
+                *vsel = nodeVsel.second;
+                *nodeWithVsel = node;
+                return true;
+            }
         }
     }
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         if (_FindPriorVariantSelection(
-                *child, ancestorRecursionDepth, vset, vsel, nodeWithVsel)) {
+                *child, sourcePath, ancestorRecursionDepth, 
+                vset, vsel, nodeWithVsel)) {
             return true;
         }
     }
@@ -3555,7 +3580,7 @@ _ComposeVariantSelection(
     // First check if we have already resolved this variant set in the current
     // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
     // accounts for any ancestral recursion.
-    if (_FindPriorVariantSelection(rootNode,
+    if (_FindPriorVariantSelection(rootNode, pathInRoot,
                                    ancestorRecursionDepth,
                                    vset, vsel, nodeWithVsel)) {
         return;
@@ -3590,7 +3615,8 @@ _ComposeVariantSelection(
 
         // Check if we have already resolved this variant set in this previous
         // stack as well.
-        if (_FindPriorVariantSelection(rootNodeInPreviousFrame,
+        if (_FindPriorVariantSelection(rootNodeInPreviousFrame, 
+                                       pathInPreviousFrame,
                                        ancestorRecursionDepth,
                                        vset, vsel, nodeWithVsel)) {
             return;

@@ -35,7 +35,7 @@ Results for composing </SubrootInheritRef>
 
 Prim Stack:
     root.sdf             /SubrootInheritRef
-    root.sdf             /Group{v=y}Model
+    root.sdf             /Group{v=z}Model
     group.sdf            /SubrootInherit
     group.sdf            /Group{v=y}Model
 
@@ -44,7 +44,7 @@ Property names:
 
 Property stacks:
 /SubrootInheritRef.a:
-    root.sdf             /Group{v=y}Model.a
+    root.sdf             /Group{v=z}Model.a
     group.sdf            /Group{v=y}Model.a
 
 ------------------------------------------------------------------------
@@ -73,12 +73,12 @@ Results for composing </Root/Child>
 
 Prim Stack:
     root.sdf             /Root/Child
-    root.sdf             /Group{v=x}Model
+    root.sdf             /Group{v=z}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /Root/Child.a:
-    root.sdf             /Group{v=x}Model.a
+    root.sdf             /Group{v=z}Model.a
 

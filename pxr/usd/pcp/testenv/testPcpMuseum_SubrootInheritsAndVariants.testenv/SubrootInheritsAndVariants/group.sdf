@@ -20,7 +20,6 @@ def "Group" (
             {
                 string a = "v_y"
             }
-
         }
     }
 }
