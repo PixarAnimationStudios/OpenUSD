@@ -117,6 +117,13 @@ struct HdBufferSpec final {
     HdTupleType tupleType;
 };
 
+// Support TfHash.
+template <class HashState>
+void
+TfHashAppend(HashState &h, HdBufferSpec const &bs)
+{
+    h.Append(bs.name, bs.tupleType);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
