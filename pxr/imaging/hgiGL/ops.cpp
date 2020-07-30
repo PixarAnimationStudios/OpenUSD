@@ -81,7 +81,7 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
 
         HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    if (!TF_VERIFY(texDesc.layerCount > copyOp.sourceLayer,
+    if (!TF_VERIFY(texDesc.layerCount > copyOp.sourceTexelOffset[2],
         "Trying to copy an invalid texture layer/slice")) {
         return;
     }
@@ -121,7 +121,7 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
             copyOp.mipLevel,
             copyOp.sourceTexelOffset[0], // x offset
             copyOp.sourceTexelOffset[1], // y offset
-            copyOp.sourceTexelOffset[2], // z offset
+            copyOp.sourceTexelOffset[2], // z offset (depth or layer)
             texDesc.dimensions[0], // width
             texDesc.dimensions[1], // height
             texDesc.dimensions[2], // layerCnt or depth
@@ -129,6 +129,81 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
             glPixelType,
             copyOp.destinationBufferByteSize,
             copyOp.cpuDestinationBuffer);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
+{
+    return [copyOp] {
+        HgiTextureDesc const& desc =
+            copyOp.gpuDestinationTexture->GetDescriptor();
+
+        GLenum internalFormat = 0;
+        GLenum format = 0;
+        GLenum type = 0;
+
+        HgiGLConversions::GetFormat(desc.format,&format,&type,&internalFormat);
+
+        const bool isCompressed = HgiIsCompressed(desc.format);
+        GfVec3i const& offsets = copyOp.destinationTexelOffset;
+        GfVec3i const& dimensions = desc.dimensions;
+
+        HgiGLTexture* dstTexture = static_cast<HgiGLTexture*>(
+            copyOp.gpuDestinationTexture.Get());
+
+        switch(desc.type) {
+        case HgiTextureType2D:
+            if (isCompressed) {
+                glCompressedTextureSubImage2D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1],
+                    dimensions[0], dimensions[1],
+                    format,
+                    copyOp.bufferByteSize,
+                    copyOp.cpuSourceBuffer);
+            } else {
+                glTextureSubImage2D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1],
+                    dimensions[0], dimensions[1],
+                    format,
+                    type,
+                    copyOp.cpuSourceBuffer);
+            }
+            break;
+        case HgiTextureType3D:
+            if (isCompressed) {
+                glCompressedTextureSubImage3D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1], offsets[2],
+                    dimensions[0], dimensions[1], dimensions[2],
+                    format,
+                    copyOp.bufferByteSize,
+                    copyOp.cpuSourceBuffer);
+            } else {
+                glTextureSubImage3D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1], offsets[2],
+                    dimensions[0], dimensions[1], dimensions[2],
+                    format,
+                    type,
+                    copyOp.cpuSourceBuffer);
+            }
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+            break;
+        }
+
+        // Make sure the copy is finished before reads from texture.
+        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };

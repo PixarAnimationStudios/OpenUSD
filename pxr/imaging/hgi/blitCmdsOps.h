@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
-#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/enums.h"
@@ -41,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //// \struct HgiTextureGpuToCpuOp
 ///
 /// Describes the properties needed to copy texture data from GPU to CPU.
-/// If the texture is an texture-array, this copies one layer (slice).
+/// This copies one mip at a time.
 ///
 /// It is the responsibility of the caller to:
 ///   - ensure the destination buffer is large enough to receive the data
@@ -56,8 +55,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The texel offset (width, height, depth) of where to start copying.</li>
 /// <li>mipLevel:
 ///   Mip level to copy from.</li>
-/// <li>sourceLayer:
-///   The layer / slice to copy from.</li>
 /// <li>cpuDestinationBuffer:
 ///   The copy destination cpu buffer.</li>
 /// <li>destinationByteOffset:
@@ -72,7 +69,6 @@ struct HgiTextureGpuToCpuOp
     : gpuSourceTexture()
     , sourceTexelOffset(GfVec3i(0))
     , mipLevel(0)
-    , sourceLayer(0)
     , cpuDestinationBuffer(nullptr)
     , destinationByteOffset(0)
     , destinationBufferByteSize(0)
@@ -81,10 +77,49 @@ struct HgiTextureGpuToCpuOp
     HgiTextureHandle gpuSourceTexture;
     GfVec3i sourceTexelOffset;
     uint32_t mipLevel;
-    uint32_t sourceLayer;
     void* cpuDestinationBuffer;
     size_t destinationByteOffset;
     size_t destinationBufferByteSize;
+};
+
+//// \struct HgiTextureCpuToGpuOp
+///
+/// Describes the properties needed to copy texture data from CPU to GPU.
+/// This uploads one mip at a time.
+///
+/// It is the responsibility of the caller to:
+///   - ensure the destination textures is large enough to receive the data.
+///   - ensure the source buffer and destination texture are valid at the time
+///     the command is executed.
+///
+/// <ul>
+/// <li>cpuSourceBuffer:
+///   Pointer to CPU source (ie. texels) to copy the data from.</li>
+/// <li>bufferByteSize:
+///   Byte size (length) of cpuSourceBuffer.</li>
+/// <li>destinationTexelOffset:
+///   The texel offset (width, height, depth) of where to upload the data.</li>
+/// <li>mipLevel:
+///   Mip level to upload into.</li>
+/// <li>gpuDestinationTexture:
+///   The GPU texture to upload the data into.</li>
+/// </ul>
+///
+struct HgiTextureCpuToGpuOp
+{
+    HgiTextureCpuToGpuOp()
+    : cpuSourceBuffer(nullptr)
+    , bufferByteSize(0)
+    , destinationTexelOffset(GfVec3i(0))
+    , mipLevel(0)
+    , gpuDestinationTexture()
+    {}
+
+    void const* cpuSourceBuffer;
+    size_t bufferByteSize;
+    GfVec3i destinationTexelOffset;
+    uint32_t mipLevel;
+    HgiTextureHandle gpuDestinationTexture;
 };
 
 //// \struct HgiBufferGpuToGpuOp
