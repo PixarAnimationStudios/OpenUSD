@@ -641,22 +641,51 @@ UsdImagingGLDrawModeAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                  SdfPath const& cachePath,
                                                  TfToken const& propertyName)
 {
+    const std::array<TfToken, 6> textureAttrs = {
+        UsdGeomTokens->modelCardTextureXPos,
+        UsdGeomTokens->modelCardTextureYPos,
+        UsdGeomTokens->modelCardTextureZPos,
+        UsdGeomTokens->modelCardTextureXNeg,
+        UsdGeomTokens->modelCardTextureYNeg,
+        UsdGeomTokens->modelCardTextureZNeg,
+    };
+
+    if (_IsMaterialPath(cachePath)) {
+        // Check if a texture has been changed.
+        for (const TfToken& attr : textureAttrs) {
+            if (propertyName == attr) {
+                return HdMaterial::DirtyResource;
+            }
+        }
+        return HdChangeTracker::Clean;
+    }
+
+    HdDirtyBits dirtyGeo =
+        HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPoints |
+        HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyExtent;
+
     if (propertyName == UsdGeomTokens->modelDrawModeColor)
         return HdChangeTracker::DirtyPrimvar;
-    else if (propertyName == UsdGeomTokens->modelCardGeometry)
-        return (HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPoints);
-    else if (propertyName == UsdGeomTokens->extent)
-        return (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyPoints);
+    else if (propertyName == UsdGeomTokens->modelCardGeometry ||
+             propertyName == UsdGeomTokens->extent ||
+             propertyName == UsdGeomTokens->extentsHint)
+        return dirtyGeo;
     else if (propertyName == UsdGeomTokens->visibility ||
              propertyName == UsdGeomTokens->purpose)
         return HdChangeTracker::DirtyVisibility;
-    else if (propertyName == UsdGeomTokens->doubleSided)
-        return HdChangeTracker::Clean;
     else if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
                 propertyName))
         return HdChangeTracker::DirtyTransform;
 
-    return HdChangeTracker::AllDirty;
+    // In "cards" mode the texture assignments change what geometry
+    // is generated.
+    for (const TfToken& attr : textureAttrs) {
+        if (propertyName == attr) {
+            return dirtyGeo;
+        }
+    }
+
+    return HdChangeTracker::Clean;
 }
 
 void
