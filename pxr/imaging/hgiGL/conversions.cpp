@@ -198,6 +198,16 @@ _componentSwizzleTable[HgiComponentSwizzleCount][2] =
     {HgiComponentSwizzleA,    GL_ALPHA}
 };
 
+static const uint32_t
+_primitiveTypeTable[HgiPrimitiveTypeCount][2] =
+{
+    {HgiPrimitiveTypePointList,    GL_POINTS},
+    {HgiPrimitiveTypeLineList,     GL_LINES},
+    {HgiPrimitiveTypeLineStrip,    GL_LINES_ADJACENCY},
+    {HgiPrimitiveTypeTriangleList, GL_TRIANGLES},
+    {HgiPrimitiveTypePatchList,    GL_PATCHES}
+};
+
 void
 HgiGLConversions::GetFormat(
         HgiFormat inFormat,
@@ -349,6 +359,12 @@ GLenum
 HgiGLConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
 {
     return _componentSwizzleTable[componentSwizzle][1];
+}
+
+GLenum
+HgiGLConversions::GetPrimitiveType(HgiPrimitiveType pt)
+{
+    return _primitiveTypeTable[pt][1];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

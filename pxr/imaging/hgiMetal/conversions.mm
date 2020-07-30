@@ -350,6 +350,30 @@ struct {
 };
 #endif
 
+struct {
+    HgiPrimitiveType hgiPrimitiveType;
+    MTLPrimitiveTopologyClass metalTC;
+} static const _primitiveClassTable[HgiPrimitiveTypeCount] =
+{
+    {HgiPrimitiveTypePointList,    MTLPrimitiveTopologyClassPoint},
+    {HgiPrimitiveTypeLineList,     MTLPrimitiveTopologyClassLine},
+    {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTopologyClassLine},
+    {HgiPrimitiveTypeTriangleList, MTLPrimitiveTopologyClassTriangle},
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassUnspecified}
+};
+
+struct {
+    HgiPrimitiveType hgiPrimitiveType;
+    MTLPrimitiveType metalPT;
+} static const _primitiveTypeTable[HgiPrimitiveTypeCount] =
+{
+    {HgiPrimitiveTypePointList,    MTLPrimitiveTypePoint},
+    {HgiPrimitiveTypeLineList,     MTLPrimitiveTypeLine},
+    {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTypeLineStrip},
+    {HgiPrimitiveTypeTriangleList, MTLPrimitiveTypeTriangle},
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTypeTriangle /*Invalid*/}
+};
+
 MTLPixelFormat
 HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
 {
@@ -470,5 +494,20 @@ HgiMetalConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
     return _componentSwizzleTable[componentSwizzle].metalCS;
 }
 #endif
+
+MTLPrimitiveTopologyClass
+HgiMetalConversions::GetPrimitiveClass(HgiPrimitiveType pt)
+{
+    return _primitiveClassTable[pt].metalTC;
+}
+
+MTLPrimitiveType
+HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
+{
+    if (pt == HgiPrimitiveTypePatchList) {
+        TF_CODING_ERROR("Patch primitives invalid for Metal");
+    }
+    return _primitiveTypeTable[pt].metalPT;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

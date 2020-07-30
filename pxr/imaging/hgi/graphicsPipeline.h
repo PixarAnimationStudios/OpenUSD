@@ -116,6 +116,9 @@ inline bool operator!=(
 /// <ul>
 /// <li>alphaToCoverageEnable:
 ///   Fragment's color.a determines coverage (screen door transparency).</li>
+/// <li>sampleCount:
+///   The number of samples for each fragment. Must match attachments</li>
+/// </ul>
 ///
 struct HgiMultiSampleState
 {
@@ -123,6 +126,7 @@ struct HgiMultiSampleState
     HgiMultiSampleState();
 
     bool alphaToCoverageEnable;
+    HgiSampleCount sampleCount;
 };
 
 HGI_API
@@ -242,21 +246,20 @@ bool operator!=(
     const HgiGraphicsShaderConstantsDesc& lhs,
     const HgiGraphicsShaderConstantsDesc& rhs);
 
-/// \struct HgiPipelineDesc
+/// \struct HgiGraphicsPipelineDesc
 ///
 /// Describes the properties needed to create a GPU pipeline.
 ///
 /// <ul>
+/// <li>primitiveType:
+///   Describes the stream of vertices (primitive topology).</li>
 /// <li>shaderProgram:
 ///   Shader functions/stages used in this pipeline.</li>
 /// <li>depthState:
-///   (Graphics pipeline only)
 ///   Describes depth state for a pipeline.</li>
 /// <li>multiSampleState:
-///   (Graphics pipeline only)
 ///   Various settings to control multi-sampling.</li>
 /// <li>rasterizationState:
-///   (Graphics pipeline only)
 ///   Various settings to control rasterization.</li>
 /// <li>vertexBuffers:
 ///   Description of the vertex buffers (per-vertex attributes).
@@ -275,6 +278,7 @@ struct HgiGraphicsPipelineDesc
     HgiGraphicsPipelineDesc();
 
     std::string debugName;
+    HgiPrimitiveType primitiveType;
     HgiShaderProgramHandle shaderProgram;
     HgiDepthStencilState depthState;
     HgiMultiSampleState multiSampleState;

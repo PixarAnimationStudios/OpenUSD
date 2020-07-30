@@ -107,6 +107,7 @@ private:
     HgiMetal* _hgi;
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
+    HgiPrimitiveType _primitiveType;
     bool _hasWork;
 };
 

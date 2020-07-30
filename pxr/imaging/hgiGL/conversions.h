@@ -86,6 +86,9 @@ public:
 
     HGIGL_API
     static GLenum GetComponentSwizzle(HgiComponentSwizzle);
+
+    HGIGL_API
+    static GLenum GetPrimitiveType(HgiPrimitiveType pt);
 };
 
 

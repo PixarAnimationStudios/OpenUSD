@@ -128,6 +128,7 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn DrawIndexed(
+        HgiPrimitiveType primitiveType,
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,

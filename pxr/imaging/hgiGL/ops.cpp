@@ -316,6 +316,7 @@ HgiGLOps::BindVertexBuffers(
 
 HgiGLOpsFn
 HgiGLOps::DrawIndexed(
+    HgiPrimitiveType primitiveType,
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
@@ -323,7 +324,7 @@ HgiGLOps::DrawIndexed(
     uint32_t instanceCount,
     uint32_t firstInstance)
 {
-    return [indexBuffer, indexCount, indexBufferByteOffset,
+    return [primitiveType, indexBuffer, indexCount, indexBufferByteOffset,
         vertexOffset, instanceCount, firstInstance] {
         TF_VERIFY(instanceCount>0);
 
@@ -336,7 +337,7 @@ HgiGLOps::DrawIndexed(
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
 
         glDrawElementsInstancedBaseVertex(
-            GL_TRIANGLES, // XXX GL_PATCHES for tessellation
+            HgiGLConversions::GetPrimitiveType(primitiveType),
             indexCount,
             GL_UNSIGNED_INT,
             (void*)(uintptr_t(indexBufferByteOffset)),

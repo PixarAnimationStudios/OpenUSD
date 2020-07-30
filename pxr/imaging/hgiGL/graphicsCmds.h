@@ -116,6 +116,7 @@ private:
 
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
+    HgiPrimitiveType _primitiveType;
     HgiGLOpsVector _ops;
     int _pushStack;
 

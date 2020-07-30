@@ -73,6 +73,7 @@ bool operator!=(
 
 HgiMultiSampleState::HgiMultiSampleState()
     : alphaToCoverageEnable(false)
+    , sampleCount(HgiSampleCount1)
 {
 }
 
@@ -80,7 +81,8 @@ bool operator==(
     const HgiMultiSampleState& lhs,
     const HgiMultiSampleState& rhs)
 {
-    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable;
+    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
+           lhs.sampleCount == rhs.sampleCount;
 }
 
 bool operator!=(
@@ -163,7 +165,10 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc() = default;
+HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
+    : primitiveType(HgiPrimitiveTypeTriangleList)
+{
+}
 
 HgiGraphicsPipelineDesc const&
 HgiGraphicsPipeline::GetDescriptor() const
@@ -176,6 +181,7 @@ bool operator==(
     const HgiGraphicsPipelineDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
+           lhs.primitiveType == rhs.primitiveType &&
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&
            lhs.multiSampleState == rhs.multiSampleState &&

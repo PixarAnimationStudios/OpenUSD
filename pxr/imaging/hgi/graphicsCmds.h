@@ -110,7 +110,9 @@ public:
 
     /// Records a draw command that renders one or more instances of primitives
     /// using an indexBuffer starting from the base vertex of the base instance.
-    /// `indexCount` is the number of vertices.
+    /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
+    /// the bound HgiPipeline.
+    /// `indexCount`: The type of primitive to is the number of vertices.
     /// `indexBufferByteOffset`: Byte offset within indexBuffer to start reading
     ///                          indices from.
     /// `vertexOffset`: the value added to the vertex index before indexing into

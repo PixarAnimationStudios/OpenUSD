@@ -91,6 +91,12 @@ public:
     HGIMETAL_API
     static MTLTextureSwizzle GetComponentSwizzle(HgiComponentSwizzle);
 #endif
+
+    HGIMETAL_API
+    static MTLPrimitiveTopologyClass GetPrimitiveClass(HgiPrimitiveType pt);
+
+    HGIMETAL_API
+    static MTLPrimitiveType GetPrimitiveType(HgiPrimitiveType pt);
 };
 
 

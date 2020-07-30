@@ -42,6 +42,7 @@ HgiGLGraphicsCmds::HgiGLGraphicsCmds(
     : HgiGraphicsCmds()
     , _recording(true)
     , _descriptor(desc)
+    , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _pushStack(0)
 {
     if (desc.HasAttachments()) {
@@ -72,6 +73,7 @@ HgiGLGraphicsCmds::SetScissor(GfVec4i const& sc)
 void
 HgiGLGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
+    _primitiveType = pipeline->GetDescriptor().primitiveType;
     _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
 
@@ -120,6 +122,7 @@ HgiGLGraphicsCmds::DrawIndexed(
 {
     _ops.push_back(
         HgiGLOps::DrawIndexed(
+            _primitiveType,
             indexBuffer,
             indexCount,
             indexBufferByteOffset,

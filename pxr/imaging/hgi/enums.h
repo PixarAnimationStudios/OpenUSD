@@ -454,6 +454,35 @@ enum HgiComponentSwizzle
     HgiComponentSwizzleCount
 };
 
+/// \enum HgiPrimitiveType
+///
+/// What the stream of vertices being rendered represents
+///
+/// <ul>
+/// <li>HgiPrimitiveTypePointList:
+///   Rasterize a point at each vertex.</li>
+/// <li>HgiPrimitiveTypeLineList:
+///   Rasterize a line between each separate pair of vertices.</li>
+/// <li>HgiPrimitiveTypeLineStrip:
+///   Rasterize a line between each pair of adjacent vertices.</li>
+/// <li>HgiPrimitiveTypeTriangleList:
+///   Rasterize a triangle for every separate set of three vertices.</li>
+/// <li>HgiPrimitiveTypePatchList:
+///   A user-defined number of vertices, which is tessellated into
+///   points, lines, or triangles.</li>
+/// </ul>
+///
+enum HgiPrimitiveType
+{
+    HgiPrimitiveTypePointList = 0,
+    HgiPrimitiveTypeLineList,
+    HgiPrimitiveTypeLineStrip,
+    HgiPrimitiveTypeTriangleList,
+    HgiPrimitiveTypePatchList,
+
+    HgiPrimitiveTypeCount
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
