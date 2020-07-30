@@ -63,17 +63,19 @@ public:
 
     /// Default Constructor, creates an empty UsdCollectionMembershipQuery
     /// object
-    UsdCollectionMembershipQuery() {}
+    UsdCollectionMembershipQuery() = default;
 
     /// Constructor that takes a path expansion rule map.  The map is scanned
     /// for 'excludes' when the UsdCollectionMembershipQuery object is
     /// constructed.
-    explicit UsdCollectionMembershipQuery(
-        const PathExpansionRuleMap& pathExpansionRuleMap);
+    UsdCollectionMembershipQuery(
+        const PathExpansionRuleMap& pathExpansionRuleMap,
+        const SdfPathSet& includedCollections);
 
     /// Constructor that takes a path expansion rule map as an rvalue reference
-    explicit UsdCollectionMembershipQuery(
-        PathExpansionRuleMap&& pathExpansionRuleMap);
+    UsdCollectionMembershipQuery(
+        PathExpansionRuleMap&& pathExpansionRuleMap,
+        SdfPathSet&& includedCollections);
 
     /// \overload
     /// Returns whether the given path is included in the collection from
@@ -128,7 +130,8 @@ public:
     /// Equality operator
     bool operator==(UsdCollectionMembershipQuery const& rhs) const {
         return _hasExcludes == rhs._hasExcludes &&
-            _pathExpansionRuleMap == rhs._pathExpansionRuleMap;
+            _pathExpansionRuleMap == rhs._pathExpansionRuleMap &&
+            _includedCollections == rhs._includedCollections;
     }
 
     /// Inequality operator
@@ -154,8 +157,20 @@ public:
         return _pathExpansionRuleMap;
     }
 
+    /// Returns a set of paths for all collections that were included in the
+    /// collection from which this UsdCollectionMembershipQuery object was
+    /// computed. This set is recursive, so collections that were included
+    /// by other collections will be part of this set. The collection from
+    /// which this UsdCollectionMembershipQuery object was computed is *not*
+    /// part of this set.
+    const SdfPathSet& GetIncludedCollections() const {
+        return _includedCollections;
+    }
+
 private:
     PathExpansionRuleMap _pathExpansionRuleMap;
+
+    SdfPathSet _includedCollections;
 
     // A cached flag indicating whether _pathExpansionRuleMap contains
     // any exclude rules.

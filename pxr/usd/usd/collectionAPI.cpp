@@ -478,7 +478,8 @@ UsdCollectionAPI::IncludePath(const SdfPath &pathToInclude) const
             auto it = map.find(pathToInclude);
             if (TF_VERIFY(it != map.end())) {
                 map.erase(it);
-                query = UsdCollectionMembershipQuery(std::move(map));
+                query = UsdCollectionMembershipQuery(
+                    std::move(map), query.GetIncludedCollections());
             }
         }
     }
@@ -522,7 +523,8 @@ UsdCollectionAPI::ExcludePath(const SdfPath &pathToExclude) const
             auto it = map.find(pathToExclude);
             if (TF_VERIFY(it != map.end())) {
                 map.erase(it);
-                query = UsdCollectionMembershipQuery(std::move(map));
+                query = UsdCollectionMembershipQuery(
+                    std::move(map), query.GetIncludedCollections());
             }
         }
     }
@@ -580,6 +582,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
 
     // Get the map from the query
     PathExpansionRuleMap map = query->GetAsPathExpansionRuleMap();
+    SdfPathSet collections = query->GetIncludedCollections();
 
     // Get this collection's expansionRule.
     TfToken expRule;
@@ -664,6 +667,15 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
             for (const auto &pathAndExpansionRule : includedMap) {
                 map[pathAndExpansionRule.first] = pathAndExpansionRule.second;
             }
+
+            // Merge included collections
+            collections.insert(includedPath);
+
+            const SdfPathSet& includedCollections = 
+                includedQuery.GetIncludedCollections();
+            collections.insert(
+                includedCollections.begin(), includedCollections.end());
+
         } else {
             // Append included path
             map[includedPath] = expRule;
@@ -676,7 +688,8 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
         map[p] = UsdTokens->exclude;
     }
 
-    *query = UsdCollectionMembershipQuery(std::move(map));
+    *query = UsdCollectionMembershipQuery(
+        std::move(map), std::move(collections));
 }
 
 /* static */

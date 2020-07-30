@@ -218,8 +218,10 @@ SdfPathSet UsdComputeIncludedPathsFromCollection(
 }
 
 UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
-    const PathExpansionRuleMap& pathExpansionRuleMap)
+    const PathExpansionRuleMap& pathExpansionRuleMap,
+    const SdfPathSet& includedCollections)
     : _pathExpansionRuleMap(pathExpansionRuleMap)
+    , _includedCollections(includedCollections)
 {
     for (const auto &pathAndExpansionRule : _pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
@@ -230,8 +232,10 @@ UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
 }
 
 UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
-    PathExpansionRuleMap&& pathExpansionRuleMap)
+    PathExpansionRuleMap&& pathExpansionRuleMap,
+    SdfPathSet&& includedCollections)
     : _pathExpansionRuleMap(std::move(pathExpansionRuleMap))
+    , _includedCollections(std::move(includedCollections))
 {
     for (const auto &pathAndExpansionRule : _pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
