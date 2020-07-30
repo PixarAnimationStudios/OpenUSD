@@ -118,7 +118,7 @@ UsdImagingIndexProxy::_RemoveDependencies(SdfPath const& cachePath)
 }
 
 void
-UsdImagingIndexProxy::_RemovePrimInfoDependency(SdfPath const& cachePath)
+UsdImagingIndexProxy::RemovePrimInfoDependency(SdfPath const& cachePath)
 {
     // This one doesn't go through ProcessRemovals...  It's intended to be
     // called right after _AddHdPrimInfo, to reverse the dependency that

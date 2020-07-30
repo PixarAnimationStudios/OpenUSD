@@ -149,7 +149,7 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
     // also, get rid of the proxyPrim dependency.
     // XXX: We should get rid of proxyPrim entirely.
     if (instancerContext != nullptr) {
-        index->_RemovePrimInfoDependency(cachePath);
+        index->RemovePrimInfoDependency(cachePath);
         index->AddDependency(cachePath, usdPrim);
     }
 

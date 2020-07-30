@@ -198,6 +198,15 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         return SdfPath();
     }
 
+    // As long as we're passing cachePrim to InsertRprim, we need to fix up
+    // the dependency map ourselves. For USD edit purposes, we depend on the
+    // prototype prim ("prim"), rather than the instancer prim.
+    // See similar code in GprimAdapter::_AddRprim.
+    if (instancerContext != nullptr) {
+        index->RemovePrimInfoDependency(cachePath);
+        index->AddDependency(cachePath, prim);
+    }
+
     // Additionally, insert the material.
     SdfPath materialPath = _GetMaterialPath(prim);
     if (index->IsSprimTypeSupported(HdPrimTypeTokens->material) &&
