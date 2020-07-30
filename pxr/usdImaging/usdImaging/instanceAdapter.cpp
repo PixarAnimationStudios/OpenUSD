@@ -1306,9 +1306,7 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
                 prim, cachePath, propertyName);
     }
 
-    // For other property changes, blast everything.  This will trigger a
-    // prim resync.
-    return HdChangeTracker::AllDirty;
+    return HdChangeTracker::Clean;
 }
 
 void
