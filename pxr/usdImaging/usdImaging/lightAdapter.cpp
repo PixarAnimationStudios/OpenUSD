@@ -71,8 +71,12 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
     // If any of the light attributes is time varying 
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) {
-        const UsdAttribute& attr = *attrIter;
+    for (UsdAttribute const& attr : attrs) {
+        // Don't double-count transform attrs.
+        if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
+                attr.GetBaseName())) {
+            continue;
+        }
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
             break;
@@ -136,7 +140,11 @@ UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
 {
-    return HdChangeTracker::AllDirty;
+    if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
+        return HdLight::DirtyBits::DirtyTransform;
+    }
+    // "DirtyParam" is the catch-all bit for light params.
+    return HdLight::DirtyBits::DirtyParams;
 }
 
 void
