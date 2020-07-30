@@ -54,6 +54,11 @@ class SdfAssetPath;
 ///
 /// Base class for field primitives defined by an external file.
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdVolTokens.
+/// So to set an attribute to the value "rightHanded", use UsdVolTokens->rightHanded
+/// as the value.
+///
 class UsdVolFieldAsset : public UsdVolFieldBase
 {
 public:
@@ -129,10 +134,7 @@ public:
     // --------------------------------------------------------------------- //
     /// An asset path attribute that points to a file on disk.
     /// For each supported file format, a separate FieldAsset
-    /// subclass is required. Any further information required to
-    /// extract the field from the file (such as a name or index to
-    /// choose a single field from a file that can store multiple
-    /// fields) will be defined on the FieldAsset subclass.
+    /// subclass is required. 
     /// 
     /// This attribute's value can be animated over time, as most
     /// volume asset formats represent just a single timeSample of
@@ -154,6 +156,106 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDVOL_API
     UsdAttribute CreateFilePathAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FIELDNAME 
+    // --------------------------------------------------------------------- //
+    /// Name of an individual field within the file specified by
+    /// the filePath attribute.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token fieldName` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    USDVOL_API
+    UsdAttribute GetFieldNameAttr() const;
+
+    /// See GetFieldNameAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVOL_API
+    UsdAttribute CreateFieldNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FIELDINDEX 
+    // --------------------------------------------------------------------- //
+    /// A file can contain multiple fields with the same
+    /// name. This optional attribute is an index used to
+    /// disambiguate between these multiple fields with the same
+    /// name.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int fieldIndex` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
+    USDVOL_API
+    UsdAttribute GetFieldIndexAttr() const;
+
+    /// See GetFieldIndexAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVOL_API
+    UsdAttribute CreateFieldIndexAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FIELDDATATYPE 
+    // --------------------------------------------------------------------- //
+    /// Token which is used to indicate the data type of an
+    /// individual field. Authors use this to tell consumers more
+    /// about the field without opening the file on disk. The list of 
+    /// allowed tokens is specified with the specific asset type. 
+    /// A missing value is considered an error.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token fieldDataType` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    USDVOL_API
+    UsdAttribute GetFieldDataTypeAttr() const;
+
+    /// See GetFieldDataTypeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVOL_API
+    UsdAttribute CreateFieldDataTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // VECTORDATAROLEHINT 
+    // --------------------------------------------------------------------- //
+    /// Optional token which is used to indicate the role of a vector
+    /// valued field. This can drive the data type in which fields
+    /// are made available in a renderer or whether the vector values 
+    /// are to be transformed.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token vectorDataRoleHint = "None"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdVolTokens "Allowed Values" | None, Point, Normal, Vector, Color |
+    USDVOL_API
+    UsdAttribute GetVectorDataRoleHintAttr() const;
+
+    /// See GetVectorDataRoleHintAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVOL_API
+    UsdAttribute CreateVectorDataRoleHintAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
