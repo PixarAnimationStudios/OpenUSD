@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/glf/udimTexture.h"
 
+#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/vec3i.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -96,8 +99,10 @@ TF_REGISTRY_FUNCTION(TfType)
 GlfUdimTexture::GlfUdimTexture(
     TfToken const& imageFilePath,
     GlfImage::ImageOriginLocation originLocation,
-    std::vector<std::tuple<int, TfToken>>&& tiles)
-    : GlfTexture(originLocation), _tiles(std::move(tiles))
+    std::vector<std::tuple<int, TfToken>>&& tiles,
+    bool const premultiplyAlpha)
+    : GlfTexture(originLocation), _tiles(std::move(tiles)), 
+      _premultiplyAlpha(premultiplyAlpha)
 {
 }
 
@@ -110,10 +115,11 @@ GlfUdimTextureRefPtr
 GlfUdimTexture::New(
     TfToken const& imageFilePath,
     GlfImage::ImageOriginLocation originLocation,
-    std::vector<std::tuple<int, TfToken>>&& tiles)
+    std::vector<std::tuple<int, TfToken>>&& tiles,
+    bool const premultiplyAlpha)
 {
     return TfCreateRefPtr(new GlfUdimTexture(
-        imageFilePath, originLocation, std::move(tiles)));
+        imageFilePath, originLocation, std::move(tiles), premultiplyAlpha));
 }
 
 GlfTexture::BindingVector
@@ -185,6 +191,106 @@ GlfUdimTexture::_FreeTextureObject()
     }
 }
 
+// XXX: This code is duplicated in hdSt/textureObject.cpp, but will hopefully
+// be removed from this file when Storm begins using Hgi for UDIM textures
+namespace {
+enum _ColorSpaceTransform
+{
+     _SRGBToLinear,
+     _LinearToSRGB
+};
+
+// Convert a [0, 1] value between color spaces
+template<_ColorSpaceTransform colorSpaceTransform>
+static
+float _ConvertColorSpace(const float in)
+{
+    TRACE_FUNCTION();
+
+    float out = in;
+    if (colorSpaceTransform == _SRGBToLinear) {
+        if (in <= 0.04045) {
+            out = in / 12.92;
+        } else {
+            out = pow((in + 0.055) / 1.055, 2.4);
+        }
+    } else if (colorSpaceTransform == _LinearToSRGB) {
+        if (in <= 0.0031308) {
+            out = 12.92 * in;
+        } else {
+            out = 1.055 * pow(in, 1.0 / 2.4) - 0.055;
+        }
+    }
+
+    return GfClamp(out, 0.f, 1.f);
+}
+
+// Pre-multiply alpha function to be used for integral types
+template<typename T, bool isSRGB>
+static
+void
+_PremultiplyAlpha(
+    T * const data,
+    const GfVec3i &dimensions)
+{
+    TRACE_FUNCTION();
+
+    static_assert(std::numeric_limits<T>::is_integer, "Requires integral type");
+
+    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
+
+    // Perform all operations using floats.
+    const float max = static_cast<float>(std::numeric_limits<T>::max());
+
+    for (size_t i = 0; i < num; i++) {
+        const float alpha = static_cast<float>(data[4 * i + 3]) / max;
+
+        for (size_t j = 0; j < 3; j++) {
+            float p = static_cast<float>(data[4 * i + j]);
+
+            if (isSRGB) {
+                // Convert value from sRGB to linear.
+                p = max * _ConvertColorSpace<_SRGBToLinear>(p / max);
+            }  
+            
+            // Pre-multiply RGB values with alpha in linear space.
+            p *= alpha;
+
+            if (isSRGB) {
+                // Convert value from linear to sRGB.
+                p = max * _ConvertColorSpace<_LinearToSRGB>(p / max);
+            } 
+
+            // Add 0.5 when converting float to integral type.
+            data[4 * i + j] = p + 0.5f;  
+        }
+    }
+}
+
+// Pre-multiply alpha function to be used for floating point types
+template<typename T>
+static
+void _PremultiplyAlphaFloat(
+    T * const data,
+    const GfVec3i &dimensions)
+{
+    TRACE_FUNCTION();
+
+    static_assert(GfIsFloatingPoint<T>::value, "Requires floating point type");
+
+    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
+
+    for (size_t i = 0; i < num; i++) {
+        const float alpha = data[4 * i + 3];
+
+        // Pre-multiply RGB values with alpha.
+        for (size_t j = 0; j < 3; j++) {
+            data[4 * i + j] = data[4 * i + j] * alpha;
+        }
+    }
+}
+}
+
 void
 GlfUdimTexture::_ReadImage()
 {
@@ -241,7 +347,13 @@ GlfUdimTexture::_ReadImage()
     } else if (type == GL_UNSIGNED_BYTE) {
         constexpr GLenum internalFormats[] =
             { GL_R8, GL_RG8, GL_RGB8, GL_RGBA8 };
-        internalFormat = internalFormats[numChannels - 1];
+        constexpr GLenum internalFormatsSRGB[] =
+            { GL_R8, GL_RG8, GL_SRGB8, GL_SRGB8_ALPHA8 };    
+        if (firstImageMips[0].image->IsColorSpaceSRGB()) {
+            internalFormat = internalFormatsSRGB[numChannels - 1];
+        } else {
+            internalFormat = internalFormats[numChannels - 1];
+        }
         sizePerElem = 1;
     }
 
@@ -348,13 +460,54 @@ GlfUdimTexture::_ReadImage()
                 spec.format = _format;
                 spec.type = type;
                 spec.flipped = true;
-                spec.data = mipData[mip].data()
-                            + (tileId * numBytesPerLayer);
+                spec.data = mipData[mip].data() + (tileId * numBytesPerLayer);
                 const auto it = std::find_if(images.rbegin(), images.rend(),
                     [&mipSize](_MipDesc const& i)
                     { return mipSize.width <= i.size.width &&
                              mipSize.height <= i.size.height;});
                 (it == images.rend() ? images.front() : *it).image->Read(spec);
+
+                // XXX: Unfortunately, pre-multiplication is occurring after
+                // mip generation. However, it is still worth it to pre-multiply
+                // textures before texture filtering.
+                if (_premultiplyAlpha && (numChannels == 4)) {
+                    const bool isSRGB = (internalFormat == GL_SRGB8_ALPHA8);
+
+                    switch (type) {
+                    case GL_UNSIGNED_BYTE:
+                        if (isSRGB) {
+                            _PremultiplyAlpha<unsigned char, /*isSRGB=*/ true>(
+                                reinterpret_cast<unsigned char *>(spec.data), 
+                                GfVec3i(mipSize.width, mipSize.height, 1));
+                        } else {
+                            _PremultiplyAlpha<unsigned char, /*isSRGB=*/ false>(
+                                reinterpret_cast<unsigned char *>(spec.data), 
+                                GfVec3i(mipSize.width, mipSize.height, 1));   
+                        }
+                        break;
+                    case GL_UNSIGNED_SHORT:
+                        if (isSRGB) {
+                            _PremultiplyAlpha<unsigned short, /*isSRGB=*/ true>(
+                                reinterpret_cast<unsigned short *>(spec.data), 
+                                GfVec3i(mipSize.width, mipSize.height, 1));
+                        } else {
+                            _PremultiplyAlpha<unsigned short, /*isSRGB=*/false>(
+                                reinterpret_cast<unsigned short *>(spec.data), 
+                                GfVec3i(mipSize.width, mipSize.height, 1));
+                        }
+                        break;
+                    case GL_HALF_FLOAT_ARB:
+                        _PremultiplyAlphaFloat<GfHalf>(
+                            reinterpret_cast<GfHalf *>(spec.data), 
+                            GfVec3i(mipSize.width, mipSize.height, 1));
+                        break;  
+                    case GL_FLOAT:
+                        _PremultiplyAlphaFloat<float>(
+                            reinterpret_cast<float *>(spec.data), 
+                            GfVec3i(mipSize.width, mipSize.height, 1));
+                        break;       
+                    }
+                }
             }
         }
     }, 1);

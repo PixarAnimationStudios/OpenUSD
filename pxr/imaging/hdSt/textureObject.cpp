@@ -1140,11 +1140,11 @@ HdStUdimTextureObject::_Commit()
     _gpuTexture = GlfUdimTexture::New(
         GetTextureIdentifier().GetFilePath(),
         GlfImage::OriginLowerLeft,
-        std::move(_tiles));
+        std::move(_tiles),
+        _GetPremultiplyAlpha(
+            GetTextureIdentifier().GetSubtextureIdentifier(), 
+            GetTextureType()));
     _gpuTexture->SetMemoryRequested(GetTargetMemory());
-
-    // XXX: Udim textures currently cannot not pre-multiplied. This should be 
-    // fixed in an upcoming change.
 
     _layoutGLTextureName = _gpuTexture->GetGlLayoutName();
     _texelGLTextureName = _gpuTexture->GetGlTextureName();
