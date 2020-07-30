@@ -334,13 +334,8 @@ HdRprim::_ComputeSharedPrimvarId(
 
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
-    for (HdBufferSpec const &bufferSpec : bufferSpecs) {
-        boost::hash_combine(primvarId, bufferSpec.name);
-        boost::hash_combine(primvarId, bufferSpec.tupleType.type);
-        boost::hash_combine(primvarId, bufferSpec.tupleType.count);
-    }
 
-    return primvarId;
+    return TfHash::Combine(primvarId, bufferSpecs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
