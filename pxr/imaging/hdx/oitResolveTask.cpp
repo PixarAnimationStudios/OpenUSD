@@ -236,13 +236,22 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassState->SetEnableDepthMask(false);
         _renderPassState->SetColorMask(HdRenderPassState::ColorMaskRGBA);
         _renderPassState->SetBlendEnabled(true);
+        // We expect pre-multiplied color as input into the OIT resolve shader
+        // e.g. vec4(rgb * a, a). Hence the src factor for rgb is "One" since 
+        // src alpha is already accounted for. 
+        // Alpha's are blended with the same blending equation as the rgb's.
+        // Thinking about it conceptually, if you're looking through two glass 
+        // windows both occluding 50% of light, some light would still be 
+        // passing through. 50% of light passes through the first window, then 
+        // 50% of the remaining light through the second window. Hence the 
+        // equation: 0.5 + 0.5 * (1 - 0.5) = 0.75, as 75% of light is occluded.
         _renderPassState->SetBlend(
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
             HdBlendFactor::HdBlendFactorOneMinusSrcAlpha,
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
-            HdBlendFactor::HdBlendFactorOne);
+            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha);
 
         _renderPassShader = std::make_shared<HdStRenderPassShader>(
             HdxPackageOitResolveImageShader());

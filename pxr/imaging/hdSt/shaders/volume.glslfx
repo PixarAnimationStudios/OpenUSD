@@ -550,7 +550,10 @@ void main(void)
     const VolumeContribution volumeContribution =
         volumeIntegrator(rayStartEye, rayDirectionEye, rayLength);
     const float alpha = 1 - volumeContribution.transmittance;
-    const vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
+    
+    // XXX: Pre-multiplied by alpha to maintain baselines. Should be removed, 
+    // and baselines updated.
+    const vec4 color = ApplyColorOverrides(vec4(volumeContribution.color * alpha, alpha));
 
     const vec4 patchCoord = vec4(0.0);
 

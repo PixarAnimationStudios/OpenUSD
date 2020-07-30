@@ -56,6 +56,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (uv)
     (fieldname)
+    (diffuseColor)
+    (a)
 
     (HwUvTexture_1)
 
@@ -791,18 +793,19 @@ static
 std::unique_ptr<HdStSubtextureIdentifier>
 _GetSubtextureIdentifier(
     const HdTextureType textureType,
-    const TfToken &nodeType)
+    const TfToken &nodeType,
+    const bool premultiplyAlpha)
 {
     if (textureType == HdTextureType::Uv) {
         const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
         return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
-                                                                 true);
+            premultiplyAlpha);
     } 
     if (textureType == HdTextureType::Udim) {
-        return std::make_unique<HdStUdimSubtextureIdentifier>(true);
+        return std::make_unique<HdStUdimSubtextureIdentifier>(premultiplyAlpha);
     }
     if (textureType == HdTextureType::Ptex) {
-        return std::make_unique<HdStPtexSubtextureIdentifier>(true);
+        return std::make_unique<HdStPtexSubtextureIdentifier>(premultiplyAlpha);
     }
     return nullptr;
 }
@@ -845,6 +848,22 @@ _MakeMaterialParamsForTexture(
         texParam.textureType = HdTextureType::Ptex;
     }
 
+    // Determine if texture should be pre-multiplied on CPU
+    // Currently, this will only happen if the texture param is called 
+    // "diffuseColor" and if there is another param "opacity" connected to the
+    // same texture node via output "a"
+    bool premultiplyTexture = false;
+    if (paramName == _tokens->diffuseColor) {
+        auto const& opacityConIt = downstreamNode.inputConnections.find(
+            _tokens->opacity);
+        if (opacityConIt != downstreamNode.inputConnections.end()) {
+            HdSt_MaterialConnection const& con = opacityConIt->second.front();
+            premultiplyTexture = ((nodePath == con.upstreamNode) && 
+                                  (con.upstreamOutputName == _tokens->a));
+        } 
+    }
+    texParam.isPremultiplied = premultiplyTexture;
+
     // Extract texture file path
     bool useTexturePrimToFindTexture = true;
     
@@ -882,7 +901,7 @@ _MakeMaterialParamsForTexture(
                 // more direct control since they can give an instance of
                 // HdStSubtextureIdentifier.
                 //
-                // Examples are, e.g., HdStUvOrientationSubtextureIdentifier
+                // Examples are, e.g., HdStUvAssetSubtextureIdentifier
                 // allowing clients to flip the texture. Clients can even
                 // subclass from HdStDynamicUvSubtextureIdentifier and
                 // HdStDynamicUvTextureImplementation to implement their own
@@ -902,7 +921,9 @@ _MakeMaterialParamsForTexture(
                 textureId = HdStTextureIdentifier(
                     TfToken(filePath),
                     _GetSubtextureIdentifier(
-                        texParam.textureType, node.nodeTypeId));
+                        texParam.textureType, 
+                        node.nodeTypeId, 
+                        premultiplyTexture));
             // If the file attribute is an SdfPath, interpret it as path
             // to a prim holding the texture resource (e.g., a render buffer).
             } else if (HdStDrawTarget::GetUseStormTextureSystem() &&
@@ -1137,7 +1158,6 @@ _MakeParamsForInputParameter(
                 if (upstreamSdr) {
                     TfToken sdrRole(upstreamSdr->GetRole());
                     if (sdrRole == SdrNodeRole->Texture) {
-
                         _MakeMaterialParamsForTexture(
                             network,
                             upstreamNode,
@@ -1149,9 +1169,7 @@ _MakeParamsForInputParameter(
                             params,
                             textureDescriptors);
                         return;
-
                     } else if (sdrRole == SdrNodeRole->Primvar) {
-
                         _MakeMaterialParamsForPrimvarReader(
                             network,
                             upstreamNode,
@@ -1160,7 +1178,6 @@ _MakeParamsForInputParameter(
                             visitedNodes,
                             params);
                         return;
-
                     } else if (sdrRole == SdrNodeRole->Field) {
                         _MakeMaterialParamsForFieldReader(
                             network,

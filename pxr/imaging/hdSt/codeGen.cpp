@@ -1504,6 +1504,11 @@ static void _EmitTextureAccessors(
         << _GetUnpackedType(dataType, false)
         << " HdGet_" << name
         << "() { return HdGet_" << name << "(0); }\n";
+
+    // Emit pre-multiplication by alpha indicator
+    if (acc.isPremultiplied) {
+        accessors << "#define " << name << "_IS_PREMULTIPLIED 1\n";
+    }      
 }
 
 // Accessing face varying primvar data of a vertex in the GS requires special
@@ -2955,6 +2960,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << HdStTokens->bias  << "()\n"
                 << "#endif\n"
                 << "  )" << swizzle << ";\n}\n";
+
+            // Emit pre-multiplication by alpha indicator
+            if (it->second.isPremultiplied) {
+                accessors 
+                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
+            }      
         } else if (bindingType == HdBinding::TEXTURE_UDIM_ARRAY) {
             accessors 
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
@@ -3038,6 +3049,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "vec2(0.0, 0.0)";
             }
             accessors << "); }\n";
+
+            // Emit pre-multiplication by alpha indicator
+            if (it->second.isPremultiplied) {
+                accessors 
+                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
+            }  
         } else if (bindingType == HdBinding::TEXTURE_UDIM_LAYOUT) {
             declarations
                 << LayoutQualifier(it->first)
@@ -3071,6 +3088,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "), "
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
+
+            // Emit pre-multiplication by alpha indicator
+            if (it->second.isPremultiplied) {
+                accessors 
+                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
+            }     
         } else if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL) {
             declarations
                 << LayoutQualifier(it->first)
@@ -3100,6 +3123,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << ","
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
+
+            // Emit pre-multiplication by alpha indicator
+            if (it->second.isPremultiplied) {
+                accessors 
+                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
+            }    
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
             //accessors << _GetUnpackedType(it->second.dataType) << "(0)";
         } else if (bindingType == HdBinding::TEXTURE_PTEX_LAYOUT) {

@@ -216,15 +216,18 @@ public:
                                      TfToken const &dataType,
                                      std::string const &swizzle=std::string(),
                                      TfTokenVector const &inPrimvars=TfTokenVector(),
-                                     bool const processTextureFallbackValue = false)
+                                     bool const isPremultiplied=false,
+                                     bool const processTextureFallbackValue=false)
                  : name(name), dataType(dataType), swizzle(swizzle),
-                  inPrimvars(inPrimvars),
+                  inPrimvars(inPrimvars), isPremultiplied(isPremultiplied),
                   processTextureFallbackValue(processTextureFallbackValue) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
              std::string swizzle; // e.g. xyzw
              TfTokenVector inPrimvars; // for primvar renaming and texture
                                        // coordinates,
+             bool isPremultiplied; // indicates if texture parameter has been 
+                                   // pre-multiplied by alpha on the CPU
              bool processTextureFallbackValue; // use NAME_fallback from shader
                                                // bar if texture is not valid
                                                // (determineed from bool

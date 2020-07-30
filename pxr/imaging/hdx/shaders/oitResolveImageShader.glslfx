@@ -76,13 +76,11 @@ vec4 imageShader(vec2 uv)
         nodeIndex = hdxOitIndexBuffer[nodeIndex]; 
     } 
 
+    // Assume color in sortedColor is pre-multiplied by alpha
     int depth = 0;
     vec4 colorAccum = vec4(0);
     while (depth < numDepths) {
-        float ca = sortedColor[depth].a * (1 - colorAccum.a);
-        vec3 cb = sortedColor[depth].rgb;
-        colorAccum.rgb = colorAccum.rgb + cb * ca;
-        colorAccum.a = colorAccum.a + ca;
+        colorAccum += sortedColor[depth] * (1 - colorAccum.a);
 
         if (colorAccum.a >= 1.0) break;
 
