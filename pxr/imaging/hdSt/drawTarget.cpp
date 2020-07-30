@@ -99,7 +99,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyDTCamera) {
         VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->camera);
         _cameraId = vtValue.Get<SdfPath>();
-        _renderPassState.SetCamera(_cameraId);
+        _drawTargetRenderPassState.SetCamera(_cameraId);
     }
 
     if (bits & DirtyDTResolution) {
@@ -131,7 +131,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
         if (bits & DirtyDTAovBindings) {
             const VtValue aovBindingsValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->aovBindings);
-            _renderPassState.SetAovBindings(
+            _drawTargetRenderPassState.SetAovBindings(
                 aovBindingsValue.GetWithDefault<HdRenderPassAovBindingVector>(
                     {}));
         }
@@ -139,7 +139,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
         if (bits & DirtyDTDepthPriority) {
             const VtValue depthPriorityValue =
                 sceneDelegate->Get(id, HdStDrawTargetTokens->depthPriority);
-            _renderPassState.SetDepthPriority(
+            _drawTargetRenderPassState.SetDepthPriority(
                 depthPriorityValue.GetWithDefault<HdDepthPriority>(
                     HdDepthPriorityNearest));
         }
@@ -161,7 +161,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
                 sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
             
             _depthClearValue = vtValue.GetWithDefault<float>(1.0f);
-            _renderPassState.SetDepthClearValue(_depthClearValue);
+            _drawTargetRenderPassState.SetDepthClearValue(_depthClearValue);
         }
     }
         
@@ -185,7 +185,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
         // know if this is a re-add.
         changeTracker.MarkCollectionDirty(collectionName);
 
-        _renderPassState.SetRprimCollection(collection);
+        _drawTargetRenderPassState.SetRprimCollection(collection);
         _collection = collection;
     }
 
@@ -289,7 +289,7 @@ HdStDrawTarget::_SetAttachments(
     _drawTarget = GlfDrawTarget::New(_resolution, /* MSAA */ true);
 
     size_t numAttachments = attachments.GetNumAttachments();
-    _renderPassState.SetNumColorAttachments(numAttachments);
+    _drawTargetRenderPassState.SetNumColorAttachments(numAttachments);
 
     _drawTarget->Bind();
 
@@ -312,7 +312,8 @@ HdStDrawTarget::_SetAttachments(
                                    type,
                                    internalFormat);
 
-        _renderPassState.SetColorClearValue(attachmentNum, desc.GetClearColor());
+        _drawTargetRenderPassState.SetColorClearValue(
+            attachmentNum, desc.GetClearColor());
 
         _RegisterTextureResourceHandle(sceneDelegate,
                                  name,
@@ -357,7 +358,7 @@ HdStDrawTarget::_SetAttachments(
                               attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
-   _renderPassState.SetDepthPriority(attachments.GetDepthPriority());
+   _drawTargetRenderPassState.SetDepthPriority(attachments.GetDepthPriority());
 
    GlfGLContext::MakeCurrent(oldContext);
 

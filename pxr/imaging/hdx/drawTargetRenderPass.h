@@ -78,7 +78,8 @@ public:
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
     HDX_API
-    void SetRenderPassState(const HdStDrawTargetRenderPassState *renderPassState);
+    void SetDrawTargetRenderPassState(
+        const HdStDrawTargetRenderPassState *renderPassState);
 
     /// Sets the collection of rprims associated to this render pass.
     HDX_API

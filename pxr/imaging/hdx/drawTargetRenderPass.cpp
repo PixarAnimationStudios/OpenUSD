@@ -88,7 +88,7 @@ HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 }
 
 void
-HdxDrawTargetRenderPass::SetRenderPassState(
+HdxDrawTargetRenderPass::SetDrawTargetRenderPassState(
     const HdStDrawTargetRenderPassState *drawTargetRenderPassState)
 {
     _drawTargetRenderPassState = drawTargetRenderPassState;
@@ -152,12 +152,15 @@ HdxDrawTargetRenderPass::Execute(
     TfTokenVector const &renderTags)
 {
     {
-        // We expect that there is either a GlfDrawTarget to bind (for
-        // old-style draw targets) or AOV bindings (for draw targets
-        // using the storm texture system).
+        // We don't expect that there is both a GlfDrawTarget to bind
+        // (for old-style draw targets) or AOV bindings (for draw
+        // targets using the storm texture system).
+        //
+        // Note that some other task could bind a GlfDrawTarget outside
+        // of execute.
         const bool hasDrawTarget(_drawTarget);
         const bool hasAovs(!renderPassState->GetAovBindings().empty());
-        TF_VERIFY(hasDrawTarget ^ hasAovs);
+        TF_VERIFY(!(hasDrawTarget && hasAovs));
     }
 
     if (_drawTarget) {
