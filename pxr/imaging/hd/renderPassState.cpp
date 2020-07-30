@@ -31,8 +31,6 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdRenderPassState::HdRenderPassState()
