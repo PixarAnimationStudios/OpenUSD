@@ -87,13 +87,6 @@ UsdImagingNurbsPatchAdapter::TrackVariability(UsdPrim const& prim,
                UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
-
-    // Discover time-varying topology.
-    _IsVarying(prim, UsdGeomTokens->curveVertexCounts,
-                       HdChangeTracker::DirtyTopology,
-                       UsdImagingTokens->usdVaryingTopology,
-                       timeVaryingBits,
-                       /*isInherited*/false);
 }
 
 // Thread safe.
@@ -123,6 +116,24 @@ UsdImagingNurbsPatchAdapter::GetPoints(UsdPrim const& prim,
 {
     TF_UNUSED(cachePath);
     return GetMeshPoints(prim, time);   
+}
+
+HdDirtyBits
+UsdImagingNurbsPatchAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                                SdfPath const& cachePath,
+                                                TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->points) {
+        return HdChangeTracker::DirtyPoints;
+    }
+
+    if (propertyName == UsdGeomTokens->uVertexCount ||
+        propertyName == UsdGeomTokens->vVertexCount ||
+        propertyName == UsdGeomTokens->orientation) {
+        return HdChangeTracker::DirtyTopology;
+    }
+
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
 // -------------------------------------------------------------------------- //

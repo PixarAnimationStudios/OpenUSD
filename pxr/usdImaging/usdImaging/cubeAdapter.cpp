@@ -109,6 +109,19 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
+HdDirtyBits
+UsdImagingCubeAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->size) {
+        return HdChangeTracker::DirtyPoints;
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
+}
+
 /*virtual*/
 VtValue
 UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,

@@ -79,15 +79,9 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
-    // WARNING: This method is executed from multiple threads, the value cache
-    // has been carefully pre-populated to avoid mutating the underlying
-    // container during update.
 
-    // IMPORTANT: Calling _IsVarying will clear the specified bit if the given
-    // attribute is _not_ varying.  Since we have multiple attributes (and the
-    // base adapter invocation) that might result in the bit being set, we need
-    // to be careful not to reset it.  Translation: only check _IsVarying for a
-    // given cause IFF the bit wasn't already set by a previous invocation.
+    // Check DirtyPoints before doing variability checks, in case we can skip
+    // any of them...
     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->height,
                    HdChangeTracker::DirtyPoints,
@@ -124,6 +118,21 @@ UsdImagingCapsuleAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
+}
+
+HdDirtyBits
+UsdImagingCapsuleAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                                SdfPath const& cachePath,
+                                                TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->height ||
+        propertyName == UsdGeomTokens->radius ||
+        propertyName == UsdGeomTokens->axis) {
+        return HdChangeTracker::DirtyPoints;
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
 /*virtual*/

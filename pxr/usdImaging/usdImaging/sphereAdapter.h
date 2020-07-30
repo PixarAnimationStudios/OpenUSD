@@ -60,6 +60,11 @@ public:
     USDIMAGING_API
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
+    USDIMAGING_API
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName);
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

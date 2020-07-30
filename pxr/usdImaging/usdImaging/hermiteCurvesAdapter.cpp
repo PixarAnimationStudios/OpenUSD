@@ -127,8 +127,12 @@ UsdImagingHermiteCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                              SdfPath const& cachePath,
                                              TfToken const& propertyName)
 {
-    if (propertyName == UsdGeomTokens->points){
+    if (propertyName == UsdGeomTokens->points) {
         return HdChangeTracker::DirtyPoints;
+    }
+
+    else if (propertyName == UsdGeomTokens->curveVertexCounts) {
+        return HdChangeTracker::DirtyTopology;
     }
 
     // Allow base class to handle change processing.

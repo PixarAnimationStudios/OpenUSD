@@ -76,13 +76,8 @@ UsdImagingSphereAdapter::TrackVariability(UsdPrim const& prim,
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
-    // WARNING: This method is executed from multiple threads, the value cache
-    // has been carefully pre-populated to avoid mutating the underlying
-    // container during update.
-    
-    // The base adapter may already be setting that points dirty bit.
-    // _IsVarying will clear it, so check it isn't already marked as
-    // varying before checking for additional set cases.
+
+    // Check DirtyPoints before doing variability checks, to see if we can skip.
     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->radius,
                       HdChangeTracker::DirtyPoints,
@@ -107,6 +102,19 @@ UsdImagingSphereAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
+}
+
+HdDirtyBits
+UsdImagingSphereAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                               SdfPath const& cachePath,
+                                               TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->radius) {
+        return HdChangeTracker::DirtyPoints;
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
 /*virtual*/

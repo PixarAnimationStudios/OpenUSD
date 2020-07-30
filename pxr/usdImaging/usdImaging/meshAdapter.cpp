@@ -281,18 +281,48 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyPoints;
 
     // Check for UsdGeomSubset changes.
-    // XXX: We can't check right now whether this was called on behalf of a
-    // geom subset, since the "prim" field is mangled by instance adapters. We
-    // hope no meshes define these attributes (probably safe), but we should
-    // add the geom subset type check when that becomes possible.
+    // XXX: Verify that this is being called on a GeomSubset prim?
     if (propertyName == UsdGeomTokens->elementType ||
         propertyName == UsdGeomTokens->indices) {
         return HdChangeTracker::DirtyTopology;
     }
 
-    // TODO: support sparse topology and subdiv tag changes
-    // (Note that a change in subdivision scheme means we need to re-track
-    // the variability of the normals...)
+    if (propertyName == UsdGeomTokens->subdivisionScheme) {
+        // (Note that a change in subdivision scheme means we need to re-track
+        // the variability of the normals...)
+        return HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyNormals;
+    }
+
+    if (propertyName == UsdGeomTokens->faceVertexCounts ||
+        propertyName == UsdGeomTokens->faceVertexIndices ||
+        propertyName == UsdGeomTokens->holeIndices ||
+        propertyName == UsdGeomTokens->orientation) {
+        return HdChangeTracker::DirtyTopology;
+    }
+
+    if (propertyName == UsdGeomTokens->interpolateBoundary ||
+        propertyName == UsdGeomTokens->faceVaryingLinearInterpolation ||
+        propertyName == UsdGeomTokens->triangleSubdivisionRule ||
+        propertyName == UsdGeomTokens->creaseIndices ||
+        propertyName == UsdGeomTokens->creaseLengths ||
+        propertyName == UsdGeomTokens->creaseSharpnesses ||
+        propertyName == UsdGeomTokens->cornerIndices ||
+        propertyName == UsdGeomTokens->cornerSharpnesses) {
+        // XXX UsdGeomTokens->creaseMethod, when we add support for that.
+        return HdChangeTracker::DirtySubdivTags;
+    }
+
+    if (propertyName == UsdGeomTokens->normals) {
+        UsdGeomPointBased pb(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->normals,
+            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
+            HdChangeTracker::DirtyNormals);
+    }
+    if (propertyName == UsdImagingTokens->primvarsNormals) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName, HdChangeTracker::DirtyNormals);
+    }
 
     // Handle attributes that are treated as "built-in" primvars.
     if (propertyName == UsdGeomTokens->normals) {

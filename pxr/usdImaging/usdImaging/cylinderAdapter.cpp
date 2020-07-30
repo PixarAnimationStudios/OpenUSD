@@ -125,6 +125,21 @@ UsdImagingCylinderAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
+HdDirtyBits
+UsdImagingCylinderAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                                 SdfPath const& cachePath,
+                                                 TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->height ||
+        propertyName == UsdGeomTokens->radius ||
+        propertyName == UsdGeomTokens->axis) {
+        return HdChangeTracker::DirtyPoints;
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
+}
+
 /*virtual*/
 VtValue
 UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,

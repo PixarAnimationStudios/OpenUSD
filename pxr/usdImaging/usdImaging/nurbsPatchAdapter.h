@@ -80,6 +80,11 @@ public:
         UsdImagingInstancerContext const* instancerContext = nullptr) 
             const override;
 
+    USDIMAGING_API
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName);
+
     // Override the implemetation in GprimAdapter since we don't fetch the
     // points attribute for implicit primitives.
     USDIMAGING_API

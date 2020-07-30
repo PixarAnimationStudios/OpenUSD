@@ -237,19 +237,25 @@ UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
     if (propertyName == UsdGeomTokens->points)
         return HdChangeTracker::DirtyPoints;
 
+    else if (propertyName == UsdGeomTokens->curveVertexCounts ||
+             propertyName == UsdGeomTokens->basis ||
+             propertyName == UsdGeomTokens->type ||
+             propertyName == UsdGeomTokens->wrap)
+        return HdChangeTracker::DirtyTopology;
+
     // Handle attributes that are treated as "built-in" primvars.
-    if (propertyName == UsdGeomTokens->widths) {
-        UsdGeomBasisCurves curves(prim);
+    else if (propertyName == UsdGeomTokens->widths) {
+        UsdGeomCurves curves(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->widths,
             _UsdToHdInterpolation(curves.GetWidthsInterpolation()),
             HdChangeTracker::DirtyWidths);
     
     } else if (propertyName == UsdGeomTokens->normals) {
-        UsdGeomBasisCurves curves(prim);
+        UsdGeomPointBased pb(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(curves.GetNormalsInterpolation()),
+            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     // Handle prefixed primvars that use special dirty bits.

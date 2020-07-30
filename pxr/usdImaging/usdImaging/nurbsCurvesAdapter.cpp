@@ -232,6 +232,46 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
+HdDirtyBits
+UsdImagingNurbsCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                        SdfPath const& cachePath,
+                                        TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->points) {
+        return HdChangeTracker::DirtyPoints;
+    }
+    else if (propertyName == UsdGeomTokens->curveVertexCounts) {
+        return HdChangeTracker::DirtyTopology;
+    }
+    // Handle attributes that are treated as "built-in" primvars.
+    else if (propertyName == UsdGeomTokens->widths) {
+        UsdGeomCurves curves(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->widths,
+            _UsdToHdInterpolation(curves.GetWidthsInterpolation()),
+            HdChangeTracker::DirtyWidths);
+    
+    } else if (propertyName == UsdGeomTokens->normals) {
+        UsdGeomPointBased pb(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->normals,
+            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
+            HdChangeTracker::DirtyNormals);
+    }
+    // Handle prefixed primvars that use special dirty bits.
+    else if (propertyName == UsdImagingTokens->primvarsWidths) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdChangeTracker::DirtyWidths);
+    
+    } else if (propertyName == UsdImagingTokens->primvarsNormals) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName, HdChangeTracker::DirtyNormals);
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
+}
+
 void
 UsdImagingNurbsCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
                                          VtValue* topo, 
