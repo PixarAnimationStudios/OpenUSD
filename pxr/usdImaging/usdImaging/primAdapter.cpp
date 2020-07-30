@@ -888,9 +888,6 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Unset the bit initially.
-    (*dirtyFlags) &= ~dirtyFlag;
-
     if (exists != nullptr) {
         *exists = false;
     }
@@ -921,9 +918,6 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    // Unset the bit initially.
-    (*dirtyFlags) &= ~dirtyFlag;
 
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
 

@@ -498,6 +498,9 @@ protected:
     //
     // If \p exists is non-null, _IsVarying will store whether the attribute
     // was found.  If the attribute is not found, it counts as non-varying.
+    // 
+    // This only sets the dirty bit, never un-sets.  The caller is responsible
+    // for setting the initial state correctly.
     USDIMAGING_API
     bool _IsVarying(UsdPrim prim, TfToken const& attrName, 
            HdDirtyBits dirtyFlag, TfToken const& perfToken,
@@ -507,6 +510,9 @@ protected:
     // Determines if the prim's transform (CTM) is varying and if so, sets the 
     // given \p dirtyFlag in the \p dirtyFlags and increments a perf counter. 
     // Returns true if the prim's transform is varying.
+    //
+    // This only sets the dirty bit, never un-sets.  The caller is responsible
+    // for setting the initial state correctly.
     USDIMAGING_API
     bool _IsTransformVarying(UsdPrim prim,
                              HdDirtyBits dirtyFlag,
