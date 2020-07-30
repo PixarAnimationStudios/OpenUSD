@@ -209,6 +209,20 @@ UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
 bool
 UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
+    // Validate the prim to protect against crashes in the schema generated 
+    // SchemaClass::Apply(const UsdPrim &prim) functions when called with a null
+    // prim as these generated functions call prim.ApplyAPI<SchemaClass>
+    //
+    // While we don't typically validate "this" prim for public UsdPrim C++ API,
+    // for performance reasons, we opt to do so here since ApplyAPI isn't 
+    // performance critical. If ApplyAPI becomes performance critical in the
+    // future, we may have to move this validation elsewhere if this validation
+    // is problematic.
+    if (!IsValid()) {
+        TF_CODING_ERROR("Invalid prim '%s'", GetDescription().c_str());
+        return false;
+    }
+
     const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
     if (instanceName.IsEmpty()) {
         return AddAppliedSchema(typeName);

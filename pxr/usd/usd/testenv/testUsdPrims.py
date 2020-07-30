@@ -844,6 +844,11 @@ class TestUsdPrim(unittest.TestCase):
         self.assertTrue(
             Usd.ClipsAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
 
+        # Verify that we an exception but don't crash when applying to the 
+        # null prim.
+        with self.assertRaises(Tf.ErrorException):
+            self.assertFalse(Usd.CollectionAPI.Apply(Usd.Prim(), "root"))
+
         for fmt in allFormats:
             sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
             s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
