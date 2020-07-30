@@ -32,6 +32,8 @@
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 
+#include "pxr/base/tf/hash.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -252,6 +254,15 @@ public:
     /// affect hash, but changing the BAR pointer will.
     HD_API
     size_t ComputeHash() const;
+
+    // TfHash support.
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, HdBindingRequest const &br) {
+        h.Append(br._name,
+                 br._bindingType,
+                 br._dataType,
+                 br._isInterleaved);
+    }
 
 private:
     // This class unfortunately represents several concepts packed into a single
