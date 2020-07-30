@@ -337,6 +337,14 @@ struct HdTupleType {
     }
 };
 
+// Support TfHash.
+template <class HashState>
+void
+TfHashAppend(HashState &h, HdTupleType const &tt)
+{
+    h.Append(tt.type, tt.count);
+}
+
 /// Returns a direct pointer to the data held by a VtValue.
 /// Returns nullptr if the VtValue is empty or holds a type unknown to Hd.
 HD_API
