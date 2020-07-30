@@ -52,7 +52,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>gpuSourceTexture:
 ///   The gpu texture to copy pixels from.</li>
 /// <li>sourceTexelOffset:
-///   The texel offset (width, height, depth) of where to start copying.</li>
+///   The texel offset (width, height, depth) of where to start copying.
+///   If the texture is a 2d_array the third element is the layer/slice.</li>
 /// <li>mipLevel:
 ///   Mip level to copy from.</li>
 /// <li>cpuDestinationBuffer:
@@ -98,7 +99,8 @@ struct HgiTextureGpuToCpuOp
 /// <li>bufferByteSize:
 ///   Byte size (length) of cpuSourceBuffer.</li>
 /// <li>destinationTexelOffset:
-///   The texel offset (width, height, depth) of where to upload the data.</li>
+///   The texel offset (width, height, depth) of where to upload the data.
+///   If the texture is a 2d_array the third element is the layer/slice.</li>
 /// <li>mipLevel:
 ///   Mip level to upload into.</li>
 /// <li>gpuDestinationTexture:
