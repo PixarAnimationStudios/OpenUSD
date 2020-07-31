@@ -192,7 +192,7 @@ def GetPythonInfo():
         elif Linux():
             return sysconfig.get_config_var("LDLIBRARY")
         elif MacOS():
-            return "libpython" + pythonVersion + ".dylib"
+            return sysconfig.get_config_var("INSTSONAME")
         else:
             raise RuntimeError("Platform not supported")
 
