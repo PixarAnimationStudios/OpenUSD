@@ -2265,7 +2265,8 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
         for (const auto& query: binding.GetSkinningTargets()) {
             if (query.GetPrim().IsInstance() || query.GetPrim().IsInstanceProxy()) {
                 // TODO: support BakeSkinning for instances
-                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for instanced SkinningQuery <%s>\n",
+                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning "
+                        "for instanced SkinningQuery <%s>\n",
                         query.GetPrim().GetPath().GetText());
                 return false;
             }
@@ -2433,8 +2434,10 @@ UsdSkelBakeSkinning(const UsdPrimRange& range, const GfInterval& interval)
 
             if (it->IsInstance() || it->IsInstanceProxy()) {
                 // TODO: support BakeSkinning for instances
-                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for instanced SkelRoot <%s>\n",
+                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for "
+                        "instanced SkelRoot <%s>\n",
                         it->GetPath().GetText());
+                return false;
             }
 
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
@@ -2470,7 +2473,8 @@ UsdSkelBakeSkinning(const UsdSkelRoot& skelRoot, const GfInterval& interval)
 {
     if (skelRoot.GetPrim().IsInstance() || skelRoot.GetPrim().IsInstanceProxy()) {
         // TODO: support BakeSkinning for instances
-        TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for instanced SkelRoot <%s>\n",
+        TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for "
+                "instanced SkelRoot <%s>\n",
                 skelRoot.GetPrim().GetPath().GetText());
         return false;
     }

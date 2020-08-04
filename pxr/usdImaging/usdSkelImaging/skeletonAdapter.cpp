@@ -141,7 +141,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
     if(!TF_VERIFY(prim.IsA<UsdSkelSkeleton>())) {
         return SdfPath();
     }
-    if(prim.IsInstance() || prim.IsInstanceProxy() || prim.IsInMaster()) {
+    if(instancerContext != nullptr) {
         // TODO: support UsdSkel with instancing
         return SdfPath();
     }

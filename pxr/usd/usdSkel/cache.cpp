@@ -40,10 +40,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-UsdSkelCache::UsdSkelCache()
-    : _impl(new UsdSkel_CacheImpl)
+UsdSkelCache::UsdSkelCache(bool includeInstances)
+    : _impl(new UsdSkel_CacheImpl), _includeInstances(includeInstances)
 {}
-
 
 void
 UsdSkelCache::Clear()
@@ -83,7 +82,8 @@ UsdSkelCache::GetSkelQuery(const UsdSkelSkeleton& skel) const
 bool
 UsdSkelCache::Populate(const UsdSkelRoot& root)
 {
-    return UsdSkel_CacheImpl::ReadScope(_impl.get()).Populate(root);
+    return UsdSkel_CacheImpl::ReadScope(_impl.get()).Populate(root,
+        _includeInstances);
 }
 
 
@@ -139,7 +139,12 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
 
     std::vector<UsdSkelSkeleton> skelStack(1);
 
-    const auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim(), UsdTraverseInstanceProxies());
+    Usd_PrimFlagsPredicate pred(UsdPrimDefaultPredicate);
+    if (_includeInstances) {
+        pred.TraverseInstanceProxies(true);
+    }
+    const auto range = UsdPrimRange::PreAndPostVisit(
+        skelRoot.GetPrim(), pred);
     for (auto it = range.begin(); it != range.end(); ++it) {
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
@@ -231,7 +236,12 @@ UsdSkelCache::ComputeSkelBinding(const UsdSkelRoot& skelRoot,
     std::vector<UsdSkelSkeleton> skelStack(1);
     VtArray<UsdSkelSkinningQuery> skinningQueries;
 
-    const auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim(), UsdTraverseInstanceProxies());
+    Usd_PrimFlagsPredicate pred(UsdPrimDefaultPredicate);
+    if (_includeInstances) {
+        pred.TraverseInstanceProxies(true);
+    }
+    const auto range = UsdPrimRange::PreAndPostVisit(
+        skelRoot.GetPrim(), pred);
     for (auto it = range.begin(); it != range.end(); ++it) {
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {

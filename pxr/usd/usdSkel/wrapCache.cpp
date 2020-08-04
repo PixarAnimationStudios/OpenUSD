@@ -69,6 +69,10 @@ _ComputeSkelBinding(const UsdSkelCache& self,
     return binding;
 }
 
+static UsdSkelCache *__init__()
+{
+    return new UsdSkelCache(false);
+}
 
 } // namespace
 
@@ -77,7 +81,10 @@ void wrapUsdSkelCache()
 {
     using This = UsdSkelCache;
 
-    class_<This>("Cache")
+    class_<This>("Cache", no_init)
+        .def("__init__", make_constructor(__init__))
+        .def(init<bool>(arg("includeInstances")))
+
         .def("Clear", &This::Clear)
 
         .def("Populate", &This::Populate)
@@ -100,5 +107,7 @@ void wrapUsdSkelCache()
              return_value_policy<TfPySequenceToList>())
 
         .def("ComputeSkelBinding", &_ComputeSkelBinding)
+
+        .def("IncludesInstances", &This::IncludesInstances)
         ;
 }            

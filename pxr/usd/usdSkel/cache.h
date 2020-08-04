@@ -59,7 +59,7 @@ class UsdSkelCache
 {
 public:
     USDSKEL_API
-    UsdSkelCache();
+    UsdSkelCache(bool includeInstances=false);
 
     USDSKEL_API
     void Clear();
@@ -104,8 +104,13 @@ public:
                             const UsdSkelSkeleton& skel,
                             UsdSkelBinding* binding) const;
 
+    /// Does this cache include instances?
+    USDSKEL_API
+    bool IncludesInstances() const { return _includeInstances; }
+
 private:
     std::shared_ptr<class UsdSkel_CacheImpl> _impl;
+    bool _includeInstances;
 
     friend class UsdSkelAnimQuery;
     friend class UsdSkelSkeletonQuery;
