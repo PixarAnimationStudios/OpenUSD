@@ -350,7 +350,11 @@ def RunCMake(context, force, extraArgs = None):
 
     if IsVisualStudio2019OrGreater():
         generator = generator + " -A x64"
-                
+
+    toolset = context.cmakeToolset
+    if toolset is not None:
+        toolset = '-T "{toolset}"'.format(toolset=toolset)
+
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
     if MacOS():
@@ -369,6 +373,7 @@ def RunCMake(context, force, extraArgs = None):
             '-DCMAKE_BUILD_TYPE={config} '
             '{osx_rpath} '
             '{generator} '
+            '{toolset} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
@@ -377,6 +382,7 @@ def RunCMake(context, force, extraArgs = None):
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
+                    toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
         Run("cmake --build . --config {config} --target install -- {multiproc}"
             .format(config=config,
@@ -726,7 +732,13 @@ def InstallBoost_Helper(context, force, buildArgs):
         if Windows():
             # toolset parameter for Visual Studio documented here:
             # https://github.com/boostorg/build/blob/develop/src/tools/msvc.jam
-            if IsVisualStudio2019OrGreater():
+            if context.cmakeToolset == "v142":
+                b2_settings.append("toolset=msvc-14.2")
+            elif context.cmakeToolset == "v141":
+                b2_settings.append("toolset=msvc-14.1")
+            elif context.cmakeToolset == "v140":
+                b2_settings.append("toolset=msvc-14.0")
+            elif IsVisualStudio2019OrGreater():
                 b2_settings.append("toolset=msvc-14.2")
             elif IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
@@ -1583,6 +1595,9 @@ group.add_argument("--force-all", action="store_true",
 group.add_argument("--generator", type=str,
                    help=("CMake generator to use when building libraries with "
                          "cmake"))
+group.add_argument("--toolset", type=str,
+                   help=("CMake toolset to use when building libraries with "
+                         "cmake"))
 
 group = parser.add_argument_group(title="3rd Party Dependency Build Options")
 group.add_argument("--src", type=str,
@@ -1771,8 +1786,9 @@ class InstallContext:
             self.downloader = DownloadFileWithUrllib
             self.downloaderName = "built-in"
 
-        # CMake generator
+        # CMake generator and toolset
         self.cmakeGenerator = args.generator
+        self.cmakeToolset = args.toolset
 
         # Number of jobs
         self.numJobs = args.jobs
@@ -2059,6 +2075,7 @@ Building with settings:
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
   CMake generator               {cmakeGenerator}
+  CMake toolset                 {cmakeToolset}
   Downloader                    {downloader}
 
   Building                      {buildType}
@@ -2107,6 +2124,8 @@ summaryMsg = summaryMsg.format(
     instDir=context.instDir,
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator),
+    cmakeToolset=("Default" if not context.cmakeToolset
+                  else context.cmakeToolset),
     downloader=(context.downloaderName),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
