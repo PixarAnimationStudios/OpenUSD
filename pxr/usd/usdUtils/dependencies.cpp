@@ -296,8 +296,10 @@ _FileAnalyzer::_ProcessSublayers()
         for (auto &subLayer: subLayerPaths) {
             std::string newPath =
                 _ProcessDependency(subLayer, _DepType::Sublayer);
-            // Avoid duplicates that may occur depending on the remap function.
-            if (std::find(newSubLayerPaths.begin(),
+            // Avoid duplicates and skip empty asset paths that may be
+            // returned depending on the remap function.
+            if (!newPath.empty() &&
+                std::find(newSubLayerPaths.begin(),
                     newSubLayerPaths.end(), newPath) ==
                     newSubLayerPaths.end()) {
                 newSubLayerPaths.push_back(newPath);
