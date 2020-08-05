@@ -99,7 +99,9 @@ bool operator!=(
 ///   The memory is consumed immediately during the creation of the HgiTexture.
 ///   The application may alter or free this memory as soon as the constructor
 ///   of the HgiTexture has returned.
-///   Data may optionally include pixels for each mip-level.</li>
+///   Data may optionally include pixels for each mip-level.
+///   HgiGetMipInitialData can be used to get to each mip's data and describes
+///   in more detail how mip dimensions are rounded.</li>
 /// </ul>
 ///
 struct HgiTextureDesc
