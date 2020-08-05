@@ -71,6 +71,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((DefaultMaterialsScopeName, "Looks"))
     ((DefaultPrimaryCameraName, "main_cam"))
+
+    (pref)
+    (st)
 );
 
 
@@ -245,12 +248,12 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 
 TfToken UsdUtilsGetPrimaryUVSetName()
 {
-    return TfToken("st");
+    return _tokens->st;
 }
 
 TfToken UsdUtilsGetPrefName()
 {
-    return TfToken("pref");
+    return _tokens->pref;
 }
 
 using _TokenToTokenMap = TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
