@@ -22,15 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/hgi.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -208,21 +209,16 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    if (caps.directStateAccessEnabled) {
-        glNamedBufferSubData(_entireResource->GetId()->GetRawResource(),
-                             0,
-                             _entireResource->GetSize(),
-                             &data[0]);
-    } else {
-        glBindBuffer(GL_ARRAY_BUFFER,
-                     _entireResource->GetId()->GetRawResource());
-        glBufferSubData(GL_ARRAY_BUFFER, 0,
-                        _entireResource->GetSize(),
-                        &data[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
+    // Use blit op to copy over the data.
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+    HgiBufferCpuToGpuOp blitOp;
+    blitOp.byteSize = _entireResource->GetSize();
+    blitOp.cpuSourceBuffer = data.data();
+    blitOp.sourceByteOffset = 0;
+    blitOp.gpuDestinationBuffer = _entireResource->GetId();
+    blitOp.destinationByteOffset = 0;
+    blitCmds->CopyBufferCpuToGpu(blitOp);
+    _hgi->SubmitCmds(blitCmds.get());
 }
 
 void
