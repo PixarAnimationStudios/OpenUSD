@@ -45,7 +45,11 @@ void
 Hgi::SubmitCmds(HgiCmds* cmds)
 {
     TRACE_FUNCTION();
-    _SubmitCmds(cmds);
+
+    if (cmds && TF_VERIFY(!cmds->IsSubmitted())) {
+        _SubmitCmds(cmds);
+        cmds->_SetSubmitted();
+    }
 }
 
 static Hgi*

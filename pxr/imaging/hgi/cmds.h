@@ -46,6 +46,10 @@ public:
     HGI_API
     virtual ~HgiCmds();
 
+    /// Returns true if the HgiCmds object has been submitted to GPU.
+    HGI_API
+    bool IsSubmitted() const;
+
 protected:
     friend class Hgi;
 
@@ -58,9 +62,15 @@ protected:
     HGI_API
     virtual bool _Submit(Hgi* hgi);
 
+    // Flags the HgiCmds object as 'submitted' to GPU.
+    HGI_API
+    void _SetSubmitted();
+
 private:
     HgiCmds & operator=(const HgiCmds&) = delete;
     HgiCmds(const HgiCmds&) = delete;
+
+    bool _submitted;
 };
 
 
