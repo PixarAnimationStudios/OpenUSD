@@ -52,21 +52,21 @@ class SdfAssetPath;
 
 /// \class UsdGeomHermiteCurves
 ///
-/// This schema specifies a cubically hermite interpolated curve as
+/// This schema specifies a cubic hermite interpolated curve batch as
 /// sometimes used for defining guides for animation. While hermite curves can
-/// be useful because they interpolate their points, they are not well supported
-/// by high-end renderers for imaging. Therefore, while we include this schema
-/// for interchange, we strongly recommend the use of UsdGeomBasisCurves as
-/// the representation of curves intended to be rendered (ie. hair or grass).
-/// Hermite curves can be converted to a Bezier representation (though not
-/// from Bezier back to Hermite in general).
+/// be useful because they interpolate through their control points, they are
+/// not well supported by high-end renderers for imaging. Therefore, while we
+/// include this schema for interchange, we strongly recommend the use of
+/// UsdGeomBasisCurves as the representation of curves intended to be rendered
+/// (ie. hair or grass). Hermite curves can be converted to a Bezier
+/// representation (though not from Bezier back to Hermite in general).
 /// 
 /// \section UsdGeomHermiteCurves_Interpolation Point Interpolation
 /// 
 /// The initial cubic curve segment is defined by the first two points and
 /// first two tangents. Additional segments are defined by additional 
-/// point / tangent pairs.  The number of segments for non-batched hermite
-/// curve would be len(hermite.points) - 1.  The total number of segments
+/// point / tangent pairs.  The number of segments for each non-batched hermite
+/// curve would be len(curve.points) - 1.  The total number of segments
 /// for the batched UsdGeomHermiteCurves representation is
 /// len(points) - len(curveVertexCounts).
 /// 
@@ -74,7 +74,7 @@ class SdfAssetPath;
 /// 
 /// Primvar interpolation is not well specified for this type as it is not
 /// intended as a rendering representation. We suggest that per point
-/// primvars would be linearly interpolated across the point and should 
+/// primvars would be linearly interpolated across each segment and should 
 /// be tagged as 'varying'.
 /// 
 /// It is not immediately clear how to specify cubic or 'vertex' interpolation

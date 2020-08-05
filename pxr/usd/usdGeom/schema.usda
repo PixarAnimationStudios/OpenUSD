@@ -1199,6 +1199,15 @@ class "Curves" (
              retaining their consistency with the RenderMan specification for
              NURBS Patches. HermiteCurves are useful for the
              interchange of animation guides and paths.
+
+             It is safe to use the length of the curve vertex count to derive
+             the number of curves and the number and layout of curve vertices,
+             but this schema should NOT be used to derive the number of curve
+             points. While vertex indices are implicit in all shipped
+             descendent types of this schema, one should not assume that all
+             internal or future shipped schemas will follow this pattern. Be
+             sure to key any indexing behavior off the concrete type, not this
+             abstract type.
              """
 ) {
     # topology attributes
@@ -2189,21 +2198,21 @@ class "XformCommonAPI"
 
 class HermiteCurves "HermiteCurves" (
     inherits = </Curves>
-    doc = """This schema specifies a cubically hermite interpolated curve as
+    doc = """This schema specifies a cubic hermite interpolated curve batch as
     sometimes used for defining guides for animation. While hermite curves can
-    be useful because they interpolate their points, they are not well supported
-    by high-end renderers for imaging. Therefore, while we include this schema
-    for interchange, we strongly recommend the use of UsdGeomBasisCurves as
-    the representation of curves intended to be rendered (ie. hair or grass).
-    Hermite curves can be converted to a Bezier representation (though not
-    from Bezier back to Hermite in general).
+    be useful because they interpolate through their control points, they are
+    not well supported by high-end renderers for imaging. Therefore, while we
+    include this schema for interchange, we strongly recommend the use of
+    UsdGeomBasisCurves as the representation of curves intended to be rendered
+    (ie. hair or grass). Hermite curves can be converted to a Bezier
+    representation (though not from Bezier back to Hermite in general).
 
     \\section UsdGeomHermiteCurves_Interpolation Point Interpolation
     
     The initial cubic curve segment is defined by the first two points and
     first two tangents. Additional segments are defined by additional 
-    point / tangent pairs.  The number of segments for non-batched hermite
-    curve would be len(hermite.points) - 1.  The total number of segments
+    point / tangent pairs.  The number of segments for each non-batched hermite
+    curve would be len(curve.points) - 1.  The total number of segments
     for the batched UsdGeomHermiteCurves representation is
     len(points) - len(curveVertexCounts).
 
@@ -2211,7 +2220,7 @@ class HermiteCurves "HermiteCurves" (
 
     Primvar interpolation is not well specified for this type as it is not
     intended as a rendering representation. We suggest that per point
-    primvars would be linearly interpolated across the point and should 
+    primvars would be linearly interpolated across each segment and should 
     be tagged as 'varying'.
 
     It is not immediately clear how to specify cubic or 'vertex' interpolation
