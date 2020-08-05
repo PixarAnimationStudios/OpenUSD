@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
+using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 
 using HdSt_BasisCurvesTopologySharedPtr =
     std::shared_ptr<class HdSt_BasisCurvesTopology>;
@@ -387,6 +388,11 @@ public:
     HdInstance<HdStGLSLProgramSharedPtr>
     RegisterGLSLProgram(HdInstance<HdStGLSLProgramSharedPtr>::ID id);
 
+    /// Register a GLSLFX file.
+    HDST_API
+    HdInstance<HioGlslfxSharedPtr>
+    RegisterGLSLFXFile(HdInstance<HioGlslfxSharedPtr>::ID id);
+
     /// Register a texture resource handle.
     HDST_API
     HdInstance<HdStTextureResourceHandleSharedPtr>
@@ -599,6 +605,10 @@ private:
     // glsl shader program registry
     HdInstanceRegistry<HdStGLSLProgramSharedPtr>
         _glslProgramRegistry;
+
+    // glslfx file registry
+    HdInstanceRegistry<HioGlslfxSharedPtr>
+        _glslfxFileRegistry;
 
     // texture resource handle registry
     HdInstanceRegistry<HdStTextureResourceHandleSharedPtr>

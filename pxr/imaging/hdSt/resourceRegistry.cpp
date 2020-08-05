@@ -596,6 +596,13 @@ HdStResourceRegistry::RegisterGLSLProgram(
     return _glslProgramRegistry.GetInstance(id);
 }
 
+HdInstance<HioGlslfxSharedPtr>
+HdStResourceRegistry::RegisterGLSLFXFile(
+        HdInstance<HioGlslfxSharedPtr>::ID id)
+{
+    return _glslfxFileRegistry.GetInstance(id);
+}
+
 HdInstance<HdStTextureResourceHandleSharedPtr>
 HdStResourceRegistry::RegisterTextureResourceHandle(
         HdInstance<HdStTextureResourceHandleSharedPtr>::ID id)
@@ -891,6 +898,7 @@ HdStResourceRegistry::_GarbageCollect()
     // Cleanup Shader registries
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
+    _glslfxFileRegistry.GarbageCollect();
     _textureResourceHandleRegistry.GarbageCollect();
 
     // Cleanup Hgi resources bindings and pipelines

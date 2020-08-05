@@ -31,10 +31,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HioGlslfxUniquePtr =
-    std::unique_ptr<class HioGlslfx>;
-using HdSt_MaterialParamVector =
-    std::vector<class HdSt_MaterialParam>;
+class HdStResourceRegistry;
+using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
+using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
 
 /// \class HdStMaterialNetwork
 ///
@@ -54,7 +53,8 @@ public:
     HDST_API
     void ProcessMaterialNetwork(
         SdfPath const& materialId,
-        HdMaterialNetworkMap const& hdNetworkMap);
+        HdMaterialNetworkMap const& hdNetworkMap,
+        HdStResourceRegistry *resourceRegistry);
 
     HDST_API
     TfToken const& GetMaterialTag() const;
@@ -118,7 +118,8 @@ private:
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
     TextureDescriptorVector _textureDescriptors;
-    HioGlslfxUniquePtr _surfaceGfx;
+    HioGlslfxSharedPtr _surfaceGfx;
+    size_t _surfaceGfxHash;
 };
 
 

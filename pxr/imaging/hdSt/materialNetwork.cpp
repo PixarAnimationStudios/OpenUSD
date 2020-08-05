@@ -23,10 +23,11 @@
 //
 
 #include "pxr/imaging/hdSt/materialNetwork.h"
-#include "pxr/imaging/hdSt/tokens.h"
-#include "pxr/imaging/hdSt/materialParam.h"
-#include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -40,6 +41,7 @@
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
 
 #include <memory>
 
@@ -247,8 +249,10 @@ _GetMaterialTag(
 
 static void
 _GetGlslfxForTerminal(
-    HioGlslfxUniquePtr& glslfxOut,
-    TfToken const& nodeTypeId)
+    HioGlslfxSharedPtr& glslfxOut,
+    size_t *glslfxOutHash,
+    TfToken const& nodeTypeId,
+    HdStResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -262,17 +266,27 @@ _GetGlslfxForTerminal(
         std::string const& glslfxFilePath = sdrNode->GetResolvedImplementationURI();
         if (!glslfxFilePath.empty()) {
 
-            // It is slow to go to disk and load the glslfx file. We don't want
-            // to do this every time the material is dirtied.
-            // XXX We need a way to force reload the same glslfx.
-            if (glslfxOut && glslfxOut->GetFilePath() == glslfxFilePath) {
-                return;
+            // Hash the filepath if it has changed.
+            if (!(*glslfxOutHash) ||
+                (glslfxOut && glslfxOut->GetFilePath() != glslfxFilePath)) {
+                *glslfxOutHash = TfHash()(glslfxFilePath);
             }
 
-            glslfxOut.reset(new HioGlslfx(glslfxFilePath));
+            // Find the glslfx file from the registry
+            HdInstance<HioGlslfxSharedPtr> glslfxInstance = 
+                resourceRegistry->RegisterGLSLFXFile(*glslfxOutHash);
+
+            if (glslfxInstance.IsFirstInstance()) {
+                glslfxOut.reset(new HioGlslfx(glslfxFilePath));
+                glslfxInstance.SetValue(glslfxOut);
+            }
+            glslfxOut = glslfxInstance.GetValue();
+
         } else {
             std::string const& sourceCode = sdrNode->GetSourceCode();
             if (!sourceCode.empty()) {
+                // Do not use the registry for the source code to avoid
+                // the cost of hashing the entire source code.
                 std::istringstream sourceCodeStream(sourceCode);
                 glslfxOut.reset(new HioGlslfx(sourceCodeStream));
             }
@@ -1272,6 +1286,7 @@ _GatherMaterialParams(
 
 HdStMaterialNetwork::HdStMaterialNetwork()
     : _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
+    , _surfaceGfxHash(0)
 {
 }
 
@@ -1280,7 +1295,8 @@ HdStMaterialNetwork::~HdStMaterialNetwork() = default;
 void
 HdStMaterialNetwork::ProcessMaterialNetwork(
     SdfPath const& materialId,
-    HdMaterialNetworkMap const& hdNetworkMap)
+    HdMaterialNetworkMap const& hdNetworkMap,
+    HdStResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -1312,7 +1328,8 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
             _GetTerminalNode(materialId, surfaceNetwork)) 
     {
         // Extract the glslfx and metadata for surface/volume.
-        _GetGlslfxForTerminal(_surfaceGfx, surfTerminal->nodeTypeId);
+        _GetGlslfxForTerminal(_surfaceGfx, &_surfaceGfxHash,
+                              surfTerminal->nodeTypeId, resourceRegistry);
         if (_surfaceGfx) {
 
             // If the glslfx file is not valid we skip parsing the network.
