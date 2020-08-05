@@ -335,9 +335,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         // Usd prohibits directly instancing gprims so if the current prim is
         // an instance and has an adapter, warn and skip the prim. Prim types
         // (such as cards) that can be directly instanced can opt out of this
-        // via CanPopulateMaster().
+        // via CanPopulateUsdInstance().
         if (instanceProxyPrim.IsInstance() && adapter &&
-            !adapter->CanPopulateMaster()) {
+            !adapter->CanPopulateUsdInstance()) {
             TF_WARN("The gprim at path <%s> was directly instanced. "
                     "In order to instance this prim, put the prim under an "
                     "Xform, and instance the Xform parent.",

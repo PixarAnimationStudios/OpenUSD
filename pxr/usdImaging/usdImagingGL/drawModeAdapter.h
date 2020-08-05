@@ -63,9 +63,9 @@ public:
     // render index compatibility at a later point than adapter lookup.
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
-    // Cards prims can take effect on master prims, so we need to let the
+    // Cards mode can be applied to instance prims, so we need to let the
     // UsdImagingInstanceAdapter know we want special handling.
-    bool CanPopulateMaster() const override;
+    bool CanPopulateUsdInstance() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

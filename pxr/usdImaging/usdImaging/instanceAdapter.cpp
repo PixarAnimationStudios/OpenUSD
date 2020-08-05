@@ -267,18 +267,21 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 continue;
             }
 
-            // If we're processing the master prim, it's normally not allowed
-            // to be imageable.  We can't instance a gprim (or instancer)
-            // directly since we don't derive any scalability benefit from
-            // mesh-to-mesh instancing.
+            // If we're processing the root instance prim, we normally don't
+            // allow it to be imageable.  If you directly instance a gprim,
+            // the gprim attributes can vary per-instance, meaning you'd need
+            // to add one hydra prototype per instance and you'd lose any
+            // scalability benefit.
             //
-            // Exceptions (like cards mode) will be flagged by the function
-            // CanPopulateMaster() on their prim adapter.
+            // Normally we skip this prim and warn (if it's of imageable type),
+            // but a few exceptions (like cards mode) will be flagged by the
+            // function CanPopulateUsdInstance(), in which case we allow them
+            // to be populated.
             //
-            // If the master prim has an adapter and shouldn't, generate a
-            // warning and continue.
+            // (Note: any prim type that implements CanPopulateUsdInstance will
+            // need extensive code support in this adapter as well).
             if (iter->IsMaster() && primAdapter &&
-                !primAdapter->CanPopulateMaster()) {
+                !primAdapter->CanPopulateUsdInstance()) {
                 TF_WARN("The gprim at path <%s> was directly instanced. "
                         "In order to instance this prim, put the prim under an "
                         "Xform, and instance the Xform parent.",

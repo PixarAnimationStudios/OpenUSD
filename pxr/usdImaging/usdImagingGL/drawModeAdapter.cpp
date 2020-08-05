@@ -116,7 +116,7 @@ UsdImagingGLDrawModeAdapter::ShouldCullChildren() const
 }
 
 bool
-UsdImagingGLDrawModeAdapter::CanPopulateMaster() const
+UsdImagingGLDrawModeAdapter::CanPopulateUsdInstance() const
 {
     return true;
 }

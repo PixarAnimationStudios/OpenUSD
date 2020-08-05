@@ -113,7 +113,7 @@ UsdImagingPrimAdapter::IsInstancerAdapter() const
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::CanPopulateMaster() const
+UsdImagingPrimAdapter::CanPopulateUsdInstance() const
 {
     return false;
 }

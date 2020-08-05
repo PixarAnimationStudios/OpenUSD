@@ -101,13 +101,36 @@ public:
     USDIMAGING_API
     virtual bool IsInstancerAdapter() const;
 
-    // Indicates whether this adapter can populate a master prim. By policy,
-    // you can't directly instance a gprim, but you can directly instance proxy
-    // objects (like cards). Note: masters don't have attributes, so an adapter
-    // opting in here needs to check if prims it's populating are master prims,
-    // and if so find a copy of the instancing prim.
+    // Indicates whether this adapter can directly populate USD instance prims.
+    //
+    // Normally, with USD instances, we make a firewall between the instance
+    // prim and the USD prototype tree. The instance adapter creates one
+    // hydra prototype per prim in the USD prototype tree, shared by all USD
+    // instances; this lets us recognize the benefits of instancing,
+    // by hopefully having a high instance count per prototype.  The instance
+    // adapter additionally configures a hydra instancer for the prototype tree;
+    // and a small set of specially-handled data is allowed through: things like
+    // inherited constant primvars, transforms, visibility, and other things
+    // we know how to vary per-instance.
+    //
+    // We enforce the above policy by refusing to populate gprims which are
+    // USD instances, since we'd need one prototype per instance and would lose
+    // any instancing benefit.
+    //
+    // There are a handful of times when it really is useful to directly
+    // populate instance prims: for example, instances with cards applied,
+    // or instances of type UsdSkelRoot.  In those cases, the adapters can
+    // opt into this scheme with "CanPopulateUsdInstance".
+    //
+    // Note that any adapters taking advantage of this feature will need
+    // extensive code support in instanceAdapter: the instance adapter will
+    // need to potentially create and track  multiple hydra prototypes per
+    // USD prototype, and the adapter will need special handling to pass down
+    // any relevant instance-varying data.
+    //
+    // In summary: use with caution.
     USDIMAGING_API
-    virtual bool CanPopulateMaster() const;
+    virtual bool CanPopulateUsdInstance() const;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
