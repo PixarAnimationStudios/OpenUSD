@@ -187,13 +187,14 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
     UsdModelAPI model(prim);
     bool applyDrawMode = false;
     TfToken kind;
-    UsdAttribute attr;
     if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
         applyDrawMode = true;
     else {
         UsdGeomModelAPI geomModel(prim);
-        if ((attr = geomModel.GetModelApplyDrawModeAttr()))
+        UsdAttribute attr = geomModel.GetModelApplyDrawModeAttr();
+        if (attr) {
             attr.Get(&applyDrawMode);
+        }
     }
 
     return applyDrawMode;

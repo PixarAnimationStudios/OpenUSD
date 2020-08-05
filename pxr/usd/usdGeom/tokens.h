@@ -168,7 +168,7 @@ struct UsdGeomTokensType {
     const TfToken creaseSharpnesses;
     /// \brief "cross"
     /// 
-    /// Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr(), Default value for UsdGeomModelAPI::GetModelCardGeometryAttr()
     const TfToken cross;
     /// \brief "cubic"
     /// 
@@ -288,7 +288,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 

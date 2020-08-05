@@ -366,7 +366,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
         if (requestedBits & HdMaterial::DirtyResource) {
 
-
             SdfAssetPath path(UsdImagingGLPackageDrawModeShader());
             
             SdrRegistry &shaderReg = SdrRegistry::GetInstance();
@@ -421,7 +420,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             for (int i = 0; i < 6; ++i) {
                 UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
                 SdfAssetPath textureFile;
-                if (attr && attr.Get(&textureFile, time)) {
+                if (attr && attr.Get(&textureFile, time) &&
+                    !textureFile.GetAssetPath().empty()) {
                     SdfPath textureNodePath = _GetMaterialPath(prim)
                         .AppendProperty(textureAttrs[i]);
 
@@ -605,7 +605,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 for (int i = 0; i < 6; ++i) {
                     UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
                     SdfAssetPath asset;
-                    if (attr && attr.Get(&asset, time)) {
+                    if (attr && attr.Get(&asset, time) &&
+                        !asset.GetAssetPath().empty()) {
                         axes_mask |= mask[i];
                     }
                 }
@@ -1055,6 +1056,10 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     // Fallback to the literal path if it couldn't be resolved.
     if (file.empty()) {
         file = asset.GetAssetPath();
+    }
+    // If the literal path is empty, ignore this attribute.
+    if (file.empty()) {
+        return false;
     }
 
     GlfImageSharedPtr img = GlfImage::OpenForReading(file);

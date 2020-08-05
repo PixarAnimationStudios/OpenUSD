@@ -759,7 +759,7 @@ typedef UsdImaging_ResolvedAttributeCache<UsdImaging_DrawModeStrategy>
 
 struct UsdImaging_DrawModeStrategy
 {
-    typedef TfToken value_type; // origin, bounds, cards, default
+    typedef TfToken value_type; // origin, bounds, cards, default, inherited
     typedef UsdAttributeQuery query_type;
 
     static
@@ -780,11 +780,22 @@ struct UsdImaging_DrawModeStrategy
             UsdPrim prim,
             query_type const* query)
     {
-        value_type v = UsdGeomTokens->default_;
-        if (*query && query->Get(&v)) {
+        // No attribute defined means inherited, means refer to the parent.
+        // Any defined attribute overrides parent opinion.
+        // If the drawMode is inherited all the way to the root of the scene,
+        // that means "default".
+        value_type v = UsdGeomTokens->inherited;
+        if (*query) {
+            query->Get(&v);
+        }
+        if (v != UsdGeomTokens->inherited) {
             return v;
         }
-        return *owner->_GetValue(prim.GetParent());
+        v = *owner->_GetValue(prim.GetParent());
+        if (v == UsdGeomTokens->inherited) {
+            return UsdGeomTokens->default_;
+        }
+        return v;
     }
 
     static
