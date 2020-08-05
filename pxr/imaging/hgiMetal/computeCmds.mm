@@ -95,7 +95,8 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
     }
 
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)
-       threadsPerThreadgroup:MTLSizeMake(thread_width, thread_height, 1)];
+       threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
+                                         MIN(thread_height, dimY), 1)];
 
     _hasWork = true;
 }
