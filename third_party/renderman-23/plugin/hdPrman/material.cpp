@@ -596,13 +596,6 @@ HdPrmanMaterial::GetInitialDirtyBitsMask() const
     return HdChangeTracker::AllDirty;
 }
 
-//virtual
-void
-HdPrmanMaterial::Reload()
-{
-    // TODO Is it possible to reload shaders during an rman session?
-}
-
 bool
 HdPrmanMaterial::IsValid() const
 {

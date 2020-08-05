@@ -80,9 +80,6 @@ public:
     void Execute(HdRenderIndex *index,
                  HdTaskSharedPtrVector *tasks);
 
-    HD_API
-    void ReloadAllShaders(HdRenderIndex& index);
-
 
 private:
     /// Context containing token-value pairs, that is passed to each

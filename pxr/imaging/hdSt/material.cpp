@@ -504,15 +504,6 @@ HdStMaterial::GetInitialDirtyBitsMask() const
     return AllDirty;
 }
 
-
-//virtual
-void
-HdStMaterial::Reload()
-{
-    _networkProcessor.ClearGlslfx();
-    _surfaceShader->Reload();
-}
-
 HdStShaderCodeSharedPtr
 HdStMaterial::GetShaderCode() const
 {

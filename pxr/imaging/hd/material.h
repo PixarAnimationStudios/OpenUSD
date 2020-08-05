@@ -42,15 +42,11 @@ public:
         // XXX: Got to skip varying and force sync bits for now
         DirtyParams           = 1 << 2,
         DirtyResource         = 1 << 3,
-        AllDirty              = (DirtyParams
-                                 |DirtyResource)
+        AllDirty              = (DirtyParams | DirtyResource)
     };
 
     HD_API
     virtual ~HdMaterial();
-
-    /// Causes the shader to be reloaded.
-    virtual void Reload() = 0;
 
 protected:
     HD_API

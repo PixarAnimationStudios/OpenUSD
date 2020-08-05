@@ -73,10 +73,6 @@ public:
     HDST_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Causes the shader to be reloaded.
-    HDST_API
-    virtual void Reload() override;
-
     /// Obtains the render delegate specific representation of the shader.
     HDST_API
     HdStShaderCodeSharedPtr GetShaderCode() const;

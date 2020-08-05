@@ -221,8 +221,6 @@ public:
         return HdMaterial::AllDirty;
     }
 
-    virtual void Reload() override {};
-
 private:
     Hd_NullMaterial()                                  = delete;
     Hd_NullMaterial(const Hd_NullMaterial &)             = delete;

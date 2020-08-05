@@ -115,6 +115,7 @@ HdStResourceRegistry::~HdStResourceRegistry() = default;
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
+    _glslfxFileRegistry.Invalidate();
 }
 
 VtDictionary
