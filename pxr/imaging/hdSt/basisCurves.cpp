@@ -704,15 +704,21 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 }
             }
 
-            // XXX: this really needs to happen for all primvars.
+            // XXX: interpolation really needs to happen for all primvars.
             if (primvar.name == HdTokens->widths) {
-                sources.push_back(HdBufferSourceSharedPtr(
-                        new HdSt_BasisCurvesWidthsInterpolaterComputation(
-                            _topology.get(), value.Get<VtFloatArray>())));
+                VtFloatArray array =  value.Get<VtFloatArray>();
+                if (!array.empty()) {
+                    sources.push_back(HdBufferSourceSharedPtr(
+                            new HdSt_BasisCurvesWidthsInterpolaterComputation(
+                                _topology.get(), array)));
+                }
             } else if (primvar.name == HdTokens->normals) {
-                sources.push_back(HdBufferSourceSharedPtr(
-                        new HdSt_BasisCurvesNormalsInterpolaterComputation(
-                            _topology.get(), value.Get<VtVec3fArray>())));
+                VtVec3fArray array = value.Get<VtVec3fArray>();
+                if (!array.empty()) {
+                    sources.push_back(HdBufferSourceSharedPtr(
+                            new HdSt_BasisCurvesNormalsInterpolaterComputation(
+                                _topology.get(), array)));
+                }
             } else {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdVtBufferSource(primvar.name, value)));
@@ -931,4 +937,3 @@ HdStBasisCurves::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
