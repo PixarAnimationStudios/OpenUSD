@@ -1,0 +1,97 @@
+#usda 1.0
+(
+    endTimeCode = 5
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Cube "cube"
+{
+    double size = 4
+    double size.timeSamples = {
+        1: 5,
+        2: 6,
+        3: 7,
+        4: 8,
+        5: 9,
+    }
+}
+
+def Cone "cone"
+{
+    token axis = "Z"
+    double height = 4
+    double height.timeSamples = {
+        1: 5,
+        2: 6,
+        3: 7,
+        4: 8,
+        5: 9,
+    }
+    double radius = 2
+    double radius.timeSamples = {
+        1: 3,
+        2: 4,
+        3: 5,
+        4: 6,
+        5: 7,
+    }
+}
+
+def Sphere "sphere"
+{
+    double radius = 2
+    double radius.timeSamples = {
+        1: 3,
+        2: 4,
+        3: 5,
+        4: 6,
+        5: 7,
+    }
+}
+
+def Cylinder "cylinder"
+{
+    token axis = "Z"
+    double height = 4
+    double height.timeSamples = {
+        1: 5,
+        2: 6,
+        3: 7,
+        4: 8,
+        5: 9,
+    }
+    double radius = 2
+    double radius.timeSamples = {
+        1: 3,
+        2: 4,
+        3: 5,
+        4: 6,
+        5: 7,
+    }
+}
+
+def Capsule "capsule"
+{
+    token axis = "Z"
+    double height = 2
+    double height.timeSamples = {
+        1: 3,
+        2: 4,
+        3: 5,
+        4: 6,
+        5: 7,
+    }
+    double radius = 2
+    double radius.timeSamples = {
+        1: 3,
+        2: 4,
+        3: 5,
+        4: 6,
+        5: 7,
+    }
+}
+

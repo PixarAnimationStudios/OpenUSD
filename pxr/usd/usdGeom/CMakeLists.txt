@@ -117,6 +117,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
+    testenv/testUsdGeomExtentFromPlugins.py
     testenv/testUsdGeomExtentTransform.py
     testenv/testUsdGeomHermiteCurves.py
     testenv/testUsdGeomImageable.py
@@ -193,6 +194,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdGeomBBoxCache
     DEST testUsdGeomBBoxCache
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomExtentFromPlugins
+    DEST testUsdGeomExtentFromPlugins
 )
 
 pxr_install_test_dir(
@@ -327,6 +333,12 @@ pxr_register_test(testUsdGeomXformCache
 pxr_register_test(testUsdGeomXformCommonAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomExtentFromPlugins
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentFromPlugins"
     EXPECTED_RETURN_CODE 0
 )
 
