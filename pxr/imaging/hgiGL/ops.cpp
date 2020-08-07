@@ -332,13 +332,19 @@ HgiGLOps::SetConstantValues(
     uint32_t byteSize,
     const void* data)
 {
-    return [pipeline, bindIndex, byteSize, data] {
+    // The data provided could be local stack memory that goes out of scope
+    // before we execute this op. Make a copy to prevent that.
+    uint8_t* dataCopy = new uint8_t[byteSize];
+    memcpy(dataCopy, data, byteSize);
+
+    return [pipeline, bindIndex, byteSize, dataCopy] {
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
         uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
-        glNamedBufferData(ubo, byteSize, data, GL_STATIC_DRAW);
+        glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
+        delete dataCopy;
     };
 }
 
@@ -349,13 +355,19 @@ HgiGLOps::SetConstantValues(
     uint32_t byteSize,
     const void* data)
 {
-    return [pipeline, bindIndex, byteSize, data] {
+    // The data provided could be local stack memory that goes out of scope
+    // before we execute this op. Make a copy to prevent that.
+    uint8_t* dataCopy = new uint8_t[byteSize];
+    memcpy(dataCopy, data, byteSize);
+
+    return [pipeline, bindIndex, byteSize, dataCopy] {
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
         uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
-        glNamedBufferData(ubo, byteSize, data, GL_STATIC_DRAW);
+        glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
+        delete dataCopy;
     };
 }
 
