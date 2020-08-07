@@ -1391,11 +1391,6 @@ HdStMaterialNetwork::GetTextureDescriptors() const
     return _textureDescriptors;
 }
 
-void
-HdStMaterialNetwork::ClearGlslfx()
-{
-    _surfaceGfx.reset();
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

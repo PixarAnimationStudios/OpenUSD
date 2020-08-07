@@ -107,10 +107,6 @@ public:
     HDST_API
     TextureDescriptorVector const& GetTextureDescriptors() const;
 
-    /// Primarily used during reload of the material (glslfx may have changed)
-    HDST_API
-    void ClearGlslfx();
-
 private:
     TfToken _materialTag;
     std::string _fragmentSource;
