@@ -743,6 +743,27 @@ struct Task {
                 } else {
                     return a.vsetNum > b.vsetNum;
                 }
+            case EvalImpliedClasses:
+                // When multiple implied classes tasks are queued for different
+                // nodes, ordering matters in that ancestor nodes must be 
+                // processed after their descendants. This minimally guarantees
+                // that by relying on an undocumented implementation detail 
+                // of the less than operator, which we use for performance
+                // rather than doing a more expensive graph traversal.
+                //
+                // The less than operator compares the nodes' index in
+                // the node graph. Each node's index is assigned incrementally
+                // as its added to its parent in the graph so b.node having a 
+                // greater index than a.node guarantees that b.node is not an 
+                // ancestor of a.node.
+                // 
+                // Note that while the composition cases where this order 
+                // matters are extremely rare, they do come up. The museum case
+                // ImpliedAndAncestralInherits_ComplexEvaluation details the
+                // minimal (though still complex) case that requires this 
+                // ordering be correct and should be referred to if a detailed
+                // explanation is desired.
+                return b.node > a.node;
             default:
                 // Arbitrary order
                 return a.node > b.node;

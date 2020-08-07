@@ -414,6 +414,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ImpliedAndAncestralInherits_ComplexEvaluation.testenv
+    DEST testPcpMuseum_ImpliedAndAncestralInherits_ComplexEvaluation
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs.testenv
     DEST testPcpMuseum_PayloadsAndAncestralArcs
 )
@@ -1020,7 +1025,7 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt ImpliedAndAncestralInherits/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ImpliedAndAncestralInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits.txt
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits.txt
 )
@@ -1032,6 +1037,13 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
     CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
+)
+
+pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_ComplexEvaluation
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ImpliedAndAncestralInherits_ComplexEvaluation/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_ComplexEvaluation.txt
+    DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_ComplexEvaluation.txt
 )
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
