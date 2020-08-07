@@ -189,10 +189,6 @@ private:
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
-    // Is it necessary to create GPU resources because they are uninitialized
-    // or the attachments/resolution changed.
-    bool _texturesDirty;
-
     void _SetAttachments(HdSceneDelegate *sceneDelegate,
                          const HdStDrawTargetAttachmentDescArray &attachments);
 
