@@ -207,7 +207,8 @@ _DeprecatedBindingCheck(bool hasBindingAPI, const UsdProperty& prop)
 
 
 bool
-UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
+UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
+                                       bool includeInstanceable)
 {
     TRACE_FUNCTION();
 
@@ -221,13 +222,12 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
 
     std::vector<std::pair<_SkinningQueryKey,UsdPrim> > stack(1);
 
-    // TODO: Consider traversing instance proxies at this point.
-    // But when doing so, must ensure that UsdSkelBakeSkinning, et.al.,
-    // take instancing into account.
+    Usd_PrimFlagsPredicate pred(UsdPrimDefaultPredicate);
+    if (includeInstanceable) {
+        pred.TraverseInstanceProxies(true);
+    }
     const UsdPrimRange range =
-        UsdPrimRange::PreAndPostVisit(root.GetPrim(),
-                                      UsdPrimDefaultPredicate);
-                                      // UsdTraverseInstanceProxies());
+        UsdPrimRange::PreAndPostVisit(root.GetPrim(), pred);
 
     for (auto it = range.begin(); it != range.end(); ++it) {
         
@@ -261,6 +261,9 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
         UsdSkelSkeleton skel;
         if (binding.GetSkeleton(&skel)) {
             key.skel = skel.GetPrim();
+            if (key.skel.IsInstanceProxy()) {
+                key.skel = key.skel.GetPrimInMaster();
+            }
         }
 
         // XXX: When looking for binding properties, only include

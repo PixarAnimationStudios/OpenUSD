@@ -63,6 +63,10 @@ UsdSkelImagingSkelRootAdapter::Populate(
     if(!TF_VERIFY(prim.IsA<UsdSkelRoot>())) {
         return SdfPath();
     }
+    if(instancerContext != nullptr) {
+        // TODO: support UsdSkel with instancing
+        return SdfPath();
+    }
 
     // Find skeletons and skinned prims under this skel root.
     UsdSkelRoot skelRoot(prim);

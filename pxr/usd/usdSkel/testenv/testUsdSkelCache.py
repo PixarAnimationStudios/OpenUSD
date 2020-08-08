@@ -108,15 +108,13 @@ class TestUsdSkelCache(unittest.TestCase):
         stage = Usd.Stage.Open(testFile)
 
         cache = UsdSkel.Cache()
+        self.assertFalse(cache.IncludesInstances())
+
         root = UsdSkel.Root(stage.GetPrimAtPath("/SkelBinding"))
         self.assertTrue(cache.Populate(root))
 
         skel1 = UsdSkel.Skeleton.Get(stage, "/Skel1")
         skel2 = UsdSkel.Skeleton.Get(stage, "/Skel2")
-
-        # TODO: Skel population does not currently traverse instance proxies,
-        # so the resolved bindings below will not include skinned meshes within
-        # instances.
 
         binding1 = cache.ComputeSkelBinding(root, skel1)
         self.assertEqual(binding1.GetSkeleton().GetPrim(), skel1.GetPrim())
@@ -164,7 +162,7 @@ class TestUsdSkelCache(unittest.TestCase):
 
         allBindings = cache.ComputeSkelBindings(root)
         # Expecting two resolved bindings. This should *not* include bindings
-        # for any inactive skels.
+        # for any inactive skels or instances
         self.assertEqual(len(allBindings), 2)
 
         self.assertEqual(binding1.GetSkeleton().GetPrim(),
@@ -176,6 +174,54 @@ class TestUsdSkelCache(unittest.TestCase):
                          allBindings[1].GetSkeleton().GetPrim())
         self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
                          [t.GetPrim() for t in allBindings[1].GetSkinningTargets()])
+
+
+    def test_InstancedSkeletonBinding(self):
+        """Tests for correctness in the interpretation of the inherited
+           skel:skeleton binding with instancing."""
+
+        testFile = "populate.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        cache = UsdSkel.Cache(includeInstances=True)
+        self.assertTrue(cache.IncludesInstances())
+
+        root = UsdSkel.Root(stage.GetPrimAtPath("/SkelBinding"))
+        self.assertTrue(cache.Populate(root))
+
+        skel1 = UsdSkel.Skeleton.Get(stage, "/Skel1")
+
+        binding1 = cache.ComputeSkelBinding(root, skel1)
+        self.assertEqual(binding1.GetSkeleton().GetPrim(), skel1.GetPrim())
+        self.assertEqual(len(binding1.GetSkinningTargets()), 2)
+        skinningQuery1 = binding1.GetSkinningTargets()[1]
+        self.assertEqual(skinningQuery1.GetPrim().GetPath(),
+                         Sdf.Path("/SkelBinding/Instance/Inherit"))
+        # Inherited skinning properties.
+        self.assertEqual(skinningQuery1.GetJointIndicesPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Instance"))
+        self.assertEqual(skinningQuery1.GetJointWeightsPrimvar()
+                         .GetAttr().GetPath().GetPrimPath(),
+                         Sdf.Path("/SkelBinding/Instance"))
+        self.assertEqual(skinningQuery1.GetJointOrder(),
+                         Vt.TokenArray(["instance"]))
+        # Non-inherited skinning properties.
+        self.assertFalse(skinningQuery1.GetBlendShapesAttr())
+        self.assertFalse(skinningQuery1.GetBlendShapeTargetsRel())
+
+        allBindings = cache.ComputeSkelBindings(root)
+        # Expecting three resolved bindings. This should *not* include bindings
+        # for any inactive skels, but does include instances
+        self.assertEqual(len(allBindings), 3)
+
+        skel2 = UsdSkel.Skeleton.Get(stage, "/SkelBinding/Instance/Skel")
+        binding2 = cache.ComputeSkelBinding(root, skel2)
+
+        self.assertEqual(binding2.GetSkeleton().GetPrim(),
+                         allBindings[2].GetSkeleton().GetPrim())
+        self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
+                         [t.GetPrim() for t in allBindings[2].GetSkinningTargets()])
 
 
 

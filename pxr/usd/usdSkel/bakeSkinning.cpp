@@ -2259,9 +2259,17 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
     // Get the stage from the first valid binding.
     UsdStagePtr stage;
     for (const auto& binding : parms.bindings) {
-        if (binding.GetSkeleton()) {
+        if (!stage && binding.GetSkeleton()) {
             stage = binding.GetSkeleton().GetPrim().GetStage();
-            break;
+        }
+        for (const auto& query: binding.GetSkinningTargets()) {
+            if (query.GetPrim().IsInstance() || query.GetPrim().IsInstanceProxy()) {
+                // TODO: support BakeSkinning for instances
+                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning "
+                        "for instanced SkinningQuery <%s>\n",
+                        query.GetPrim().GetPath().GetText());
+                return false;
+            }
         }
     }
     if (!stage) {
@@ -2424,6 +2432,14 @@ UsdSkelBakeSkinning(const UsdPrimRange& range, const GfInterval& interval)
     for (auto it = range.begin(); it != range.end(); ++it) {
         if (it->IsA<UsdSkelRoot>()) {
 
+            if (it->IsInstance() || it->IsInstanceProxy()) {
+                // TODO: support BakeSkinning for instances
+                TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for "
+                        "instanced SkelRoot <%s>\n",
+                        it->GetPath().GetText());
+                return false;
+            }
+
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                 "[UsdSkelBakeSkinning] Populating cache for <%s>\n",
                 it->GetPath().GetText());
@@ -2455,6 +2471,14 @@ UsdSkelBakeSkinning(const UsdPrimRange& range, const GfInterval& interval)
 bool
 UsdSkelBakeSkinning(const UsdSkelRoot& skelRoot, const GfInterval& interval)
 {
+    if (skelRoot.GetPrim().IsInstance() || skelRoot.GetPrim().IsInstanceProxy()) {
+        // TODO: support BakeSkinning for instances
+        TF_WARN("[UsdSkelBakeSkinning] Cannot bake skinning for "
+                "instanced SkelRoot <%s>\n",
+                skelRoot.GetPrim().GetPath().GetText());
+        return false;
+    }
+
     UsdSkelBakeSkinningParms parms;
     // Backwards-compatibility: do not save during skinning.
     parms.saveLayers = false;
