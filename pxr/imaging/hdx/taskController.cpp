@@ -216,7 +216,6 @@ HdxTaskController::~HdxTaskController()
         _shadowTaskId,
         _colorizeSelectionTaskId,
         _colorCorrectionTaskId,
-        _colorChannelTaskId,
         _pickTaskId,
         _pickFromRenderBufferTaskId,
         _presentTaskId
@@ -505,21 +504,6 @@ HdxTaskController::_CreateColorCorrectionTask()
 }
 
 void
-HdxTaskController::_CreateColorChannelTask()
-{
-    _colorChannelTaskId = GetControllerId().AppendChild(
-        _tokens->colorChannelTask);
-
-    HdxColorChannelTaskParams taskParams;
-
-    GetRenderIndex()->InsertTask<HdxColorChannelTask>(&_delegate,
-        _colorChannelTaskId);
-
-    _delegate.SetParameter(_colorChannelTaskId, HdTokens->params,
-        taskParams);
-}
-
-void
 HdxTaskController::_CreatePickTask()
 {
     _pickTaskId = GetControllerId().AppendChild(
@@ -632,24 +616,6 @@ HdxTaskController::_ColorCorrectionEnabled() const
 }
 
 bool
-HdxTaskController::_ColorChannelEnabled() const
-{
-    if (_colorChannelTaskId.IsEmpty()) {
-        return false;
-    }
-
-    const HdxColorChannelTaskParams& colorChannelParams =
-        _delegate.GetParameter<HdxColorChannelTaskParams>(
-            _colorChannelTaskId, HdTokens->params);
-
-    // Disable the task if the chosen channel is "color"
-    bool useColorChannel = colorChannelParams.channel != 
-                           HdxColorChannelTokens->color &&
-                           !colorChannelParams.channel.IsEmpty();
-    return useColorChannel;
-}
-
-bool
 HdxTaskController::_AovsSupported() const
 {
     return GetRenderIndex()->IsBprimTypeSupported(
@@ -736,11 +702,6 @@ HdxTaskController::GetRenderingTasks() const
     // Apply color correction / grading (convert to display colors)
     if (_ColorCorrectionEnabled()) {
         tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
-    }
-
-    // Apply color channel filtering
-    if (_ColorChannelEnabled()) {
-        tasks.push_back(GetRenderIndex()->GetTask(_colorChannelTaskId));
     }
 
     // Render pixels to screen
@@ -1073,17 +1034,6 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             colCorParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
-    }
-
-    if (!_colorChannelTaskId.IsEmpty()) {
-        HdxColorChannelTaskParams colChannelParams =
-            _delegate.GetParameter<HdxColorChannelTaskParams>(
-                _colorChannelTaskId, HdTokens->params);
-
-        _delegate.SetParameter(_colorChannelTaskId, HdTokens->params,
-            colChannelParams);
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _colorChannelTaskId, HdChangeTracker::DirtyParams);
     }
 
     if (!_presentTaskId.IsEmpty()) {
@@ -1789,23 +1739,13 @@ HdxTaskController::SetColorCorrectionParams(
 }
 
 void 
-HdxTaskController::SetColorChannelParams(
-    HdxColorChannelTaskParams const& params)
+HdxTaskController::SetEnablePresentTask(bool enabled)
 {
-    if (_colorChannelTaskId.IsEmpty()) {
-        return;
-    }
-
-    HdxColorChannelTaskParams oldParams = 
-        _delegate.GetParameter<HdxColorChannelTaskParams>(
-            _colorChannelTaskId, HdTokens->params);
-
-    if (params != oldParams) {
-        _delegate.SetParameter(
-            _colorChannelTaskId, HdTokens->params, params);
-
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _colorChannelTaskId, HdChangeTracker::DirtyParams);
+    if (enabled && _presentTaskId.IsEmpty()) {
+        _CreatePresentTask();
+    }else if (!enabled && !_presentTaskId.IsEmpty()) {
+        GetRenderIndex()->RemoveTask(_presentTaskId);
+        _presentTaskId = SdfPath::EmptyPath();
     }
 }
 

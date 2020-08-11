@@ -294,6 +294,10 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         }
     }
 
+    if (PresentDisabled()) {
+        _engine->SetEnablePresentTask(false);
+    }
+
     if (!GetClipPlanes().empty()) {
         params.clipPlanes = GetClipPlanes();
         for (size_t i=0; i<GetClipPlanes().size(); ++i) {

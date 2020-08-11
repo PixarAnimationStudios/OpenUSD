@@ -212,11 +212,17 @@ public:
     void SetColorCorrectionParams(HdxColorCorrectionTaskParams const& params);
 
     /// -------------------------------------------------------
-    /// Color Channel API
+    /// Present task API
 
-    /// Configure color channel by settings params.
+    /// Enable / disable the present task.
+    /// An application may choose to manage the AOVs that are rendered into
+    /// itself and skip using the PresentTask to composite (interop) them to
+    /// screen.
+    /// screen.
+    /// Note: When enabling the PresentTask the caller must ensure to
+    /// supply the viewport dimensions via SetRenderViewport.
     HDX_API
-    void SetColorChannelParams(HdxColorChannelTaskParams const& params);
+    void SetEnablePresentTask(bool enabled);
 
 private:
     ///
@@ -240,7 +246,6 @@ private:
     void _CreateSelectionTask();
     void _CreateColorizeSelectionTask();
     void _CreateColorCorrectionTask();
-    void _CreateColorChannelTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
     void _CreateAovInputTask();
@@ -256,7 +261,6 @@ private:
     bool _SelectionEnabled() const;
     bool _ColorizeSelectionEnabled() const;
     bool _ColorCorrectionEnabled() const;
-    bool _ColorChannelEnabled() const;
     bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
     bool _CamerasSupported() const;
@@ -340,7 +344,6 @@ private:
     SdfPath _selectionTaskId;
     SdfPath _colorizeSelectionTaskId;
     SdfPath _colorCorrectionTaskId;
-    SdfPath _colorChannelTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
     SdfPath _presentTaskId;

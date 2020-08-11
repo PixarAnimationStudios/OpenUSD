@@ -357,6 +357,13 @@ public:
     void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
+    /// Enable / disable the present task.
+    /// An application may choose to manage the AOVs that are rendered into
+    /// itself and skip using the PresentTask to composite (interop) them to
+    /// screen.
+    USDIMAGINGGL_API
+    void SetEnablePresentTask(bool enabled);
+
     /// @}
 
     // ---------------------------------------------------------------------

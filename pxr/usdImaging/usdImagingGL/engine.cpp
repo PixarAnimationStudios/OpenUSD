@@ -1003,6 +1003,18 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
     _renderDelegate->SetRenderSetting(id, value);
 }
 
+void
+UsdImagingGLEngine::SetEnablePresentTask(bool enabled)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetEnablePresentTask(enabled);
+    }
+}
+
 // ---------------------------------------------------------------------
 // Control of background rendering threads.
 // ---------------------------------------------------------------------
