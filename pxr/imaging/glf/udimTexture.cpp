@@ -205,8 +205,6 @@ template<_ColorSpaceTransform colorSpaceTransform>
 static
 float _ConvertColorSpace(const float in)
 {
-    TRACE_FUNCTION();
-
     float out = in;
     if (colorSpaceTransform == _SRGBToLinear) {
         if (in <= 0.04045) {
