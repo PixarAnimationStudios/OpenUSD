@@ -30,6 +30,12 @@
 --- --------------------------------------------------------------------------
 -- glsl Selection.DecodeUtils
 
+// This should match the HdSelection enum.
+const int GetMaxNumSelectionHighlightModes()
+{
+    return 2;
+}
+
 #if defined(HD_HAS_hdxSelectionBuffer)
 // helper methods to decode hdxSelectionBuffer
 // ------ selection highlight mode specifics -------
@@ -286,9 +292,6 @@ bool IsPointSelected(int pointId)
 
 --- --------------------------------------------------------------------------
 -- glsl Selection.Fragment.ElementSel
-
-int GetActiveSelectionMode() {return 0;}
-int GetRolloverSelectionMode() {return 1;}
 
 // Decodes the selection buffer to find out if the current fragment is from a
 // selected face.

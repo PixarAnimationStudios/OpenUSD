@@ -54,7 +54,6 @@
 #include "pxr/imaging/hd/flatNormals.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -1582,8 +1581,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                          HdStDrawItem *drawItem,
-                                         const HdMeshReprDesc &desc,
-                                         size_t drawItemIdForDesc)
+                                         const HdMeshReprDesc &desc)
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
@@ -1686,16 +1684,6 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     bool useCustomDisplacement = hasCustomDisplacementTerminal &&
         desc.useCustomDisplacement && _displacementEnabled;
 
-    // The edge geomstyles below are rasterized as lines.
-    // See HdSt_GeometricShader::BindResources()
-    bool rasterizedAsLines = 
-         (desc.geomStyle == HdMeshGeomStyleEdgeOnly ||
-         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly);
-    bool discardIfNotActiveSelected = rasterizedAsLines && 
-                                     (drawItemIdForDesc == 1);
-    bool discardIfNotRolloverSelected = rasterizedAsLines && 
-                                     (drawItemIdForDesc == 2);
-
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
@@ -1709,9 +1697,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  cullStyle,
                                  geomStyle,
                                  desc.lineWidth,
-                                 desc.enableScalarOverride,
-                                 discardIfNotActiveSelected,
-                                 discardIfNotRolloverSelected);
+                                 desc.enableScalarOverride);
 
     HdStResourceRegistrySharedPtr resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
@@ -1780,38 +1766,6 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     return bits;
 }
 
-static
-size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
-{
-    // By default, each repr desc item maps to 1 draw item
-    size_t numDrawItems = 1;
-    switch (reprDesc.geomStyle) {
-    case HdMeshGeomStyleInvalid:
-        numDrawItems = 0;
-        break;
-
-    // The edge geomstyles (below) result in geometry rasterized as lines.
-    // This has an interesting and unfortunate limitation in that a
-    // shared edge corresponds to the face that was drawn first/last
-    // (depending on the depth test), and hence, cannot be uniquely
-    // identified.
-    // For face selection highlighting, this means that only a subset of the
-    // edges of a selected face may be highlighted.
-    // In order to support correct face selection highlighting, we draw the
-    // geometry two more times (one for each selection mode), discarding
-    // fragments that don't correspond to a selected face in that mode.
-    case HdMeshGeomStyleHullEdgeOnly:
-    case HdMeshGeomStyleEdgeOnly:
-        numDrawItems += HdSelection::HighlightModeCount;
-        break;
-
-    default:
-        break;
-    }
-
-    return numDrawItems;
-}
-
 void
 HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
@@ -1833,16 +1787,16 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
             const HdMeshReprDesc &desc = descs[descIdx];
 
-            size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
-            if (numDrawItems == 0) continue;
+            if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+                continue;
+            }
 
-            for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-                HdRepr::DrawItemUniquePtr drawItem =
-                    std::make_unique<HdStDrawItem>(&_sharedData);
-                HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-                repr->AddDrawItem(std::move(drawItem));
+            HdRepr::DrawItemUniquePtr drawItem =
+                std::make_unique<HdStDrawItem>(&_sharedData);
+            HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
+            repr->AddDrawItem(std::move(drawItem));
 
-                switch (desc.geomStyle) {
+            switch (desc.geomStyle) {
                 case HdMeshGeomStyleHull:
                 case HdMeshGeomStyleHullEdgeOnly:
                 case HdMeshGeomStyleHullEdgeOnSurf:
@@ -1876,12 +1830,11 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                         *dirtyBits |= DirtyIndices;
                     }
                 }
-                }
+            }
 
-                // Set up drawing coord instance primvars.
-                drawingCoord->SetInstancePrimvarBaseIndex(
-                    HdStMesh::InstancePrimvar);
-            } // for each draw item
+            // Set up drawing coord instance primvars.
+            drawingCoord->SetInstancePrimvarBaseIndex(
+                HdStMesh::InstancePrimvar);
 
             if (desc.flatShadingEnabled) {
                 if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
@@ -1937,17 +1890,16 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-        size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
-        if (numDrawItems == 0) continue;
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
         
-        for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
-                curRepr->GetDrawItem(drawItemIndex++));
+        HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+            curRepr->GetDrawItem(drawItemIndex++));
 
-            if (HdChangeTracker::IsDirty(*dirtyBits)) {
-                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
-                        requireSmoothNormals, requireFlatNormals);
-            } 
+        if (HdChangeTracker::IsDirty(*dirtyBits)) {
+            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
+                requireSmoothNormals, requireFlatNormals);
         }
     }
 
@@ -1977,20 +1929,19 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
 
         int drawItemIndex = 0;
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            size_t numDrawItems = _GetNumDrawItemsForDesc(descs[descIdx]);
-            if (numDrawItems == 0) continue;
+            if (descs[descIdx].geomStyle == HdMeshGeomStyleInvalid) {
+                continue;
+            }
 
-            for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
-                    repr->GetDrawItem(drawItemIndex++));
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
 
-                if (updateMaterialShader) {
-                    drawItem->SetMaterialShader(materialShader);
-                }
-                if (updateGeometricShader) {
-                    _UpdateDrawItemGeometricShader(sceneDelegate,
-                        drawItem, descs[descIdx], itemId);
-                }
+            if (updateMaterialShader) {
+                drawItem->SetMaterialShader(materialShader);
+            }
+            if (updateGeometricShader) {
+                _UpdateDrawItemGeometricShader(sceneDelegate,
+                    drawItem, descs[descIdx]);
             }
         }
     }

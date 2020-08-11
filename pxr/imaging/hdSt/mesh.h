@@ -122,8 +122,7 @@ protected:
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
-                                        const HdMeshReprDesc &desc,
-                                        size_t drawItemIdForDesc);
+                                        const HdMeshReprDesc &desc);
 
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                    bool updateMaterialShader,
