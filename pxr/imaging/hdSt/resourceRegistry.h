@@ -106,6 +106,10 @@ public:
     void InvalidateShaderRegistry() override;
 
     HDST_API
+    void ReloadResource(TfToken const& resourceType,
+                        std::string const& path) override;
+
+    HDST_API
     VtDictionary GetResourceAllocation() const override;
 
     /// Returns Hgi used to create/destroy GPU resources.

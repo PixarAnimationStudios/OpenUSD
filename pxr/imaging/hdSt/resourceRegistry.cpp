@@ -40,7 +40,10 @@
 #include "pxr/imaging/hdSt/textureHandleRegistry.h"
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
+#include "pxr/imaging/hio/glslfx.h"
+
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -116,6 +119,24 @@ void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
+}
+
+
+void HdStResourceRegistry::ReloadResource(TfToken const& resourceType,
+                                          std::string const& path) 
+{
+    // find the file and invalidate it 
+    if (resourceType == HdResourceTypeTokens->shaderFile) {
+
+        size_t pathHash = TfHash()(path);
+        HdInstance<HioGlslfxSharedPtr> glslfxInstance = 
+                                                RegisterGLSLFXFile(pathHash);
+
+        // Reload the glslfx file.
+        HioGlslfxSharedPtr glslfxSharedPtr = glslfxInstance.GetValue();
+        glslfxSharedPtr.reset(new HioGlslfx(path));
+        glslfxInstance.SetValue(glslfxSharedPtr);
+    }
 }
 
 VtDictionary
