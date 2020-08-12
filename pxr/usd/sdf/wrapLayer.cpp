@@ -375,7 +375,6 @@ _CanApplyNamespaceEdit(
 static SdfLayerRefPtr
 _CreateNew(
     const std::string& identifier,
-    const std::string& realPath = std::string(),
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
@@ -383,14 +382,13 @@ _CreateNew(
         return SdfLayerRefPtr();
     }
 
-    return SdfLayer::CreateNew(identifier, realPath, args);
+    return SdfLayer::CreateNew(identifier, args);
 }
 
 static SdfLayerRefPtr
 _New(
     const SdfFileFormatConstPtr& fileFormat,
     const std::string& identifier,
-    const std::string& realPath = std::string(),
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
@@ -398,7 +396,7 @@ _New(
         return SdfLayerRefPtr();
     }
 
-    return SdfLayer::New(fileFormat, identifier, realPath, args);
+    return SdfLayer::New(fileFormat, identifier, args);
 }
 
 static SdfLayerRefPtr
@@ -519,7 +517,6 @@ void wrapLayer()
 
         .def("CreateNew", &_CreateNew,
              ( arg("identifier"),
-               arg("realPath") = std::string(),
                arg("args") = boost::python::dict()),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("CreateNew")
@@ -545,7 +542,6 @@ void wrapLayer()
         .def("New", &_New,
              ( arg("fileFormat"),
                arg("identifier"),
-               arg("realPath") = std::string(),
                arg("args") = boost::python::dict()),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("New")

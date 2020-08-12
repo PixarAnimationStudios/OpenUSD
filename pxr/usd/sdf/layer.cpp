@@ -345,36 +345,33 @@ SdfLayer::GetDisplayNameFromIdentifier(const string& identifier)
 SdfLayerRefPtr
 SdfLayer::CreateNew(
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::CreateNew('%s', '%s', '%s')\n",
-        identifier.c_str(), realPath.c_str(), TfStringify(args).c_str());
+        "SdfLayer::CreateNew('%s', '%s')\n",
+        identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(TfNullPtr, identifier, realPath, ArAssetInfo(), args);
+    return _CreateNew(TfNullPtr, identifier, ArAssetInfo(), args);
 }
 
 SdfLayerRefPtr
 SdfLayer::CreateNew(
     const SdfFileFormatConstPtr& fileFormat,
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::CreateNew('%s', '%s', '%s', '%s')\n",
+        "SdfLayer::CreateNew('%s', '%s', '%s')\n",
         fileFormat->GetFormatId().GetText(), 
-        identifier.c_str(), realPath.c_str(), TfStringify(args).c_str());
+        identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
+    return _CreateNew(fileFormat, identifier, ArAssetInfo(), args);
 }
 
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
     const string& identifier,
-    const string& realPath,
     const ArAssetInfo& assetInfo,
     const FileFormatArguments &args)
 {
@@ -401,8 +398,7 @@ SdfLayer::_CreateNew(
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
     // Direct newly created layers to a local path.
-    const string localPath = realPath.empty() ? 
-        resolver.ComputeLocalPath(absIdentifier) : realPath;
+    const string localPath = resolver.ComputeLocalPath(absIdentifier);
     if (localPath.empty()) {
         TF_CODING_ERROR(
             "Failed to compute local path for new layer with "
@@ -464,23 +460,12 @@ SdfLayer::_CreateNew(
     return layer;
 }
 
-// Creates a new empty layer with the given identifier for a given file
-// format class. This is so that Python File Format classes can create
-// layers (CreateNew(); doesn't work, because it already saves during
-// construction of the layer. That is something specific (python generated)
-// layer types may choose to not do.)
-
 SdfLayerRefPtr
 SdfLayer::New(
     const SdfFileFormatConstPtr& fileFormat,
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments& args)
 {
-    // No layer identifier or realPath policies can be applied at this point.
-    // This method is called by the file format implementation to create new
-    // layer objects. Policy is applied in CreateNew.
-
     if (!fileFormat) {
         TF_CODING_ERROR("Invalid file format");
         return TfNullPtr;
@@ -506,7 +491,7 @@ SdfLayer::New(
         TfAbsPath(identifier) : identifier;
 
     SdfLayerRefPtr layer = _CreateNewWithFormat(
-        fileFormat, absIdentifier, realPath, ArAssetInfo(), args);
+        fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
 
     // No further initialization required.
     layer->_FinishInitialization(/* success = */ true);

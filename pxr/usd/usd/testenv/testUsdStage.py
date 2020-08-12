@@ -227,7 +227,7 @@ class TestUsdStage(unittest.TestCase):
     def test_testUsdStageColorConfiguration(self):
         for fmt in allFormats:
             f = lambda base: base + '.' + fmt
-            rootLayer = Sdf.Layer.CreateNew(f("colorConf"), f("colorConf"))
+            rootLayer = Sdf.Layer.CreateNew(f("colorConf"))
             stage = Usd.Stage.Open(rootLayer)
             
             colorConfigFallbacks = Usd.Stage.GetColorConfigFallbacks()
@@ -282,9 +282,9 @@ class TestUsdStage(unittest.TestCase):
         for fmt in allFormats:
             f = lambda base: base + '.' + fmt
 
-            sessionLayer = Sdf.Layer.CreateNew(f('sessionLayer'), f('sessionLayer'))
-            rootLayer = Sdf.Layer.CreateNew(f("rootLayer"), f("rootLayer"))
-            subLayer = Sdf.Layer.CreateNew(f("subLayer"), f("subLayer"))
+            sessionLayer = Sdf.Layer.CreateNew(f('sessionLayer'))
+            rootLayer = Sdf.Layer.CreateNew(f("rootLayer"))
+            subLayer = Sdf.Layer.CreateNew(f("subLayer"))
 
             rootLayer.subLayerPaths = [f("./subLayer")]
             subLayer.Save()

@@ -124,18 +124,11 @@ public:
 
     /// Creates a new empty layer with the given identifier.
     ///
-    /// The \p identifier must be either a real filesystem path or an asset
-    /// path without version modifier. Attempting to create a layer using an
-    /// identifier with a version specifier (e.g.  layer.menva@300100,
-    /// layer.menva#5) raises a coding error, and returns a null layer
-    /// pointer.
-    ///
     /// Additional arguments may be supplied via the \p args parameter.
     /// These arguments may control behavior specific to the layer's
     /// file format.
     SDF_API
     static SdfLayerRefPtr CreateNew(const std::string &identifier,
-                                    const std::string &realPath = std::string(),
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
@@ -148,19 +141,13 @@ public:
     SDF_API
     static SdfLayerRefPtr CreateNew(const SdfFileFormatConstPtr& fileFormat,
                                     const std::string &identifier,
-                                    const std::string &realPath = std::string(),
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
     /// Creates a new empty layer with the given identifier for a given file
     /// format class.
     ///
-    /// This is so that Python File Format classes can create layers
-    /// (CreateNew() doesn't work, because it already saves during
-    /// construction of the layer. That is something specific (python
-    /// generated) layer types may choose to not do.)
-    ///
-    /// The new layer will not be dirty.
+    /// The new layer will not be dirty and will not be saved.
     ///
     /// Additional arguments may be supplied via the \p args parameter. 
     /// These arguments may control behavior specific to the layer's
@@ -168,7 +155,6 @@ public:
     SDF_API
     static SdfLayerRefPtr New(const SdfFileFormatConstPtr& fileFormat,
                               const std::string &identifier,
-                              const std::string &realPath = std::string(),
                               const FileFormatArguments &args = 
                               FileFormatArguments());
 
@@ -1376,7 +1362,6 @@ private:
     static SdfLayerRefPtr _CreateNew(
         SdfFileFormatConstPtr fileFormat,
         const std::string& identifier,
-        const std::string& realPath,
         const ArAssetInfo& assetInfo = ArAssetInfo(),
         const FileFormatArguments& args = FileFormatArguments());
 
