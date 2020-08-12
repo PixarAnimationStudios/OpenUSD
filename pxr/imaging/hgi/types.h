@@ -110,11 +110,17 @@ size_t HgiGetComponentCount(HgiFormat f);
 
 /// Return the size of a single element of the given format.
 ///
-/// Returns the bytes-per-pixel even for blocked formats such as
-/// BC6 since - luckily - the number still happens to be integral for supported
-/// compression formats.
+/// For an uncompressed format, returns the number of bytes per pixel
+/// and sets blockWidth and blockHeight to 1.
+/// For a compressed format (e.g., BC6), returns the number of bytes per
+/// block and sets blockWidth and blockHeight to the width and height of
+/// a block.
+///
 HGI_API
-size_t HgiDataSizeOfFormat(HgiFormat f);
+size_t HgiDataSizeOfFormat(
+    HgiFormat f,
+    size_t *blockWidth = nullptr,
+    size_t *blockHeight = nullptr);
 
 /// Return whether the given format uses compression.
 HGI_API

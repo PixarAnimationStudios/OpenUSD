@@ -71,8 +71,18 @@ HgiGetComponentCount(const HgiFormat f)
 }
 
 size_t
-HgiDataSizeOfFormat(const HgiFormat f)
+HgiDataSizeOfFormat(
+    const HgiFormat f,
+    size_t * const blockWidth,
+    size_t * const blockHeight)
 {
+    if (blockWidth) {
+        *blockWidth = 1;
+    }
+    if (blockHeight) {
+        *blockHeight = 1;
+    }
+
     switch(f) {
     case HgiFormatUNorm8:
     case HgiFormatSNorm8:
@@ -112,7 +122,13 @@ HgiDataSizeOfFormat(const HgiFormat f)
     case HgiFormatBC6UFloatVec3:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
-        return 1;
+        if (blockWidth) {
+            *blockWidth = 4;
+        }
+        if (blockHeight) {
+            *blockHeight = 4;
+        }
+        return 16;
     case HgiFormatCount:
     case HgiFormatInvalid:
         TF_CODING_ERROR("Invalid Format");
@@ -153,7 +169,8 @@ HgiGetMipInitialData(
         return initialData;
     }
 
-    const size_t bpt = HgiDataSizeOfFormat(format);
+    size_t blockWidth, blockHeight;
+    const size_t bpt = HgiDataSizeOfFormat(format, &blockWidth, &blockHeight);
 
     GfVec3i& size = *mipDimensions;
     size = dimensions;
@@ -161,7 +178,10 @@ HgiGetMipInitialData(
 
     // Each mip image is half the dimensions of the previous level.
     for (size_t i=0; i<mipLevel; i++) {
-        byteOffset += size[0] * size[1] * size[2] * bpt;
+        byteOffset += 
+            ((size[0] + blockWidth  - 1) / blockWidth ) *
+            ((size[1] + blockHeight - 1) / blockHeight) *
+            size[2] * bpt;
         size[0] = std::max(size[0] / 2, 1);
         size[1] = std::max(size[1] / 2, 1);
         size[2] = std::max(size[2] / 2, 1);
@@ -172,7 +192,10 @@ HgiGetMipInitialData(
     }
 
     // Each mip image is a quarter of the bytes of the previous level.
-    *mipByteSize = size[0] * size[1] * size[2] * bpt;
+    *mipByteSize =
+        ((size[0] + blockWidth  - 1) / blockWidth ) *
+        ((size[1] + blockHeight - 1) / blockHeight) *
+        size[2] * bpt;
     return static_cast<char const*>(initialData) + byteOffset;
 }
 

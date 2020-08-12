@@ -158,8 +158,13 @@ size_t
 HgiMetalTexture::GetByteSizeOfResource() const
 {
     GfVec3i const& s = _descriptor.dimensions;
-    return HgiDataSizeOfFormat(_descriptor.format) * 
-        s[0] * s[1] * std::max(s[2], 1);
+    size_t blockWidth, blockHeight;
+    const size_t bytesPerBlock =
+        HgiDataSizeOfFormat(_descriptor.format, &blockWidth, &blockHeight);
+    return
+        ((s[0] + blockWidth  - 1) / blockWidth) *
+        ((s[1] + blockHeight - 1) / blockHeight) *
+        std::max(s[2], 1) * bytesPerBlock;
 }
 
 uint64_t

@@ -292,13 +292,17 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
         };
     }
 
-    // Size of initial data (note that textureData->ComputeBytesUSed()
+    size_t blockWidth, blockHeight;
+    const size_t bytesPerBlock = HgiDataSizeOfFormat(
+        _textureDesc.format, &blockWidth, &blockHeight);
+
+    // Size of initial data (note that textureData->ComputeBytesUsed()
     // includes the mip maps).
     _textureDesc.pixelsByteSize =
-        textureData->ResizedWidth() *
-        textureData->ResizedHeight() *
+        ((textureData->ResizedWidth()  + blockWidth  - 1) / blockWidth ) *
+        ((textureData->ResizedHeight() + blockHeight - 1) / blockHeight) *
         textureData->ResizedDepth() *
-        HgiDataSizeOfFormat(_textureDesc.format);
+        bytesPerBlock;
 }
 
 HdStGlfTextureCpuData::~HdStGlfTextureCpuData() = default;
