@@ -358,8 +358,8 @@ template<class Key, class Mapped, class HashFn = std::hash<Key>,
 	 class EqualKey = std::equal_to<Key>,
          class Alloc = std::allocator<std::pair<const Key, Mapped> > >
 class TfHashMultiMap :
-    private std::unordered_map<Key, Mapped, HashFn, EqualKey, Alloc> {
-    typedef std::unordered_map<Key, Mapped, HashFn, EqualKey, Alloc> _Base;
+    private std::unordered_multimap<Key, Mapped, HashFn, EqualKey, Alloc> {
+    typedef std::unordered_multimap<Key, Mapped, HashFn, EqualKey, Alloc> _Base;
 public:
     typedef typename _Base::key_type key_type;
     typedef typename _Base::mapped_type mapped_type;
@@ -419,7 +419,7 @@ public:
     using _Base::find;
     using _Base::get_allocator;
     using _Base::hash_function;
-    std::pair<iterator, bool> insert(const value_type& v) {
+    iterator insert(const value_type& v) {
         return _Base::insert(v);
     }
     iterator insert(const_iterator hint, const value_type& v) {
