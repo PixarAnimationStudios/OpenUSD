@@ -110,19 +110,20 @@ def Shader "UsdPreviewSurface" (
 def Shader "UsdUVTexture" (
     doc = """Texture Node Specification represents a node that can be used to 
     read UV textures, including tiled textures such as Mari UDIM's.
-    
-    Reads from a texture file and outputs one or more values. If the texture has 
+     
+    Reads from a texture file and outputs one or more values. If the texture has
     8 bits per component, [0, 255] values will first be converted to floating 
     point in the range [0, 1] and then any transformations (bias, scale) 
     indicated  are applied. Otherwise any indicated transformation (bias, 
     scale) is just applied. If a single-channel texture is fed into a 
-    UsdUVTexture, the r, g, and b  components of the rgb and rgba outputs will
-    repeat the channel's value, while both the single 'a' output and the 'a' 
-    component of the rgba outputs will be set to 1.0.  If a two-channel texture 
-    is fed into a UsdUVTexture, the r, g, and b components of the rgb and rgba
-    outputs will repeat the first channel's value, while both the single "a" 
-    output and the "a" component of the rgba outputs will be set to the second
-    channel's value.
+    UsdUVTexture, the r, g, and b components of the rgb output will repeat the 
+    channel's value, while the single 'a' output will be set to 1.0. If a 
+    two-channel texture is fed into a UsdUVTexture, the r, g, and b components 
+    of the rgb output will repeat the first channel's value, while the single 
+    'a' output will be set to the second channel's value. If a three-channel 
+    texture is fed into a UsdUVTexture, the r, g, and b components of the rgb 
+    outputs will contain the assigned texture channel's value, while the single 
+    'a' output will be set to 1.0.
 """
     sdrMetadata = {
         token role = "texture"
@@ -212,13 +213,6 @@ def Shader "UsdUVTexture" (
         doc = "Outputs the red, green and blue channels."
         sdrMetadata = {
             token swizzle = "xyz"
-        }
-    )
-
-    float4 outputs:rgba (
-        doc = "Outputs all 4 channels (red, green, blue and alpha)."
-        sdrMetadata = {
-            token swizzle = "xyzw"
         }
     )
 }

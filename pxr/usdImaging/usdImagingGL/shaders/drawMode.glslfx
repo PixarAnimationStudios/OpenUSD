@@ -34,23 +34,41 @@
         }
     },
     "parameters": {
-        "textureXPos" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureXPosColor" : {
+            "default": [0.18, 0.18, 0.18]
         },
-        "textureXNeg" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureXPosOpacity" : {
+            "default": [1.0]
         },
-        "textureYPos" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureXNegColor" : {
+            "default": [0.18, 0.18, 0.18]
         },
-        "textureYNeg" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureXNegOpacity" : {
+            "default": [1.0]
         },
-        "textureZPos" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureYPosColor" : {
+            "default": [0.18, 0.18, 0.18]
         },
-        "textureZNeg" : {
-            "default": [0.18, 0.18, 0.18, 1.0]
+        "textureYPosOpacity" : {
+            "default": [1.0]
+        },
+        "textureYNegColor" : {
+            "default": [0.18, 0.18, 0.18]
+        },
+        "textureYNegOpacity" : {
+            "default": [1.0]
+        },
+        "textureZPosColor" : {
+            "default": [0.18, 0.18, 0.18]
+        },
+        "textureZPosOpacity" : {
+            "default": [1.0]
+        },
+        "textureZNegColor" : {
+            "default": [0.18, 0.18, 0.18]
+        },
+        "textureZNegOpacity" : {
+            "default": [1.0]
         },
         "activeTexCard" : {
             "default": 0
@@ -75,28 +93,28 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     const int texAssign = HdGet_activeTexCard();
 
     if (texAssign == X_POS) {
-#ifdef HD_HAS_textureXPos
-        diffuse = HdGet_textureXPos();
+#if defined(HD_HAS_textureXPosColor) && defined(HD_HAS_textureXPosOpacity)
+        diffuse = vec4(HdGet_textureXPosColor(), HdGet_textureXPosOpacity());
 #endif
     } else if (texAssign == X_NEG) {
-#ifdef HD_HAS_textureXNeg
-        diffuse = HdGet_textureXNeg();
+#if defined(HD_HAS_textureXNegColor) && defined(HD_HAS_textureXNegOpacity)
+        diffuse = vec4(HdGet_textureXNegColor(), HdGet_textureXNegOpacity());
 #endif
     } else if (texAssign == Y_POS) {
-#ifdef HD_HAS_textureYPos
-        diffuse = HdGet_textureYPos();
+#if defined(HD_HAS_textureYPosColor) && defined(HD_HAS_textureYPosOpacity)
+        diffuse = vec4(HdGet_textureYPosColor(), HdGet_textureYPosOpacity());
 #endif
     } else if (texAssign == Y_NEG) {
-#ifdef HD_HAS_textureYNeg
-        diffuse = HdGet_textureYNeg();
+#if defined(HD_HAS_textureYNegColor) && defined(HD_HAS_textureYNegOpacity)
+        diffuse = vec4(HdGet_textureYNegColor(), HdGet_textureYNegOpacity());
 #endif
     } else if (texAssign == Z_POS) {
-#ifdef HD_HAS_textureZPos
-        diffuse = HdGet_textureZPos();
+#if defined(HD_HAS_textureZPosColor) && defined(HD_HAS_textureZPosOpacity)
+        diffuse = vec4(HdGet_textureZPosColor(), HdGet_textureZPosOpacity());
 #endif
     } else if (texAssign == Z_NEG) {
-#ifdef HD_HAS_textureZNeg
-        diffuse = HdGet_textureZNeg();
+#if defined(HD_HAS_textureZNegColor) && defined(HD_HAS_textureZNegOpacity)
+        diffuse = vec4(HdGet_textureZNegColor(), HdGet_textureZNegOpacity());
 #endif
     }
 
