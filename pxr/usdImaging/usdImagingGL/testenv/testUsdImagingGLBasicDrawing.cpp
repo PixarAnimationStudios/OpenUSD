@@ -295,7 +295,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
 
     if (PresentDisabled()) {
-        _engine->SetEnablePresentTask(false);
+        _engine->SetEnablePresentation(false);
     }
 
     if (!GetClipPlanes().empty()) {

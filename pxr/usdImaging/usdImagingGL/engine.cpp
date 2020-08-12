@@ -1004,14 +1004,14 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 }
 
 void
-UsdImagingGLEngine::SetEnablePresentTask(bool enabled)
+UsdImagingGLEngine::SetEnablePresentation(bool enabled)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return;
     }
 
     if (TF_VERIFY(_taskController)) {
-        _taskController->SetEnablePresentTask(enabled);
+        _taskController->SetEnablePresentation(enabled);
     }
 }
 

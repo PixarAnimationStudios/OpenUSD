@@ -357,12 +357,11 @@ public:
     void SetRendererSetting(TfToken const& id,
                                     VtValue const& value);
 
-    /// Enable / disable the present task.
+    /// Enable / disable presenting the render to bound framebuffer.
     /// An application may choose to manage the AOVs that are rendered into
-    /// itself and skip using the PresentTask to composite (interop) them to
-    /// screen.
+    /// itself and skip the engine's presentation.
     USDIMAGINGGL_API
-    void SetEnablePresentTask(bool enabled);
+    void SetEnablePresentation(bool enabled);
 
     /// @}
 

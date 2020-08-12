@@ -212,17 +212,13 @@ public:
     void SetColorCorrectionParams(HdxColorCorrectionTaskParams const& params);
 
     /// -------------------------------------------------------
-    /// Present task API
+    /// Present API
 
-    /// Enable / disable the present task.
+    /// Enable / disable presenting the render to bound framebuffer.
     /// An application may choose to manage the AOVs that are rendered into
-    /// itself and skip using the PresentTask to composite (interop) them to
-    /// screen.
-    /// screen.
-    /// Note: When enabling the PresentTask the caller must ensure to
-    /// supply the viewport dimensions via SetRenderViewport.
+    /// itself and skip the task controller's presentation.
     HDX_API
-    void SetEnablePresentTask(bool enabled);
+    void SetEnablePresentation(bool enabled);
 
 private:
     ///

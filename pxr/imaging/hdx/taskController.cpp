@@ -1739,11 +1739,18 @@ HdxTaskController::SetColorCorrectionParams(
 }
 
 void 
-HdxTaskController::SetEnablePresentTask(bool enabled)
+HdxTaskController::SetEnablePresentation(bool enabled)
 {
     if (enabled && _presentTaskId.IsEmpty()) {
         _CreatePresentTask();
-    }else if (!enabled && !_presentTaskId.IsEmpty()) {
+        // Sync the curreng viewport size into the PresentTask
+        if (!_renderTaskIds.empty()) {
+            HdxRenderTaskParams params =
+                _delegate.GetParameter<HdxRenderTaskParams>(
+                    _renderTaskIds.front(), HdTokens->params);
+            SetRenderViewport(params.viewport);
+        }
+    } else if (!enabled && !_presentTaskId.IsEmpty()) {
         GetRenderIndex()->RemoveTask(_presentTaskId);
         _presentTaskId = SdfPath::EmptyPath();
     }
