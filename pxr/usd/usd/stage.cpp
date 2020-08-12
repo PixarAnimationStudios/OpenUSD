@@ -5029,7 +5029,10 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
     {
         SdfChangeBlock block;
 
-        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(dstParent);
+        // Use the edit target from the destination prim's stage, since it may
+        // be different from this stage
+        SdfPrimSpecHandle primSpec = 
+            dstParent.GetStage()->_CreatePrimSpecForEditing(dstParent);
         if (!primSpec) {
             // _CreatePrimSpecForEditing will have already issued any
             // coding errors, so just bail out.
@@ -5068,8 +5071,11 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Apply offsets that affect the edit target to flattened time 
         // samples to ensure they resolve to the expected value.
+        // Use the edit target from the destination prim's stage, since it may 
+        // be different from this stage.
         const SdfLayerOffset stageToLayerOffset = 
-            GetEditTarget().GetMapFunction().GetTimeOffset().GetInverse();
+            dstParent.GetStage()->GetEditTarget().GetMapFunction().
+            GetTimeOffset().GetInverse();
 
         // Copy authored property values and metadata.
         _CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
