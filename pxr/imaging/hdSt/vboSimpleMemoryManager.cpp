@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -66,13 +65,14 @@ HdStVBOSimpleMemoryManager::CreateBufferArray(
     HdBufferArrayUsageHint usageHint)
 {
     return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
-        _hgi, role, bufferSpecs, usageHint);
+        _resourceRegistry, role, bufferSpecs, usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
 {
-    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>();
+    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>
+                (_resourceRegistry);
 }
 
 HdAggregationStrategy::AggregationId
@@ -142,12 +142,12 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
 //  _SimpleBufferArray
 // ---------------------------------------------------------------------------
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
-    Hgi* hgi,
+    HdStResourceRegistry* resourceRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
  : HdBufferArray(role, TfToken(), usageHint)
- , _hgi(hgi)
+ , _resourceRegistry(resourceRegistry)
  , _capacity(0)
  , _maxBytesPerElement(0)
 {
@@ -280,7 +280,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     int numElements = range->GetNumElements();
 
     // Use blit work to record resource copy commands.
-    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+    Hgi* hgi = _resourceRegistry->GetHgi();
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
     
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceSharedPtr const &bres = bresIt->second;
@@ -297,7 +298,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             HgiBufferDesc bufDesc;
             bufDesc.byteSize = bufferSize;
             bufDesc.usage = HgiBufferUsageUniform;
-            newId = _hgi->CreateBuffer(bufDesc);
+            newId = hgi->CreateBuffer(bufDesc);
         }
 
         // copy the range. There are three cases:
@@ -329,13 +330,11 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
         // delete old buffer
         if (oldId) {
-            _hgi->DestroyBuffer(&oldId);
+            hgi->DestroyBuffer(&oldId);
         }
 
         bres->SetAllocation(newId, bufferSize);
     }
-
-    _hgi->SubmitCmds(blitCmds.get());
 
     _capacity = numElements;
     _needsReallocation = false;
@@ -354,8 +353,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetMaxNumElements() const
 void
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
 {
+    Hgi* hgi = _resourceRegistry->GetHgi();
     TF_FOR_ALL (it, GetResources()) {
-        _hgi->DestroyBuffer(&it->second->GetId());
+        hgi->DestroyBuffer(&it->second->GetId());
     }
 }
 
@@ -441,42 +441,34 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
-    GLF_GROUP_FUNCTION();
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    if (glBufferSubData != NULL) {
-        int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
-        // overrun check. for graceful handling of erroneous assets,
-        // issue warning here and continue to copy for the valid range.
-        size_t dstSize = _numElements * bytesPerElement;
-        size_t srcSize =
-            bufferSource->GetNumElements() *
-            HdDataSizeOfTupleType(bufferSource->GetTupleType());
-        if (srcSize > dstSize) {
-            TF_WARN("%s: size %ld is larger than the range (%ld)",
-                    bufferSource->GetName().GetText(), srcSize, dstSize);
-            srcSize = dstSize;
-        }
-
-        GLintptr vboOffset = bytesPerElement * offset;
-
-        HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
-
-        if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubData(VBO->GetId()->GetRawResource(),
-                                 vboOffset,
-                                 srcSize,
-                                 bufferSource->GetData());
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId()->GetRawResource());
-            glBufferSubData(GL_ARRAY_BUFFER,
-                            vboOffset,
-                            srcSize,
-                            bufferSource->GetData());
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
+    int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
+    // overrun check. for graceful handling of erroneous assets,
+    // issue warning here and continue to copy for the valid range.
+    size_t dstSize = _numElements * bytesPerElement;
+    size_t srcSize =
+        bufferSource->GetNumElements() *
+        HdDataSizeOfTupleType(bufferSource->GetTupleType());
+    if (srcSize > dstSize) {
+        TF_WARN("%s: size %ld is larger than the range (%ld)",
+                bufferSource->GetName().GetText(), srcSize, dstSize);
+        srcSize = dstSize;
     }
+
+    size_t vboOffset = bytesPerElement * offset;
+
+    HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
+
+    HgiBufferCpuToGpuOp blitOp;
+    blitOp.cpuSourceBuffer = bufferSource->GetData();
+    blitOp.gpuDestinationBuffer = VBO->GetId();
+    
+    blitOp.sourceByteOffset = 0;
+    blitOp.byteSize = srcSize;
+    blitOp.destinationByteOffset = vboOffset;
+
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    blitCmds->CopyBufferCpuToGpu(blitOp);
 }
 
 VtValue

@@ -28,8 +28,12 @@
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
 
 #include "pxr/base/arch/hash.h"
@@ -52,7 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdBufferArrayRangeSharedPtr
 HdStInterleavedMemoryManager::CreateBufferArrayRange()
 {
-    return (std::make_shared<_StripedInterleavedBufferRange>());
+    return std::make_shared<_StripedInterleavedBufferRange>(_resourceRegistry);
 }
 
 /// Returns the buffer specs from a given buffer array
@@ -117,7 +121,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            _hgi,
+            _resourceRegistry,
             role,
             bufferSpecs,
             usageHint,
@@ -156,7 +160,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            _hgi,
+            _resourceRegistry,
             role,
             bufferSpecs,
             usageHint,
@@ -222,7 +226,7 @@ _ComputeAlignment(HdTupleType tupleType)
 }
 
 HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer(
-    Hgi* hgi,
+    HdStResourceRegistry* resourceRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint,
@@ -231,7 +235,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     size_t maxSize = 0,
     TfToken const &garbageCollectionPerfToken = HdPerfTokens->garbageCollectedUbo)
     : HdBufferArray(role, garbageCollectionPerfToken, usageHint),
-      _hgi(hgi),
+      _resourceRegistry(resourceRegistry),
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
@@ -423,12 +427,14 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         curRangeOwner_->GetResources().begin()->second->GetId();
     HgiBufferHandle newId;
 
+    Hgi* hgi = _resourceRegistry->GetHgi();
+    
     // Skip buffers of zero size.
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = totalSize;
         bufDesc.usage = HgiBufferUsageUniform;
-        newId = _hgi->CreateBuffer(bufDesc);
+        newId = hgi->CreateBuffer(bufDesc);
     }
 
     // if old and new buffer exist, copy unchanged data
@@ -437,6 +443,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
         size_t rangeCount = GetRangeCount();
 
+        HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+        
         // pre-pass to combine consecutive buffer range relocation
         HdStBufferRelocator relocator(curId, newId);
         for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
@@ -462,7 +470,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         }
 
         // buffer copy
-        relocator.Commit(_hgi);
+        relocator.Commit(blitCmds);
 
     } else {
         // just set index
@@ -483,7 +491,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     }
     if (oldId) {
         // delete old buffer
-        _hgi->DestroyBuffer(&oldId);
+        hgi->DestroyBuffer(&oldId);
     }
 
     // update id to all buffer resources
@@ -505,7 +513,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_DeallocateResources()
 {
     HdStBufferResourceSharedPtr resource = GetResource();
     if (resource) {
-        _hgi->DestroyBuffer(&resource->GetId());
+        _resourceRegistry->GetHgi()->DestroyBuffer(&resource->GetId());
     }
 }
 
@@ -657,30 +665,30 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         return;
     }
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (glBufferSubData != NULL) {
-        int vboStride = VBO->GetStride();
-        GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
-        int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
-        const unsigned char *data =
-            (const unsigned char*)bufferSource->GetData();
+    int vboStride = VBO->GetStride();
+    GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
+    int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    const unsigned char *data =
+        (const unsigned char*)bufferSource->GetData();
 
-        for (size_t i = 0; i < _numElements; ++i) {
-            HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    HgiBufferCpuToGpuOp blitOp;
+    blitOp.gpuDestinationBuffer = VBO->GetId();
 
-            // XXX: MapBuffer?
-            if (caps.directStateAccessEnabled) {
-                glNamedBufferSubData(
-                    VBO->GetId()->GetRawResource(), vboOffset, dataSize, data);
-            } else {
-                glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId()->GetRawResource());
-                glBufferSubData(GL_ARRAY_BUFFER, vboOffset, dataSize, data);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-            vboOffset += vboStride;
-            data += dataSize;
-        }
+    for (size_t i = 0; i < _numElements; ++i) {
+        blitOp.cpuSourceBuffer = data;
+        
+        blitOp.sourceByteOffset = 0;
+        blitOp.byteSize = dataSize;
+        blitOp.destinationByteOffset = vboOffset;
+        blitCmds->CopyBufferCpuToGpu(blitOp);
+
+        vboOffset += vboStride;
+        data += dataSize;
     }
+    
+    HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferCpuToGpu,
+                        (double)_numElements);
 }
 
 VtValue

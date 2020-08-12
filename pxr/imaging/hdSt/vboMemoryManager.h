@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hgi;
+class HdStResourceRegistry;
 
 /// \class HdStVBOMemoryManager
 ///
@@ -49,9 +49,9 @@ class Hgi;
 ///
 class HdStVBOMemoryManager : public HdAggregationStrategy {
 public:
-    HdStVBOMemoryManager(Hgi *hgi)
+    HdStVBOMemoryManager(HdStResourceRegistry *resourceRegistry)
     : HdAggregationStrategy()
-    , _hgi(hgi) {}
+    , _resourceRegistry(resourceRegistry) {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
@@ -88,8 +88,9 @@ protected:
     class _StripedBufferArrayRange : public HdStBufferArrayRange {
     public:
         /// Constructor.
-        _StripedBufferArrayRange()
-         : _stripedBufferArray(nullptr),
+        _StripedBufferArrayRange(HdStResourceRegistry* resourceRegistry)
+         : HdStBufferArrayRange(resourceRegistry),
+           _stripedBufferArray(nullptr),
            _elementOffset(0),
            _numElements(0),
            _capacity(0)
@@ -234,7 +235,7 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _StripedBufferArray(Hgi* _hgi,
+        _StripedBufferArray(HdStResourceRegistry* _resourceRegistry,
                             TfToken const &role,
                             HdBufferSpecVector const &bufferSpecs,
                             HdBufferArrayUsageHint usageHint);
@@ -311,7 +312,7 @@ protected:
 
     private:
 
-        Hgi* _hgi;
+        HdStResourceRegistry* _resourceRegistry;
         bool _needsCompaction;
         int _totalCapacity;
         size_t _maxBytesPerElement;
@@ -324,7 +325,7 @@ protected:
         }
     };
     
-    Hgi* _hgi;
+    HdStResourceRegistry* _resourceRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

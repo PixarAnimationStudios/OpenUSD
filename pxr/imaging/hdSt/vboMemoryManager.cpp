@@ -35,6 +35,8 @@
 
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -62,14 +64,14 @@ HdStVBOMemoryManager::CreateBufferArray(
     HdBufferArrayUsageHint usageHint)
 {
     return std::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
-        _hgi, role, bufferSpecs, usageHint);
+        _resourceRegistry, role, bufferSpecs, usageHint);
 }
 
 
 HdBufferArrayRangeSharedPtr
 HdStVBOMemoryManager::CreateBufferArrayRange()
 {
-    return std::make_shared<_StripedBufferArrayRange>();
+    return std::make_shared<_StripedBufferArrayRange>(_resourceRegistry);
 }
 
 
@@ -145,12 +147,12 @@ HdStVBOMemoryManager::GetResourceAllocation(
 //  _StripedBufferArray
 // ---------------------------------------------------------------------------
 HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
-    Hgi* hgi,
+    HdStResourceRegistry* resourceRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
     : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, usageHint),
-      _hgi(hgi),
+      _resourceRegistry(resourceRegistry),
       _needsCompaction(false),
       _totalCapacity(0),
       _maxBytesPerElement(0)
@@ -323,6 +325,9 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     _SetRangeList(ranges);
 
     _totalCapacity = totalNumElements;
+    
+    Hgi* hgi = _resourceRegistry->GetHgi();
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
 
     // resize each BufferResource
     HdStBufferResourceNamedList const& resources = GetResources();
@@ -347,7 +352,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             HgiBufferDesc bufDesc;
             bufDesc.usage = HgiBufferUsageUniform;
             bufDesc.byteSize = bufferSize;
-            newId = _hgi->CreateBuffer(bufDesc);
+            newId = hgi->CreateBuffer(bufDesc);
         }
 
         // if old and new buffer exist, copy unchanged data
@@ -394,11 +399,11 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             }
 
             // buffer copy
-            relocator.Commit(_hgi);
+            relocator.Commit(blitCmds);
         }
         if (oldId) {
             // delete old buffer
-            _hgi->DestroyBuffer(&oldId);
+            hgi->DestroyBuffer(&oldId);
         }
 
         // update id of buffer resource
@@ -426,8 +431,9 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
 void
 HdStVBOMemoryManager::_StripedBufferArray::_DeallocateResources()
 {
+    Hgi* hgi = _resourceRegistry->GetHgi();
     TF_FOR_ALL (it, GetResources()) {
-        _hgi->DestroyBuffer(&it->second->GetId());
+        hgi->DestroyBuffer(&it->second->GetId());
     }
 }
 
@@ -635,39 +641,33 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     }
     GLF_GROUP_FUNCTION();
     
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (glBufferSubData) {
-        int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
+    int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
 
-        // overrun check. for graceful handling of erroneous assets,
-        // issue warning here and continue to copy for the valid range.
-        size_t dstSize = _numElements * bytesPerElement;
-        size_t srcSize =
-            bufferSource->GetNumElements() *
-            HdDataSizeOfTupleType(bufferSource->GetTupleType());
-        if (srcSize > dstSize) {
-            TF_WARN("%s: size %ld is larger than the range (%ld)",
-                    bufferSource->GetName().GetText(), srcSize, dstSize);
-            srcSize = dstSize;
-        }
-        GLintptr vboOffset = bytesPerElement * _elementOffset;
-
-        HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
-
-        if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubData(VBO->GetId()->GetRawResource(),
-                                 vboOffset,
-                                 srcSize,
-                                 bufferSource->GetData());
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId()->GetRawResource());
-            glBufferSubData(GL_ARRAY_BUFFER,
-                            vboOffset,
-                            srcSize,
-                            bufferSource->GetData());
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
+    // overrun check. for graceful handling of erroneous assets,
+    // issue warning here and continue to copy for the valid range.
+    size_t dstSize = _numElements * bytesPerElement;
+    size_t srcSize =
+        bufferSource->GetNumElements() *
+        HdDataSizeOfTupleType(bufferSource->GetTupleType());
+    if (srcSize > dstSize) {
+        TF_WARN("%s: size %ld is larger than the range (%ld)",
+                bufferSource->GetName().GetText(), srcSize, dstSize);
+        srcSize = dstSize;
     }
+    size_t vboOffset = bytesPerElement * _elementOffset;
+    
+    HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
+
+    HgiBufferCpuToGpuOp blitOp;
+    blitOp.cpuSourceBuffer = bufferSource->GetData();
+    blitOp.gpuDestinationBuffer = VBO->GetId();
+    
+    blitOp.sourceByteOffset = 0;
+    blitOp.byteSize = srcSize;
+    blitOp.destinationByteOffset = vboOffset;
+
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    blitCmds->CopyBufferCpuToGpu(blitOp);
 }
 
 int

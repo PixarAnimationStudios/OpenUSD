@@ -30,6 +30,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdStBufferArrayRange::HdStBufferArrayRange(
+    HdStResourceRegistry* resourceRegistry)
+    : _resourceRegistry(resourceRegistry)
+{
+}
 
 HdStBufferArrayRange::~HdStBufferArrayRange() 
 {
@@ -45,6 +50,12 @@ HdStBufferArrayRange::GetBufferSpecs(HdBufferSpecVector *specs) const
     TF_FOR_ALL(it, resources) {
         specs->emplace_back(it->first, it->second->GetTupleType());
     }
+}
+
+HdStResourceRegistry*
+HdStBufferArrayRange::GetResourceRegistry()
+{
+    return _resourceRegistry;
 }
 
 std::ostream &operator <<(std::ostream &out,
@@ -84,6 +95,5 @@ HdStBufferArrayRangeContainer::Get(int index) const
     }
     return _ranges[index];
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

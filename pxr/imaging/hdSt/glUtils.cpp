@@ -183,14 +183,11 @@ HdStBufferRelocator::AddRange(GLintptr readOffset,
 }
 
 void
-HdStBufferRelocator::Commit(Hgi* hgi)
+HdStBufferRelocator::Commit(HgiBlitCmds* blitCmds)
 {
     HgiBufferGpuToGpuOp blitOp;
     blitOp.gpuSourceBuffer = _srcBuffer;
     blitOp.gpuDestinationBuffer = _dstBuffer;
-
-    // Use blit work to record resource copy commands.
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
     
     TF_FOR_ALL (it, _queue) {
         blitOp.sourceByteOffset = it->readOffset;
@@ -199,7 +196,6 @@ HdStBufferRelocator::Commit(Hgi* hgi)
 
         blitCmds->CopyBufferGpuToGpu(blitOp);
     }
-    hgi->SubmitCmds(blitCmds.get());
 
     HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferGpuToGpu,
                         (double)_queue.size());
