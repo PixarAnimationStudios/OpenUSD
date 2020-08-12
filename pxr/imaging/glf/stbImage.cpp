@@ -83,7 +83,8 @@ public:
 
 protected:
     virtual bool _OpenForReading(std::string const & filename, int subimage,
-                                 int mip, bool suppressErrors);
+                                 int mip, SourceColorSpace sourceColorSpace, 
+                                 bool suppressErrors);
     virtual bool _OpenForWriting(std::string const & filename);
 
 private:
@@ -106,6 +107,8 @@ private:
     GLenum _outputType; 
     
     int _nchannels;
+
+    SourceColorSpace _sourceColorSpace;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -327,6 +330,13 @@ Glf_StbImage::GetBytesPerPixel() const
 bool
 Glf_StbImage::IsColorSpaceSRGB() const
 {
+    if (_sourceColorSpace == SourceColorSpace::SRGB) {
+        return true;
+    }
+    if (_sourceColorSpace == SourceColorSpace::Raw) {
+        return false;
+    }
+
     const float gamma_epsilon = 0.1f;
 
     // If we found gamma in the texture, use it to decide if we are sRGB
@@ -345,10 +355,9 @@ Glf_StbImage::IsColorSpaceSRGB() const
     }
 
     // Texture had no (recognized) gamma hint, make a reasonable guess
-    return ((_nchannels == 3  || _nchannels == 4) && 
+    return ((_nchannels == 3 || _nchannels == 4) && 
             GetType() == GL_UNSIGNED_BYTE);
 }
-
 
 //XXX Still need to investigate Metadata handling
 /* virtual */
@@ -375,9 +384,11 @@ Glf_StbImage::GetNumMipLevels() const
 /* virtual */
 bool
 Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
-                              int mip, bool suppressErrors)
+                              int mip, SourceColorSpace sourceColorSpace, 
+                              bool suppressErrors)
 {
     _filename = filename;
+    _sourceColorSpace = sourceColorSpace;
 
     std::string fileExtension = _GetFilenameExtension();
     if (fileExtension == "hdr") {

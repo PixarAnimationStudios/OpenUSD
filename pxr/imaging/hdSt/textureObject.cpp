@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/uvTextureData.h"
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
@@ -105,8 +106,10 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
             textureId.GetFilePath().GetString()
             + " - flipVertically="
             + std::to_string(int(subId->GetFlipVertically()))
-            + + " - premultiplyAlpha="
-            + std::to_string(int(subId->GetPremultiplyAlpha()));
+            + " - premultiplyAlpha="
+            + std::to_string(int(subId->GetPremultiplyAlpha()))
+            + " - sourceColorSpace="
+            + subId->GetSourceColorSpace().GetString();
     }
 
     if (const HdStPtexSubtextureIdentifier * const subId =
@@ -114,7 +117,7 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
                 textureId.GetSubtextureIdentifier())) {
         return
             textureId.GetFilePath().GetString()
-            + + " - premultiplyAlpha="
+            + " - premultiplyAlpha="
             + std::to_string(int(subId->GetPremultiplyAlpha()));
     }
 
@@ -123,8 +126,10 @@ _GetDebugName(const HdStTextureIdentifier &textureId)
                 textureId.GetSubtextureIdentifier())) {
         return
             textureId.GetFilePath().GetString()
-            + + " - premultiplyAlpha="
-            + std::to_string(int(subId->GetPremultiplyAlpha()));
+            + " - premultiplyAlpha="
+            + std::to_string(int(subId->GetPremultiplyAlpha()))
+            + " - sourceColorSpace="
+            + subId->GetSourceColorSpace().GetString();
     }
      
     return
@@ -138,31 +143,62 @@ bool
 _GetPremultiplyAlpha(const HdStSubtextureIdentifier * const subId, 
                      const HdTextureType textureType)
 {    
-    switch (textureType) {
-        case HdTextureType::Uv:
-            if (const HdStAssetUvSubtextureIdentifier* const uvSubId = 
-                dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
-                return uvSubId->GetPremultiplyAlpha();
-            } 
-            return false;
-
-        case HdTextureType::Ptex:
-            if (const HdStPtexSubtextureIdentifier* const ptexSubId = 
-                dynamic_cast<const HdStPtexSubtextureIdentifier *>(subId)) {
-            return ptexSubId->GetPremultiplyAlpha();
-            }
-            return false;
-
-        case HdTextureType::Udim:
-            if (const HdStUdimSubtextureIdentifier* const udimSubId = 
-                    dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
-                return udimSubId->GetPremultiplyAlpha();
-            }
-            return false;
-
-        default:
-            return false;
+    switch(textureType) {
+    case HdTextureType::Uv:
+        if (const HdStAssetUvSubtextureIdentifier* const uvSubId = 
+            dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
+            return uvSubId->GetPremultiplyAlpha();
+        } 
+        return false;
+    case HdTextureType::Ptex:
+        if (const HdStPtexSubtextureIdentifier* const ptexSubId = 
+            dynamic_cast<const HdStPtexSubtextureIdentifier *>(subId)) {
+        return ptexSubId->GetPremultiplyAlpha();
+        }
+        return false;
+    case HdTextureType::Udim:
+        if (const HdStUdimSubtextureIdentifier* const udimSubId = 
+                dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
+            return udimSubId->GetPremultiplyAlpha();
+        }
+        return false;
+    default:
+        return false;
     }
+}
+
+// Read from the HdStSubtextureIdentifier its source color space
+//
+static
+GlfImage::SourceColorSpace
+_GetSourceColorSpace(const HdStSubtextureIdentifier * const subId,
+                   const HdTextureType textureType)
+{    
+    TfToken sourceColorSpace;
+    switch(textureType) {
+    case HdTextureType::Uv:
+        if (const HdStAssetUvSubtextureIdentifier* const uvSubId = 
+            dynamic_cast<const HdStAssetUvSubtextureIdentifier *>(subId)) {
+            sourceColorSpace = uvSubId->GetSourceColorSpace();
+        } 
+        break;
+    case HdTextureType::Udim:
+        if (const HdStUdimSubtextureIdentifier* const udimSubId = 
+                dynamic_cast<const HdStUdimSubtextureIdentifier *>(subId)) {
+            sourceColorSpace = udimSubId->GetSourceColorSpace();
+        }
+        break;
+    default:
+        break;
+    }
+
+    if (sourceColorSpace == HdStTokens->sRGB) {
+        return GlfImage::SRGB;
+    } 
+    if (sourceColorSpace == HdStTokens->raw) {
+        return GlfImage::Raw;
+    }
+    return GlfImage::Auto;
 }
 
 } // anonymous namespace
@@ -319,7 +355,10 @@ HdStAssetUvTextureObject::_Load()
         GlfUVTextureData::New(
             GetTextureIdentifier().GetFilePath(),
             GetTargetMemory(),
-            /* borders */ 0, 0, 0, 0);
+            /* borders */ 0, 0, 0, 0,
+            _GetSourceColorSpace(
+                GetTextureIdentifier().GetSubtextureIdentifier(),
+                GetTextureType()));
 
     _SetCpuData(
         std::make_unique<HdStGlfTextureCpuData>(
@@ -646,6 +685,9 @@ HdStUdimTextureObject::_Commit()
         GlfImage::OriginLowerLeft,
         std::move(_tiles),
         _GetPremultiplyAlpha(
+            GetTextureIdentifier().GetSubtextureIdentifier(), 
+            GetTextureType()),
+        _GetSourceColorSpace(
             GetTextureIdentifier().GetSubtextureIdentifier(), 
             GetTextureType()));
     _gpuTexture->SetMemoryRequested(GetTargetMemory());

@@ -72,8 +72,12 @@ HdStVdbSubtextureIdentifier::Hash() const
 // HdStAssetUvSubtextureIdentifier
 
 HdStAssetUvSubtextureIdentifier::HdStAssetUvSubtextureIdentifier(
-    const bool flipVertically, const bool premultiplyAlpha)
- : _flipVertically(flipVertically), _premultiplyAlpha(premultiplyAlpha)
+    const bool flipVertically, 
+    const bool premultiplyAlpha, 
+    const TfToken& sourceColorSpace)
+ : _flipVertically(flipVertically), 
+   _premultiplyAlpha(premultiplyAlpha), 
+   _sourceColorSpace(sourceColorSpace)
 {
 }
 
@@ -84,7 +88,7 @@ std::unique_ptr<HdStSubtextureIdentifier>
 HdStAssetUvSubtextureIdentifier::Clone() const
 {
     return std::make_unique<HdStAssetUvSubtextureIdentifier>(
-        GetFlipVertically(), GetPremultiplyAlpha());
+        GetFlipVertically(), GetPremultiplyAlpha(), GetSourceColorSpace());
 }
 
 HdStSubtextureIdentifier::ID
@@ -125,8 +129,8 @@ HdStDynamicUvSubtextureIdentifier::GetTextureImplementation() const
 // HdStUdimSubtextureIdentifier
 
 HdStUdimSubtextureIdentifier::HdStUdimSubtextureIdentifier(
-    const bool premultiplyAlpha)
- : _premultiplyAlpha(premultiplyAlpha)
+    const bool premultiplyAlpha, const TfToken &sourceColorSpace)
+ : _premultiplyAlpha(premultiplyAlpha), _sourceColorSpace(sourceColorSpace)
 {
 }
 
@@ -137,20 +141,13 @@ std::unique_ptr<HdStSubtextureIdentifier>
 HdStUdimSubtextureIdentifier::Clone() const
 {
     return std::make_unique<HdStUdimSubtextureIdentifier>(
-        GetPremultiplyAlpha());
+        GetPremultiplyAlpha(), GetSourceColorSpace());
 }
 
 HdStSubtextureIdentifier::ID
 HdStUdimSubtextureIdentifier::Hash() const
 {
-    static ID premultiplyAlphaTrue = TfToken("premultiplyAlpha").Hash();
-    static ID premultiplyAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
-
-    if (GetPremultiplyAlpha()) {
-        return premultiplyAlphaTrue;
-    } else {
-        return premultiplyAlphaFalse;
-    }
+    return TfHash()(*this);
 }
 
 ////////////////////////////////////////////////////////////////////////////

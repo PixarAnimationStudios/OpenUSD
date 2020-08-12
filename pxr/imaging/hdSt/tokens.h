@@ -55,6 +55,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bias)                                      \
     (rotation)                                  \
     (translation)                               \
+    (sRGB)                                      \
+    (raw)                                       \
+    ((colorSpaceAuto, "auto"))
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

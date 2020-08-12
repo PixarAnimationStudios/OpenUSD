@@ -173,6 +173,13 @@ def Shader "UsdUVTexture" (
                  value * scale + bias)"""
     )
 
+    token inputs:sourceColorSpace = "auto" (
+        connectability = "interfaceOnly"
+        allowedTokens = ["raw", "sRGB", "auto"]
+        doc = """<options> raw, sRGB, auto. Flag indicating the color
+                 space in which the source texture is encoded."""
+    )
+
     float outputs:r ( 
         doc = "Outputs the red channel."
         sdrMetadata = {

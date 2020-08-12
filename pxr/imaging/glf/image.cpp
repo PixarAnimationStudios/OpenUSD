@@ -49,13 +49,14 @@ GlfImage::IsSupportedImageFile(std::string const & filename)
 /* static */
 GlfImageSharedPtr
 GlfImage::OpenForReading(std::string const & filename, int subimage,
-                         int mip, bool suppressErrors)
+                         int mip, SourceColorSpace sourceColorSpace, 
+                         bool suppressErrors)
 {
     GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
 
     GlfImageSharedPtr image = registry._ConstructImage(filename);
-    if (!image || !image->_OpenForReading(filename, subimage,
-                                          mip, suppressErrors)) {
+    if (!image || !image->_OpenForReading(filename, subimage, mip, 
+                                          sourceColorSpace, suppressErrors)) {
         return GlfImageSharedPtr();
     }
 

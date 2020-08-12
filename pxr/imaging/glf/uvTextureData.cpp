@@ -41,7 +41,8 @@ GlfUVTextureData::New(
     unsigned int cropTop,
     unsigned int cropBottom,
     unsigned int cropLeft,
-    unsigned int cropRight)
+    unsigned int cropRight,
+    GlfImage::SourceColorSpace sourceColorSpace)
 {
     GlfUVTextureData::Params params;
     params.targetMemory = targetMemory;
@@ -49,13 +50,15 @@ GlfUVTextureData::New(
     params.cropBottom   = cropBottom;
     params.cropLeft     = cropLeft;
     params.cropRight    = cropRight;
-    return New(filePath, params);
+    return New(filePath, params, sourceColorSpace);
 }
 
 GlfUVTextureDataRefPtr
-GlfUVTextureData::New(std::string const &filePath, Params const &params)
+GlfUVTextureData::New(std::string const &filePath, Params const &params,
+                      GlfImage::SourceColorSpace sourceColorSpace)
 {
-    return TfCreateRefPtr(new GlfUVTextureData(filePath, params));
+    return TfCreateRefPtr(new GlfUVTextureData(filePath, params, 
+                                               sourceColorSpace));
 }
 
 GlfUVTextureData::~GlfUVTextureData()
@@ -63,7 +66,8 @@ GlfUVTextureData::~GlfUVTextureData()
 }
 
 GlfUVTextureData::GlfUVTextureData(std::string const &filePath,
-                                     Params const &params)
+                                   Params const &params, 
+                                   GlfImage::SourceColorSpace sourceColorSpace)
   : _filePath(filePath),
     _params(params),
     _targetMemory(0),
@@ -73,7 +77,8 @@ GlfUVTextureData::GlfUVTextureData(std::string const &filePath,
     _glInternalFormat(GL_RGB),
     _glFormat(GL_RGB),
     _glType(GL_UNSIGNED_BYTE),
-    _size(0)
+    _size(0),
+    _sourceColorSpace(sourceColorSpace)
 {
     /* nothing */
 }
@@ -108,7 +113,8 @@ GlfUVTextureData::_GetDegradedImageInputChain(double scaleX, double scaleY,
 {
     _DegradedImageInput chain(scaleX, scaleY);
     for (int level = startMip; level < lastMip; level++) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, level);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, level,
+                                                           _sourceColorSpace);
         chain.images.push_back(image);
     }
     return chain;
@@ -129,7 +135,8 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
     // in that case 
     for (int mipCounter = 1; mipCounter < 32; mipCounter++) {
         GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath,
-            0 /*subimage*/, mipCounter, /*suppressErrors=*/ true);
+            0 /*subimage*/, mipCounter, _sourceColorSpace, 
+            /*suppressErrors=*/ true);
         if (!image) {
             potentialMipLevels = mipCounter;
             break;
@@ -163,8 +170,8 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
 
 GlfUVTextureData::_DegradedImageInput
 GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
-                                           size_t targetMemory,
-                                           size_t degradeLevel)
+                                          size_t targetMemory,
+                                          size_t degradeLevel)
 {
     TRACE_FUNCTION();
 
@@ -199,7 +206,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     // If no targetMemory set, use degradeLevel to determine mipLevel
     if (targetMemory == 0) {
         GlfImageSharedPtr image =
-        GlfImage::OpenForReading(_filePath, 0, degradeLevel);
+        GlfImage::OpenForReading(_filePath, 0, degradeLevel, _sourceColorSpace);
         if (!image) {
             return _DegradedImageInput(1.0, 1.0);
         }
@@ -224,7 +231,8 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     for (int i = 1; i < numMipLevels; i++) {
         // Open the image and is requested to use the i-th
         // down-sampled image (mipLevel).
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, i);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, i, 
+                                                           _sourceColorSpace);
 
         // If mipLevel could not be opened, return fullImage. We are
         // not supposed to hit this. GlfImage will return the last

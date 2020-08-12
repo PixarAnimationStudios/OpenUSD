@@ -60,7 +60,8 @@ struct _MipDesc {
 
 using _MipDescArray = std::vector<_MipDesc>;
 
-_MipDescArray _GetMipLevels(const TfToken& filePath)
+_MipDescArray _GetMipLevels(const TfToken& filePath, 
+                            GlfImage::SourceColorSpace sourceColorSpace)
 {
     constexpr int maxMipReads = 32;
     _MipDescArray ret {};
@@ -68,7 +69,8 @@ _MipDescArray _GetMipLevels(const TfToken& filePath)
     unsigned int prevWidth = std::numeric_limits<int>::max();
     unsigned int prevHeight = std::numeric_limits<int>::max();
     for (unsigned int mip = 0; mip < maxMipReads; ++mip) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(filePath, 0, mip);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(filePath, 0, mip, 
+                                                           sourceColorSpace);
         if (image == nullptr) {
             break;
         }
@@ -100,9 +102,10 @@ GlfUdimTexture::GlfUdimTexture(
     TfToken const& imageFilePath,
     GlfImage::ImageOriginLocation originLocation,
     std::vector<std::tuple<int, TfToken>>&& tiles,
-    bool const premultiplyAlpha)
+    bool const premultiplyAlpha,
+    GlfImage::SourceColorSpace sourceColorSpace)
     : GlfTexture(originLocation), _tiles(std::move(tiles)), 
-      _premultiplyAlpha(premultiplyAlpha)
+      _premultiplyAlpha(premultiplyAlpha), _sourceColorSpace(sourceColorSpace)
 {
 }
 
@@ -116,10 +119,12 @@ GlfUdimTexture::New(
     TfToken const& imageFilePath,
     GlfImage::ImageOriginLocation originLocation,
     std::vector<std::tuple<int, TfToken>>&& tiles,
-    bool const premultiplyAlpha)
+    bool const premultiplyAlpha,
+    GlfImage::SourceColorSpace sourceColorSpace)
 {
     return TfCreateRefPtr(new GlfUdimTexture(
-        imageFilePath, originLocation, std::move(tiles), premultiplyAlpha));
+        imageFilePath, originLocation, std::move(tiles), premultiplyAlpha, 
+        sourceColorSpace));
 }
 
 GlfTexture::BindingVector
@@ -304,7 +309,8 @@ GlfUdimTexture::_ReadImage()
         return;
     }
 
-    const _MipDescArray firstImageMips = _GetMipLevels(std::get<1>(_tiles[0]));
+    const _MipDescArray firstImageMips = _GetMipLevels(std::get<1>(_tiles[0]), 
+                                                       _sourceColorSpace);
 
     if (firstImageMips.empty()) {
         return;
@@ -446,7 +452,8 @@ GlfUdimTexture::_ReadImage()
         for (size_t tileId = begin; tileId < end; ++tileId) {
             std::tuple<int, TfToken> const& tile = _tiles[tileId];
             layoutData[std::get<0>(tile)] = tileId + 1;
-            _MipDescArray images = _GetMipLevels(std::get<1>(tile));
+            _MipDescArray images = _GetMipLevels(std::get<1>(tile), 
+                                                 _sourceColorSpace);
             if (images.empty()) { continue; }
             for (unsigned int mip = 0; mip < mipCount; ++mip) {
                 _TextureSize const& mipSize = mips[mip];

@@ -69,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (wrapR)
     (minFilter)
     (magFilter)
+    (sourceColorSpace)
 
     (in)
 );
@@ -800,23 +801,26 @@ _GetSamplerParameters(
 }
 
 //
-// We need to flip the image for the legacy HwUvTexture_1 shader node and 
-// pre-multiply textures by their alpha if applicable
+// We need to flip the image for the legacy HwUvTexture_1 shader node, 
+// pre-multiply textures by their alpha if applicable, and provide a hint for
+// in what color space the texture is encoded 
 //
 static
 std::unique_ptr<HdStSubtextureIdentifier>
 _GetSubtextureIdentifier(
     const HdTextureType textureType,
     const TfToken &nodeType,
-    const bool premultiplyAlpha)
+    const bool premultiplyAlpha,
+    const TfToken &sourceColorSpace)
 {
     if (textureType == HdTextureType::Uv) {
         const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
         return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
-            premultiplyAlpha);
+            premultiplyAlpha, sourceColorSpace);
     } 
     if (textureType == HdTextureType::Udim) {
-        return std::make_unique<HdStUdimSubtextureIdentifier>(premultiplyAlpha);
+        return std::make_unique<HdStUdimSubtextureIdentifier>(premultiplyAlpha, 
+            sourceColorSpace);
     }
     if (textureType == HdTextureType::Ptex) {
         return std::make_unique<HdStPtexSubtextureIdentifier>(premultiplyAlpha);
@@ -878,6 +882,10 @@ _MakeMaterialParamsForTexture(
     }
     texParam.isPremultiplied = premultiplyTexture;
 
+    // Get texture's sourceColorSpace hint 
+    const TfToken sourceColorSpace = _ResolveParameter(
+        node, sdrNode, _tokens->sourceColorSpace, HdStTokens->colorSpaceAuto);
+
     // Extract texture file path
     bool useTexturePrimToFindTexture = true;
     
@@ -937,7 +945,8 @@ _MakeMaterialParamsForTexture(
                     _GetSubtextureIdentifier(
                         texParam.textureType, 
                         node.nodeTypeId, 
-                        premultiplyTexture));
+                        premultiplyTexture,
+                        sourceColorSpace));
             // If the file attribute is an SdfPath, interpret it as path
             // to a prim holding the texture resource (e.g., a render buffer).
             } else if (HdStDrawTarget::GetUseStormTextureSystem() &&

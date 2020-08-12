@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/domeLightComputations.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/binding.h"
@@ -346,7 +347,8 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
         TfToken(resolvedPath),
         std::make_unique<HdStAssetUvSubtextureIdentifier>(
             /* flipVertically = */ true,
-            /* premultiplyAlpha = */ false));
+            /* premultiplyAlpha = */ false,
+	        /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
 
     static const HdSamplerParameters envSamplerParameters{
         HdWrapRepeat, HdWrapRepeat, HdWrapRepeat,
