@@ -224,7 +224,7 @@ class "UsdPrimvarReader" (
 {
     uniform token info:implementationSource = "sourceAsset"
     uniform asset info:glslfx:sourceAsset = @./primvarReader.glslfx@
-    token inputs:varname = "" (
+    string inputs:varname = "" (
         connectability = "interfaceOnly"
         doc = """Name of the primvar to be fetched from the geometry."""
         sdrMetadata = {
