@@ -73,7 +73,7 @@ _FindAllAttributeConnectionPaths(
 {
     using Predicate = std::function<bool (UsdAttribute const &)>;
     Predicate pred;
-    if (pypred != boost::python::object())
+    if (!pypred.is_none())
         pred = boost::python::extract<Predicate>(pypred);
     return self.FindAllAttributeConnectionPaths(pred, recurseOnSources);
 }
@@ -86,7 +86,7 @@ _FindAllRelationshipTargetPaths(
 {
     using Predicate = std::function<bool (UsdRelationship const &)>;
     Predicate pred;
-    if (pypred != boost::python::object())
+    if (!pypred.is_none())
         pred = boost::python::extract<Predicate>(pypred);
     return self.FindAllRelationshipTargetPaths(pred, recurseOnTargets);
 }

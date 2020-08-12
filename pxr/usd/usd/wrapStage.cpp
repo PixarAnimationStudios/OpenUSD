@@ -169,10 +169,10 @@ _ExpandPopulationMask(UsdStage &self,
     using AttrPredicate = std::function<bool (UsdAttribute const &)>;
     RelPredicate relPred;
     AttrPredicate attrPred;
-    if (pyRelPred != boost::python::object()) {
+    if (!pyRelPred.is_none()) {
         relPred = boost::python::extract<RelPredicate>(pyRelPred);
     }
-    if (pyAttrPred != boost::python::object()) {
+    if (!pyAttrPred.is_none()) {
         attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
     }
     return self.ExpandPopulationMask(relPred, attrPred);
