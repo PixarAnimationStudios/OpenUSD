@@ -104,7 +104,7 @@ def SkelRoot "SkelBinding"
         uniform int[] primvars:skel:jointIndices = []
         uniform float[] primvars:skel:jointWeights = []
         uniform token[] skel:joints = ["scope"]
-        uniform token[] skel:blendShapes = ["scope"]
+        uniform token[] skel:blendShapes = ["ignored"]
         rel skel:blendShapeTargets = []
 
         def Mesh "Inherit" {}
@@ -118,7 +118,7 @@ def SkelRoot "SkelBinding"
             uniform int[] primvars:skel:jointIndices = []
             uniform float[] primvars:skel:jointWeights = []
             uniform token[] skel:joints = ["override"]
-            uniform token[] skel:blendShapes = ["override"]
+            uniform token[] skel:blendShapes = ["shape"]
             rel skel:blendShapeTargets = []
         }
 
@@ -155,7 +155,7 @@ def SkelRoot "SkelBinding"
         uniform int[] primvars:skel:jointIndices = []
         uniform float[] primvars:skel:jointWeights = []
         uniform token[] skel:joints = ["instance"]
-        uniform token[] skel:blendShapes = ["instance"]
+        uniform token[] skel:blendShapes = ["ignored"]
         rel skel:blendShapeTargets = []
     }
 }

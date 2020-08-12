@@ -2445,9 +2445,10 @@ UsdSkelBakeSkinning(const UsdPrimRange& range, const GfInterval& interval)
                 it->GetPath().GetText());
 
             const UsdSkelRoot skelRoot(*it);
-            skelCache.Populate(skelRoot);
+            skelCache.Populate(skelRoot, UsdPrimDefaultPredicate);
 
-            if (skelCache.ComputeSkelBindings(skelRoot, &bindings)) {
+            if (skelCache.ComputeSkelBindings(
+                    skelRoot, &bindings, UsdPrimDefaultPredicate)) {
                 parms.bindings.insert(parms.bindings.end(),
                                       bindings.begin(), bindings.end());
             }
@@ -2488,9 +2489,10 @@ UsdSkelBakeSkinning(const UsdSkelRoot& skelRoot, const GfInterval& interval)
         skelRoot.GetPrim().GetPath().GetText());
 
     UsdSkelCache skelCache;
-    skelCache.Populate(skelRoot);
+    skelCache.Populate(skelRoot, UsdPrimDefaultPredicate);
 
-    if (skelCache.ComputeSkelBindings(skelRoot, &parms.bindings)) {
+    if (skelCache.ComputeSkelBindings(
+            skelRoot, &parms.bindings, UsdPrimDefaultPredicate)) {
         if (parms.bindings.empty()) {
             // Nothing to do.
             return true;

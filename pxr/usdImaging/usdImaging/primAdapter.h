@@ -95,6 +95,11 @@ public:
     USDIMAGING_API
     virtual bool ShouldCullChildren() const;
 
+    // Indicates whether or not native USD prim instancing should be ignored
+    // for prims using this delegate, along with their descendants.
+    USDIMAGING_API
+    virtual bool ShouldIgnoreNativeInstanceSubtrees() const;
+
     // Indicates the adapter is a multiplexing adapter (e.g. PointInstancer),
     // potentially managing its children. This flag is used in nested
     // instancer cases to determine which adapter is assigned to which prim.

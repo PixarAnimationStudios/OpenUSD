@@ -106,6 +106,13 @@ UsdImagingPrimAdapter::ShouldCullChildren() const
 
 /*virtual*/
 bool
+UsdImagingPrimAdapter::ShouldIgnoreNativeInstanceSubtrees() const
+{
+    return false;
+}
+
+/*virtual*/
+bool
 UsdImagingPrimAdapter::IsInstancerAdapter() const
 {
     return false;

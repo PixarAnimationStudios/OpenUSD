@@ -51,10 +51,11 @@ namespace {
 
 std::vector<UsdSkelBinding>
 _ComputeSkelBindings(const UsdSkelCache& self,  
-                     const UsdSkelRoot& skelRoot)
+                     const UsdSkelRoot& skelRoot,
+                     const Usd_PrimFlagsPredicate predicate)
 {   
     std::vector<UsdSkelBinding> bindings;
-    self.ComputeSkelBindings(skelRoot, &bindings);
+    self.ComputeSkelBindings(skelRoot, &bindings, predicate);
     return bindings;
 }
 
@@ -62,16 +63,12 @@ _ComputeSkelBindings(const UsdSkelCache& self,
 UsdSkelBinding
 _ComputeSkelBinding(const UsdSkelCache& self,
                     const UsdSkelRoot& skelRoot,
-                    const UsdSkelSkeleton& skel)
+                    const UsdSkelSkeleton& skel,
+                    const Usd_PrimFlagsPredicate predicate)
 {
     UsdSkelBinding binding;
-    self.ComputeSkelBinding(skelRoot, skel, &binding);
+    self.ComputeSkelBinding(skelRoot, skel, &binding, predicate);
     return binding;
-}
-
-static UsdSkelCache *__init__()
-{
-    return new UsdSkelCache(false);
 }
 
 } // namespace
@@ -81,13 +78,12 @@ void wrapUsdSkelCache()
 {
     using This = UsdSkelCache;
 
-    class_<This>("Cache", no_init)
-        .def("__init__", make_constructor(__init__))
-        .def(init<bool>(arg("includeInstances")))
+    class_<This>("Cache", init<>())
 
         .def("Clear", &This::Clear)
 
-        .def("Populate", &This::Populate)
+        .def("Populate", &This::Populate,
+             (arg("skelRoot"), arg("predicate")))
 
         .def("GetSkelQuery", &This::GetSkelQuery)
         
@@ -104,10 +100,10 @@ void wrapUsdSkelCache()
              (arg("anim")))
 
         .def("ComputeSkelBindings", &_ComputeSkelBindings,
-             return_value_policy<TfPySequenceToList>())
+             return_value_policy<TfPySequenceToList>(),
+             (arg("skelRoot"), arg("predicate")))
 
-        .def("ComputeSkelBinding", &_ComputeSkelBinding)
-
-        .def("IncludesInstances", &This::IncludesInstances)
+        .def("ComputeSkelBinding", &_ComputeSkelBinding,
+             (arg("skelRoot"), arg("skel"), arg("predicate")))
         ;
 }            

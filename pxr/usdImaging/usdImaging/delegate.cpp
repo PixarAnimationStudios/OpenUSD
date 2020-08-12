@@ -625,6 +625,8 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     std::vector<std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr> > leafPaths;
     leafPaths.reserve(usdPathsToRepopulate.size());
 
+    std::vector<UsdPrim> primsToPopulateWithoutInstancing;
+
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
 
         // _Populate should never be called on master prims or prims in master.
@@ -637,7 +639,9 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         // execution.
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Root path: <%s>\n",
                             usdPath.GetText());
-        UsdPrimRange range(prim, _GetDisplayPredicate());
+
+        const UsdPrimRange range(prim, _GetDisplayPredicate());
+
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
                 iter.PruneChildren();
@@ -662,7 +666,94 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                             iter->GetTypeName().GetText());
                 continue;
             }
-            if (UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(*iter)){
+
+            if (iter->IsInstance()) {
+                // Check if the adapter of the instanced prim wants to
+                // ignore instancing.
+                if (UsdImagingPrimAdapterSharedPtr adapter =
+                    _AdapterLookup(*iter, /*ignoreInstancing*/ true)) {
+
+                    if (adapter->ShouldIgnoreNativeInstanceSubtrees()) {
+                        TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                            "[Repopulate] Ignoring instancing of subtree "
+                            "at <%s>\n", iter->GetPath().GetText());
+
+                        primsToPopulateWithoutInstancing.push_back(*iter);
+                        iter.PruneChildren();
+                        continue;
+                    }
+                }
+            }
+
+            if (UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(*iter)) {
+
+                if (adapter->ShouldIgnoreNativeInstanceSubtrees()) {
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                        "[Repopulate] Ignoring instancing of subtree "
+                        "at <%s>\n", iter->GetPath().GetText());
+
+                    primsToPopulateWithoutInstancing.push_back(*iter);
+                    iter.PruneChildren();
+                    continue;
+                }
+
+                // Schedule the prim for population and discovery
+                // of material bindings.
+                //
+                // If we are using full networks, we will populate the 
+                // binding cache that has the strategy to compute the correct
+                // bindings.
+                _PopulateMaterialBindingCache wu = 
+                    { *iter, &_materialBindingCache};
+                 bindingDispatcher.Run(wu);
+                
+                leafPaths.push_back(std::make_pair(*iter, adapter));
+                if (adapter->ShouldCullChildren()) {
+                   TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned "
+                                    "children of <%s> due to adapter\n",
+                            iter->GetPath().GetText());
+                   iter.PruneChildren();
+                }
+            }
+        }
+    }
+
+    // Populate subtrees for adapters that ignore instancing.
+    for (const UsdPrim& prim : primsToPopulateWithoutInstancing) {
+        TF_DEBUG(USDIMAGING_CHANGES).Msg(
+            "[Repopulate] Root path (no instancing): <%s>\n",
+            prim.GetPath().GetText());
+
+        const UsdPrimRange range(
+            prim, UsdTraverseInstanceProxies(_GetDisplayPredicate()));
+
+        for (auto iter = range.begin(); iter != range.end(); ++iter) {
+            if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
+                iter.PruneChildren();
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
+                            "not under root prim path <%s>\n",
+                            iter->GetPath().GetText(),
+                            _rootPrimPath.GetText());
+                continue;
+            }
+            if (excludedSet.find(iter->GetPath()) != excludedSet.end()) {
+                iter.PruneChildren();
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
+                            "due to exclusion list\n",
+                            iter->GetPath().GetText());
+                continue;
+            }
+            if (UsdImagingPrimAdapter::ShouldCullSubtree(*iter)) {
+                iter.PruneChildren();
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
+                            "due to prim type <%s>\n",
+                            iter->GetPath().GetText(),
+                            iter->GetTypeName().GetText());
+                continue;
+            }
+
+            if (UsdImagingPrimAdapterSharedPtr adapter =
+                _AdapterLookup(*iter, /*ignoreInstancing*/ true)) {
                 // Schedule the prim for population and discovery
                 // of material bindings.
                 //

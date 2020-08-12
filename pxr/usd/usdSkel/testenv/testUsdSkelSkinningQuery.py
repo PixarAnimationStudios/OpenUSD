@@ -39,7 +39,8 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         cache = UsdSkel.Cache()
 
         root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        self.assertTrue(cache.Populate(root))
+        self.assertTrue(cache.Populate(
+            root, Usd.PrimDefaultPredicate))
 
         def _GetSkinningQuery(path):
             return cache.GetSkinningQuery(stage.GetPrimAtPath(path))

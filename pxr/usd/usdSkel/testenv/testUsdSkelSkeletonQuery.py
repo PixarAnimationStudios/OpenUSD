@@ -108,7 +108,6 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         # 
 
         skelCache = UsdSkel.Cache()
-        skelCache.Populate(skelRoot)
 
         query = skelCache.GetSkelQuery(skel)
         self.assertTrue(query)
@@ -201,7 +200,6 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         anim.GetPrim().SetActive(False)
 
         skelCache.Clear()
-        skelCache.Populate(skelRoot)
 
         query = skelCache.GetSkelQuery(skel)
 
@@ -219,7 +217,6 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         anim.GetTranslationsAttr().Block()
 
         skelCache.Clear()
-        skelCache.Populate(skelRoot)
 
         query = skelCache.GetSkelQuery(skel)
 

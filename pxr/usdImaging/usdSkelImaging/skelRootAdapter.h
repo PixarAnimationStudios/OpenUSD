@@ -65,6 +65,8 @@ public:
     USDSKELIMAGING_API
     bool CanPopulateUsdInstance() const override { return true; }
 
+    bool ShouldIgnoreNativeInstanceSubtrees() const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
