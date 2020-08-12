@@ -224,7 +224,7 @@ _ComputeExtentForSphere(
     }
 
     double radius;
-    if (!sphereSchema.GetRadiusAttr().Get(&radius)) {
+    if (!sphereSchema.GetRadiusAttr().Get(&radius, time)) {
         return false;
     }
 

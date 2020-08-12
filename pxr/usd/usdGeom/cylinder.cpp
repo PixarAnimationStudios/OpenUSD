@@ -287,17 +287,17 @@ _ComputeExtentForCylinder(
     }
 
     double height;
-    if (!cylinderSchema.GetHeightAttr().Get(&height)) {
+    if (!cylinderSchema.GetHeightAttr().Get(&height, time)) {
         return false;
     }
 
     double radius;
-    if (!cylinderSchema.GetRadiusAttr().Get(&radius)) {
+    if (!cylinderSchema.GetRadiusAttr().Get(&radius, time)) {
         return false;
     }
 
     TfToken axis;
-    if (!cylinderSchema.GetAxisAttr().Get(&axis)) {
+    if (!cylinderSchema.GetAxisAttr().Get(&axis, time)) {
         return false;
     }
 

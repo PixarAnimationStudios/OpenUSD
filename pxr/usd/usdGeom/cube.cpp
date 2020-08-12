@@ -224,7 +224,7 @@ _ComputeExtentForCube(
     }
 
     double size;
-    if (!cubeSchema.GetSizeAttr().Get(&size)) {
+    if (!cubeSchema.GetSizeAttr().Get(&size, time)) {
         return false;
     }
 
