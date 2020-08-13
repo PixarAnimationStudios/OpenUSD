@@ -517,7 +517,7 @@ UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
 bool 
 UsdShadeConnectableAPI::DisconnectSource(UsdAttribute const &shadingAttr)
 {
-    return shadingAttr.BlockConnections();
+    return shadingAttr.SetConnections({});
 }
 
 /* static */

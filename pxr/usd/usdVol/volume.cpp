@@ -221,7 +221,7 @@ UsdVolVolume::BlockFieldRelationship(const TfToken &name) const
     UsdRelationship fieldRel =  GetPrim().GetRelationship(_MakeNamespaced(name));
     
     if (fieldRel){
-        fieldRel.BlockTargets();
+        fieldRel.SetTargets({});
         return true;
     }
     else {

@@ -210,7 +210,7 @@ UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 {
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
-        return rel.BlockTargets();
+        return rel.SetTargets({});
     }
     return false;
 }

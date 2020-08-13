@@ -455,7 +455,7 @@ UsdShadeMaterialBindingAPI::UnbindDirectBinding(
 {
     UsdRelationship bindingRel = GetPrim().CreateRelationship(
         _GetDirectBindingRelName(materialPurpose), /*custom*/ false);
-    return bindingRel && bindingRel.BlockTargets();
+    return bindingRel && bindingRel.SetTargets({});
 }
 
 bool 
@@ -466,7 +466,7 @@ UsdShadeMaterialBindingAPI::UnbindCollectionBinding(
     UsdRelationship collBindingRel = GetPrim().CreateRelationship(
         _GetCollectionBindingRelName(bindingName, materialPurpose), 
         /*custom*/ false);
-    return collBindingRel && collBindingRel.BlockTargets();
+    return collBindingRel && collBindingRel.SetTargets({});
 }
 
 bool
@@ -488,7 +488,7 @@ UsdShadeMaterialBindingAPI::UnbindAllBindings() const
     std::vector<UsdRelationship> result;
     for (const UsdProperty &prop : allBindingProperties) {
         if (UsdRelationship bindingRel = prop.As<UsdRelationship>()) {
-            success = bindingRel.BlockTargets() && success;
+            success = bindingRel.SetTargets({}) && success;
         }
     }
 

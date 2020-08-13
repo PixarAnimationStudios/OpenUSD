@@ -817,10 +817,10 @@ UsdCollectionAPI::BlockCollection() const
 {
     bool success = true;
     if (UsdRelationship includesRel = GetIncludesRel()) {
-        success = includesRel.BlockTargets() && success;  
+        success = includesRel.SetTargets({}) && success;  
     }
     if (UsdRelationship excludesRel = GetExcludesRel()) {
-        success = excludesRel.BlockTargets() && success;
+        success = excludesRel.SetTargets({}) && success;
     }
     return success;    
 }
