@@ -344,7 +344,7 @@ HgiGLOps::SetConstantValues(
         uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
         glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
-        delete dataCopy;
+        delete[] dataCopy;
     };
 }
 
@@ -367,7 +367,7 @@ HgiGLOps::SetConstantValues(
         uint32_t ubo = glProgram->GetUniformBuffer(byteSize);
         glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
-        delete dataCopy;
+        delete[] dataCopy;
     };
 }
 
