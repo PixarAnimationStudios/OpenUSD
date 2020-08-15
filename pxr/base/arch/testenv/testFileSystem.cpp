@@ -141,6 +141,37 @@ int main()
     ARCH_AXIOM(ArchPRead(firstFile, buf2.get(), strlen("written in a"),
                      9/*index of 'written in a'*/) == strlen("written in a"));
     ARCH_AXIOM(memcmp("written in a", buf2.get(), strlen("written in a")) == 0);
+    fclose(firstFile);
+
+#ifdef O_NOATIME
+    // Test ArchOpenFileForReadOnly does not update atime.
+    struct stat statBefore, statAfter;
+    ARCH_AXIOM(stat(firstName.c_str(), &statBefore) == 0);
+
+    int fd = open(firstName.c_str(), O_RDONLY);
+    ARCH_AXIOM(fd > 0);
+    struct timespec times[2];
+    times[0] = statBefore.st_atim;
+    times[0].tv_sec--;
+    times[1].tv_nsec = UTIME_OMIT;
+    ARCH_AXIOM(futimens(fd, times) == 0);
+    close(fd);
+
+    ARCH_AXIOM(stat(firstName.c_str(), &statBefore) == 0);
+
+    ARCH_AXIOM((firstFile = ArchOpenFileForReadOnly(firstName.c_str(), false)) != NULL);
+    ARCH_AXIOM(ArchPRead(firstFile, buf.get(), len, 0) == len);
+    fclose(firstFile);
+    ARCH_AXIOM(stat(firstName.c_str(), &statAfter) == 0);
+    ARCH_AXIOM(statBefore.st_atim.tv_sec == statAfter.st_atim.tv_sec);
+    ARCH_AXIOM(statBefore.st_atim.tv_nsec == statAfter.st_atim.tv_nsec);
+
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
+    ARCH_AXIOM(ArchPRead(firstFile, buf.get(), len, 0) == len);
+    fclose(firstFile);
+    ARCH_AXIOM(stat(firstName.c_str(), &statAfter) == 0);
+    ARCH_AXIOM(statBefore.st_atim.tv_sec != statAfter.st_atim.tv_sec);
+#endif /* O_NOATIME */
 
     // create and remove a tmp subdir
     std::string retpath;
