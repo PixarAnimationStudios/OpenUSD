@@ -286,7 +286,8 @@ std::shared_ptr<ArAsset>
 ArDefaultResolver::OpenAsset(
     const std::string& resolvedPath)
 {
-    FILE* f = ArchOpenFile(resolvedPath.c_str(), "rb");
+    FILE* f = ArchOpenFileForReadOnly(resolvedPath.c_str(), true);
+
     if (!f) {
         return nullptr;
     }

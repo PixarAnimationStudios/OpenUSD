@@ -77,6 +77,20 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
     return fopen(fileName, mode);
 }
 
+FILE* ArchOpenFileForReadOnly(char const* fileName, bool isBinary)
+{
+    char const* mode = isBinary ? "rb" : "r";
+#ifdef O_NOATIME
+    int fd = open(fileName, O_RDONLY | O_NOATIME);
+    if (ARCH_UNLIKELY(fd < 0)) {
+        return nullptr;
+    }
+    return fdopen(fd, mode);
+#else /* O_NOATIME */
+    return fopen(fileName, mode);
+#endif /* O_NOATIME */
+}
+
 #if defined(ARCH_OS_WINDOWS)
 int ArchRmDir(const char* path)
 {

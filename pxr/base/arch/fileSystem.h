@@ -130,6 +130,8 @@ typedef struct stat ArchStatType;
 ///
 ARCH_API FILE*
 ArchOpenFile(char const* fileName, char const* mode);
+ARCH_API FILE*
+ArchOpenFileForReadOnly(char const* fileName, bool isBinary);
 
 #if defined(ARCH_OS_WINDOWS)
 #   define ArchChmod(path, mode)        _chmod(path, mode)
