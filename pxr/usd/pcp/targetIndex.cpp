@@ -485,6 +485,7 @@ PcpBuildFilteredTargetIndex(
 
     SdfPathVector paths;
     PcpErrorVector targetPathErrors;
+    bool hasTargetOpinions = false;
 
     // Walk the property stack from weakest to strongest, applying path list 
     // operations with the appropriate path translations to targetPaths.
@@ -501,6 +502,7 @@ PcpBuildFilteredTargetIndex(
         const SdfPathListOp& pathListOps =
             pathValue.UncheckedGet<SdfPathListOp>();
         if (pathListOps.HasKeys()) {
+            hasTargetOpinions = true;
 
             // If this list op is explicit, its contents will overwrite
             // everything we've composed up to this point. Because of this,
@@ -533,6 +535,7 @@ PcpBuildFilteredTargetIndex(
 
     targetIndex->paths.swap(paths);
     targetIndex->localErrors.swap(targetPathErrors);
+    targetIndex->hasTargetOpinions = hasTargetOpinions;
 }
 
 void

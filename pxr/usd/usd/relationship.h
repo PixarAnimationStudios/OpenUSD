@@ -192,6 +192,12 @@ public:
 
     /// Compose this relationship's targets and fill \p targets with the result.
     /// All preexisting elements in \p targets are lost.
+    /// 
+    /// Returns true if any target path opinions have been authored and no
+    /// composition errors were encountered, returns false otherwise. 
+    /// Note that authored opinions may include opinions that clear the targets 
+    /// and a return value of true does not necessarily indicate that \p targets 
+    /// will contain any target paths.
     ///
     /// See \ref Usd_ScenegraphInstancing_TargetsAndConnections for details on 
     /// behavior when targets point to objects beneath instance prims.
@@ -202,13 +208,22 @@ public:
 
     /// Compose this relationship's \em ultimate targets, taking into account
     /// "relationship forwarding", and fill \p targets with the result.  All
-    /// preexisting elements in \p targets are lost.  This method never inserts
+    /// preexisting elements in \p targets are lost. This method never inserts
     /// relationship paths in \p targets.
     ///
-    /// When composition errors occur, continue to collect successfully
-    /// composed targets, but return false to indicate to the caller that
-    /// errors occurred.
-    ///
+    /// Returns true if any of the visited relationships that are not 
+    /// "purely forwarding" has an authored opinion for its target paths and
+    /// no composition errors were encountered while computing any targets. 
+    /// Purely forwarding, in this context, means the relationship has at least 
+    /// one target but all of its targets are paths to other relationships.
+    /// Note that authored opinions may include opinions that clear the targets 
+    /// and a return value of true does not necessarily indicate that \p targets 
+    /// will not be empty.
+    /// 
+    /// Returns false otherwise. When composition errors occur, this function 
+    /// continues to collect successfully composed targets, but returns false 
+    /// to indicate to the caller that errors occurred.
+    /// 
     /// When a forwarded target cannot be determined, e.g. due to a composition
     /// error, no value is returned for that target; the alternative would be to
     /// return the relationship path at which the forwarded targets could not be
@@ -257,10 +272,11 @@ private:
     bool _GetForwardedTargets(SdfPathVector* targets,
                               bool includeForwardingRels) const;
 
-    bool _GetForwardedTargets(SdfPathSet* visited, 
-                              SdfPathSet* uniqueTargets,
-                              SdfPathVector* targets,
-                              bool includeForwardingRels) const;
+    bool _GetForwardedTargetsImpl(SdfPathSet* visited, 
+                                  SdfPathSet* uniqueTargets,
+                                  SdfPathVector* targets,
+                                  bool *foundAnyErrors,
+                                  bool includeForwardingRels) const;
 
     SdfPath _GetTargetForAuthoring(const SdfPath &targetPath,
                                    std::string* whyNot = 0) const;

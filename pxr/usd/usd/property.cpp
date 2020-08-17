@@ -222,7 +222,8 @@ _MapPath(_PathMap const &map, SdfPath const &path)
 }
 
 bool
-UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
+UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
+                         bool *foundErrors) const
 {
     if (!TF_VERIFY(specType == SdfSpecTypeAttribute ||
                    specType == SdfSpecTypeRelationship)) {
@@ -233,7 +234,6 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
 
     UsdStage *stage = _GetStage();
     PcpErrorVector pcpErrors;
-    std::vector<std::string> otherErrors;
     PcpTargetIndex targetIndex;
     {
         // Our intention is that the following code requires read-only
@@ -297,17 +297,19 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
     }
 
     // TODO: handle errors
-    const bool isClean = pcpErrors.empty() && otherErrors.empty();
+    const bool isClean = pcpErrors.empty();
     if (!isClean) {
-        stage->_ReportErrors(
-            pcpErrors, otherErrors,
+        stage->_ReportPcpErrors(pcpErrors,
             TfStringPrintf(specType == SdfSpecTypeAttribute ?
                            "getting connections for attribute <%s>" :
                            "getting targets for relationship <%s>",
                            GetPath().GetText()));
+        if (foundErrors) {
+            *foundErrors = true;
+        }
     }
 
-    return isClean;
+    return isClean && targetIndex.hasTargetOpinions;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

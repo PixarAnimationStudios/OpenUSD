@@ -281,7 +281,11 @@ protected:
     template <class Derived>
     UsdProperty(_Null<Derived>) : UsdObject(_Null<Derived>()) {}
 
-    bool _GetTargets(SdfSpecType specType, SdfPathVector *out) const;
+    // Gets the targets of the given spec type. Returns true if an authored
+    // opinion is found and no composition errors occured. If foundErrors is
+    // provided, it will be set to true only if errors are encountered.
+    bool _GetTargets(SdfSpecType specType, SdfPathVector *out,
+                     bool *foundErrors = nullptr) const;
     
 private:
     friend class UsdAttribute;
