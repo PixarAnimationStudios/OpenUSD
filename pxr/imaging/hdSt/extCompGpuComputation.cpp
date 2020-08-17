@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
@@ -38,13 +36,46 @@
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hgiGL/shaderProgram.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/glf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static void
+_AppendResourceBindings(
+    HgiResourceBindingsDesc* resourceDesc,
+    HgiBufferHandle const& buffer,
+    uint32_t location)
+{
+    HgiBufferBindDesc bufBind;
+    bufBind.bindingIndex = location;
+    bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
+    bufBind.stageUsage = HgiShaderStageCompute;
+    bufBind.offsets.push_back(0);
+    bufBind.buffers.push_back(buffer);
+    resourceDesc->buffers.push_back(std::move(bufBind));
+}
+
+static HgiComputePipelineSharedPtr
+_CreatePipeline(
+    Hgi* hgi,
+    uint32_t constantValuesSize,
+    HgiShaderProgramHandle const& program)
+{
+    HgiComputePipelineDesc desc;
+    desc.debugName = "ExtComputation";
+    desc.shaderProgram = program;
+    desc.shaderConstantsDesc.byteSize = constantValuesSize;
+    return std::make_shared<HgiComputePipelineHandle>(
+        hgi->CreateComputePipeline(desc));
+}
 
 HdStExtCompGpuComputation::HdStExtCompGpuComputation(
         SdfPath const &id,
@@ -90,21 +121,14 @@ HdStExtCompGpuComputation::Execute(
             "GPU computation '%s' executed for primvars: %s\n",
             _id.GetText(), _GetDebugPrimvarNames(_compPrimvars).c_str());
 
-    if (!glDispatchCompute) {
-        TF_WARN("glDispatchCompute not available");
-        return;
-    }
-
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
     HdStGLSLProgramSharedPtr const &computeProgram = _resource->GetProgram();
     HdSt_ResourceBinder const &binder = _resource->GetResourceBinder();
 
     if (!TF_VERIFY(computeProgram)) {
         return;
     }
-
-    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
-    GLuint kernel = hgiProgram->GetRawResource();
-    glUseProgram(kernel);
 
     HdStBufferArrayRangeSharedPtr outputBar =
         std::static_pointer_cast<HdStBufferArrayRange>(outputRange);
@@ -114,6 +138,10 @@ HdStExtCompGpuComputation::Execute(
     // XXX: We'd really prefer to delegate this to the resource binder.
     std::vector<int32_t> _uniforms;
     _uniforms.push_back(outputBar->GetElementOffset());
+
+    // Generate hash for resource bindings and pipeline.
+    // XXX Needs fingerprint hash to avoid collisions
+    uint64_t rbHash = 0;
 
     // Bind buffers as SSBOs to the indices matching the layout in the shader
     for (HdExtComputationPrimvarDescriptor const &compPrimvar: _compPrimvars) {
@@ -129,8 +157,9 @@ HdStExtCompGpuComputation::Execute(
             _uniforms.push_back(buffer->GetOffset() / componentSize);
             // Assumes non-SSBO allocator for the stride
             _uniforms.push_back(buffer->GetStride() / componentSize);
-            binder.BindBuffer(name, buffer);
-        } 
+
+            rbHash = TfHash::Combine(rbHash, buffer->GetId().Get());
+        }
     }
 
     for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
@@ -155,70 +184,102 @@ HdStExtCompGpuComputation::Execute(
                 //    buffer->GetStride() / buffer->GetComponentSize());
                 // This is correct for the SSBO allocator only
                 _uniforms.push_back(HdGetComponentCount(tupleType.type));
-                binder.BindBuffer(name, buffer);
+
+                if (binding.GetType() != HdBinding::SSBO) {
+                    TF_RUNTIME_ERROR(
+                        "Unsupported binding type %d for ExtComputation",
+                        binding.GetType());
+                }
+
+                rbHash = TfHash::Combine(rbHash, buffer->GetId().Get());
             }
         }
     }
-    
+
+    Hgi* hgi = hdStResourceRegistry->GetHgi();
+
     // Prepare uniform buffer for GPU computation
-    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
-    // GfxCmds.
     const size_t uboSize = sizeof(int32_t) * _uniforms.size();
-    HgiGLShaderProgram * const hgiGLProgram =
-        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
-    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER,
-            uboSize,
-            &_uniforms[0],
-            GL_STATIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    uint64_t pHash = (uint64_t) TfHash::Combine(
+        computeProgram->GetProgram().Get(),
+        uboSize);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-
-    glDispatchCompute((GLuint)GetDispatchCount(), 1, 1);
-    GLF_POST_PENDING_GL_ERRORS();
-
-    // For now we make sure the computation finishes right away.
-    // Figure out if sync or async is the way to go.
-    // Assuming SSBOs for the output
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    // Unbind.
-    // XXX this should go away once we use a graphics abstraction
-    // as that would take care of cleaning state.
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
-    for (HdStBufferResourceNamedPair const & it: outputBar->GetResources()) {
-        TfToken const &name = it.first;
-        HdStBufferResourceSharedPtr const &buffer = it.second;
-
-        HdBinding const &binding = binder.GetBinding(name);
-        // XXX we need a better way than this to pick
-        // which buffers to bind on the output.
-        // No guarantee that we are hiding buffers that
-        // shouldn't be written to for example.
-        if (binding.IsValid()) {
-            binder.UnbindBuffer(name, buffer);
-        } 
+    // Get or add pipeline in registry.
+    HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
+        hdStResourceRegistry->RegisterComputePipeline(pHash);
+    if (computePipelineInstance.IsFirstInstance()) {
+        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+            hgi, uboSize, computeProgram->GetProgram());
+        computePipelineInstance.SetValue(pipe);
     }
-    for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
-        HdStBufferArrayRangeSharedPtr const & inputBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(input);
 
-        for (HdStBufferResourceNamedPair const & it:
-                        inputBar->GetResources()) {
-            TfToken const &name = it.first;
-            HdStBufferResourceSharedPtr const &buffer = it.second;
+    HgiComputePipelineSharedPtr const& pipelinePtr =
+        computePipelineInstance.GetValue();
+    HgiComputePipelineHandle pipeline = *pipelinePtr.get();
+
+    // Get or add resource bindings in registry.
+    HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
+        hdStResourceRegistry->RegisterResourceBindings(rbHash);
+    if (resourceBindingsInstance.IsFirstInstance()) {
+        // Begin the resource set
+        HgiResourceBindingsDesc resourceDesc;
+        resourceDesc.debugName = "ExtComputation";
+
+        for (HdExtComputationPrimvarDescriptor const& compPvar: _compPrimvars) {
+            TfToken const & name = compPvar.sourceComputationOutputName;
+            HdStBufferResourceSharedPtr const & buffer =
+                    outputBar->GetResource(compPvar.name);
 
             HdBinding const &binding = binder.GetBinding(name);
-            // These should all be valid as they are required inputs
-            if (TF_VERIFY(binding.IsValid())) {
-                binder.UnbindBuffer(name, buffer);
+            // These should all be valid as they are required outputs
+            if (TF_VERIFY(binding.IsValid()) && TF_VERIFY(buffer->GetId())) {
+                _AppendResourceBindings(
+                    &resourceDesc, buffer->GetId(), binding.GetLocation());
             }
         }
+
+        for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()){
+            HdStBufferArrayRangeSharedPtr const & inputBar =
+                std::static_pointer_cast<HdStBufferArrayRange>(input);
+
+            for (HdStBufferResourceNamedPair const & it:
+                            inputBar->GetResources()) {
+                TfToken const &name = it.first;
+                HdStBufferResourceSharedPtr const &buffer = it.second;
+
+                HdBinding const &binding = binder.GetBinding(name);
+                // These should all be valid as they are required inputs
+                if (TF_VERIFY(binding.IsValid())) {
+                    _AppendResourceBindings(
+                        &resourceDesc, buffer->GetId(), binding.GetLocation());
+                }
+            }
+        }
+
+        HgiResourceBindingsSharedPtr rb =
+            std::make_shared<HgiResourceBindingsHandle>(
+                hgi->CreateResourceBindings(resourceDesc));
+        
+        resourceBindingsInstance.SetValue(rb);
     }
 
-    glUseProgram(0);
+    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+        resourceBindingsInstance.GetValue();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+
+    HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
+
+    computeCmds->PushDebugGroup("ExtComputation");
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(pipeline);
+
+    computeCmds->SetConstantValues(pipeline, 0, uboSize, &_uniforms[0]);
+
+    // dispatch compute kernel
+    computeCmds->Dispatch(GetDispatchCount(), 1);
+
+    computeCmds->PopDebugGroup();
+    hgi->SubmitCmds(computeCmds.get());
 }
 
 void
