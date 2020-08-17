@@ -678,6 +678,16 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         if (bindingType != HdBinding::PRIMVAR_REDIRECT) {
             _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
         }
+
+        // For any texture shader parameter we also emit the texture 
+        // coordinates associated with it
+        if (bindingType == HdBinding::TEXTURE_2D ||
+            bindingType == HdBinding::BINDLESS_TEXTURE_2D ||
+            bindingType == HdBinding::TEXTURE_UDIM_ARRAY || 
+            bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
+            _genCommon
+                << "#define HD_HAS_COORD_" << it->second.name << " 1\n";
+        }
     }
 
     // mixin shaders
@@ -1479,25 +1489,35 @@ static void _EmitTextureAccessors(
             << "#endif\n";
     }
 
+    // Create accessor for texture coordinates based on texture param name
+    // vec2 HdGetCoord_name(int localIndex)
+    accessors
+        << "vec" << dim << " HdGetCoord_" << name << "(int localIndex) {\n"
+        << "  return \n";
+    if (!inPrimvars.empty()) {
+        accessors 
+            << "#if defined(HD_HAS_" << inPrimvars[0] <<")\n"
+            << "  HdGet_" << inPrimvars[0] << "(localIndex).xy\n"
+            << "#else\n"
+            << "  vec" << dim << "(0.0)\n"
+            << "#endif\n";
+    } else {
+        accessors
+            << "  vec" << dim << "(0.0)\n";
+    }
+    accessors << ";}\n"; 
+
+    // vec2 HdGetCoord_name()
+    accessors
+        << "vec" << dim << " HdGetCoord_" << name << "() {"
+        << "  return HdGetCoord_" << name << "(0); }\n";
+
     // vec4 HdGet_name(int localIndex)
     accessors
         << _GetUnpackedType(dataType, false)
         << " HdGet_" << name
-        << "(int localIndex) { return HdGet_" << name << "(";
-    if (!inPrimvars.empty()) {
-        accessors
-            << "\n"
-            << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
-            << "HdGet_" << inPrimvars[0]
-            << "(localIndex).xy\n"
-            << "#else\n"
-            << "vec" << dim << "(0.0)\n"
-            << "#endif\n";
-    } else {
-        accessors
-            << "vec" << dim << "(0.0)";
-    }
-    accessors << "); }\n";
+        << "(int localIndex) { return HdGet_" << name << "("
+        << "HdGetCoord_" << name << "(localIndex)); }\n";
 
     // vec4 HdGet_name()
     accessors
@@ -2960,6 +2980,24 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << HdStTokens->bias  << "()\n"
                 << "#endif\n"
                 << "  )" << swizzle << ";\n}\n";
+                    
+            // Create accessor for texture coordinates based on param name
+            // vec2 HdGetCoord_name()
+            accessors
+                << "vec2 HdGetCoord_" << it->second.name << "() {\n"
+                << "  return \n";
+            if (!it->second.inPrimvars.empty()) {
+                accessors 
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] <<")\n"
+                    << "  HdGet_" << it->second.inPrimvars[0] << "().xy;\n"
+                    << "#else\n"
+                    << "  vec2(0.0, 0.0)\n"
+                    << "#endif\n";
+            } else {
+                accessors
+                    << "  vec2(0.0, 0.0)\n";
+            }
+            accessors << "; }\n";  
 
             // Emit pre-multiplication by alpha indicator
             if (it->second.isPremultiplied) {
@@ -3030,31 +3068,36 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "#endif\n"
                 << "  )" << swizzle << ";\n}\n";
 
-            // vec4 HdGet_name() { return HdGet_name(HdGet_st().xy); }
+            // Create accessor for texture coordinates based on param name
+            // vec2 HdGetCoord_name()
             accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "() { return HdGet_" << it->second.name << "(";
+                << "vec2 HdGetCoord_" << it->second.name << "() {\n"
+                << "  return \n";
             if (!it->second.inPrimvars.empty()) {
-                accessors
-                    << "\n"
-                    << "#if defined(HD_HAS_"
-                    << it->second.inPrimvars[0] << ")\n"
-                    << "HdGet_" << it->second.inPrimvars[0] << "().xy\n"
+                accessors 
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] <<")\n"
+                    << "  HdGet_" << it->second.inPrimvars[0] << "().xy\n"
                     << "#else\n"
-                    << "vec2(0.0, 0.0)\n"
+                    << "  vec2(0.0, 0.0)\n"
                     << "#endif\n";
             } else {
                 accessors
-                    << "vec2(0.0, 0.0)";
+                    << "  vec2(0.0, 0.0)\n";
             }
-            accessors << "); }\n";
+            accessors << "; }\n";
+
+            // vec4 HdGet_name() { return HdGet_name(HdGetCoord_name()); }
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name
+                << "() { return HdGet_" << it->second.name << "("
+                << "HdGetCoord_" << it->second.name << "()); }\n";
 
             // Emit pre-multiplication by alpha indicator
             if (it->second.isPremultiplied) {
                 accessors 
                     << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
-            }  
+            }
         } else if (bindingType == HdBinding::TEXTURE_UDIM_LAYOUT) {
             declarations
                 << LayoutQualifier(it->first)
