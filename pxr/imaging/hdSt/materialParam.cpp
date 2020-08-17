@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdSt_MaterialParam::HdSt_MaterialParam()
     : paramType(ParamTypeFallback)
     , textureType(HdTextureType::Uv)
+    , isPremultiplied(false)
 {
 }
 
