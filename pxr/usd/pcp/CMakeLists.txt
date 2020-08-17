@@ -1462,6 +1462,13 @@ pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection_pcp.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt
+    DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt 
+)
+
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyConnectionToRelocatedAttribute/root.sdf" 
