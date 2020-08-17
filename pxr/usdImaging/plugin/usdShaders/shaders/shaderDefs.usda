@@ -54,11 +54,11 @@ def Shader "UsdPreviewSurface" (
     float inputs:metallic = 0.0 (
         doc = """Used only in the metalness workflow.
             1 for metallic surfaces and 0 for non-metallic.
-            - If metallic is 1, then F0 (reflectivity at 0 degree incidence)
-            will be derived from ior ( (1-ior)/(1+ior) )^2, then multiplied by Albedo;
-            while edge F90 reflectivity will simply be the Albedo.
-            (As an option, you can put ior to 0 such that F0 comes equal to F90 and thus the Albedo).
-            - If metallic is 0, then Albedo is ignored; F0 is derived from ior and F90 is white.
+            - If metallic is 1, then both F0 (reflectivity at 0 degree 
+            incidence) and edge F90 reflectivity will simply be the Albedo.
+            - If metallic is 0, then Albedo is ignored in the calculation of F0
+            and F90; F0 is derived from ior via ( (1-ior)/(1+ior) )^2 and F90 is
+            white. 
             In between, we interpolate."""
     )
  

@@ -103,7 +103,7 @@ shader UsdPreviewSurfaceParameters
         float metal = clamp(metallic, 0.0, 1.0); 
         color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
         float r = (1.0 - ior) / (1.0 + ior);
-        specularFaceColorOut = r * r * spec;
+        specularFaceColorOut = mix(r * r * spec, spec, metal);
         specularEdgeColorOut = spec;
 
         diffuseGainOut *= 1.0 - metal;

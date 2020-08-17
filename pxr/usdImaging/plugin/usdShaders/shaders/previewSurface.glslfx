@@ -214,7 +214,7 @@ evaluateLight(
         if (!useSpecularWorkflow) {
             float R = (1.0 - ior) / (1.0 + ior);
             vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = mix(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse
@@ -297,7 +297,7 @@ evaluateIndirectLighting(
     if (!useSpecularWorkflow) {
         float R = (1.0 - ior) / (1.0 + ior);
         vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
-        F0  = R * R * specColor;
+        F0 = mix(R * R * specColor, specColor, metallic);
         F90 = specColor;
 
         // For metallic workflows, pure metals have no diffuse
