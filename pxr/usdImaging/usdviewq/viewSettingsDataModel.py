@@ -128,6 +128,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._displayRender = self.stateProperty("displayRender", default=False)
         self._displayPrimId = self.stateProperty("displayPrimId", default=False)
         self._enableSceneMaterials = self.stateProperty("enableSceneMaterials", default=True)
+        self._enableSceneLights = self.stateProperty("enableSceneLights", default=True)
         self._cullBackfaces = self.stateProperty("cullBackfaces", default=False)
         self._showInactivePrims = self.stateProperty("showInactivePrims", default=True)
         self._showAllMasterPrims = self.stateProperty("showAllMasterPrims", default=False)
@@ -180,6 +181,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["displayRender"] = self._displayRender
         state["displayPrimId"] = self._displayPrimId
         state["enableSceneMaterials"] = self._enableSceneMaterials
+        state["enableSceneLights"] = self._enableSceneLights
         state["cullBackfaces"] = self._cullBackfaces
         state["showInactivePrims"] = self._showInactivePrims
         state["showAllMasterPrims"] = self._showAllMasterPrims
@@ -403,6 +405,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def enableSceneMaterials(self, value):
         self._enableSceneMaterials = value
+
+    @property
+    def enableSceneLights(self):
+        return self._enableSceneLights
+
+    @enableSceneLights.setter
+    @visibleViewSetting
+    def enableSceneLights(self, value):
+        self._enableSceneLights = value
 
     @property
     def cullBackfaces(self):

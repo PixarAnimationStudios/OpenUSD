@@ -125,10 +125,15 @@ public:
     void SetHasShadow(bool hasShadow);
 
     GLF_API
+    bool HasIntensity() const;
+    GLF_API
+    void SetHasIntensity(bool hasIntensity);
+
+    GLF_API
     bool IsCameraSpaceLight() const;
     GLF_API
-    void SetIsCameraSpaceLight(bool isCameraSpaceLight);
 
+    void SetIsCameraSpaceLight(bool isCameraSpaceLight);
     GLF_API
     SdfPath const & GetID() const;
     GLF_API
@@ -166,6 +171,7 @@ private:
     float _spotFalloff;
     GfVec3f _attenuation;
     bool _isCameraSpaceLight;
+    bool _hasIntensity;
 
     bool _hasShadow;
     int _shadowResolution;

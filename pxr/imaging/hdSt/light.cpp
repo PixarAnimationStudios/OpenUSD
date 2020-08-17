@@ -71,8 +71,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Create the Glf Simple Light object that will be used by the rest
     // of the pipeline. No support for shadows for this translated light.
     GlfSimpleLight l;
+    l.SetHasIntensity(intensity != 0.0f);
     l.SetPosition(p);
     l.SetDiffuse(c);
+    l.SetSpecular(l.GetSpecular() * intensity);
     l.SetHasShadow(false);
     return l;
 }

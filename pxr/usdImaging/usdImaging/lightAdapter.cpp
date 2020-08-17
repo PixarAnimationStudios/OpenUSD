@@ -173,4 +173,13 @@ UsdImagingLightAdapter::MarkVisibilityDirty(UsdPrim const& prim,
     // TBD
 }
 
+void
+UsdImagingLightAdapter::MarkLightParamsDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    static const HdDirtyBits paramsDirty = HdLight::DirtyParams;
+    index->MarkSprimDirty(cachePath, paramsDirty);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

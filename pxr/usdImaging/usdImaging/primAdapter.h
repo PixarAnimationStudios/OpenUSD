@@ -243,6 +243,11 @@ public:
                                    UsdImagingIndexProxy* index);
 
     USDIMAGING_API
+    virtual void MarkLightParamsDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
+    USDIMAGING_API
     virtual void MarkWindowPolicyDirty(UsdPrim const& prim,
                                        SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index);

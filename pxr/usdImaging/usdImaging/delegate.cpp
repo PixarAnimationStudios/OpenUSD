@@ -134,6 +134,7 @@ UsdImagingDelegate::UsdImagingDelegate(
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
     , _sceneMaterialsEnabled(true)
+    , _sceneLightsEnabled(true)
     , _appWindowPolicy(CameraUtilMatchVertically)
     , _coordSysEnabled(parentIndex
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
@@ -1621,6 +1622,28 @@ UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 }
 
 void
+UsdImagingDelegate::SetSceneLightsEnabled(bool enable)
+{
+    if (_sceneLightsEnabled != enable)
+    {
+        _sceneLightsEnabled = enable;
+
+        UsdImagingIndexProxy indexProxy(this, nullptr);
+
+        // XXX: Need to unfortunately go through all prim info entries to
+        // propagate dirtyness to gprims.
+        for (auto& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath = pair.first;
+            _HdPrimInfo &primInfo = pair.second;
+            if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+                primInfo.adapter->MarkLightParamsDirty(primInfo.usdPrim, 
+                                                       cachePath, &indexProxy);
+            }
+        }
+    }
+}
+
+void
 UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 {
     if (_appWindowPolicy != policy) {
@@ -2742,6 +2765,9 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     } else if (paramName == HdTokens->shadowLink) {
         UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(shadowLink));
+    } else if (paramName == HdLightTokens->intensity && !_sceneLightsEnabled ) {
+        // return 0.0 intensity if scene lights are not enabled
+        return VtValue(0.0f);
     }
 
     // Fallback to USD attributes.

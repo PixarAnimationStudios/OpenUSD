@@ -1388,7 +1388,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>25</height>
+     <height>29</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1638,6 +1638,7 @@
     <addaction name="actionRollover_Prim_Info"/>
     <addaction name="separator"/>
     <addaction name="actionEnable_Scene_Materials"/>
+    <addaction name="actionEnable_Scene_Lights"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
    </widget>
@@ -2355,6 +2356,17 @@
    </property>
    <property name="text">
     <string>Enable Scene Materials</string>
+   </property>
+  </action>
+  <action name="actionEnable_Scene_Lights">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Enable Scene Lights</string>
    </property>
   </action>
   <action name="actionShow_Inactive_Prims">

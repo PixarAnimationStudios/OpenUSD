@@ -141,6 +141,7 @@ struct HdxRenderTaskParams
         , enableIdRender(false)
         , alphaThreshold(0.0)
         , enableSceneMaterials(true)
+        , enableSceneLights(true)
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
@@ -181,6 +182,7 @@ struct HdxRenderTaskParams
     bool enableIdRender;
     float alphaThreshold;
     bool enableSceneMaterials;
+    bool enableSceneLights;
 
     // Depth Bias Raster State
     // When use default is true - state
