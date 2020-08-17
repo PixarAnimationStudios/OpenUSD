@@ -41,7 +41,6 @@
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
 #include "pxr/imaging/hio/glslfx.h"
-#include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -98,18 +97,18 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
     , _nonUniformAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>(this))
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
     , _nonUniformImmutableAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>(this))
+        std::make_unique<HdStVBOMemoryManager>(_hgi))
     // default aggregation strategy for uniform on UBO (for globals)
     , _uniformUboAggregationStrategy(
-        std::make_unique<HdStInterleavedUBOMemoryManager>(this))
+        std::make_unique<HdStInterleavedUBOMemoryManager>(_hgi))
     // default aggregation strategy for uniform on SSBO (for primvars)
     , _uniformSsboAggregationStrategy(
-        std::make_unique<HdStInterleavedSSBOMemoryManager>(this))
+        std::make_unique<HdStInterleavedSSBOMemoryManager>(_hgi))
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
-        std::make_unique<HdStVBOSimpleMemoryManager>(this))
+        std::make_unique<HdStVBOSimpleMemoryManager>(_hgi))
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
 {
 }
@@ -487,7 +486,7 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 {
     HdStDispatchBufferSharedPtr const result =
         std::make_shared<HdStDispatchBuffer>(
-            this, role, count, commandNumUints);
+            _hgi, role, count, commandNumUints);
 
     _dispatchBufferRegistry.push_back(result);
 
@@ -676,51 +675,6 @@ std::ostream &operator <<(
     return out;
 }
 
-HgiComputeCmds*
-HdStResourceRegistry::GetComputeCmds()
-{
-    // Metal can only have one encoder active per command buffer.
-    // Since BlitCmds and ComputeCmds use the same Metal command buffer we
-    // must submit any recorded blit work before starting compute work.
-    if (_blitCmds) {
-        _hgi->SubmitCmds(_blitCmds.get());
-        _blitCmds.reset();
-    }
-    if (!_computeCmds) {
-        _computeCmds = _hgi->CreateComputeCmds();
-    }
-    return _computeCmds.get();
-}
-
-HgiBlitCmds*
-HdStResourceRegistry::GetBlitCmds()
-{
-    // Metal can only have one encoder active per command buffer.
-    // Since BlitCmds and ComputeCmds use the same Metal command buffer we
-    // must submit any recorded compute work before starting blit work.
-    if (_computeCmds) {
-        _hgi->SubmitCmds(_computeCmds.get());
-        _computeCmds.reset();
-    }
-    if (!_blitCmds) {
-        _blitCmds = _hgi->CreateBlitCmds();
-    }
-    return _blitCmds.get();
-}
-
-void HdStResourceRegistry::SubmitHgiWork()
-{
-    // Submit the work queued by the computations
-    if (_blitCmds) {
-        _hgi->SubmitCmds(_blitCmds.get());
-        _blitCmds.reset();
-    }
-    if (_computeCmds) {
-        _hgi->SubmitCmds(_computeCmds.get());
-        _computeCmds.reset();
-    }
-}
-
 void
 HdStResourceRegistry::_CommitTextures()
 {
@@ -900,8 +854,6 @@ HdStResourceRegistry::_Commit()
         }
     }
 
-    SubmitHgiWork();
-
     // release sources
     WorkParallelForEach(_pendingSources.begin(), _pendingSources.end(),
                         [](_PendingSource &ps) {
@@ -984,8 +936,6 @@ HdStResourceRegistry::_GarbageCollect()
     _uniformUboBufferArrayRegistry.GarbageCollect();
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
-
-    SubmitHgiWork();
 }
 
 void

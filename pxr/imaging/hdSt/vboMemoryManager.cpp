@@ -64,14 +64,14 @@ HdStVBOMemoryManager::CreateBufferArray(
     HdBufferArrayUsageHint usageHint)
 {
     return std::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
-        _resourceRegistry, role, bufferSpecs, usageHint);
+        _hgi, role, bufferSpecs, usageHint);
 }
 
 
 HdBufferArrayRangeSharedPtr
 HdStVBOMemoryManager::CreateBufferArrayRange()
 {
-    return std::make_shared<_StripedBufferArrayRange>(_resourceRegistry);
+    return std::make_shared<_StripedBufferArrayRange>(_hgi);
 }
 
 
@@ -147,12 +147,12 @@ HdStVBOMemoryManager::GetResourceAllocation(
 //  _StripedBufferArray
 // ---------------------------------------------------------------------------
 HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
-    HdStResourceRegistry* resourceRegistry,
+    Hgi* hgi,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
     : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, usageHint),
-      _resourceRegistry(resourceRegistry),
+      _hgi(hgi),
       _needsCompaction(false),
       _totalCapacity(0),
       _maxBytesPerElement(0)
@@ -326,8 +326,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
 
     _totalCapacity = totalNumElements;
     
-    Hgi* hgi = _resourceRegistry->GetHgi();
-    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
 
     // resize each BufferResource
     HdStBufferResourceNamedList const& resources = GetResources();
@@ -352,7 +351,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             HgiBufferDesc bufDesc;
             bufDesc.usage = HgiBufferUsageUniform;
             bufDesc.byteSize = bufferSize;
-            newId = hgi->CreateBuffer(bufDesc);
+            newId = _hgi->CreateBuffer(bufDesc);
         }
 
         // if old and new buffer exist, copy unchanged data
@@ -399,11 +398,11 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             }
 
             // buffer copy
-            relocator.Commit(blitCmds);
+            relocator.Commit(_hgi);
         }
         if (oldId) {
             // delete old buffer
-            hgi->DestroyBuffer(&oldId);
+            _hgi->DestroyBuffer(&oldId);
         }
 
         // update id of buffer resource
@@ -426,14 +425,15 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
 
     // increment version to rebuild dispatch buffers.
     IncrementVersion();
+
+    _hgi->SubmitCmds(blitCmds.get());
 }
 
 void
 HdStVBOMemoryManager::_StripedBufferArray::_DeallocateResources()
 {
-    Hgi* hgi = _resourceRegistry->GetHgi();
     TF_FOR_ALL (it, GetResources()) {
-        hgi->DestroyBuffer(&it->second->GetId());
+        _hgi->DestroyBuffer(&it->second->GetId());
     }
 }
 
@@ -666,8 +666,9 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
+    _hgi->SubmitCmds(blitCmds.get());
 }
 
 int

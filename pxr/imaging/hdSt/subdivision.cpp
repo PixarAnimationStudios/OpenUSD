@@ -22,11 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
-
 
 #include <opensubdiv/version.h>
 
@@ -183,11 +181,6 @@ HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
     HdSt_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return;
 
-    // Flush Hgi work to GPU before calling into OpenSubdiv
-    HdStResourceRegistry* hdStResourceRegistry =
-        static_cast<HdStResourceRegistry*>(resourceRegistry);
-    hdStResourceRegistry->SubmitHgiWork();
-    
     subdivision->RefineGPU(range, _name);
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineGPU);

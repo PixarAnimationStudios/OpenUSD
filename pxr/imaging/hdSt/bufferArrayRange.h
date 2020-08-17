@@ -36,7 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdBufferArrayGL;
-class HdStResourceRegistry;
 
 using HdStBufferArrayRangeSharedPtr = 
     std::shared_ptr<class HdStBufferArrayRange>;
@@ -59,8 +58,6 @@ using HdStBufferResourceNamedList =
 class HdStBufferArrayRange : public HdBufferArrayRange 
 {
 public:
-    HdStBufferArrayRange(HdStResourceRegistry* resourceRegistry);
-
     /// Destructor (do nothing).
     /// The specialized range class may want to do something for garbage
     /// collection in its destructor. However, be careful not do any
@@ -82,12 +79,6 @@ public:
     /// Sets the bufferSpecs for all resources.
     HDST_API
     virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const override;
-    
-protected:
-    HdStResourceRegistry* GetResourceRegistry();
-    
-private:
-    HdStResourceRegistry* _resourceRegistry;
 };
 
 HDST_API

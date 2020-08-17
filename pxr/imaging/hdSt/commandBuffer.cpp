@@ -89,9 +89,6 @@ HdStCommandBuffer::PrepareDraw(
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(renderPassState, resourceRegistry);
     }
-
-    // Submit work recorded during PrepareDraw (e.g. dispatch buffer copying).
-    resourceRegistry->SubmitHgiWork();
 }
 
 void

@@ -24,8 +24,6 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -37,13 +35,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 class Hd_DispatchBufferArrayRange : public HdStBufferArrayRange {
 public:
     /// Constructor.
-    Hd_DispatchBufferArrayRange(
-        HdStResourceRegistry* resourceRegistry, HdStDispatchBuffer *buffer)
-        : HdStBufferArrayRange(resourceRegistry)
-        , _buffer(buffer) {
+    Hd_DispatchBufferArrayRange(HdStDispatchBuffer *buffer) :
+        _buffer(buffer) {
     }
 
     /// Returns true if this range is valid
@@ -168,13 +165,10 @@ private:
 };
 
 
-HdStDispatchBuffer::HdStDispatchBuffer(
-    HdStResourceRegistry* resourceRegistry,
-    TfToken const &role,
-    int count,
-    unsigned int commandNumUints)
+HdStDispatchBuffer::HdStDispatchBuffer(Hgi* hgi, TfToken const &role, int count,
+                                   unsigned int commandNumUints)
  : HdBufferArray(role, TfToken(), HdBufferArrayUsageHint())
- , _resourceRegistry(resourceRegistry)
+ , _hgi(hgi)
  , _count(count)
  , _commandNumUints(commandNumUints)
 {
@@ -188,7 +182,7 @@ HdStDispatchBuffer::HdStDispatchBuffer(
     HgiBufferDesc bufDesc;
     bufDesc.usage = HgiBufferUsageUniform;
     bufDesc.byteSize = dataSize;
-    HgiBufferHandle newId = _resourceRegistry->GetHgi()->CreateBuffer(bufDesc);
+    HgiBufferHandle newId = _hgi->CreateBuffer(bufDesc);
 
     // monolithic resource
     _entireResource = HdStBufferResourceSharedPtr(
@@ -199,14 +193,13 @@ HdStDispatchBuffer::HdStDispatchBuffer(
 
     // create a buffer array range, which aggregates all views
     // (will be added by AddBufferResourceView)
-    _bar = HdStBufferArrayRangeSharedPtr(
-        new Hd_DispatchBufferArrayRange(resourceRegistry, this));
+    _bar = HdStBufferArrayRangeSharedPtr(new Hd_DispatchBufferArrayRange(this));
 }
 
 HdStDispatchBuffer::~HdStDispatchBuffer()
 {
     HgiBufferHandle& id = _entireResource->GetId();
-    _resourceRegistry->GetHgi()->DestroyBuffer(&id);
+    _hgi->DestroyBuffer(&id);
     _entireResource->SetAllocation(HgiBufferHandle(), 0);
 }
 
@@ -216,10 +209,8 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
-    HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
-
     // Use blit op to copy over the data.
-    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
     HgiBufferCpuToGpuOp blitOp;
     blitOp.byteSize = _entireResource->GetSize();
     blitOp.cpuSourceBuffer = data.data();
@@ -227,6 +218,7 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     blitOp.gpuDestinationBuffer = _entireResource->GetId();
     blitOp.destinationByteOffset = 0;
     blitCmds->CopyBufferCpuToGpu(blitOp);
+    _hgi->SubmitCmds(blitCmds.get());
 }
 
 void

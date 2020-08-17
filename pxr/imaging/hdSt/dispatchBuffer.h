@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStResourceRegistry;
+class Hgi;
 
 using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 
@@ -92,10 +92,8 @@ class HdStDispatchBuffer : public HdBufferArray {
 public:
     /// Constructor. commandNumUints is given in how many integers.
     HDST_API
-    HdStDispatchBuffer(HdStResourceRegistry* _resourceRegistry,
-                       TfToken const &role,
-                       int count,
-                       unsigned int commandNumUints);
+    HdStDispatchBuffer(Hgi* hgi, TfToken const &role, int count,
+                     unsigned int commandNumUints);
 
     /// Destructor.
     HDST_API
@@ -162,7 +160,7 @@ protected:
                                                int stride);
 
 private:
-    class HdStResourceRegistry *_resourceRegistry;
+    class Hgi *_hgi;
     int _count;
     unsigned int _commandNumUints;
     HdStBufferResourceNamedList _resourceList;

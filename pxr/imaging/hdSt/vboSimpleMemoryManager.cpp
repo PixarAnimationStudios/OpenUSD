@@ -65,14 +65,13 @@ HdStVBOSimpleMemoryManager::CreateBufferArray(
     HdBufferArrayUsageHint usageHint)
 {
     return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
-        _resourceRegistry, role, bufferSpecs, usageHint);
+        _hgi, role, bufferSpecs, usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
 HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
 {
-    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>
-                (_resourceRegistry);
+    return std::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>(_hgi);
 }
 
 HdAggregationStrategy::AggregationId
@@ -142,12 +141,12 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
 //  _SimpleBufferArray
 // ---------------------------------------------------------------------------
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
-    HdStResourceRegistry* resourceRegistry,
+    Hgi* hgi,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
  : HdBufferArray(role, TfToken(), usageHint)
- , _resourceRegistry(resourceRegistry)
+ , _hgi(hgi)
  , _capacity(0)
  , _maxBytesPerElement(0)
 {
@@ -280,8 +279,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     int numElements = range->GetNumElements();
 
     // Use blit work to record resource copy commands.
-    Hgi* hgi = _resourceRegistry->GetHgi();
-    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
     
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceSharedPtr const &bres = bresIt->second;
@@ -298,7 +296,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             HgiBufferDesc bufDesc;
             bufDesc.byteSize = bufferSize;
             bufDesc.usage = HgiBufferUsageUniform;
-            newId = hgi->CreateBuffer(bufDesc);
+            newId = _hgi->CreateBuffer(bufDesc);
         }
 
         // copy the range. There are three cases:
@@ -330,11 +328,13 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
         // delete old buffer
         if (oldId) {
-            hgi->DestroyBuffer(&oldId);
+            _hgi->DestroyBuffer(&oldId);
         }
 
         bres->SetAllocation(newId, bufferSize);
     }
+
+    _hgi->SubmitCmds(blitCmds.get());
 
     _capacity = numElements;
     _needsReallocation = false;
@@ -353,9 +353,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetMaxNumElements() const
 void
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
 {
-    Hgi* hgi = _resourceRegistry->GetHgi();
     TF_FOR_ALL (it, GetResources()) {
-        hgi->DestroyBuffer(&it->second->GetId());
+        _hgi->DestroyBuffer(&it->second->GetId());
     }
 }
 
@@ -467,8 +466,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
+    _hgi->SubmitCmds(blitCmds.get());
 }
 
 VtValue

@@ -56,7 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdBufferArrayRangeSharedPtr
 HdStInterleavedMemoryManager::CreateBufferArrayRange()
 {
-    return std::make_shared<_StripedInterleavedBufferRange>(_resourceRegistry);
+    return std::make_shared<_StripedInterleavedBufferRange>(_hgi);
 }
 
 /// Returns the buffer specs from a given buffer array
@@ -121,7 +121,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            _resourceRegistry,
+            _hgi,
             role,
             bufferSpecs,
             usageHint,
@@ -160,7 +160,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            _resourceRegistry,
+            _hgi,
             role,
             bufferSpecs,
             usageHint,
@@ -226,7 +226,7 @@ _ComputeAlignment(HdTupleType tupleType)
 }
 
 HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer(
-    HdStResourceRegistry* resourceRegistry,
+    Hgi* hgi,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint,
@@ -235,7 +235,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     size_t maxSize = 0,
     TfToken const &garbageCollectionPerfToken = HdPerfTokens->garbageCollectedUbo)
     : HdBufferArray(role, garbageCollectionPerfToken, usageHint),
-      _resourceRegistry(resourceRegistry),
+      _hgi(hgi),
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
@@ -427,14 +427,12 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         curRangeOwner_->GetResources().begin()->second->GetId();
     HgiBufferHandle newId;
 
-    Hgi* hgi = _resourceRegistry->GetHgi();
-    
     // Skip buffers of zero size.
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = totalSize;
         bufDesc.usage = HgiBufferUsageUniform;
-        newId = hgi->CreateBuffer(bufDesc);
+        newId = _hgi->CreateBuffer(bufDesc);
     }
 
     // if old and new buffer exist, copy unchanged data
@@ -443,8 +441,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
         size_t rangeCount = GetRangeCount();
 
-        HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
-        
         // pre-pass to combine consecutive buffer range relocation
         HdStBufferRelocator relocator(curId, newId);
         for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
@@ -470,7 +466,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         }
 
         // buffer copy
-        relocator.Commit(blitCmds);
+        relocator.Commit(_hgi);
 
     } else {
         // just set index
@@ -491,7 +487,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     }
     if (oldId) {
         // delete old buffer
-        hgi->DestroyBuffer(&oldId);
+        _hgi->DestroyBuffer(&oldId);
     }
 
     // update id to all buffer resources
@@ -513,7 +509,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_DeallocateResources()
 {
     HdStBufferResourceSharedPtr resource = GetResource();
     if (resource) {
-        _resourceRegistry->GetHgi()->DestroyBuffer(&resource->GetId());
+        _hgi->DestroyBuffer(&resource->GetId());
     }
 }
 
@@ -671,7 +667,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = _hgi->CreateBlitCmds();
+
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetId();
 
@@ -686,6 +683,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         vboOffset += vboStride;
         data += dataSize;
     }
+
+    _hgi->SubmitCmds(blitCmds.get());
     
     HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferCpuToGpu,
                         (double)_numElements);

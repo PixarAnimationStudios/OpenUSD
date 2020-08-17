@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/bufferArray.h"
@@ -36,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStResourceRegistry;
+class Hgi;
 
 /// \class HdStVBOSimpleMemoryManager
 ///
@@ -46,8 +45,7 @@ class HdStResourceRegistry;
 ///
 class HdStVBOSimpleMemoryManager : public HdAggregationStrategy {
 public:
-    HdStVBOSimpleMemoryManager(HdStResourceRegistry* resourceRegistry)
-        : _resourceRegistry(resourceRegistry) {}
+    HdStVBOSimpleMemoryManager(Hgi* hgi): _hgi(hgi) {}
     
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOSimpleMemoryManager.
@@ -87,10 +85,8 @@ protected:
     {
     public:
         /// Constructor.
-        _SimpleBufferArrayRange(HdStResourceRegistry* resourceRegistry)
-            : HdStBufferArrayRange(resourceRegistry)
-            , _bufferArray(nullptr)
-            , _numElements(0) {
+        _SimpleBufferArrayRange(Hgi* hgi) :
+            _hgi(hgi), _bufferArray(nullptr), _numElements(0) {
         }
 
         /// Returns true if this range is valid
@@ -200,6 +196,7 @@ protected:
                                                    int stride);
 
     private:
+        Hgi* const _hgi;
         _SimpleBufferArray * _bufferArray;
         size_t _numElements;
     };
@@ -220,7 +217,7 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _SimpleBufferArray(HdStResourceRegistry* resourceRegistry,
+        _SimpleBufferArray(Hgi* hgi,
                            TfToken const &role,
                            HdBufferSpecVector const &bufferSpecs,
                            HdBufferArrayUsageHint usageHint);
@@ -292,7 +289,7 @@ protected:
                                                    int offset,
                                                    int stride);
     private:
-        HdStResourceRegistry* const _resourceRegistry;
+        Hgi* const _hgi;
         int _capacity;
         size_t _maxBytesPerElement;
 
@@ -305,7 +302,7 @@ protected:
         }
     };
     
-    HdStResourceRegistry* const _resourceRegistry;
+    Hgi* const _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

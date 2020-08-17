@@ -144,10 +144,7 @@ private:
 
     // GLsync is not defined in gl.h. It's defined in spec as an opaque pointer:
     typedef struct __GLsync *GLsync;
-    void _EndGPUCountVisibleInstances(
-        HdStResourceRegistrySharedPtr const &resourceRegistry,
-        GLsync resultSync,
-        size_t * result);
+    void _EndGPUCountVisibleInstances(GLsync resultSync, size_t * result);
 
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
