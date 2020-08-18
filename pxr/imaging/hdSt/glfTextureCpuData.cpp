@@ -67,7 +67,7 @@ _ComputeNumMipLevels(const GfVec3i &dimensions)
 }
 
 bool
-_IsValid(GlfBaseTextureDataRefPtr const &textureData)
+_IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
 {
     return
         textureData->ResizedWidth() > 0 &&
@@ -230,11 +230,10 @@ _CheckValid()
 } // anonymous namespace
 
 HdStGlfTextureCpuData::HdStGlfTextureCpuData(
-    GlfBaseTextureDataRefPtr const &textureData,
+    GlfBaseTextureDataConstRefPtr const &textureData,
     const std::string &debugName,
     const bool generateMips,
-    const bool premultiplyAlpha,
-    const GlfImage::ImageOriginLocation originLocation)
+    const bool premultiplyAlpha)
   : _textureData(textureData)
 {
     TRACE_FUNCTION();
@@ -243,11 +242,6 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
 
     // Bail if we don't have texture data.
     if (!textureData) {
-        return;
-    }
-
-    // Read texture file
-    if (!textureData->Read(0, false, originLocation)) {
         return;
     }
 

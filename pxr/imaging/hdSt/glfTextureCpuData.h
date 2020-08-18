@@ -46,14 +46,16 @@ TF_DECLARE_REF_PTRS(GlfBaseTextureData);
 class HdStGlfTextureCpuData : public HdStTextureCpuData
 {
 public:
+    /// It is assumed that Read(...) has already been called
+    /// on textureData.
+
     HDST_API
     HdStGlfTextureCpuData(
-        GlfBaseTextureDataRefPtr const &textureData,
+        GlfBaseTextureDataConstRefPtr const &textureData,
         const std::string &debugName,
         bool generateMips = false,
-        bool premultiplyAlpha = true,
-        GlfImage::ImageOriginLocation originLoc = GlfImage::OriginUpperLeft);
-    
+        bool premultiplyAlpha = true);
+
     HDST_API
     ~HdStGlfTextureCpuData();
     
@@ -82,7 +84,7 @@ private:
 
     // To avoid a copy, hold on to original data if we
     // can use them.
-    GlfBaseTextureDataRefPtr _textureData;
+    GlfBaseTextureDataConstRefPtr _textureData;
 
     // Buffer if we had to convert the data.
     std::unique_ptr<const unsigned char[]> _convertedRawData;

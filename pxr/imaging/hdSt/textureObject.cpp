@@ -360,26 +360,28 @@ HdStAssetUvTextureObject::_Load()
                 GetTextureIdentifier().GetSubtextureIdentifier(),
                 GetTextureType()));
 
+    textureData->Read(
+        /* degradeLevel = */ 0,
+        /* generateMipmap = */ false,
+        _GetImageOriginLocation(
+            GetTextureIdentifier().GetSubtextureIdentifier()));
+
+    _SetWrapParameters(_GetWrapParameters(textureData));
+
     _SetCpuData(
         std::make_unique<HdStGlfTextureCpuData>(
             textureData,
             _GetDebugName(GetTextureIdentifier()),
             /* generateMips = */ true,
-	        _GetPremultiplyAlpha(
+            _GetPremultiplyAlpha(
                 GetTextureIdentifier().GetSubtextureIdentifier(), 
-                GetTextureType()),
-            _GetImageOriginLocation(
-                GetTextureIdentifier().GetSubtextureIdentifier())));
+                GetTextureType())));
 
     if (_GetCpuData()->IsValid()) {
         if (_GetCpuData()->GetTextureDesc().type != HgiTextureType2D) {
             TF_CODING_ERROR("Wrong texture type for uv");
         }
     }
-
-    // _GetWrapParameters can only be called after the texture has
-    // been loaded by HdStGlfTextureCpuData.
-    _SetWrapParameters(_GetWrapParameters(textureData));
 }
 
 void
@@ -476,6 +478,10 @@ HdStFieldTextureObject::_Load()
             GetTextureIdentifier().GetFilePath(),
             vdbSubtextureId->GetGridName(),
             GetTargetMemory());
+
+    texData->Read(
+        /* degradeLevel = */ 0,
+        /* generateMipmap = */ false);
 
     _cpuData = std::make_unique<HdStGlfTextureCpuData>(
         texData,
