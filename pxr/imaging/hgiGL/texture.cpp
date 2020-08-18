@@ -242,23 +242,18 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         // Upload texel data
         if (desc.initialData && desc.pixelsByteSize > 0) {
             // Upload each (available) mip
-            for (size_t mip=0; mip<desc.mipLevels; mip++) {
-
-                GfVec3i mipDimensions;
-                size_t mipByteSize = 0;
-
-                const void* mipSrc = HgiGetMipInitialData(
+            const std::vector<HgiMipInfo> mipInfos =
+                HgiGetMipInfos(
                     desc.format,
                     desc.dimensions,
-                    mip,
-                    desc.pixelsByteSize,
-                    desc.initialData,
-                    &mipDimensions,
-                    &mipByteSize);
+                    desc.pixelsByteSize);
+            const size_t mipLevels = std::min(
+                mipInfos.size(), size_t(desc.mipLevels));
+            const char * const initialData = reinterpret_cast<const char *>(
+                desc.initialData);
 
-                if (!mipSrc) {
-                    break;
-                }
+            for (size_t mip = 0; mip < mipLevels; mip++) {
+                const HgiMipInfo &mipInfo = mipInfos[mip];
 
                 if (isCompressed) {
                     _GlCompressedTextureSubImageND(
@@ -266,20 +261,20 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
                         _textureId,
                         mip,
                         /*offsets*/GfVec3i(0),
-                        mipDimensions,
+                        mipInfo.dimensions,
                         glInternalFormat,
-                        mipByteSize,
-                        mipSrc);
+                        mipInfo.byteSize,
+                        initialData + mipInfo.byteOffset);
                 } else {
                     _GlTextureSubImageND(
                         desc.type,
                         _textureId,
                         mip,
                         /*offsets*/GfVec3i(0),
-                        mipDimensions,
+                        mipInfo.dimensions,
                         glFormat,
                         glPixelType,
-                        mipSrc);
+                        initialData + mipInfo.byteOffset);
                 }
             }
         }

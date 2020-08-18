@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
+#include <vector>
+#include <limits>
 #include <stdlib.h>
 
 
@@ -104,6 +106,19 @@ enum HgiFormat
     HgiFormatCount
 };
 
+/// \class HgiMipInfo
+///
+/// HgiMipInfo describes size and other info for a mip level.
+struct HgiMipInfo
+{
+    /// Offset in bytes from start of texture data to start of mip map.
+    size_t byteOffset;
+    /// Dimension of mip GfVec3i.
+    GfVec3i dimensions;
+    /// size of mip map in bytes.
+    size_t byteSize;
+};
+
 /// Return the count of components in the given format.
 HGI_API
 size_t HgiGetComponentCount(HgiFormat f);
@@ -126,10 +141,11 @@ size_t HgiGetDataSizeOfFormat(
 HGI_API
 bool HgiIsCompressed(HgiFormat f);
 
-/// Returns a pointer to the start of the mip's data inside 'initialData'.
-/// The dimensions and byte size of the mip are also returned.
-/// A nullptr if returned if there is no mip data for the requested mipLevel.
-/// I.e. initialDataByteSize is too small to contain data for the mipLevel.
+/// Returns mip infos.
+///
+/// If dataByteSize is specified, the levels stops when the total memory
+/// required by all levels up to that point reach the specified value.
+/// Otherwise, the levels stop when all dimensions are 1.
 /// Mip map sizes are calculated by dividing the previous mip level by two and
 /// rounding down to the nearest integer (minimum integer is 1).
 /// level 0: 37x53
@@ -139,15 +155,11 @@ bool HgiIsCompressed(HgiFormat f);
 /// level 4: 2x3
 /// level 5: 1x1
 HGI_API
-const void* HgiGetMipInitialData(
-    const HgiFormat format,
+std::vector<HgiMipInfo>
+HgiGetMipInfos(
+    HgiFormat format,
     const GfVec3i& dimensions,
-    const uint16_t mipLevel,
-    const size_t initialDataByteSize,
-    const void* initialData,
-    GfVec3i* mipDimensions,
-    size_t* mipByteSize);
-
+    size_t dataByteSize = std::numeric_limits<size_t>::max());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

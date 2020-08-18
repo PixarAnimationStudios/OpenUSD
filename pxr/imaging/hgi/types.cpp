@@ -152,51 +152,58 @@ HgiIsCompressed(const HgiFormat f)
     }
 }
 
-const void*
-HgiGetMipInitialData(
+uint16_t
+_ComputeNumMipLevels(const GfVec3i &dimensions)
+{
+    const int dim = std::max({dimensions[0], dimensions[1], dimensions[2]});
+    
+    for (uint16_t i = 1; i < 8 * sizeof(int) - 1; i++) {
+        const int powerTwo = 1 << i;
+        if (powerTwo > dim) {
+            return i;
+        }
+    }
+    
+    // Can never be reached, but compiler doesn't know that.
+    return 1;
+}
+
+std::vector<HgiMipInfo>
+HgiGetMipInfos(
     const HgiFormat format,
     const GfVec3i& dimensions,
-    const uint16_t mipLevel,
-    const size_t initialDataByteSize,
-    const void* initialData,
-    GfVec3i* mipDimensions,
-    size_t* mipByteSize)
+    const size_t dataByteSize)
 {
-    // The most common case is loading the first mip. Exit early.
-    if (mipLevel == 0) {
-        *mipDimensions = dimensions;
-        *mipByteSize = initialDataByteSize;
-        return initialData;
-    }
+    const uint16_t numMips = _ComputeNumMipLevels(dimensions);
 
+    std::vector<HgiMipInfo> result;
+    result.reserve(numMips);
+    
     size_t blockWidth, blockHeight;
-    const size_t bpt = HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
-
-    GfVec3i& size = *mipDimensions;
-    size = dimensions;
+    const size_t bpt =
+        HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
     size_t byteOffset = 0;
+    GfVec3i size = dimensions;
 
-    // Each mip image is half the dimensions of the previous level.
-    for (size_t i=0; i<mipLevel; i++) {
-        byteOffset += 
+    for (uint16_t mipLevel = 0; mipLevel < numMips; mipLevel++) {
+        const size_t byteSize = 
             ((size[0] + blockWidth  - 1) / blockWidth ) *
             ((size[1] + blockHeight - 1) / blockHeight) *
             size[2] * bpt;
+
+        result.push_back({ byteOffset, size, byteSize });
+
+        byteOffset += byteSize;
+        if (byteOffset >= dataByteSize) {
+            break;
+        }
+
         size[0] = std::max(size[0] / 2, 1);
         size[1] = std::max(size[1] / 2, 1);
         size[2] = std::max(size[2] / 2, 1);
     }
 
-    if (byteOffset >= initialDataByteSize) {
-        return nullptr;
-    }
-
-    // Each mip image is a quarter of the bytes of the previous level.
-    *mipByteSize =
-        ((size[0] + blockWidth  - 1) / blockWidth ) *
-        ((size[1] + blockHeight - 1) / blockHeight) *
-        size[2] * bpt;
-    return static_cast<char const*>(initialData) + byteOffset;
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
