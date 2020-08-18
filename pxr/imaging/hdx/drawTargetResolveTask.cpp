@@ -21,22 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hdSt/drawTarget.h"
-
 #include "pxr/imaging/glf/drawTarget.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-typedef std::unique_ptr<HdxDrawTargetRenderPass>
-                                               HdxDrawTargetRenderPassUniquePtr;
-typedef std::vector<HdxDrawTargetRenderPassUniquePtr>
-                                          HdxDrawTargetRenderPassUniquePtrVector;
 
 HdxDrawTargetResolveTask::HdxDrawTargetResolveTask(HdSceneDelegate* delegate,
                                                    SdfPath const& id)
@@ -44,9 +35,7 @@ HdxDrawTargetResolveTask::HdxDrawTargetResolveTask(HdSceneDelegate* delegate,
 {
 }
 
-HdxDrawTargetResolveTask::~HdxDrawTargetResolveTask()
-{
-}
+HdxDrawTargetResolveTask::~HdxDrawTargetResolveTask() = default;
 
 void
 HdxDrawTargetResolveTask::Sync(HdSceneDelegate* delegate,
@@ -73,49 +62,28 @@ HdxDrawTargetResolveTask::Execute(HdTaskContext* ctx)
 
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.
-    HdTaskContext::const_iterator valueIt =
-                                   ctx->find(HdxTokens->drawTargetRenderPasses);
+    const HdTaskContext::const_iterator valueIt =
+        ctx->find(HdxTokens->drawTargetRenderPasses);
     if (valueIt == ctx->cend()) {
-        TF_CODING_ERROR("drawTargetRenderPasses token missing from "
-                        "task context");
         return;
     }
 
-    std::vector<GlfDrawTarget*> drawTargets;
-
-    const VtValue &valueVt = (valueIt->second);
-    if (valueVt.IsHolding<HdxDrawTargetRenderPass *>()) {
-        HdxDrawTargetRenderPass * const pass =
-                              valueVt.UncheckedGet<HdxDrawTargetRenderPass *>();
-        if (GlfDrawTarget * const drawTarget = 
-                        boost::get_pointer(pass->GetDrawTarget())) {
-            drawTargets = { drawTarget };
-        }
-    } else if (valueVt.IsHolding<HdxDrawTargetRenderPassUniquePtrVector *>()) {
-        HdxDrawTargetRenderPassUniquePtrVector * const passes =
-               valueVt.UncheckedGet<HdxDrawTargetRenderPassUniquePtrVector *>();
-        
-        // Iterate through all renderpass (drawtarget renderpass), extract the
-        // draw target and resolve them if needed. We need to resolve them to 
-        // regular buffers so use them in the rest of the pipeline.
- 
-        drawTargets.reserve(passes->size());
-
-        for (const HdxDrawTargetRenderPassUniquePtr &pass : *passes) {
-            if (GlfDrawTarget * const drawTarget =
-                            boost::get_pointer(pass->GetDrawTarget())) {
-                drawTargets.push_back(drawTarget);
-            }
-        }
-    } else {
+    const VtValue &valueVt = valueIt->second;
+    if (!valueVt.IsHolding<HdxDrawTargetRenderPass *>()) {
         TF_CODING_ERROR("drawTargetRenderPasses in task context is of "
                         "unexpected type");
         return;
+    }        
+
+    HdxDrawTargetRenderPass * const pass =
+        valueVt.UncheckedGet<HdxDrawTargetRenderPass *>();
+    GlfDrawTarget * const drawTarget = 
+        boost::get_pointer(pass->GetDrawTarget());
+    if (!drawTarget) {
+        return;
     }
 
-    if (!drawTargets.empty()) {
-        GlfDrawTarget::Resolve(drawTargets);
-    }
+    drawTarget->Resolve();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

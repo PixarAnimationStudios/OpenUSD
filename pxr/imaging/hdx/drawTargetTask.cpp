@@ -334,10 +334,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         _currentDrawTargetSetVersion = drawTargetVersion;
     }
 
-    // Store the draw targets in the task context so the resolve 
-    // task does not have to extract them again.
-    (*ctx)[HdxTokens->drawTargetRenderPasses] = &_renderPasses;
-
     ///----------------------
     static const GfMatrix4d yflip = GfMatrix4d().SetScale(
         GfVec3d(1.0, -1.0, 1.0));

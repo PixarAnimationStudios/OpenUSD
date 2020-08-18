@@ -37,7 +37,7 @@ public:
     HdxDrawTargetResolveTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxDrawTargetResolveTask();
+    ~HdxDrawTargetResolveTask() override;
 
     /// Sync the render pass resources
     HDX_API
