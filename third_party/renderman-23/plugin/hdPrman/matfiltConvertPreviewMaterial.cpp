@@ -79,6 +79,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularIorOut)
     (specularRoughness)
     (specularRoughnessOut)
+
+    // UsdUVTexture parameters
+    (wrapS)
+    (wrapT)
+    (useMetadata)
 );
 
 void
@@ -162,9 +167,22 @@ MatfiltConvertPreviewMaterial(
                     if (!ext.empty() && ext != "tex") {
                         std::string pluginName = 
                             std::string("RtxGlfImage") + ARCH_LIBRARY_SUFFIX;
+                        // Check for wrap mode. In Renderman, the
+                        // texture asset specifies its wrap mode, so we
+                        // must pass this from the shading node into the
+                        // texture plugin parameters.
+                        VtValue wrapSVal, wrapTVal;
+                        TfMapLookup(node.parameters, _tokens->wrapS, &wrapSVal);
+                        TfMapLookup(node.parameters, _tokens->wrapT, &wrapTVal);
+                        TfToken wrapS =
+                            wrapSVal.GetWithDefault(_tokens->useMetadata);
+                        TfToken wrapT =
+                            wrapSVal.GetWithDefault(_tokens->useMetadata);
                         param.second =
-                            TfStringPrintf("rtxplugin:%s?filename=%s",
-                                           pluginName.c_str(), path.c_str());
+                            TfStringPrintf("rtxplugin:%s?filename=%s"
+                                           "&wrapS=%s&wrapT=%s",
+                                           pluginName.c_str(), path.c_str(),
+                                           wrapS.GetText(), wrapT.GetText());
                     }
                 }
             }
