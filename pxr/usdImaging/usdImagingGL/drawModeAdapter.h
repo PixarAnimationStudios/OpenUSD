@@ -40,9 +40,8 @@ class UsdImagingGLDrawModeAdapter : public UsdImagingPrimAdapter
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
-    UsdImagingGLDrawModeAdapter()
-        : UsdImagingPrimAdapter()
-    {}
+    USDIMAGINGGL_API
+    UsdImagingGLDrawModeAdapter();
 
     USDIMAGINGGL_API
     ~UsdImagingGLDrawModeAdapter() override;
@@ -176,6 +175,10 @@ private:
     // Map from cachePath to what drawMode it was populated as.
     using _DrawModeMap = TfHashMap<SdfPath, TfToken, SdfPath::Hash>;
     _DrawModeMap _drawModeMap;
+
+    // The default value of model:drawModeColor, fetched from the schema
+    // registry and stored for quick access...
+    GfVec3f _schemaColor;
 };
 
 

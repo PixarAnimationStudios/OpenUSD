@@ -112,6 +112,20 @@ _GetMaterialPath(UsdPrim const& prim)
     return prim.GetPath().AppendPath(matPath);
 }
 
+UsdImagingGLDrawModeAdapter::UsdImagingGLDrawModeAdapter()
+    : UsdImagingPrimAdapter()
+    , _schemaColor(0)
+{
+    // Look up the default color in the schema registry.
+    const UsdPrimDefinition *primDef =
+        UsdSchemaRegistry::GetInstance()
+        .FindAppliedAPIPrimDefinition(TfToken("GeomModelAPI"));
+    if (primDef) {
+        primDef->GetAttributeFallbackValue(
+            UsdGeomTokens->modelDrawModeColor, &_schemaColor);
+    }
+}
+
 UsdImagingGLDrawModeAdapter::~UsdImagingGLDrawModeAdapter()
 {
 }
@@ -398,14 +412,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             terminal.path = cachePath;
             terminal.identifier = sdrNode->GetIdentifier();
 
-            const TfToken textureAttrs[6] = {
-                UsdGeomTokens->modelCardTextureXPos,
-                UsdGeomTokens->modelCardTextureYPos,
-                UsdGeomTokens->modelCardTextureZPos,
-                UsdGeomTokens->modelCardTextureXNeg,
-                UsdGeomTokens->modelCardTextureYNeg,
-                UsdGeomTokens->modelCardTextureZNeg,
-            };
             const TfToken textureNames[12] = {
                 _tokens->textureXPosColor,
                 _tokens->textureYPosColor,
@@ -421,57 +427,69 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 _tokens->textureZNegOpacity
             };
 
-            GfVec3f schemaColor = GfVec3f(0.18f, 0.18f, 0.18f);
-            UsdAttribute drawModeColorAttr =
-                model.GetModelDrawModeColorAttr();
-            if (drawModeColorAttr) {
-                drawModeColorAttr.Get(&schemaColor);
-            }
-            VtValue fallback = VtValue(GfVec4f(
-                schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
+            if (model) {
+                const TfToken textureAttrs[6] = {
+                    UsdGeomTokens->modelCardTextureXPos,
+                    UsdGeomTokens->modelCardTextureYPos,
+                    UsdGeomTokens->modelCardTextureZPos,
+                    UsdGeomTokens->modelCardTextureXNeg,
+                    UsdGeomTokens->modelCardTextureYNeg,
+                    UsdGeomTokens->modelCardTextureZNeg,
+                };
 
-            for (int i = 0; i < 6; ++i) {
-                UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
-                SdfAssetPath textureFile;
-                if (attr && attr.Get(&textureFile, time) &&
-                    !textureFile.GetAssetPath().empty()) {
-                    SdfPath textureNodePath = _GetMaterialPath(prim)
-                        .AppendProperty(textureAttrs[i]);
+                GfVec3f drawModeColor;
+                model.GetModelDrawModeColorAttr().Get(&drawModeColor);
+                VtValue fallback = VtValue(GfVec4f(
+                    drawModeColor[0], drawModeColor[1], drawModeColor[2],
+                    1.0f));
 
-                    // Make texture node
-                    HdMaterialNode textureNode;
-                    textureNode.path = textureNodePath;
-                    textureNode.identifier = UsdImagingTokens->UsdUVTexture;
-                    textureNode.parameters[_tokens->st] = _tokens->cardsUv;
-                    textureNode.parameters[_tokens->fallback] = fallback;
-                    textureNode.parameters[_tokens->file] = textureFile;
-                    textureNode.parameters[_tokens->minFilter] =
-                        _tokens->linearMipmapLinear;
-                    textureNode.parameters[_tokens->magFilter] =
-                        _tokens->linear;
+                for (int i = 0; i < 6; ++i) {
+                    SdfAssetPath textureFile;
+                    prim.GetAttribute(textureAttrs[i]).Get(&textureFile, time);
+                    if (!textureFile.GetAssetPath().empty()) {
+                        SdfPath textureNodePath = _GetMaterialPath(prim)
+                            .AppendProperty(textureAttrs[i]);
 
-                    // Insert connection between texture node and terminal color
-                    // input
-                    HdMaterialRelationship colorRel;
-                    colorRel.inputId = textureNode.path;
-                    colorRel.inputName = _tokens->rgb;
-                    colorRel.outputId = terminal.path;
-                    colorRel.outputName = textureNames[i];
-                    network.relationships.emplace_back(std::move(colorRel));
+                        // Make texture node
+                        HdMaterialNode textureNode;
+                        textureNode.path = textureNodePath;
+                        textureNode.identifier = UsdImagingTokens->UsdUVTexture;
+                        textureNode.parameters[_tokens->st] = _tokens->cardsUv;
+                        textureNode.parameters[_tokens->fallback] = fallback;
+                        textureNode.parameters[_tokens->file] = textureFile;
+                        textureNode.parameters[_tokens->minFilter] =
+                            _tokens->linearMipmapLinear;
+                        textureNode.parameters[_tokens->magFilter] =
+                            _tokens->linear;
 
-                    // Insert connection between texture node and terminal 
-                    // opacity input
-                    HdMaterialRelationship opacityRel;
-                    opacityRel.inputId = textureNode.path;
-                    opacityRel.inputName = _tokens->a;
-                    opacityRel.outputId = terminal.path;
-                    opacityRel.outputName = textureNames[i + 6];
-                    network.relationships.emplace_back(std::move(opacityRel));
+                        // Insert connection between texture node and terminal color
+                        // input
+                        HdMaterialRelationship colorRel;
+                        colorRel.inputId = textureNode.path;
+                        colorRel.inputName = _tokens->rgb;
+                        colorRel.outputId = terminal.path;
+                        colorRel.outputName = textureNames[i];
+                        network.relationships.emplace_back(std::move(colorRel));
 
-                    // Insert texture node
-                    network.nodes.emplace_back(std::move(textureNode));
-                } else {
-                    terminal.parameters[textureNames[i]] = schemaColor;
+                        // Insert connection between texture node and terminal 
+                        // opacity input
+                        HdMaterialRelationship opacityRel;
+                        opacityRel.inputId = textureNode.path;
+                        opacityRel.inputName = _tokens->a;
+                        opacityRel.outputId = terminal.path;
+                        opacityRel.outputName = textureNames[i + 6];
+                        network.relationships.emplace_back(std::move(opacityRel));
+
+                        // Insert texture node
+                        network.nodes.emplace_back(std::move(textureNode));
+                    } else {
+                        terminal.parameters[textureNames[i]] = drawModeColor;
+                        terminal.parameters[textureNames[i + 6]] = VtValue(1.f);
+                    }
+                }
+            } else {
+                for (int i = 0; i < 6; ++i) {
+                    terminal.parameters[textureNames[i]] = _schemaColor;
                     terminal.parameters[textureNames[i + 6]] = VtValue(1.f);
                 }
             }
@@ -547,13 +565,13 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         VtVec3fArray color = VtVec3fArray(1);
-        // Default color to 18% gray.
-        GfVec3f schemaColor= GfVec3f(0.18f, 0.18f, 0.18f);
-        UsdAttribute drawModeColorAttr = model.GetModelDrawModeColorAttr();
-        if (drawModeColorAttr) {
-            drawModeColorAttr.Get(&schemaColor);
+        GfVec3f drawModeColor;
+        if (model) {
+            model.GetModelDrawModeColorAttr().Get(&drawModeColor);
+        } else {
+            drawModeColor = _schemaColor;
         }
-        color[0] = schemaColor;
+        color[0] = drawModeColor;
         valueCache->GetColor(cachePath) = color;
 
         _MergePrimvar(&primvars, HdTokens->displayColor,
@@ -582,26 +600,27 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             drawMode = it->second;
         }
 
-        UsdAttribute cardGeometryAttr = model.GetModelCardGeometryAttr();
-        TfToken cardGeometry = UsdGeomTokens->cross;
-        if (cardGeometryAttr)
-            cardGeometryAttr.Get(&cardGeometry);
 
         VtValue& topology = valueCache->GetTopology(cachePath);
         VtValue& points = valueCache->GetPoints(cachePath);
         GfRange3d& extent = valueCache->GetExtent(cachePath);
 
-        // Unless we're in cards "fromTexture" mode, compute the extents.
-        if (!(drawMode == UsdGeomTokens->cards &&
-              cardGeometry == UsdGeomTokens->fromTexture)) {
-            extent = _ComputeExtent(prim);
-        }
-
         if (drawMode == UsdGeomTokens->origin) {
+            extent = _ComputeExtent(prim);
             _GenerateOriginGeometry(&topology, &points, extent);
         } else if (drawMode == UsdGeomTokens->bounds) {
+            extent = _ComputeExtent(prim);
             _GenerateBoundsGeometry(&topology, &points, extent);
         } else if (drawMode == UsdGeomTokens->cards) {
+            if (!model) {
+                // The population rules in UsdImagingDelegate disallow this.
+                TF_CODING_ERROR("Prim has draw mode 'cards' but geom model "
+                                "API schema is not applied.");
+                return;
+            }
+            TfToken cardGeometry;
+            model.GetModelCardGeometryAttr().Get(&cardGeometry);
+
             VtValue& uv = valueCache->GetPrimvar(cachePath,
                     _tokens->cardsUv);
             VtValue& assign = valueCache->GetPrimvar(cachePath,
@@ -613,6 +632,9 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 _GenerateCardsFromTextureGeometry(&topology, &points,
                         &uv, &assign, &extent, prim);
             } else {
+                // First compute the extents.
+                extent = _ComputeExtent(prim);
+
                 // Generate mask for suppressing axes with no textures
                 uint8_t axes_mask = 0;
                 const TfToken textureAttrs[6] = {
@@ -627,10 +649,9 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     xPos, yPos, zPos, xNeg, yNeg, zNeg,
                 };
                 for (int i = 0; i < 6; ++i) {
-                    UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
                     SdfAssetPath asset;
-                    if (attr && attr.Get(&asset, time) &&
-                        !asset.GetAssetPath().empty()) {
+                    prim.GetAttribute(textureAttrs[i]).Get(&asset, time);
+                    if (!asset.GetAssetPath().empty()) {
                         axes_mask |= mask[i];
                     }
                 }
@@ -1072,7 +1093,10 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
 {
     // This function expects the input attribute to be an image asset path.
     SdfAssetPath asset;
-    if (!attr || !attr.Get(&asset)) {
+    attr.Get(&asset);
+
+    // If the literal path is empty, ignore this attribute.
+    if (asset.GetAssetPath().empty()) {
         return false;
     }
 
@@ -1080,10 +1104,6 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     // Fallback to the literal path if it couldn't be resolved.
     if (file.empty()) {
         file = asset.GetAssetPath();
-    }
-    // If the literal path is empty, ignore this attribute.
-    if (file.empty()) {
-        return false;
     }
 
     GlfImageSharedPtr img = GlfImage::OpenForReading(file);

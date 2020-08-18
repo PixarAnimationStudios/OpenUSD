@@ -176,6 +176,17 @@ UsdImagingDelegate::~UsdImagingDelegate()
 bool
 UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
 {
+    // Optionally draw unloaded prims as bounds.
+    if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
+        return true;
+    }
+
+    // Otherwise, only models with the GeomModel API schema applied can draw as
+    // cards...
+    if (!prim.IsModel() || !prim.HasAPI<UsdGeomModelAPI>()) {
+        return false;
+    }
+
     // Compute the inherited drawMode.
     TfToken drawMode = _GetModelDrawMode(prim);
     // If draw mode is "default", no draw mode is applied.
@@ -185,20 +196,15 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
 
     // Draw mode is only applied on models that are components, or which have
     // applyDrawMode = true.
-    UsdModelAPI model(prim);
-    bool applyDrawMode = false;
-    TfToken kind;
-    if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
-        applyDrawMode = true;
+    if (UsdModelAPI(prim).IsKind(KindTokens->component))
+        return true;
     else {
-        UsdGeomModelAPI geomModel(prim);
-        UsdAttribute attr = geomModel.GetModelApplyDrawModeAttr();
-        if (attr) {
-            attr.Get(&applyDrawMode);
-        }
+        bool applyDrawMode = false;
+        UsdGeomModelAPI(prim).GetModelApplyDrawModeAttr().Get(&applyDrawMode);
+        return applyDrawMode;
     }
 
-    return applyDrawMode;
+    return false;
 }
 
 
@@ -211,12 +217,6 @@ UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
     if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
         return UsdGeomTokens->bounds;
     }
-
-    // Draw modes can only be applied to models.
-    if (!prim.IsModel()) { return UsdGeomTokens->default_; }
-
-    // Draw modes can't be applied to the pseudo-root.
-    if (!prim.GetParent()) { return UsdGeomTokens->default_; }
 
     if (_IsEnabledDrawModeCache())
         return _drawModeCache.GetValue(prim);
