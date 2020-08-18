@@ -117,7 +117,7 @@ size_t HgiGetComponentCount(HgiFormat f);
 /// a block.
 ///
 HGI_API
-size_t HgiDataSizeOfFormat(
+size_t HgiGetDataSizeOfFormat(
     HgiFormat f,
     size_t *blockWidth = nullptr,
     size_t *blockHeight = nullptr);

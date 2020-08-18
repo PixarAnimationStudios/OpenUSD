@@ -182,7 +182,7 @@ HdStRenderBuffer::Map()
     const HgiTextureDesc &desc = texture->GetDescriptor();
     const size_t dataByteSize =
         desc.dimensions[0] * desc.dimensions[1] * desc.dimensions[2] *
-        HgiDataSizeOfFormat(desc.format);
+        HgiGetDataSizeOfFormat(desc.format);
     
     if (dataByteSize == 0) {
         return nullptr;

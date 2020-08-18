@@ -287,7 +287,7 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
     }
 
     size_t blockWidth, blockHeight;
-    const size_t bytesPerBlock = HgiDataSizeOfFormat(
+    const size_t bytesPerBlock = HgiGetDataSizeOfFormat(
         _textureDesc.format, &blockWidth, &blockHeight);
 
     // Size of initial data (note that textureData->ComputeBytesUsed()

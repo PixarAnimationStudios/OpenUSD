@@ -71,7 +71,7 @@ HgiGetComponentCount(const HgiFormat f)
 }
 
 size_t
-HgiDataSizeOfFormat(
+HgiGetDataSizeOfFormat(
     const HgiFormat f,
     size_t * const blockWidth,
     size_t * const blockHeight)
@@ -170,7 +170,7 @@ HgiGetMipInitialData(
     }
 
     size_t blockWidth, blockHeight;
-    const size_t bpt = HgiDataSizeOfFormat(format, &blockWidth, &blockHeight);
+    const size_t bpt = HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
 
     GfVec3i& size = *mipDimensions;
     size = dimensions;

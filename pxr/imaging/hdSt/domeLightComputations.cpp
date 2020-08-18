@@ -81,7 +81,7 @@ static
 void
 _FillPixelsByteSize(HgiTextureDesc * const desc)
 {
-    const size_t s = HgiDataSizeOfFormat(desc->format);
+    const size_t s = HgiGetDataSizeOfFormat(desc->format);
     desc->pixelsByteSize =
         s * desc->dimensions[0] * desc->dimensions[1] * desc->dimensions[2];
 }
