@@ -296,18 +296,12 @@ Hdx_UnitTestDelegate::SetDrawTarget(SdfPath const &id, TfToken const &key,
     } else if (key == HdStDrawTargetTokens->resolution) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdStDrawTarget::DirtyDTResolution);
-    } else if (key == HdStDrawTargetTokens->attachments) {
-        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdStDrawTarget::DirtyDTAttachment);
     } else if (key == HdStDrawTargetTokens->aovBindings) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdStDrawTarget::DirtyDTAovBindings);
     } else if (key == HdStDrawTargetTokens->depthPriority) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdStDrawTarget::DirtyDTDepthPriority);
-    } else if (key == HdStDrawTargetTokens->depthClearValue) {
-        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdStDrawTarget::DirtyDTDepthClearValue);
     } else if (key == HdStDrawTargetTokens->collection) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdStDrawTarget::DirtyDTCollection);

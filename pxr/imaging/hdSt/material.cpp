@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/materialBufferSourceAndTextureHelper.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -31,7 +30,6 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
-#include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
@@ -92,13 +90,6 @@ _GetTextureHandleFromRenderBuffer(
     HdStMaterialNetwork::TextureDescriptor const &desc,
     std::weak_ptr<HdStShaderCode> const &shaderCode)
 {
-    // Render buffers as storm textures are only used so far for
-    // the draw targets.
-    // Bail if draw targets are not using the storm texture system.
-    if (!HdStDrawTarget::GetUseStormTextureSystem()) {
-        return nullptr;
-    }
-
     // Texture nodes with a file attribute not being an SdfPath
     // pointing to a prim are not pointing to render buffers.
     if (!desc.useTexturePrimToFindTexture) {

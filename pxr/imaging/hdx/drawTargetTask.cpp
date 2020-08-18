@@ -32,8 +32,6 @@
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
-#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
-#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +42,6 @@ HdxDrawTargetTask::_RenderPassInfo
     HdStRenderPassStateSharedPtr renderPassState;
     HdStSimpleLightingShaderSharedPtr simpleLightingShader;
     HdStDrawTarget *target;
-    unsigned int version;
 };
 
 static
@@ -160,8 +157,6 @@ struct _DrawTargetEntry
     size_t originalIndex;
     // The draw target
     HdStDrawTarget * drawTarget;
-    // Do other draw targets depend on this one?
-    bool hasDependentDrawTargets;
 };
 
 using _DrawTargetEntryVector = std::vector<_DrawTargetEntry>;
@@ -210,7 +205,7 @@ _SortDrawTargets(HdStDrawTargetPtrVector const &drawTargets,
         for (size_t dependent = 0; dependent < n; dependent++) {
             if (indexToDependencies[dependent].empty()) {
                 result->push_back(
-                    {dependent, drawTargets[dependent], false});
+                    {dependent, drawTargets[dependent]});
             }
         }
 
@@ -228,9 +223,8 @@ _SortDrawTargets(HdStDrawTargetPtrVector const &drawTargets,
                 // target, we can schedule the other draw target.
                 if (indexToDependencies[dependent].empty()) {
                     result->push_back(
-                        {dependent, drawTargets[dependent], false});
+                        {dependent, drawTargets[dependent]});
                 }
-                entry.hasDependentDrawTargets = true;
             }
         }
         
@@ -243,7 +237,7 @@ _SortDrawTargets(HdStDrawTargetPtrVector const &drawTargets,
             for (size_t i = 0; i < n; i++) {
                 if (!indexToDependencies[i].empty()) {
                     result->push_back(
-                        {i, drawTargets[i], false});
+                        {i, drawTargets[i]});
                 }
             }
         }
@@ -326,41 +320,18 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
                     HdxDrawTargetRenderPassUniquePtr drawTargetPass =
                         std::make_unique<HdxDrawTargetRenderPass>(&renderIndex);
 
-                    drawTargetPass->SetDrawTarget(
-                        drawTarget->GetGlfDrawTarget());
                     drawTargetPass->SetDrawTargetRenderPassState(
                         drawTarget->GetDrawTargetRenderPassState());
-                    drawTargetPass->SetHasDependentDrawTargets(
-                        entry.hasDependentDrawTargets);
                     _renderPasses.push_back(std::move(drawTargetPass));
 
                     _renderPassesInfo.push_back(
                         { std::make_shared<HdStRenderPassState>(),
                           std::make_shared<HdStSimpleLightingShader>(),
-                          drawTarget,
-                          drawTarget->GetVersion() });
+                          drawTarget });
                 }
             }
         }
         _currentDrawTargetSetVersion = drawTargetVersion;
-    } else {
-        const size_t numRenderPasses = _renderPassesInfo.size();
-
-        // Need to look for changes in individual draw targets.
-        for (size_t renderPassIdx = 0;
-             renderPassIdx < numRenderPasses;
-             ++renderPassIdx) {
-            _RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
-
-            HdStDrawTarget const *target = renderPassInfo.target;
-            const unsigned int targetVersion = target->GetVersion();
-
-            if (renderPassInfo.version != targetVersion) {
-                _renderPasses[renderPassIdx]->SetDrawTarget(
-                    target->GetGlfDrawTarget());
-                renderPassInfo.version = targetVersion;
-            }
-        }
     }
 
     // Store the draw targets in the task context so the resolve 
@@ -537,13 +508,6 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         renderPass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
 
-        if (renderPass->HasDependentDrawTargets()) {
-            // If later draw targets depend on this one, we need to
-            // resolve before they fire (if MSAA enabled).
-            if (renderPass->GetDrawTarget()) {
-                renderPass->GetDrawTarget()->Resolve();
-            }
-        }
     }
 
     // Restore to GL defaults

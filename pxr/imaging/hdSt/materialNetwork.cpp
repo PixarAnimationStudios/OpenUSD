@@ -23,7 +23,6 @@
 //
 
 #include "pxr/imaging/hdSt/materialNetwork.h"
-#include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
@@ -949,8 +948,7 @@ _MakeMaterialParamsForTexture(
                         sourceColorSpace));
             // If the file attribute is an SdfPath, interpret it as path
             // to a prim holding the texture resource (e.g., a render buffer).
-            } else if (HdStDrawTarget::GetUseStormTextureSystem() &&
-                       v.IsHolding<SdfPath>()) {
+            } else if (v.IsHolding<SdfPath>()) {
                 texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
             }
         }

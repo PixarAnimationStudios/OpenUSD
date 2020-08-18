@@ -46,8 +46,6 @@ pxr_library(hdSt
         drawItem
         drawItemInstance
         drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
         drawTargetRenderPassState
         dynamicUvTextureObject
         extComputation
@@ -118,7 +116,6 @@ pxr_library(hdSt
         codeGen
         cullingShaderKey
         drawBatch
-        drawTargetTextureResource
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch
