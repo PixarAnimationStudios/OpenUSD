@@ -79,9 +79,9 @@ TF_DEFINE_ENV_SETTING(
     "The number of threads available for reading ogawa-backed files via UsdAbc.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY, false,
-    "Switch to true to enable writing Alembic uv sets as primvars:st with type "
-    "texCoord2fArray to USD");
+    USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY, true,
+    "Switch to false to disable writing Alembic uv sets as primvars:st with "
+    "type texCoord2fArray to USD");
 
 
 TF_DEFINE_ENV_SETTING(

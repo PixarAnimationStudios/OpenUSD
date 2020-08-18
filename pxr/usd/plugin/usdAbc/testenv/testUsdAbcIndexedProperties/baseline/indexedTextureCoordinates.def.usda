@@ -25,16 +25,16 @@ def Mesh "Cube"
     point3f[] points.timeSamples = {
         0: [(-1, -1, 1), (-1, 1, 1), (-1, -1, -1), (-1, 1, -1), (1, -1, 1), (1, 1, 1), (1, -1, -1), (1, 1, -1)],
     }
-    float2[] primvars:uv (
+    texCoord2f[] primvars:st (
         interpolation = "faceVarying"
     )
-    float2[] primvars:uv.timeSamples = {
+    texCoord2f[] primvars:st.timeSamples = {
         0: [(0.9999134, 0.25004348), (0.7499567, 0.2500434), (0.74995667, 0.50000006), (0.9999133, 0.5000001), (0.25004333, 0.25004333), (0.25004333, 0.000086587555), (0.000086587555, 0.000086587555), (0.000086587555, 0.25004333), (0.25004333, 0.50000006), (0.5, 0.50000006), (0.50000006, 0.25004336), (0.000086587555, 0.50000006), (0.000086587555, 0.7499568), (0.25004333, 0.7499568)],
     }
-    int[] primvars:uv:indices (
+    int[] primvars:st:indices (
         interpolation = "faceVarying"
     )
-    int[] primvars:uv:indices.timeSamples = {
+    int[] primvars:st:indices.timeSamples = {
         0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 4, 11, 12, 13, 8, 11, 8, 4, 7, 9, 2, 1, 10],
     }
     uniform token subdivisionScheme = "none"

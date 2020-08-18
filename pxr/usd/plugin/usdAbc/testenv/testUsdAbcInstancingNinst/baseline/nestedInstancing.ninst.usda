@@ -64,10 +64,10 @@ over Xform "a" (
         point3f[] points.timeSamples = {
             0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
         }
-        float2[] primvars:uv (
+        texCoord2f[] primvars:st (
             interpolation = "faceVarying"
         )
-        float2[] primvars:uv.timeSamples = {
+        texCoord2f[] primvars:st.timeSamples = {
             0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
         }
         uniform token subdivisionScheme = "none"
@@ -97,10 +97,10 @@ over Xform "a" (
         point3f[] points.timeSamples = {
             0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
         }
-        float2[] primvars:uv (
+        texCoord2f[] primvars:st (
             interpolation = "faceVarying"
         )
-        float2[] primvars:uv.timeSamples = {
+        texCoord2f[] primvars:st.timeSamples = {
             0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
         }
         uniform token subdivisionScheme = "none"
@@ -133,10 +133,10 @@ over Xform "a" (
             point3f[] points.timeSamples = {
                 0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
             }
-            float2[] primvars:uv (
+            texCoord2f[] primvars:st (
                 interpolation = "faceVarying"
             )
-            float2[] primvars:uv.timeSamples = {
+            texCoord2f[] primvars:st.timeSamples = {
                 0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
             }
             uniform token subdivisionScheme = "none"

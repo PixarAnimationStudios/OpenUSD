@@ -64,26 +64,26 @@ class TestUsdAbcSDFArguments(unittest.TestCase):
         self.assertEqual(len(pCubeShape1.GetNormalsAttr().Get(time)), 8)
         self.assertEqual(len(pCubeShape2.GetNormalsAttr().Get(time)), 24)
 
-        pCubeShape1UV = pCubeShape1.GetPrimvar('uv')
-        pCubeShape2UV = pCubeShape2.GetPrimvar('uv')
+        pCubeShape1ST = pCubeShape1.GetPrimvar('st')
+        pCubeShape2ST = pCubeShape2.GetPrimvar('st')
+        
+        self.assertEqual(pCubeShape1ST.GetTypeName(), 'texCoord2f[]')
+        self.assertEqual(pCubeShape2ST.GetTypeName(), 'texCoord2f[]')
 
-        self.assertEqual(pCubeShape1UV.GetTypeName(), 'float2[]')
-        self.assertEqual(pCubeShape2UV.GetTypeName(), 'float2[]')
+        self.assertEqual(pCubeShape1ST.GetInterpolation() , 'varying')
+        self.assertEqual(len(pCubeShape1ST.Get(time)),  8)
 
-        self.assertEqual(pCubeShape1UV.GetInterpolation() , 'varying')
-        self.assertEqual(len(pCubeShape1UV.Get(time)),  8)
-
-        self.assertEqual(pCubeShape2UV.GetInterpolation(), 'faceVarying')
-        self.assertEqual(len(pCubeShape2UV.Get(time)), 14)
-        self.assertEqual(len(pCubeShape2UV.GetIndices(time)), 24)
+        self.assertEqual(pCubeShape2ST.GetInterpolation(), 'faceVarying')
+        self.assertEqual(len(pCubeShape2ST.Get(time)), 14)
+        self.assertEqual(len(pCubeShape2ST.GetIndices(time)), 24)
 
         # Test against the known flattened version
         #
         flatABC = Usd.Stage.Open(flatFile)
         self.assertTrue(flatABC)
 
-        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape1').GetPrimvar('uv').Get(time), pCubeShape1UV.Get(time))
-        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape2').GetPrimvar('uv').Get(time), pCubeShape2UV.Get(time))
+        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape1').GetPrimvar('st').Get(time), pCubeShape1ST.Get(time))
+        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape2').GetPrimvar('st').Get(time), pCubeShape2ST.Get(time))
 
 if __name__ == '__main__':
     unittest.main()
