@@ -43,7 +43,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStResourceRegistry;
-class Hgi;
 
 /// \class HdStInterleavedMemoryManager
 ///
@@ -57,9 +56,11 @@ protected:
     class _StripedInterleavedBufferRange : public HdStBufferArrayRange {
     public:
         /// Constructor.
-        _StripedInterleavedBufferRange(Hgi* hgi) :
-        _hgi(hgi), _stripedBuffer(nullptr), _index(NOT_ALLOCATED), _numElements(1) {
-        }
+        _StripedInterleavedBufferRange(HdStResourceRegistry* resourceRegistry)
+        : HdStBufferArrayRange(resourceRegistry)
+        , _stripedBuffer(nullptr)
+        , _index(NOT_ALLOCATED)
+        , _numElements(1) {}
 
         /// Destructor.
         HDST_API
@@ -167,7 +168,6 @@ protected:
 
     private:
         enum { NOT_ALLOCATED = -1 };
-        Hgi* const _hgi;
         _StripedInterleavedBuffer *_stripedBuffer;
         int _index;
         size_t _numElements;
@@ -185,7 +185,7 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _StripedInterleavedBuffer(Hgi* hgi,
+        _StripedInterleavedBuffer(HdStResourceRegistry* resourceRegistry,
                                   TfToken const &role,
                                   HdBufferSpecVector const &bufferSpecs,
                                   HdBufferArrayUsageHint usageHint,
@@ -264,7 +264,7 @@ protected:
                                                    int stride);
 
     private:
-        Hgi* const _hgi;
+        HdStResourceRegistry* const _resourceRegistry;
         bool _needsCompaction;
         int _stride;
         int _bufferOffsetAlignment;  // ranged binding offset alignment
@@ -278,7 +278,8 @@ protected:
 
     };
     
-    HdStInterleavedMemoryManager(Hgi* hgi): _hgi(hgi) {}
+    HdStInterleavedMemoryManager(HdStResourceRegistry* resourceRegistry)
+        : _resourceRegistry(resourceRegistry) {}
 
     /// Factory for creating HdBufferArrayRange
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
@@ -292,13 +293,13 @@ protected:
         HdBufferArraySharedPtr const &bufferArray, 
         VtDictionary &result) const;
     
-    Hgi* const _hgi;
+    HdStResourceRegistry* const _resourceRegistry;
 };
 
 class HdStInterleavedUBOMemoryManager : public HdStInterleavedMemoryManager {
 public:
-    HdStInterleavedUBOMemoryManager(Hgi* hgi)
-    : HdStInterleavedMemoryManager(hgi) {}
+    HdStInterleavedUBOMemoryManager(HdStResourceRegistry* resourceRegistry)
+    : HdStInterleavedMemoryManager(resourceRegistry) {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
@@ -317,8 +318,8 @@ public:
 
 class HdStInterleavedSSBOMemoryManager : public HdStInterleavedMemoryManager {
 public:
-    HdStInterleavedSSBOMemoryManager(Hgi* hgi)
-    : HdStInterleavedMemoryManager(hgi) {}
+    HdStInterleavedSSBOMemoryManager(HdStResourceRegistry* resourceRegistry)
+    : HdStInterleavedMemoryManager(resourceRegistry) {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.

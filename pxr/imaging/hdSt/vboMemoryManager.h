@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hgi;
+class HdStResourceRegistry;
 
 /// \class HdStVBOMemoryManager
 ///
@@ -49,9 +49,9 @@ class Hgi;
 ///
 class HdStVBOMemoryManager : public HdAggregationStrategy {
 public:
-    HdStVBOMemoryManager(Hgi *hgi)
+    HdStVBOMemoryManager(HdStResourceRegistry *resourceRegistry)
     : HdAggregationStrategy()
-    , _hgi(hgi) {}
+    , _resourceRegistry(resourceRegistry) {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
@@ -88,8 +88,8 @@ protected:
     class _StripedBufferArrayRange : public HdStBufferArrayRange {
     public:
         /// Constructor.
-        _StripedBufferArrayRange(Hgi *hgi)
-         : _hgi(hgi),
+        _StripedBufferArrayRange(HdStResourceRegistry* resourceRegistry)
+         : HdStBufferArrayRange(resourceRegistry),
            _stripedBufferArray(nullptr),
            _elementOffset(0),
            _numElements(0),
@@ -217,7 +217,6 @@ protected:
         // holding a weak reference to container.
         // this pointer becomes null when the StripedBufferArray gets destructed,
         // in case if any drawItem still holds this bufferRange.
-        Hgi* const _hgi;
         _StripedBufferArray *_stripedBufferArray;
         int _elementOffset;
         size_t _numElements;
@@ -236,7 +235,7 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _StripedBufferArray(Hgi* _hgi,
+        _StripedBufferArray(HdStResourceRegistry* resourceRegistry,
                             TfToken const &role,
                             HdBufferSpecVector const &bufferSpecs,
                             HdBufferArrayUsageHint usageHint);
@@ -313,7 +312,7 @@ protected:
 
     private:
 
-        Hgi* const _hgi;
+        HdStResourceRegistry* _resourceRegistry;
         bool _needsCompaction;
         int _totalCapacity;
         size_t _maxBytesPerElement;
@@ -326,7 +325,7 @@ protected:
         }
     };
     
-    Hgi* _hgi;
+    HdStResourceRegistry* _resourceRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

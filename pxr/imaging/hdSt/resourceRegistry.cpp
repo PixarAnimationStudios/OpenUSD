@@ -41,6 +41,7 @@
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
 #include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -97,18 +98,18 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
     , _nonUniformAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>(_hgi))
+        std::make_unique<HdStVBOMemoryManager>(this))
     , _nonUniformImmutableAggregationStrategy(
-        std::make_unique<HdStVBOMemoryManager>(_hgi))
+        std::make_unique<HdStVBOMemoryManager>(this))
     // default aggregation strategy for uniform on UBO (for globals)
     , _uniformUboAggregationStrategy(
-        std::make_unique<HdStInterleavedUBOMemoryManager>(_hgi))
+        std::make_unique<HdStInterleavedUBOMemoryManager>(this))
     // default aggregation strategy for uniform on SSBO (for primvars)
     , _uniformSsboAggregationStrategy(
-        std::make_unique<HdStInterleavedSSBOMemoryManager>(_hgi))
+        std::make_unique<HdStInterleavedSSBOMemoryManager>(this))
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
-        std::make_unique<HdStVBOSimpleMemoryManager>(_hgi))
+        std::make_unique<HdStVBOSimpleMemoryManager>(this))
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
 {
 }
@@ -486,7 +487,7 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 {
     HdStDispatchBufferSharedPtr const result =
         std::make_shared<HdStDispatchBuffer>(
-            _hgi, role, count, commandNumUints);
+            this, role, count, commandNumUints);
 
     _dispatchBufferRegistry.push_back(result);
 
