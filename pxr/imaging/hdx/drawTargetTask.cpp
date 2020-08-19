@@ -36,9 +36,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HdxDrawTargetRenderPassUniquePtr =
+    std::unique_ptr<class HdxDrawTargetRenderPass>;
+
 struct
 HdxDrawTargetTask::_RenderPassInfo
 {
+    HdxDrawTargetRenderPassUniquePtr dtRenderPass;
     HdStRenderPassStateSharedPtr renderPassState;
     HdStSimpleLightingShaderSharedPtr simpleLightingShader;
     HdStDrawTarget *target;
@@ -85,7 +89,6 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
  : HdTask(id)
  , _currentDrawTargetSetVersion(0)
  , _renderPassesInfo()
- , _renderPasses()
  , _overrideColor()
  , _wireframeColor()
  , _enableLighting(false)
@@ -309,10 +312,8 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         _GetSortedDrawTargets(&renderIndex, &drawTargetEntries);
                               
         _renderPassesInfo.clear();
-        _renderPasses.clear();
 
         _renderPassesInfo.reserve(drawTargetEntries.size());
-        _renderPasses.reserve(drawTargetEntries.size());
 
         for (_DrawTargetEntry const &entry : drawTargetEntries) {
             if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
@@ -322,10 +323,10 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
                     drawTargetPass->SetDrawTargetRenderPassState(
                         drawTarget->GetDrawTargetRenderPassState());
-                    _renderPasses.push_back(std::move(drawTargetPass));
 
                     _renderPassesInfo.push_back(
-                        { std::make_shared<HdStRenderPassState>(),
+                        { std::move(drawTargetPass),
+                          std::make_shared<HdStRenderPassState>(),
                           std::make_shared<HdStSimpleLightingShader>(),
                           drawTarget });
                 }
@@ -342,15 +343,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     GlfSimpleLightingContextRefPtr lightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
-    const size_t numRenderPasses = _renderPassesInfo.size();
-    for (size_t renderPassIdx = 0;
-         renderPassIdx < numRenderPasses;
-         ++renderPassIdx) {
-
-        const _RenderPassInfo &renderPassInfo =
-            _renderPassesInfo[renderPassIdx];
-        HdxDrawTargetRenderPass * const renderPass = 
-            _renderPasses[renderPassIdx].get();
+    for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
         HdStRenderPassStateSharedPtr const &renderPassState = 
             renderPassInfo.renderPassState;
         HdStDrawTarget * const drawTarget = renderPassInfo.target;
@@ -387,7 +380,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             drawTargetRenderPassState->GetAovBindings());
 
         HdStSimpleLightingShaderSharedPtr const& simpleLightingShader
-            = _renderPassesInfo[renderPassIdx].simpleLightingShader;
+            = renderPassInfo.simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();
 
@@ -424,7 +417,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         }
 
         renderPassState->Prepare(renderIndex.GetResourceRegistry());
-        renderPass->Sync();
+        renderPassInfo.dtRenderPass->Sync();
     }
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
@@ -448,8 +441,8 @@ void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
-    for (const HdxDrawTargetRenderPassUniquePtr & renderPass : _renderPasses) {
-        renderPass->Prepare();
+    for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
+        renderPassInfo.dtRenderPass->Prepare();
     }
 }
 
@@ -491,17 +484,11 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     // PSO.
     glFrontFace(GL_CW);
 
-    const size_t numRenderPasses = _renderPassesInfo.size();
-    for (size_t renderPassIdx = 0;
-         renderPassIdx < numRenderPasses;
-         ++renderPassIdx) {
-
-        HdxDrawTargetRenderPass * const renderPass = 
-            _renderPasses[renderPassIdx].get();
+    for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
         HdStRenderPassStateSharedPtr const renderPassState =
-            _renderPassesInfo[renderPassIdx].renderPassState;
+            renderPassInfo.renderPassState;
         renderPassState->Bind();
-        renderPass->Execute(renderPassState, GetRenderTags());
+        renderPassInfo.dtRenderPass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
 
     }

@@ -34,12 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdxDrawTargetRenderPassUniquePtr =
-    std::unique_ptr<class HdxDrawTargetRenderPass>;
-using HdStSimpleLightingShaderSharedPtr =
-    std::shared_ptr<class HdStSimpleLightingShader>;
-class HdStDrawTarget;
-
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
 
@@ -77,7 +71,6 @@ private:
 
     using _RenderPassInfoVector = std::vector<_RenderPassInfo>;
     _RenderPassInfoVector _renderPassesInfo;
-    std::vector< HdxDrawTargetRenderPassUniquePtr > _renderPasses;
 
     // Raster State - close match to render task
     // but doesn't have enableHardwareShading
