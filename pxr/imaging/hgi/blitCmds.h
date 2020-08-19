@@ -26,9 +26,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/cmds.h"
 #include "pxr/imaging/hgi/texture.h"
 #include <memory>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,6 +81,11 @@ public:
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
 
+    /// Queue a copy new data from cpu into gpu buffer.
+    /// For example copy new data into a uniform block or storage buffer.
+    HGI_API
+    void QueueCopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
+
     /// Generate mip maps for a texture
     HGI_API
     virtual void GenerateMipMaps(HgiTextureHandle const& texture) = 0;
@@ -87,9 +94,28 @@ protected:
     HGI_API
     HgiBlitCmds();
 
+    /// Flush any queued buffer data copies to GPU.
+    /// This will copy the new buffer data from staging area to GPU.
+    HGI_API
+    void FlushQueuedCopies();
+
 private:
     HgiBlitCmds & operator=(const HgiBlitCmds&) = delete;
     HgiBlitCmds(const HgiBlitCmds&) = delete;
+    
+    struct BufferFlushListEntry {
+        BufferFlushListEntry(HgiBufferHandle const& _buffer,
+                             uint64_t _start, uint64_t _end) {
+            buffer = _buffer;
+            start = _start;
+            end = _end;
+        }
+        HgiBufferHandle buffer;
+        uint64_t start;
+        uint64_t end;
+    };
+
+    std::unordered_map<class HgiBuffer*, BufferFlushListEntry> queuedBuffers;
 };
 
 

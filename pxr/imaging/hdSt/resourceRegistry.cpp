@@ -676,6 +676,23 @@ std::ostream &operator <<(
     return out;
 }
 
+HgiBlitCmds*
+HdStResourceRegistry::GetBlitCmds()
+{
+    if (!_blitCmds) {
+        _blitCmds = _hgi->CreateBlitCmds();
+    }
+    return _blitCmds.get();
+}
+
+void HdStResourceRegistry::SubmitHgiWork()
+{
+    if (_blitCmds) {
+        _hgi->SubmitCmds(_blitCmds.get());
+        _blitCmds.reset();
+    }
+}
+
 void
 HdStResourceRegistry::_CommitTextures()
 {
@@ -834,10 +851,11 @@ HdStResourceRegistry::_Commit()
     }
 
     {
-        // HD_TRACE_SCOPE("Flush");
+        HD_TRACE_SCOPE("Flush");
         // 5. flush phase:
         //
         // flush cosolidated buffer updates
+        SubmitHgiWork();
     }
 
     {
@@ -854,6 +872,8 @@ HdStResourceRegistry::_Commit()
             HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
         }
     }
+
+    SubmitHgiWork();
 
     // release sources
     WorkParallelForEach(_pendingSources.begin(), _pendingSources.end(),
@@ -937,6 +957,8 @@ HdStResourceRegistry::_GarbageCollect()
     _uniformUboBufferArrayRegistry.GarbageCollect();
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
+
+    SubmitHgiWork();
 }
 
 void

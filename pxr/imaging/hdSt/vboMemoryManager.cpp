@@ -327,7 +327,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     _totalCapacity = totalNumElements;
     
     Hgi* hgi = _resourceRegistry->GetHgi();
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
 
     // resize each BufferResource
     HdStBufferResourceNamedList const& resources = GetResources();
@@ -399,7 +399,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             }
 
             // buffer copy
-            relocator.Commit(hgi);
+            relocator.Commit(blitCmds);
         }
         if (oldId) {
             // delete old buffer
@@ -426,8 +426,6 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
 
     // increment version to rebuild dispatch buffers.
     IncrementVersion();
-
-    hgi->SubmitCmds(blitCmds.get());
 }
 
 void
@@ -668,10 +666,8 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    Hgi* hgi = GetResourceRegistry()->GetHgi();
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
-    hgi->SubmitCmds(blitCmds.get());
 }
 
 int

@@ -47,6 +47,9 @@ public:
     HGIGL_API
     uint64_t GetRawResource() const override;
 
+    HGIGL_API
+    void* GetCPUStagingAddress() override;
+
     uint32_t GetBufferId() const {return _bufferId;}
 
 protected:
@@ -62,6 +65,7 @@ private:
 
     uint32_t _bufferId;
     void* _mapped;
+    void* _cpuStaging;
 };
 
 

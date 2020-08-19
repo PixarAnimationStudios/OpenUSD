@@ -124,6 +124,13 @@ public:
     HGI_API
     virtual uint64_t GetRawResource() const = 0;
 
+    /// Returns the 'staging area' in which new buffer data is copied before
+    /// it is flushed to GPU. See QueueCopyBufferCpuToGpu.
+    /// Some implementations (e.g. Metal) may have build in support for
+    /// queueing up CPU->GPU copies. Those implementations can return the
+    /// CPU pointer to the buffer's content directly.
+    virtual void* GetCPUStagingAddress() = 0;
+
 protected:
     HGI_API
     HgiBuffer(HgiBufferDesc const& desc);

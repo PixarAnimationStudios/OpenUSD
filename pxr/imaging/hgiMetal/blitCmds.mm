@@ -251,14 +251,22 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
     HgiMetalBuffer* metalBuffer = static_cast<HgiMetalBuffer*>(
         copyOp.gpuDestinationBuffer.Get());
 
-    // Offset into the src buffer
-    const char* src = ((const char*) copyOp.cpuSourceBuffer) +
-        copyOp.sourceByteOffset;
-
-    // Offset into the dst buffer
-    size_t dstOffset = copyOp.destinationByteOffset;
     uint8_t *dst = static_cast<uint8_t*>([metalBuffer->GetBufferId() contents]);
-    memcpy(dst + dstOffset, src, copyOp.byteSize);
+    size_t dstOffset = copyOp.destinationByteOffset;
+
+    // If we used GetCPUStagingAddress as the cpuSourceBuffer when the copyOp
+    // was created, we can skip the memcpy since the src and dst buffer are
+    // the same and dst already contains the desired data.
+    // See also: QueueCopyBufferCpuToGpu.
+    if (copyOp.cpuSourceBuffer != dst ||
+        copyOp.sourceByteOffset != copyOp.destinationByteOffset) {
+        // Offset into the src buffer
+        const char* src = ((const char*) copyOp.cpuSourceBuffer) +
+            copyOp.sourceByteOffset;
+
+        // Offset into the dst buffer
+        memcpy(dst + dstOffset, src, copyOp.byteSize);
+    }
 
     if([metalBuffer->GetBufferId()
             respondsToSelector:@selector(didModifyRange:)]) {
@@ -286,6 +294,8 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 bool
 HgiMetalBlitCmds::_Submit(Hgi* hgi)
 {
+    FlushQueuedCopies();
+
     if (_blitEncoder) {
         [_blitEncoder endEncoding];
         _blitEncoder = nil;

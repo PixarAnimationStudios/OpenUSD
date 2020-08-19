@@ -281,8 +281,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
     // Use blit work to record resource copy commands.
     Hgi* hgi = _resourceRegistry->GetHgi();
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
-
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+    
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceSharedPtr const &bres = bresIt->second;
 
@@ -335,8 +335,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
         bres->SetAllocation(newId, bufferSize);
     }
-
-    hgi->SubmitCmds(blitCmds.get());
 
     _capacity = numElements;
     _needsReallocation = false;
@@ -469,10 +467,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    Hgi* hgi = GetResourceRegistry()->GetHgi();
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
-    hgi->SubmitCmds(blitCmds.get());
 }
 
 VtValue

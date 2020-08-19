@@ -66,7 +66,7 @@ public:
 
     /// Execute Hgi buffer copy command to flush all scheduled range copies.
     HDST_API
-    void Commit(class Hgi* hgi);
+    void Commit(class HgiBlitCmds* blitCmds);
 
 private:
     struct _CopyUnit {

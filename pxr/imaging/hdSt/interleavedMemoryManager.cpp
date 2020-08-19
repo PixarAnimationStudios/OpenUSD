@@ -443,6 +443,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
         size_t rangeCount = GetRangeCount();
 
+        HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+        
         // pre-pass to combine consecutive buffer range relocation
         HdStBufferRelocator relocator(curId, newId);
         for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
@@ -468,7 +470,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         }
 
         // buffer copy
-        relocator.Commit(hgi);
+        relocator.Commit(blitCmds);
 
     } else {
         // just set index
@@ -669,26 +671,22 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
 
-    Hgi* hgi = GetResourceRegistry()->GetHgi();
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
-
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetId();
+    blitOp.sourceByteOffset = 0;
+    blitOp.byteSize = dataSize;
 
     for (size_t i = 0; i < _numElements; ++i) {
         blitOp.cpuSourceBuffer = data;
         
-        blitOp.sourceByteOffset = 0;
-        blitOp.byteSize = dataSize;
         blitOp.destinationByteOffset = vboOffset;
-        blitCmds->CopyBufferCpuToGpu(blitOp);
+        blitCmds->QueueCopyBufferCpuToGpu(blitOp);
 
         vboOffset += vboStride;
         data += dataSize;
     }
 
-    hgi->SubmitCmds(blitCmds.get());
-    
     HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferCpuToGpu,
                         (double)_numElements);
 }
