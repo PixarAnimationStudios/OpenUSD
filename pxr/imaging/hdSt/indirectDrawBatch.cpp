@@ -1092,7 +1092,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
     if (gpuCulling && !freezeCulling) {
         if (IsEnabledGPUCountVisibleInstances()) {
-            _EndGPUCountVisibleInstances(_cullResultSync, &_numVisibleItems);
+            _EndGPUCountVisibleInstances(
+                resourceRegistry, _cullResultSync, &_numVisibleItems);
             glDeleteSync(_cullResultSync);
             _cullResultSync = 0;
         }
@@ -1615,8 +1616,16 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 }
 
 void
-HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t * result)
+HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
+    GLsync resultSync,
+    size_t * result)
 {
+    // XXX Submit any work recorded before this call since we are using raw gl
+    // calls below. If we don't submit Hgi work, things are out of order.
+    // Code below needs to be converted to Hgi.
+    resourceRegistry->SubmitHgiWork();
+
     GLenum status = glClientWaitSync(resultSync,
             GL_SYNC_FLUSH_COMMANDS_BIT, HD_CULL_RESULT_TIMEOUT_NS);
 
