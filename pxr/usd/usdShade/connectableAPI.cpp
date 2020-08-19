@@ -418,13 +418,7 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
     UsdAttribute const &shadingAttr, 
     SdfPathVector *sourcePaths)
 {
-    if (!shadingAttr.GetConnections(sourcePaths)) {
-        TF_WARN("Unable to get connections for shading attribute <%s>", 
-                shadingAttr.GetPath().GetText());
-        return false;
-    }
-    
-    return true;
+    return shadingAttr.GetConnections(sourcePaths);
 }
 
 /* static */
