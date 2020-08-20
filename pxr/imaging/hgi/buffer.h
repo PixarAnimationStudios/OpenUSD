@@ -129,6 +129,7 @@ public:
     /// Some implementations (e.g. Metal) may have build in support for
     /// queueing up CPU->GPU copies. Those implementations can return the
     /// CPU pointer to the buffer's content directly.
+    HGI_API
     virtual void* GetCPUStagingAddress() = 0;
 
 protected:

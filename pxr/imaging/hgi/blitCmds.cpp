@@ -77,7 +77,8 @@ HgiBlitCmds::QueueCopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
     }
 }
 
-void HgiBlitCmds::FlushQueuedCopies()
+void
+HgiBlitCmds::FlushQueuedCopies()
 {
     HgiBufferCpuToGpuOp op;
     for(auto &copy: queuedBuffers) {
