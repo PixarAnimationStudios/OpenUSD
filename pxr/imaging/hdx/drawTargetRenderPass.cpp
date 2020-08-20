@@ -22,70 +22,24 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/glContext.h"
-
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-static
-void
-_ClearBuffer(GLenum buffer, GLint drawBuffer, const VtValue &value)
-{
-    // XXX: There has to be a better way to handle the different formats.
-    if (value.IsHolding<int>()) {
-        glClearBufferiv(buffer, drawBuffer, &value.UncheckedGet<int>());
-    } else if (value.IsHolding<GfVec2i>()) {
-        glClearBufferiv(buffer, drawBuffer, value.UncheckedGet<GfVec2i>().GetArray());
-    } else if (value.IsHolding<GfVec3i>()) {
-        glClearBufferiv(buffer, drawBuffer, value.UncheckedGet<GfVec3i>().GetArray());
-    } else if (value.IsHolding<GfVec4i>()) {
-        glClearBufferiv(buffer, drawBuffer, value.UncheckedGet<GfVec4i>().GetArray());
-    } else if (value.IsHolding<float>()) {
-        glClearBufferfv(buffer, drawBuffer, &value.UncheckedGet<float>());
-    } else if (value.IsHolding<GfVec2f>()) {
-        glClearBufferfv(buffer, drawBuffer, value.UncheckedGet<GfVec2f>().GetArray());
-    } else if (value.IsHolding<GfVec3f>()) {
-        glClearBufferfv(buffer, drawBuffer, value.UncheckedGet<GfVec3f>().GetArray());
-    } else if (value.IsHolding<GfVec4f>()) {
-        glClearBufferfv(buffer, drawBuffer, value.UncheckedGet<GfVec4f>().GetArray());
-    } else {
-      TF_CODING_ERROR("Unsupported clear value type: %s",
-                      value.GetTypeName().c_str());
-    }
-}
 
 // _renderPass's collection is populated after build time, during Sync().
 HdxDrawTargetRenderPass::HdxDrawTargetRenderPass(HdRenderIndex *index)
  : _renderPass(index, HdRprimCollection())
  , _drawTargetRenderPassState(nullptr)
- , _drawTarget()
- , _drawTargetContext()
  , _collectionObjectVersion(0)
- , _hasDependentDrawTargets(false)
 {
 }
 
 
 HdxDrawTargetRenderPass::~HdxDrawTargetRenderPass() = default;
-
-void
-HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
-{
-    if (drawTarget) {
-        // XXX: The Draw Target may have been created on a different GL
-        // context, so create a local copy here to use on this context.
-        _drawTarget = GlfDrawTarget::New(drawTarget);
-        _drawTargetContext = GlfGLContext::GetCurrentGLContext();
-    } else {
-        _drawTarget = TfNullPtr;
-        _drawTargetContext = nullptr;
-    }
-}
 
 void
 HdxDrawTargetRenderPass::SetDrawTargetRenderPassState(
@@ -98,18 +52,6 @@ void
 HdxDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
 {
     _renderPass.SetRprimCollection(col);
-}
-
-bool
-HdxDrawTargetRenderPass::HasDependentDrawTargets() const
-{
-    return _hasDependentDrawTargets;
-}
-
-void
-HdxDrawTargetRenderPass::SetHasDependentDrawTargets(bool value)
-{
-    _hasDependentDrawTargets = value;
 }
 
 void
@@ -131,19 +73,6 @@ HdxDrawTargetRenderPass::Sync()
 void
 HdxDrawTargetRenderPass::Prepare()
 {
-    if (!_drawTarget) {
-        return;
-    }
-
-    // Check that draw target was created on current context.
-    if (_drawTargetContext != GlfGLContext::GetCurrentGLContext()) {
-
-        // If not, create yet another draw target so that it is valid
-        // on the current context.
-
-        TF_CODING_ERROR("Given draw target was for different GL context");
-        SetDrawTarget(_drawTarget);
-    }
 }
 
 void
@@ -151,37 +80,10 @@ HdxDrawTargetRenderPass::Execute(
     HdRenderPassStateSharedPtr const &renderPassState,
     TfTokenVector const &renderTags)
 {
-    {
-        // We don't expect that there is both a GlfDrawTarget to bind
-        // (for old-style draw targets) or AOV bindings (for draw
-        // targets using the storm texture system).
-        //
-        // Note that some other task could bind a GlfDrawTarget outside
-        // of execute.
-        const bool hasDrawTarget(_drawTarget);
-        const bool hasAovs(!renderPassState->GetAovBindings().empty());
-        TF_VERIFY(!(hasDrawTarget && hasAovs));
-    }
-
-    if (_drawTarget) {
-        _drawTarget->Bind();
-        // The draw target task is already settings flags on
-        // HgiGraphicsCmdsDesc to clear the render buffers if the Storm texture
-        // system is used, so clear buffers is only necessary if using
-        // GlfDrawTarget's.
-        _ClearBuffers();
-    }
-
     // XXX: Should the Raster State or Renderpass set and restore this?
     // save the current viewport
     GLint originalViewport[4];
     glGetIntegerv(GL_VIEWPORT, originalViewport);
-
-    const GfVec4f viewport = renderPassState->GetViewport();
-    glViewport(GLint(viewport[0]),
-               GLint(viewport[1]),
-               GLint(viewport[2]),
-               GLint(viewport[3]));
 
     // Perform actual draw
     _renderPass.Execute(renderPassState, renderTags);
@@ -191,34 +93,6 @@ HdxDrawTargetRenderPass::Execute(
                originalViewport[1],
                originalViewport[2],
                originalViewport[3]);
-
-    if (_drawTarget) {
-        _drawTarget->Unbind();
-    }
-}
-
-void 
-HdxDrawTargetRenderPass::_ClearBuffers()
-{
-    float depthValue = _drawTargetRenderPassState->GetDepthClearValue();
-    glClearBufferfv(GL_DEPTH, 0, &depthValue);
-
-    size_t numAttachments = _drawTargetRenderPassState->GetNumColorAttachments();
-    for (size_t attachmentNum = 0;
-         attachmentNum < numAttachments;
-         ++attachmentNum)
-    {
-        const VtValue &clearColor =
-            _drawTargetRenderPassState->GetColorClearValue(attachmentNum);
-
-        _ClearBuffer(GL_COLOR, attachmentNum, clearColor);
-    }
-}
-
-GlfDrawTargetRefPtr 
-HdxDrawTargetRenderPass::GetDrawTarget()
-{
-    return _drawTarget;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,53 +27,27 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdSt/renderPass.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-
-#include "pxr/imaging/glf/drawTarget.h"
-
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
-
 class HdStDrawTargetRenderPassState;
+class HdRprimCollection;
 
 /// \class HdxDrawTargetRenderPass
 ///
-/// Represents an render pass that renders to a draw target.
+/// Represents a render pass that renders to AOVs and camera specified in the
+/// HdStDrawTargetRenderPassState 
 ///
 /// \note This is a temporary API to aid transition to Hydra, and is subject
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdxDrawTargetRenderPass : boost::noncopyable {
+class HdxDrawTargetRenderPass final {
 public:
     HDX_API
     HdxDrawTargetRenderPass(HdRenderIndex *index);
     HDX_API
-    virtual ~HdxDrawTargetRenderPass();
-
-    /// Sets the target draw object of this render pass containing
-    /// the color buffers and depth buffer to use.
-    HDX_API
-    void SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget);
-
-    /// Returns the draw target associated to this render pass.
-    HDX_API
-    GlfDrawTargetRefPtr GetDrawTarget();
-
-    /// Sets whether other draw targets depend on this draw target.
-    HDX_API
-    void SetHasDependentDrawTargets(bool value);
-
-    /// Whether other draw targets depend on this draw target.
-    ///
-    /// If true, the buffer needs to be resolved before the dependent
-    /// draw targets use it if MSAA is enabled.
-    HDX_API
-    bool HasDependentDrawTargets() const;
+    ~HdxDrawTargetRenderPass();
 
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
@@ -104,19 +78,7 @@ private:
 
     /// drawtarget renderPass state
     const HdStDrawTargetRenderPassState *_drawTargetRenderPassState;
-
-    /// Local copy of the draw target object.
-    GlfDrawTargetRefPtr  _drawTarget;
-
-    /// The context which owns the draw target object.
-    GlfGLContextSharedPtr  _drawTargetContext;
-
     unsigned int         _collectionObjectVersion;
-
-    bool _hasDependentDrawTargets;
-
-    /// Clear all color and depth buffers.
-    void _ClearBuffers();
 
     // No default/copy
     HdxDrawTargetRenderPass()                                            = delete;
