@@ -41,6 +41,11 @@ public:
     /// pointer to the CPU data (as initialData).
     virtual const HgiTextureDesc &GetTextureDesc() const = 0;
 
+    /// Make GPU generate mipmaps. The number of mipmaps is specified
+    /// in the texture descriptor and the mipmaps are generate from
+    /// the mip level 0 data.
+    virtual bool GetGenerateMipmaps() const = 0;
+    
     /// Are the data valid (e.g., false if file could not be found).
     virtual bool IsValid() const = 0;
 };

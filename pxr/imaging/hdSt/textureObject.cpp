@@ -257,11 +257,23 @@ HdStUvTextureObject::_CreateTexture(const HgiTextureDesc &desc)
     _DestroyTexture();
  
     _gpuTexture = hgi->CreateTexture(desc);
-    if (desc.mipLevels > 1 && desc.initialData) {
-        HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
-        blitCmds->GenerateMipMaps(_gpuTexture);
-        hgi->SubmitCmds(blitCmds.get());
+}
+
+void
+HdStUvTextureObject::_GenerateMipmaps()
+{
+    Hgi * const hgi = _GetHgi();
+    if (!TF_VERIFY(hgi)) {
+        return;
     }
+
+    if (!_gpuTexture) {
+        return;
+    }
+
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    blitCmds->GenerateMipMaps(_gpuTexture);
+    hgi->SubmitCmds(blitCmds.get());
 }
 
 void
@@ -395,6 +407,9 @@ HdStAssetUvTextureObject::_Commit()
         if (cpuData->IsValid()) {
             // Upload to GPU
             _CreateTexture(cpuData->GetTextureDesc());
+            if (cpuData->GetGenerateMipmaps()) {
+                _GenerateMipmaps();
+            }
         }
     }
 

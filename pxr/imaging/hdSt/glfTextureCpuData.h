@@ -53,7 +53,7 @@ public:
     HdStGlfTextureCpuData(
         GlfBaseTextureDataConstRefPtr const &textureData,
         const std::string &debugName,
-        bool generateMips = false,
+        bool useOrGenerateMips = false,
         bool premultiplyAlpha = true);
 
     HDST_API
@@ -63,31 +63,26 @@ public:
     const HgiTextureDesc &GetTextureDesc() const override;
 
     HDST_API
+    bool GetGenerateMipmaps() const override;
+
+    HDST_API
     bool IsValid() const override;
 
 private:
-    // Determine format for texture descriptor.
-    //
-    // If necessary, converts the RGB to RGBA data or pre-multiplies by alpha,
-    // updating _textureDesc.initialData to point to the newly allocated data
-    // (and dropping _textureData).
-    //
-    HgiFormat _DetermineFormatAndConvertIfNecessary(
-        const GLenum glFormat,
-        const GLenum glType,
-        const GLenum glInternalFormat,
-        const bool premultiplyAlpha);
-
     // The result, including a pointer to the potentially
     // converted texture data in _textureDesc.initialData.
     HgiTextureDesc _textureDesc;
+
+    // If true, initialData only contains mip level 0 data
+    // and the GPU is supposed to generate the other mip levels.
+    bool _generateMipmaps;
 
     // To avoid a copy, hold on to original data if we
     // can use them.
     GlfBaseTextureDataConstRefPtr _textureData;
 
     // Buffer if we had to convert the data.
-    std::unique_ptr<const unsigned char[]> _convertedRawData;
+    std::unique_ptr<const unsigned char[]> _convertedData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

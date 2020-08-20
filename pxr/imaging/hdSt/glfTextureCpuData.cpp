@@ -48,24 +48,6 @@ _GetTextureType(const int numDimensions)
     }
 }
 
-// Compute the number of mip levels given the dimensions of a texture using
-// the same formula as OpenGL.
-uint16_t
-_ComputeNumMipLevels(const GfVec3i &dimensions)
-{
-    const int dim = std::max({dimensions[0], dimensions[1], dimensions[2]});
-
-    for (uint16_t i = 1; i < 8 * sizeof(int) - 1; i++) {
-        const int powerTwo = 1 << i;
-        if (powerTwo > dim) {
-            return i;
-        }
-    }
-    
-    // Can never be reached, but compiler doesn't know that.
-    return 1;
-}
-
 bool
 _IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
 {
@@ -76,23 +58,24 @@ _IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
         textureData->HasRawBuffer();
 }
 
-template<typename T>
-std::unique_ptr<const unsigned char[]>
+using _Data = std::unique_ptr<const unsigned char[]>;
+
+template<typename T, T alpha>
+_Data
 _ConvertRGBToRGBA(
-    const unsigned char * const data,
-    const GfVec3i &dimensions,
-    const T alpha)
+    const void * const data,
+    const size_t numTargetBytes)
 {
     TRACE_FUNCTION();
 
     const T * const typedData = reinterpret_cast<const T*>(data);
 
-    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
-
     std::unique_ptr<unsigned char[]> result =
-        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+        std::make_unique<unsigned char[]>(numTargetBytes);
 
     T * const typedConvertedData = reinterpret_cast<T*>(result.get());
+
+    const size_t num = numTargetBytes / (4 * sizeof(T));
 
     for (size_t i = 0; i < num; i++) {
         typedConvertedData[4 * i + 0] = typedData[3 * i + 0];
@@ -137,7 +120,7 @@ template<typename T, bool isSRGB>
 std::unique_ptr<const unsigned char[]>
 _PremultiplyAlpha(
     const void * const data,
-    const GfVec3i &dimensions)
+    const size_t numTargetBytes)
 {
     TRACE_FUNCTION();
 
@@ -145,15 +128,15 @@ _PremultiplyAlpha(
 
     const T * const typedData = reinterpret_cast<const T*>(data);
 
-    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
-
     std::unique_ptr<unsigned char[]> result =
-        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+        std::make_unique<unsigned char[]>(numTargetBytes);
 
     T * const typedConvertedData = reinterpret_cast<T*>(result.get());
 
     // Perform all operations using floats.
-    const float max = static_cast<float>(std::numeric_limits<T>::max());    
+    constexpr float max = static_cast<float>(std::numeric_limits<T>::max());
+
+    const size_t num = numTargetBytes / (4 * sizeof(T));
 
     for (size_t i = 0; i < num; i++) {
         const float alpha = static_cast<float>(typedData[4 * i + 3]) / max;
@@ -188,7 +171,7 @@ template<typename T>
 std::unique_ptr<const unsigned char[]>
 _PremultiplyAlphaFloat(
     const void * const data,
-    const GfVec3i &dimensions)
+    const size_t numTargetBytes)
 {
     TRACE_FUNCTION();
 
@@ -196,12 +179,12 @@ _PremultiplyAlphaFloat(
 
     const T * const typedData = reinterpret_cast<const T*>(data);
 
-    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
-
     std::unique_ptr<unsigned char[]> result =
-        std::make_unique<unsigned char[]>(num * 4 * sizeof(T));
+        std::make_unique<unsigned char[]>(numTargetBytes);
 
     T * const typedConvertedData = reinterpret_cast<T*>(result.get());
+
+    const size_t num = numTargetBytes / (4 * sizeof(T));
 
     for (size_t i = 0; i < num; i++) {
         const float alpha = typedData[4 * i + 3];
@@ -216,15 +199,174 @@ _PremultiplyAlphaFloat(
     return std::move(result);
 }
 
-// Some of these formats have been aliased to HgiFormatInvalid because
-// they are not available on MTL. Guard against us trying to use
-// formats that are no longer available.
-template<HgiFormat f>
-constexpr HgiFormat
-_CheckValid()
+using _ConversionFunction = _Data(*)(const void * data, size_t numTargetBytes);
+
+void
+_GetHgiFormatAndConversionFunction(
+    const GLenum glFormat,
+    const GLenum glType,
+    const GLenum glInternalFormat,
+    const bool premultiplyAlpha,
+    HgiFormat * const hgiFormat,
+    _ConversionFunction * const conversionFunction)
 {
-    static_assert(f != HgiFormatInvalid, "Invalid HgiFormat");
-    return f;
+    // Format dispatch, mostly we can just use the CPU buffer from
+    // the texture data provided.
+    switch(glFormat) {
+    case GL_RED:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            *hgiFormat = HgiFormatUNorm8;
+            break;
+        case GL_HALF_FLOAT:
+            *hgiFormat = HgiFormatFloat16;
+            break;
+        case GL_FLOAT:
+            *hgiFormat = HgiFormatFloat32;
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RED 0x%04x",
+                            glType);
+            break;
+        }
+        break;
+    case GL_RG:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            *hgiFormat = HgiFormatUNorm8Vec2;
+            break;
+        case GL_HALF_FLOAT:
+            *hgiFormat = HgiFormatFloat16Vec2;
+            break;
+        case GL_FLOAT:
+            *hgiFormat = HgiFormatFloat32Vec2;
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RG 0x%04x",
+                            glType);
+            break;
+        }
+        break;
+    case GL_RGB:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            // RGB (24bit) is not supported on MTL, so we need to convert it.
+            *conversionFunction = _ConvertRGBToRGBA<unsigned char, 255>;
+            if (glInternalFormat == GL_SRGB8) {
+                *hgiFormat = HgiFormatUNorm8Vec4srgb;
+            } else {
+                *hgiFormat = HgiFormatUNorm8Vec4;
+            }
+            break;
+        case GL_HALF_FLOAT:
+            *hgiFormat = HgiFormatFloat16Vec3;
+            break;
+        case GL_FLOAT:
+            *hgiFormat = HgiFormatFloat32Vec3;
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGB 0x%04x",
+                            glType);
+            break;
+        }
+        break;
+    case GL_RGBA:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE: 
+        {
+            const bool isSRGB = (glInternalFormat == GL_SRGB8_ALPHA8);
+            if (isSRGB) {
+                *hgiFormat = HgiFormatUNorm8Vec4srgb;
+            } else {
+                *hgiFormat = HgiFormatUNorm8Vec4;
+            }
+            
+            if (premultiplyAlpha) {
+                if (isSRGB) {
+                    *conversionFunction =
+                        _PremultiplyAlpha<unsigned char, /* isSRGB = */ true>;
+                } else {
+                    *conversionFunction =
+                        _PremultiplyAlpha<unsigned char, /* isSRGB = */ false>;
+                }
+            }
+            break;
+        }
+        case GL_HALF_FLOAT:
+            if (premultiplyAlpha) {
+                *conversionFunction = _PremultiplyAlphaFloat<GfHalf>;
+            }
+
+            *hgiFormat = HgiFormatFloat16Vec4;
+            break;
+        case GL_FLOAT:
+            if (premultiplyAlpha) {
+                *conversionFunction = _PremultiplyAlphaFloat<float>;
+            }
+
+            *hgiFormat = HgiFormatFloat32Vec4;
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
+                            glType);
+            break;
+        }
+        break;
+    case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT:
+        switch(glType) {
+        case GL_FLOAT:
+            *hgiFormat = HgiFormatBC6UFloatVec3;
+            break;
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x%04x",
+                glType);
+        }
+        break;
+    case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT:
+        switch(glType) {
+        case GL_FLOAT:
+            *hgiFormat = HgiFormatBC6FloatVec3;
+            break;
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT 0x%04x",
+                glType);
+            break;
+        }
+        break;
+    case GL_COMPRESSED_RGBA_BPTC_UNORM:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            *hgiFormat = HgiFormatBC7UNorm8Vec4;
+            break;
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_RGBA_BPTC_UNORM 0x%04x",
+                glType);
+            break;
+        }
+        break;
+    case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
+        switch(glType) {
+        case GL_UNSIGNED_BYTE:
+            *hgiFormat = HgiFormatBC7UNorm8Vec4srgb;
+        default:
+            TF_CODING_ERROR(
+                "Unsupported texture format "
+                "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM 0x%04x",
+                glType);
+            break;
+        }
+        break;
+    default:
+        TF_CODING_ERROR("Unsupported texture format 0x%04x 0x%04x",
+                        glFormat, glType);
+        break;
+    }
 }
 
 } // anonymous namespace
@@ -232,9 +374,9 @@ _CheckValid()
 HdStGlfTextureCpuData::HdStGlfTextureCpuData(
     GlfBaseTextureDataConstRefPtr const &textureData,
     const std::string &debugName,
-    const bool generateMips,
+    const bool useOrGenerateMipmaps,
     const bool premultiplyAlpha)
-  : _textureData(textureData)
+  : _generateMipmaps(false)
 {
     TRACE_FUNCTION();
 
@@ -256,25 +398,21 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
 
     // Is this 2D or 3D texture?
     _textureDesc.type = _GetTextureType(textureData->NumDimensions());
-    _textureDesc.dimensions = GfVec3i(
-        textureData->ResizedWidth(),
-        textureData->ResizedHeight(),
-        textureData->ResizedDepth());
-    // Image data - might need RGB to RGBA conversion.
-    _textureDesc.initialData = textureData->GetRawBuffer();
 
-    if (generateMips) {
-        _textureDesc.mipLevels = _ComputeNumMipLevels(_textureDesc.dimensions);
-    }
-
-    // Determine the format (e.g., float/byte, RED/RGBA).
-    // Convert data if necessary, setting initialData to the buffer
-    // with the new data and freeing _textureData
-    _textureDesc.format = _DetermineFormatAndConvertIfNecessary(
+    // Determine the format (e.g., float/byte, RED/RGBA) and give
+    // function to convert data if necessary.
+    // Possible conversions are:
+    // - Unsigned byte RGB to RGBA (since the former is not support
+    //   by modern graphics APIs)
+    // - Pre-multiply alpha.
+    _ConversionFunction conversionFunction = nullptr;
+    _GetHgiFormatAndConversionFunction(
         textureData->GLFormat(),
         textureData->GLType(),
         textureData->GLInternalFormat(),
-        premultiplyAlpha);
+        premultiplyAlpha,
+        &_textureDesc.format,
+        &conversionFunction);
 
     // Handle grayscale textures by expanding value to green and blue.
     if (HgiGetComponentCount(_textureDesc.format) == 1) {
@@ -286,17 +424,50 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
         };
     }
 
-    size_t blockWidth, blockHeight;
-    const size_t bytesPerBlock = HgiGetDataSizeOfFormat(
-        _textureDesc.format, &blockWidth, &blockHeight);
+    _textureDesc.dimensions = GfVec3i(
+        textureData->ResizedWidth(),
+        textureData->ResizedHeight(),
+        textureData->ResizedDepth());
 
-    // Size of initial data (note that textureData->ComputeBytesUsed()
-    // includes the mip maps).
-    _textureDesc.pixelsByteSize =
-        ((textureData->ResizedWidth()  + blockWidth  - 1) / blockWidth ) *
-        ((textureData->ResizedHeight() + blockHeight - 1) / blockHeight) *
-        textureData->ResizedDepth() *
-        bytesPerBlock;
+    const std::vector<HgiMipInfo> mipInfos = HgiGetMipInfos(
+        _textureDesc.format,
+        _textureDesc.dimensions);
+
+    // How many mipmaps to use from the file.
+    unsigned int numGivenMipmaps = 1;
+
+    if (useOrGenerateMipmaps) {
+        numGivenMipmaps = textureData->GetNumMipLevels();
+        if (numGivenMipmaps > 1) {
+            // Use mipmaps from file.
+            if (numGivenMipmaps > mipInfos.size()) {
+                TF_CODING_ERROR("Too many mip maps in texture data.");
+                numGivenMipmaps = mipInfos.size();
+            }
+            _textureDesc.mipLevels = numGivenMipmaps;
+        } else {
+            // No mipmaps in file, generate mipmaps on GPU.
+            _generateMipmaps = true;
+            _textureDesc.mipLevels = mipInfos.size();
+        }
+    }
+    const HgiMipInfo &mipInfo = mipInfos[numGivenMipmaps - 1];
+
+    // Size of initial data.
+    _textureDesc.pixelsByteSize = mipInfo.byteOffset + mipInfo.byteSize;
+
+    if (conversionFunction) {
+        // Convert the texture data
+        _convertedData = conversionFunction(
+            textureData->GetRawBuffer(), _textureDesc.pixelsByteSize);
+        // Point to converted data
+        _textureDesc.initialData = _convertedData.get();
+    } else {
+        // Ensure that texture data are not deleted
+        _textureData = textureData;
+        // Point to raw buffer inside texture data
+        _textureDesc.initialData = textureData->GetRawBuffer();
+    }
 }
 
 HdStGlfTextureCpuData::~HdStGlfTextureCpuData() = default;
@@ -309,183 +480,15 @@ HdStGlfTextureCpuData::GetTextureDesc() const
 }
 
 bool
+HdStGlfTextureCpuData::GetGenerateMipmaps() const
+{
+    return _generateMipmaps;
+}
+
+bool
 HdStGlfTextureCpuData::IsValid() const
 {
     return _textureDesc.initialData;
-}
-
-HgiFormat
-HdStGlfTextureCpuData::_DetermineFormatAndConvertIfNecessary(
-    const GLenum glFormat,
-    const GLenum glType,
-    const GLenum glInternalFormat,
-    const bool premultiplyAlpha)
-{
-    // Format dispatch, mostly we can just use the CPU buffer from
-    // the texture data provided.
-    switch(glFormat) {
-    case GL_RED:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            return _CheckValid<HgiFormatUNorm8>();
-        case GL_HALF_FLOAT:
-            return _CheckValid<HgiFormatFloat16>();
-        case GL_FLOAT:
-            return _CheckValid<HgiFormatFloat32>();
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RED 0x%04x",
-                            glType);
-            return HgiFormatInvalid;
-        }
-    case GL_RG:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            return _CheckValid<HgiFormatUNorm8Vec2>();
-        case GL_HALF_FLOAT:
-            return _CheckValid<HgiFormatFloat16Vec2>();
-        case GL_FLOAT:
-            return _CheckValid<HgiFormatFloat32Vec2>();
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RG 0x%04x",
-                            glType);
-            return HgiFormatInvalid;
-        }
-    case GL_RGB:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            // RGB (24bit) is not supported on MTL, so we need to convert it.
-            _convertedRawData = 
-                _ConvertRGBToRGBA<unsigned char>(
-                    reinterpret_cast<const unsigned char *>(
-                        _textureDesc.initialData),
-                    _textureDesc.dimensions,
-                    255);
-            // Point to the buffer with the converted data.
-            _textureDesc.initialData = _convertedRawData.get();
-            // Drop the old buffer.
-            _textureData = TfNullPtr;
-
-            if (glInternalFormat == GL_SRGB8) {
-                return _CheckValid<HgiFormatUNorm8Vec4srgb>();
-            } else {
-                return _CheckValid<HgiFormatUNorm8Vec4>();
-            }
-        case GL_HALF_FLOAT:
-            return _CheckValid<HgiFormatFloat16Vec3>();
-        case GL_FLOAT:
-            return _CheckValid<HgiFormatFloat32Vec3>();
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGB 0x%04x",
-                            glType);
-            return HgiFormatInvalid;
-        }
-    case GL_RGBA:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE: 
-        {
-            const bool isSRGB = (glInternalFormat == GL_SRGB8_ALPHA8);
-
-            if (premultiplyAlpha) {
-                if (isSRGB) {
-                    _convertedRawData = _PremultiplyAlpha<unsigned char, 
-                        /* isSRGB = */ true>(_textureDesc.initialData, 
-                        _textureDesc.dimensions);
-                } else {
-                    _convertedRawData = _PremultiplyAlpha<unsigned char, 
-                        /* isSRGB = */ false>(_textureDesc.initialData,
-                        _textureDesc.dimensions);
-                }
-
-                // Point to the buffer with the converted data.
-                _textureDesc.initialData = _convertedRawData.get();  
-                // Drop the old buffer.
-                _textureData = TfNullPtr;
-            }
-
-            if (isSRGB) {
-                return _CheckValid<HgiFormatUNorm8Vec4srgb>();
-            } else {
-                return _CheckValid<HgiFormatUNorm8Vec4>();
-            }
-        }
-        case GL_HALF_FLOAT:
-            if (premultiplyAlpha) {
-                _convertedRawData = _PremultiplyAlphaFloat<GfHalf>(
-                    _textureDesc.initialData, _textureDesc.dimensions);
-
-                // Point to the buffer with the converted data.
-                _textureDesc.initialData = _convertedRawData.get();
-                // Drop the old buffer.
-                _textureData = TfNullPtr;
-            }
-
-            return _CheckValid<HgiFormatFloat16Vec4>();
-        case GL_FLOAT:
-            if (premultiplyAlpha) {
-                _convertedRawData = _PremultiplyAlphaFloat<float>(
-                    _textureDesc.initialData, _textureDesc.dimensions);
-
-                // Point to the buffer with the converted data.
-                _textureDesc.initialData = _convertedRawData.get();
-                // Drop the old buffer.
-                _textureData = TfNullPtr;
-            }
-
-            return _CheckValid<HgiFormatFloat32Vec4>();
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
-                            glType);
-            return HgiFormatInvalid;
-        }
-    case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT:
-        switch(glType) {
-        case GL_FLOAT:
-            return _CheckValid<HgiFormatBC6UFloatVec3>();
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x%04x",
-                glType);
-            return HgiFormatInvalid;
-        }
-    case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT:
-        switch(glType) {
-        case GL_FLOAT:
-            return _CheckValid<HgiFormatBC6FloatVec3>();
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT 0x%04x",
-                glType);
-            return HgiFormatInvalid;
-        }
-    case GL_COMPRESSED_RGBA_BPTC_UNORM:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            return _CheckValid<HgiFormatBC7UNorm8Vec4>();
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGBA_BPTC_UNORM 0x%04x",
-                glType);
-            return HgiFormatInvalid;
-        }
-    case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
-            return _CheckValid<HgiFormatBC7UNorm8Vec4srgb>();
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM 0x%04x",
-                glType);
-            return HgiFormatInvalid;
-        }
-    default:
-        TF_CODING_ERROR("Unsupported texture format 0x%04x 0x%04x",
-                        glFormat, glType);
-        return HgiFormatInvalid;
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

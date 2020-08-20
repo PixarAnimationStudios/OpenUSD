@@ -68,6 +68,13 @@ public:
         _CreateTexture(desc);
     }
 
+    /// Make GPU generate mipmaps.
+    ///
+    void GenerateMipmaps()
+    {
+        _GenerateMipmaps();
+    }
+
     /// Release GPU resource.
     void DestroyTexture() {
         _DestroyTexture();
