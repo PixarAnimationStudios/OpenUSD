@@ -39,7 +39,6 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
-#include "pxr/imaging/hdx/drawTargetResolveTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
@@ -102,16 +101,13 @@ int main(int argc, char *argv[])
     SdfPath simpleLightTask("/simpleLightTask");
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
-    SdfPath drawTargetResolveTask("/drawTargetResolveTask");
     delegate->AddSimpleLightTask(simpleLightTask);
     delegate->AddDrawTargetTask(drawTargetTask);
-    delegate->AddDrawTargetResolveTask(drawTargetResolveTask);
     delegate->AddRenderSetupTask(renderSetupTask);
     delegate->AddRenderTask(renderTask);
     HdTaskSharedPtrVector tasks;
     tasks.push_back(index->GetTask(simpleLightTask));
     tasks.push_back(index->GetTask(drawTargetTask));
-    tasks.push_back(index->GetTask(drawTargetResolveTask));
     tasks.push_back(index->GetTask(renderSetupTask));
     tasks.push_back(index->GetTask(renderTask));
 

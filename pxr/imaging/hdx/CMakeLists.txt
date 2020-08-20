@@ -45,7 +45,6 @@ pxr_library(hdx
         colorCorrectionTask
         drawTargetRenderPass
         drawTargetTask
-        drawTargetResolveTask
         fullscreenShader
         hgiConversions
         oitBufferAccessor
