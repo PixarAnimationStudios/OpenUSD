@@ -43,7 +43,6 @@ pxr_library(hdx
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
-        drawTargetRenderPass
         drawTargetTask
         fullscreenShader
         hgiConversions

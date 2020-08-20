@@ -25,27 +25,27 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdxDrawTargetRenderPassUniquePtr =
-    std::unique_ptr<class HdxDrawTargetRenderPass>;
+using HdSt_RenderPassUniquePtr = std::unique_ptr<HdSt_RenderPass>;
 
 struct
 HdxDrawTargetTask::_RenderPassInfo
 {
-    HdxDrawTargetRenderPassUniquePtr dtRenderPass;
+    HdSt_RenderPassUniquePtr renderPass;
     HdStRenderPassStateSharedPtr renderPassState;
     HdStSimpleLightingShaderSharedPtr simpleLightingShader;
     HdStDrawTarget *target;
+    unsigned collectionVersion;
 };
 
 static
@@ -302,7 +302,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     }
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
+    const HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
     const unsigned drawTargetVersion
         = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
@@ -318,17 +318,13 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         for (_DrawTargetEntry const &entry : drawTargetEntries) {
             if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
                 if (drawTarget->IsEnabled()) {
-                    HdxDrawTargetRenderPassUniquePtr drawTargetPass =
-                        std::make_unique<HdxDrawTargetRenderPass>(&renderIndex);
-
-                    drawTargetPass->SetDrawTargetRenderPassState(
-                        drawTarget->GetDrawTargetRenderPassState());
-
                     _renderPassesInfo.push_back(
-                        { std::move(drawTargetPass),
+                        { std::make_unique<HdSt_RenderPass>(
+                                &renderIndex, HdRprimCollection()),
                           std::make_shared<HdStRenderPassState>(),
                           std::make_shared<HdStSimpleLightingShader>(),
-                          drawTarget });
+                          drawTarget,
+                          0 });
                 }
             }
         }
@@ -343,7 +339,7 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
     GlfSimpleLightingContextRefPtr lightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
-    for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
+    for (_RenderPassInfo &renderPassInfo : _renderPassesInfo) {
         HdStRenderPassStateSharedPtr const &renderPassState = 
             renderPassInfo.renderPassState;
         HdStDrawTarget * const drawTarget = renderPassInfo.target;
@@ -417,7 +413,16 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         }
 
         renderPassState->Prepare(renderIndex.GetResourceRegistry());
-        renderPassInfo.dtRenderPass->Sync();
+
+        const unsigned newCollectionVersion =
+            drawTargetRenderPassState->GetRprimCollectionVersion();
+        if (renderPassInfo.collectionVersion != newCollectionVersion) {
+            renderPassInfo.renderPass->SetRprimCollection(
+                drawTargetRenderPassState->GetRprimCollection());
+            renderPassInfo.collectionVersion = newCollectionVersion;
+        }
+
+        renderPassInfo.renderPass->Sync();
     }
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
@@ -441,9 +446,8 @@ void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
-    for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
-        renderPassInfo.dtRenderPass->Prepare();
-    }
+    // Not calling HdSt_RenderPass::Prepare(...) here since
+    // HdxDrawTargetRenderPass::Prepare didn't do so.
 }
 
 void
@@ -488,7 +492,20 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         HdStRenderPassStateSharedPtr const renderPassState =
             renderPassInfo.renderPassState;
         renderPassState->Bind();
-        renderPassInfo.dtRenderPass->Execute(renderPassState, GetRenderTags());
+        
+        // XXX: Should the Raster State or Renderpass set and restore this?
+        // save the current viewport
+        GLint originalViewport[4];
+        glGetIntegerv(GL_VIEWPORT, originalViewport);
+
+        renderPassInfo.renderPass->Execute(renderPassState, GetRenderTags());
+
+        // restore viewport
+        glViewport(originalViewport[0],
+                   originalViewport[1],
+                   originalViewport[2],
+                   originalViewport[3]);
+
         renderPassState->Unbind();
 
     }
