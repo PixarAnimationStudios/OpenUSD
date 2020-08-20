@@ -57,16 +57,17 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     const HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyDTEnable) {
-        VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->enable);
+        const VtValue vtValue =
+            sceneDelegate->Get(id, HdStDrawTargetTokens->enable);
 
         // Optional attribute.
         _enabled = vtValue.GetWithDefault<bool>(true);
     }
 
     if (bits & DirtyDTCamera) {
-        VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->camera);
-        _cameraId = vtValue.Get<SdfPath>();
-        _drawTargetRenderPassState.SetCamera(_cameraId);
+        const VtValue vtValue =
+            sceneDelegate->Get(id, HdStDrawTargetTokens->camera);
+        _drawTargetRenderPassState.SetCamera(vtValue.Get<SdfPath>());
     }
 
     if (bits & DirtyDTResolution) {
@@ -103,10 +104,10 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     }
         
     if (bits & DirtyDTCollection) {
-        VtValue vtValue =
-                       sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
+        const VtValue vtValue =
+            sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
 
-        HdRprimCollection collection = vtValue.Get<HdRprimCollection>();
+        const HdRprimCollection collection = vtValue.Get<HdRprimCollection>();
 
         TfToken const &collectionName = collection.GetName();
 

@@ -130,7 +130,6 @@ public:
 
 private:
     bool                    _enabled;
-    SdfPath                 _cameraId;
     GfVec2i                 _resolution;
     HdRprimCollection       _collection;
 
