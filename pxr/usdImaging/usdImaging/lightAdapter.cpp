@@ -60,7 +60,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
-                                            instancerContext) const
+                                        instancerContext) const
 {
     // Discover time-varying transforms.
     _IsTransformVarying(prim,
@@ -68,6 +68,14 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         UsdImagingTokens->usdVaryingXform,
         timeVaryingBits);
 
+    // Discover time-varying visibility.
+    _IsVarying(prim,
+        UsdGeomTokens->visibility,
+        HdLight::DirtyBits::DirtyParams,
+        UsdImagingTokens->usdVaryingVisibility,
+        timeVaryingBits,
+        true);
+    
     // If any of the light attributes is time varying 
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
@@ -170,7 +178,8 @@ UsdImagingLightAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
-    // TBD
+    static const HdDirtyBits paramsDirty = HdLight::DirtyParams;
+    index->MarkSprimDirty(cachePath, paramsDirty);
 }
 
 void

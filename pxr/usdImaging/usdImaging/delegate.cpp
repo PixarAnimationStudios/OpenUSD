@@ -2765,9 +2765,18 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     } else if (paramName == HdTokens->shadowLink) {
         UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(shadowLink));
-    } else if (paramName == HdLightTokens->intensity && !_sceneLightsEnabled ) {
+    } else if (paramName == HdLightTokens->intensity) {
         // return 0.0 intensity if scene lights are not enabled
-        return VtValue(0.0f);
+        if (!_sceneLightsEnabled) {
+            return VtValue(0.0f);
+        }
+        // return 0.0 intensity if the scene lights are not visible
+        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+        if (TF_VERIFY(primInfo)) {
+            if (!primInfo->adapter->GetVisible(primInfo->usdPrim, _time)){
+                return VtValue(0.0f);
+            }
+        }
     }
 
     // Fallback to USD attributes.
