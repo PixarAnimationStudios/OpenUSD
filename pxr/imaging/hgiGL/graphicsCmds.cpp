@@ -117,8 +117,7 @@ HgiGLGraphicsCmds::DrawIndexed(
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t instanceCount)
 {
     _ops.push_back(
         HgiGLOps::DrawIndexed(
@@ -127,8 +126,7 @@ HgiGLGraphicsCmds::DrawIndexed(
             indexCount,
             indexBufferByteOffset,
             vertexOffset,
-            instanceCount,
-            firstInstance)
+            instanceCount)
         );
 }
 

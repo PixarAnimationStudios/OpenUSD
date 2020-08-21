@@ -251,8 +251,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t instanceCount)
 {
     TF_VERIFY(instanceCount>0);
 
@@ -271,7 +270,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
                   indexBufferOffset:indexBufferByteOffset
                       instanceCount:instanceCount
                          baseVertex:vertexOffset
-                       baseInstance:firstInstance];
+                       baseInstance:0];
 
     _hasWork = true;
 }

@@ -407,11 +407,10 @@ HgiGLOps::DrawIndexed(
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t instanceCount)
 {
     return [primitiveType, indexBuffer, indexCount, indexBufferByteOffset,
-        vertexOffset, instanceCount, firstInstance] {
+            vertexOffset, instanceCount] {
         TF_VERIFY(instanceCount>0);
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());

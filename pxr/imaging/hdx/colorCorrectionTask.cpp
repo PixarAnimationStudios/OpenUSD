@@ -443,7 +443,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
     GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
     gfxCmds->SetViewport(vp);
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.
