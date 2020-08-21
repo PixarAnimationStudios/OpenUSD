@@ -40,7 +40,7 @@ static size_t _Hash(HdBufferSpecVector const &specs) {
 
 HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
-        HdStComputeShaderSharedPtr const &kernel,
+        HdSt_ComputeShaderSharedPtr const &kernel,
         HdBufferArrayRangeSharedPtrVector const &inputs,
         HdStResourceRegistrySharedPtr const &registry)
  : _outputBufferSpecs(outputBufferSpecs)

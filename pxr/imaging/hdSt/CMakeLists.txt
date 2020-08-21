@@ -38,7 +38,6 @@ pxr_library(hdSt
         bufferArrayRange
         bufferResource
         commandBuffer
-        computeShader
         copyComputation
         debugCodes
         dispatchBuffer
@@ -114,6 +113,7 @@ pxr_library(hdSt
         basisCurvesShaderKey
         basisCurvesTopology
         codeGen
+        computeShader
         cullingShaderKey
         drawBatch
         imageShaderShaderKey
