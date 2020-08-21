@@ -601,10 +601,20 @@ public:
     /// \name Texture Aspects
     // -----------------------------------------------------------------------//
 
+    ///
+    /// \deprecated It is now the responsibility of the render delegate to load
+    /// the texture (using the file path authored on the texture node in a
+    /// material network).
+    ///
     /// Returns the texture resource ID for a given texture ID.
     HD_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
 
+    ///
+    /// \deprecated It is now the responsibility of the render delegate to load
+    /// the texture (using the file path authored on the texture node in a
+    /// material network).
+    ///
     /// Returns the texture resource for a given texture ID.
     HD_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
