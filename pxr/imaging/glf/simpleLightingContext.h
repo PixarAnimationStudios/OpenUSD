@@ -57,7 +57,7 @@ public:
     GLF_API
     void SetLights(GlfSimpleLightVector const & lights);
     GLF_API
-    GlfSimpleLightVector & GetLights();
+    GlfSimpleLightVector const & GetLights() const;
 
     // returns the effective number of lights taken into account
     // in composable/compatible shader constraints
@@ -72,7 +72,7 @@ public:
     GLF_API
     void SetShadows(GlfSimpleShadowArrayRefPtr const & shadows);
     GLF_API
-    GlfSimpleShadowArrayRefPtr const & GetShadows();
+    GlfSimpleShadowArrayRefPtr const & GetShadows() const;
 
     GLF_API
     void SetMaterial(GlfSimpleMaterial const & material);

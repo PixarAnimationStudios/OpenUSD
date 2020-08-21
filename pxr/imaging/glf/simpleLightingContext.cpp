@@ -105,8 +105,8 @@ GlfSimpleLightingContext::SetLights(GlfSimpleLightVector const & lights)
     }
 }
 
-GlfSimpleLightVector &
-GlfSimpleLightingContext::GetLights()
+const GlfSimpleLightVector &
+GlfSimpleLightingContext::GetLights() const
 {
     return _lights;
 }
@@ -137,7 +137,7 @@ GlfSimpleLightingContext::SetShadows(GlfSimpleShadowArrayRefPtr const & shadows)
 }
 
 GlfSimpleShadowArrayRefPtr const &
-GlfSimpleLightingContext::GetShadows()
+GlfSimpleLightingContext::GetShadows() const
 {
     return _shadows;
 }

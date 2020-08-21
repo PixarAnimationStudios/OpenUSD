@@ -48,6 +48,15 @@ HdxDrawTargetTask::_RenderPassInfo
     unsigned collectionVersion;
 };
 
+struct
+HdxDrawTargetTask::_CameraInfo
+{
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projectionMatrix;
+    GfVec4d viewport;
+    std::vector<GfVec4d> clipPlanes;
+};
+
 static
 HdCompareFunction
 HdxDrawTargetTask_GetResolvedDepthFunc(HdCompareFunction depthFunc,
@@ -265,6 +274,150 @@ _GetSortedDrawTargets(
 
 } // namespace anonymous
 
+HdxDrawTargetTask::_RenderPassInfoVector
+HdxDrawTargetTask::_ComputeRenderPassInfos(HdRenderIndex * const renderIndex)
+{
+    HdxDrawTargetTask::_RenderPassInfoVector result;
+
+    _DrawTargetEntryVector drawTargetEntries;
+    _GetSortedDrawTargets(renderIndex, &drawTargetEntries);
+                              
+    result.reserve(drawTargetEntries.size());
+
+    for (_DrawTargetEntry const &entry : drawTargetEntries) {
+        if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
+            if (drawTarget->IsEnabled()) {
+                result.push_back(
+                    { std::make_unique<HdSt_RenderPass>(
+                            renderIndex, HdRprimCollection()),
+                      std::make_shared<HdStRenderPassState>(),
+                      std::make_shared<HdStSimpleLightingShader>(),
+                      drawTarget,
+                      0 });
+            }
+        }
+    }
+    
+    return result;
+}
+
+
+HdxDrawTargetTask::_CameraInfo
+HdxDrawTargetTask::_ComputeCameraInfo(
+    const HdRenderIndex &renderIndex,
+    const HdStDrawTarget * const drawTarget)
+{
+    // Update camera/framing state
+    // XXX Since we flip the projection matrix below, we can't set the
+    // camera handle on renderPassState and use its projection matrix.
+    GfVec2i const &resolution = drawTarget->GetResolution();
+    const GfVec4d viewport(0, 0, resolution[0], resolution[1]);
+    const double aspect =
+        resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0;
+
+    const HdStDrawTargetRenderPassState * const state =
+        drawTarget->GetDrawTargetRenderPassState();
+
+    const SdfPath &cameraId = state->GetCamera();
+    
+    // XXX: Need to detect when camera changes and only update if
+    // needed
+    const HdCamera * const camera = static_cast<const HdCamera *>(
+        renderIndex.GetSprim(HdPrimTypeTokens->camera, cameraId));
+
+    if (!camera) {
+        // Render pass should not have been added to task list.
+        TF_CODING_ERROR("Invalid camera for render pass: %s",
+                        cameraId.GetText());
+        return { GfMatrix4d(1.0),
+                 GfMatrix4d(1.0),
+                 viewport,
+                 {} };
+    }
+
+    static const GfMatrix4d yflip = GfMatrix4d().SetScale(
+        GfVec3d(1.0, -1.0, 1.0));
+
+    const GfMatrix4d projectionMatrix =
+        CameraUtilConformedWindow(camera->GetProjectionMatrix(), 
+                                  camera->GetWindowPolicy(),
+                                  aspect)
+        * yflip;
+    
+    return { camera->GetViewMatrix(),
+             projectionMatrix,
+             viewport,
+             camera->GetClipPlanes() };
+}
+
+void
+HdxDrawTargetTask::_UpdateRenderPassState(
+    const HdRenderIndex &renderIndex,
+    const _CameraInfo &cameraInfo,
+    HdStSimpleLightingShaderSharedPtr const &lightingShader,
+    const HdStDrawTargetRenderPassState * const srcState,
+    HdStRenderPassStateSharedPtr const &state) const
+{
+    // Update Raster States
+    state->SetOverrideColor(_overrideColor);
+    state->SetWireframeColor(_wireframeColor);
+    state->SetLightingEnabled(_enableLighting);
+    state->SetAlphaThreshold(_alphaThreshold);
+    state->SetCullStyle(_cullStyle);
+
+    state->SetDepthFunc(
+        HdxDrawTargetTask_GetResolvedDepthFunc(
+            _depthFunc, srcState->GetDepthPriority()));
+
+    state->SetAovBindings(srcState->GetAovBindings());
+
+    state->SetLightingShader(lightingShader);
+    
+    state->SetCameraFramingState(
+        cameraInfo.viewMatrix,
+        cameraInfo.projectionMatrix,
+        cameraInfo.viewport,
+        cameraInfo.clipPlanes);
+    
+    state->Prepare(renderIndex.GetResourceRegistry());
+}
+
+void
+HdxDrawTargetTask::_UpdateLightingContext(
+    const _CameraInfo &cameraInfo,
+    GlfSimpleLightingContextConstRefPtr const &srcContext,
+    GlfSimpleLightingContextRefPtr const &ctx)
+{
+    ctx->SetCamera(cameraInfo.viewMatrix, cameraInfo.projectionMatrix);
+
+    if (!srcContext) {
+        return;
+    }
+     
+    ctx->SetUseLighting(srcContext->GetUseLighting());
+    ctx->SetLights(srcContext->GetLights());
+    ctx->SetMaterial(srcContext->GetMaterial());
+    ctx->SetSceneAmbient(srcContext->GetSceneAmbient());
+    ctx->SetShadows(srcContext->GetShadows());
+    ctx->SetUseColorMaterialDiffuse(srcContext->GetUseColorMaterialDiffuse());
+}
+
+void
+HdxDrawTargetTask::_UpdateRenderPass(
+    _RenderPassInfo *info)
+{
+    const HdStDrawTargetRenderPassState * const state =
+        info->target->GetDrawTargetRenderPassState();
+    const unsigned newCollectionVersion = state->GetRprimCollectionVersion();
+
+    if (info->collectionVersion != newCollectionVersion) {
+        info->renderPass->SetRprimCollection(state->GetRprimCollection());
+        info->collectionVersion = newCollectionVersion;
+    }
+    
+    info->renderPass->Sync();
+}
+
 void
 HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
                         HdTaskContext* ctx,
@@ -308,121 +461,36 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        _DrawTargetEntryVector drawTargetEntries;
-        _GetSortedDrawTargets(&renderIndex, &drawTargetEntries);
-                              
-        _renderPassesInfo.clear();
-
-        _renderPassesInfo.reserve(drawTargetEntries.size());
-
-        for (_DrawTargetEntry const &entry : drawTargetEntries) {
-            if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
-                if (drawTarget->IsEnabled()) {
-                    _renderPassesInfo.push_back(
-                        { std::make_unique<HdSt_RenderPass>(
-                                &renderIndex, HdRprimCollection()),
-                          std::make_shared<HdStRenderPassState>(),
-                          std::make_shared<HdStSimpleLightingShader>(),
-                          drawTarget,
-                          0 });
-                }
-            }
-        }
+        _renderPassesInfo = _ComputeRenderPassInfos(&renderIndex);
         _currentDrawTargetSetVersion = drawTargetVersion;
     }
 
     ///----------------------
-    static const GfMatrix4d yflip = GfMatrix4d().SetScale(
-        GfVec3d(1.0, -1.0, 1.0));
 
     // lighting context
-    GlfSimpleLightingContextRefPtr lightingContext;
-    _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
+    GlfSimpleLightingContextRefPtr srcLightingContext;
+    _GetTaskContextData(ctx, HdxTokens->lightingContext, &srcLightingContext);
 
     for (_RenderPassInfo &renderPassInfo : _renderPassesInfo) {
-        HdStRenderPassStateSharedPtr const &renderPassState = 
-            renderPassInfo.renderPassState;
-        HdStDrawTarget * const drawTarget = renderPassInfo.target;
-        const HdStDrawTargetRenderPassState * const drawTargetRenderPassState =
-            drawTarget->GetDrawTargetRenderPassState();
-        const SdfPath &cameraId = drawTargetRenderPassState->GetCamera();
 
-        // XXX: Need to detect when camera changes and only update if
-        // needed
-        const HdCamera * const camera = static_cast<const HdCamera *>(
-            renderIndex.GetSprim(HdPrimTypeTokens->camera,
-                cameraId));
+        const _CameraInfo cameraInfo = _ComputeCameraInfo(
+            renderIndex,
+            renderPassInfo.target);
 
-        if (camera == nullptr) {
-            // Render pass should not have been added to task list.
-            TF_CODING_ERROR("Invalid camera for render pass: %s",
-                            cameraId.GetText());
-            return;
-        }
+        _UpdateLightingContext(
+            cameraInfo,
+            srcLightingContext,
+            renderPassInfo.simpleLightingShader->GetLightingContext());
 
-        const HdCompareFunction depthFunc =
-            HdxDrawTargetTask_GetResolvedDepthFunc(
-                _depthFunc,
-                drawTargetRenderPassState->GetDepthPriority());
+        _UpdateRenderPassState(
+            renderIndex,
+            cameraInfo,
+            renderPassInfo.simpleLightingShader,
+            renderPassInfo.target->GetDrawTargetRenderPassState(),
+            renderPassInfo.renderPassState);
 
-        // Update Raster States
-        renderPassState->SetOverrideColor(_overrideColor);
-        renderPassState->SetWireframeColor(_wireframeColor);
-        renderPassState->SetLightingEnabled(_enableLighting);
-        renderPassState->SetAlphaThreshold(_alphaThreshold);
-        renderPassState->SetCullStyle(_cullStyle);
-        renderPassState->SetDepthFunc(depthFunc);
-        renderPassState->SetAovBindings(
-            drawTargetRenderPassState->GetAovBindings());
-
-        HdStSimpleLightingShaderSharedPtr const& simpleLightingShader
-            = renderPassInfo.simpleLightingShader;
-        GlfSimpleLightingContextRefPtr const& simpleLightingContext =
-            simpleLightingShader->GetLightingContext();
-
-        renderPassState->SetLightingShader(simpleLightingShader);
-
-        // Update camera/framing state
-        // XXX Since we flip the projection matrix below, we can't set the
-        // camera handle on renderPassState and use its projection matrix.
-        GfVec2i const &resolution = drawTarget->GetResolution();
-
-        GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
-        GfMatrix4d projectionMatrix = camera->GetProjectionMatrix();
-        projectionMatrix = CameraUtilConformedWindow(projectionMatrix, 
-            camera->GetWindowPolicy(),
-            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
-        projectionMatrix = projectionMatrix * yflip;
-
-        const GfVec4d viewport(0, 0, resolution[0], resolution[1]);
-        renderPassState->SetCameraFramingState(
-            viewMatrix, projectionMatrix, viewport, camera->GetClipPlanes());
-
-        simpleLightingContext->SetCamera(viewMatrix, projectionMatrix);
-
-        if (lightingContext) {
-            simpleLightingContext->SetUseLighting(
-                lightingContext->GetUseLighting());
-            simpleLightingContext->SetLights(lightingContext->GetLights());
-            simpleLightingContext->SetMaterial(lightingContext->GetMaterial());
-            simpleLightingContext->SetSceneAmbient(
-                lightingContext->GetSceneAmbient());
-            simpleLightingContext->SetShadows(lightingContext->GetShadows());
-            simpleLightingContext->SetUseColorMaterialDiffuse(
-                lightingContext->GetUseColorMaterialDiffuse());
-        }
-
-        renderPassState->Prepare(renderIndex.GetResourceRegistry());
-
-        const unsigned newCollectionVersion =
-            drawTargetRenderPassState->GetRprimCollectionVersion();
-        if (renderPassInfo.collectionVersion != newCollectionVersion) {
-            renderPassInfo.renderPass->SetRprimCollection(
-                drawTargetRenderPassState->GetRprimCollection());
-            renderPassInfo.collectionVersion = newCollectionVersion;
-        }
-
-        renderPassInfo.renderPass->Sync();
+        _UpdateRenderPass(
+            &renderPassInfo);
     }
 
     // XXX: Long-term Alpha to Coverage will be a render style on the
