@@ -128,10 +128,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
 #include "pxr/usd/usdShade/nodeDefAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
+{
+    // UsdShadeShader prims are connectable, with default behavior rules.
+    UsdShadeRegisterConnectableAPIBehavior<UsdShadeShader>();
+}
 
 UsdShadeShader::UsdShadeShader(const UsdShadeConnectableAPI &connectable)
     : UsdShadeShader(connectable.GetPrim())

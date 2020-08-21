@@ -70,13 +70,17 @@ class NodeGraph "NodeGraph" (
     output on a shader inside the node-graph.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"'''
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"'''
     }
 ) {
 
@@ -229,6 +233,9 @@ class Shader "Shader" (
     input parameters are encapsulated in the property schema UsdShadeInput.
     """ 
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"

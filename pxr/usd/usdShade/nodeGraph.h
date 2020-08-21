@@ -38,6 +38,7 @@
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -372,6 +373,16 @@ public:
         bool computeTransitiveConsumers=false) const;
 
     /// @}
+
+    /// UsdShadeNodeGraph provides its own connectability behavior,
+    /// to support nesting of node graphs.
+    class ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior {
+        USDSHADE_API
+        bool
+        CanConnectOutputToSource(const UsdShadeOutput &output,
+                                 const UsdAttribute &source,
+                                 std::string *reason) override;
+    };
 
 };
 

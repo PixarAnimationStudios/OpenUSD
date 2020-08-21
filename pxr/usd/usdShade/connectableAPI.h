@@ -201,7 +201,8 @@ public:
     /// source attribute, which can be an input or an output.
     /// 
     /// The result depends on the "connectability" of the input and the source 
-    /// attributes. 
+    /// attributes.  Depending on the prim type, this may require the plugin
+    /// that defines connectability behavior for that prim type be loaded.
     /// 
     /// \sa UsdShadeInput::SetConnectability
     /// \sa UsdShadeInput::GetConnectability

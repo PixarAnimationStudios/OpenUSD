@@ -13,6 +13,7 @@ pxr_library(usdShade
 
     PUBLIC_CLASSES
         connectableAPI
+        connectableAPIBehavior
         coordSysAPI
         input
         material
