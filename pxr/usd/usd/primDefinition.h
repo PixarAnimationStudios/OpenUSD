@@ -67,14 +67,6 @@ public:
         return SdfSpecTypeUnknown;
     }
 
-    /// \deprecated Please use the API on UsdPrimDefinition itself to inquire
-    /// about metadata and properties.
-    /// 
-    /// Returns the prim spec in the registered schematics that represents this 
-    /// prim definition's prim type. This will be null for invalid prim types
-    /// or definitions composed for a prim with applied API schemas.
-    SdfPrimSpecHandle GetSchemaPrimSpec() const { return _primSpec; }
-
     /// Return the property spec that defines the fallback for the property
     /// named \a propName on prims of this prim definition's type. Return null 
     /// if there is no such property spec.

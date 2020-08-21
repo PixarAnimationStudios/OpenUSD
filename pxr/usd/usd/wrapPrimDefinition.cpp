@@ -89,7 +89,6 @@ void wrapUsdPrimDefinition()
              return_value_policy<TfPySequenceToList>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
              return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaPrimSpec", &This::GetSchemaPrimSpec)
         .def("GetSchemaPropertySpec", &This::GetSchemaPropertySpec,
              (arg("propName")))
         .def("GetSchemaAttributeSpec", &This::GetSchemaAttributeSpec,

@@ -51,12 +51,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(primDef.GetDocumentation(),
                          "Testing documentation metadata")
 
-        primSpec = primDef.GetSchemaPrimSpec()
-        self.assertEqual(primSpec.GetInfo("documentation"),
-                         "Testing documentation metadata")
-        self.assertEqual(primSpec.GetInfo("hidden"), True)
-        self.assertEqual(primSpec.GetInfo("testCustomMetadata"), "garply")
-
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "MetadataTest")
@@ -218,8 +212,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             'MetadataTest')
         self.assertTrue(primDef)
-        # Prim def has schema spec with USD type name.
-        self.assertEqual(primDef.GetSchemaPrimSpec().name, 'MetadataTest')
 
         # Prim def has built in property names.
         self.assertEqual(primDef.GetPropertyNames(), ['testAttr', 'testRel'])
@@ -248,8 +240,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
             'CollectionAPI')
         self.assertTrue(primDef)
-        # Prim def has schema spec with USD type name.
-        self.assertEqual(primDef.GetSchemaPrimSpec().name, 'CollectionAPI')
 
         # Prim def has built in property names.
         self.assertEqual(primDef.GetPropertyNames(), 
