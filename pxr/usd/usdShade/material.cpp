@@ -204,6 +204,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/utils.h"
@@ -622,6 +623,24 @@ UsdShadeMaterial::ComputeVolumeSource(
 {
     return _ComputeNamedOutputShader(UsdShadeTokens->volume, renderContext, 
             sourceName, sourceType);
+}
+
+class UsdShadeMaterial_ConnectableAPIBehavior : public UsdShadeNodeGraph::ConnectableAPIBehavior
+{
+    bool
+    CanConnectInputToSource(const UsdShadeInput &input,
+                            const UsdAttribute &source,
+                            std::string *reason) override
+    {
+        *reason = "Material inputs are not connectable.";
+        return false;
+    }
+};
+
+TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
+{
+    UsdShadeRegisterConnectableAPIBehavior<UsdShadeMaterial,
+        UsdShadeMaterial_ConnectableAPIBehavior>();
 }
 
 

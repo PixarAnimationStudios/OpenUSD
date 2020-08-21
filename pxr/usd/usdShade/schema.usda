@@ -136,6 +136,9 @@ class Material "Material" (
     
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
