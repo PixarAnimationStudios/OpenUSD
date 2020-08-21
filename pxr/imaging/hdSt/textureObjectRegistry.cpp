@@ -148,6 +148,11 @@ HdSt_TextureObjectRegistry::Commit()
         TRACE_FUNCTION_SCOPE("Loading textures");
 
         if (_isGlfBaseTextureDataThreadSafe) {
+            // Loading a texture file of a previously unseen type might
+            // require loading a new plugin, so give up the GIL temporarily
+            // to the threads loading the images.
+            TF_PY_ALLOW_THREADS_IN_SCOPE();
+
             // Parallel load texture files
             WorkParallelForEach(result.begin(), result.end(),
                                 [](const HdStTextureObjectSharedPtr &texture) {
