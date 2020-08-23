@@ -82,7 +82,7 @@ ArchSetEnv(const std::string &name, const std::string &value, bool overwrite)
 #if defined(ARCH_OS_WINDOWS)
     if (!overwrite) {
         const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
-        if (size == 0) {
+        if (size != 0) {
             // Already exists.
             return true;
         }
