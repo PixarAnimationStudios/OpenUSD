@@ -322,7 +322,12 @@ private:
     // Data for each skinned prim.
     struct _SkinnedPrimData {
         _SkinnedPrimData() = default;
-        _SkinnedPrimData(const UsdSkelSkeletonQuery& skelQuery,
+        
+        /// Construct skinned prim, referencing the skeleton at \p skelPath.
+        /// XXX: We cannot extract the skel path from the skelQuery because
+        /// the skelQuery might refer to a prim within an instance master.
+        _SkinnedPrimData(const SdfPath& skelPath,
+                         const UsdSkelSkeletonQuery& skelQuery,
                          const UsdSkelSkinningQuery& skinningQuery,
                          const SdfPath& skelRootPath);
 

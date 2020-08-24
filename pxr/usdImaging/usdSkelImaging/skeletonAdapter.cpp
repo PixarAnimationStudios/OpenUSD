@@ -163,7 +163,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
         SdfPath instancer = instancerContext ?
             instancerContext->instancerCachePath : SdfPath();
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
-                        instancer, prim, shared_from_this());
+                           instancer, prim, shared_from_this());
     }
 
     // Insert a computation for each skinned prim targeted by this
@@ -199,7 +199,8 @@ UsdSkelImagingSkeletonAdapter::Populate(
                                     skinnedPrim.GetPath(), instancerContext);
 
             _skinnedPrimDataCache[skinnedPrimPath] =
-                _SkinnedPrimData(skelData->skelQuery, query, skelRootPath);
+                _SkinnedPrimData(skelPath, skelData->skelQuery,
+                                 query, skelRootPath);
 
             SdfPath compPath = _GetSkinningComputationPath(skinnedPrimPath);
 
@@ -2063,13 +2064,13 @@ UsdSkelImagingSkeletonAdapter::_GetSkinnedPrimData(
     return it != _skinnedPrimDataCache.end() ? &it->second : nullptr;
 }
 
-
 UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
+    const SdfPath& skelPath,
     const UsdSkelSkeletonQuery& skelQuery,
     const UsdSkelSkinningQuery& skinningQuery,
     const SdfPath& skelRootPath)
     : skinningQuery(skinningQuery),
-      skelPath(skelQuery.GetPrim().GetPath()),
+      skelPath(skelPath),
       skelRootPath(skelRootPath),
       hasJointInfluences(skinningQuery.HasJointInfluences())
 {

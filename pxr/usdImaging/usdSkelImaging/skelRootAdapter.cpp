@@ -95,7 +95,7 @@ UsdSkelImagingSkelRootAdapter::Populate(
         const UsdSkelSkeleton& skel = binding.GetSkeleton();
 
         UsdImagingPrimAdapterSharedPtr adapter =
-            _GetPrimAdapter(skel.GetPrim());
+            _GetPrimAdapter(skel.GetPrim(), /*ignoreInstancing*/ true);
         TF_VERIFY(adapter);
 
         auto skelAdapter = std::dynamic_pointer_cast<
