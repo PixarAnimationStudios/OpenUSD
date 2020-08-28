@@ -1,4 +1,4 @@
-#usda 1.0
+#sdf 1.4.32
 
 # Exchange these names.
 def Scope "B"

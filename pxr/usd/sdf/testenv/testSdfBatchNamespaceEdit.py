@@ -65,8 +65,8 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
 
         print('\nTest Process()')
 
-        layer = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/test.usda')
-        final = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/final.usda')
+        layer = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/test.sdf')
+        final = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/final.sdf')
         self.assertTrue(layer is not None)
         self.assertTrue(final is not None)
 
