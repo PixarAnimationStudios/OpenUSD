@@ -205,6 +205,116 @@ using HgiTextureHandle = HgiHandle<class HgiTexture>;
 using HgiTextureHandleVector = std::vector<HgiTextureHandle>;
 
 
+/// \struct HgiTextureViewDesc
+///
+/// Describes the properties needed to create a GPU texture view from an
+/// existing GPU texture object.
+///
+/// <ul>
+/// <li>debugName:
+///   This label can be applied as debug label for GPU debugging.</li>
+/// <li>format:
+///   The format of the texture view. This format must be compatible with
+///   the sourceTexture, but does not have to be the identical format.
+///   Generally: All 8-, 16-, 32-, 64-, and 128-bit color formats are 
+///   compatible with other formats with the same bit length.
+///   For example HgiFormatFloat32Vec4 and HgiFormatInt32Vec4 are compatible.
+/// <li>layerCount:
+///   The number of layers (texture-arrays).</li>
+/// <li>mipLevels:
+///   The number of mips in texture.</li>
+/// <li>sourceTexture:
+///   Handle to the HgiTexture to be used as the source data backing.</li>
+/// <li>sourceFirstLayer:
+///   The layer index to use from the source texture as the first layer of the
+///   view.</li>
+/// <li>sourceFirstMip:
+///   The mip index to ues from the source texture as the first mip of the
+///   view.</li>
+///   </ul>
+///
+struct HgiTextureViewDesc
+{
+    HgiTextureViewDesc()
+    : format(HgiFormatInvalid)
+    , layerCount(1)
+    , mipLevels(1)
+    , sourceTexture()
+    , sourceFirstLayer(0)
+    , sourceFirstMip(0)
+    {}
+
+    std::string debugName;
+    HgiFormat format;
+    uint16_t layerCount;
+    uint16_t mipLevels;
+    HgiTextureHandle sourceTexture;
+    uint16_t sourceFirstLayer;
+    uint16_t sourceFirstMip;
+};
+
+HGI_API
+bool operator==(
+    const HgiTextureViewDesc& lhs,
+    const HgiTextureViewDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiTextureViewDesc& lhs,
+    const HgiTextureViewDesc& rhs);
+
+///
+/// \class HgiTextureView
+///
+/// Represents a graphics platform independent GPU texture view resource.
+/// Texture Views should be created via Hgi::CreateTextureView.
+///
+/// A TextureView aliases the data of another texture and is a thin wrapper
+/// around a HgiTextureHandle. The embeded texture handle is used to
+/// add the texture to resource bindings for use in shaders.
+///
+/// For example when using a compute shader to fill the mip levels of a
+/// texture, like a lightDome texture, we can use a texture view to give the 
+/// shader access to a specific mip level of a sourceTexture via a TextureView.
+///
+/// Another example is to conserve resources by reusing a RGBAF32 texture as
+/// a RGBAI32 texture once the F32 texture is no longer needed
+/// (transient resources).
+///
+class HgiTextureView
+{
+public:
+    HGI_API
+    HgiTextureView(HgiTextureViewDesc const& desc);
+
+    HGI_API
+    virtual ~HgiTextureView();
+
+    /// Set the handle to the texture that aliases another texture.
+    HGI_API
+    void SetViewTexture(HgiTextureHandle const& handle);
+
+    /// Returns the handle to the texture that aliases another texture.
+    HGI_API
+    HgiTextureHandle const& GetViewTexture() const;
+
+protected:
+    HgiTextureHandle _viewTexture;
+
+private:
+    HgiTextureView() = delete;
+    HgiTextureView & operator=(const HgiTextureView&) = delete;
+    HgiTextureView(const HgiTextureView&) = delete;
+};
+
+
+/// Explicitly instantiate and define texture view handle
+template class HgiHandle<class HgiTextureView>;
+using HgiTextureViewHandle = HgiHandle<class HgiTextureView>;
+using HgiTextureViewHandleVector = std::vector<HgiTextureViewHandle>;
+
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

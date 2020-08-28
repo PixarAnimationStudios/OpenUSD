@@ -75,5 +75,41 @@ bool operator!=(const HgiTextureDesc& lhs,
     return !(lhs == rhs);
 }
 
+bool operator==(const HgiTextureViewDesc& lhs,
+    const HgiTextureViewDesc& rhs)
+{
+    return  lhs.debugName == rhs.debugName &&
+            lhs.format == rhs.format &&
+            lhs.layerCount == rhs.layerCount &&
+            lhs.mipLevels == rhs.mipLevels &&
+            lhs.sourceTexture == rhs.sourceTexture &&
+            lhs.sourceFirstLayer == rhs.sourceFirstLayer &&
+            lhs.sourceFirstMip == rhs.sourceFirstMip
+    ;
+}
+
+bool operator!=(const HgiTextureViewDesc& lhs,
+    const HgiTextureViewDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiTextureView::HgiTextureView(HgiTextureViewDesc const& desc)
+{
+}
+
+HgiTextureView::~HgiTextureView() = default;
+
+void
+HgiTextureView::SetViewTexture(HgiTextureHandle const& handle)
+{
+    _viewTexture = handle;
+}
+
+HgiTextureHandle const&
+HgiTextureView::GetViewTexture() const
+{
+    return _viewTexture;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

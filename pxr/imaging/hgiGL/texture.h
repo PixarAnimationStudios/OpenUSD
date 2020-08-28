@@ -56,6 +56,9 @@ protected:
     HGIGL_API
     HgiGLTexture(HgiTextureDesc const & desc);
 
+    HGIGL_API
+    HgiGLTexture(HgiTextureViewDesc const & desc);
+
 private:
     HgiGLTexture() = delete;
     HgiGLTexture & operator=(const HgiGLTexture&) = delete;

@@ -173,6 +173,22 @@ public:
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
 
+    /// Create a texture view in rendering backend.
+    /// A texture view aliases another texture's data.
+    /// It is the responsibility of the client to ensure that the sourceTexture
+    /// is not destroyed while the texture view is in use.
+    /// Thread safety: Creation must happen on main thread. See notes above.
+    HGI_API
+    virtual HgiTextureViewHandle CreateTextureView(
+        HgiTextureViewDesc const & desc) = 0;
+
+    /// Destroy a texture view in rendering backend.
+    /// This will destroy the view's texture, but not the sourceTexture that
+    /// was aliased by the view. The sourceTexture data remains unchanged.
+    /// Thread safety: Destruction must happen on main thread. See notes above.
+    HGI_API
+    virtual void DestroyTextureView(HgiTextureViewHandle* viewHandle) = 0;
+
     /// Create a sampler in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.
     HGI_API

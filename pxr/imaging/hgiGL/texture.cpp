@@ -215,8 +215,6 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     }
 
     if (desc.sampleCount == HgiSampleCount1) {
-        // XXX sampler state etc should all be set via tex descriptor.
-        //     (probably pass in HgiSamplerHandle in tex descriptor)
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -299,6 +297,78 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         _textureId,
         GL_TEXTURE_SWIZZLE_RGBA,
         swizzleMask);
+
+    HGIGL_POST_PENDING_GL_ERRORS();
+}
+
+HgiGLTexture::HgiGLTexture(HgiTextureViewDesc const & desc)
+    : HgiTexture(desc.sourceTexture->GetDescriptor())
+    , _textureId(0)
+{
+    // Update the texture descriptor to reflect the view desc
+    _descriptor.debugName = desc.debugName;
+    _descriptor.format = desc.format;
+    _descriptor.layerCount = desc.layerCount;
+    _descriptor.mipLevels = desc.mipLevels;
+
+    HgiGLTexture* srcTexture =
+        static_cast<HgiGLTexture*>(desc.sourceTexture.Get());
+    GLenum glInternalFormat = 0;
+
+    if (srcTexture->GetDescriptor().usage & HgiTextureUsageBitsDepthTarget) {
+        TF_VERIFY(desc.format == HgiFormatFloat32 ||
+                  desc.format == HgiFormatFloat32UInt8);
+        
+        if (desc.format == HgiFormatFloat32UInt8) {
+            glInternalFormat = GL_DEPTH32F_STENCIL8;
+        } else {
+            glInternalFormat = GL_DEPTH_COMPONENT32F;
+        }
+    } else {
+        GLenum glFormat = 0;
+        GLenum glPixelType = 0;
+        HgiGLConversions::GetFormat(
+            desc.format,
+            &glFormat,
+            &glPixelType,
+            &glInternalFormat);
+    }
+
+    // Note we must use glGenTextures, not glCreateTextures.
+    // glTextureView requires the textureId to be unbound and not given a type.
+    glGenTextures(1, &_textureId);
+
+    GLenum textureType =
+        HgiGLConversions::GetTextureType(srcTexture->GetDescriptor().type);
+
+    glTextureView(
+        _textureId,
+        textureType,
+        srcTexture->GetTextureId(),
+        glInternalFormat, 
+        desc.sourceFirstMip, 
+        desc.mipLevels,
+        desc.sourceFirstLayer,
+        desc.layerCount);
+
+    if (!desc.debugName.empty()) {
+        glObjectLabel(GL_TEXTURE, _textureId,-1, desc.debugName.c_str());
+    }
+
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    const uint16_t mips = desc.mipLevels;
+    GLint minFilter = mips > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+    glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    float aniso = 2.0f;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+    glTextureParameterf(_textureId, GL_TEXTURE_MAX_ANISOTROPY_EXT,aniso);
+    glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
+    glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 
     HGIGL_POST_PENDING_GL_ERRORS();
 }
