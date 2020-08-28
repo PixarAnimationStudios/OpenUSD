@@ -51,11 +51,17 @@ public:
     virtual std::unique_ptr<HdStSubtextureIdentifier> Clone() const = 0;
 
     HDST_API
-    virtual ID Hash() const;
-
-    HDST_API
     virtual ~HdStSubtextureIdentifier();
+
+protected:
+    HDST_API
+    friend size_t hash_value(const HdStSubtextureIdentifier &subId);
+
+    virtual ID _Hash() const = 0;
 };
+
+HDST_API
+size_t hash_value(const HdStSubtextureIdentifier &subId);
 
 ///
 /// \class HdStFieldBaseSubtextureIdentifier
@@ -77,14 +83,14 @@ public:
     int GetFieldIndex() const { return _fieldIndex; }
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     ~HdStFieldBaseSubtextureIdentifier() override = 0;
     
 protected:
     HDST_API
     HdStFieldBaseSubtextureIdentifier(TfToken const &fieldName, int fieldIndex);
+
+    HDST_API
+    ID _Hash() const override;
 
 private:
     TfToken _fieldName;
@@ -118,9 +124,6 @@ public:
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     bool GetFlipVertically() const { return _flipVertically; }
 
     HDST_API
@@ -132,25 +135,15 @@ public:
     HDST_API
     ~HdStAssetUvSubtextureIdentifier() override;
 
+protected:
+    HDST_API
+    ID _Hash() const override;
+
 private:
     bool _flipVertically;
     bool _premultiplyAlpha;
     TfToken _sourceColorSpace;
 };
-
-template <class HashState>
-void
-TfHashAppend(HashState &h, HdStAssetUvSubtextureIdentifier const &subId) {
-    static size_t vertFlipFalse = TfToken("notVerticallyFlipped").Hash();
-    static size_t vertFlipTrue = TfToken("verticallyFlipped").Hash();
-
-    static size_t premulAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
-    static size_t premulAlphaTrue = TfToken("premultiplyAlpha").Hash();
-
-    h.Append(subId.GetFlipVertically() ? vertFlipTrue : vertFlipFalse);
-    h.Append(subId.GetPremultiplyAlpha() ? premulAlphaTrue :  premulAlphaFalse);
-    h.Append(subId.GetSourceColorSpace().Hash());
-}
 
 ///
 /// \class HdStDynamicUvSubtextureIdentifier
@@ -192,8 +185,9 @@ public:
     HDST_API
     virtual HdStDynamicUvTextureImplementation *GetTextureImplementation() const;
 
+protected:
     HDST_API
-    ID Hash() const override;
+    ID _Hash() const override;
 };
 
 ///
@@ -214,13 +208,14 @@ public:
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
     
     HDST_API
     ~HdStPtexSubtextureIdentifier() override;
+
+protected:
+    HDST_API
+    ID _Hash() const override;
 
 private:
     bool _premultiplyAlpha;
@@ -246,9 +241,6 @@ public:
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     bool GetPremultiplyAlpha() const { return _premultiplyAlpha; }
 
     HDST_API
@@ -257,21 +249,14 @@ public:
     HDST_API
     ~HdStUdimSubtextureIdentifier() override;
 
+protected:
+    HDST_API
+    ID _Hash() const override;
+
 private:
     bool _premultiplyAlpha;
     TfToken _sourceColorSpace;
 };
-
-template <class HashState>
-void
-TfHashAppend(HashState &h, HdStUdimSubtextureIdentifier const &subId) {
-    static size_t premulAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
-    static size_t premulAlphaTrue = TfToken("premultiplyAlpha").Hash();
-
-    h.Append(subId.GetPremultiplyAlpha() ? premulAlphaTrue :  premulAlphaFalse,
-             subId.GetSourceColorSpace().Hash());
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

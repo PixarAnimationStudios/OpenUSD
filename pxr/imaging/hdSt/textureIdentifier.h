@@ -86,11 +86,6 @@ public:
         return _subtextureId.get();
     }
 
-    /// Hash
-    ///
-    HDST_API
-    ID Hash() const;
-    
     bool operator==(const HdStTextureIdentifier &other) const;
     bool operator!=(const HdStTextureIdentifier &other) const;
 
@@ -98,6 +93,8 @@ private:
     TfToken _filePath;
     std::unique_ptr<const HdStSubtextureIdentifier> _subtextureId;
 };
+
+size_t hash_value(const HdStTextureIdentifier &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

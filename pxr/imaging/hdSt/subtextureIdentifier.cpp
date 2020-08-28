@@ -25,8 +25,6 @@
 
 #include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////////
@@ -34,10 +32,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStSubtextureIdentifier::~HdStSubtextureIdentifier() = default;
 
-HdStSubtextureIdentifier::ID
-HdStSubtextureIdentifier::Hash() const {
-    static ID result = TfToken().Hash();
-    return result;
+size_t
+hash_value(const HdStSubtextureIdentifier &subId)
+{
+    return subId._Hash();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -52,14 +50,8 @@ HdStFieldBaseSubtextureIdentifier::~HdStFieldBaseSubtextureIdentifier()
     = default;
 
 HdStSubtextureIdentifier::ID
-HdStFieldBaseSubtextureIdentifier::Hash() const {
-    static ID typeHash = TfToken("HdStFielfSubtextureIdentifier").Hash();
-    
-    ID hash = typeHash;
-    boost::hash_combine(hash, _fieldName.Hash());
-    boost::hash_combine(hash, _fieldIndex);
-
-    return hash;
+HdStFieldBaseSubtextureIdentifier::_Hash() const {
+    return TfHash::Combine(_fieldName, _fieldIndex);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -86,9 +78,16 @@ HdStAssetUvSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStAssetUvSubtextureIdentifier::Hash() const
+HdStAssetUvSubtextureIdentifier::_Hash() const
 {
-    return TfHash()(*this);
+    static ID typeHash =
+        TfHash()(std::string("HdStAssetUvSubtextureIdentifier"));
+
+    return TfHash::Combine(
+        typeHash,
+        GetFlipVertically(),
+        GetPremultiplyAlpha(),
+        GetSourceColorSpace());
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -107,10 +106,11 @@ HdStDynamicUvSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStDynamicUvSubtextureIdentifier::Hash() const
+HdStDynamicUvSubtextureIdentifier::_Hash() const
 {
-    static ID result = TfToken("dynamicTexture").Hash();
-    return result;
+    static ID typeHash =
+        TfHash()(std::string("HdStDynamicUvSubtextureIdentifier"));
+    return typeHash;
 }
 
 HdStDynamicUvTextureImplementation *
@@ -139,9 +139,15 @@ HdStUdimSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStUdimSubtextureIdentifier::Hash() const
+HdStUdimSubtextureIdentifier::_Hash() const
 {
-    return TfHash()(*this);
+    static ID typeHash =
+        TfHash()(std::string("HdStUdimSubtextureIdentifier"));
+
+    return TfHash::Combine(
+        typeHash,
+        GetPremultiplyAlpha(),
+        GetSourceColorSpace());
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -164,16 +170,14 @@ HdStPtexSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStPtexSubtextureIdentifier::Hash() const
+HdStPtexSubtextureIdentifier::_Hash() const
 {
-    static ID premultiplyAlphaTrue = TfToken("premultiplyAlpha").Hash();
-    static ID premultiplyAlphaFalse = TfToken("noPremultiplyAlpha").Hash();
+    static ID typeHash =
+        TfHash()(std::string("HdStPtexSubtextureIdentifier"));
 
-    if (GetPremultiplyAlpha()) {
-        return premultiplyAlphaTrue;
-    } else {
-        return premultiplyAlphaFalse;
-    }
+    return TfHash::Combine(
+        typeHash,
+        GetPremultiplyAlpha());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

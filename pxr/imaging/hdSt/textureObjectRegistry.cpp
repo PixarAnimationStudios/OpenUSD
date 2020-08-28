@@ -84,7 +84,7 @@ HdSt_TextureObjectRegistry::AllocateTextureObject(
     // Check with instance registry and allocate texture and sampler object
     // if first object.
     HdInstance<HdStTextureObjectSharedPtr> inst =
-        _textureObjectRegistry.GetInstance(textureId.Hash());
+        _textureObjectRegistry.GetInstance(TfHash()(textureId));
 
     if (inst.IsFirstInstance()) {
         HdStTextureObjectSharedPtr const texture = _MakeTextureObject(

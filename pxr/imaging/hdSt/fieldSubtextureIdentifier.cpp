@@ -24,8 +24,6 @@
 
 #include "pxr/imaging/hdSt/fieldSubtextureIdentifier.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////////
@@ -48,14 +46,14 @@ HdStOpenVDBAssetSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStOpenVDBAssetSubtextureIdentifier::Hash() const
+HdStOpenVDBAssetSubtextureIdentifier::_Hash() const
 {
-    static ID typeHash = TfToken("vdb").Hash();
+    static ID typeHash =
+        TfHash()(std::string("vdb"));
 
-    ID hash = typeHash;
-    boost::hash_combine(hash, HdStFieldBaseSubtextureIdentifier::Hash());
-
-    return hash;
+    return TfHash::Combine(
+        typeHash,
+        HdStFieldBaseSubtextureIdentifier::_Hash());
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -81,15 +79,15 @@ HdStField3DAssetSubtextureIdentifier::Clone() const
 }
 
 HdStSubtextureIdentifier::ID
-HdStField3DAssetSubtextureIdentifier::Hash() const
+HdStField3DAssetSubtextureIdentifier::_Hash() const
 {
-    static ID typeHash = TfToken("Field3D").Hash();
+    static ID typeHash =
+        TfHash()(std::string("Field3D"));
 
-    ID hash = typeHash;
-    boost::hash_combine(hash, HdStFieldBaseSubtextureIdentifier::Hash());
-    boost::hash_combine(hash, _fieldPurpose.Hash());
-
-    return hash;
+    return TfHash::Combine(
+        typeHash,
+        HdStFieldBaseSubtextureIdentifier::_Hash(),
+        _fieldPurpose);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

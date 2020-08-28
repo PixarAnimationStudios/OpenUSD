@@ -50,10 +50,11 @@ public:
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     ~HdStOpenVDBAssetSubtextureIdentifier() override;
+
+protected:
+    HDST_API
+    ID _Hash() const override;
 };
 
 ///
@@ -82,13 +83,14 @@ public:
     std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
 
     HDST_API
-    ID Hash() const override;
-
-    HDST_API
     TfToken const &GetFieldPurpose() const { return _fieldPurpose; }
 
     HDST_API
     ~HdStField3DAssetSubtextureIdentifier() override;
+
+protected:
+    HDST_API
+    ID _Hash() const override;
 
 private:
     TfToken _fieldPurpose;

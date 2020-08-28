@@ -25,8 +25,6 @@
 
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static
@@ -76,22 +74,12 @@ HdStTextureIdentifier::operator=(const HdStTextureIdentifier &textureId)
 
 HdStTextureIdentifier::~HdStTextureIdentifier() = default;
 
-HdStTextureIdentifier::ID
-HdStTextureIdentifier::Hash() const
-{
-     size_t result = _filePath.Hash();
-     if (_subtextureId) {
-         boost::hash_combine(result, _subtextureId->Hash());
-     }
-     return result;
-}
-
 static
 std::pair<bool, HdStTextureIdentifier::ID>
 _OptionalSubidentifierHash(const HdStTextureIdentifier &id)
 {
     if (const HdStSubtextureIdentifier * subId = id.GetSubtextureIdentifier()) {
-        return {true, subId->Hash()};
+        return {true, TfHash()(*subId)};
     }
     return {false, 0};
 }
@@ -108,6 +96,17 @@ bool
 HdStTextureIdentifier::operator!=(const HdStTextureIdentifier &other) const
 {
     return !(*this == other);
+}
+
+size_t
+hash_value(const HdStTextureIdentifier &id)
+{
+    if (const HdStSubtextureIdentifier * const subId =
+                                    id.GetSubtextureIdentifier()) {
+        return TfHash::Combine(id.GetFilePath(), *subId);
+    } else {
+        return TfHash()(id.GetFilePath());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
