@@ -269,8 +269,12 @@ HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
             copyOp.byteSize,
             src);
 
-        // Make sure the copy is finished before reads from buffer.
-        glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+        // We do not need this barrier because (currently) no shaders write
+        // to these buffers from Storm. Meaning: we can rely on OpenGL's
+        // implicit synch. Adding this barrier would cause some performance
+        // regressions. If we do need this barrier in the future, we need to
+        // find a Hgi way of expressing when the barrier should be inserted.
+        // glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };
