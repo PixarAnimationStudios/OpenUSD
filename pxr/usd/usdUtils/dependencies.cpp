@@ -474,6 +474,11 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
                     const std::string clipsDir = TfGetPathName(
                             templateAssetPath);
                     // Resolve clipsDir relative to this layer. 
+                    if (clipsDir.empty()) {
+                        TF_WARN("Invalid template asset path '%s'.",
+                            templateAssetPath.c_str());
+                        continue;
+                    }
                     const std::string clipsDirAssetPath = 
                         SdfComputeAssetPathRelativeToLayer(_layer, clipsDir);
 
