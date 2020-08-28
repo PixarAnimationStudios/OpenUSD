@@ -1088,6 +1088,20 @@ class TestUsdInstancing(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             relInMaster.SetTargets(['/Some/Target'])
 
+    def test_IsMasterOrInMasterPath(self):
+        """Test Usd.Prim.IsMasterPath and Usd.Prim.IsPathInMaster"""
+        self.assertTrue(Usd.Prim.IsMasterPath('/__Master_1'))
+        self.assertFalse(Usd.Prim.IsMasterPath('/__Master_1/Child'))
+        self.assertFalse(Usd.Prim.IsMasterPath('/__Master_1.property'))
+        self.assertFalse(Usd.Prim.IsMasterPath('/NotAMaster'))
+        self.assertFalse(Usd.Prim.IsMasterPath('/NotAMaster.property'))
+
+        self.assertTrue(Usd.Prim.IsPathInMaster('/__Master_1'))
+        self.assertTrue(Usd.Prim.IsPathInMaster('/__Master_1/Child'))
+        self.assertTrue(Usd.Prim.IsPathInMaster('/__Master_1.property'))
+        self.assertFalse(Usd.Prim.IsPathInMaster('/NotAMaster'))
+        self.assertFalse(Usd.Prim.IsPathInMaster('/NotAMaster.property'))
+
 if __name__ == "__main__":
     # Default to verbosity=2 and redirect unittest's output to
     # stdout so that the output from each test case is nicely

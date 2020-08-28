@@ -1127,6 +1127,18 @@ UsdPrim::IsPseudoRoot() const
     return GetPath() == SdfPath::AbsoluteRootPath();
 }
 
+bool
+UsdPrim::IsMasterPath(const SdfPath& path)
+{
+    return Usd_InstanceCache::IsMasterPath(path);
+}
+
+bool
+UsdPrim::IsPathInMaster(const SdfPath& path)
+{
+    return Usd_InstanceCache::IsPathInMaster(path);
+}
+
 UsdPrim
 UsdPrim::GetMaster() const
 {
@@ -1139,12 +1151,6 @@ std::vector<UsdPrim>
 UsdPrim::GetInstances() const
 {
     return _GetStage()->_GetInstancesForMaster(*this);
-}
-
-bool 
-UsdPrim::_PrimPathIsInMaster() const
-{
-    return Usd_InstanceCache::IsPathInMaster(GetPrimPath());
 }
 
 SdfPrimSpecHandleVector 

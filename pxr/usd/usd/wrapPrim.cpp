@@ -363,6 +363,11 @@ void wrapUsdPrim()
         .def("ClearInstanceable", &UsdPrim::ClearInstanceable)
         .def("HasAuthoredInstanceable", &UsdPrim::HasAuthoredInstanceable)
 
+        .def("IsMasterPath", &UsdPrim::IsMasterPath, arg("path"))
+        .staticmethod("IsMasterPath")
+        .def("IsPathInMaster", &UsdPrim::IsPathInMaster, arg("path"))
+        .staticmethod("IsPathInMaster")
+
         .def("IsInstance", &UsdPrim::IsInstance)
         .def("IsMaster", &UsdPrim::IsMaster)
         .def("IsInMaster", &UsdPrim::IsInMaster)

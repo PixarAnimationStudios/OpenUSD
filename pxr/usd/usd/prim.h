@@ -1401,17 +1401,35 @@ public:
         return Usd_IsInstanceProxy(_Prim(), _ProxyPrimPath());
     }
 
+    /// Return true if the given \p path identifies a master prim,
+    /// false otherwise.
+    ///
+    /// This function will return false for prim and property paths
+    /// that are descendants of a master prim path.
+    ///
+    /// \sa IsPathInMaster
+    USD_API
+    static bool IsMasterPath(const SdfPath& path);
+
+    /// Return true if the given \p path identifies a master prim or
+    /// a prim or property descendant of a master prim, false otherwise.
+    ///
+    /// \sa IsMasterPath
+    USD_API
+    static bool IsPathInMaster(const SdfPath& path);
+
     /// Return true if this prim is a master prim, false otherwise.
+    ///
+    /// \sa IsInMaster
     bool IsMaster() const { return _Prim()->IsMaster(); }
 
-    /// Return true if this prim is located in a subtree of prims
-    /// rooted at a master prim, false otherwise.
+    /// Return true if this prim is a master prim or a descendant
+    /// of a master prim, false otherwise.
     ///
-    /// If this function returns true, this prim is either a master prim
-    /// or a descendent of a master prim.
+    /// \sa IsMaster
     bool IsInMaster() const { 
         return (IsInstanceProxy() ? 
-            _PrimPathIsInMaster() : _Prim()->IsInMaster());
+            IsPathInMaster(GetPrimPath()) : _Prim()->IsInMaster());
     }
 
     /// If this prim is an instance, return the UsdPrim for the corresponding
@@ -1541,11 +1559,6 @@ private:
     // Helper for Get(Authored)Relationships.
     std::vector<UsdRelationship>
     _GetRelationships(bool onlyAuthored, bool applyOrder=false) const;
-
-    // Helper for determining whether this prim is in a master based
-    // on prim path.
-    USD_API
-    bool _PrimPathIsInMaster() const;
 
     friend const PcpPrimIndex &Usd_PrimGetSourcePrimIndex(const UsdPrim&);
     // Return a const reference to the source PcpPrimIndex for this prim.
