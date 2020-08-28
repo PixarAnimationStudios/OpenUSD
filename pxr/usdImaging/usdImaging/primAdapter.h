@@ -81,8 +81,9 @@ public:
     /// expected to create one or more prims in the render index using the
     /// given proxy.
     virtual SdfPath Populate(UsdPrim const& prim,
-                UsdImagingIndexProxy* index,
-                UsdImagingInstancerContext const* instancerContext = NULL) = 0;
+                             UsdImagingIndexProxy* index,
+                             UsdImagingInstancerContext const*
+                                 instancerContext = nullptr) = 0;
 
     // Indicates whether population traversal should be pruned based on
     // prim-specific features (like whether it's imageable).
@@ -150,7 +151,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const = 0;
+                                      instancerContext = nullptr) const = 0;
 
     /// Populates the \p cache for the given \p prim, \p time and \p
     /// requestedBits.
@@ -161,7 +162,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const = 0;
+                                   instancerContext = nullptr) const = 0;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -419,10 +420,18 @@ public:
                     float *sampleTimes,
                     GfMatrix4d *sampleValues);
 
+    /// Gets the value of the parameter named key for the given prim (which
+    /// has the given cache path) and given time.
+    USDIMAGING_API
+    virtual VtValue Get(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        TfToken const& key,
+                        UsdTimeCode time) const;
+
     /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
     USDIMAGING_API
-    SdfPath GetMaterialUsdPath(UsdPrim const& prim) const; 
+    SdfPath GetMaterialUsdPath(UsdPrim const& prim) const;
 
     /// Gets the model:drawMode attribute for the given prim, walking up
     /// the namespace if necessary.
@@ -448,7 +457,7 @@ public:
     }
 
 protected:
-    typedef UsdImagingValueCache::Key Keys;
+    using Keys = UsdImagingValueCache::Key;
 
     template <typename T>
     T _Get(UsdPrim const& prim, TfToken const& attrToken, 

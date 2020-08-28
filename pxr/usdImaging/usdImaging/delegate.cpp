@@ -85,7 +85,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Material)
     (DomeLight)
     (lightFilterType)
-    (textureMemory)
 );
 
 // This environment variable matches a set of similar ones in
@@ -2439,25 +2438,20 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             // it to primvars:color automatically by virtue of UsdGeomPrimvar.
             TF_VERIFY(pv.ComputeFlattened(&value, _time), "%s, %s\n", 
                       id.GetText(), key.GetText());
-        } else if (key == _tokens->textureMemory) {
-            // XXX: This is for volume fields only should be done in
-            // UsdImagingFieldAdapter::UpdateForTime but cannot right now since
-            // UpdateForTime is never called on a bprim (HdSyncRequestVector
-            // is only requested for rprims).
-            if (!_GetUsdPrim(cachePath).GetAttribute(key).Get(&value, _time)) {
-                value = VtValue(0.0f);
-            }
         } else {
-            // XXX: This does not work for point instancer child prims; while we
-            // do not hit this code path given the current state of the
-            // universe, we need to rethink UsdImagingDelegate::Get().
-            //
-            // XXX(UsdImaging): We use cachePath directly as usdPath here,
-            // but should do the proper transformation.  Maybe we can use
-            // the primInfo.usdPrim?
-            UsdPrim prim = _GetUsdPrim(cachePath);
-            TF_VERIFY(prim && prim.GetAttribute(key).Get(&value, _time),
-                      "%s, %s\n", id.GetText(), key.GetText());
+            _HdPrimInfo  const *primInfo = _GetHdPrimInfo(cachePath);
+            if (!TF_VERIFY(primInfo)) {
+                return value;
+            }
+            UsdPrim const & prim = primInfo->usdPrim;
+            if (!TF_VERIFY(prim)) {
+                return value;
+            }
+            value = primInfo->adapter->Get(
+                prim,
+                cachePath,
+                key,
+                _time);
         }
     }
 
