@@ -443,10 +443,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility){
-        valueCache->GetVisible(cachePath) = GetVisible(prim, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyMaterialId){
         // Although the material binding cache generally holds
         // cachePaths, not usdPaths, we can use the usdPath

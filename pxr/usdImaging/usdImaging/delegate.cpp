@@ -2336,8 +2336,8 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id,
 bool
 UsdImagingDelegate::IsInInvisedPaths(SdfPath const &usdPath) const
 {
-    TF_FOR_ALL(it, _invisedPrimPaths) {
-        if (usdPath.HasPrefix(*it)) {
+    for (const auto& it: _invisedPrimPaths) {
+        if (usdPath.HasPrefix(it)) {
             return true;
         }
     }
@@ -2348,32 +2348,27 @@ UsdImagingDelegate::IsInInvisedPaths(SdfPath const &usdPath) const
 bool
 UsdImagingDelegate::GetVisible(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
 
     // Root visibility overrides prim visibility.
-    if (!_rootIsVisible)
+    if (!_rootIsVisible) {
         return false;
+    }
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    // for instance protos (not IsPrimPath), visibility is
+
+    // For instance protos (not IsPrimPath), visibility is
     // controlled by instanceIndices.
     if (cachePath.IsPrimPath() && IsInInvisedPaths(cachePath)) {
         return false;
     }
 
-    bool vis = true;
-    if (_valueCache.FindVisible(cachePath, &vis)) {
-        return vis;
-    }
-
-    // Slow path, we should not hit this.
-    TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow visible fetch for %s\n", 
-                               id.GetText());
-
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyVisibility);
-    if (TF_VERIFY(_valueCache.ExtractVisible(cachePath, &vis),
-                "<%s>\n", cachePath.GetText())) {
-        return vis;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetVisible(
+            primInfo->usdPrim, 
+            cachePath, 
+            _time);
     }
     return false;
 }
@@ -2764,12 +2759,10 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         if (!_sceneLightsEnabled) {
             return VtValue(0.0f);
         }
+
         // return 0.0 intensity if the scene lights are not visible
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (TF_VERIFY(primInfo)) {
-            if (!primInfo->adapter->GetVisible(primInfo->usdPrim, _time)){
-                return VtValue(0.0f);
-            }
+        if (!GetVisible(cachePath)) {
+            return VtValue(0.0f);
         }
     }
 

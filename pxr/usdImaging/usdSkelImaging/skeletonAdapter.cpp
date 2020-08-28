@@ -1110,10 +1110,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
         valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility) {
-        valueCache->GetVisible(cachePath) = GetVisible(prim, time);
-    }
-    
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
 
         // Expose points as a primvar.

@@ -1123,17 +1123,20 @@ UsdImagingPrimAdapter::Get(
 }
 
 bool
-UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
+UsdImagingPrimAdapter::GetVisible(
+    UsdPrim const& prim, 
+    SdfPath const& cachePath, 
+    UsdTimeCode time) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
 
-    if (_delegate->IsInInvisedPaths(prim.GetPath())) return false;
+    if (_delegate->IsInInvisedPaths(prim.GetPath())) {
+        return false;
+    }
 
     UsdImaging_VisCache &visCache = _delegate->_visCache;
-    if (_IsEnabledVisCache() && visCache.GetTime() == time)
-    {
-        return visCache.GetValue(prim)
-                    == UsdGeomTokens->inherited;
+    if (_IsEnabledVisCache() && visCache.GetTime() == time) {
+        return visCache.GetValue(prim) == UsdGeomTokens->inherited;
     } else {
         return UsdImaging_VisStrategy::ComputeVisibility(prim, time)
                     == UsdGeomTokens->inherited;

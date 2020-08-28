@@ -385,7 +385,10 @@ public:
     /// visibility values. Inherited values are strongest, Usd has no notion of
     /// "super vis/invis".
     USDIMAGING_API
-    bool GetVisible(UsdPrim const& prim, UsdTimeCode time) const;
+    virtual bool GetVisible(
+        UsdPrim const& prim, 
+        SdfPath const& cachePath,
+        UsdTimeCode time) const;
 
     /// Returns the purpose token for \p prim. If an \p instancerContext is 
     /// provided and the prim doesn't have an explicitly authored or inherited 

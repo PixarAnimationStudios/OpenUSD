@@ -76,15 +76,6 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         }
     }
 
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    // XXX: The usage of _GetTimeWithOffset here is super-sketch, but avoids
-    // blowing up the inherited visibility cache. This belongs in
-    // UpdateForTime, except that we don't currently call UpdateForTime on
-    // lights...
-    valueCache->GetVisible(cachePath) = GetVisible(prim,
-        _GetTimeWithOffset(0.0));
-
     UsdLuxLightFilter lightFilter(prim);
     if (TF_VERIFY(lightFilter)) {
         UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();

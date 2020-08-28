@@ -654,10 +654,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility) {
-        valueCache->GetVisible(cachePath) = GetVisible(prim, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyDoubleSided) {
         valueCache->GetDoubleSided(cachePath) = false;
     }

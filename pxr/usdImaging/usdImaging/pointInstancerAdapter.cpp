@@ -607,44 +607,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     cachePath, time, protoReqBits);
         }
 
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            // Apply the instancer visibility at the current time to the
-            // instance. Notice that the instance will also pickup the instancer
-            // visibility at the time offset.
-            bool& vis = valueCache->GetVisible(cachePath);
-            bool protoHasFixedVis = !(proto.variabilityBits
-                    & HdChangeTracker::DirtyVisibility);
-
-            _InstancerDataMap::const_iterator it
-                = _instancerData.find(instancerPath);
-            if (TF_VERIFY(it != _instancerData.end())) {
-                _InstancerData const& instrData = it->second;
-                _UpdateInstancerVisibility(instancerPath, instrData, time);
-                vis = instrData.visible;
-            }
-
-            if (protoHasFixedVis) {
-                // The instancer is visible and the proto prim has fixed
-                // visibility (it does not vary over time), we can use the
-                // pre-cached visibility.
-                vis = vis && proto.visible;
-            } else if (vis) {
-                // The instancer is visible and the prototype has varying
-                // visibility, we must compute visibility from the proto
-                // prim to the model instance root.
-                for (size_t i = 0; i < proto.paths.size()-1; ++i) {
-                    _ComputeProtoVisibility(
-                        _GetPrim(proto.paths[i+1]).GetMaster(),
-                        _GetPrim(proto.paths[i+0]),
-                        time, &vis);
-                }
-                _ComputeProtoVisibility(
-                    _GetPrim(proto.protoRootPath),
-                    _GetPrim(proto.paths.back()),
-                    time, &vis);
-            }
-        }
-
         if (requestedBits & HdChangeTracker::DirtyTransform) {
             // If the prototype we're processing is a master, _GetProtoUsdPrim
             // will return us the instance for attribute lookup; but the
@@ -1133,7 +1095,9 @@ UsdImagingPointInstancerAdapter::_GetInstancerVisible(
     SdfPath const &instancerPath, UsdTimeCode time) const
 {
     bool visible = UsdImagingPrimAdapter::GetVisible(
-        _GetPrim(instancerPath.GetPrimPath()), time);
+        _GetPrim(instancerPath.GetPrimPath()), 
+        instancerPath,
+        time);
 
     if (visible) {
         _InstancerDataMap::const_iterator it
@@ -1622,6 +1586,66 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
 }
 
 /*virtual*/
+bool 
+UsdImagingPointInstancerAdapter::GetVisible(UsdPrim const& prim, 
+                                            SdfPath const& cachePath,
+                                            UsdTimeCode time) const
+{
+    // Apply the instancer visibility at the current time to the
+    // instance. Notice that the instance will also pickup the instancer
+    // visibility at the time offset.
+
+    if (IsChildPath(cachePath)) {
+        bool vis = false;
+
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoPrim const& proto = _GetProtoPrim(instancerPath, cachePath);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return vis;
+        }
+        if (!TF_VERIFY(proto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return vis;
+        }
+
+        bool protoHasFixedVis = !(proto.variabilityBits
+                & HdChangeTracker::DirtyVisibility);
+        _InstancerDataMap::const_iterator it = 
+            _instancerData.find(instancerPath);
+        if (TF_VERIFY(it != _instancerData.end())) {
+            _InstancerData const& instrData = it->second;
+            _UpdateInstancerVisibility(instancerPath, instrData, time);
+            vis = instrData.visible;
+        }
+
+        if (protoHasFixedVis) {
+            // The instancer is visible and the proto prim has fixed
+            // visibility (it does not vary over time), we can use the
+            // pre-cached visibility.
+            vis = vis && proto.visible;
+        } else if (vis) {
+            // The instancer is visible and the prototype has varying
+            // visibility, we must compute visibility from the proto
+            // prim to the model instance root.
+            for (size_t i = 0; i < proto.paths.size()-1; ++i) {
+                _ComputeProtoVisibility(
+                    _GetPrim(proto.paths[i+1]).GetMaster(),
+                    _GetPrim(proto.paths[i+0]),
+                    time, &vis);
+            }
+            _ComputeProtoVisibility(
+                _GetPrim(proto.protoRootPath),
+                _GetPrim(proto.paths.back()),
+                time, &vis);
+        }
+
+        return vis;
+    }
+
+    return BaseAdapter::GetVisible(prim, cachePath, time);
+}
+
 PxOsdSubdivTags
 UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                                SdfPath const& cachePath,

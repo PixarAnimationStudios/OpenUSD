@@ -395,9 +395,6 @@ public:
     GfMatrix4d& GetTransform(SdfPath const& path) const {
         return _Get<GfMatrix4d>(Key::Transform(path));
     }
-    bool& GetVisible(SdfPath const& path) const {
-        return _Get<bool>(Key::Visible(path));
-    }
     VtValue& GetWidths(SdfPath const& path) const {
         return _Get<VtValue>(Key::Widths(path));
     }
@@ -481,9 +478,6 @@ public:
     bool FindTransform(SdfPath const& path, GfMatrix4d* value) const {
         return _Find(Key::Transform(path), value);
     }
-    bool FindVisible(SdfPath const& path, bool* value) const {
-        return _Find(Key::Visible(path), value);
-    }
     bool FindWidths(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Widths(path), value);
     }
@@ -563,9 +557,6 @@ public:
     bool ExtractTransform(SdfPath const& path, GfMatrix4d* value) {
         return _Extract(Key::Transform(path), value);
     }
-    bool ExtractVisible(SdfPath const& path, bool* value) {
-        return _Extract(Key::Visible(path), value);
-    }
     bool ExtractWidths(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Widths(path), value);
     }
@@ -637,7 +628,7 @@ public:
 private:
     bool _locked;
 
-    // visible, doubleSided
+    // doubleSided
     typedef _TypedCache<bool> _BoolCache;
     mutable _BoolCache _boolCache;
 

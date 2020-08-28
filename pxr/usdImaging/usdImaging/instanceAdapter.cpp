@@ -1903,7 +1903,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
         // is not variable.
         UsdTimeCode time = adapter->_GetTimeWithOffset(0.0);
         for (UsdPrim const& prim : instanceContext) {
-            if (!adapter->GetVisible(prim, time)) {
+            if (!adapter->GetVisible(prim, prim.GetPath(), time)) {
                 return false;
             }
         }
@@ -2007,7 +2007,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapFn
     bool GetVisible(const std::vector<UsdPrim>& instanceContext)
     {
         for (UsdPrim const& prim : instanceContext) {
-            if (!adapter->GetVisible(prim, time)) {
+            if (!adapter->GetVisible(prim, prim.GetPath(), time)) {
                 return false;
             }
         }

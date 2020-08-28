@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingPointInstancerAdapter : public UsdImagingPrimAdapter 
 {
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingPointInstancerAdapter()
         : BaseAdapter()
@@ -118,8 +118,6 @@ public:
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index) override;
 
-
-
     // ---------------------------------------------------------------------- //
     /// \name Instancing
     // ---------------------------------------------------------------------- //
@@ -149,9 +147,13 @@ public:
                   float *sampleTimes,
                   VtValue *sampleValues) override;
 
-    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
-                                          SdfPath const& cachePath,
-                                          UsdTimeCode time) const override;
+    PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                  SdfPath const& cachePath,
+                                  UsdTimeCode time) const override;
+
+    bool GetVisible(UsdPrim const& prim, 
+                    SdfPath const& cachePath,
+                    UsdTimeCode time) const override;
 
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
