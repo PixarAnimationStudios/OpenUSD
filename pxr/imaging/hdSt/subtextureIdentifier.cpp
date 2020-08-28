@@ -41,29 +41,23 @@ HdStSubtextureIdentifier::Hash() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// HdStVdbSubtextureIdentifier
-
-HdStVdbSubtextureIdentifier::HdStVdbSubtextureIdentifier(
-    TfToken const &gridName)
- : _gridName(gridName)
+// HdStFieldBaseSubtextureIdentifier
+HdStFieldBaseSubtextureIdentifier::HdStFieldBaseSubtextureIdentifier(
+    TfToken const &fieldName, const int fieldIndex)
+  : _fieldName(fieldName), _fieldIndex(fieldIndex)
 {
 }
 
-HdStVdbSubtextureIdentifier::~HdStVdbSubtextureIdentifier() = default;
-
-std::unique_ptr<HdStSubtextureIdentifier>
-HdStVdbSubtextureIdentifier::Clone() const
-{
-    return std::make_unique<HdStVdbSubtextureIdentifier>(GetGridName());
-}
+HdStFieldBaseSubtextureIdentifier::~HdStFieldBaseSubtextureIdentifier()
+    = default;
 
 HdStSubtextureIdentifier::ID
-HdStVdbSubtextureIdentifier::Hash() const
-{
-    static ID typeHash = TfToken("vdb").Hash();
-
+HdStFieldBaseSubtextureIdentifier::Hash() const {
+    static ID typeHash = TfToken("HdStFielfSubtextureIdentifier").Hash();
+    
     ID hash = typeHash;
-    boost::hash_combine(hash, _gridName.Hash());
+    boost::hash_combine(hash, _fieldName.Hash());
+    boost::hash_combine(hash, _fieldIndex);
 
     return hash;
 }

@@ -29,10 +29,12 @@
 #include "pxr/imaging/hdSt/textureCpuData.h"
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/fieldSubtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/uvTextureData.h"
+#include "pxr/imaging/glf/fieldTextureData.h"
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 #include "pxr/imaging/glf/vdbTextureData.h"
 #endif
@@ -91,49 +93,61 @@ namespace {
 std::string
 _GetDebugName(const HdStTextureIdentifier &textureId)
 {
-    if (const HdStVdbSubtextureIdentifier * const vdbSubtextureId =
-            dynamic_cast<const HdStVdbSubtextureIdentifier*>(
-                textureId.GetSubtextureIdentifier())) {
-        return
-            textureId.GetFilePath().GetString() + " - " +
-            vdbSubtextureId->GetGridName().GetString();
+    const std::string &filePath = textureId.GetFilePath().GetString();
+    const HdStSubtextureIdentifier * const subId =
+        textureId.GetSubtextureIdentifier();
+
+    if (!subId) {
+        return filePath;
     }
 
-    if (const HdStAssetUvSubtextureIdentifier * const subId =
-            dynamic_cast<const HdStAssetUvSubtextureIdentifier*>(
-                textureId.GetSubtextureIdentifier())) {
+    if (const HdStOpenVDBAssetSubtextureIdentifier * const vdbSubId =
+            dynamic_cast<const HdStOpenVDBAssetSubtextureIdentifier*>(subId)) {
         return
-            textureId.GetFilePath().GetString()
+            filePath + " - "
+            + vdbSubId->GetFieldName().GetString();
+    }
+
+    if (const HdStField3DAssetSubtextureIdentifier * const f3dSubId =
+            dynamic_cast<const HdStField3DAssetSubtextureIdentifier*>(subId)) {
+        return
+            filePath + " - "
+            + f3dSubId->GetFieldName().GetString() + " "
+            + std::to_string(f3dSubId->GetFieldIndex()) + " "
+            + f3dSubId->GetFieldPurpose().GetString();
+    }
+
+    if (const HdStAssetUvSubtextureIdentifier * const assetUvSubId =
+            dynamic_cast<const HdStAssetUvSubtextureIdentifier*>(subId)) {
+        return
+            filePath
             + " - flipVertically="
-            + std::to_string(int(subId->GetFlipVertically()))
+            + std::to_string(int(assetUvSubId->GetFlipVertically()))
             + " - premultiplyAlpha="
-            + std::to_string(int(subId->GetPremultiplyAlpha()))
+            + std::to_string(int(assetUvSubId->GetPremultiplyAlpha()))
             + " - sourceColorSpace="
-            + subId->GetSourceColorSpace().GetString();
+            + assetUvSubId->GetSourceColorSpace().GetString();
     }
 
-    if (const HdStPtexSubtextureIdentifier * const subId =
-            dynamic_cast<const HdStPtexSubtextureIdentifier*>(
-                textureId.GetSubtextureIdentifier())) {
+    if (const HdStPtexSubtextureIdentifier * const ptexSubId =
+            dynamic_cast<const HdStPtexSubtextureIdentifier*>(subId)) {
         return
-            textureId.GetFilePath().GetString()
+            filePath
             + " - premultiplyAlpha="
-            + std::to_string(int(subId->GetPremultiplyAlpha()));
+            + std::to_string(int(ptexSubId->GetPremultiplyAlpha()));
     }
 
-    if (const HdStUdimSubtextureIdentifier * const subId =
-            dynamic_cast<const HdStUdimSubtextureIdentifier*>(
-                textureId.GetSubtextureIdentifier())) {
+    if (const HdStUdimSubtextureIdentifier * const udimSubId =
+            dynamic_cast<const HdStUdimSubtextureIdentifier*>(subId)) {
         return
-            textureId.GetFilePath().GetString()
+            filePath +
             + " - premultiplyAlpha="
-            + std::to_string(int(subId->GetPremultiplyAlpha()))
+            + std::to_string(int(udimSubId->GetPremultiplyAlpha()))
             + " - sourceColorSpace="
-            + subId->GetSourceColorSpace().GetString();
+            + udimSubId->GetSourceColorSpace().GetString();
     }
      
-    return
-        textureId.GetFilePath().GetString();
+    return filePath + " - unknown subtexture identifier";
 }
 
 // Read from the HdStSubtextureIdentifier whether we need
@@ -426,8 +440,6 @@ HdStAssetUvTextureObject::IsValid() const
 ///////////////////////////////////////////////////////////////////////////////
 // Field texture
 
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
-
 // Compute transform mapping GfRange3d to unit box [0,1]^3
 static
 GfMatrix4d
@@ -456,7 +468,35 @@ _ComputeSamplingTransform(const GfBBox3d &bbox)
         _ComputeSamplingTransform(bbox.GetRange());
 }
 
+static
+GlfFieldTextureDataRefPtr
+_ComputeFieldTexData(
+    const HdStTextureIdentifier &textureId,
+    const size_t targetMemory)
+{
+    const HdStSubtextureIdentifier * const subId =
+        textureId.GetSubtextureIdentifier();
+
+#ifdef PXR_OPENVDB_SUPPORT_ENABLED
+    if (const HdStOpenVDBAssetSubtextureIdentifier * const vdbSubId =
+            dynamic_cast<const HdStOpenVDBAssetSubtextureIdentifier*>(subId)) {
+        return GlfVdbTextureData::New(
+            textureId.GetFilePath().GetString(),
+            vdbSubId->GetFieldName(), targetMemory);
+    }
 #endif
+
+    if (const HdStField3DAssetSubtextureIdentifier * const f3dSubId =
+            dynamic_cast<const HdStField3DAssetSubtextureIdentifier*>(subId)) {
+        TF_WARN("No Field3D support yet.");
+        return TfNullPtr;
+    }
+
+    TF_CODING_ERROR("Unsupported field subtexture identifier");
+
+    return TfNullPtr;
+}
+
 
 HdStFieldTextureObject::HdStFieldTextureObject(
     const HdStTextureIdentifier &textureId,
@@ -477,22 +517,13 @@ HdStFieldTextureObject::_Load()
 {
     TRACE_FUNCTION();
 
-    // Proper casting.
-    HdStVdbSubtextureIdentifier const * vdbSubtextureId =
-        dynamic_cast<const HdStVdbSubtextureIdentifier*>(
-            GetTextureIdentifier().GetSubtextureIdentifier());
+    GlfFieldTextureDataRefPtr const texData = _ComputeFieldTexData(
+        GetTextureIdentifier(),
+        GetTargetMemory());
 
-    if (!vdbSubtextureId) {
-        TF_CODING_ERROR("Only supporting VDB files for now");
+    if (!texData) {
         return;
     }
-
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
-    GlfVdbTextureDataRefPtr const texData =
-        GlfVdbTextureData::New(
-            GetTextureIdentifier().GetFilePath(),
-            vdbSubtextureId->GetGridName(),
-            GetTargetMemory());
 
     texData->Read(
         /* degradeLevel = */ 0,
@@ -514,7 +545,6 @@ HdStFieldTextureObject::_Load()
         _samplingTransform = GfMatrix4d(1.0);
     }
 
-#endif
 }
 
 void

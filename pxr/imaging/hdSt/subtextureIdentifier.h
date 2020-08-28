@@ -58,32 +58,37 @@ public:
 };
 
 ///
-/// \class HdStVdbSubtextureIdentifier
+/// \class HdStFieldBaseSubtextureIdentifier
 ///
-/// Identifies the grid in an OpenVDB file by its name.
+/// Base class for information identifying a grid in a volume field
+/// file. Parallels FieldBase in usdVol.
 ///
-class HdStVdbSubtextureIdentifier final : public HdStSubtextureIdentifier
+class HdStFieldBaseSubtextureIdentifier : public HdStSubtextureIdentifier
 {
 public:
-    /// C'tor using name of grid in OpenVDB file
+    /// Get field name.
+    ///
     HDST_API
-    explicit HdStVdbSubtextureIdentifier(TfToken const &gridName);
+    TfToken const &GetFieldName() const { return _fieldName; }
 
+    /// Get field index.
+    ///
     HDST_API
-    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+    int GetFieldIndex() const { return _fieldIndex; }
 
     HDST_API
     ID Hash() const override;
 
-    /// Name of grid in OpenVDB file
     HDST_API
-    TfToken const &GetGridName() const { return _gridName; }
-
+    ~HdStFieldBaseSubtextureIdentifier() override = 0;
+    
+protected:
     HDST_API
-    ~HdStVdbSubtextureIdentifier() override;
+    HdStFieldBaseSubtextureIdentifier(TfToken const &fieldName, int fieldIndex);
 
 private:
-    TfToken _gridName;
+    TfToken _fieldName;
+    int _fieldIndex;
 };
 
 ///
