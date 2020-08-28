@@ -83,6 +83,11 @@ public:
 
     /// Queue a copy new data from cpu into gpu buffer.
     /// For example copy new data into a uniform block or storage buffer.
+    /// This is very similar to calling CopyBufferCpuToGpu, except this can
+    /// be more efficient if we end up needing many small, consecutive writes
+    /// into the same buffer, since this will queue those changes together
+    /// into a staging buffer and only flush to the GPU when we write to
+    /// a different, or non-consecutive area of a buffer.
     HGI_API
     void QueueCopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 

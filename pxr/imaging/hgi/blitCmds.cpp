@@ -40,7 +40,18 @@ HgiBlitCmds::QueueCopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
         return;
     }
 
-    // Place the data into the staging buffer
+    // When the to-be-copied data is 'large' doing the extra memcpy into the
+    // stating buffer to avoid many small GPU buffer upload can be more
+    // expensive than just submitting the CPU to GPU copy operation directly.
+    // The value of 'queueThreshold' is estimated (when is the extra memcpy
+    // into the staging buffer slower than immediately issuing a gpu upload)
+    static const int queueThreshold = 512*1024;
+    if (copyOp.byteSize > queueThreshold) {
+        CopyBufferCpuToGpu(copyOp);
+        return;
+    }
+
+    // Place the data into the staging buffer.
     uint8_t * const cpuStaging = static_cast<uint8_t*>(
         copyOp.gpuDestinationBuffer->GetCPUStagingAddress());
     uint8_t const* const srcData =
