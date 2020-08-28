@@ -778,10 +778,12 @@ HdStResourceRegistry::_Commit()
         // for each gpu computation, make sure its destination buffer to be
         // allocated.
         //
-        TF_FOR_ALL(compIt, _pendingComputations) {
-            if (compIt->range) {
+        for (_PendingComputation &pendingComp : _pendingComputations) {
+            HdComputationSharedPtr const &comp = pendingComp.computation;
+            HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
+            if (dstRange) {
                 // ask the size of destination buffer of the gpu computation
-                int numElements = compIt->computation->GetNumOutputElements();
+                int numElements = comp->GetNumOutputElements();
                 if (numElements > 0) {
                     // We call BufferArray->Reallocate() later so that
                     // the reallocation happens only once per BufferArray.
@@ -789,9 +791,9 @@ HdStResourceRegistry::_Commit()
                     // if the range is already larger than the current one,
                     // leave it as it is (there is a possibilty that GPU
                     // computation generates less data than it was).
-                    int currentNumElements = compIt->range->GetNumElements();
+                    int currentNumElements = dstRange->GetNumElements();
                     if (currentNumElements < numElements) {
-                        compIt->range->Resize(numElements);
+                        dstRange->Resize(numElements);
                     }
                  }
             }
@@ -819,31 +821,26 @@ HdStResourceRegistry::_Commit()
         // 4. copy phase:
         //
 
-        TF_FOR_ALL(reqIt, _pendingSources) {
+        for (_PendingSource &pendingSource : _pendingSources) {
+            HdBufferArrayRangeSharedPtr &dstRange = pendingSource.range;
             // CPU computation may not have a range. (e.g. adjacency)
-            if (!reqIt->range) continue;
+            if (!dstRange) continue;
 
             // CPU computation may result in an empty buffer source
             // (e.g. GPU quadrangulation table could be empty for quad only
             // mesh)
-            if (reqIt->range->GetNumElements() == 0) continue;
+            if (dstRange->GetNumElements() == 0) continue;
 
-            // Note that for staticArray in interleavedVBO,
-            // it's possible range->GetNumElements() != srcIt->GetNumElements().
-            // (range->GetNumElements() should always be 1, but srcIt
-            //  (vtBufferSource) could have a VtArray with arraySize entries).
-
-            TF_FOR_ALL(srcIt, reqIt->sources) {
-                // execute copy
-                reqIt->range->CopyData(*srcIt);
+            for (auto const& src : pendingSource.sources) {// execute copy
+                dstRange->CopyData(src);
 
                 // also copy any chained buffers
-                _CopyChainedBuffers(*srcIt, reqIt->range);
+                _CopyChainedBuffers(src, dstRange);
             }
 
             if (TfDebug::IsEnabled(HD_BUFFER_ARRAY_RANGE_CLEANED)) {
                 std::stringstream ss;
-                ss << *reqIt->range;
+                ss << *dstRange;
                 TF_DEBUG(HD_BUFFER_ARRAY_RANGE_CLEANED).Msg("CLEAN: %s\n", 
                                                             ss.str().c_str());
             }
@@ -866,8 +863,10 @@ HdStResourceRegistry::_Commit()
         // they are registered.
         //   e.g. smooth normals -> quadrangulation.
         //
-        TF_FOR_ALL(it, _pendingComputations) {
-            it->computation->Execute(it->range, this);
+        for (_PendingComputation &pendingComp : _pendingComputations) {
+            HdComputationSharedPtr const &comp = pendingComp.computation;
+            HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
+            comp->Execute(dstRange, this);
 
             HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
         }
@@ -1137,11 +1136,12 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
     // Texture registry
     {
         GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
-        std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
+        std::vector<VtDictionary> textureInfos = textureReg.GetTextureInfos();
         size_t textureMemory = 0;
-        TF_FOR_ALL (textureIt, textureInfo) {
-            VtDictionary &info = (*textureIt);
-            textureMemory += info["memoryUsed"].Get<size_t>();
+        for (VtDictionary const &info :  textureInfos) {
+            if (VtDictionaryIsHolding<size_t>(info, "memoryUsed")) {
+                textureMemory += VtDictionaryGet<size_t>(info, "memoryUsed");
+            }
         }
         (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
     }
