@@ -3552,7 +3552,18 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
     PcpChanges changes;
-    _cache->RequestLayerMuting(muteLayers, unmuteLayers, &changes);
+    std::vector<std::string> newMutedLayers, newUnMutedLayers;
+    _cache->RequestLayerMuting(muteLayers, unmuteLayers, &changes, 
+            &newMutedLayers, &newUnMutedLayers);
+
+    UsdStageWeakPtr self(this);
+
+    // Notify for layer muting/unmuting
+    if (!newMutedLayers.empty() || !newUnMutedLayers.empty()) {
+        UsdNotice::LayerMutingChanged(self, newMutedLayers, newUnMutedLayers)
+            .Send(self);
+    }
+
     if (changes.IsEmpty()) {
         return;
     }
@@ -3560,8 +3571,6 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     _PathsToChangesMap resyncChanges, infoChanges;
     _Recompose(changes, &resyncChanges);
-
-    UsdStageWeakPtr self(this);
 
     UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
         .Send(self);

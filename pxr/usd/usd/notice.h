@@ -291,6 +291,46 @@ public:
         USD_API virtual ~StageEditTargetChanged();
     };
 
+    /// \class LayerMutingChanged
+    ///
+    /// Notice sent after a set of layers have been newly muted or unmuted.
+    /// Note this does not necessarily mean the specified layers are currently 
+    /// loaded.
+    ///
+    /// LayerMutingChanged notice is sent before any UsdNotice::ObjectsChanged 
+    /// or UsdNotice::StageContentsChanged notices are sent resulting from
+    /// muting or unmuting of layers.
+    /// 
+    /// Note that LayerMutingChanged notice is sent even if the
+    /// muting/unmuting layer does not belong to the current stage, or is a 
+    /// layer that does belong to the current stage but is not yet loaded 
+    /// because it is behind an unloaded payload or unselected variant.
+    class LayerMutingChanged : public StageNotice {
+    public:
+        explicit LayerMutingChanged(const UsdStageWeakPtr &stage, 
+                const std::vector<std::string>& mutedLayers, 
+                const std::vector<std::string>& unmutedLayers)
+            : StageNotice(stage),
+             _mutedLayers(mutedLayers),
+             _unMutedLayers(unmutedLayers) {}
+
+        USD_API virtual ~LayerMutingChanged();
+
+        /// Returns the identifier of the layers that were muted.
+        const std::vector<std::string>& GetMutedLayers() const {
+            return _mutedLayers;
+        }
+
+        /// Returns the identifier of the layers that were unmuted.
+        const std::vector<std::string>& GetUnmutedLayers() const {
+            return _unMutedLayers;
+        }
+
+    private:
+        const std::vector<std::string>& _mutedLayers;
+        const std::vector<std::string>& _unMutedLayers;
+    };
+
 };
 
 

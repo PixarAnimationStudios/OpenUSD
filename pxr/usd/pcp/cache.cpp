@@ -264,7 +264,9 @@ PcpCache::RequestPayloads( const SdfPathSet & pathsToInclude,
 void 
 PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                              const std::vector<std::string>& layersToUnmute,
-                             PcpChanges* changes)
+                             PcpChanges* changes,
+                             std::vector<std::string>* newLayersMuted,
+                             std::vector<std::string>* newLayersUnmuted)
 {
     ArResolverContextBinder binder(_pathResolverContext);
 
@@ -343,6 +345,14 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                 }
             }
         }
+    }
+
+    // update out newLayersMuted and newLayersUnmuted parameters
+    if (newLayersMuted) {
+        *newLayersMuted = std::move(finalLayersToMute);
+    }
+    if (newLayersUnmuted) {
+        *newLayersUnmuted = std::move(finalLayersToUnmute);
     }
 }
 

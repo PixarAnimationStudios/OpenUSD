@@ -200,10 +200,16 @@ public:
     /// changes necessary to see the change in muted layers.  Otherwise,
     /// those changes are applied immediately.
     /// 
+    /// \p newLayersMuted and \p newLayersUnmuted contains the pruned vector
+    /// of layers which are muted or unmuted by this call to RequestLayerMuting.
+    ///
     PCP_API 
     void RequestLayerMuting(const std::vector<std::string>& layersToMute,
                             const std::vector<std::string>& layersToUnmute,
-                            PcpChanges* changes = nullptr);
+                            PcpChanges* changes = nullptr,
+                            std::vector<std::string>* newLayersMuted = nullptr,
+                            std::vector<std::string>* newLayersUnmuted = 
+                                nullptr);
 
     /// Returns the list of canonical identifiers for muted layers
     /// in this cache.  See documentation on RequestLayerMuting for
