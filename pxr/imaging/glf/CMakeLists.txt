@@ -87,6 +87,7 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
+        fieldTextureData.h
         
     PRIVATE_HEADERS
         rankedTypeMap.h
