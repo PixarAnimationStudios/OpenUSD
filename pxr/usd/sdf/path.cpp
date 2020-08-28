@@ -52,7 +52,7 @@ static inline bool _IsValidIdentifier(TfToken const &name);
 static VtValue
 _CastFromSdfPathToTfToken(const VtValue &val)
 {
-    return VtValue(val.Get<SdfPath>().GetToken());
+    return VtValue(val.Get<SdfPath>().GetAsToken());
 }
 
 // XXX: Enable this define to make bad path strings
@@ -291,6 +291,21 @@ SdfPath::IsExpressionPath() const {
         return propNode->GetNodeType() == Sdf_PathNode::ExpressionNode;
     }
     return false;
+}
+
+TfToken
+SdfPath::GetAsToken() const
+{
+    if (_primPart) {
+        return Sdf_PathNode::GetPathAsToken(_primPart.get(), _propPart.get());
+    }
+    return TfToken();
+}
+
+std::string
+SdfPath::GetAsString() const
+{
+    return GetAsToken().GetString();
 }
 
 TfToken const &
@@ -620,12 +635,12 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
     }
     if (newSuffix == EmptyPath()) {
         TF_CODING_ERROR("Cannot append invalid path to <%s>",
-                        GetString().c_str());
+                        GetAsString().c_str());
         return EmptyPath();
     }
     if (newSuffix.IsAbsolutePath()) {
         TF_WARN("Cannot append absolute path <%s> to another path <%s>.",
-                newSuffix.GetString().c_str(), GetString().c_str());
+                newSuffix.GetAsString().c_str(), GetAsString().c_str());
         return EmptyPath();
     }
     if (newSuffix == ReflexiveRelativePath()) {
@@ -916,12 +931,12 @@ SdfPath
 SdfPath::AppendMapper(const SdfPath &targetPath) const {
     if (!IsPropertyPath()) {
         TF_WARN("Cannnot append mapper '%s' to non-property path <%s>.",
-                targetPath.GetString().c_str(), GetString().c_str());
+                targetPath.GetAsString().c_str(), GetAsString().c_str());
         return EmptyPath();
     }
     if (targetPath == EmptyPath()) {
         TF_WARN("Cannot append an empty mapper target path to <%s>",
-                GetString().c_str());
+                GetAsString().c_str());
         return EmptyPath();
     }
     return SdfPath { _primPart, 
@@ -1574,7 +1589,7 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
         !anchor.IsPrimVariantSelectionPath()) {
         TF_WARN("MakeRelativePath() requires a prim, prim variant selection, "
                 "or absolute root path as an anchor (got '%s').",
-                 anchor.GetString().c_str());
+                 anchor.GetAsString().c_str());
         return SdfPath();
     }
 

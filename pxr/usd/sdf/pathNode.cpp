@@ -421,6 +421,13 @@ Sdf_PathNode::GetPathToken(Sdf_PathNode const *primPart,
 }
 
 TfToken
+Sdf_PathNode::GetPathAsToken(Sdf_PathNode const *primPart,
+                             Sdf_PathNode const *propPart)
+{
+    return _CreatePathToken(primPart, propPart);
+}
+
+TfToken
 Sdf_PathNode::_CreatePathToken(Sdf_PathNode const *primPart,
                                Sdf_PathNode const *propPart)
 {

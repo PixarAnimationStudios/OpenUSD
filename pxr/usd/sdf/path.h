@@ -416,13 +416,52 @@ public:
         return !_primPart; 
     }
 
-    /// Returns the string representation of this path as a TfToken.
+    /// Return the string representation of this path as a TfToken.
+    ///
+    /// This function is recommended only for human-readable or diagnostic
+    /// output.  Use the SdfPath API to manipulate paths.  It is less
+    /// error-prone and has better performance.
+    SDF_API TfToken GetAsToken() const;
+
+    /// Return the string representation of this path as a TfToken lvalue.
+    ///
+    /// This function returns a persistent lvalue.  If an rvalue will suffice,
+    /// call GetAsToken() instead.  That avoids populating internal data
+    /// structures to hold the persistent token.
+    ///
+    /// This function is recommended only for human-readable or diagnostic
+    /// output.  Use the SdfPath API to manipulate paths.  It is less
+    /// error-prone and has better performance.
     SDF_API TfToken const &GetToken() const;
 
-    /// Returns the string representation of this path as a std::string.
+    /// Return the string representation of this path as a std::string.
+    ///
+    /// This function is recommended only for human-readable or diagnostic
+    /// output.  Use the SdfPath API to manipulate paths.  It is less
+    /// error-prone and has better performance.
+    SDF_API std::string GetAsString() const;
+
+    /// Return the string representation of this path as a std::string.
+    ///
+    /// This function returns a persistent lvalue.  If an rvalue will suffice,
+    /// call GetAsString() instead.  That avoids populating internal data
+    /// structures to hold the persistent string.
+    ///
+    /// This function is recommended only for human-readable or diagnostic
+    /// output.  Use the SdfPath API to manipulate paths.  It is less
+    /// error-prone and has better performance.
     SDF_API const std::string &GetString() const;
 
     /// Returns the string representation of this path as a c string.
+    ///
+    /// This function returns a pointer to a persistent c string.  If a
+    /// temporary c string will suffice, call GetAsString().c_str() instead.
+    /// That avoids populating internal data structures to hold the persistent
+    /// string.
+    ///
+    /// This function is recommended only for human-readable or diagnostic
+    /// output.  Use the SdfPath API to manipulate paths.  It is less
+    /// error-prone and has better performance.
     SDF_API const char *GetText() const;
 
     /// Returns the prefix paths of this path.
