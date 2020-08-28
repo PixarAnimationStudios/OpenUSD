@@ -170,6 +170,11 @@ public:
                                   SdfPath const& cachePath,
                                   UsdTimeCode time) const override;
 
+    USDSKELIMAGING_API
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Change Processing API (protected)

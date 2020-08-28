@@ -110,10 +110,19 @@ public:
                              SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     void MarkMaterialDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            UsdImagingIndexProxy* index) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGINGGL_API
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
 
 protected:
     USDIMAGINGGL_API
@@ -127,8 +136,19 @@ private:
                                GfRange3d const& extents, uint8_t axes_mask) 
         const;
 
+    void _ComputeGeometryData(UsdPrim const& prim,
+                              SdfPath const& cachePath,
+                              UsdTimeCode time,
+                              TfToken const& drawMode,
+                              VtValue* topology, 
+                              VtValue* points, 
+                              GfRange3d* extent,
+                              VtValue* uv,
+                              VtValue* assign) const;
+
     // Check whether the given cachePath is a path to the draw mode material.
     bool _IsMaterialPath(SdfPath const& path) const;
+
     // Check whether the given cachePath is a path to a draw mode texture.
     bool _IsTexturePath(SdfPath const& path) const;
 

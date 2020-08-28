@@ -205,6 +205,10 @@ public:
                                           SdfPath const& cachePath,
                                           UsdTimeCode time) const override;
 
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //

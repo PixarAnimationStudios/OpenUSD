@@ -124,10 +124,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key Topology(SdfPath const& path) {
-            static TfToken attr("topology");
-            return Key(path, attr);
-        }
         static Key Transform(SdfPath const& path) {
             static TfToken attr("transform");
             return Key(path, attr);
@@ -304,7 +300,6 @@ public:
         _Erase<GfRange3d>(Key::Extent(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<TfToken>(Key::Purpose(path));
-        _Erase<VtValue>(Key::Topology(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
         _Erase<bool>(Key::Visible(path));
         _Erase<VtValue>(Key::Points(path));
@@ -397,9 +392,6 @@ public:
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
-    VtValue& GetTopology(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Topology(path));
-    }
     GfMatrix4d& GetTransform(SdfPath const& path) const {
         return _Get<GfMatrix4d>(Key::Transform(path));
     }
@@ -486,9 +478,6 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindTopology(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Topology(path), value);
-    }
     bool FindTransform(SdfPath const& path, GfMatrix4d* value) const {
         return _Find(Key::Transform(path), value);
     }
@@ -570,9 +559,6 @@ public:
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
-    }
-    bool ExtractTopology(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Topology(path), value);
     }
     bool ExtractTransform(SdfPath const& path, GfMatrix4d* value) {
         return _Extract(Key::Transform(path), value);
@@ -683,7 +669,7 @@ private:
     typedef _TypedCache<SdfPath> _SdfPathCache;
     mutable _SdfPathCache _sdfPathCache;
 
-    // primvars, topology, materialResources, extCompInputs
+    // primvars, materialResources, extCompInputs
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 

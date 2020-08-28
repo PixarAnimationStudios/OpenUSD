@@ -38,7 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Delegate support for UsdGeomPointInstancer
 ///
-class UsdImagingPointInstancerAdapter : public UsdImagingPrimAdapter {
+class UsdImagingPointInstancerAdapter : public UsdImagingPrimAdapter 
+{
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
@@ -50,7 +51,7 @@ public:
     virtual SdfPath Populate(
         UsdPrim const& prim,
         UsdImagingIndexProxy* index,
-        UsdImagingInstancerContext const* instancerContext = NULL) override;
+        UsdImagingInstancerContext const* instancerContext = nullptr) override;
 
     virtual bool ShouldCullChildren() const override;
 
@@ -79,7 +80,8 @@ public:
 
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName) override;
+                                              TfToken const& propertyName) 
+                                                override;
 
     virtual void ProcessPrimResync(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
@@ -150,6 +152,10 @@ public:
     virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
                                           SdfPath const& cachePath,
                                           UsdTimeCode time) const override;
+
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

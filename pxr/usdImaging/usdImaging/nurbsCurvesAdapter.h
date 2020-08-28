@@ -38,7 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for UsdGeomNurbsCurves.
 ///
-class UsdImagingNurbsCurvesAdapter : public UsdImagingGprimAdapter {
+class UsdImagingNurbsCurvesAdapter : public UsdImagingGprimAdapter 
+{
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
 
@@ -85,16 +86,20 @@ public:
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName);
 
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
+
 protected: 
     USDIMAGING_API
     bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
-private: 
-    void _GetBasisCurvesTopology(UsdPrim const& prim, 
-                                 VtValue* topoHolder, 
-                                 UsdTimeCode time) const;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

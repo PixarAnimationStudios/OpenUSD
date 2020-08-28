@@ -310,6 +310,122 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
 }
 
 void
+UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    UsdTimeCode time,
+    TfToken const& drawMode,
+    VtValue* topology, 
+    VtValue* points, 
+    GfRange3d* extent,
+    VtValue* uv,
+    VtValue* assign) const
+{
+    if (drawMode == UsdGeomTokens->origin) {
+        *extent = _ComputeExtent(prim);
+        _GenerateOriginGeometry(topology, points, *extent);
+
+    } else if (drawMode == UsdGeomTokens->bounds) {
+        *extent = _ComputeExtent(prim);
+        _GenerateBoundsGeometry(topology, points, *extent);
+
+    } else if (drawMode == UsdGeomTokens->cards) {
+        UsdGeomModelAPI model(prim);
+        if (!model) {
+            // The population rules in UsdImagingDelegate disallow this.
+            TF_CODING_ERROR("Prim has draw mode 'cards' but geom model "
+                            "API schema is not applied.");
+            return;
+        }
+
+        TfToken cardGeometry;
+        model.GetModelCardGeometryAttr().Get(&cardGeometry);
+        if (cardGeometry == UsdGeomTokens->fromTexture) {
+            // In "fromTexture" mode, read all the geometry data in from
+            // the textures.
+            _GenerateCardsFromTextureGeometry(topology, points,
+                    uv, assign, extent, prim);
+
+        } else {
+            // First compute the extents.
+            *extent = _ComputeExtent(prim);
+
+            // Generate mask for suppressing axes with no textures
+            uint8_t axes_mask = 0;
+            const TfToken textureAttrs[6] = {
+                UsdGeomTokens->modelCardTextureXPos,
+                UsdGeomTokens->modelCardTextureYPos,
+                UsdGeomTokens->modelCardTextureZPos,
+                UsdGeomTokens->modelCardTextureXNeg,
+                UsdGeomTokens->modelCardTextureYNeg,
+                UsdGeomTokens->modelCardTextureZNeg,
+            };
+            const uint8_t mask[6] = {
+                xPos, yPos, zPos, xNeg, yNeg, zNeg,
+            };
+            for (int i = 0; i < 6; ++i) {
+                SdfAssetPath asset;
+                prim.GetAttribute(textureAttrs[i]).Get(&asset, time);
+                if (!asset.GetAssetPath().empty()) {
+                    axes_mask |= mask[i];
+                }
+            }
+
+            // If no textures are bound, generate the full geometry.
+            if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }
+    
+            // Generate UVs.
+            _GenerateTextureCoordinates(uv, assign, axes_mask);
+
+            // Generate geometry based on card type.
+            if (cardGeometry == UsdGeomTokens->cross) {
+                _GenerateCardsCrossGeometry(topology, points, *extent,
+                    axes_mask);
+            } else if (cardGeometry == UsdGeomTokens->box) {
+                _GenerateCardsBoxGeometry(topology, points, *extent,
+                    axes_mask);
+            } else {
+                TF_CODING_ERROR("<%s> Unexpected card geometry mode %s",
+                    cachePath.GetText(), cardGeometry.GetText());
+            }
+
+            // Issue warnings for zero-area faces that we're supposedly
+            // drawing.
+            _SanityCheckFaceSizes(cachePath, *extent, axes_mask);
+        }
+    } else {
+        TF_CODING_ERROR("<%s> Unexpected draw mode %s",
+            cachePath.GetText(), drawMode.GetText());
+    }
+}
+
+/*virtual*/ 
+VtValue
+UsdImagingGLDrawModeAdapter::GetTopology(UsdPrim const& prim,
+                                         SdfPath const& cachePath,
+                                         UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    TfToken drawMode = UsdGeomTokens->default_;
+    _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+    if (TF_VERIFY(it != _drawModeMap.end())) {
+        drawMode = it->second;
+    }
+
+    VtValue topology;
+    VtValue points;
+    VtValue uv;
+    VtValue assign;
+    GfRange3d extent;
+    _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+        &points, &extent, &uv, &assign);
+
+    return topology;
+}
+
+void
 UsdImagingGLDrawModeAdapter::_CheckForTextureVariability(
     UsdPrim const& prim, HdDirtyBits dirtyBits,
     HdDirtyBits *timeVaryingBits) const
@@ -600,112 +716,40 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             drawMode = it->second;
         }
 
-
-        VtValue& topology = valueCache->GetTopology(cachePath);
+        VtValue topology;
         VtValue& points = valueCache->GetPoints(cachePath);
         GfRange3d& extent = valueCache->GetExtent(cachePath);
+        VtValue& uv = valueCache->GetPrimvar(cachePath, _tokens->cardsUv);
+        VtValue& assign = valueCache->GetPrimvar(cachePath, 
+            _tokens->cardsTexAssign);
+        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv, &assign);
 
-        if (drawMode == UsdGeomTokens->origin) {
-            extent = _ComputeExtent(prim);
-            _GenerateOriginGeometry(&topology, &points, extent);
-        } else if (drawMode == UsdGeomTokens->bounds) {
-            extent = _ComputeExtent(prim);
-            _GenerateBoundsGeometry(&topology, &points, extent);
-        } else if (drawMode == UsdGeomTokens->cards) {
-            if (!model) {
-                // The population rules in UsdImagingDelegate disallow this.
-                TF_CODING_ERROR("Prim has draw mode 'cards' but geom model "
-                                "API schema is not applied.");
-                return;
-            }
-            TfToken cardGeometry;
-            model.GetModelCardGeometryAttr().Get(&cardGeometry);
-
-            VtValue& uv = valueCache->GetPrimvar(cachePath,
-                    _tokens->cardsUv);
-            VtValue& assign = valueCache->GetPrimvar(cachePath,
-                    _tokens->cardsTexAssign);
-
-            if (cardGeometry == UsdGeomTokens->fromTexture) {
-                // In "fromTexture" mode, read all the geometry data in from
-                // the textures.
-                _GenerateCardsFromTextureGeometry(&topology, &points,
-                        &uv, &assign, &extent, prim);
-            } else {
-                // First compute the extents.
-                extent = _ComputeExtent(prim);
-
-                // Generate mask for suppressing axes with no textures
-                uint8_t axes_mask = 0;
-                const TfToken textureAttrs[6] = {
-                    UsdGeomTokens->modelCardTextureXPos,
-                    UsdGeomTokens->modelCardTextureYPos,
-                    UsdGeomTokens->modelCardTextureZPos,
-                    UsdGeomTokens->modelCardTextureXNeg,
-                    UsdGeomTokens->modelCardTextureYNeg,
-                    UsdGeomTokens->modelCardTextureZNeg,
-                };
-                const uint8_t mask[6] = {
-                    xPos, yPos, zPos, xNeg, yNeg, zNeg,
-                };
-                for (int i = 0; i < 6; ++i) {
-                    SdfAssetPath asset;
-                    prim.GetAttribute(textureAttrs[i]).Get(&asset, time);
-                    if (!asset.GetAssetPath().empty()) {
-                        axes_mask |= mask[i];
-                    }
-                }
-
-                // If no textures are bound, generate the full geometry.
-                if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }
-
-                // Generate UVs.
-                _GenerateTextureCoordinates(&uv, &assign, axes_mask);
-
-                // Generate geometry based on card type.
-                if (cardGeometry == UsdGeomTokens->cross) {
-                    _GenerateCardsCrossGeometry(&topology, &points, extent,
-                        axes_mask);
-                } else if (cardGeometry == UsdGeomTokens->box) {
-                    _GenerateCardsBoxGeometry(&topology, &points, extent,
-                        axes_mask);
-                } else {
-                    TF_CODING_ERROR("<%s> Unexpected card geometry mode %s",
-                        cachePath.GetText(), cardGeometry.GetText());
-                }
-
-                // Issue warnings for zero-area faces that we're supposedly
-                // drawing.
-                _SanityCheckFaceSizes(cachePath, extent, axes_mask);
-            }
-
+        if (drawMode == UsdGeomTokens->cards) {
             // Merge "cardsUv" and "cardsTexAssign" primvars
             _MergePrimvar(&primvars, _tokens->cardsUv,
-                          HdInterpolationVertex);
+                HdInterpolationVertex);
             _MergePrimvar(&primvars, _tokens->cardsTexAssign,
-                          HdInterpolationUniform);
+                HdInterpolationUniform);
 
             // XXX: backdoor into the material system.
             valueCache->GetPrimvar(cachePath, _tokens->displayRoughness) =
                 VtValue(1.0f);
-            _MergePrimvar(&primvars, _tokens->displayRoughness,
-                          HdInterpolationConstant);
-        } else {
-            TF_CODING_ERROR("<%s> Unexpected draw mode %s",
-                cachePath.GetText(), drawMode.GetText());
+            _MergePrimvar(&primvars, _tokens->displayRoughness, 
+                HdInterpolationConstant);
         }
 
         // Merge "points" primvar
         _MergePrimvar(&primvars, HdTokens->points,
-                      HdInterpolationVertex,
-                      HdPrimvarRoleTokens->point);
+            HdInterpolationVertex,
+            HdPrimvarRoleTokens->point);
     }
 }
 
 HdDirtyBits
 UsdImagingGLDrawModeAdapter::ProcessPropertyChange(UsdPrim const& prim,
-                                                 SdfPath const& cachePath,
-                                                 TfToken const& propertyName)
+                                                   SdfPath const& cachePath,
+                                                   TfToken const& propertyName)
 {
     const std::array<TfToken, 6> textureAttrs = {
         UsdGeomTokens->modelCardTextureXPos,
@@ -756,7 +800,7 @@ UsdImagingGLDrawModeAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
 void
 UsdImagingGLDrawModeAdapter::_GenerateOriginGeometry(
-        VtValue *topo, VtValue *points, GfRange3d const& extents) const
+    VtValue *topo, VtValue *points, GfRange3d const& extents) const
 {
     // Origin: vertices are (0,0,0); (1,0,0); (0,1,0); (0,0,1)
     VtVec3fArray pt = VtVec3fArray(4);

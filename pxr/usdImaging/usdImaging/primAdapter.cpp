@@ -1197,6 +1197,15 @@ UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
     return _delegate->_GetModelDrawMode(prim);
 }
 
+/*virtual*/ 
+VtValue 
+UsdImagingPrimAdapter::GetTopology(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdTimeCode time) const
+{
+    return VtValue();
+}
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

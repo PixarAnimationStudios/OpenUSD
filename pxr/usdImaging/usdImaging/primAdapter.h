@@ -412,13 +412,12 @@ public:
 
     /// Samples the transform for the given prim.
     USDIMAGING_API
-    virtual size_t
-    SampleTransform(UsdPrim const& prim,
-                    SdfPath const& cachePath,
-                    UsdTimeCode time,
-                    size_t maxNumSamples, 
-                    float *sampleTimes,
-                    GfMatrix4d *sampleValues);
+    virtual size_t SampleTransform(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdTimeCode time,
+                                   size_t maxNumSamples, 
+                                   float *sampleTimes,
+                                   GfMatrix4d *sampleValues);
 
     /// Gets the value of the parameter named key for the given prim (which
     /// has the given cache path) and given time.
@@ -446,6 +445,15 @@ public:
     USDIMAGING_API
     VtArray<VtIntArray> GetPerPrototypeIndices(UsdPrim const& prim,
                                                UsdTimeCode time) const;
+
+    /// Gets the topology object of a specific Usd prim. If the
+    /// adapter is a mesh it will return an HdMeshTopology,
+    /// if it is of type basis curves, it will return an HdBasisCurvesTopology.
+    /// If the adapter does not have a topology, it returns an empty VtValue.
+    USDIMAGING_API
+    virtual VtValue GetTopology(UsdPrim const& prim,
+                                SdfPath const& cachePath,
+                                UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility

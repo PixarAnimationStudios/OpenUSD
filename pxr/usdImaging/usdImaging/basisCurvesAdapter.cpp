@@ -168,11 +168,6 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        VtValue& topology = valueCache->GetTopology(cachePath);
-        _GetBasisCurvesTopology(prim, &topology, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         // First check for "primvars:widths"
         UsdGeomPrimvarsAPI primvarsApi(prim);
@@ -234,17 +229,17 @@ UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
 {
     // Even though points is treated as a primvar, it is special and is always
     // treated as a vertex primvar.
-    if (propertyName == UsdGeomTokens->points)
+    if (propertyName == UsdGeomTokens->points) {
         return HdChangeTracker::DirtyPoints;
-
-    else if (propertyName == UsdGeomTokens->curveVertexCounts ||
+    
+    } else if (propertyName == UsdGeomTokens->curveVertexCounts ||
              propertyName == UsdGeomTokens->basis ||
              propertyName == UsdGeomTokens->type ||
-             propertyName == UsdGeomTokens->wrap)
+             propertyName == UsdGeomTokens->wrap) {
         return HdChangeTracker::DirtyTopology;
 
     // Handle attributes that are treated as "built-in" primvars.
-    else if (propertyName == UsdGeomTokens->widths) {
+    } else if (propertyName == UsdGeomTokens->widths) {
         UsdGeomCurves curves(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->widths,
@@ -272,14 +267,12 @@ UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
-// -------------------------------------------------------------------------- //
-
-void
-UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
-                                         VtValue* topo,
-                                         UsdTimeCode time) const
+VtValue
+UsdImagingBasisCurvesAdapter::GetTopology(UsdPrim const& prim, 
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // These are uniform attributes and can't vary over time.
@@ -341,7 +334,7 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveType, topoCurveBasis, topoCurveWrap,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
-    *topo = VtValue(topology);
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

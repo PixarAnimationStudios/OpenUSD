@@ -1621,6 +1621,7 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     }
 }
 
+/*virtual*/
 PxOsdSubdivTags
 UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                                SdfPath const& cachePath,
@@ -1634,6 +1635,22 @@ UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
         return proto.adapter->GetSubdivTags(protoPrim, cachePath, time);
     }
     return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetTopology(UsdPrim const& usdPrim,
+                                             SdfPath const& cachePath,
+                                             UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                   cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetTopology(protoPrim, cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetTopology(usdPrim, cachePath, time);
 }
 
 /*virtual*/

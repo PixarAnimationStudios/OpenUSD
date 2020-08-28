@@ -673,7 +673,6 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
     // Nothing to do otherwise.
 }
 
-
 PxOsdSubdivTags
 UsdSkelImagingSkeletonAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                              SdfPath const& cachePath,
@@ -686,6 +685,31 @@ UsdSkelImagingSkeletonAdapter::GetSubdivTags(UsdPrim const& usdPrim,
     return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
 }
 
+/*virtual*/ 
+VtValue
+UsdSkelImagingSkeletonAdapter::GetTopology(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (_IsCallbackForSkeleton(prim)) {
+        // The bone mesh uses the fallback material.
+        _SkelData* skelData = _GetSkelData(cachePath);
+        if (!TF_VERIFY(skelData)) {
+            return VtValue();
+        }
+        return VtValue(skelData->ComputeTopologyAndRestState());
+
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
+        // make sure to delegate to the actual adapter registered for the prim.
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
+        return adapter->GetTopology(prim, cachePath, time);
+    }
+    return VtValue();
+}
 
 namespace {
 
@@ -1072,12 +1096,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
     // the value cache with the necessary info.
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath) =
-            skelData->ComputeTopologyAndRestState();
-    }
-
     if (requestedBits & HdChangeTracker::DirtyPoints) {
+        // Necessary for ComputePoints to work correctly.
+        skelData->ComputeTopologyAndRestState();
         valueCache->GetPoints(cachePath) = skelData->ComputePoints(time);
     }
 

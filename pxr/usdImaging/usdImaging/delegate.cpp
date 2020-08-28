@@ -1765,40 +1765,40 @@ UsdImagingDelegate::GetRenderTag(SdfPath const& id)
 HdBasisCurvesTopology 
 UsdImagingDelegate::GetBasisCurvesTopology(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    HdBasisCurvesTopology topology;
-    VtValue tmp;
-
-    if (_valueCache.ExtractTopology(cachePath, &tmp)) {
-        return tmp.UncheckedGet<HdBasisCurvesTopology>();
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        VtValue topology = primInfo->adapter->GetTopology(
+            primInfo->usdPrim, 
+            cachePath, 
+            _time);
+        return topology.Get<HdBasisCurvesTopology>();
     }
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyTopology);
-    if (TF_VERIFY(_valueCache.ExtractTopology(cachePath, &tmp)))
-        return tmp.UncheckedGet<HdBasisCurvesTopology>();
 
-    return topology;
+    return HdBasisCurvesTopology();
 }
 
 /*virtual*/
 HdMeshTopology 
 UsdImagingDelegate::GetMeshTopology(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    HdMeshTopology topology;
-    VtValue tmp;
 
-    if (_valueCache.ExtractTopology(cachePath, &tmp)) {
-        return tmp.UncheckedGet<HdMeshTopology>();
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        VtValue topology = primInfo->adapter->GetTopology(
+            primInfo->usdPrim, 
+            cachePath, 
+            _time);
+        return topology.Get<HdMeshTopology>();
     }
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyTopology);
-    if (TF_VERIFY(_valueCache.ExtractTopology(cachePath, &tmp)))
-        return tmp.UncheckedGet<HdMeshTopology>();
-    
-    return topology;
+
+    return HdMeshTopology();
 }
 
 /*virtual*/

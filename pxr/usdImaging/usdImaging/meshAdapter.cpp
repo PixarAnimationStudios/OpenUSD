@@ -235,11 +235,6 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        VtValue& topology = valueCache->GetTopology(cachePath);
-        _GetMeshTopology(prim, &topology, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyNormals) {
         TfToken schemeToken;
         _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
@@ -342,17 +337,15 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
-// -------------------------------------------------------------------------- //
-// Private IO Helpers
-// -------------------------------------------------------------------------- //
-
-void
-UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
-                                        VtValue* topo,
-                                        UsdTimeCode time) const
+/*virtual*/ 
+VtValue
+UsdImagingMeshAdapter::GetTopology(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdTimeCode time) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     TfToken schemeToken;
     _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
 
@@ -387,7 +380,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
         }
     }
 
-    topo->Swap(meshTopo);
+    return VtValue(meshTopo);
 }
 
 PxOsdSubdivTags
@@ -400,8 +393,9 @@ UsdImagingMeshAdapter::GetSubdivTags(UsdPrim const& prim,
 
     PxOsdSubdivTags tags;
 
-    if(!prim.IsA<UsdGeomMesh>())
+    if(!prim.IsA<UsdGeomMesh>()) {
         return tags;
+    }
 
     TfToken interpolationRule =
         _Get<TfToken>(prim, UsdGeomTokens->interpolateBoundary, time);

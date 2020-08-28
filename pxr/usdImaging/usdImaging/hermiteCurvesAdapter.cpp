@@ -104,24 +104,6 @@ UsdImagingHermiteCurvesAdapter::_IsBuiltinPrimvar(
         UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
-void 
-UsdImagingHermiteCurvesAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext) const
-{
-    BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        VtValue& topology = valueCache->GetTopology(cachePath);
-        _GetBasisCurvesTopology(prim, &topology, time);
-    }
-}
-
 HdDirtyBits
 UsdImagingHermiteCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                              SdfPath const& cachePath,
@@ -141,19 +123,19 @@ UsdImagingHermiteCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
 // -------------------------------------------------------------------------- //
 
-void
-UsdImagingHermiteCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
-                                         VtValue* topo,
-                                         UsdTimeCode time) const
+VtValue
+UsdImagingHermiteCurvesAdapter::GetTopology(UsdPrim const& prim, 
+                                            SdfPath const& cachePath,
+                                            UsdTimeCode time) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     HdBasisCurvesTopology topology(
         HdTokens->linear, HdTokens->bezier, HdTokens->nonperiodic,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
-    *topo = VtValue(topology);
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -169,14 +169,6 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-
-        VtValue& topology = valueCache->GetTopology(cachePath);
-
-        // Currently drawing the cage for NURBS curves so this creates
-        // a Basis Curves Topology with pre-set parameters
-        _GetBasisCurvesTopology(prim, &topology, time);
-    }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         // First check for "primvars:widths"
@@ -272,10 +264,10 @@ UsdImagingNurbsCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
-void
-UsdImagingNurbsCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
-                                         VtValue* topo, 
-                                         UsdTimeCode time) const
+VtValue
+UsdImagingNurbsCurvesAdapter::GetTopology(UsdPrim const& prim, 
+                                          SdfPath const& cachePath, 
+                                          UsdTimeCode time) const
 {
     // Currently drawing the cage for NURBS curves so this creates 
     // a Basis Curves Topology with the following parameters:
@@ -288,7 +280,7 @@ UsdImagingNurbsCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveType, topoCurveBasis, topoCurveWrap,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
-    *topo = VtValue(topology);
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -76,15 +76,14 @@ public:
         UsdImagingInstancerContext const* instancerContext = nullptr) 
             const override;
 
-    /// Thread Safe.
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
     USDIMAGING_API
-    void UpdateForTime(
-        UsdPrim const& prim,
-        SdfPath const& cachePath, 
-        UsdTimeCode time,
-        HdDirtyBits requestedBits,
-        UsdImagingInstancerContext const* instancerContext = nullptr) 
-            const override;
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
 
     // Override the implemetation in GprimAdapter since we don't fetch the
     // points attribute for implicit primitives.
@@ -94,10 +93,12 @@ public:
         SdfPath const& cachePath,
         UsdTimeCode time) const override;
 
+    // Used by the legacyEngine.
     USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
-                                UsdTimeCode time);
-    
+                                 UsdTimeCode time);
+
+    // Used by the legacyEngine.
     USDIMAGING_API
     static VtValue GetMeshTopology();
 };

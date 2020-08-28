@@ -102,24 +102,6 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
     }
 }
 
-// Thread safe.
-//  * Populate dirty bits for the given \p time.
-void 
-UsdImagingCapsuleAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext) const
-{
-    BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath) = GetMeshTopology();
-    }
-}
-
 HdDirtyBits
 UsdImagingCapsuleAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                 SdfPath const& cachePath,
@@ -167,6 +149,17 @@ UsdImagingCapsuleAdapter::GetMeshTopology()
 {
     // Topology is constant and identical for all capsules.
     return VtValue(HdMeshTopology(UsdImagingGetCapsuleMeshTopology()));
+}
+
+/*virtual*/ 
+VtValue
+UsdImagingCapsuleAdapter::GetTopology(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    return GetMeshTopology();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
