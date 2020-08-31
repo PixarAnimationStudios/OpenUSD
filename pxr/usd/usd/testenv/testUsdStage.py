@@ -28,6 +28,24 @@ from pxr import Sdf,Usd,Tf
 allFormats = ['usd' + c for c in 'ac']
 
 class TestUsdStage(unittest.TestCase):
+    def test_Repr(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        # Test that we have a non-empty repr for a Usd.Stage. 
+        self.assertTrue(stage)
+        self.assertTrue(repr(stage))
+
+        # Test that we have a non-empty repr for an expired Usd.Stage.
+        # We insert our test stage into a Usd.StageCache, which takes
+        # ownership of the stage, then we clear it. This leaves us with
+        # a handle to an expired Usd.Stage in Python.
+        sc = Usd.StageCache()
+        sc.Insert(stage)
+        sc.Clear()
+
+        self.assertFalse(stage)
+        self.assertTrue(repr(stage))
+
     def test_UsedLayers(self):
         for fmt in allFormats:
             sMain = Usd.Stage.CreateInMemory('testUsedLayers.'+fmt)
