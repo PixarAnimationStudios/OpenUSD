@@ -120,6 +120,11 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGINGGL_API
+    HdCullStyle GetCullStyle(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             UsdTimeCode time) const override;
+
+    USDIMAGINGGL_API
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;

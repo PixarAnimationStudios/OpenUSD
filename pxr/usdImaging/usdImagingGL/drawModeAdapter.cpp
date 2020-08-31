@@ -658,10 +658,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetDoubleSided(cachePath) = false;
     }
 
-    if (requestedBits & HdChangeTracker::DirtyCullStyle) {
-        valueCache->GetCullStyle(cachePath) = HdCullStyleBack;
-    }
-
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
         SdfPath materialPath = _GetMaterialPath(prim);
         valueCache->GetMaterialId(cachePath) = materialPath;
@@ -1340,6 +1336,14 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         }
         return extent;
     }
+}
+
+HdCullStyle 
+UsdImagingGLDrawModeAdapter::GetCullStyle(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const
+{
+    return HdCullStyleBack;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

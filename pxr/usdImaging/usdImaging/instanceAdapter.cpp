@@ -1728,6 +1728,28 @@ UsdImagingInstanceAdapter::GetTopology(UsdPrim const& usdPrim,
     return UsdImagingPrimAdapter::GetTopology(usdPrim, cachePath, time);
 }
 
+/*virtual*/
+HdCullStyle 
+UsdImagingInstanceAdapter::GetCullStyle(UsdPrim const& usdPrim,
+                                        SdfPath const& cachePath,
+                                        UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        // Note that the proto group in this proto has not yet been
+        // updated with new instances at this point.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return HdCullStyleDontCare;
+        }
+        return proto.adapter->GetCullStyle(
+                _GetPrim(proto.path), cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetCullStyle(usdPrim, cachePath, time);
+}
+
 void
 UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index,

@@ -159,6 +159,10 @@ public:
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
 
+    HdCullStyle GetCullStyle(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             UsdTimeCode time) const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //

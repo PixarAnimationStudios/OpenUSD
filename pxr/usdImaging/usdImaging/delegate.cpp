@@ -1853,19 +1853,25 @@ UsdImagingDelegate::GetDoubleSided(SdfPath const& id)
 HdCullStyle
 UsdImagingDelegate::GetCullStyle(SdfPath const &id)
 {
-    // XXX: Cull style works a bit weirdly. Most adapters aren't
+    // Cull style works a bit weirdly. Most adapters aren't
     // expected to use cullstyle, so: if it's there, use it, but otherwise
     // just use the fallback value.
-    //
-    // This way, prims that don't care about it don't need to pay the price
-    // of populating it in the value cache.
     HdCullStyle cullStyle = HdCullStyleDontCare;
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    if (_valueCache.ExtractCullStyle(cachePath, &cullStyle)) {
-        return cullStyle;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        cullStyle = primInfo->adapter->GetCullStyle(
+            primInfo->usdPrim, 
+            cachePath,
+            _time);
     }
 
-    return _cullStyleFallback;
+    if (cullStyle == HdCullStyleDontCare) {
+        cullStyle = _cullStyleFallback;
+    }
+
+    return cullStyle;
 }
 
 /*virtual*/ 

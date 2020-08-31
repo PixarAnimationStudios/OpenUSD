@@ -1179,6 +1179,14 @@ UsdImagingPrimAdapter::GetInheritablePurpose(UsdPrim const& prim) const
     return purposeInfo.GetInheritablePurpose();
 }
 
+HdCullStyle 
+UsdImagingPrimAdapter::GetCullStyle(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdTimeCode time) const
+{
+    return HdCullStyleDontCare;
+}
+
 SdfPath
 UsdImagingPrimAdapter::GetMaterialUsdPath(UsdPrim const& prim) const
 {

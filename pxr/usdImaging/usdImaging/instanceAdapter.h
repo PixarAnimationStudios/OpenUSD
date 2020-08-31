@@ -201,13 +201,17 @@ public:
                   float *sampleTimes,
                   VtValue *sampleValues) override;
 
-    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
-                                          SdfPath const& cachePath,
-                                          UsdTimeCode time) const override;
+    PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                  SdfPath const& cachePath,
+                                  UsdTimeCode time) const override;
 
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
+
+    HdCullStyle GetCullStyle(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

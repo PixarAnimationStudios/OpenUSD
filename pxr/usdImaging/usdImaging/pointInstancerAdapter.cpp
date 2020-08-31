@@ -1646,6 +1646,7 @@ UsdImagingPointInstancerAdapter::GetVisible(UsdPrim const& prim,
     return BaseAdapter::GetVisible(prim, cachePath, time);
 }
 
+/*virtual*/
 PxOsdSubdivTags
 UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                                SdfPath const& cachePath,
@@ -1675,6 +1676,22 @@ UsdImagingPointInstancerAdapter::GetTopology(UsdPrim const& usdPrim,
         return proto.adapter->GetTopology(protoPrim, cachePath, time);
     }
     return UsdImagingPrimAdapter::GetTopology(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+HdCullStyle 
+UsdImagingPointInstancerAdapter::GetCullStyle(UsdPrim const& usdPrim,
+                                             SdfPath const& cachePath,
+                                             UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                   cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetCullStyle(protoPrim, cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetCullStyle(usdPrim, cachePath, time);
 }
 
 /*virtual*/

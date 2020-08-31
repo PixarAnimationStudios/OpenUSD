@@ -430,6 +430,12 @@ public:
                         TfToken const& key,
                         UsdTimeCode time) const;
 
+    /// Gets the cullstyle of a specific path in the scene graph.
+    USDIMAGING_API
+    virtual HdCullStyle GetCullStyle(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdTimeCode time) const;
+
     /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
     USDIMAGING_API
