@@ -351,8 +351,8 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
 	        /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
 
     static const HdSamplerParameters envSamplerParameters{
-        HdWrapRepeat, HdWrapRepeat, HdWrapRepeat,
-        HdMinFilterLinear, HdMagFilterLinear};
+        HdWrapClamp, HdWrapClamp, HdWrapClamp,
+        HdMinFilterLinearMipmapLinear, HdMagFilterLinear};
 
     _domeLightEnvironmentTextureHandle =
         resourceRegistry->AllocateTextureHandle(
