@@ -35,8 +35,8 @@
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/variant.hpp>
 
-#include <iostream>
 #include <memory>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
