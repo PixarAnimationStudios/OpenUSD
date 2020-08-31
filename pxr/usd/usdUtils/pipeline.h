@@ -40,16 +40,12 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/common.h"
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-
 USDUTILS_API
 extern TfEnvSetting<bool> USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME;
-
 
 /// Define the shading pipeline's convention for naming a companion
 /// alpha/opacity attribute and primvarnames given the full name of a
@@ -117,12 +113,12 @@ UsdPrim UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 /// Returns the name of the primary UV set used on meshes and nurbs.
 /// By default the name is "st".
 USDUTILS_API
-TfToken UsdUtilsGetPrimaryUVSetName();
+const TfToken& UsdUtilsGetPrimaryUVSetName();
 
 /// Returns the name of the reference position used on meshes and nurbs.
 /// By default the name is "pref".
 USDUTILS_API
-TfToken UsdUtilsGetPrefName();
+const TfToken& UsdUtilsGetPrefName();
 
 /// Get the name of the USD prim under which materials are expected to be
 /// authored.
@@ -158,8 +154,6 @@ TfToken UsdUtilsGetMaterialsScopeName(const bool forceDefault = false);
 USDUTILS_API
 TfToken UsdUtilsGetPrimaryCameraName(const bool forceDefault = false);
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

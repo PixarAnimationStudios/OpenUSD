@@ -30,6 +30,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include <boost/python/return_by_value.hpp>
 
 using namespace boost::python;
 
@@ -46,8 +47,10 @@ void wrapPipeline()
         (arg("stage"), arg("path")));
     def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
         (arg("stage"), arg("path")));
-    def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName);
-    def("GetPrefName", UsdUtilsGetPrefName);
+    def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName,
+        return_value_policy<return_by_value>());
+    def("GetPrefName", UsdUtilsGetPrefName,
+        return_value_policy<return_by_value>());
     def(
         "GetMaterialsScopeName",
         UsdUtilsGetMaterialsScopeName,
