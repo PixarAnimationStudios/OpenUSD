@@ -62,6 +62,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsConditionalAbortDiagnosticDelegate.py
     testenv/testUsdUtilsCreateNewUsdzPackage.py
+    testenv/testUsdUtilsDependencies.py
     testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py
@@ -117,6 +118,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsCreateNewUsdzPackage
     DEST testUsdUtilsCreateNewUsdzPackage
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencies
+    DEST testUsdUtilsDependencies
 )
 
 pxr_install_test_dir(
@@ -357,6 +363,12 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
     DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencies
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies"
     EXPECTED_RETURN_CODE 0
 )
 
