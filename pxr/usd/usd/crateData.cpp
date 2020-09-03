@@ -492,6 +492,16 @@ public:
         return result;
     }
 
+    inline std::type_info const &GetTypeid(const SdfPath& path,
+                                           const TfToken& field) const {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
+            return fieldValue->IsHolding<ValueRep>() ?
+                _crateFile->GetTypeid(fieldValue->UncheckedGet<ValueRep>()) :
+                fieldValue->GetTypeid();
+        }
+        return typeid(void);
+    }
+
     template <class Data>
     inline void _ListHelper(Data const &d, SdfPath const &path,
                             vector<TfToken> &out) const {
@@ -1272,6 +1282,12 @@ VtValue
 Usd_CrateData::Get(const SdfPath& path, const TfToken & field) const
 {
     return _impl->Get(path, field);
+}
+
+std::type_info const &
+Usd_CrateData::GetTypeid(const SdfPath& path, const TfToken& field) const
+{
+    return _impl->GetTypeid(path, field);
 }
 
 std::vector<TfToken>

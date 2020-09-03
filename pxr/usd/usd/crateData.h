@@ -68,6 +68,8 @@ public:
                      VtValue *value=nullptr) const;
     virtual VtValue Get(const SdfPath& path, 
                         const TfToken& fieldName) const;
+    virtual std::type_info const &GetTypeid(const SdfPath& path,
+                                            const TfToken& fieldname) const;
     virtual void Set(const SdfPath& path, const TfToken& fieldName,
                      const VtValue& value);
     virtual void Set(const SdfPath& path, const TfToken& fieldName,
