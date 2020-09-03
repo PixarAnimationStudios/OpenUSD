@@ -162,6 +162,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     )
 
     pxr_install_test_dir(
+        SRC testenv/testUsdviewDefaultFontFamily
+        DEST testUsdviewDefaultFontFamily
+    )
+
+    pxr_install_test_dir(
         SRC testenv/testUsdviewSkinning
         DEST testUsdviewSkinning
     )
@@ -382,6 +387,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 0
     )
     
+    pxr_register_test(testUsdviewDefaultFontFamily
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDefaultFontFamily.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
     pxr_register_test(testUsdviewSkinning
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSkinning.py arm.usda"

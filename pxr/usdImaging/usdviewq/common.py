@@ -38,6 +38,12 @@ class ClearColors(ConstantGroup):
     LIGHT_GREY = "Grey (Light)"
     WHITE = "White"
 
+class DefaultFontFamily(ConstantGroup):
+    """Names of the default font family and monospace font family to be used
+    with usdview"""
+    FONT_FAMILY = "Roboto"
+    MONOSPACE_FONT_FAMILY = "Roboto Mono"
+
 class HighlightColors(ConstantGroup):
     """Names of available highlight colors for selected objects."""
     WHITE = "White"

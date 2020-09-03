@@ -168,7 +168,7 @@
           <widget class="PrimTreeWidget" name="primView">
            <property name="font">
             <font>
-             <family>Gotham Rounded</family>
+             <family>Roboto</family>
              <pointsize>9</pointsize>
              <weight>50</weight>
              <italic>false</italic>
@@ -263,7 +263,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>75</weight>
                <bold>true</bold>
@@ -302,7 +302,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -330,7 +330,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -467,7 +467,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -507,7 +507,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -535,7 +535,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -1353,7 +1353,7 @@
             </property>
             <property name="font">
              <font>
-              <family>Gotham Rounded</family>
+              <family>Roboto</family>
               <pointsize>9</pointsize>
               <weight>50</weight>
               <italic>false</italic>
@@ -1388,7 +1388,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>29</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="minimumSize">
