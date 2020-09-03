@@ -165,7 +165,7 @@ Set the environment variables specified by the script when it finishes and
 launch ```usdview``` with a sample asset.
 
 ```
-> usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
+> usdview USD/extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
 
 Contributing
