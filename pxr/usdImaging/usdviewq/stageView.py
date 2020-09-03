@@ -833,6 +833,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.viewSettings.signalVisibleSettingChanged.connect(
             self.update)
 
+        self._dataModel.viewSettings.signalAutoComputeClippingPlanesChanged\
+                                    .connect(self._onAutoComputeClippingChanged)
+
         self._dataModel.signalStageReplaced.connect(self._stageReplaced)
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
@@ -2055,14 +2058,15 @@ class StageView(QtOpenGL.QGLWidget):
                 1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
         self.updateGL()
 
-    def detachAndReClipFromCurrentCamera(self):
+    def _onAutoComputeClippingChanged(self):
         """If we are currently rendering from a prim camera, switch to the
         FreeCamera.  Then reset the near/far clipping planes based on
-        distance to closest geometry."""
-        if not self._dataModel.viewSettings.freeCamera:
-            self.switchToFreeCamera()
-        else:
-            self.computeAndSetClosestDistance()
+        distance to closest geometry.  But only when autoClip has turned on!"""
+        if self._dataModel.viewSettings.autoComputeClippingPlanes:
+            if not self._dataModel.viewSettings.freeCamera:
+                self.switchToFreeCamera()
+            else:
+                self.computeAndSetClosestDistance()
 
     def computeAndSetClosestDistance(self):
         '''Using the current FreeCamera's frustum, determine the world-space

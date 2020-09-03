@@ -2382,9 +2382,6 @@ class AppController(QtCore.QObject):
     def _toggleAutoComputeClippingPlanes(self):
         autoClip = self._ui.actionAuto_Compute_Clipping_Planes.isChecked()
         self._dataModel.viewSettings.autoComputeClippingPlanes = autoClip
-        if autoClip:
-            self._stageView.detachAndReClipFromCurrentCamera()
-        
 
     def _setUseExtentsHint(self):
         self._dataModel.useExtentsHint = self._ui.useExtentsHint.isChecked()
