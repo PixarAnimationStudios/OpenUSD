@@ -95,7 +95,8 @@ getsegcount(PyObject *self, Py_ssize_t *lenp) {
 // Python's getcharbuf interface function.
 static Py_ssize_t
 getcharbuf(PyObject *self, Py_ssize_t segment, const char **ptrptr) {
-    return getreadbuf(self, segment, (void **) ptrptr);
+    PyErr_SetString(PyExc_ValueError, "cannot treat binary data as text");
+    return -1;
 }
 #endif
 
