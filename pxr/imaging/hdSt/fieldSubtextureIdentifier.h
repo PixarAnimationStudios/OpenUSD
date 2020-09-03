@@ -69,9 +69,12 @@ class HdStField3DAssetSubtextureIdentifier final
 public:
     /// C'tor
     ///
-    /// fieldName corresponds to the layer/attribute name in the Field3D file
-    /// fieldIndex corresponds to the partition index
-    /// fieldPurpose corresponds to the partition name/grouping
+    /// fieldName corresponds (e.g., density) to the
+    ///             layer/attribute name in the Field3D file
+    /// fieldIndex corresponds to the
+    ///             partition index
+    /// fieldPurpose (e.g., BigCloud) corresponds to the
+    ///             partition name/grouping
     /// 
     HDST_API
     explicit HdStField3DAssetSubtextureIdentifier(

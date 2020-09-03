@@ -58,6 +58,7 @@ pxr_library(glf
         contextCaps
         diagnostic
         drawTarget
+        field3DTextureDataBase
         glew
         glContext
         glRawContext

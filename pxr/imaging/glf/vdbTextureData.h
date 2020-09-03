@@ -105,7 +105,7 @@ private:
     const std::string _filePath;
     const std::string _gridName;
 
-    size_t _targetMemory;
+    const size_t _targetMemory;
 
     int _nativeWidth, _nativeHeight, _nativeDepth;
     int _resizedWidth, _resizedHeight, _resizedDepth;

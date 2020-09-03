@@ -38,6 +38,7 @@
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 #include "pxr/imaging/glf/vdbTextureData.h"
 #endif
+#include "pxr/imaging/glf/field3DTextureDataBase.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 #include "pxr/imaging/glf/udimTexture.h"
 
@@ -474,22 +475,38 @@ _ComputeFieldTexData(
     const HdStTextureIdentifier &textureId,
     const size_t targetMemory)
 {
+    const std::string &filePath = textureId.GetFilePath().GetString();
     const HdStSubtextureIdentifier * const subId =
         textureId.GetSubtextureIdentifier();
 
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
     if (const HdStOpenVDBAssetSubtextureIdentifier * const vdbSubId =
             dynamic_cast<const HdStOpenVDBAssetSubtextureIdentifier*>(subId)) {
+        if (vdbSubId->GetFieldIndex() != 0) {
+            TF_WARN("Support of field index when reading OpenVDB file not yet "
+                    "implemented (file: %s, field name: %s, field index: %d",
+                    filePath.c_str(),
+                    vdbSubId->GetFieldName().GetText(),
+                    vdbSubId->GetFieldIndex());
+        }
         return GlfVdbTextureData::New(
-            textureId.GetFilePath().GetString(),
-            vdbSubId->GetFieldName(), targetMemory);
+            filePath, vdbSubId->GetFieldName(), targetMemory);
     }
 #endif
 
     if (const HdStField3DAssetSubtextureIdentifier * const f3dSubId =
             dynamic_cast<const HdStField3DAssetSubtextureIdentifier*>(subId)) {
-        TF_WARN("No Field3D support yet.");
-        return TfNullPtr;
+        GlfField3DTextureDataBaseRefPtr const texData =
+            GlfField3DTextureDataBase::New(
+                filePath,
+                f3dSubId->GetFieldName(),
+                f3dSubId->GetFieldIndex(),
+                f3dSubId->GetFieldPurpose(),
+                targetMemory);
+        if (!texData) {
+            TF_WARN("Could not find plugin to load Field3D file.");
+        }
+        return texData;
     }
 
     TF_CODING_ERROR("Unsupported field subtexture identifier");
