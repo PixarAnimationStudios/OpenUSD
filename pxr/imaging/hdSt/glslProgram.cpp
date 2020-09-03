@@ -228,7 +228,9 @@ HdStGLSLProgram::CompileShader(
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 
     std::string fname;
-    if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCEFILE)) {
+    if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCEFILE) ||
+            ( TfDebug::IsEnabled(HDST_DUMP_FAILING_SHADER_SOURCEFILE) &&
+              !shaderFn->IsValid())) {
         std::stringstream fnameStream;
         static size_t debugShaderID = 0;
         fnameStream << "program" << _debugID << "_shader" << debugShaderID++
