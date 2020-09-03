@@ -346,6 +346,7 @@ Sdf_PathNode::_GetEmptyVariantSelection() const {
     return _emptyVariantSelection;
 }
 
+namespace {
 // This "table" is a thread-safe mapping from property node to path token.  Each
 // entry in the _pathTokenTable points to one of these, and will have an entry
 // for the path string for the prim path itself (which will be keyed with a
@@ -357,25 +358,24 @@ struct _PropToTokenTable
     template <class Fn>
     TfToken const &
     FindOrCreate(Sdf_PathNode const *prop, Fn &&makeToken) {
-        auto &propsToToks = _data->propsToToks;
-        auto &mutex = _data->mutex;
+        _Data &d = *_data;
         // We try first without creating the token -- if that fails we try
         // again.  This could be made more efficient, but getting strings for
         // paths shouldn't be a bottleneck for clients.
-        tbb::spin_mutex::scoped_lock lock(mutex);
-        auto iter = propsToToks.find(prop);
-        if (iter == propsToToks.end()) {
+        tbb::spin_mutex::scoped_lock lock(d.mutex);
+        auto iter = d.propsToToks.find(prop);
+        if (iter == d.propsToToks.end()) {
             // No entry yet.  Drop the lock, make the token, and try to insert
             // it.  We *must* drop the lock since creating the token can
             // re-enter here (e.g. if there are embedded target paths that have
             // properties on the same prim).
             lock.release();
             TfToken tok = std::forward<Fn>(makeToken)();
-            lock.acquire(mutex);
+            lock.acquire(d.mutex);
             // This may or may not actually insert the token, depending on
             // whether or not a concurrent caller did, but it doesn't really
             // matter.
-            iter = propsToToks.emplace(prop, std::move(tok)).first;
+            iter = d.propsToToks.emplace(prop, std::move(tok)).first;
         }
         return iter->second;
     }
@@ -388,6 +388,8 @@ private:
 
     std::shared_ptr<_Data> _data { new _Data };
 };
+
+} // anon
 
 using _PrimToPropTokenTables =
     tbb::concurrent_hash_map<Sdf_PathNode const *, _PropToTokenTable>;
