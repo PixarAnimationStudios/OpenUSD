@@ -258,6 +258,9 @@ _ExtractFileFormatArguments(
 static std::string
 _Repr(const SdfLayerHandle &self)
 {
+    if (!self) {
+        return "<expired " + TF_PY_REPR_PREFIX + "Layer instance>";
+    }
     return TF_PY_REPR_PREFIX + "Find(" + TfPyRepr(self->GetIdentifier()) + ")";
 }
 
@@ -483,6 +486,12 @@ _FindOrOpenRelativeToLayer(
 
 using Py_SdfLayerTraversalFunctionSig = void(const SdfPath&);
 
+// Just for testing purposes.
+static void _TestTakeOwnership(SdfLayerRefPtr layerRef)
+{
+    // do nothing
+}
+
 } // anonymous namespace 
 
 void wrapLayer()
@@ -501,6 +510,8 @@ void wrapLayer()
     def("ComputeAssetPathRelativeToLayer", &SdfComputeAssetPathRelativeToLayer,
         ( arg("anchor"),
           arg("assetPath")));
+
+    def("_TestTakeOwnership", &_TestTakeOwnership);
 
     scope s = class_<This,
                      ThisHandle,

@@ -260,6 +260,13 @@ def "Root"
         self.assertIn(Sdf.Path('/Root{v=x}ChildInVariant.myAttr'), propPaths)
         self.assertIn(Sdf.Path('/Root.myRel'), propPaths)
 
+    def test_ExpiredLayerRepr(self):
+        l = Sdf.Layer.CreateAnonymous()
+        self.assertTrue(l)
+        Sdf._TestTakeOwnership(l)
+        self.assertFalse(l)
+        self.assertTrue(l.expired)
+        self.assertTrue(len(repr(l)))
 
 if __name__ == "__main__":
     unittest.main()
