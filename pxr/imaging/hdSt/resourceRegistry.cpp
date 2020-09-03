@@ -870,9 +870,9 @@ HdStResourceRegistry::_Commit()
 
             HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
         }
-    }
 
-    SubmitHgiWork();
+        SubmitHgiWork();
+    }
 
     // release sources
     WorkParallelForEach(_pendingSources.begin(), _pendingSources.end(),
