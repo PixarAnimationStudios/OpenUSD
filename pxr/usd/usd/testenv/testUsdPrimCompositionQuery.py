@@ -682,9 +682,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         # PrimCollectionQuery instance is garbage collection
         stage = Usd.Stage.CreateInMemory("testCreationAndGarbageCollect.usda")
         Usd.PrimCompositionQuery(stage.GetPseudoRoot())
-        sessionLayer = stage.GetSessionLayer().identifier
+        sessionLayer = stage.GetSessionLayer()
         del stage
-        self.assertFalse(Sdf.Layer.FindOrOpen(sessionLayer))
+        self.assertTrue(sessionLayer.expired)
 
 if __name__ == "__main__":
     unittest.main()
