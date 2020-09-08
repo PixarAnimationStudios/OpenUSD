@@ -1682,41 +1682,22 @@ UsdImagingDelegate::SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded)
 GfInterval 
 UsdImagingDelegate::GetCurrentTimeSamplingInterval()
 {
+    TRACE_FUNCTION();
+
     float shutterOpen = 0.0f;
     float shutterClose = 0.0f;
 
     if (!_cameraPathForSampling.IsEmpty()) {
-        VtValue vShutterOpen;
-        VtValue vShutterClose;
-
-        if (!_valueCache.FindCameraParam(
-                _cameraPathForSampling, 
-                HdCameraTokens->shutterOpen, 
-                &vShutterOpen)) {
-            _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
-
-            _valueCache.FindCameraParam(
-                _cameraPathForSampling, 
-                HdCameraTokens->shutterOpen, 
-                &vShutterOpen);
-        }
-
+        const VtValue vShutterOpen = GetCameraParamValue(
+            _cameraPathForSampling, 
+            HdCameraTokens->shutterOpen);
         if (vShutterOpen.IsHolding<double>()) {
             shutterOpen = vShutterOpen.Get<double>();
         }
 
-        if (!_valueCache.FindCameraParam(
-                _cameraPathForSampling, 
-                HdCameraTokens->shutterClose, 
-                &vShutterClose)) {
-            _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
-
-            _valueCache.FindCameraParam(
-                _cameraPathForSampling, 
-                HdCameraTokens->shutterClose, 
-                &vShutterClose);
-        }
-
+        const VtValue vShutterClose = GetCameraParamValue(
+            _cameraPathForSampling, 
+            HdCameraTokens->shutterClose);
         if (vShutterClose.IsHolding<double>()) {
             shutterClose = vShutterClose.Get<double>();
         }
@@ -1775,7 +1756,9 @@ UsdImagingDelegate::GetBasisCurvesTopology(SdfPath const& id)
             primInfo->usdPrim, 
             cachePath, 
             _time);
-        return topology.Get<HdBasisCurvesTopology>();
+        if (topology.IsHolding<HdBasisCurvesTopology>()) {
+            return topology.Get<HdBasisCurvesTopology>();
+        }
     }
 
     return HdBasisCurvesTopology();
@@ -1795,7 +1778,9 @@ UsdImagingDelegate::GetMeshTopology(SdfPath const& id)
             primInfo->usdPrim, 
             cachePath, 
             _time);
-        return topology.Get<HdMeshTopology>();
+        if (topology.IsHolding<HdMeshTopology>()) {
+            return topology.Get<HdMeshTopology>();
+        }
     }
 
     return HdMeshTopology();
@@ -2780,6 +2765,8 @@ VtValue
 UsdImagingDelegate::GetCameraParamValue(SdfPath const &id, 
                                         TfToken const &paramName)
 {
+    TRACE_FUNCTION();
+
     if (paramName == HdCameraTokens->windowPolicy) {
         // Hydra expects the window policy to be authored on the camera.
         // Since UsdGeomCamera doesn't have this property, we store the app
@@ -2788,24 +2775,15 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
     }
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    VtValue value;
-    HdDirtyBits dirtyBit = HdCamera::Clean;
-    if (paramName == HdCameraTokens->worldToViewMatrix) {
-        dirtyBit = HdCamera::DirtyViewMatrix;
-    } else if (paramName == HdCameraTokens->projectionMatrix) {
-        dirtyBit = HdCamera::DirtyProjMatrix;
-    } else if (paramName == HdCameraTokens->clipPlanes) {
-        dirtyBit = HdCamera::DirtyClipPlanes;
-    } else {
-        dirtyBit = HdCamera::DirtyParams;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->Get(
+            primInfo->usdPrim, 
+            cachePath, 
+            paramName,
+            _time);
     }
-    
-    _UpdateSingleValue(cachePath, dirtyBit);
-    if (!_valueCache.FindCameraParam(cachePath, paramName, &value)) {
-        // Fallback to USD attributes.
-        value = _GetUsdPrimAttribute(cachePath, paramName);
-    }
-    return value;
+    return VtValue();
 }
 
 HdVolumeFieldDescriptorVector

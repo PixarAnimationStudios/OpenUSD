@@ -109,6 +109,10 @@ public:
                              SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
     USDIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,

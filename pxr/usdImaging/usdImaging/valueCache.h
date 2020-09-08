@@ -164,10 +164,6 @@ public:
             const TfToken attr("extComputationKernel");
             return Key(path, attr);
         }
-        static Key CameraParamNames(SdfPath const& path) {
-            static TfToken attr("CameraParamNames");
-            return Key(path, attr);
-        }
     };
 
     UsdImagingValueCache()
@@ -345,16 +341,6 @@ public:
                 Key::ExtComputationPrimvars(path));
             _Erase<std::string>(Key::ExtComputationKernel(path));
         }
-
-        // Camera state
-        TfTokenVector CameraParamNames;
-        if (FindCameraParamNames(path, &CameraParamNames)) {
-            for (const TfToken& paramName : CameraParamNames) {
-                _Erase<VtValue>(Key(path, paramName));
-            }
-
-            _Erase<TfTokenVector>(Key::CameraParamNames(path));
-        }
     }
 
     VtValue& GetColor(SdfPath const& path) const {
@@ -426,12 +412,6 @@ public:
     }
     std::string& GetExtComputationKernel(SdfPath const& path) const {
         return _Get<std::string>(Key::ExtComputationKernel(path));
-    }
-    VtValue& GetCameraParam(SdfPath const& path, TfToken const& name) const {
-        return _Get<VtValue>(Key(path, name));
-    }
-    TfTokenVector& GetCameraParamNames(SdfPath const& path) const {
-        return _Get<TfTokenVector>(Key::CameraParamNames(path));
     }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
@@ -505,13 +485,6 @@ public:
     bool FindExtComputationKernel(SdfPath const& path, std::string* value) const {
         return _Find(Key::ExtComputationKernel(path), value);
     }
-    bool FindCameraParam(SdfPath const& path, TfToken const& name,
-                         VtValue* value) const {
-        return _Find(Key(path, name), value);
-    }
-    bool FindCameraParamNames(SdfPath const& path, TfTokenVector* value) const {
-        return _Find(Key::CameraParamNames(path), value);
-    }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Color(path), value);
@@ -584,12 +557,6 @@ public:
     bool ExtractExtComputationKernel(SdfPath const& path, std::string* value) {
         return _Extract(Key::ExtComputationKernel(path), value);
     }
-    bool ExtractCameraParam(SdfPath const& path, TfToken const& name,
-                            VtValue* value) {
-        return _Extract(Key(path, name), value);
-    }
-    // Skip adding ExtractCameraParamNames as we don't expose scene delegate
-    // functionality to query all available parameters on a camera.
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()

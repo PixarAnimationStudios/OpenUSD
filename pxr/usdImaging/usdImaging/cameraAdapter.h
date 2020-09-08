@@ -39,7 +39,8 @@ class UsdPrim;
 ///
 /// Delegate support for UsdGeomCamera.
 ///
-class UsdImagingCameraAdapter : public UsdImagingPrimAdapter {
+class UsdImagingCameraAdapter : public UsdImagingPrimAdapter 
+{
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
@@ -105,6 +106,16 @@ public:
     void MarkWindowPolicyDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
                                UsdImagingIndexProxy* index) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
 
 protected:
     void _RemovePrim(SdfPath const& cachePath,
