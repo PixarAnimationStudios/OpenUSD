@@ -197,7 +197,7 @@ _MakeFallbackVolumeShader()
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeFieldRedirect,
                 _fallbackShaderTokens->density,
-                VtValue(GfVec3f(0.0, 0.0, 0.0)),
+                VtValue(0.0f),
                 { _fallbackShaderTokens->density }),
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeFieldRedirect,
