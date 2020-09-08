@@ -185,7 +185,7 @@ public:
     /// Author a \p kind for this prim, at the current UsdEditTarget.
     /// \return true if \p kind was successully authored, otherwise false.
     USD_API
-    bool SetKind(const TfToken& kind);
+    bool SetKind(const TfToken& kind) const;
 
     /// Return true if the prim's kind metadata is or inherits from
     /// \p baseKind as defined by the Kind Registry.
