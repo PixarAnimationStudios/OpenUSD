@@ -175,6 +175,11 @@ public:
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
 
+    USDSKELIMAGING_API
+    GfRange3d GetExtent(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Change Processing API (protected)
@@ -187,11 +192,6 @@ private:
     /// Handlers for the Bone Mesh
     // ---------------------------------------------------------------------- //
     bool _IsCallbackForSkeleton(const UsdPrim& prim) const;
-    
-    /// Note: Methods below have been lifted from GprimAdapter.
-    /// Reads the extent from the given prim. If the extent is not authored,
-    /// an empty GfRange3d is returned, the extent will not be computed.
-    GfRange3d _GetExtent(const UsdPrim& prim, UsdTimeCode time) const;
 
     /// Returns a value holding color for \p prim,
     /// taking into account explicitly authored color on the prim.

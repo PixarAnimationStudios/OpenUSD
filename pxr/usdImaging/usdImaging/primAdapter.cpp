@@ -1217,6 +1217,15 @@ UsdImagingPrimAdapter::GetTopology(UsdPrim const& prim,
     return VtValue();
 }
 
+/*virtual*/
+GfRange3d 
+UsdImagingPrimAdapter::GetExtent(UsdPrim const& prim, 
+                                 SdfPath const& cachePath, 
+                                 UsdTimeCode time) const
+{
+    return GfRange3d();
+}
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

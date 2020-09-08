@@ -1790,7 +1790,7 @@ UsdImagingDelegate::GetMeshTopology(SdfPath const& id)
 UsdImagingDelegate::SubdivTags 
 UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
@@ -1806,18 +1806,16 @@ UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
 GfRange3d 
 UsdImagingDelegate::GetExtent(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    GfRange3d extent;
-    if (_valueCache.ExtractExtent(cachePath, &extent)) {
-        return extent;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetExtent(
+            primInfo->usdPrim, cachePath, _time);
     }
-    // Slow path, we should not hit this.
-    TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extent fetch for %s\n", 
-                               id.GetText());
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyExtent);
-    TF_VERIFY(_valueCache.ExtractExtent(cachePath, &extent));
-    return extent;
+    return GfRange3d();
 }
 
 /*virtual*/ 

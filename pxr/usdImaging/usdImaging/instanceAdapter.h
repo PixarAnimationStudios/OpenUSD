@@ -91,7 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingInstanceAdapter : public UsdImagingPrimAdapter
 {
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingInstanceAdapter();
     virtual ~UsdImagingInstanceAdapter();
@@ -212,6 +212,10 @@ public:
     HdCullStyle GetCullStyle(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              UsdTimeCode time) const override;
+
+    GfRange3d GetExtent(UsdPrim const& usdPrim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

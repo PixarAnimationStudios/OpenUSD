@@ -421,8 +421,32 @@ UsdImagingGLDrawModeAdapter::GetTopology(UsdPrim const& prim,
     GfRange3d extent;
     _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
         &points, &extent, &uv, &assign);
-
     return topology;
+}
+
+/*virtual*/
+GfRange3d 
+UsdImagingGLDrawModeAdapter::GetExtent(UsdPrim const& prim, 
+                                       SdfPath const& cachePath, 
+                                       UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    TfToken drawMode = UsdGeomTokens->default_;
+    _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+    if (TF_VERIFY(it != _drawModeMap.end())) {
+        drawMode = it->second;
+    }
+
+    VtValue topology;
+    VtValue points;
+    VtValue uv;
+    VtValue assign;
+    GfRange3d extent;
+    _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+        &points, &extent, &uv, &assign);
+    return extent;
 }
 
 void
@@ -709,8 +733,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         VtValue topology;
+        GfRange3d extent;
         VtValue& points = valueCache->GetPoints(cachePath);
-        GfRange3d& extent = valueCache->GetExtent(cachePath);
         VtValue& uv = valueCache->GetPrimvar(cachePath, _tokens->cardsUv);
         VtValue& assign = valueCache->GetPrimvar(cachePath, 
             _tokens->cardsTexAssign);

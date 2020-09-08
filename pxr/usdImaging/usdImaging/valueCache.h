@@ -37,7 +37,6 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
 
@@ -46,13 +45,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-
 /// \class UsdImagingValueCache
 ///
 /// A heterogeneous value container without type erasure.
 ///
-class UsdImagingValueCache {
+class UsdImagingValueCache 
+{
 public:
     UsdImagingValueCache(const UsdImagingValueCache&) = delete;
     UsdImagingValueCache& operator=(const UsdImagingValueCache&) = delete;
@@ -94,10 +92,6 @@ public:
         }
         static Key DoubleSided(SdfPath const& path) {
             static TfToken attr("doubleSided");
-            return Key(path, attr);
-        }
-        static Key Extent(SdfPath const& path) {
-            static TfToken attr("extent");
             return Key(path, attr);
         }
         static Key InstancerTransform(SdfPath const& path) {
@@ -288,7 +282,6 @@ public:
         _Erase<VtValue>(Key::Color(path));
         _Erase<VtValue>(Key::Opacity(path));
         _Erase<bool>(Key::DoubleSided(path));
-        _Erase<GfRange3d>(Key::Extent(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<TfToken>(Key::Purpose(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
@@ -351,9 +344,6 @@ public:
     }
     bool& GetDoubleSided(SdfPath const& path) const {
         return _Get<bool>(Key::DoubleSided(path));
-    }
-    GfRange3d& GetExtent(SdfPath const& path) const {
-        return _Get<GfRange3d>(Key::Extent(path));
     }
     GfMatrix4d& GetInstancerTransform(SdfPath const& path) const {
         return _Get<GfMatrix4d>(Key::InstancerTransform(path));
@@ -426,9 +416,6 @@ public:
     bool FindDoubleSided(SdfPath const& path, bool* value) const {
         return _Find(Key::DoubleSided(path), value);
     }
-    bool FindExtent(SdfPath const& path, GfRange3d* value) const {
-        return _Find(Key::Extent(path), value);
-    }
     bool FindInstancerTransform(SdfPath const& path, GfMatrix4d* value) const {
         return _Find(Key::InstancerTransform(path), value);
     }
@@ -494,9 +481,6 @@ public:
     }
     bool ExtractDoubleSided(SdfPath const& path, bool* value) {
         return _Extract(Key::DoubleSided(path), value);
-    }
-    bool ExtractExtent(SdfPath const& path, GfRange3d* value) {
-        return _Extract(Key::Extent(path), value);
     }
     bool ExtractInstancerTransform(SdfPath const& path, GfMatrix4d* value) {
         return _Extract(Key::InstancerTransform(path), value);
@@ -564,7 +548,6 @@ public:
         _GarbageCollect(_boolCache);
         _GarbageCollect(_tokenCache);
         _GarbageCollect(_tokenVectorCache);
-        _GarbageCollect(_rangeCache);
         _GarbageCollect(_matrixCache);
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
@@ -591,10 +574,6 @@ private:
     // extComputationSceneInputNames
     typedef _TypedCache<TfTokenVector> _TokenVectorCache;
     mutable _TokenVectorCache _tokenVectorCache;
-
-    // extent
-    typedef _TypedCache<GfRange3d> _RangeCache;
-    mutable _RangeCache _rangeCache;
 
     // transform
     typedef _TypedCache<GfMatrix4d> _MatrixCache;
@@ -638,9 +617,6 @@ private:
     }
     void _GetCache(_TokenVectorCache **cache) const {
         *cache = &_tokenVectorCache;
-    }
-    void _GetCache(_RangeCache **cache) const {
-        *cache = &_rangeCache;
     }
     void _GetCache(_MatrixCache **cache) const {
         *cache = &_matrixCache;

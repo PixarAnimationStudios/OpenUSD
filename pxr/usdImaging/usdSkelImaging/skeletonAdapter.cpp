@@ -711,6 +711,28 @@ UsdSkelImagingSkeletonAdapter::GetTopology(UsdPrim const& prim,
     return VtValue();
 }
 
+/*virtual*/
+GfRange3d
+UsdSkelImagingSkeletonAdapter::GetExtent(UsdPrim const& prim,
+                                         SdfPath const& cachePath,
+                                         UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    UsdGeomBoundable boundable(prim);
+    VtVec3fArray extent;
+    if (boundable.GetExtentAttr().Get(&extent, time) && extent.size() == 2) {
+        // Note:
+        // Usd stores extent as 2 float vecs. We do an implicit 
+        // conversion to doubles
+        return GfRange3d(extent[0], extent[1]);
+    } else {
+        // Return empty range if no value was found.
+        return GfRange3d();
+    }
+}
+
 namespace {
 
 void
@@ -930,27 +952,6 @@ UsdSkelImagingSkeletonAdapter::_IsCallbackForSkeleton(const UsdPrim& prim) const
     return prim.IsA<UsdSkelSkeleton>();
 }
 
-
-GfRange3d
-UsdSkelImagingSkeletonAdapter::_GetExtent(const UsdPrim& prim,
-                                          UsdTimeCode time) const
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-    UsdGeomBoundable boundable(prim);
-    VtVec3fArray extent;
-    if (boundable.GetExtentAttr().Get(&extent, time)) {
-        // Note:
-        // Usd stores extent as 2 float vecs. We do an implicit 
-        // conversion to doubles
-        return GfRange3d(extent[0], extent[1]);
-    } else {
-        // Return empty range if no value was found.
-        return GfRange3d();
-    }
-}
-
-
 GfVec3f
 UsdSkelImagingSkeletonAdapter::_GetSkeletonDisplayColor(
         const UsdPrim& prim,
@@ -1104,10 +1105,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyExtent) {
-        valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
     }
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {

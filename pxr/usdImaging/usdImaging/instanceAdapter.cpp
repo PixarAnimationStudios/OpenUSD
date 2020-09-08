@@ -1704,7 +1704,7 @@ UsdImagingInstanceAdapter::GetSubdivTags(UsdPrim const& usdPrim,
         return proto.adapter->GetSubdivTags(
                 _GetPrim(proto.path), cachePath, time);
     }
-    return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+    return BaseAdapter::GetSubdivTags(usdPrim, cachePath, time);
 }
 
 VtValue
@@ -1725,7 +1725,7 @@ UsdImagingInstanceAdapter::GetTopology(UsdPrim const& usdPrim,
         return proto.adapter->GetTopology(
                 _GetPrim(proto.path), cachePath, time);
     }
-    return UsdImagingPrimAdapter::GetTopology(usdPrim, cachePath, time);
+    return BaseAdapter::GetTopology(usdPrim, cachePath, time);
 }
 
 /*virtual*/
@@ -1747,7 +1747,27 @@ UsdImagingInstanceAdapter::GetCullStyle(UsdPrim const& usdPrim,
         return proto.adapter->GetCullStyle(
                 _GetPrim(proto.path), cachePath, time);
     }
-    return UsdImagingPrimAdapter::GetCullStyle(usdPrim, cachePath, time);
+    return BaseAdapter::GetCullStyle(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+GfRange3d 
+UsdImagingInstanceAdapter::GetExtent(UsdPrim const& usdPrim, 
+                                  SdfPath const& cachePath, 
+                                  UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return GfRange3d();
+        }
+        return proto.adapter->GetExtent(
+                _GetPrim(proto.path), cachePath, time);
+    }
+    return BaseAdapter::GetExtent(usdPrim, cachePath, time);
 }
 
 void

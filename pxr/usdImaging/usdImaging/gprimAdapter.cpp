@@ -439,10 +439,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyExtent) {
-        valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyMaterialId){
         // Although the material binding cache generally holds
         // cachePaths, not usdPaths, we can use the usdPath
@@ -580,14 +576,20 @@ UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
     return VtValue(_Get<VtVec3fArray>(prim, UsdGeomTokens->points, time));
 }
 
-// -------------------------------------------------------------------------- //
-
+/*virtual*/
 GfRange3d 
-UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
+UsdImagingGprimAdapter::GetExtent(UsdPrim const& prim, 
+                                  SdfPath const& cachePath, 
+                                  UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     UsdGeomGprim gprim(prim);
+
+    if (!TF_VERIFY(gprim)) {
+        return GfRange3d();
+    }
+
     VtVec3fArray extent;
     if (gprim.GetExtentAttr().Get(&extent, time) && extent.size() == 2) {
         // Note:
@@ -602,6 +604,8 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
         return GfRange3d();
     }
 }
+
+// -------------------------------------------------------------------------- //
 
 /* static */
 bool
