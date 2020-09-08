@@ -629,11 +629,16 @@ class TestGfVec(unittest.TestCase):
         # buffer protocol 'getcharbuffer' method to expose the binary content,
         # where really a string is expected.  This tests that we correctly raise
         # instead of treating the binary object representation as a string.
-        with self.assertRaises(TypeError):
+        
+        # We get different exceptions between Python 2 & 3 here, see Python
+        # issue 41707 (https://bugs.python.org/issue41707).
+        excType = TypeError if sys.version_info.major < 3 else ValueError
+
+        with self.assertRaises(excType):
             int(Gf.Vec3d(1,2,3))
-        with self.assertRaises(TypeError):
+        with self.assertRaises(excType):
             int(Gf.Vec3i(1,2,3))
-        with self.assertRaises(TypeError):
+        with self.assertRaises(excType):
             int(Gf.Vec3f(1,2,3))
 
 if __name__ == '__main__':
