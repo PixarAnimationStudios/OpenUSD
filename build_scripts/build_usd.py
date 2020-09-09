@@ -863,6 +863,12 @@ def InstallTIFF(context, force, buildArgs):
         PatchFile("CMakeLists.txt", 
                    [("add_subdirectory(tools)", "# add_subdirectory(tools)"),
                     ("add_subdirectory(test)", "# add_subdirectory(test)")])
+
+        if MacOS() or iOS():
+            PatchFile("CMakeLists.txt",
+                      [("option(ld-version-script \"Enable linker version script\" ON)",
+                        "option(ld-version-script \"Enable linker version script\" OFF)")])
+
         RunCMake(context, force, buildArgs)
 
 TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
