@@ -201,6 +201,11 @@ public:
                   float *sampleTimes,
                   VtValue *sampleValues) override;
 
+    TfToken GetPurpose(
+        UsdPrim const& usdPrim, 
+        SdfPath const& cachePath,
+        TfToken const& instanceInheritablePurpose) const override;
+
     PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
                                   SdfPath const& cachePath,
                                   UsdTimeCode time) const override;

@@ -1686,6 +1686,29 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     return numSamples;
 }
 
+TfToken 
+UsdImagingInstanceAdapter::GetPurpose(
+    UsdPrim const& usdPrim, 
+    SdfPath const& cachePath,
+    TfToken const& instanceInheritablePurpose) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        // Note that the proto group in this proto has not yet been
+        // updated with new instances at this point.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                   cachePath,
+                                                   &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return UsdGeomTokens->default_;
+        }
+
+        return proto.adapter->GetPurpose(_GetPrim(proto.path), cachePath, 
+                                instancerContext.instanceInheritablePurpose);
+    }
+    return UsdImagingPrimAdapter::GetPurpose(usdPrim, cachePath, TfToken());
+}
+
 PxOsdSubdivTags
 UsdImagingInstanceAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                          SdfPath const& cachePath,

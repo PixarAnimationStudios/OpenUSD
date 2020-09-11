@@ -1718,12 +1718,18 @@ UsdImagingDelegate::SetCameraForSampling(SdfPath const& usdPath)
 TfToken
 UsdImagingDelegate::GetRenderTag(SdfPath const& id)
 {
+    TRACE_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
     // Check the purpose of the rpim
     TfToken purpose = UsdGeomTokens->default_;
-    TF_VERIFY(_valueCache.FindPurpose(cachePath, &purpose), "%s", 
-              cachePath.GetText());
+
+    if (TF_VERIFY(primInfo)) {
+        purpose = primInfo->adapter->GetPurpose(primInfo->usdPrim, cachePath,
+                    TfToken());
+    }
 
     if (purpose == UsdGeomTokens->default_) {
         // Simple mapping so all render tags in multiple delegates match

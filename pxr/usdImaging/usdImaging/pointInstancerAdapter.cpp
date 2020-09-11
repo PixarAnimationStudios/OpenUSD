@@ -1647,6 +1647,31 @@ UsdImagingPointInstancerAdapter::GetVisible(UsdPrim const& prim,
 }
 
 /*virtual*/
+TfToken 
+UsdImagingPointInstancerAdapter::GetPurpose(
+    UsdPrim const& usdPrim, 
+    SdfPath const& cachePath,
+    TfToken const& instanceInheritablePurpose) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoUsdPrim = _GetProtoUsdPrim(proto);
+
+        UsdPrim instanceProxyPrim = _GetPrim(_GetPrimPathFromInstancerChain(
+                proto.paths));
+
+        TfToken const& inheritablePurpose = 
+                    GetInheritablePurpose(instanceProxyPrim);
+
+        return proto.adapter->GetPurpose(protoUsdPrim, cachePath, 
+                                         inheritablePurpose);
+    }
+    return BaseAdapter::GetPurpose(usdPrim, cachePath, TfToken());
+
+}
+
+/*virtual*/
 PxOsdSubdivTags
 UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
                                                SdfPath const& cachePath,

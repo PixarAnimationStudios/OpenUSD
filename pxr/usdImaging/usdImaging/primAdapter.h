@@ -390,14 +390,15 @@ public:
         SdfPath const& cachePath,
         UsdTimeCode time) const;
 
-    /// Returns the purpose token for \p prim. If an \p instancerContext is 
-    /// provided and the prim doesn't have an explicitly authored or inherited 
-    /// purpose, it may inherit the instancerContext's purpose if the instance
-    /// has an explicit purpose.
+    /// Returns the purpose token for \p prim. If a non-empty \p
+    /// instanceInheritablePurpose is specified and the prim doesn't have an 
+    /// explicitly authored or inherited purpose, it may inherit the 
+    /// instancer's purpose if the instance has an explicit purpose.
     USDIMAGING_API
-    TfToken GetPurpose(
+    virtual TfToken GetPurpose(
         UsdPrim const& prim, 
-        UsdImagingInstancerContext const* instancerContext) const;
+        SdfPath const& cachePath,
+        TfToken const& instanceInheritablePurpose) const;
 
     /// Returns the purpose token for \p prim, but only if it is inheritable 
     /// by child prims (i.e. it is an explicitly authored purpose on the prim

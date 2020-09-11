@@ -152,6 +152,11 @@ public:
                     SdfPath const& cachePath,
                     UsdTimeCode time) const override;
 
+    TfToken GetPurpose(
+        UsdPrim const& usdPrim, 
+        SdfPath const& cachePath,
+        TfToken const& instanceInheritablePurpose) const override;
+
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;

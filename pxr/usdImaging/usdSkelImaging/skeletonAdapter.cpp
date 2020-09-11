@@ -1003,7 +1003,6 @@ UsdSkelImagingSkeletonAdapter::_GetSkeletonDisplayOpacity(
     return 1.0f;
 }
 
-
 void
 UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
     const UsdPrim& prim,
@@ -1015,8 +1014,6 @@ UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
     if (!TF_VERIFY(skelData)) {
         return;
     }
-
-    UsdImagingValueCache* valueCache = _GetValueCache();
 
     if (!_IsVarying(prim,
                     UsdGeomTokens->primvarsDisplayColor,
@@ -1065,13 +1062,41 @@ UsdSkelImagingSkeletonAdapter::_TrackBoneMeshVariability(
                UsdImagingTokens->usdVaryingVisibility,
                timeVaryingBits,
                true);
+}
 
-    TfToken purpose = skelData->ComputePurpose();
-    // Empty purpose means there is no opinion. Fall back to default.
-    if (purpose.IsEmpty()) {
-        purpose = UsdGeomTokens->default_;
+
+TfToken
+UsdSkelImagingSkeletonAdapter::GetPurpose(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& instanceInheritablePurpose) const
+{
+    TRACE_FUNCTION();
+
+    TfToken purpose;
+
+    if (_IsCallbackForSkeleton(prim)) {
+
+        const _SkelData* skelData = _GetSkelData(cachePath);
+        if (TF_VERIFY(skelData)) {
+            purpose = skelData->ComputePurpose();
+        }
+
+        // Empty purpose means there is no opinion. Fall back to default.
+        if (purpose.IsEmpty()) {
+            if (instanceInheritablePurpose.IsEmpty()) {
+                purpose = UsdGeomTokens->default_;
+            } else {
+                purpose = instanceInheritablePurpose;
+            }
+        }
+
+    } else {
+        purpose = BaseAdapter::GetPurpose(prim, cachePath, 
+                                          instanceInheritablePurpose);
     }
-    valueCache->GetPurpose(cachePath) = purpose;
+
+    return purpose;
 }
 
 

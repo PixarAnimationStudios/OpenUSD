@@ -485,12 +485,6 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
         return;
     }
 
-    // WARNING: This method is executed from multiple threads, the value cache
-    // has been carefully pre-populated to avoid mutating the underlying
-    // container during update.
-
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
     // Discover time-varying transforms. If this card is instantiated on an
     // instance, skip since the instance adapter will handle transforms
     // and master roots always have identity transform.
@@ -509,7 +503,6 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
-    valueCache->GetPurpose(cachePath) = GetPurpose(prim, instancerContext);
 }
 
 void

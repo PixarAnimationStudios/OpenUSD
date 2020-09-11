@@ -180,6 +180,12 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    USDSKELIMAGING_API
+    TfToken GetPurpose(UsdPrim const& prim,
+                       SdfPath const& cachePath,
+                       TfToken const& instanceInheritablePurpose) 
+                                                                const override;
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Change Processing API (protected)

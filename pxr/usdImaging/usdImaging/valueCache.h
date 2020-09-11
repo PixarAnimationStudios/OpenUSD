@@ -106,10 +106,6 @@ public:
             static TfToken attr("points");
             return Key(path, attr);
         }
-        static Key Purpose(SdfPath const& path) {
-            static TfToken attr("purpose");
-            return Key(path, attr);
-        }
         static Key Primvars(SdfPath const& path) {
             static TfToken attr("primvars");
             return Key(path, attr);
@@ -283,7 +279,6 @@ public:
         _Erase<VtValue>(Key::Opacity(path));
         _Erase<bool>(Key::DoubleSided(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
-        _Erase<TfToken>(Key::Purpose(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
         _Erase<bool>(Key::Visible(path));
         _Erase<VtValue>(Key::Points(path));
@@ -354,9 +349,6 @@ public:
     VtValue& GetPoints(SdfPath const& path) const {
         return _Get<VtValue>(Key::Points(path));
     }
-    TfToken& GetPurpose(SdfPath const& path) const {
-        return _Get<TfToken>(Key::Purpose(path));
-    }
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
@@ -425,9 +417,6 @@ public:
     bool FindPoints(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Points(path), value);
     }
-    bool FindPurpose(SdfPath const& path, TfToken* value) const {
-        return _Find(Key::Purpose(path), value);
-    }
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
@@ -490,9 +479,6 @@ public:
     }
     bool ExtractPoints(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Points(path), value);
-    }
-    bool ExtractPurpose(SdfPath const& path, TfToken* value) {
-        return _Extract(Key::Purpose(path), value);
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);

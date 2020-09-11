@@ -197,12 +197,6 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          UsdImagingInstancerContext const* 
                                              instancerContext) const
 {
-    // WARNING: This method is executed from multiple threads, the value cache
-    // has been carefully pre-populated to avoid mutating the underlying
-    // container during update.
-    
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
     // See if any of the inherited primvars are time-dependent.
     UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
         _GetInheritedPrimvars(prim.GetParent());
@@ -268,10 +262,6 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                UsdImagingTokens->usdVaryingTopology,
                timeVaryingBits,
                false);
-
-    // XXX: We need to populate purpose here, since it's fetched by hydra
-    // before we call UpdateForTime().
-    valueCache->GetPurpose(cachePath) = GetPurpose(prim, instancerContext);
 }
 
 void

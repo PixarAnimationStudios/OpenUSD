@@ -1144,8 +1144,10 @@ UsdImagingPrimAdapter::GetVisible(
 }
 
 TfToken 
-UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim, 
-    UsdImagingInstancerContext const* instancerContext) const
+UsdImagingPrimAdapter::GetPurpose(
+    UsdPrim const& prim, 
+    SdfPath const& cachePath,
+    TfToken const& instanceInheritablePurpose) const
 {
     HD_TRACE_FUNCTION();
 
@@ -1157,9 +1159,8 @@ UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim,
     // Inherit the instance's purpose if our prim has a fallback purpose and
     // there's an instance that provide a purpose to inherit.
     if (!purposeInfo.isInheritable &&
-        instancerContext &&
-        !instancerContext->instanceInheritablePurpose.IsEmpty()) {
-        return instancerContext->instanceInheritablePurpose;
+        !instanceInheritablePurpose.IsEmpty()) {
+        return instanceInheritablePurpose;
     }
 
     return purposeInfo.purpose.IsEmpty() ? 
