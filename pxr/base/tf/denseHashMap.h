@@ -242,16 +242,28 @@ public:
     ///
     TfDenseHashMap(const TfDenseHashMap &rhs)
     :   _vectorHashFnEqualFn(rhs._vectorHashFnEqualFn) {
-        if (rhs._h)
+        if (rhs._h) {
             _h.reset(new _HashMap(*rhs._h));
+        }
     }
 
-    /// Assignment operator.
+    /// Move Ctor.
     ///
-    TfDenseHashMap &operator=(TfDenseHashMap rhs) {
-        swap(rhs);
+    TfDenseHashMap(TfDenseHashMap &&rhs) = default;
+
+    /// Copy assignment operator.
+    ///
+    TfDenseHashMap &operator=(const TfDenseHashMap &rhs) {
+        if (this != &rhs) {
+            TfDenseHashMap temp(rhs);
+            temp.swap(*this);
+        }
         return *this;
     }
+
+    /// Move assignment operator.
+    ///
+    TfDenseHashMap &operator=(TfDenseHashMap &&rhs) = default;
 
     /// Assignment from an initializer_list.
     ///

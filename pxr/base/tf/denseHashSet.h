@@ -36,8 +36,6 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility.hpp>
 
-#include <cstdio>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
@@ -104,9 +102,14 @@ public:
     ///
     TfDenseHashSet(const TfDenseHashSet &rhs)
     :   _vectorHashFnEqualFn(rhs._vectorHashFnEqualFn) {
-        if (rhs._h)
+        if (rhs._h) {
             _h.reset(new _HashMap(*rhs._h));
+        }
     }
+
+    /// Move Ctor.
+    ///
+    TfDenseHashSet(TfDenseHashSet &&rhs) = default;
 
     /// Construct from range.
     ///
@@ -121,12 +124,19 @@ public:
         insert(l.begin(), l.end());
     }
 
-    /// Assignment operator.
+    /// Copy assignment operator.
     ///
-    TfDenseHashSet &operator=(TfDenseHashSet rhs) {
-        swap(rhs);
+    TfDenseHashSet &operator=(const TfDenseHashSet &rhs) {
+        if (this != &rhs) {
+            TfDenseHashSet temp(rhs);
+            temp.swap(*this);
+        }
         return *this;
     }
+
+    /// Move assignment operator.
+    ///
+    TfDenseHashSet &operator=(TfDenseHashSet &&rhs) = default;
 
     /// Assignment from an initializer_list.
     ///
