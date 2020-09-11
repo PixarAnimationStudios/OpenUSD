@@ -261,7 +261,8 @@ HdxTaskController::_CreateRenderGraph()
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateRenderTask(
             HdMaterialTagTokens->defaultMaterialTag));
-
+        _renderTaskIds.push_back(_CreateRenderTask(
+            HdStMaterialTagTokens->masked));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdxMaterialTagTokens->additive));
         _renderTaskIds.push_back(_CreateRenderTask(
@@ -349,6 +350,7 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
 
     if (materialTag == HdMaterialTagTokens->defaultMaterialTag || 
         materialTag == HdxMaterialTagTokens->additive ||
+        materialTag == HdStMaterialTagTokens->masked ||
         materialTag.IsEmpty()) {
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
     } else if (materialTag == HdxMaterialTagTokens->translucent) {
@@ -1210,7 +1212,7 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         mergedParams.viewport = oldParams.viewport;
         mergedParams.aovBindings = oldParams.aovBindings;
 
-        // We also explicitly manage blend params, based on the render tag.
+        // We also explicitly manage blend params, based on the material tag.
         // XXX: Note: if params.enableIdRender is set, we want to use default
         // blend params so that we don't try to additive blend ID buffers...
         _SetBlendStateForMaterialTag(

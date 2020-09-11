@@ -81,6 +81,18 @@ def Shader "UsdPreviewSurface" (
         doc = """Opacity of the material."""
     )
 
+    float inputs:opacityThreshold = 0.0 (
+        connectability = "interfaceOnly"
+        doc = """Threshold used to determine opacity values that will be
+        considered fully transparent. A value of 0.0 indicates that no masking
+        is applied to the opacity input, while a value greater than 0.0 indicates
+        that rendering of the surface is limited to the areas where the opacity
+        is greater or equal to that value. Note that when opacityThreshold is
+        greater than zero, the opacity values less than the opacityThreshold will
+        not be rendered, and the opacity values greater than or equal to the
+        opacityThreshold will be fully visible."""
+    )
+
     float inputs:ior = 1.5 (
         doc = """Index of Refraction to be used for translucent objects."""
     )

@@ -69,6 +69,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDST_MATERIAL_TAG_TOKENS                \
     (defaultMaterialTag)                        \
+    (masked)                                    \
     (additive)                                  \
     (translucent)                               \
     (volume)

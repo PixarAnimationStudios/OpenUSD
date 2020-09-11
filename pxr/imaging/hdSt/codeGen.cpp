@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -529,6 +530,17 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             HdVtBufferSource::GetDefaultMatrixType()) << "\n";
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genCommon << _GetPackedTypeDefinitions();
+
+    // check if surface shader has masked material tag
+    for (auto const& shader : _shaders) {
+        if (HdStSurfaceShaderSharedPtr surfaceShader = 
+            std::dynamic_pointer_cast<HdStSurfaceShader>(shader)) {
+            if (surfaceShader->GetMaterialTag() == 
+                HdStMaterialTagTokens->masked) {
+                _genCommon << "#define HD_MATERIAL_TAG_MASKED 1\n";
+            }
+        }
+    }
 
     // ------------------
     // Custom Buffer Bindings

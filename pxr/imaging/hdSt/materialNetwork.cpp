@@ -53,6 +53,7 @@ TF_DEFINE_ENV_SETTING(HDST_USE_TRANSLUCENT_MATERIAL_TAG, false,
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (opacity)
+    (opacityThreshold)
     (isPtex)
     (st)
     (uv)
@@ -204,7 +205,7 @@ _GetMaterialTag(
     HdSt_MaterialNode const& terminal)
 {
     // Strongest materialTag opinion is a hardcoded tag in glslfx meta data.
-    // This can be used for additive, translucent or volume materials.
+    // This can be used for masked, additive, translucent or volume materials.
     // See HdMaterialTagTokens.
     VtValue vtMetaTag = TfMapLookupByValue(
         metadata,
@@ -213,6 +214,16 @@ _GetMaterialTag(
 
     if (vtMetaTag.IsHolding<std::string>()) {
         return TfToken(vtMetaTag.UncheckedGet<std::string>());
+    }
+
+    // Next check for authored terminal.opacityThreshold value > 0
+    for (auto const& paramIt : terminal.parameters) {
+        if (paramIt.first != _tokens->opacityThreshold) continue;
+
+        VtValue const& vtOpacityThreshold = paramIt.second;
+        if (vtOpacityThreshold.Get<float>() > 0.0f) {
+            return HdStMaterialTagTokens->masked;
+        }      
     }
 
     bool isTranslucent = false;
@@ -837,7 +848,8 @@ _MakeMaterialParamsForTexture(
     TfToken const& paramName,
     SdfPathSet* visitedNodes,
     HdSt_MaterialParamVector *params,
-    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors)
+    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors,
+    TfToken const& materialTag)
 {
     if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
 
@@ -868,9 +880,11 @@ _MakeMaterialParamsForTexture(
     // Determine if texture should be pre-multiplied on CPU
     // Currently, this will only happen if the texture param is called 
     // "diffuseColor" and if there is another param "opacity" connected to the
-    // same texture node via output "a"
+    // same texture node via output "a", as long as the material tag is not 
+    // "masked"
     bool premultiplyTexture = false;
-    if (paramName == _tokens->diffuseColor) {
+    if (paramName == _tokens->diffuseColor && 
+        materialTag != HdStMaterialTagTokens->masked) {
         auto const& opacityConIt = downstreamNode.inputConnections.find(
             _tokens->opacity);
         if (opacityConIt != downstreamNode.inputConnections.end()) {
@@ -1148,7 +1162,8 @@ _MakeParamsForInputParameter(
     TfToken const& paramName,
     SdfPathSet* visitedNodes,
     HdSt_MaterialParamVector *params,
-    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors)
+    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors,
+    TfToken const& materialTag)
 {
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
@@ -1188,7 +1203,8 @@ _MakeParamsForInputParameter(
                             paramName,
                             visitedNodes,
                             params,
-                            textureDescriptors);
+                            textureDescriptors,
+                            materialTag);
                         return;
                     } else if (sdrRole == SdrNodeRole->Primvar) {
                         _MakeMaterialParamsForPrimvarReader(
@@ -1235,7 +1251,8 @@ _GatherMaterialParams(
     HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     HdSt_MaterialParamVector *params,
-    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors)
+    HdStMaterialNetwork::TextureDescriptorVector *textureDescriptors,
+    TfToken const& materialTag)
 {
     HD_TRACE_FUNCTION();
 
@@ -1265,7 +1282,7 @@ _GatherMaterialParams(
     for (TfToken const& inputName : parameters) {
         _MakeParamsForInputParameter(
             network, node, inputName, &visitedNodes,
-            params, textureDescriptors);
+            params, textureDescriptors, materialTag);
     }
 
     // Set fallback values for the inputs on the terminal
@@ -1350,7 +1367,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
                 _GatherMaterialParams(
                     surfaceNetwork, *surfTerminal,
-                    &_materialParams, &_textureDescriptors);
+                    &_materialParams, &_textureDescriptors, _materialTag);
 
                 // OSL networks have a displacement network in hdNetworkMap
                 // under terminal: HdMaterialTerminalTokens->displacement.
