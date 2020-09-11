@@ -121,6 +121,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
+            this,
             _resourceRegistry,
             role,
             bufferSpecs,
@@ -160,6 +161,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
+            this,
             _resourceRegistry,
             role,
             bufferSpecs,
@@ -226,6 +228,7 @@ _ComputeAlignment(HdTupleType tupleType)
 }
 
 HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer(
+    HdStInterleavedMemoryManager* mgr,
     HdStResourceRegistry* resourceRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
@@ -235,6 +238,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     size_t maxSize = 0,
     TfToken const &garbageCollectionPerfToken = HdPerfTokens->garbageCollectedUbo)
     : HdBufferArray(role, garbageCollectionPerfToken, usageHint),
+      _manager(mgr),
       _resourceRegistry(resourceRegistry),
       _needsCompaction(false),
       _stride(0),
@@ -628,6 +632,93 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElem
     return false;
 }
 
+HdStInterleavedMemoryManager::_BufferFlushListEntry::_BufferFlushListEntry(
+    HgiBufferHandle const& buf, uint64_t s, uint64_t e)
+    : buffer(buf)
+    , start(s)
+    , end(e)
+{
+}
+
+void
+HdStInterleavedMemoryManager::StageBufferCopy(
+    HgiBufferCpuToGpuOp const& copyOp)
+{
+    if (copyOp.byteSize == 0 ||
+        !copyOp.cpuSourceBuffer ||
+        !copyOp.gpuDestinationBuffer)
+    {
+        return;
+    }
+
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
+
+    // When the to-be-copied data is 'large' doing the extra memcpy into the
+    // stating buffer to avoid many small GPU buffer upload can be more
+    // expensive than just submitting the CPU to GPU copy operation directly.
+    // The value of 'queueThreshold' is estimated (when is the extra memcpy
+    // into the staging buffer slower than immediately issuing a gpu upload)
+    static const int queueThreshold = 512*1024;
+    if (copyOp.byteSize > queueThreshold) {
+        blitCmds->CopyBufferCpuToGpu(copyOp);
+        return;
+    }
+
+    // Place the data into the staging buffer.
+    uint8_t * const cpuStaging = static_cast<uint8_t*>(
+        copyOp.gpuDestinationBuffer->GetCPUStagingAddress());
+    uint8_t const* const srcData =
+        static_cast<uint8_t const*>(copyOp.cpuSourceBuffer) +
+        copyOp.sourceByteOffset;
+    memcpy(cpuStaging + copyOp.destinationByteOffset, srcData, copyOp.byteSize);
+
+    auto const &it = _queuedBuffers.find(copyOp.gpuDestinationBuffer.Get());
+    if (it != _queuedBuffers.end()) {
+        _BufferFlushListEntry &bufferEntry = it->second;
+        if (copyOp.destinationByteOffset == bufferEntry.end) {
+            // Accumulate the copy
+            bufferEntry.end += copyOp.byteSize;
+        } else {
+            // This buffer copy doesn't contiguously extend the queued copy
+            // Submit the accumulated work to date
+            HgiBufferCpuToGpuOp op;
+            op.cpuSourceBuffer = cpuStaging;
+            op.sourceByteOffset = bufferEntry.start;
+            op.gpuDestinationBuffer = copyOp.gpuDestinationBuffer;
+            op.destinationByteOffset = bufferEntry.start;
+            op.byteSize = bufferEntry.end - bufferEntry.start;
+            blitCmds->CopyBufferCpuToGpu(op);
+
+            // Update this entry for our new pending copy
+            bufferEntry.start = copyOp.destinationByteOffset;
+            bufferEntry.end = copyOp.destinationByteOffset + copyOp.byteSize;
+        }
+    } else {
+        uint64_t const start = copyOp.destinationByteOffset;
+        uint64_t const end = copyOp.destinationByteOffset + copyOp.byteSize;
+        _queuedBuffers.emplace(copyOp.gpuDestinationBuffer.Get(),
+            _BufferFlushListEntry(copyOp.gpuDestinationBuffer, start, end));
+    }
+}
+
+void
+HdStInterleavedMemoryManager::Flush()
+{
+    HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
+
+    HgiBufferCpuToGpuOp op;
+    for(auto &copy: _queuedBuffers) {
+        _BufferFlushListEntry const &entry = copy.second;
+        op.cpuSourceBuffer = entry.buffer->GetCPUStagingAddress();
+        op.sourceByteOffset = entry.start;
+        op.gpuDestinationBuffer = entry.buffer;
+        op.destinationByteOffset = entry.start;
+        op.byteSize = entry.end - entry.start;
+        blitCmds->CopyBufferCpuToGpu(op);
+    }
+    _queuedBuffers.clear();
+}
+
 void
 HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
@@ -671,7 +762,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetId();
     blitOp.sourceByteOffset = 0;
@@ -681,7 +771,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         blitOp.cpuSourceBuffer = data;
         
         blitOp.destinationByteOffset = vboOffset;
-        blitCmds->QueueCopyBufferCpuToGpu(blitOp);
+        _stripedBuffer->GetManager()->StageBufferCopy(blitOp);
 
         vboOffset += vboStride;
         data += dataSize;

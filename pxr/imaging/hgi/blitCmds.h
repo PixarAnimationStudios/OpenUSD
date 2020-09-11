@@ -81,16 +81,6 @@ public:
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
 
-    /// Queue a copy new data from cpu into gpu buffer.
-    /// For example copy new data into a uniform block or storage buffer.
-    /// This is very similar to calling CopyBufferCpuToGpu, except this can
-    /// be more efficient if we end up needing many small, consecutive writes
-    /// into the same buffer, since this will queue those changes together
-    /// into a staging buffer and only flush to the GPU when we write to
-    /// a different, or non-consecutive area of a buffer.
-    HGI_API
-    void QueueCopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
-
     /// Generate mip maps for a texture
     HGI_API
     virtual void GenerateMipMaps(HgiTextureHandle const& texture) = 0;
@@ -98,11 +88,6 @@ public:
 protected:
     HGI_API
     HgiBlitCmds();
-
-    /// Flush any queued buffer data copies to GPU.
-    /// This will copy the new buffer data from staging area to GPU.
-    HGI_API
-    void FlushQueuedCopies();
 
 private:
     HgiBlitCmds & operator=(const HgiBlitCmds&) = delete;

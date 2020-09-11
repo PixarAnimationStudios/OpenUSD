@@ -125,7 +125,7 @@ public:
     virtual uint64_t GetRawResource() const = 0;
 
     /// Returns the 'staging area' in which new buffer data is copied before
-    /// it is flushed to GPU. See QueueCopyBufferCpuToGpu.
+    /// it is flushed to GPU.
     /// Some implementations (e.g. Metal) may have build in support for
     /// queueing up CPU->GPU copies. Those implementations can return the
     /// CPU pointer to the buffer's content directly.

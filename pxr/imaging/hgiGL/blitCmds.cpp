@@ -96,8 +96,6 @@ HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 bool
 HgiGLBlitCmds::_Submit(Hgi* hgi)
 {
-    FlushQueuedCopies();
-
     if (_ops.empty()) {
         return false;
     }

@@ -257,7 +257,7 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
     // If we used GetCPUStagingAddress as the cpuSourceBuffer when the copyOp
     // was created, we can skip the memcpy since the src and dst buffer are
     // the same and dst already contains the desired data.
-    // See also: QueueCopyBufferCpuToGpu.
+    // See also: HgiBuffer::GetCPUStagingAddress.
     if (copyOp.cpuSourceBuffer != dst ||
         copyOp.sourceByteOffset != copyOp.destinationByteOffset) {
         // Offset into the src buffer
@@ -294,8 +294,6 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 bool
 HgiMetalBlitCmds::_Submit(Hgi* hgi)
 {
-    FlushQueuedCopies();
-
     if (_blitEncoder) {
         [_blitEncoder endEncoding];
         _blitEncoder = nil;

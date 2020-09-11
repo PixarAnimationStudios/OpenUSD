@@ -871,7 +871,14 @@ HdStResourceRegistry::_Commit()
         HD_TRACE_SCOPE("Flush");
         // 5. flush phase:
         //
-        // flush consolidated buffer updates
+        // flush consolidated / staging buffer updates
+
+        _nonUniformAggregationStrategy->Flush();
+        _nonUniformImmutableAggregationStrategy->Flush();
+        _uniformUboAggregationStrategy->Flush();
+        _uniformSsboAggregationStrategy->Flush();
+        _singleAggregationStrategy->Flush();
+
         SubmitBlitWork();
     }
 
