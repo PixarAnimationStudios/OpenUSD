@@ -480,6 +480,14 @@ public:
 
 
     // ---------------------------------------------------------------------- //
+    /// \name ExtComputations
+    // ---------------------------------------------------------------------- //
+    USDIMAGING_API
+    virtual const TfTokenVector &GetExtComputationSceneInputNames(
+        SdfPath const& computationPath,
+        SdfPath const& cachePath) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //
 

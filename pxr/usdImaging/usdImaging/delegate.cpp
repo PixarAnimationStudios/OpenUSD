@@ -2814,21 +2814,12 @@ UsdImagingDelegate::GetExtComputationSceneInputNames(
     HD_TRACE_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
-
-    TfTokenVector inputNames;
-    if (!_valueCache.ExtractExtComputationSceneInputNames(
-            cachePath, &inputNames)) {
-
-        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation input "
-                                   "descriptor fetch for %s\n", 
-                                   computationId.GetText());
-        
-        _UpdateSingleValue(cachePath, HdExtComputation::DirtyInputDesc);
-        TF_VERIFY(_valueCache.ExtractExtComputationSceneInputNames(
-                      cachePath, &inputNames));
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetExtComputationSceneInputNames(computationId, cachePath);
     }
-
-    return inputNames;
+    return TfTokenVector();
 }
 
 HdExtComputationInputDescriptorVector

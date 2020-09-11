@@ -1236,6 +1236,15 @@ UsdImagingPrimAdapter::GetDoubleSided(UsdPrim const& prim,
     return false;
 }
 
+/*virtual*/
+const TfTokenVector &
+UsdImagingPrimAdapter::GetExtComputationSceneInputNames(
+    SdfPath const& computationPath,
+    SdfPath const& cachePath) const
+{
+    static TfTokenVector emptyTokenVector;
+    return emptyTokenVector;
+}
 
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,

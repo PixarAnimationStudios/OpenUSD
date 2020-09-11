@@ -127,10 +127,6 @@ public:
             static TfToken attr("materialResource");
             return Key(path, attr);
         }
-        static Key ExtComputationSceneInputNames(SdfPath const& path) {
-            static TfToken attr("extComputationSceneInputNames");
-            return Key(path, attr);
-        }
         static Key ExtComputationInputs(SdfPath const& path) {
             static TfToken attr("extComputationInputs");
             return Key(path, attr);
@@ -289,19 +285,6 @@ public:
         }
 
         {
-            // ExtComputation related state
-            TfTokenVector sceneInputNames;
-            if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
-                // Add computation "config" params to the list of inputs
-                sceneInputNames.emplace_back(HdTokens->dispatchCount);
-                sceneInputNames.emplace_back(HdTokens->elementCount);
-                for (TfToken const& input : sceneInputNames) {
-                    _Erase<VtValue>(Key(path, input));
-                }
-
-                _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
-            }
-            
             // Computed inputs are tied to the computation that computes them.
             // We don't walk the dependency chain to clear them.
             _Erase<HdExtComputationInputDescriptorVector>(
@@ -358,9 +341,6 @@ public:
     }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
-    }
-    TfTokenVector& GetExtComputationSceneInputNames(SdfPath const& path) const {
-        return _Get<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
     }
     HdExtComputationInputDescriptorVector&
     GetExtComputationInputs(SdfPath const& path) const {
@@ -422,10 +402,6 @@ public:
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
-    bool FindExtComputationSceneInputNames(SdfPath const& path,
-                                           TfTokenVector* value) const {
-        return _Find(Key::ExtComputationSceneInputNames(path), value);
-    }
     bool FindExtComputationInputs(
         SdfPath const& path,
         HdExtComputationInputDescriptorVector* value) const {
@@ -485,10 +461,6 @@ public:
     }
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
-    }
-    bool ExtractExtComputationSceneInputNames(SdfPath const& path,
-                                              TfTokenVector* value) {
-        return _Extract(Key::ExtComputationSceneInputNames(path), value);
     }
     bool ExtractExtComputationInputs(
         SdfPath const& path,

@@ -185,6 +185,10 @@ public:
                        SdfPath const& cachePath,
                        TfToken const& instanceInheritablePurpose) 
                                                                 const override;
+    USDSKELIMAGING_API
+    const TfTokenVector &GetExtComputationSceneInputNames(
+        SdfPath const& computationPath,
+        SdfPath const& cachePath) const override;
 
     USDSKELIMAGING_API
     bool GetDoubleSided(UsdPrim const& prim, 

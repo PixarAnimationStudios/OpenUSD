@@ -1113,6 +1113,74 @@ UsdSkelImagingSkeletonAdapter::GetPurpose(
     return purpose;
 }
 
+const TfTokenVector &
+UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
+    SdfPath const& computationPath,
+    SdfPath const& cachePath) const
+{
+
+    if (_IsSkinningComputationPath(cachePath)) {
+
+        if (_IsEnabledAggregatorComputation()) {
+
+            // Scene inputs
+            static TfTokenVector sceneInputNames({
+                    // From the skinned prim
+                        _tokens->primWorldToLocal,
+                    // From the skeleton
+                        _tokens->blendShapeWeights,
+                        _tokens->skinningXforms,
+                        _tokens->skelLocalToWorld,
+            });
+            return sceneInputNames;
+
+        } else {
+
+            // Scene inputs
+            static TfTokenVector sceneInputNames({
+                // From the skinned prim
+                    _tokens->restPoints,
+                    _tokens->geomBindXform,
+                    _tokens->influences,
+                    _tokens->numInfluencesPerComponent,
+                    _tokens->hasConstantInfluences,
+                    _tokens->primWorldToLocal,
+                    _tokens->blendShapeOffsets,
+                    _tokens->blendShapeOffsetRanges,
+                    _tokens->numBlendShapeOffsetRanges,
+
+                // From the skeleton
+                    _tokens->blendShapeWeights,
+                    _tokens->skinningXforms,
+                    _tokens->skelLocalToWorld
+            });
+            return sceneInputNames;
+        }
+    }
+
+    if (_IsSkinningInputAggregatorComputationPath(cachePath)) {
+
+        // ExtComputation inputs
+        static TfTokenVector inputNames({
+            // Data authored on the skinned prim as primvars.
+                _tokens->restPoints,
+                _tokens->geomBindXform,
+                _tokens->influences,
+                _tokens->numInfluencesPerComponent,
+                _tokens->hasConstantInfluences,
+                _tokens->blendShapeOffsets,
+                _tokens->blendShapeOffsetRanges,
+                _tokens->numBlendShapeOffsetRanges
+        });
+        return inputNames;
+
+    }  
+
+    return BaseAdapter::GetExtComputationSceneInputNames(
+        computationPath, cachePath);;
+
+}
+
 
 void
 UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
@@ -1458,18 +1526,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
     if (requestedBits & HdExtComputation::DirtyInputDesc) {
         if (_IsEnabledAggregatorComputation()) {
 
-            // Scene inputs
-            TfTokenVector sceneInputNames({
-                // From the skinned prim
-                    _tokens->primWorldToLocal,
-                // From the skeleton
-                    _tokens->blendShapeWeights,
-                    _tokens->skinningXforms,
-                    _tokens->skelLocalToWorld,
-            });
-            valueCache->GetExtComputationSceneInputNames(computationPath)
-                = sceneInputNames;
-
             // Computation inputs
             TfTokenVector compInputNames({
                     _tokens->restPoints,
@@ -1497,26 +1553,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
                 = compInputDescs;
 
         } else {
-            // Scene inputs
-            TfTokenVector sceneInputNames({
-                // From the skinned prim
-                    _tokens->restPoints,
-                    _tokens->geomBindXform,
-                    _tokens->influences,
-                    _tokens->numInfluencesPerComponent,
-                    _tokens->hasConstantInfluences,
-                    _tokens->primWorldToLocal,
-                    _tokens->blendShapeOffsets,
-                    _tokens->blendShapeOffsetRanges,
-                    _tokens->numBlendShapeOffsetRanges,
-
-                // From the skeleton
-                    _tokens->blendShapeWeights,
-                    _tokens->skinningXforms,
-                    _tokens->skelLocalToWorld
-            });
-            valueCache->GetExtComputationSceneInputNames(computationPath) =
-                sceneInputNames;
 
             // No computation inputs
             valueCache->GetExtComputationInputs(computationPath)
@@ -1725,20 +1761,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
     }
 
     if (requestedBits & HdExtComputation::DirtyInputDesc) {
-        // ExtComputation inputs
-        TfTokenVector inputNames({
-            // Data authored on the skinned prim as primvars.
-                _tokens->restPoints,
-                _tokens->geomBindXform,
-                _tokens->influences,
-                _tokens->numInfluencesPerComponent,
-                _tokens->hasConstantInfluences,
-                _tokens->blendShapeOffsets,
-                _tokens->blendShapeOffsetRanges,
-                _tokens->numBlendShapeOffsetRanges
-        });
-        valueCache->GetExtComputationSceneInputNames(computationPath)
-            = inputNames;
 
         valueCache->GetExtComputationInputs(computationPath)
             = HdExtComputationInputDescriptorVector();
