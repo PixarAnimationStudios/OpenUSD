@@ -575,6 +575,7 @@ UsdImagingGLEngine::TestIntersection(
     const UsdPrim& root,
     const UsdImagingGLRenderParams& params,
     GfVec3d *outHitPoint,
+    GfVec3d *outHitNormal,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
     int *outHitInstanceIndex,
@@ -636,9 +637,11 @@ UsdImagingGLEngine::TestIntersection(
     HdxPickHit &hit = allHits[0];
 
     if (outHitPoint) {
-        *outHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
-                               hit.worldSpaceHitPoint[1],
-                               hit.worldSpaceHitPoint[2]);
+        *outHitPoint = hit.worldSpaceHitPoint;
+    }
+
+    if (outHitNormal) {
+        *outHitNormal = hit.worldSpaceHitNormal;
     }
 
     hit.objectId = _sceneDelegate->GetScenePrimPath(

@@ -2092,28 +2092,28 @@ class StageView(QtOpenGL.QGLWidget):
         cameraFrustum.nearFar = \
             Gf.Range1d(smallNear, smallNear*FreeCamera.maxSafeZResolution)
         pickResults = self.pick(cameraFrustum)
-        if pickResults[0] is None or pickResults[1] == Sdf.Path.emptyPath:
+        if pickResults[0] is None or pickResults[2] == Sdf.Path.emptyPath:
             cameraFrustum.nearFar = \
                 Gf.Range1d(trueFar/FreeCamera.maxSafeZResolution, trueFar)
             pickResults = self.pick(cameraFrustum)
             if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
                 print("computeAndSetClosestDistance: Needed to call pick() a second time")
 
-        if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
+        if pickResults[0] is not None and pickResults[2] != Sdf.Path.emptyPath:
             self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
             self.updateView()
 
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quintuple:
-          selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex, selectedInstancerContext
+        Returns a sextuple:
+          selectedPoint, selectedNormal, selectedPrimPath,
+          selectedInstancerPath, selectedInstanceIndex, selectedInstancerContext
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
             # error has already been issued
-            return None, Sdf.Path.emptyPath, None, None, None
+            return None, None, Sdf.Path.emptyPath, None, None, None
 
         # this import is here to make sure the create_first_image stat doesn't
         # regress..
@@ -2192,15 +2192,15 @@ class StageView(QtOpenGL.QGLWidget):
             (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
             if inImageBounds:
-                selectedPoint, selectedPrimPath, \
+                selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
                 self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
-                selectedPoint, selectedPrimPath, \
+                selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                    None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
+                    None, None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
         
             # Correct for high DPI displays
             coord = self._scaleMouseCoords( \

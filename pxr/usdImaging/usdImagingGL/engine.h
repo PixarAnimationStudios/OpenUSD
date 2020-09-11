@@ -271,7 +271,8 @@ public:
     ///
     /// Returns whether a hit occurred and if so, \p outHitPoint will contain
     /// the intersection point in world space (i.e. \p projectionMatrix and
-    /// \p viewMatrix factored back out of the result).
+    /// \p viewMatrix factored back out of the result), and \p outHitNormal
+    /// will contain the world space normal at that point.
     ///
     /// \p outHitPrimPath will point to the gprim selected by the pick.
     /// \p outHitInstancerPath will point to the point instancer (if applicable)
@@ -285,6 +286,7 @@ public:
         const UsdPrim& root,
         const UsdImagingGLRenderParams &params,
         GfVec3d *outHitPoint,
+        GfVec3d *outHitNormal,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
