@@ -978,6 +978,9 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
     //      this is more costly or that would be.
     static const bool fixTargetPaths = true;
     std::vector<SdfPath> newIncludes;
+    // Path changes are in the order in which they were processed so we know
+    // the difference between a rename from B -> C followed by A -> B as opposed
+    // to from A -> B, B -> C.
     TF_FOR_ALL(i, changes.didChangePath) {
         for (PayloadSet::iterator j = _includedPayloads.begin();
                 j != _includedPayloads.end(); ) {
@@ -992,6 +995,18 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
             }
             else {
                 ++j;
+            }
+        }
+        // Because we could have a chain of renames like A -> B, B -> C, we also
+        // need to check the newIncludes. Any payloads prefixed by A will have
+        // been removed from _includedPayloads and renamed B in newIncludes 
+        // during the A -> B pass, so the B -> C pass needs to rename all the
+        // B prefixed paths in newIncludes to complete the full rename.
+        for (SdfPath &newInclude : newIncludes) {
+            if (newInclude.HasPrefix(i->first)) {
+                // The rename can happen in place.
+                newInclude = newInclude.ReplacePrefix(i->first, i->second,
+                                                       !fixTargetPaths);
             }
         }
     }

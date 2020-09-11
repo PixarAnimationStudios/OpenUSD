@@ -1108,8 +1108,7 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
             SdfPathVector depPaths;
 
             for (auto cache : caches) {
-                PcpCacheChanges::PathEditMap& renameChanges =
-                    _GetRenameChanges(cache);
+                _PathEditMap& renameChanges = _GetRenameChanges(cache);
 
                 // Do every path.
                 for (size_t i = 0, n = oldPaths.size(); i != n; ++i) {
@@ -1507,17 +1506,14 @@ PcpChanges::DidChangePaths(
     const SdfPath& oldPath,
     const SdfPath& newPath)
 {
-    // XXX: Do we need to handle rename chains?  I.e. A renamed to B
-    //      then renamed to C.  If so then we may need to handle one
-    //      oldPath appearing multiple times, e.g. A -> B -> C and
-    //      D -> B -> E, where B appears in two chains.
-
     TF_DEBUG(PCP_CHANGES).Msg("PcpChanges::DidChangePaths: @%s@<%s> to <%s>\n",
                               cache->GetLayerStackIdentifier().rootLayer->
                                   GetIdentifier().c_str(),
                               oldPath.GetText(), newPath.GetText());
 
-    _GetCacheChanges(cache).didChangePath[oldPath] = newPath;
+    // Changes are ordered. A chain of A -> B; B -> C is different than a 
+    // parallel move B -> C; A -> B
+    _GetCacheChanges(cache).didChangePath.emplace_back(oldPath, newPath);
 }
 
 void
@@ -1610,7 +1606,7 @@ PcpChanges::_GetCacheChanges(const PcpCache* cache)
     return _cacheChanges[const_cast<PcpCache*>(cache)];
 }
 
-PcpCacheChanges::PathEditMap&
+PcpChanges::_PathEditMap&
 PcpChanges::_GetRenameChanges(const PcpCache* cache)
 {
     return _renameChanges[const_cast<PcpCache*>(cache)];
@@ -1667,15 +1663,28 @@ void
 PcpChanges::_OptimizePathChanges(
     const PcpCache* cache,
     PcpCacheChanges* changes,
-    PcpCacheChanges::PathEditMap* pathChanges)
+    _PathEditMap* pathChanges)
 {
+    // XXX: DidChangePaths handles rename chains. I.e. A renamed to B
+    //      then renamed to C. pathChanges is a map but we may need to handle 
+    //      one oldPath appearing multiple times in didChangePath, e.g. 
+    //      A -> B -> C and D -> B -> E, where B appears in two chains.
+
     // Discard any path change that's also in changes->didChangePath.
     typedef std::pair<SdfPath, SdfPath> PathPair;
     std::vector<PathPair> sdOnly;
+
+    // Custom compare function to handle the type mismatch between the
+    // map's value type pair<const SdfPath, SdfPath> and pair<SdfPath, SdfPath>.
+    auto compareFunc = 
+        [](const _PathEditMap::value_type &lhs, const PathPair &rhs) {
+             return lhs.first < rhs.first ||
+                (lhs.first == rhs.first && lhs.second < rhs.second); };
     std::set_difference(pathChanges->begin(), pathChanges->end(),
                         changes->didChangePath.begin(),
                         changes->didChangePath.end(),
-                        std::back_inserter(sdOnly));
+                        std::back_inserter(sdOnly), 
+                        compareFunc);
 
     std::string summary;
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
