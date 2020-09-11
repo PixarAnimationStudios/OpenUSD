@@ -472,6 +472,13 @@ public:
                                 SdfPath const& cachePath, 
                                 UsdTimeCode time) const;
 
+    /// Reads double-sided from the given prim. If not authored, returns false
+    USDIMAGING_API
+    virtual bool GetDoubleSided(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const;
+
+
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //

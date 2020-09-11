@@ -421,10 +421,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided){
-        valueCache->GetDoubleSided(cachePath) = _GetDoubleSided(prim);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyTransform) {
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
     }
@@ -593,6 +589,25 @@ UsdImagingGprimAdapter::GetExtent(UsdPrim const& prim,
         // TODO: Should this compute the extent based on the points instead?
         return GfRange3d();
     }
+}
+
+/*virtual*/
+bool
+UsdImagingGprimAdapter::GetDoubleSided(UsdPrim const& prim, 
+                                       SdfPath const& cachePath, 
+                                       UsdTimeCode time) const
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    UsdGeomGprim gprim(prim);
+
+    if (!TF_VERIFY(gprim)) {
+        return false;
+    }
+
+    bool doubleSided = false;
+    gprim.GetDoubleSidedAttr().Get(&doubleSided, time);
+    return doubleSided;
 }
 
 // -------------------------------------------------------------------------- //
@@ -796,19 +811,6 @@ UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
         }
     }
     return UsdGeomPrimvar();
-}
-
-bool 
-UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim) const
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if(!TF_VERIFY(prim.IsA<UsdGeomGprim>(), "%s\n",
-                prim.GetPath().GetText()))
-        return false;
-
-    return _Get<bool>(prim, UsdGeomTokens->doubleSided, UsdTimeCode::Default());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

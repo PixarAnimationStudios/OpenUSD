@@ -449,6 +449,17 @@ UsdImagingGLDrawModeAdapter::GetExtent(UsdPrim const& prim,
     return extent;
 }
 
+
+/*virtual*/
+bool
+UsdImagingGLDrawModeAdapter::GetDoubleSided(UsdPrim const& prim, 
+                                            SdfPath const& cachePath, 
+                                            UsdTimeCode time) const
+{
+    return false;
+}
+
+
 void
 UsdImagingGLDrawModeAdapter::_CheckForTextureVariability(
     UsdPrim const& prim, HdDirtyBits dirtyBits,
@@ -669,10 +680,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         } else {
             valueCache->GetTransform(cachePath) = GetTransform(prim, time);
         }
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided) {
-        valueCache->GetDoubleSided(cachePath) = false;
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {

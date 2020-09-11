@@ -169,6 +169,10 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    bool GetDoubleSided(UsdPrim const& usdPrim, 
+                   SdfPath const& cachePath, 
+                   UsdTimeCode time) const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //

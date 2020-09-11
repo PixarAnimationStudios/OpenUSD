@@ -90,10 +90,7 @@ public:
             static TfToken attr("displayOpacity");
             return Key(path, attr);
         }
-        static Key DoubleSided(SdfPath const& path) {
-            static TfToken attr("doubleSided");
-            return Key(path, attr);
-        }
+
         static Key InstancerTransform(SdfPath const& path) {
             static TfToken attr("instancerTransform");
             return Key(path, attr);
@@ -112,10 +109,6 @@ public:
         }
         static Key Transform(SdfPath const& path) {
             static TfToken attr("transform");
-            return Key(path, attr);
-        }
-        static Key Visible(SdfPath const& path) {
-            static TfToken attr("visible");
             return Key(path, attr);
         }
         static Key Widths(SdfPath const& path) {
@@ -277,10 +270,8 @@ public:
     void Clear(SdfPath const& path) {
         _Erase<VtValue>(Key::Color(path));
         _Erase<VtValue>(Key::Opacity(path));
-        _Erase<bool>(Key::DoubleSided(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
-        _Erase<bool>(Key::Visible(path));
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
@@ -337,9 +328,7 @@ public:
     VtValue& GetOpacity(SdfPath const& path) const {
         return _Get<VtValue>(Key::Opacity(path));
     }
-    bool& GetDoubleSided(SdfPath const& path) const {
-        return _Get<bool>(Key::DoubleSided(path));
-    }
+
     GfMatrix4d& GetInstancerTransform(SdfPath const& path) const {
         return _Get<GfMatrix4d>(Key::InstancerTransform(path));
     }
@@ -405,9 +394,7 @@ public:
     bool FindOpacity(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Opacity(path), value);
     }
-    bool FindDoubleSided(SdfPath const& path, bool* value) const {
-        return _Find(Key::DoubleSided(path), value);
-    }
+
     bool FindInstancerTransform(SdfPath const& path, GfMatrix4d* value) const {
         return _Find(Key::InstancerTransform(path), value);
     }
@@ -468,9 +455,7 @@ public:
     bool ExtractOpacity(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Opacity(path), value);
     }
-    bool ExtractDoubleSided(SdfPath const& path, bool* value) {
-        return _Extract(Key::DoubleSided(path), value);
-    }
+
     bool ExtractInstancerTransform(SdfPath const& path, GfMatrix4d* value) {
         return _Extract(Key::InstancerTransform(path), value);
     }
@@ -531,7 +516,7 @@ public:
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
     {
-        _GarbageCollect(_boolCache);
+
         _GarbageCollect(_tokenCache);
         _GarbageCollect(_tokenVectorCache);
         _GarbageCollect(_matrixCache);
@@ -548,10 +533,6 @@ public:
 
 private:
     bool _locked;
-
-    // doubleSided
-    typedef _TypedCache<bool> _BoolCache;
-    mutable _BoolCache _boolCache;
 
     // purpose
     typedef _TypedCache<TfToken> _TokenCache;
@@ -595,9 +576,6 @@ private:
         _ExtComputationPrimvarsCache;
     mutable _ExtComputationPrimvarsCache _extComputationPrimvarsCache;
 
-    void _GetCache(_BoolCache **cache) const {
-        *cache = &_boolCache;
-    }
     void _GetCache(_TokenCache **cache) const {
         *cache = &_tokenCache;
     }

@@ -177,6 +177,14 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    /// Reads double-sided from the given prim. If not authored, returns false
+    USDIMAGING_API
+    bool GetDoubleSided(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
+
+
+
 protected:
 
     USDIMAGING_API
@@ -193,10 +201,6 @@ protected:
     UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
                                         TfToken const& primvarName) const;
 
-private:
-
-    /// Returns the doubleSided state for a given prim.
-    bool _GetDoubleSided(UsdPrim const& prim) const;
 };
 
 

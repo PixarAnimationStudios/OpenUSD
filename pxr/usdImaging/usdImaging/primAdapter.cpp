@@ -1227,6 +1227,16 @@ UsdImagingPrimAdapter::GetExtent(UsdPrim const& prim,
     return GfRange3d();
 }
 
+/*virtual*/
+bool
+UsdImagingPrimAdapter::GetDoubleSided(UsdPrim const& prim, 
+                                      SdfPath const& cachePath, 
+                                      UsdTimeCode time) const
+{
+    return false;
+}
+
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

@@ -1830,11 +1830,13 @@ UsdImagingDelegate::GetDoubleSided(SdfPath const& id)
 {
     bool doubleSided = false;
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    if (_valueCache.ExtractDoubleSided(cachePath, &doubleSided))
-        return doubleSided; 
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyDoubleSided);
-    TF_VERIFY(_valueCache.ExtractDoubleSided(cachePath, &doubleSided));
+    if (TF_VERIFY(primInfo)) {
+        doubleSided = primInfo->adapter->GetDoubleSided(
+            primInfo->usdPrim, cachePath, _time);
+    }
+    
     return doubleSided;
 }
 

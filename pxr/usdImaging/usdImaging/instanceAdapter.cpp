@@ -1813,6 +1813,27 @@ UsdImagingInstanceAdapter::GetVisible(UsdPrim const& usdPrim,
     return BaseAdapter::GetVisible(usdPrim, cachePath, time);
 }
 
+/*virtual*/
+bool
+UsdImagingInstanceAdapter::GetDoubleSided(UsdPrim const& usdPrim, 
+                                          SdfPath const& cachePath, 
+                                          UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return false;
+        }
+        return proto.adapter->GetDoubleSided(
+                _GetPrim(proto.path), cachePath, time);
+    }
+
+    return BaseAdapter::GetDoubleSided(usdPrim, cachePath, time);
+}
+
 void
 UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index,

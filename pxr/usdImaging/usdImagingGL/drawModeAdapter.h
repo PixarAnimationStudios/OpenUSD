@@ -134,6 +134,12 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    USDIMAGINGGL_API
+    bool GetDoubleSided(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
+
+
 protected:
     USDIMAGINGGL_API
     void _RemovePrim(SdfPath const& cachePath,

@@ -186,6 +186,12 @@ public:
                        TfToken const& instanceInheritablePurpose) 
                                                                 const override;
 
+    USDSKELIMAGING_API
+    bool GetDoubleSided(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
+
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Change Processing API (protected)

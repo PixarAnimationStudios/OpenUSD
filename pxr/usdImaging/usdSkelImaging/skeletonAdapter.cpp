@@ -733,6 +733,20 @@ UsdSkelImagingSkeletonAdapter::GetExtent(UsdPrim const& prim,
     }
 }
 
+/*virtual*/
+bool
+UsdSkelImagingSkeletonAdapter::GetDoubleSided(UsdPrim const& prim, 
+                                              SdfPath const& cachePath, 
+                                              UsdTimeCode time) const
+{
+    if (_IsCallbackForSkeleton(prim)) {
+        return true;
+    } else {
+        return BaseAdapter::GetDoubleSided(prim, cachePath, time);
+    }
+}
+
+
 namespace {
 
 void
@@ -1152,10 +1166,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
         _MergePrimvar(&valueCache->GetPrimvars(cachePath),
                       HdTokens->displayOpacity,
                       HdInterpolationConstant);
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided) {
-        valueCache->GetDoubleSided(cachePath) = true;
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
