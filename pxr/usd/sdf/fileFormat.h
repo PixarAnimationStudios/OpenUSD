@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class ArAssetInfo;
 class SdfSchemaBase;
+class SdfLayerHints;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -309,9 +310,20 @@ protected:
 
     /// Set the internal data for \p layer to \p data, possibly transferring
     /// ownership of \p data.
+    /// 
+    /// Existing layer hints are reset to the default hints.
     SDF_API
     static void _SetLayerData(
         SdfLayer* layer, SdfAbstractDataRefPtr& data);
+
+    /// Set the internal data for \p layer to \p data, possibly transferring
+    /// ownership of \p data.
+    ///
+    /// Existing layer hints are replaced with \p hints.
+    SDF_API
+    static void _SetLayerData(
+        SdfLayer* layer, SdfAbstractDataRefPtr& data,
+        SdfLayerHints hints);
 
     /// Get the internal data for \p layer.
     SDF_API

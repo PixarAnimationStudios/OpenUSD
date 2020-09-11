@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/fileFormatRegistry.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/layerHints.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/trace/trace.h"
@@ -352,6 +353,15 @@ SdfFileFormat::_SetLayerData(
     SdfLayer* layer,
     SdfAbstractDataRefPtr& data)
 {
+    _SetLayerData(layer, data, SdfLayerHints{});
+}
+
+void
+SdfFileFormat::_SetLayerData(
+    SdfLayer* layer,
+    SdfAbstractDataRefPtr& data,
+    SdfLayerHints hints)
+{
     // If layer initialization has not completed, then this
     // is being loaded as a new layer; otherwise we are loading
     // data into an existing layer.
@@ -366,6 +376,8 @@ SdfFileFormat::_SetLayerData(
     else {
         layer->_SetData(data);
     }
+
+    layer->_hints = hints;
 }
 
 SdfAbstractDataConstPtr

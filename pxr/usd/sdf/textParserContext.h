@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
+#include "pxr/usd/sdf/layerHints.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/parserValueContext.h"
@@ -138,6 +139,9 @@ public:
 
     // Should we only read metadata from the file?
     bool metadataOnly;
+
+    // Hints to fill in about the layer's contents.
+    SdfLayerHints layerHints;
 
     // Stack for the child names of all the prims currently being parsed
     // For instance if we're currently parsing /A/B then this vector

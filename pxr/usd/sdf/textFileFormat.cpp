@@ -63,13 +63,15 @@ extern bool Sdf_ParseMenva(
     const string& token,
     const string& version,
     bool metadataOnly,
-    PXR_NS::SdfDataRefPtr data);
+    PXR_NS::SdfDataRefPtr data,
+    PXR_NS::SdfLayerHints *hints);
 
 extern bool Sdf_ParseMenvaFromString(
     const std::string & menvaString,
     const string& token,
     const string& version,
-    PXR_NS::SdfDataRefPtr data);
+    PXR_NS::SdfDataRefPtr data,
+    PXR_NS::SdfLayerHints *hints);
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -172,14 +174,15 @@ SdfTextFileFormat::Read(
                 resolvedPath.c_str());
     }
 
+    SdfLayerHints hints;
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     if (!Sdf_ParseMenva(
             resolvedPath, asset, GetFormatId(), GetVersionString(), 
-            metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data))) {
+            metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data), &hints)) {
         return false;
     }
 
-    _SetLayerData(layer, data);
+    _SetLayerData(layer, data, hints);
     return true;
 }
 
@@ -336,15 +339,17 @@ SdfTextFileFormat::ReadFromString(
     SdfLayer* layer,
     const std::string& str) const
 {
+    SdfLayerHints hints;
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     if (!Sdf_ParseMenvaFromString(str, 
                                   GetFormatId(),
                                   GetVersionString(),
-                                  TfDynamic_cast<SdfDataRefPtr>(data))) {
+                                  TfDynamic_cast<SdfDataRefPtr>(data),
+                                  &hints)) {
         return false;
     }
 
-    _SetLayerData(layer, data);
+    _SetLayerData(layer, data, hints);
     return true;
 }
 

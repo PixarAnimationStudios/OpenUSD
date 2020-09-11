@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
+#include "pxr/usd/sdf/layerHints.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -208,6 +209,12 @@ public:
     /// Returns the data from the absolute root path of this layer.
     SDF_API
     SdfDataRefPtr GetMetadata() const;
+
+    /// Return hints about the layer's current contents.  Any operation that
+    /// dirties the layer will invalidate all hints.
+    /// \sa SdfLayerHints
+    SDF_API
+    SdfLayerHints GetHints() const;
 
     /// Returns handles for all layers currently held by the layer registry.
     SDF_API
@@ -1678,6 +1685,9 @@ private:
 
     // Whether layer edits are validated.
     bool _validateAuthoring;
+
+    // Layer hints as of the most recent save operation.
+    mutable SdfLayerHints _hints;
 
     // Allow access to _ValidateAuthoring() and _IsInert().
     friend class SdfSpec;

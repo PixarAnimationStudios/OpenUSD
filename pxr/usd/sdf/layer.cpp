@@ -143,6 +143,7 @@ SdfLayer::SdfLayer(
     , _permissionToSave(true)
     , _validateAuthoring(
         validateAuthoring || TfGetEnvSetting<bool>(SDF_LAYER_VALIDATE_AUTHORING))
+    , _hints{/*.mightHaveRelocates =*/ false}
 {
     const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
@@ -442,17 +443,26 @@ SdfLayer::_CreateNew(
         layer = _CreateNewWithFormat(
             fileFormat, absIdentifier, localPath, assetInfo, args);
 
+        if (!TF_VERIFY(layer)) {
+            return TfNullPtr;
+        }
+
+        // Stash away the existing layer hints.  The call to _Save below will
+        // invalidate them but they should still be good.
+        SdfLayerHints hints = layer->_hints;
+
         // XXX 2011-08-19 Newly created layers should not be
         // saved to disk automatically.
         //
         // Force the save here to ensure this new layer overwrites any
         // existing layer on disk.
-        if (!TF_VERIFY(layer) || !layer->_Save(/* force = */ true)) {
+        if (!layer->_Save(/* force = */ true)) {
             // Dropping the layer reference will destroy it, and
             // the destructor will remove it from the registry.
             return TfNullPtr;
         }
 
+        layer->_hints = hints;
         // Once we have saved the layer, initialization is complete.
         layer->_FinishInitialization(/* success = */ true);
     }
@@ -2768,6 +2778,9 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
         _data = newData;
     }
 
+    // Copy hints from other layer
+    _hints = layer->_hints;
+
     // If this is a "streaming" layer, we must mark it dirty.
     if (isStreamingLayer) {
         _stateDelegate->_MarkCurrentStateAsDirty();
@@ -3131,6 +3144,15 @@ SdfLayer::HasField(const SdfPath& path, const TfToken& fieldName,
         return true;
     }
     return false;
+}
+
+SdfLayerHints
+SdfLayer::GetHints() const
+{
+    // Hints are invalidated by any authoring operation but we don't want to
+    // incur the cost of resetting the _hints object at authoring time.
+    // Instead, we return a default SdfLayerHints here if the layer is dirty.
+    return IsDirty() ? SdfLayerHints{} : _hints;
 }
 
 bool
@@ -4245,6 +4267,10 @@ SdfLayer::_Save(bool force) const
     if (!_WriteToFile(path, std::string(), 
                       GetFileFormat(), GetFileFormatArguments()))
         return false;
+
+    // Layer hints are invalidated by authoring so _hints must be reset now
+    // that the layer has been marked as clean.  See GetHints().
+    _hints = SdfLayerHints{};
 
     // Record modification timestamp.
     VtValue timestamp = ArGetResolver().GetModificationTimestamp(

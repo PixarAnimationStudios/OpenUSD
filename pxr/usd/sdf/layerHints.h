@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,24 +21,33 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_USD_SDF_LAYER_HINTS_H
+#define PXR_USD_SDF_LAYER_HINTS_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/textParserContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-Sdf_TextParserContext::Sdf_TextParserContext() :
-    listOpType(SdfListOpTypeExplicit),
-    currentDictionaries(std::vector<VtDictionary>(1)),
-    seenError(false),
-    path(SdfPath::AbsoluteRootPath()),
-    metadataOnly(false),
-    // This parser supports the maybe-has-relocates hint.  The parser will set
-    // it to true if it encounters a relocates field.
-    layerHints{/*.mightHaveRelocates =*/ false},
-    menvaLineNo(1),
-    scanner(NULL)
+/// Contains hints about layer contents that may be used to accelerate certain
+/// composition operations.
+class SdfLayerHints
 {
-}
+public:
+    /// Default constructed hints provide the most conservative set of values
+    /// such that consumers of the hints will act correctly if not optimally.
+    SdfLayerHints() = default;
+
+    /// Construct hints with specific values.  Using this constructor requires
+    /// that all hint fields be specified.
+    explicit SdfLayerHints(bool mightHaveRelocates)
+        : mightHaveRelocates(mightHaveRelocates)
+    {}
+
+    /// If this field is false, the layer does not contain relocates.  If
+    /// true, relocates may be present but are not guaranteed to exist.
+    bool mightHaveRelocates = true;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
