@@ -306,11 +306,6 @@ QTableView, QTableWidget, QTreeWidget, #primFrame, #attributeFrame{
     alternate-background-color: rgb(59, 59, 59);
 }
 
-/* Font setting for the table widget */
-QTableWidget{
-    font: 25 %(BASE_FONT_SZ)s "Roboto";
-}
-
 /* bump to the right to hide the extra line */
 QTableWidget, QTreeWidget {
     margin-right: -1px;
