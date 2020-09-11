@@ -126,7 +126,8 @@ public:
 
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName) override;
+                                              TfToken const& propertyName) 
+                                                  override;
 
     virtual void ProcessPrimResync(SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
@@ -166,8 +167,6 @@ public:
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index) override;
-
-
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -221,6 +220,10 @@ public:
     GfRange3d GetExtent(UsdPrim const& usdPrim, 
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
+
+    bool GetVisible(UsdPrim const& usdPrim, 
+                    SdfPath const& cachePath,
+                    UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

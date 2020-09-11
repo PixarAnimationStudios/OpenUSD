@@ -1776,8 +1776,8 @@ UsdImagingInstanceAdapter::GetCullStyle(UsdPrim const& usdPrim,
 /*virtual*/
 GfRange3d 
 UsdImagingInstanceAdapter::GetExtent(UsdPrim const& usdPrim, 
-                                  SdfPath const& cachePath, 
-                                  UsdTimeCode time) const
+                                     SdfPath const& cachePath, 
+                                     UsdTimeCode time) const
 {
     if (_IsChildPrim(usdPrim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
@@ -1791,6 +1791,26 @@ UsdImagingInstanceAdapter::GetExtent(UsdPrim const& usdPrim,
                 _GetPrim(proto.path), cachePath, time);
     }
     return BaseAdapter::GetExtent(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+bool 
+UsdImagingInstanceAdapter::GetVisible(UsdPrim const& usdPrim, 
+                                      SdfPath const& cachePath,
+                                      UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return false;
+        }
+        return proto.adapter->GetVisible(
+                _GetPrim(proto.path), cachePath, time);
+    }
+    return BaseAdapter::GetVisible(usdPrim, cachePath, time);
 }
 
 void
