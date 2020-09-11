@@ -71,7 +71,7 @@
 float
 extinctionFunction(vec3 p)
 {
-    return HdGet_density(p).x;
+    return HdGet_density(p);
 }
 
 // Scattering function, returns in-scattering cross-section (will be combined
@@ -92,7 +92,7 @@ scatteringFunction(vec3 p)
 vec3
 emissionFunction(vec3 p)
 {
-    return HdGet_emission(p).xyz;
+    return HdGet_emission(p);
 }
 
 // Phase function in volume rendering equation.
