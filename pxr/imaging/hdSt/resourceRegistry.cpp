@@ -110,7 +110,7 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
         std::make_unique<HdStVBOSimpleMemoryManager>(this))
-    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(hgi))
+    , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(this))
 {
 }
 

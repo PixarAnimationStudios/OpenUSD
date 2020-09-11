@@ -37,8 +37,9 @@ using HdStTextureObjectSharedPtr =
     std::shared_ptr<class HdStTextureObject>;
 using HdStTextureObjectPtr =
     std::weak_ptr<class HdStTextureObject>;
+class HdStResourceRegistry;
 class HdStTextureIdentifier;
-class Hgi;
+
 
 /// \class HdSt_TextureObjectRegistry
 ///
@@ -47,7 +48,7 @@ class Hgi;
 class HdSt_TextureObjectRegistry final
 {
 public:
-    explicit HdSt_TextureObjectRegistry(Hgi * hgi);
+    explicit HdSt_TextureObjectRegistry(HdStResourceRegistry * registry);
     ~HdSt_TextureObjectRegistry();
 
     /// Allocate texture.
@@ -78,9 +79,10 @@ public:
     void MarkTextureObjectDirty(
         HdStTextureObjectPtr const &textureObject);
 
-    /// Get Hgi instance
+    /// Get resource registry
     ///
-    Hgi * GetHgi() const { return _hgi; }
+    HDST_API
+    HdStResourceRegistry * GetResourceRegistry() const;
 
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(
@@ -94,7 +96,7 @@ private:
     // Texture for which GPU resources need to be (re-)loaded
     tbb::concurrent_vector<HdStTextureObjectPtr> _dirtyTextures;
 
-    Hgi *_hgi;
+    HdStResourceRegistry *_resourceRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

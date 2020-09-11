@@ -24,7 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/samplerObject.h"
-
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/samplerObjectRegistry.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
@@ -54,7 +54,13 @@ HdStSamplerObject::_GetHgi() const
         return nullptr;
     }
 
-    Hgi * const hgi = _samplerObjectRegistry->GetHgi();
+    HdStResourceRegistry * const registry = 
+        _samplerObjectRegistry->GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return nullptr;
+    }
+
+    Hgi * const hgi = registry->GetHgi();
     TF_VERIFY(hgi);
 
     return hgi;
@@ -96,7 +102,13 @@ _GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
         return HgiSamplerHandle();
     }
 
-    Hgi * const hgi = samplerObjectRegistry->GetHgi();
+    HdStResourceRegistry * const registry = 
+        samplerObjectRegistry->GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return HgiSamplerHandle();
+    }
+
+    Hgi * const hgi = registry->GetHgi();
     if (!TF_VERIFY(hgi)) {
         return HgiSamplerHandle();
     }

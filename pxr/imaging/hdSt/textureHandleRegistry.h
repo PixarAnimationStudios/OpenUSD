@@ -38,8 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hgi;
-
+class HdStResourceRegistry;
 class HdStTextureIdentifier;
 class HdSamplerParameters;
 class HdSt_SamplerObjectRegistry;
@@ -73,7 +72,10 @@ using HdStShaderCodeSharedPtr =
 class HdSt_TextureHandleRegistry final
 {
 public:
-    explicit HdSt_TextureHandleRegistry(Hgi * hgi);
+    HDST_API
+    explicit HdSt_TextureHandleRegistry(HdStResourceRegistry * registry);
+
+    HDST_API
     ~HdSt_TextureHandleRegistry();
 
     /// Allocate texture handle (thread-safe).
@@ -97,6 +99,7 @@ public:
     /// handles will be updated potentially triggering texture garbage
     /// collection.
     ///
+    HDST_API
     void MarkDirty(HdStTextureObjectPtr const &texture);
 
     /// Mark shader dirty (thread-safe).
@@ -104,11 +107,13 @@ public:
     /// If set, the shader is scheduled to be updated (i.e., have its
     /// AddResourcesFromTextures called) on the next commit.
     ///
+    HDST_API
     void MarkDirty(HdStShaderCodePtr const &shader);
 
     /// Mark that sampler garbage collection needs to happen during
     /// next commit (thead-safe).
     ///
+    HDST_API
     void MarkSamplerGarbageCollectionNeeded();
 
     /// Get texture object registry.
@@ -129,6 +134,7 @@ public:
     ///
     /// Also garbage collect textures and samplers if necessary.
     ///
+    HDST_API
     std::set<HdStShaderCodeSharedPtr> Commit();
 
 private:

@@ -30,9 +30,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(Hgi * const hgi)
+HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(
+    HdStResourceRegistry * registry)
   : _garbageCollectionNeeded(false)
-  , _hgi(hgi)
+  , _resourceRegistry(registry)
 {
 }
 
@@ -128,6 +129,12 @@ void
 HdSt_SamplerObjectRegistry::MarkGarbageCollectionNeeded()
 {
     _garbageCollectionNeeded = true;
+}
+
+HdStResourceRegistry *
+HdSt_SamplerObjectRegistry::GetResourceRegistry() const
+{
+    return _resourceRegistry;
 }
 
 // Remove all shared pointers to objects not referenced by any client.

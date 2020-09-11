@@ -33,8 +33,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry(Hgi * const hgi)
-  : _hgi(hgi)
+HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry(
+    HdStResourceRegistry * registry)
+  : _resourceRegistry(registry)
 {
 }
 
@@ -102,6 +103,12 @@ HdSt_TextureObjectRegistry::MarkTextureObjectDirty(
     HdStTextureObjectPtr const &texture)
 {
     _dirtyTextures.push_back(texture);
+}
+
+HdStResourceRegistry *
+HdSt_TextureObjectRegistry::GetResourceRegistry() const 
+{
+    return _resourceRegistry;
 }
 
 // Turn a vector into a set, dropping expired weak points.

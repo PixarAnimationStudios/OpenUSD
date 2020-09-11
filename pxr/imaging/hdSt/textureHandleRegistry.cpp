@@ -136,9 +136,12 @@ private:
     Map _map;
 };
 
-HdSt_TextureHandleRegistry::HdSt_TextureHandleRegistry(Hgi * const hgi)
-    : _samplerObjectRegistry(std::make_unique<HdSt_SamplerObjectRegistry>(hgi))
-    , _textureObjectRegistry(std::make_unique<HdSt_TextureObjectRegistry>(hgi))
+HdSt_TextureHandleRegistry::HdSt_TextureHandleRegistry(
+    HdStResourceRegistry * registry)
+    : _samplerObjectRegistry(
+        std::make_unique<HdSt_SamplerObjectRegistry>(registry))
+    , _textureObjectRegistry(
+        std::make_unique<HdSt_TextureObjectRegistry>(registry))
     , _textureToHandlesMap(std::make_unique<_TextureToHandlesMap>())
 {
 }

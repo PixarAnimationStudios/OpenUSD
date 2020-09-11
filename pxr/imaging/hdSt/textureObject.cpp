@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/textureObject.h"
 
 #include "pxr/imaging/hdSt/glfTextureCpuData.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureCpuData.h"
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
@@ -71,14 +72,29 @@ HdStTextureObject::SetTargetMemory(const size_t targetMemory)
     _textureObjectRegistry->MarkTextureObjectDirty(shared_from_this());
 }
 
-Hgi *
-HdStTextureObject::_GetHgi() const
+HdStResourceRegistry*
+HdStTextureObject::_GetResourceRegistry() const
 {
     if (!TF_VERIFY(_textureObjectRegistry)) {
         return nullptr;
     }
 
-    Hgi * const hgi = _textureObjectRegistry->GetHgi();
+    HdStResourceRegistry* const registry =
+        _textureObjectRegistry->GetResourceRegistry();
+    TF_VERIFY(registry);
+
+    return registry;
+}
+
+Hgi *
+HdStTextureObject::_GetHgi() const
+{
+    HdStResourceRegistry* const registry = _GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return nullptr;
+    }
+
+    Hgi * const hgi = registry->GetHgi();
     TF_VERIFY(hgi);
 
     return hgi;
@@ -277,8 +293,8 @@ HdStUvTextureObject::_CreateTexture(const HgiTextureDesc &desc)
 void
 HdStUvTextureObject::_GenerateMipmaps()
 {
-    Hgi * const hgi = _GetHgi();
-    if (!TF_VERIFY(hgi)) {
+    HdStResourceRegistry * const registry = _GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
         return;
     }
 
@@ -286,9 +302,8 @@ HdStUvTextureObject::_GenerateMipmaps()
         return;
     }
 
-    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    HgiBlitCmds* const blitCmds = registry->GetGlobalBlitCmds();
     blitCmds->GenerateMipMaps(_gpuTexture);
-    hgi->SubmitCmds(blitCmds.get());
 }
 
 void
