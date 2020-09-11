@@ -177,8 +177,9 @@ HgiMetal::DestroyTextureView(HgiTextureViewHandle* viewHandle)
     // Trash the texture inside the view and invalidate the view handle.
     HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
     _TrashObject(&texHandle);
-    delete viewHandle->Get();
     (*viewHandle)->SetViewTexture(HgiTextureHandle());
+    delete viewHandle->Get();
+    *viewHandle = HgiTextureViewHandle();
 }
 
 HgiSamplerHandle
