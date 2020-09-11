@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/renderPass.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
@@ -48,8 +46,6 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/frustum.h"
-
-#include "pxr/imaging/glf/diagnostic.h"
 
 
 // XXX We do not want to include specific HgiXX backends, but we need to do
@@ -109,7 +105,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // Downcast render pass state
     HdStRenderPassStateSharedPtr stRenderPassState =
@@ -178,7 +173,6 @@ void
 HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
     HdRprimCollection const &collection = GetRprimCollection();
@@ -219,7 +213,6 @@ void
 HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // -------------------------------------------------------------------
     // SCHEDULE PREPARATION

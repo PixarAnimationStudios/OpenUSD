@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
@@ -75,7 +73,7 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
     HdBufferArraySharedPtr const &bufferArray, 
     VtDictionary &result) const 
 { 
-    std::set<GLuint> idSet;
+    std::set<uint64_t> idSet;
     size_t gpuMemoryUsed = 0;
 
     _StripedInterleavedBufferSharedPtr bufferArray_ =
@@ -87,7 +85,7 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
         HgiBufferHandle buffer = resource->GetId();
 
         // XXX avoid double counting of resources shared within a buffer
-        GLuint id = buffer ? buffer->GetRawResource() : 0;
+        uint64_t id = buffer ? buffer->GetRawResource() : 0;
         if (idSet.count(id) == 0) {
             idSet.insert(id);
 
@@ -396,7 +394,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // XXX: make sure glcontext
 
@@ -462,9 +459,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             int oldIndex = range->GetElementOffset();
             if (oldIndex >= 0) {
                 // copy old data
-                GLintptr readOffset = oldIndex * _stride;
-                GLintptr writeOffset = index * _stride;
-                GLsizeiptr copySize = _stride * range->GetNumElements();
+                ptrdiff_t readOffset = oldIndex * _stride;
+                ptrdiff_t writeOffset = index * _stride;
+                ptrdiff_t copySize = _stride * range->GetNumElements();
 
                 relocator.AddRange(readOffset, writeOffset, copySize);
             }
@@ -508,8 +505,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
     // increment version to rebuild dispatch buffers.
     IncrementVersion();
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -736,7 +731,6 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
-    GLF_GROUP_FUNCTION();
 
     // overrun check
     // XXX:Arrays:  Note that we only check tuple type here, not arity.
@@ -757,7 +751,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     }
 
     int vboStride = VBO->GetStride();
-    GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
+    size_t vboOffset = VBO->GetOffset() + vboStride * _index;
     int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
