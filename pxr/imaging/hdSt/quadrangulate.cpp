@@ -579,20 +579,18 @@ HdSt_QuadrangulateComputationGPU::Execute(
         computePipelineInstance.GetValue();
     HgiComputePipelineHandle pipeline = *pipelinePtr.get();
 
-    HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
     computeCmds->PushDebugGroup("Quadrangulate Cmds");
     computeCmds->BindResources(resourceBindings);
     computeCmds->BindPipeline(pipeline);
 
-    // transfer uniform buffer
+    // Queue transfer uniform buffer
     computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
 
-    // dispatch compute kernel
+    // Queue compute work
     computeCmds->Dispatch(numNonQuads, 1);
 
-    // submit the work
     computeCmds->PopDebugGroup();
-    hgi->SubmitCmds(computeCmds.get());
 
     HD_PERF_COUNTER_ADD(HdPerfTokens->quadrangulatedVerts,
                         quadInfo->numAdditionalPoints);

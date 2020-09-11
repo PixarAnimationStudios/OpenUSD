@@ -107,6 +107,13 @@ HgiGLComputeCmds::_Submit(Hgi* hgi)
     HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
     HgiGLDevice* device = hgiGL->GetPrimaryDevice();
     device->SubmitOps(_ops);
+
+    // We assume the client has grouped together all async compute work into
+    // one HgiComputeCmds and that we must set barriers between ComputeCmds to
+    // respect dependencies between HgiCmds.
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
     return true;
 }
 

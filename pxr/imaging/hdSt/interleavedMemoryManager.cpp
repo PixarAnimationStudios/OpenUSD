@@ -443,7 +443,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
         size_t rangeCount = GetRangeCount();
 
-        HgiBlitCmds* blitCmds = _resourceRegistry->GetBlitCmds();
+        HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
         
         // pre-pass to combine consecutive buffer range relocation
         HdStBufferRelocator relocator(curId, newId);
@@ -671,7 +671,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetBlitCmds();
+    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetId();
     blitOp.sourceByteOffset = 0;

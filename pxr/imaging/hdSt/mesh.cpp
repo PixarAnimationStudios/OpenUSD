@@ -79,6 +79,14 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_FORCE_QUADRANGULATE, 0,
 TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
                       "Use packed normals");
 
+// Use more recognizable names for each compute queue the mesh computations use.
+namespace {
+    constexpr HdStComputeQueue _CopyExtCompQueue = HdStComputeQueueZero;
+    constexpr HdStComputeQueue _RefinePrimvarCompQueue = HdStComputeQueueOne;
+    constexpr HdStComputeQueue _NormalsCompQueue = HdStComputeQueueTwo;
+    constexpr HdStComputeQueue _RefineNormalsCompQueue = HdStComputeQueueThree;
+}
+
 HdStMesh::HdStMesh(SdfPath const& id,
                    SdfPath const& instancerId)
     : HdMesh(id, instancerId)
@@ -481,7 +489,7 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 
 static HdBufferSourceSharedPtr
 _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
-                      HdComputationSharedPtrVector *computations,
+                      HdStComputationSharedPtrVector *computations,
                       HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id,
                       HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -494,7 +502,7 @@ _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
             source->GetName(), source->GetTupleType().type, id);
     // computation can be null for all quad mesh.
     if (computation) {
-        computations->push_back(computation);
+        computations->emplace_back(computation, _RefinePrimvarCompQueue);
     }
     return source;
 }
@@ -537,7 +545,7 @@ _TriangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
 static HdBufferSourceSharedPtr
 _RefinePrimvar(HdBufferSourceSharedPtr const &source,
                bool varying,
-               HdComputationSharedPtrVector *computations,
+               HdStComputationSharedPtrVector *computations,
                HdSt_MeshTopologySharedPtr const &topology)
 {
     if (!TF_VERIFY(computations)) return source;
@@ -548,8 +556,9 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
             source->GetName(),
             source->GetTupleType().type);
     // computation can be null for empty mesh
-    if (computation)
-        computations->push_back(computation);
+    if (computation) {
+        computations->emplace_back(computation, _RefinePrimvarCompQueue);
+    }
 
     return source;
 }
@@ -593,7 +602,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdComputationSharedPtrVector computations;
+    HdStComputationSharedPtrVector computations;
     sources.reserve(primvars.size());
 
     int numPoints = _topology ? _topology->GetNumPoints() : 0;
@@ -645,11 +654,13 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     for (HdBufferSourceSharedPtr const & source: reserveOnlySources) {
         HdBufferSourceSharedPtr compSource; 
         if (refineLevel > 0) {
-            compSource = _RefinePrimvar(source, false, // Should support varying
-                                    &computations, _topology);
+            compSource = _RefinePrimvar(
+                source, false, // Should support varying
+                &computations, _topology);
         } else if (_UseQuadIndices(renderIndex, _topology)) {
-            compSource = _QuadrangulatePrimvar(source, &computations, _topology,
-                                           GetId(), resourceRegistry);
+            compSource = _QuadrangulatePrimvar(
+                source, &computations, _topology,
+                GetId(), resourceRegistry);
         }
         // Don't schedule compSource for commit
 
@@ -731,11 +742,11 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
 
             if (refineLevel > 0) {
-                source = _RefinePrimvar(source, isVarying,
-                                        &computations, _topology);
+                source = _RefinePrimvar(
+                    source, isVarying, &computations, _topology);
             } else if (_UseQuadIndices(renderIndex, _topology)) {
-                source = _QuadrangulatePrimvar(source, &computations, _topology,
-                                               GetId(), resourceRegistry);
+                source = _QuadrangulatePrimvar(
+                    source, &computations, _topology, GetId(),resourceRegistry);
             }
 
             // Special handling of points primvar.
@@ -797,7 +808,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     normalsName,
                     pointsDataType,
                     usePackedSmoothNormals));
-            computations.push_back(smoothNormalsComputation);
+            computations.emplace_back(
+                smoothNormalsComputation, _NormalsCompQueue);
 
             // note: we haven't had explicit dependency for GPU
             // computations just yet. Currently they are executed
@@ -814,7 +826,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
                 // computation can be null for empty mesh
                 if (computation) {
-                    computations.push_back(computation);
+                    computations.emplace_back(
+                        computation, _RefineNormalsCompQueue);
                 }
             } else if (doQuadrangulate) {
                 HdComputationSharedPtr computation =
@@ -824,7 +837,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
                 // computation can be null for all-quad mesh
                 if (computation) {
-                        computations.push_back(computation);
+                    computations.emplace_back(
+                        computation, _RefineNormalsCompQueue);
                 }
             }
         }
@@ -853,7 +867,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
     HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
-    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
+    HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
     HdBufferSourceSharedPtrVector allSources(sources);
     for (HdBufferSourceSharedPtr& src : reserveOnlySources) {
@@ -862,7 +876,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     HdBufferArrayRangeSharedPtr range;
 
-    if (_IsEnabledSharedVertexPrimvar()) {
+    if (HdStIsEnabledSharedVertexPrimvar()) {
         // When primvar sharing is enabled, we have the following scenarios:
         // (a) BAR hasn't been allocated,
         //    - See if an existing immutable BAR may be shared.
@@ -895,9 +909,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // include topology and other topological computations
             // in the sharing id so that we can take into account
             // sharing of computed primvar data.
-            _vertexPrimvarId = _ComputeSharedPrimvarId(_topologyId,
-                                                       allSources,
-                                                       computations);
+            _vertexPrimvarId = HdStComputeSharedPrimvarId(
+                _topologyId, allSources, computations);
             
             bool isFirstInstance = true;
             range = _GetSharedPrimvarRange(_vertexPrimvarId,
@@ -956,9 +969,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     // include our existing sharing id so that we can take
                     // into account previously committed sources along
                     // with our new sources and computations.
-                    _vertexPrimvarId = _ComputeSharedPrimvarId(_vertexPrimvarId,
-                                                           allSources,
-                                                           computations);
+                    _vertexPrimvarId = HdStComputeSharedPrimvarId(
+                        _vertexPrimvarId, allSources, computations);
 
                     bool isFirstInstance = true;
                     range = _GetSharedPrimvarRange(_vertexPrimvarId,
@@ -1015,12 +1027,12 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
                                      std::move(sources));
     }
-    if (!computations.empty()) {
-        // add gpu computations to queue.
-        for (auto const& comp : computations) {
-            resourceRegistry->AddComputation(
-                drawItem->GetVertexPrimvarRange(), comp);
-        }
+    // add gpu computations to queue.
+    for (auto const& compQueuePair : computations) {
+        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputeQueue queue = compQueuePair.second;
+        resourceRegistry->AddComputation(
+            drawItem->GetVertexPrimvarRange(), comp, queue);
     }
     if (!separateComputationSources.empty()) {
         for (auto const& src : separateComputationSources) {
@@ -1190,7 +1202,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdComputationSharedPtrVector computations;
+    HdStComputationSharedPtrVector computations;
 
     if (requireFlatNormals && (*dirtyBits & DirtyFlatNormals))
     {
@@ -1226,7 +1238,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                     normalsName,
                     pointsDataType,
                     usePackedNormals));
-            computations.push_back(flatNormalsComputation);
+            computations.emplace_back(flatNormalsComputation, _NormalsCompQueue);
         }
     }
 
@@ -1249,7 +1261,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
+    HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr range =
         resourceRegistry->UpdateNonUniformBufferArrayRange(
@@ -1268,12 +1280,12 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         resourceRegistry->AddSources(
             drawItem->GetElementPrimvarRange(), std::move(sources));
     }
-    if (!computations.empty()) {
-        // add gpu computations to queue.
-        for (auto const& comp : computations) {
-            resourceRegistry->AddComputation(
-                drawItem->GetElementPrimvarRange(), comp);
-        }
+    // add gpu computations to queue.
+    for (auto const& compQueuePair : computations) {
+        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputeQueue queue = compQueuePair.second;
+        resourceRegistry->AddComputation(
+            drawItem->GetElementPrimvarRange(), comp, queue);
     }
 }
 

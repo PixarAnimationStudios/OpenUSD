@@ -210,7 +210,7 @@ void HdSt_GetExtComputationPrimvarsComputations(
     HdBufferSourceSharedPtrVector *sources,
     HdBufferSourceSharedPtrVector *reserveOnlySources,
     HdBufferSourceSharedPtrVector *separateComputationSources,
-    HdComputationSharedPtrVector *computations);
+    HdStComputationSharedPtrVector *computations);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -1623,8 +1623,9 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(
 {
     // XXX Submit any work recorded before this call since we are using raw gl
     // calls below. If we don't submit Hgi work, things are out of order.
-    // Code below needs to be converted to Hgi.
-    resourceRegistry->SubmitHgiWork();
+    // Code below needs to be converted to Hgi and the SubmitWork calls removed.
+    resourceRegistry->SubmitBlitWork();
+    resourceRegistry->SubmitComputeWork();
 
     GLenum status = glClientWaitSync(resultSync,
             GL_SYNC_FLUSH_COMMANDS_BIT, HD_CULL_RESULT_TIMEOUT_NS);

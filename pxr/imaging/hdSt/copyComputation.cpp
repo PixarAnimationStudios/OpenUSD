@@ -116,10 +116,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         blitOp.byteSize = copySize;
         blitOp.destinationByteOffset = writeOffset;
 
-        Hgi* hgi = hdStResourceRegistry->GetHgi();
-        HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+        HgiBlitCmds* blitCmds = hdStResourceRegistry->GetGlobalBlitCmds();
         blitCmds->CopyBufferGpuToGpu(blitOp);
-        hgi->SubmitCmds(blitCmds.get());
     }
 
     GLF_POST_PENDING_GL_ERRORS();

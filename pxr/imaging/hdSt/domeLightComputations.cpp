@@ -236,26 +236,25 @@ HdSt_DomeLightComputationGPU::Execute(
     }
     HgiComputePipelineHandle pipeline = hgi->CreateComputePipeline(desc);
 
-    HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
     computeCmds->PushDebugGroup("DomeLightComputationCmds");
     computeCmds->BindResources(resourceBindings);
     computeCmds->BindPipeline(pipeline);
 
-    // if we are calculating the irradiance map we do not need to send over
+    // Queue transfer uniform buffer.
+    // If we are calculating the irradiance map we do not need to send over
     // the roughness value to the shader
     // flagged this with a negative roughness value
     if (hasUniforms) {
         computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
     }
 
-    // dispatch compute kernel
+    // Queue compute work
     computeCmds->Dispatch(width / 32, height / 32);
 
-    // submit the work
     computeCmds->PopDebugGroup();
-    hgi->SubmitCmds(computeCmds.get());
 
-    // destroy the intermediate resources
+    // Garbage collect the intermediate resources (destroyed at end of frame).
     hgi->DestroyTextureView(&dstTextureView);
     hgi->DestroyComputePipeline(&pipeline);
     hgi->DestroyResourceBindings(&resourceBindings);

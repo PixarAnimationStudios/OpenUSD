@@ -299,21 +299,19 @@ HdSt_FlatNormalsComputationGPU::Execute(
         computePipelineInstance.GetValue();
     HgiComputePipelineHandle pipeline = *pipelinePtr.get();
 
-    HgiComputeCmdsUniquePtr computeCmds = hgi->CreateComputeCmds();
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
     computeCmds->PushDebugGroup("Flat Normals Cmds");
     computeCmds->BindResources(resourceBindings);
     computeCmds->BindPipeline(pipeline);
 
-    // transfer uniform buffer
+    // Queue transfer uniform buffer
     computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
 
-    // dispatch compute kernel
+    // Queue compute work
     int numPrims = topologyRange->GetNumElements();
     computeCmds->Dispatch(numPrims, 1);
 
-    // submit the work
     computeCmds->PopDebugGroup();
-    hgi->SubmitCmds(computeCmds.get());
 }
 
 void

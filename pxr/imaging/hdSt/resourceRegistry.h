@@ -87,6 +87,30 @@ using HgiComputePipelineSharedPtr =
 class HdStTextureIdentifier;
 class HdSamplerParameters;
 
+/// \enum HdStComputeQueue
+///
+/// Determines the 'compute queue' a computation should be added into.
+///
+/// We only perform synchronization between queues, not within one queue.
+/// In OpenGL terms that means we insert memory barriers between computations
+/// of two queues, but not between two computations in the same queue.
+///
+/// A prim determines the role for each queue based on its local knowledge of
+/// compute dependencies. Eg. HdStMesh knows computing normals should wait
+/// until the primvar refinement computation has fnished. It can assign one
+/// queue to primvar refinement and a following queue for normal computations.
+///
+enum HdStComputeQueue {
+    HdStComputeQueueZero=0,
+    HdStComputeQueueOne,
+    HdStComputeQueueTwo,
+    HdStComputeQueueThree,
+    HdStComputeQueueCount};
+
+using HdStComputationSharedPtrVector = 
+    std::vector<std::pair<HdComputationSharedPtr, HdStComputeQueue>>;
+
+
 /// \class HdStResourceRegistry
 ///
 /// A central registry of all GPU resources.
@@ -278,7 +302,8 @@ public:
     /// they are registered.
     HDST_API
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                        HdComputationSharedPtr const &computaion);
+                        HdComputationSharedPtr const &computation,
+                        HdStComputeQueue const queue);
 
     /// ------------------------------------------------------------------------
     /// Dispatch & persistent buffer API
@@ -424,13 +449,37 @@ public:
     HdInstance<HgiComputePipelineSharedPtr>
     RegisterComputePipeline(HdInstance<HgiComputePipelineSharedPtr>::ID id);
 
-    /// Returns the global hgi blit command queue for registering blitting work.
+    /// Returns the global hgi blit command queue for recording blitting work.
+    /// When using this global cmd instead of creating a new HgiBlitCmds we
+    /// reduce the number of command buffers being created.
+    /// The returned pointer should not be held onto by the client as it is
+    /// only valid until the HgiBlitCmds has been submitted.
     HDST_API
-    HgiBlitCmds* GetBlitCmds();
+    HgiBlitCmds* GetGlobalBlitCmds();
 
-    /// Submits any queued compute/blit work for GPU execution.
+    /// Returns the global hgi compute cmd queue for recording compute work.
+    /// When using this global cmd instead of creating a new HgiComputeCmds we
+    /// reduce the number of command buffers being created.
+    /// The returned pointer should not be held onto by the client as it is
+    /// only valid until the HgiComputeCmds has been submitted.
     HDST_API
-    void SubmitHgiWork();
+    HgiComputeCmds* GetGlobalComputeCmds();
+
+    /// Submits blit work queued in global blit cmds for GPU execution.
+    /// We can call this when we want to submit some work to the GPU to ensure
+    /// the GPU isn't starved for work or if we need synchronization (barriers)
+    /// between two Hgi*Cmds objects 
+    /// (Eg. if we need barriers between buffer writes and reads)
+    HDST_API
+    void SubmitBlitWork();
+
+    /// Submits compute work queued in global compute cmds for GPU execution.
+    /// We can call this when we want to submit some work to the GPU to ensure
+    /// the GPU isn't starved for work or if we need synchronization (barriers)
+    /// between two Hgi*Cmds objects 
+    /// (Eg. if we need barriers between compute shaders)
+    HDST_API
+    void SubmitComputeWork();
 
 public:
     //
@@ -550,8 +599,11 @@ private:
         HdComputationSharedPtr computation;
     };
 
+    // If we need more 'compute queues' we can increase HdStComputeQueueCount.
+    // We could also consider tbb::concurrent_priority_queue if we want this
+    // to be dynamically scalable.
     typedef tbb::concurrent_vector<_PendingComputation> _PendingComputationList;
-    _PendingComputationList  _pendingComputations;
+    _PendingComputationList  _pendingComputations[HdStComputeQueueCount];
 
     // aggregated buffer array
     HdBufferArrayRegistry _nonUniformBufferArrayRegistry;
@@ -642,6 +694,7 @@ private:
         _computePipelineRegistry;
 
     HgiBlitCmdsUniquePtr _blitCmds;
+    HgiComputeCmdsUniquePtr _computeCmds;
 };
 
 
