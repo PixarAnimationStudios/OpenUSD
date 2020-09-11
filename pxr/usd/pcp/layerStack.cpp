@@ -187,6 +187,10 @@ Pcp_ComputeRelocationsForLayerStack(
     std::map<SdfPath, SdfRelocatesMap> relocatesPerPrim;
     static const TfToken field = SdfFieldKeys->Relocates;
     TF_REVERSE_FOR_ALL(layer, layers) {
+        if (!(*layer)->GetHints().mightHaveRelocates) {
+            continue;
+        }
+
         // Check for relocation arcs in this layer.
         SdfPrimSpecHandleVector stack;
         stack.push_back( (*layer)->GetPseudoRoot() );
