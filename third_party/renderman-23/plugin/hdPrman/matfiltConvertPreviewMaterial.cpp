@@ -79,6 +79,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularIorOut)
     (specularRoughness)
     (specularRoughnessOut)
+    (presence)
+    (presenceOut)
+    (allowPresenceWithGlass)
 
     // UsdUVTexture parameters
     (wrapS)
@@ -121,7 +124,9 @@ MatfiltConvertPreviewMaterial(
             nodesToAdd[pxrSurfacePath] = MatfiltNode {
                 _tokens->PxrSurface, 
                 // parameters:
-                {},
+                {
+                    {_tokens->allowPresenceWithGlass, VtValue(1)},
+                },
                 // connections:
                 {
                     {_tokens->bumpNormal,
@@ -152,6 +157,8 @@ MatfiltConvertPreviewMaterial(
                         {{nodePath, _tokens->clearcoatEdgeColorOut}}},
                     {_tokens->clearcoatRoughness,
                         {{nodePath, _tokens->clearcoatRoughnessOut}}},
+                    {_tokens->presence,
+                        {{nodePath, _tokens->presenceOut}}},
                 },
             };
 

@@ -33,6 +33,7 @@ shader UsdPreviewSurfaceParameters
     float clearcoat = 0.0,
     float clearcoatRoughness = 0.01,
     float opacity = 1.0,
+    float opacityThreshold = 0.0,
     float ior = 1.5,
     vector normalIn = vector(0.0, 0.0, 1.0),
     float occlusion = 1.0,
@@ -76,6 +77,10 @@ shader UsdPreviewSurfaceParameters
         [[ string widget = "null" ]],
     output float glassIorOut= 0.0
         [[ string widget = "null" ]],
+
+    // Presence output    
+    output float presenceOut = 1.0
+        [[ string widget = "null" ]],
 )
 {
     // Diffuse
@@ -87,11 +92,21 @@ shader UsdPreviewSurfaceParameters
         diffuseColorOut = diffuseColor;
     }
 
+    // Opacity Threshold
+    float opacityAdjusted = opacity;
+    if (opacityThreshold > 0.0) {
+        if (opacity < opacityThreshold) {
+            presenceOut = 0.0;
+        } else {
+            opacityAdjusted = 1.0;
+        }
+    }
+
     // Opacity
-    if (opacity < 1.0) {
+    if (opacityAdjusted < 1.0) {
         glassIorOut = ior;
-        refractionGainOut = 1.0 - opacity;
-        diffuseGainOut *= opacity;
+        refractionGainOut = 1.0 - opacityAdjusted;
+        diffuseGainOut *= opacityAdjusted;
     }
 
     // Specular
