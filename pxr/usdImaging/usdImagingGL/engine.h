@@ -463,17 +463,15 @@ protected:
     void _Execute(const UsdImagingGLRenderParams &params,
                   HdTaskSharedPtrVector tasks);
 
-    // These functions factor batch preparation into separate steps so they
-    // can be reused by both the vectorized and non-vectorized API.
     USDIMAGINGGL_API
-    bool _CanPrepareBatch(const UsdPrim& root, 
-        const UsdImagingGLRenderParams& params);
+    bool _CanPrepare(const UsdPrim& root);
     USDIMAGINGGL_API
-    void _PreSetTime(const UsdPrim& root, 
-        const UsdImagingGLRenderParams& params);
+    void _PreSetTime(const UsdImagingGLRenderParams& params);
     USDIMAGINGGL_API
-    void _PostSetTime(const UsdPrim& root, 
-        const UsdImagingGLRenderParams& params);
+    void _PostSetTime(const UsdImagingGLRenderParams& params);
+
+    USDIMAGINGGL_API
+    void _PrepareRender(const UsdImagingGLRenderParams& params);
 
     // Create a hydra collection given root paths and render params.
     // Returns true if the collection was updated.
