@@ -151,6 +151,7 @@ private:
     bool _hasDisplacement : 1;
 
     TfToken _materialTag;
+    size_t _textureHash;
 
     HdStMaterialNetwork _networkProcessor;
 };

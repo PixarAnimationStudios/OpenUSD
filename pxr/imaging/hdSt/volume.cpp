@@ -399,7 +399,7 @@ _ComputeMaterialShader(
         params.push_back(param);
 
         namedTextureHandles.push_back(
-            { textureName, textureType, nullptr, desc->fieldId });
+            { textureName, textureType, nullptr, desc->fieldId.GetHash() });
     }
 
     const bool bindlessTextureEnabled

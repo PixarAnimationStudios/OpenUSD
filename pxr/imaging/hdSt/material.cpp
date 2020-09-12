@@ -66,6 +66,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
  , _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
+ , _textureHash(0)
 {
     TF_DEBUG(HDST_MATERIAL_ADDED).Msg("HdStMaterial Created: %s\n",
                                       id.GetText());
@@ -115,6 +116,27 @@ _GetTextureIdentifier(
     return false;
 }
 
+static size_t
+_GetTextureDescriptorHash(
+    bool useScenePath,
+    HdStMaterialNetwork::TextureDescriptor const& desc,
+    HdStTextureIdentifier const& textureId)
+{
+    TF_WARN("<%s> %zu", desc.texturePrim.GetText(),
+            hash_value(textureId));
+    if (useScenePath) {
+        return hash_value(desc.texturePrim);
+    } else {
+        return TfHash::Combine(
+            textureId,
+            desc.samplerParameters.wrapS,
+            desc.samplerParameters.wrapT,
+            desc.samplerParameters.wrapR,
+            desc.samplerParameters.minFilter,
+            desc.samplerParameters.magFilter);
+    }
+}
+
 void
 HdStMaterial::_ProcessTextureDescriptors(
     HdSceneDelegate * const sceneDelegate,
@@ -140,11 +162,34 @@ HdStMaterial::_ProcessTextureDescriptors(
                     desc.memoryRequest,
                     bindlessTextureEnabled,
                     shaderCode);
+
+            // Note about batching hashes:
+            // If this is our first sync, try to hash using the asset path.
+            // If we're on our 2nd+ sync, just use the texture prim path.
+            //
+            // This will aggressively batch textured prims together as long as
+            // they are 100% static; if they are dynamic, we assume that the
+            // textures are dynamic, and we split the batches of textured prims.
+            //
+            // This tries to balance two competing concerns:
+            // 1.) Static textured simple geometry (like billboard placeholders)
+            //     really need to be batched together; otherwise, the render
+            //     cost is dominated by the switching cost between batches.
+            // 2.) Objects with animated textures will change their texture hash
+            //     every frame.  If the hash is based on asset path, we need to
+            //     rebuild batches every frame, which is untenable. If it's
+            //     based on scene graph path (meaning split into its own batch),
+            //     we don't need to update batching.
+            //
+            // Better batch invalidation (i.e., not global) would really help
+            // us here, as would hints from the scene about how likely the
+            // textures are to change.  Maybe in the future...
+
             texturesFromStorm->push_back(
                 { desc.name,
                   desc.type,
                   textureHandle,
-                  desc.texturePrim});
+                  _GetTextureDescriptorHash(_isInitialized, desc, texId)});
         } else {
             // If above fails, fallback to the old-style
             // HdSceneDelegat::GetTextureResource which is deprecated.
@@ -189,6 +234,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     bool needsRprimMaterialStateUpdate = false;
+    bool markBatchesDirty = false;
 
     std::string fragmentSource;
     std::string geometrySource;
@@ -222,6 +268,16 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
+    // If we're updating the fragment or geometry source, we need to rebatch
+    // anything that uses this material.
+    std::string const& oldFragmentSource = 
+        _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
+    std::string const& oldGeometrySource = 
+        _surfaceShader->GetSource(HdShaderTokens->geometryShader);
+
+    markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
+                        (oldGeometrySource!=geometrySource);
+
     _surfaceShader->SetFragmentSource(fragmentSource);
     _surfaceShader->SetGeometrySource(geometrySource);
 
@@ -244,38 +300,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _materialTag = materialTag;
         _surfaceShader->SetMaterialTag(_materialTag);
         needsRprimMaterialStateUpdate = true;
+
+        // If the material tag changes, we'll need to rebatch.
+        markBatchesDirty = true;
     }
 
     _surfaceShader->SetEnabledPrimvarFiltering(true);
-
-    //
-    // Mark batches dirty to force batch validation/rebuild.
-    //
-
-    if (_isInitialized) {
-
-        // We need to re-batch when the shader or materialTag changes. I.e. when
-        // network topology changes or the prim goes from opaque to translucent.
-        // We skip this the first time since batches will already be rebuild.
-
-        bool markBatchesDirty = (_materialTag != materialTag);
-
-        if (!markBatchesDirty) {
-            // XXX cheaper to compare network topology instead fo strings?
-            std::string const& oldFragmentSource = 
-                _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
-            std::string const& oldGeometrySource = 
-                _surfaceShader->GetSource(HdShaderTokens->geometryShader);
-
-            markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                                (oldGeometrySource!=geometrySource);
-        }
-
-        if (markBatchesDirty) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker().
-                MarkBatchesDirty();
-        }
-    }
 
     //
     // Update material parameters
@@ -323,7 +353,21 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         &specs,
         &sources);
 
-        _surfaceShader->SetNamedTextureHandles(textures);
+    // Check if the texture hash has changed; if so, we need to ask for a
+    // re-batch.  We only look at NamedTextureHandles because the legacy system
+    // hashes based on scene graph path, meaning each textured gprim gets its
+    // own batch.
+    size_t textureHash = 0;
+    for (HdStShaderCode::NamedTextureHandle const& tex : textures) {
+        textureHash = TfHash::Combine(textureHash, tex.hash);
+    }
+
+    if (_textureHash != textureHash) {
+        _textureHash = textureHash;
+        markBatchesDirty = true;
+    }
+
+    _surfaceShader->SetNamedTextureHandles(textures);
     _surfaceShader->SetTextureDescriptors(textureResourceDescriptors);    
     _surfaceShader->SetBufferSources(
         specs, std::move(sources), resourceRegistry);
@@ -333,6 +377,11 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         needsRprimMaterialStateUpdate = true;
     }
 
+    if (markBatchesDirty && _isInitialized) {
+        // Only invalidate batches if this isn't our first round through sync.
+        // If this is the initial sync, we haven't formed batches yet.
+        sceneDelegate->GetRenderIndex().GetChangeTracker().MarkBatchesDirty();
+    }
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {
         // XXX Forcing rprims to have a dirty material id to re-evaluate

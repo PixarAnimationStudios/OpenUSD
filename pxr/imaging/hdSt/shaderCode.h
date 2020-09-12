@@ -180,9 +180,9 @@ public:
         /// The texture.
         HdStTextureHandleSharedPtr handle;
 
-        /// The path of the corresponding texture prim - used to
-        /// compute the hash for draw batches when not using bindless textures.
-        SdfPath textureSourcePath;
+        /// A hash unique to the corresponding asset; used to
+        /// split draw batches when not using bindless textures.
+        size_t hash;
     };
     using NamedTextureHandleVector = std::vector<NamedTextureHandle>;
 

@@ -322,7 +322,7 @@ HdStSurfaceShader::_ComputeTextureSourceHash() const
 
         // Use name, texture object and sampling parameters.
         boost::hash_combine(hash, namedHandle.name);
-        boost::hash_combine(hash, namedHandle.textureSourcePath);
+        boost::hash_combine(hash, namedHandle.hash);
     }
     
     return hash;

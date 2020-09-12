@@ -310,7 +310,7 @@ _MakeNamedTextureHandle(
     return { name,
              HdTextureType::Uv,
              textureHandle,
-             SdfPath::AbsoluteRootPath().AppendChild(name) };
+             name.Hash() };
 }
 
 void
