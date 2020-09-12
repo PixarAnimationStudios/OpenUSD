@@ -596,6 +596,8 @@ UsdImagingGLEngine::TestIntersection(
     TF_VERIFY(_sceneDelegate);
     TF_VERIFY(_taskController);
 
+    PrepareBatch(root, params);
+
     // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
     // subtree, but the subtree in the hydra namespace might be very different
     // (e.g. for native instancing).  We need a translation step.
