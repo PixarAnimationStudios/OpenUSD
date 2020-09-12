@@ -380,7 +380,6 @@ void
 My_TestGLDrawing::ShutdownTest()
 {
     std::cout << "My_TestGLDrawing::ShutdownTest()\n";
-    _engine->InvalidateBuffers();
 }
 
 void

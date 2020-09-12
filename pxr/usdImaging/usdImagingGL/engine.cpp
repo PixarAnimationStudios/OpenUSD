@@ -313,14 +313,6 @@ UsdImagingGLEngine::Render(
     RenderBatch(paths, params);
 }
 
-void
-UsdImagingGLEngine::InvalidateBuffers()
-{
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return _legacyImpl->InvalidateBuffers();
-    }
-}
-
 bool
 UsdImagingGLEngine::IsConverged() const
 {
