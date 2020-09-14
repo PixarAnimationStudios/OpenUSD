@@ -203,169 +203,122 @@ using _ConversionFunction = _Data(*)(const void * data, size_t numTargetBytes);
 
 void
 _GetHgiFormatAndConversionFunction(
-    const GLenum glFormat,
-    const GLenum glType,
-    const GLenum glInternalFormat,
+    const HioFormat hioFormat,
     const bool premultiplyAlpha,
     HgiFormat * const hgiFormat,
     _ConversionFunction * const conversionFunction)
 {
     // Format dispatch, mostly we can just use the CPU buffer from
     // the texture data provided.
-    switch(glFormat) {
-    case GL_RED:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
+    switch(hioFormat) {
+        // single channel
+        case HioFormatUNorm8:
             *hgiFormat = HgiFormatUNorm8;
             break;
-        case GL_HALF_FLOAT:
+        case HioFormatFloat16:
             *hgiFormat = HgiFormatFloat16;
             break;
-        case GL_FLOAT:
+        case HioFormatFloat32:
             *hgiFormat = HgiFormatFloat32;
             break;
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RED 0x%04x",
-                            glType);
+        case HioFormatSNorm8:
+        case HioFormatUInt16:
+        case HioFormatInt16:
+        case HioFormatUInt32:
+        case HioFormatInt32:
+            TF_CODING_ERROR("Unsupported texture format HioFormat: %i", hioFormat);
             break;
-        }
-        break;
-    case GL_RG:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
+        
+        // two channel
+        case HioFormatUNorm8Vec2:
             *hgiFormat = HgiFormatUNorm8Vec2;
             break;
-        case GL_HALF_FLOAT:
+        case HioFormatFloat16Vec2:
             *hgiFormat = HgiFormatFloat16Vec2;
             break;
-        case GL_FLOAT:
+        case HioFormatFloat32Vec2:
             *hgiFormat = HgiFormatFloat32Vec2;
+        case HioFormatSNorm8Vec2:
+        case HioFormatUInt16Vec2:
+        case HioFormatInt16Vec2:
+        case HioFormatUInt32Vec2:
+        case HioFormatInt32Vec2:
+            TF_CODING_ERROR("Unsupported texture format HioFormat: %i", hioFormat);
             break;
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RG 0x%04x",
-                            glType);
-            break;
-        }
-        break;
-    case GL_RGB:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
+
+        // three channel
+        case HioFormatUNorm8Vec3:
             // RGB (24bit) is not supported on MTL, so we need to convert it.
             *conversionFunction = _ConvertRGBToRGBA<unsigned char, 255>;
-            if (glInternalFormat == GL_SRGB8) {
-                *hgiFormat = HgiFormatUNorm8Vec4srgb;
-            } else {
-                *hgiFormat = HgiFormatUNorm8Vec4;
-            }
+            *hgiFormat = HgiFormatUNorm8Vec4;
             break;
-        case GL_HALF_FLOAT:
+        case HioFormatUNorm8Vec3srgb:
+            // RGB (24bit) is not supported on MTL, so we need to convert it.
+            *conversionFunction = _ConvertRGBToRGBA<unsigned char, 255>;
+            *hgiFormat = HgiFormatUNorm8Vec4srgb;
+            break;
+        case HioFormatFloat16Vec3:
             *hgiFormat = HgiFormatFloat16Vec3;
             break;
-        case GL_FLOAT:
+        case HioFormatFloat32Vec3:
             *hgiFormat = HgiFormatFloat32Vec3;
             break;
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGB 0x%04x",
-                            glType);
+        case HioFormatSNorm8Vec3:
+        case HioFormatUInt16Vec3:
+        case HioFormatInt16Vec3:
+        case HioFormatUInt32Vec3:
+        case HioFormatInt32Vec3:
+            TF_CODING_ERROR("Unsupported texture format HioFormat: %i", hioFormat);
             break;
-        }
-        break;
-    case GL_RGBA:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE: 
-        {
-            const bool isSRGB = (glInternalFormat == GL_SRGB8_ALPHA8);
-            if (isSRGB) {
-                *hgiFormat = HgiFormatUNorm8Vec4srgb;
-            } else {
-                *hgiFormat = HgiFormatUNorm8Vec4;
-            }
-            
+        case HioFormatBC6UFloatVec3:
+            *hgiFormat = HgiFormatBC6UFloatVec3;
+            break;
+        case HioFormatBC6FloatVec3:
+            *hgiFormat = HgiFormatBC6FloatVec3;
+            break;
+
+        // four channel
+        case HioFormatUNorm8Vec4srgb:
             if (premultiplyAlpha) {
-                if (isSRGB) {
-                    *conversionFunction =
-                        _PremultiplyAlpha<unsigned char, /* isSRGB = */ true>;
-                } else {
-                    *conversionFunction =
-                        _PremultiplyAlpha<unsigned char, /* isSRGB = */ false>;
-                }
+                *conversionFunction =
+                        _PremultiplyAlpha<unsigned char, /* isSRGB */ true>;
             }
+            *hgiFormat = HgiFormatUNorm8Vec4srgb;
             break;
-        }
-        case GL_HALF_FLOAT:
+        case HioFormatUNorm8Vec4: 
+            if (premultiplyAlpha) {
+                *conversionFunction =
+                        _PremultiplyAlpha<unsigned char, /* isSRGB */ false>;
+            }
+            *hgiFormat = HgiFormatUNorm8Vec4;
+            break;
+        case HioFormatFloat16Vec4:
             if (premultiplyAlpha) {
                 *conversionFunction = _PremultiplyAlphaFloat<GfHalf>;
             }
-
             *hgiFormat = HgiFormatFloat16Vec4;
             break;
-        case GL_FLOAT:
+        case HioFormatFloat32Vec4:
             if (premultiplyAlpha) {
                 *conversionFunction = _PremultiplyAlphaFloat<float>;
             }
-
             *hgiFormat = HgiFormatFloat32Vec4;
             break;
-        default:
-            TF_CODING_ERROR("Unsupported texture format GL_RGBA 0x%04x",
-                            glType);
+        case HioFormatSNorm8Vec4:
+        case HioFormatUInt16Vec4:
+        case HioFormatInt16Vec4:
+        case HioFormatUInt32Vec4:
+        case HioFormatInt32Vec4:
+            TF_CODING_ERROR("Unsupported texture format HioFormat: %i", hioFormat);
             break;
-        }
-        break;
-    case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT:
-        switch(glType) {
-        case GL_FLOAT:
-            *hgiFormat = HgiFormatBC6UFloatVec3;
-            break;
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x%04x",
-                glType);
-        }
-        break;
-    case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT:
-        switch(glType) {
-        case GL_FLOAT:
-            *hgiFormat = HgiFormatBC6FloatVec3;
-            break;
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT 0x%04x",
-                glType);
-            break;
-        }
-        break;
-    case GL_COMPRESSED_RGBA_BPTC_UNORM:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
+        case HioFormatBC7UNorm8Vec4:
             *hgiFormat = HgiFormatBC7UNorm8Vec4;
             break;
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_RGBA_BPTC_UNORM 0x%04x",
-                glType);
-            break;
-        }
-        break;
-    case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
-        switch(glType) {
-        case GL_UNSIGNED_BYTE:
+        case HioFormatBC7UNorm8Vec4srgb:
             *hgiFormat = HgiFormatBC7UNorm8Vec4srgb;
-        default:
-            TF_CODING_ERROR(
-                "Unsupported texture format "
-                "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM 0x%04x",
-                glType);
             break;
-        }
-        break;
-    default:
-        TF_CODING_ERROR("Unsupported texture format 0x%04x 0x%04x",
-                        glFormat, glType);
-        break;
+        default:
+            break;
     }
 }
 
@@ -405,14 +358,16 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
     // - Unsigned byte RGB to RGBA (since the former is not support
     //   by modern graphics APIs)
     // - Pre-multiply alpha.
+
+    const HioFormat hioFormat = GlfGetHioFormat(textureData->GLFormat(), 
+                                          textureData->GLType(), 
+                                          textureData->GLInternalFormat());
+
     _ConversionFunction conversionFunction = nullptr;
-    _GetHgiFormatAndConversionFunction(
-        textureData->GLFormat(),
-        textureData->GLType(),
-        textureData->GLInternalFormat(),
-        premultiplyAlpha,
-        &_textureDesc.format,
-        &conversionFunction);
+    _GetHgiFormatAndConversionFunction(hioFormat,
+                                       premultiplyAlpha,
+                                       &_textureDesc.format,
+                                       &conversionFunction);
 
     // Handle grayscale textures by expanding value to green and blue.
     if (HgiGetComponentCount(_textureDesc.format) == 1) {

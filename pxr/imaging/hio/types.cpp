@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,44 +21,46 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_TYPES_H
-#define PXR_IMAGING_HDX_TYPES_H
-
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/types.h"
 #include "pxr/imaging/hio/types.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
-
-#include "pxr/imaging/hd/enums.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+bool 
+HioIsCompressed(HioFormat format) 
+{
+    switch(format) {
+        case HioFormatBC6FloatVec3:
+        case HioFormatBC6UFloatVec3:
+        case HioFormatBC7UNorm8Vec4:
+        case HioFormatBC7UNorm8Vec4srgb:
+            return true;
+        default:
+            return false;
+    }
+}
 
-// Struct used to send shader inputs from Presto and send them to Hydra
-struct HdxShaderInputs {
-    VtDictionary parameters;
-    VtDictionary textures;
-    VtDictionary textureFallbackValues;
-    TfTokenVector attributes;
-    VtDictionary metaData;
-};
+size_t
+HioGetCompressedTextureSize(int width, int height, HioFormat hioFormat)
+{
+    int blockSize = 0;
+    int tileSize = 0;
+    int alignSize = 0;
+    
+    // XXX Only BPTC is supported right now
+    if (hioFormat == HioFormatBC6FloatVec3 ||
+        hioFormat == HioFormatBC6UFloatVec3 ||
+        hioFormat == HioFormatBC7UNorm8Vec4 || 
+        hioFormat == HioFormatBC7UNorm8Vec4srgb) {
+        blockSize = 16;
+        tileSize = 4;
+        alignSize = 3;
+    }
 
-HDX_API
-bool operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs);
-HDX_API
-bool operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs);
-HDX_API
-std::ostream& operator<<(std::ostream& out, const HdxShaderInputs& pv);
+    size_t numPixels = ((width + alignSize)/tileSize) * 
+                       ((height + alignSize)/tileSize);
+    return numPixels * blockSize;
+}
 
-/// Returns the HioFormat for the given HgiFormat
-HDX_API
-HioFormat GetHioFormat(HgiFormat hgiFormat);
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif //PXR_IMAGING_HDX_TYPES_H

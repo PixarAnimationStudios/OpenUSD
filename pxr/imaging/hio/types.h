@@ -25,6 +25,8 @@
 #define PXR_IMAGING_HIO_TYPES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hio/api.h"
+#include <stdlib.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,21 +69,21 @@ enum HioFormat
 
     // UInt16 - a 2-byte unsigned short integer. 
     HioFormatUInt16,
-    HioFormatUInt16vec2,
-    HioFormatUInt16vec3,
-    HioFormatUInt16vec4,
+    HioFormatUInt16Vec2,
+    HioFormatUInt16Vec3,
+    HioFormatUInt16Vec4,
 
     // Int16 - a 2-byte signed short integer. 
     HioFormatInt16,
-    HioFormatInt16vec2,
-    HioFormatInt16vec3,
-    HioFormatInt16vec4,
+    HioFormatInt16Vec2,
+    HioFormatInt16Vec3,
+    HioFormatInt16Vec4,
 
     // UInt32 - a 4-byte unsigned integer. 
     HioFormatUInt32,
-    HioFormatUInt32vec2,
-    HioFormatUInt32vec3,
-    HioFormatUInt32vec4,
+    HioFormatUInt32Vec2,
+    HioFormatUInt32Vec3,
+    HioFormatUInt32Vec4,
 
     // Int32 - a 4-byte signed integer.
     HioFormatInt32,
@@ -112,6 +114,13 @@ enum HioFormat
     HioFormatCount
 };
 
+/// Return if the given format is compressed.
+HIO_API
+bool HioIsCompressed(HioFormat format);
+
+/// Calculate the byte size of compressed textures.
+HIO_API
+size_t HioGetCompressedTextureSize(int width, int height, HioFormat hioFormat);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

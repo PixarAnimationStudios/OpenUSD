@@ -28,7 +28,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hio/types.h"
 
 #include <string>
 
@@ -50,6 +52,40 @@ GLenum GlfGetBaseFormat(int numComponents);
 /// GL_RED, GL_LUMINANCE, GL_RG, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
 GLF_API 
 int GlfGetNumElements(GLenum format);
+
+/// Number of elements.
+///
+/// Returns the number of elements (channels) in a given HioFormat.
+GLF_API 
+int GlfGetNumElements(HioFormat format);
+
+/// GL type.
+///
+/// Returns the GL type for a given HioFormat.
+GLF_API
+GLenum GlfGetGLType(HioFormat format);
+
+/// GL format.
+///
+/// Returns the GL format for a given HioFormat.
+GLF_API
+GLenum GlfGetGLFormat(HioFormat format);
+
+/// HioFormat
+///
+/// Returns the HioFormat for the given GL format and GL type
+///
+/// Supported formats are : GL_DEPTH_COMPONENT, GL_COLOR_INDEX, GL_ALPHA, 
+/// GL_RED, GL_LUMINANCE, GL_RG, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
+///
+/// Supported types are : GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, 
+/// GL_SHORT, GL_FLOAT, GL_DOUBLE
+GLF_API
+HioFormat GlfGetHioFormat(GLenum glFormat, GLenum glType, bool isSRGB);
+
+GLF_API
+HioFormat GlfGetHioFormat(GLenum glFormat, GLenum glType,
+                          GLenum glInternalFormat);
 
 /// Byte size of a GL type.
 ///
@@ -74,14 +110,18 @@ bool GlfCheckGLFrameBufferStatus(GLuint target, std::string * reason);
 GLF_API
 bool GlfIsCompressedFormat(GLenum format);
 
+/// Check if the format is compressed.
+///
+/// Supported Hio compressed formats : HioFormatBC7UNorm8Vec4, 
+/// HioFormatBC6UFloatVec3
+GLF_API
+bool GlfIsCompressedFormat(HioFormat hioFormat);
+
 /// Calculate the byte size of compressed textures.
 ///
-/// Supported GL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
-/// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
-GLF_API
-size_t GlfGetCompressedTextureSize(int width, int height, 
-                                   GLenum format, GLenum type);
-
+/// Supported Hio compressed formats : HioFormatBC7UNorm8Vec4, 
+/// HioFormatBC6UFloatVec3
+size_t GlfGetCompressedTextureSize(int width, int height, HioFormat hioFormat);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

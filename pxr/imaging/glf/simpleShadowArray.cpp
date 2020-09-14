@@ -285,8 +285,7 @@ GlfSimpleShadowArray::EndCapture(size_t index)
         GfVec2i resolution = GetShadowMapSize(index);
         storage.width = resolution[0];
         storage.height = resolution[1];
-        storage.format = GL_DEPTH_COMPONENT;
-        storage.type = GL_FLOAT;
+        storage.hioFormat = HioFormatFloat32;
 
         // In OpenGL, (0, 0) is the lower left corner.
         storage.flipped = true;
@@ -299,8 +298,8 @@ GlfSimpleShadowArray::EndCapture(size_t index)
                      0,
                      storage.width,
                      storage.height,
-                     storage.format,
-                     storage.type,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
                      storage.data);
 
         GLfloat minValue = std::numeric_limits<float>::max();

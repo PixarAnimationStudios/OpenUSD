@@ -37,6 +37,7 @@
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include "pxr/imaging/hdx/types.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/hgi.h"
@@ -154,46 +155,6 @@ _ReadbackTexture(Hgi* const hgi,
     hgi->SubmitCmds(blitCmds.get());
 }
 
-struct _FormatDesc {
-    GLenum format;
-    GLenum type;
-};
-
-static constexpr _FormatDesc FORMAT_DESC[HgiFormatCount] =
-{
-    // format,  type
-    {GL_RED,  GL_UNSIGNED_BYTE }, // UNorm8
-    {GL_RG,   GL_UNSIGNED_BYTE }, // UNorm8Vec2
-//  {GL_RGB,  GL_UNSIGNED_BYTE }, // Unsupported by HgiFormat
-    {GL_RGBA, GL_UNSIGNED_BYTE }, // UNorm8Vec4
-
-    {GL_RED,  GL_BYTE          }, // SNorm8
-    {GL_RG,   GL_BYTE          }, // SNorm8Vec2
-//  {GL_RGB,  GL_BYTE          }, // Unsupported by HgiFormat
-    {GL_RGBA, GL_BYTE          }, // SNorm8Vec4
-
-    {GL_RED,  GL_HALF_FLOAT    }, // Float16
-    {GL_RG,   GL_HALF_FLOAT    }, // Float16Vec2
-    {GL_RGB,  GL_HALF_FLOAT    }, // Float16Vec3
-    {GL_RGBA, GL_HALF_FLOAT    }, // Float16Vec4
-
-    {GL_RED,  GL_FLOAT         }, // Float32
-    {GL_RG,   GL_FLOAT         }, // Float32Vec2
-    {GL_RGB,  GL_FLOAT         }, // Float32Vec3
-    {GL_RGBA, GL_FLOAT         }, // Float32Vec4
-
-    {GL_RED,  GL_INT           }, // Int32
-    {GL_RG,   GL_INT           }, // Int32Vec2
-    {GL_RGB,  GL_INT           }, // Int32Vec3
-    {GL_RGBA, GL_INT           }, // Int32Vec4
-
-//  {GL_RGB, GL_UNSIGNED_BYTE  }, // Unsupported by HgiFormat
-    {GL_RGBA, GL_UNSIGNED_BYTE }, // UNorm8Vec4sRGB,
-
-    {GL_RGB, GL_FLOAT          }, // BC6FloatVec3
-    {GL_RGB, GL_FLOAT          }
-};
-
 static bool
 _WriteTextureToFile(HgiTextureDesc const& textureDesc,
                     std::vector<uint8_t> const& buffer,
@@ -212,14 +173,11 @@ _WriteTextureToFile(HgiTextureDesc const& textureDesc,
     if (textureDesc.format < 0 || textureDesc.format >= HgiFormatCount) {
         return false;
     }
-
-    _FormatDesc formatDesc = FORMAT_DESC[textureDesc.format];
     
     GlfImage::StorageSpec storage;
     storage.width = width;
     storage.height = height;
-    storage.format = formatDesc.format;
-    storage.type = formatDesc.type;
+    storage.hioFormat = GetHioFormat(textureDesc.format);
     storage.flipped = flipped;
     storage.data = (void*)buffer.data();
 

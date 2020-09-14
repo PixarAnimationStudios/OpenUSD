@@ -17,6 +17,7 @@ pxr_library(hio
     PUBLIC_CLASSES
         glslfx
         glslfxConfig
+        types
 
     PRIVATE_CLASSES
         debugCodes

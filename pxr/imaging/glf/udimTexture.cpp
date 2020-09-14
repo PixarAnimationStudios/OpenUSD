@@ -35,6 +35,7 @@
 #include "pxr/imaging/glf/glContext.h"
 
 #include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/glf/utils.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
@@ -316,20 +317,11 @@ GlfUdimTexture::_ReadImage()
         return;
     }
 
-    _format = firstImageMips[0].image->GetFormat();
-    const GLenum type = firstImageMips[0].image->GetType();
-    unsigned int numChannels;
-    if (_format == GL_RED || _format == GL_LUMINANCE) {
-        numChannels = 1;
-    } else if (_format == GL_RG) {
-        numChannels = 2;
-    } else if (_format == GL_RGB) {
-        numChannels = 3;
-    } else if (_format == GL_RGBA) {
-        numChannels = 4;
-    } else {
-        return;
-    }
+    HioFormat hioFormat = firstImageMips[0].image->GetHioFormat();
+    _format = GlfGetGLFormat(hioFormat);
+    const GLenum type = GlfGetGLType(hioFormat);
+
+    unsigned int numChannels = GlfGetNumElements(hioFormat);
 
     GLenum internalFormat = GL_RGBA8;
     unsigned int sizePerElem = 1;
@@ -462,8 +454,7 @@ GlfUdimTexture::_ReadImage()
                 GlfImage::StorageSpec spec;
                 spec.width = mipSize.width;
                 spec.height = mipSize.height;
-                spec.format = _format;
-                spec.type = type;
+                spec.hioFormat = hioFormat;
                 spec.flipped = true;
                 spec.data = mipData[mip].data() + (tileId * numBytesPerLayer);
                 const auto it = std::find_if(images.rbegin(), images.rend(),

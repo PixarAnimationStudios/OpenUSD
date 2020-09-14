@@ -168,7 +168,8 @@ RtxGlfImagePlugin::Open(TextureCtx& tCtx)
     tCtx.maxRes.X = image->GetWidth();
     tCtx.maxRes.Y = image->GetHeight();
     // Component data type.
-    switch (image->GetType()) {
+    GLenum glType = GlfGetGLType(image->GetHioFormat());
+    switch (glType) {
     case GL_FLOAT:
         tCtx.dataType = TextureCtx::k_Float;
         tCtx.numChannels = image->GetBytesPerPixel() / sizeof(float);
@@ -246,13 +247,10 @@ RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
             level.width = fillReq.imgRes.X;
             level.height = fillReq.imgRes.Y;
             level.depth = data->image->GetBytesPerPixel();
-            level.format = data->image->GetFormat();
+            level.hioFormat = data->image->GetHioFormat();
 
-            if (tCtx.dataType == TextureCtx::k_Byte) {
-                level.type = GL_UNSIGNED_BYTE;
-            } else if (tCtx.dataType == TextureCtx::k_Float) {
-                level.type = GL_FLOAT;
-            } else {
+            if (tCtx.dataType != TextureCtx::k_Byte &&
+                tCtx.dataType != TextureCtx::k_Float) {
                 m_msgHandler->ErrorAlways(
                     "RtxGlfImagePlugin %p: unsupported data type\n", this);
                 return 1;
@@ -266,9 +264,9 @@ RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
     }
 
     const bool isSRGB = data->image->IsColorSpaceSRGB();
-    const GLenum type = data->image->GetType();
+    const GLenum type = GlfGetGLType(data->image->GetHioFormat());
 
-    const int numImageChannels = GlfGetNumElements(level.format);
+    const int numImageChannels = GlfGetNumElements(level.hioFormat);
     const int bytesPerChannel = GlfGetElementSize(type);
 
     // Copy out tile data, one row at a time.

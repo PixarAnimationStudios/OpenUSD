@@ -30,6 +30,8 @@
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
 
+#include "pxr/imaging/hio/types.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/dictionary.h"
@@ -41,7 +43,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
+using GlfImageSharedPtr = std::shared_ptr<class GlfImage>;
 
 /// \class GlfImage
 ///
@@ -80,13 +82,12 @@ public:
     public:
         StorageSpec()
             : width(0), height(0)
-            , format(GL_NONE)
-            , type(GL_NONE)
+            , hioFormat(HioFormatInvalid)
             , flipped(false)
             , data(0) { }
 
         int width, height, depth;
-        GLenum format, type;
+        HioFormat hioFormat;
         bool flipped;
         void * data;
     };
@@ -153,11 +154,8 @@ public:
     /// Returns the image height.
     virtual int GetHeight() const = 0;
 
-    /// Returns the image format.
-    virtual GLenum GetFormat() const = 0;
-
-    /// Returns the image type.
-    virtual GLenum GetType() const = 0;
+    /// Returns the HioFormat.
+    virtual HioFormat GetHioFormat() const = 0;
 
     /// Returns the number of bytes per pixel.
     virtual int GetBytesPerPixel() const = 0;

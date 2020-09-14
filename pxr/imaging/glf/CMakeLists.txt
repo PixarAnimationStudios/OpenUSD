@@ -33,6 +33,7 @@ pxr_library(glf
         garch
         gf
         hf
+        hio
         js
         plug
         tf

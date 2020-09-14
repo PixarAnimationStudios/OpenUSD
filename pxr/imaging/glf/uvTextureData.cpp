@@ -98,9 +98,9 @@ GlfUVTextureData_ComputeMemory(GlfImageSharedPtr const &img,
     // extra 1/4 + 1/16 + 1/64 + 1/256 + ... of memory
     const double scale = generateMipmap ? 4.0 / 3 : 1.0;
 
-    if (GlfIsCompressedFormat(img->GetFormat())) {
-         return scale * GlfGetCompressedTextureSize(img->GetWidth(), 
-                            img->GetHeight(), img->GetFormat(), img->GetType());
+    if (HioIsCompressed(img->GetHioFormat())) {
+         return scale * HioGetCompressedTextureSize(img->GetWidth(), 
+                            img->GetHeight(), img->GetHioFormat());
     }
 
     const size_t numPixels = img->GetWidth() * img->GetHeight();
@@ -306,8 +306,10 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
 
     // Load the first mip to extract important data
     GlfImageSharedPtr image = degradedImage.images[0];
-    _glFormat = image->GetFormat();
-    _glType   = image->GetType();
+    HioFormat hioFormat = image->GetHioFormat();
+    _glFormat = GlfGetGLFormat(hioFormat);
+    _glType = GlfGetGLType(hioFormat);
+
     _targetMemory = _params.targetMemory;
     _wrapInfo.hasWrapModeS =
         image->GetSamplerMetadata(GL_TEXTURE_WRAP_S, &_wrapInfo.wrapModeS);
@@ -317,7 +319,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     _nativeWidth = _resizedWidth = image->GetWidth();
     _nativeHeight = _resizedHeight = image->GetHeight();
 
-    bool isCompressed = GlfIsCompressedFormat(image->GetFormat());
+    bool isCompressed = HioIsCompressed(hioFormat);
     bool needsCropping = _params.cropTop || _params.cropBottom ||
                          _params.cropLeft || _params.cropRight;
     bool needsResizeOnLoad = false;
@@ -326,8 +328,12 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     if (isCompressed) {
         // When using compressed formats the bytesPerPixel is not 
         // used and the glFormat matches the glInternalFormat.
+        // XXX internalFormat is used to get the HioFormat back until 
+        // textureData is updated to include hioFormat 
         _bytesPerPixel = image->GetBytesPerPixel(); 
-        _glInternalFormat = _glFormat;
+        _glInternalFormat = hioFormat == HioFormatBC7UNorm8Vec4 ? 
+                            GL_COMPRESSED_RGBA_BPTC_UNORM : 
+                            GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
     } else {
         _bytesPerPixel = GlfGetNumElements(_glFormat) * 
                          GlfGetElementSize(_glType);
@@ -407,8 +413,8 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         mip.height = needsResizeOnLoad ? _resizedHeight : image->GetHeight();
         
         const size_t numPixels = mip.width * mip.height;
-        mip.size   = isCompressed ? GlfGetCompressedTextureSize( 
-                                     mip.width, mip.height, _glFormat, _glType):
+        mip.size   = isCompressed ? HioGetCompressedTextureSize( 
+                                    mip.width, mip.height, hioFormat):
                                     numPixels * _bytesPerPixel;
         mip.offset = _size;
         _size += mip.size;
@@ -431,10 +437,9 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     // This is a storage spec "template" common to all other storage specs,
     // and is incomplete.
     GlfImage::StorageSpec commonStorageSpec;
-    commonStorageSpec.format = _glFormat;
+    commonStorageSpec.hioFormat = hioFormat;
     commonStorageSpec.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
                       (true) : (false);
-    commonStorageSpec.type = _glType;
 
     std::atomic<bool> returnVal(true);
 
@@ -455,9 +460,8 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
             GlfImage::StorageSpec storage;
             storage.width = mip.width;
             storage.height = mip.height;
-            storage.format = commonStorageSpec.format;
+            storage.hioFormat = commonStorageSpec.hioFormat;
             storage.flipped = commonStorageSpec.flipped;
-            storage.type = commonStorageSpec.type;
             storage.data = _rawBuffer.get() + mip.offset;
             
             if (!image->ReadCropped(

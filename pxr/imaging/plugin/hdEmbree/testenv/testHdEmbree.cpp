@@ -397,12 +397,10 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
         // multisampled color, etc.
         rb->Resolve();
 
-        GLenum unused;
         GlfImage::StorageSpec storage;
         storage.width = rb->GetWidth();
         storage.height = rb->GetHeight();
-        HdStGLConversions::GetGlFormat(rb->GetFormat(),
-            &storage.format, &storage.type, &unused);
+        storage.hioFormat = HdStGLConversions::GetHioFormat(rb->GetFormat());
         storage.flipped = true;
         storage.data = rb->Map();
 
@@ -414,8 +412,7 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
             _RescaleDepth(reinterpret_cast<float*>(storage.data),
                 storage.width*storage.height);
         } else if (_aov == "primId") {
-            storage.format = GL_RGBA;
-            storage.type = GL_UNSIGNED_BYTE;
+            storage.hioFormat =  HioFormatUNorm8Vec4;
             _ColorizeId(reinterpret_cast<int32_t*>(storage.data),
                 storage.width*storage.height);
         }

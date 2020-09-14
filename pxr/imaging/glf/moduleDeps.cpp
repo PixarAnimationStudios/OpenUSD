@@ -40,6 +40,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("garch"),
         TfToken("gf"),
         TfToken("hf"),
+        TfToken("hio"),
         TfToken("js"),
         TfToken("plug"),
         TfToken("sdf"),
