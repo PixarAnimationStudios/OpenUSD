@@ -189,6 +189,7 @@ pxr_test_scripts(
     testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
+    testenv/testUsdExternalAssetDependencies.py
     testenv/testUsdFallbackPrimTypes.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
@@ -226,6 +227,18 @@ pxr_test_scripts(
     testenv/testUsdVariantFallbacks.py
     testenv/testUsdVariants.py
     testenv/testUsdZipFile.py
+)
+
+pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX UsdPlugins
+    LIBRARIES
+        sdf
+        tf
+        usd
+        
+    CPPFILES
+        testenv/TestUsdProceduralExternalAssetsFileFormatPlugin.cpp
 )
 
 pxr_build_test(testUsdAttributeBlockingCpp
@@ -381,6 +394,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdCratePayloadConversionFromVersion07.testenv
     DEST testUsdCratePayloadConversionFromVersion07
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdExternalAssetDependencies.testenv
+    DEST testUsdExternalAssetDependencies
 )
 
 pxr_install_test_dir(
@@ -654,6 +672,12 @@ pxr_register_test(testUsdCreateProperties
 pxr_register_test(testUsdCreateAttributeCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCreateAttributeCpp"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdExternalAssetDependencies
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExternalAssetDependencies"
+    EXPECTED_RETURN_CODE 0  
 )
 
 pxr_register_test(testUsdFallbackPrimTypes
