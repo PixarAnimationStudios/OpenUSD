@@ -877,6 +877,10 @@ void wrapLayer()
             "Return unique list of asset paths of external references for\n"
             "given layer.")
 
+        .def("GetExternalAssetDependencies",
+             make_function(&This::GetExternalAssetDependencies,
+                           return_value_policy<TfPySequenceToList>()))
+
         .add_property("permissionToSave", &This::PermissionToSave, 
               "Return true if permitted to be saved, false otherwise.\n")
 

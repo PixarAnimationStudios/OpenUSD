@@ -210,6 +210,22 @@ public:
         std::string* str,
         const std::string& comment = std::string()) const;
 
+    /// Returns the set of resolved paths to external asset file dependencies 
+    /// for the given \p layer. These are additional dependencies, specific to 
+    /// the file format, that are needed when generating the layer's contents
+    /// and would not otherwise be discoverable through composition dependencies
+    /// (i.e. sublayers, references, and payloads). 
+    ///
+    /// The default implementation returns an empty set. Derived file formats 
+    /// that depend on external assets to read and generate layer content 
+    /// should implement this function to return the external asset paths.
+    ///
+    /// \sa SdfLayer::GetExternalAssetDependencies
+    /// \sa SdfLayer::Reload
+    SDF_API
+    virtual std::set<std::string> GetExternalAssetDependencies(
+        const SdfLayer& layer) const;
+
     /// Returns the file extension for path or file name \p s, without the
     /// leading dot character.
     SDF_API static std::string GetFileExtension(const std::string& s);

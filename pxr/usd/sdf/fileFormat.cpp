@@ -260,6 +260,13 @@ SdfFileFormat::WriteToString(
     return false;
 }
 
+std::set<std::string> 
+SdfFileFormat::GetExternalAssetDependencies(
+    const SdfLayer& layer) const
+{
+    return std::set<std::string>();
+}
+
 /* static */
 std::string
 SdfFileFormat::GetFileExtension(

@@ -826,6 +826,24 @@ SdfLayer::GetSchema() const
     return GetFileFormat()->GetSchema();
 }
 
+// For the given layer, gets a dictionary of resolved external asset dependency 
+// paths to the timestamp for each asset.
+static VtDictionary
+_GetExternalAssetModificationTimes(const SdfLayer& layer)
+{
+    VtDictionary result;
+    std::set<std::string> externalAssetDependencies = 
+        layer.GetExternalAssetDependencies();
+    for (const std::string& resolvedPath : externalAssetDependencies) {
+        // Get the modification timestamp for the path. Note that external
+        // asset dependencies only returns resolved paths so pass the same
+        // path for both params.
+        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
+            resolvedPath, resolvedPath);
+    }
+    return result;
+}
+
 SdfLayer::_ReloadResult
 SdfLayer::_Reload(bool force)
 {
@@ -897,10 +915,15 @@ SdfLayer::_Reload(bool force)
             return _ReloadFailed;
         }
 
+        // Ask the current external asset dependency state.
+        VtDictionary externalAssetTimestamps = 
+            _GetExternalAssetModificationTimes(*this);
+
         // See if we can skip reloading.
         if (!force && !IsDirty()
             && (realPath == oldRealPath)
-            && (timestamp == _assetModificationTime)) {
+            && (timestamp == _assetModificationTime)
+            && (externalAssetTimestamps == _externalAssetModificationTimes)) {
             return _ReloadSkipped;
         }
 
@@ -909,6 +932,7 @@ SdfLayer::_Reload(bool force)
         }
 
         _assetModificationTime.Swap(timestamp);
+        _externalAssetModificationTimes = std::move(externalAssetTimestamps);
 
         if (realPath != oldRealPath) {
             Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
@@ -2824,7 +2848,7 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
 }
 
 set<string>
-SdfLayer::GetExternalReferences()
+SdfLayer::GetExternalReferences() const
 {
     SdfSubLayerProxy subLayers = GetSubLayerPaths();
 
@@ -2860,6 +2884,12 @@ SdfLayer::UpdateExternalReference(
     _UpdateReferencePaths(GetPseudoRoot(), oldLayerPath, newLayerPath);
 
     return true;
+}
+
+std::set<std::string> 
+SdfLayer::GetExternalAssetDependencies() const
+{
+    return _fileFormat->GetExternalAssetDependencies(*this);
 }
 
 // ModifyItemEdits() callback that updates a reference's or payload's
@@ -3051,6 +3081,11 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         
         layer->_assetModificationTime.Swap(timestamp);
     }
+
+    // Store any external asset dependencies so we have an initial state to
+    // compare during reload.
+    layer->_externalAssetModificationTimes = 
+        std::move(_GetExternalAssetModificationTimes(*layer));
 
     layer->_MarkCurrentStateAsClean();
 

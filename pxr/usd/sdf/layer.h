@@ -336,7 +336,11 @@ public:
     /// avoid reloading layers that have not changed on disk. It does so
     /// by comparing the file's modification time (mtime) to when the
     /// file was loaded. If the layer has unsaved modifications, this
-    /// mechanism is not used, and the layer is reloaded from disk.
+    /// mechanism is not used, and the layer is reloaded from disk. If the 
+    /// layer has any 
+    /// \ref GetExternalAssetDependencies "external asset dependencies"
+    /// their modification state will also be consulted when determining if 
+    /// the layer needs to be reloaded.
     ///
     /// Passing true to the \p force parameter overrides this behavior,
     /// forcing the layer to be reloaded from disk regardless of whether
@@ -368,7 +372,7 @@ public:
 
     /// Return paths of all external references of layer.
     SDF_API
-    std::set<std::string> GetExternalReferences();
+    std::set<std::string> GetExternalReferences() const;
 
     /// Updates the external references of the layer.
     ///
@@ -382,6 +386,17 @@ public:
     bool UpdateExternalReference(
         const std::string &oldAssetPath,
         const std::string &newAssetPath=std::string());
+
+    /// Returns a set of resolved paths to all external asset dependencies
+    /// the layer needs to generate its contents. These are additional asset 
+    /// dependencies that are determined by the layer's 
+    /// \ref SdfFileFormat::GetExternalAssetDependencies "file format" and
+    /// will be consulted during Reload() when determining if the layer needs 
+    /// to be reloaded. This specifically does not include dependencies related 
+    /// to composition, i.e. this will not include assets from references, 
+    /// payloads, and sublayers.
+    SDF_API
+    std::set<std::string> GetExternalAssetDependencies() const;
 
     /// @}
     /// \name Identification
@@ -1671,6 +1686,10 @@ private:
 
     // Modification timestamp of the backing file asset when last read.
     mutable VtValue _assetModificationTime;
+
+    // All external asset dependencies, with their modification timestamps, of
+    // the layer when last read.
+    mutable VtDictionary _externalAssetModificationTimes;
 
     // Mutable revision number for cache invalidation.
     mutable size_t _mutedLayersRevisionCache;
