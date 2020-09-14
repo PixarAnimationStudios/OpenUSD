@@ -201,7 +201,7 @@ bool
 HdSelection::IsEmpty() const
 {
     for (auto const &mode : _selMap) {
-        if (mode.size() > 0) {
+        if (!mode.empty()) {
             return false;
         }
     }
