@@ -122,8 +122,6 @@ _GetTextureDescriptorHash(
     HdStMaterialNetwork::TextureDescriptor const& desc,
     HdStTextureIdentifier const& textureId)
 {
-    TF_WARN("<%s> %zu", desc.texturePrim.GetText(),
-            hash_value(textureId));
     if (useScenePath) {
         return hash_value(desc.texturePrim);
     } else {
