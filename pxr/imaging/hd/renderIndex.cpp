@@ -1242,8 +1242,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         if (taskMapIt != _taskMap.end()) {
             _TaskInfo &taskInfo = taskMapIt->second;
 
-            // If in the task is in the render index, then we have to
-            // possibility that the task pass in points to a
+            // If the task is in the render index, then we have the
+            // possibility that the task passed in points to a
             // different instance than the one stored in the render index
             // even though they have the same id.
             //
