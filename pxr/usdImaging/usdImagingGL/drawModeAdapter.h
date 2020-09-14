@@ -139,6 +139,11 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    USDIMAGINGGL_API
+    GfMatrix4d GetTransform(UsdPrim const& prim, 
+                            SdfPath const& cachePath,
+                            UsdTimeCode time,
+                            bool ignoreRootTransform = false) const override;
 
 protected:
     USDIMAGINGGL_API

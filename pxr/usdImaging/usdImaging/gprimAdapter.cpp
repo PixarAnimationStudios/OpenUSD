@@ -421,10 +421,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        valueCache->GetTransform(cachePath) = GetTransform(prim, time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyMaterialId){
         // Although the material binding cache generally holds
         // cachePaths, not usdPaths, we can use the usdPath

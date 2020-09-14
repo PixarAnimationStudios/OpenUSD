@@ -76,14 +76,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// XXX: Perhaps all interpolation tokens for Hydra should come from Hd and
-// UsdGeom tokens should be passed through a mapping function.
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (instance)
-    (Material)
-    (DomeLight)
     (lightFilterType)
 );
 
@@ -95,7 +89,6 @@ static bool _IsEnabledDrawModeCache() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_DRAWMODE_CACHE) == 1;
     return _v;
 }
-
 
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
@@ -2289,19 +2282,17 @@ UsdImagingDelegate::PopulateSelection(
 GfMatrix4d 
 UsdImagingDelegate::GetTransform(SdfPath const& id)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
 
-    SdfPath cachePath = ConvertIndexPathToCachePath(id);
     GfMatrix4d ctm(1.0);
-    if (_valueCache.ExtractTransform(cachePath, &ctm)) {
-        return ctm;
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetTransform(
+            primInfo->usdPrim, 
+            cachePath, 
+            _time);
     }
-    // Slow path, we should not hit this.
-    TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow transform fetch for %s\n", 
-                               id.GetText());
-
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtyTransform);
-    TF_VERIFY(_valueCache.ExtractTransform(cachePath, &ctm));
     return ctm;
 }
 
@@ -2312,20 +2303,15 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id,
                                     float *sampleTimes, 
                                     GfMatrix4d *sampleValues)
 {
+    TRACE_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
-        // Now, return the multi-sampled result.
-        size_t nSamples = primInfo->adapter
-            ->SampleTransform(primInfo->usdPrim, cachePath, 
-                              _time, maxNumSamples,
-                              sampleTimes, sampleValues);
-        // Make sure to clear the transform out of the value cache so we don't
-        // leak memory...
-        GfMatrix4d ctm(1.0);
-        _valueCache.ExtractTransform(cachePath, &ctm);
-
-        return nSamples;
+        return primInfo->adapter->SampleTransform(
+            primInfo->usdPrim, cachePath, 
+            _time, maxNumSamples,
+            sampleTimes, sampleValues);
     }
     return 0;
 }
@@ -2412,14 +2398,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtVec3fArray vec(1, GfVec3f(0,0,0));
                 value = VtValue(vec);
             }
-        } else if (key == HdTokens->transform) {
-            // XXX(UsdImaging): We use cachePath directly as usdPath here
-            // but should do the proper transformation.  Maybe we can use
-            // the primInfo.usdPrim?
-            SdfPath const& usdPath = cachePath;
-            value = VtValue(
-                UsdImaging_XfStrategy::ComputeTransform( _GetUsdPrim(usdPath),
-                    _rootPrimPath, GetTime(), _rigidXformOverrides) * _rootXf);
         } else if (UsdGeomPrimvar pv = UsdGeomGprim(_GetUsdPrim(cachePath))
                                                 .GetPrimvar(key)) {
             // XXX(UsdImaging): We use cachePath directly as usdPath above,
@@ -2618,25 +2596,17 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
 GfMatrix4d
 UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
 
-    // InstancerTransform is cached on instancer prim, not prototype prim
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     GfMatrix4d ctm(1.0);
-
-    // same as GetInstanceIndices, the instancer transform may be
-    // asked multiple times for all prototypes. use Find instead of Extract
-    // to preserve the result for further lookup.
-
-    if (!_valueCache.FindInstancerTransform(cachePath, &ctm)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow instancer transform fetch for %s\n", 
-            instancerId.GetText());
-        _UpdateSingleValue(cachePath, HdChangeTracker::DirtyTransform);
-        TF_VERIFY(_valueCache.FindInstancerTransform(cachePath, &ctm));
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        ctm = primInfo->adapter->GetInstancerTransform(
+            primInfo->usdPrim, 
+            cachePath, 
+            _time);
     }
-
     return ctm;
 }
 
@@ -2698,9 +2668,6 @@ VtValue
 UsdImagingDelegate::GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName)
 {
-    // PERFORMANCE: We should schedule this to be updated during Sync, rather
-    // than pulling values on demand.
-
     if (!TF_VERIFY(id != SdfPath())) {
         return VtValue();
     }
@@ -2735,13 +2702,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         return _GetUsdPrimAttribute(cachePath, paramName);
     }
 
-    if (paramName == HdTokens->transform) {
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (TF_VERIFY(primInfo)) {
-            return VtValue(primInfo->adapter->GetTransform(primInfo->usdPrim, 
-                                                           _time));
-        }
-    } else if (paramName == HdTokens->lightLink) {
+    if (paramName == HdTokens->lightLink) {
         UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(lightLink));
     } else if (paramName == HdTokens->filters) {

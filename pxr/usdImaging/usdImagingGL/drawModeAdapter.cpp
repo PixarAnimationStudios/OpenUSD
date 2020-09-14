@@ -671,17 +671,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     // Geometry aspect
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        // If the draw mode is instantiated on an instance, prim will be
-        // the instance prim, but we want to ignore transforms on that
-        // prim since the instance adapter will handle them.
-        if (prim.IsInstance()) {
-            valueCache->GetTransform(cachePath) = GfMatrix4d(1.0);
-        } else {
-            valueCache->GetTransform(cachePath) = GetTransform(prim, time);
-        }
-    }
-
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
         SdfPath materialPath = _GetMaterialPath(prim);
         valueCache->GetMaterialId(cachePath) = materialPath;
@@ -1362,12 +1351,31 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
     }
 }
 
+/*virtual*/
 HdCullStyle 
 UsdImagingGLDrawModeAdapter::GetCullStyle(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           UsdTimeCode time) const
 {
     return HdCullStyleBack;
+}
+
+/*virtual*/
+GfMatrix4d 
+UsdImagingGLDrawModeAdapter::GetTransform(UsdPrim const& prim, 
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time,
+                                          bool ignoreRootTransform) const
+{
+    // If the draw mode is instantiated on an instance, prim will be
+    // the instance prim, but we want to ignore transforms on that
+    // prim since the instance adapter will handle them.
+    if (prim.IsInstance()) {
+        return GfMatrix4d(1.0);
+    } else {
+        return BaseAdapter::GetTransform(
+            prim, prim.GetPath(), time, ignoreRootTransform);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

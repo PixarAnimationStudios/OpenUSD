@@ -206,7 +206,7 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdLight::DirtyParams|HdLight::DirtyShadowParams);
         cache[HdLightTokens->shadowParams] = shadowParams;
-    } else if (key == HdLightTokens->transform) {
+    } else if (key == HdTokens->transform) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdLight::DirtyTransform);
     } else if (key == HdLightTokens->shadowCollection) {

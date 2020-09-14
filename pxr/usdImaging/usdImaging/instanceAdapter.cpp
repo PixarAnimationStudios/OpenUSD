@@ -746,8 +746,8 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
 
         GfMatrix4d xform(1.0);
         for (UsdPrim const& prim : instanceContext) {
-            xform = xform *
-                adapter->GetTransform(prim, time, ignoreRootTransform);
+            xform = xform * adapter->GetTransform(
+                prim, prim.GetPath(), time, ignoreRootTransform);
         }
 
         // The prototype transform will have the root transform, so we need
@@ -1261,12 +1261,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                 }
             }
         }
-
-        // instancer transform can only be the root transform.
-        if (requestedBits & HdChangeTracker::DirtyTransform) {
-            _GetValueCache()->GetInstancerTransform(cachePath) =
-                GetRootTransform();
-        }
     }
 }
 
@@ -1539,6 +1533,16 @@ UsdImagingInstanceAdapter::GetInstanceCategories(UsdPrim const& prim)
         }
     }
     return categories;
+}
+
+/*virtual*/
+GfMatrix4d
+UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
+                                                 SdfPath const& instancerPath,
+                                                 UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    return GetRootTransform();
 }
 
 /*virtual*/
@@ -1832,6 +1836,30 @@ UsdImagingInstanceAdapter::GetDoubleSided(UsdPrim const& usdPrim,
     }
 
     return BaseAdapter::GetDoubleSided(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+GfMatrix4d 
+UsdImagingInstanceAdapter::GetTransform(UsdPrim const& prim, 
+                                        SdfPath const& cachePath,
+                                        UsdTimeCode time,
+                                        bool ignoreRootTransform) const
+{
+    if (_IsChildPrim(prim, cachePath)) {
+        // Note that the proto group in this proto has not yet been
+        // updated with new instances at this point.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(prim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return GfMatrix4d(1);
+        }
+        return proto.adapter->GetTransform(
+            _GetPrim(proto.path), cachePath, time, ignoreRootTransform);
+    }
+
+    return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
 void
@@ -2566,11 +2594,12 @@ UsdImagingInstanceAdapter::_RemovePrim(SdfPath const& cachePath,
 GfMatrix4d
 UsdImagingInstanceAdapter::GetRelativeInstancerTransform(
     SdfPath const &parentInstancerPath,
-    SdfPath const &instancerPath, UsdTimeCode time) const
+    SdfPath const &instancerPath, 
+    UsdTimeCode time) const
 {
     // This API doesn't do anything for native instancers.
     UsdPrim prim = _GetPrim(instancerPath.GetPrimPath());
-    return GetTransform(prim, time);
+    return BaseAdapter::GetTransform(prim, prim.GetPath(), time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

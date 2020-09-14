@@ -96,8 +96,10 @@ public:
     UsdImagingInstanceAdapter();
     virtual ~UsdImagingInstanceAdapter();
 
-    virtual SdfPath Populate(UsdPrim const& prim, UsdImagingIndexProxy* index,
-            UsdImagingInstancerContext const* instancerContext = NULL) override;
+    virtual SdfPath Populate(
+        UsdPrim const& prim, 
+        UsdImagingIndexProxy* index, 
+        UsdImagingInstancerContext const* instancerContext = nullptr) override;
 
     virtual bool ShouldCullChildren() const override;
 
@@ -172,33 +174,34 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual std::vector<VtArray<TfToken>>
-    GetInstanceCategories(UsdPrim const& prim) override;
+    std::vector<VtArray<TfToken>> GetInstanceCategories(
+        UsdPrim const& prim) override;
 
-    virtual size_t
-    SampleInstancerTransform(UsdPrim const& instancerPrim,
-                             SdfPath const& instancerPath,
-                             UsdTimeCode time,
-                             size_t maxSampleCount,
-                             float *sampleTimes,
-                             GfMatrix4d *sampleValues) override;
+    GfMatrix4d GetInstancerTransform(UsdPrim const& instancerPrim,
+                                     SdfPath const& instancerPath,
+                                     UsdTimeCode time) const override;
 
-    virtual size_t
-    SampleTransform(UsdPrim const& prim, 
-                    SdfPath const& cachePath,
-                    UsdTimeCode time, 
-                    size_t maxNumSamples, 
-                    float *sampleTimes,
-                    GfMatrix4d *sampleValues) override;
+    size_t SampleInstancerTransform(UsdPrim const& instancerPrim,
+                                    SdfPath const& instancerPath,
+                                    UsdTimeCode time,
+                                    size_t maxSampleCount,
+                                    float *sampleTimes,
+                                    GfMatrix4d *sampleValues) override;
 
-    virtual size_t
-    SamplePrimvar(UsdPrim const& usdPrim,
-                  SdfPath const& cachePath,
-                  TfToken const& key,
-                  UsdTimeCode time,
-                  size_t maxNumSamples, 
-                  float *sampleTimes,
-                  VtValue *sampleValues) override;
+    size_t SampleTransform(UsdPrim const& prim, 
+                           SdfPath const& cachePath,
+                           UsdTimeCode time, 
+                           size_t maxNumSamples, 
+                           float *sampleTimes,
+                           GfMatrix4d *sampleValues) override;
+
+    size_t SamplePrimvar(UsdPrim const& usdPrim,
+                         SdfPath const& cachePath,
+                         TfToken const& key,
+                         UsdTimeCode time,
+                         size_t maxNumSamples, 
+                         float *sampleTimes,
+                         VtValue *sampleValues) override;
 
     TfToken GetPurpose(
         UsdPrim const& usdPrim, 
@@ -228,6 +231,11 @@ public:
     bool GetDoubleSided(UsdPrim const& prim, 
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
+
+    GfMatrix4d GetTransform(UsdPrim const& prim, 
+                            SdfPath const& cachePath,
+                            UsdTimeCode time,
+                            bool ignoreRootTransform = false) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

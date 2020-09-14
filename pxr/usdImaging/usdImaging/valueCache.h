@@ -107,10 +107,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key Transform(SdfPath const& path) {
-            static TfToken attr("transform");
-            return Key(path, attr);
-        }
         static Key Widths(SdfPath const& path) {
             static TfToken attr("widths");
             return Key(path, attr);
@@ -267,7 +263,6 @@ public:
         _Erase<VtValue>(Key::Color(path));
         _Erase<VtValue>(Key::Opacity(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
-        _Erase<GfMatrix4d>(Key::Transform(path));
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
@@ -311,10 +306,6 @@ public:
     VtValue& GetOpacity(SdfPath const& path) const {
         return _Get<VtValue>(Key::Opacity(path));
     }
-
-    GfMatrix4d& GetInstancerTransform(SdfPath const& path) const {
-        return _Get<GfMatrix4d>(Key::InstancerTransform(path));
-    }
     VtValue& GetInstanceIndices(SdfPath const& path) const {
         return _Get<VtValue>(Key::InstanceIndices(path));
     }
@@ -323,9 +314,6 @@ public:
     }
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
-    }
-    GfMatrix4d& GetTransform(SdfPath const& path) const {
-        return _Get<GfMatrix4d>(Key::Transform(path));
     }
     VtValue& GetWidths(SdfPath const& path) const {
         return _Get<VtValue>(Key::Widths(path));
@@ -374,10 +362,6 @@ public:
     bool FindOpacity(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Opacity(path), value);
     }
-
-    bool FindInstancerTransform(SdfPath const& path, GfMatrix4d* value) const {
-        return _Find(Key::InstancerTransform(path), value);
-    }
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
     }
@@ -386,9 +370,6 @@ public:
     }
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
-    }
-    bool FindTransform(SdfPath const& path, GfMatrix4d* value) const {
-        return _Find(Key::Transform(path), value);
     }
     bool FindWidths(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Widths(path), value);
@@ -431,10 +412,6 @@ public:
     bool ExtractOpacity(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Opacity(path), value);
     }
-
-    bool ExtractInstancerTransform(SdfPath const& path, GfMatrix4d* value) {
-        return _Extract(Key::InstancerTransform(path), value);
-    }
     bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
         return _Extract(Key::InstanceIndices(path), value);
     }
@@ -443,9 +420,6 @@ public:
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
-    }
-    bool ExtractTransform(SdfPath const& path, GfMatrix4d* value) {
-        return _Extract(Key::Transform(path), value);
     }
     bool ExtractWidths(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Widths(path), value);
@@ -491,7 +465,6 @@ public:
 
         _GarbageCollect(_tokenCache);
         _GarbageCollect(_tokenVectorCache);
-        _GarbageCollect(_matrixCache);
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
@@ -513,10 +486,6 @@ private:
     // extComputationSceneInputNames
     typedef _TypedCache<TfTokenVector> _TokenVectorCache;
     mutable _TokenVectorCache _tokenVectorCache;
-
-    // transform
-    typedef _TypedCache<GfMatrix4d> _MatrixCache;
-    mutable _MatrixCache _matrixCache;
 
     // color (will be VtValue)
     typedef _TypedCache<GfVec4f> _Vec4Cache;
@@ -553,9 +522,6 @@ private:
     }
     void _GetCache(_TokenVectorCache **cache) const {
         *cache = &_tokenVectorCache;
-    }
-    void _GetCache(_MatrixCache **cache) const {
-        *cache = &_matrixCache;
     }
     void _GetCache(_Vec4Cache **cache) const {
         *cache = &_vec4Cache;

@@ -122,12 +122,21 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
+    GfMatrix4d GetInstancerTransform(UsdPrim const& instancerPrim,
+                                     SdfPath const& instancerPath,
+                                     UsdTimeCode time) const override;
+
     size_t SampleInstancerTransform(UsdPrim const& instancerPrim,
                                     SdfPath const& instancerPath,
                                     UsdTimeCode time,
                                     size_t maxNumSamples,
                                     float *sampleTimes,
                                     GfMatrix4d *sampleValues) override;
+
+    GfMatrix4d GetTransform(UsdPrim const& prim, 
+                            SdfPath const& cachePath,
+                            UsdTimeCode time,
+                            bool ignoreRootTransform = false) const override;
 
     size_t SampleTransform(UsdPrim const& prim, 
                            SdfPath const& cachePath,
@@ -258,15 +267,15 @@ private:
     // Gets the UsdPrim to use from the given _ProtoPrim.
     const UsdPrim _GetProtoUsdPrim(_ProtoPrim const& proto) const;
 
-    // Takes the transform in the value cache (this must exist before calling
-    // this method) and applies a corrective transform to 1) remove any
+    // Takes the transform applies a corrective transform to 1) remove any
     // transforms above the model root (root proto path) and 2) apply the 
     // instancer transform.
-    void _CorrectTransform(UsdPrim const& instancer,
-                           UsdPrim const& proto,
-                           SdfPath const& cachePath,
-                           SdfPathVector const& protoPathChain,
-                           UsdTimeCode time) const;
+    GfMatrix4d _CorrectTransform(UsdPrim const& instancer,
+                                 UsdPrim const& proto,
+                                 SdfPath const& cachePath,
+                                 SdfPathVector const& protoPathChain,
+                                 GfMatrix4d const& inTransform,
+                                 UsdTimeCode time) const;
 
     // Similar to CorrectTransform, requires a visibility value exist in the
     // ValueCache, removes any visibility opinions above the model root (proto

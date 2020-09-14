@@ -280,6 +280,16 @@ UsdImagingPrimAdapter::SampleInstancerTransform(
 }
 
 /*virtual*/
+GfMatrix4d
+UsdImagingPrimAdapter::GetInstancerTransform(
+    UsdPrim const& instancerPrim,
+    SdfPath const& instancerPath,
+    UsdTimeCode time) const
+{
+    return GfMatrix4d(1.0); 
+}
+
+/*virtual*/
 size_t
 UsdImagingPrimAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
@@ -960,10 +970,12 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
 }
 
 GfMatrix4d 
-UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
+UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, 
+                                    SdfPath const& cachePath,
+                                    UsdTimeCode time,
                                     bool ignoreRootTransform) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
@@ -1046,7 +1058,7 @@ UsdImagingPrimAdapter::SampleTransform(
         // other object synthesized by UsdImaging.  Just return
         // the single transform sample from the ValueCache.
         sampleTimes[0] = 0.0;
-        sampleValues[0] = GetTransform(prim, 0.0);
+        sampleValues[0] = GetTransform(prim, prim.GetPath(), 0.0);
         return 1;
     }
 

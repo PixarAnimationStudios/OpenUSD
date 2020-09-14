@@ -101,9 +101,20 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 GfMatrix4d
 HdxTaskController::_Delegate::GetTransform(SdfPath const& id)
 {
-    // We expect this to be called only for the free cam.
-    VtValue val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
     GfMatrix4d xform(1.0);
+    VtValue val;
+
+    // Try to extract from the cache first, otherwise it is a camera
+    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
+    if (vcache && TfMapLookup(*vcache, HdTokens->transform, &val)) {
+        if (val.IsHolding<GfMatrix4d>()) {
+            xform = val.Get<GfMatrix4d>();
+            return xform;
+        }
+    }
+    
+    // We expect this to be called only for the free cam.
+    val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
     if (val.IsHolding<GfMatrix4d>()) {
         xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
     } else {
@@ -134,7 +145,7 @@ HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id,
 /* virtual */
 VtValue
 HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id, 
-                                                  TfToken const& paramName)
+                                                 TfToken const& paramName)
 {   
     return Get(id, paramName);
 }
@@ -736,9 +747,9 @@ HdxTaskController::_GetAovPath(TfToken const& aov) const
 
 void 
 HdxTaskController::_SetParameters(SdfPath const& pathName, 
-                                    GlfSimpleLight const& light)
+                                  GlfSimpleLight const& light)
 {
-    _delegate.SetParameter(pathName, HdLightTokens->transform,
+    _delegate.SetParameter(pathName, HdTokens->transform,
         VtValue(light.GetTransform()));
     _delegate.SetParameter(pathName, HdLightTokens->shadowParams,
         HdxShadowParams());
@@ -754,7 +765,6 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
                                SdfAssetPath(
                                    HdxPackageDefaultDomeLightTexture(),
                                    HdxPackageDefaultDomeLightTexture()));
-        
     }
 }
 

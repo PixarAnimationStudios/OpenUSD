@@ -104,13 +104,6 @@ UsdImagingCoordSysAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdImagingInstancerContext const* 
                                    instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        // For coordinate system adapters, the UsdPrim will be the
-        // UsdGeomXformable that the coordSys relationship targets,
-        // and we compute its transform.
-        valueCache->GetTransform(cachePath) = GetTransform(prim, time);
-    }
 }
 
 void

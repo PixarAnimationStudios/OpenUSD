@@ -269,16 +269,24 @@ public:
     virtual std::vector<VtArray<TfToken>>
     GetInstanceCategories(UsdPrim const& prim);
 
+    /// Get the instancer transform for the given prim.
+    /// \see HdSceneDelegate::GetInstancerTransform()
+    USDIMAGING_API
+    virtual GfMatrix4d GetInstancerTransform(
+        UsdPrim const& instancerPrim,
+        SdfPath const& instancerPath,
+        UsdTimeCode time) const;
+
     /// Sample the instancer transform for the given prim.
     /// \see HdSceneDelegate::SampleInstancerTransform()
     USDIMAGING_API
-    virtual size_t
-    SampleInstancerTransform(UsdPrim const& instancerPrim,
-                             SdfPath const& instancerPath,
-                             UsdTimeCode time,
-                             size_t maxNumSamples,
-                             float *sampleTimes,
-                             GfMatrix4d *sampleValues);
+    virtual size_t SampleInstancerTransform(
+        UsdPrim const& instancerPrim,
+        SdfPath const& instancerPath,
+        UsdTimeCode time,
+        size_t maxNumSamples,
+        float *sampleTimes,
+        GfMatrix4d *sampleValues);
 
     /// Sample the primvar for the given prim.
     /// \see HdSceneDelegate::SamplePrimvar()
@@ -411,8 +419,10 @@ public:
     /// pre-computed cache of prim transforms. Requesting transforms at
     /// incoherent times is currently inefficient.
     USDIMAGING_API
-    GfMatrix4d GetTransform(UsdPrim const& prim, UsdTimeCode time,
-                            bool ignoreRootTransform = false) const;
+    virtual GfMatrix4d GetTransform(UsdPrim const& prim, 
+                                    SdfPath const& cachePath,
+                                    UsdTimeCode time,
+                                    bool ignoreRootTransform = false) const;
 
     /// Samples the transform for the given prim.
     USDIMAGING_API
