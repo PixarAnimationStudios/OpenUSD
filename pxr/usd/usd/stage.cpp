@@ -521,7 +521,7 @@ UsdStage::_Close()
     if (_pseudoRoot) {
         // Instancing masters are not children of the pseudo-root so
         // we need to explicitly destroy those subtrees.
-        primsToDestroy = _instanceCache->GetAllMasters();
+        primsToDestroy = _instanceCache->GetAllPrototypes();
         wd.Run([this, &primsToDestroy]() {
                 primsToDestroy.push_back(SdfPath::AbsoluteRootPath());
                 _DestroyPrimsInParallel(primsToDestroy);
@@ -652,7 +652,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
             {absoluteRootPath}, "instantiating stage", &instanceChanges);
     stage->_pseudoRoot = stage->_InstantiatePrim(absoluteRootPath);
 
-    const size_t subtreeCount = instanceChanges.newMasterPrims.size() + 1;
+    const size_t subtreeCount = instanceChanges.newPrototypePrims.size() + 1;
     std::vector<Usd_PrimDataPtr> subtreesToCompose;
     SdfPathVector primIndexPathsForSubtrees;
     subtreesToCompose.reserve(subtreeCount);
@@ -662,10 +662,10 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 
     // We only need to add new masters since, during stage initialization there
     // should not be any changed masters
-    for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
-        const SdfPath& masterPath = instanceChanges.newMasterPrims[i];
+    for (size_t i = 0; i != instanceChanges.newPrototypePrims.size(); ++i) {
+        const SdfPath& masterPath = instanceChanges.newPrototypePrims[i];
         const SdfPath& masterPrimIndexPath = 
-            instanceChanges.newMasterPrimIndexes[i];
+            instanceChanges.newPrototypePrimIndexes[i];
 
         Usd_PrimDataPtr masterPrim = stage->_InstantiateMasterPrim(masterPath);
         subtreesToCompose.push_back(masterPrim);
@@ -1280,7 +1280,7 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInMaster(primPath))) {
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
         TF_CODING_ERROR("Cannot %s at path <%s>; "
                         "authoring to an instancing master is not allowed.",
                         operation, primPath.GetText());
@@ -1908,7 +1908,7 @@ UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
     // in the master.
     if (!primData) {
         const SdfPath primInMasterPath = 
-            _instanceCache->GetPathInMasterForInstancePath(path);
+            _instanceCache->GetPathInPrototypeForInstancePath(path);
         if (!primInMasterPath.IsEmpty()) {
             primData = _GetPrimDataAtPath(primInMasterPath);
         }
@@ -1925,7 +1925,7 @@ UsdStage::_IsValidForUnload(const SdfPath& path) const
                         path.GetText());
         return false;
     }
-    if (_instanceCache->IsPathInMaster(path)) {
+    if (_instanceCache->IsPathInPrototype(path)) {
         TF_CODING_ERROR("Attempted to load/unload a master path <%s>",
                         path.GetText());
         return false;
@@ -2328,7 +2328,7 @@ UsdStage::GetMasters() const
 {
     // Sort the instance master paths to provide a stable ordering for
     // this function.
-    SdfPathVector masterPaths = _instanceCache->GetAllMasters();
+    SdfPathVector masterPaths = _instanceCache->GetAllPrototypes();
     std::sort(masterPaths.begin(), masterPaths.end());
 
     vector<UsdPrim> masterPrims;
@@ -2351,7 +2351,8 @@ UsdStage::_GetInstancesForMaster(const UsdPrim& masterPrim) const
 
     vector<UsdPrim> instances;
     SdfPathVector instancePaths = 
-        _instanceCache->GetInstancePrimIndexesForMaster(masterPrim.GetPath());
+        _instanceCache->GetInstancePrimIndexesForPrototype(
+            masterPrim.GetPath());
     instances.reserve(instancePaths.size());
     for (const SdfPath& instancePath : instancePaths) {
         Usd_PrimDataConstPtr primData = 
@@ -2369,7 +2370,7 @@ UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
     }
 
     const SdfPath masterPath =
-        _instanceCache->GetMasterForInstanceablePrimIndexPath(
+        _instanceCache->GetPrototypeForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
     return masterPath.IsEmpty() ? nullptr : _GetPrimDataAtPath(masterPath);
 }
@@ -2398,9 +2399,9 @@ UsdStage::_GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const
     if (GetPrimAtPath(primIndexPath)) {
         primPath = primIndexPath;
     } 
-    else if (_instanceCache->GetNumMasters() != 0) {
+    else if (_instanceCache->GetNumPrototypes() != 0) {
         const vector<SdfPath> mastersUsingPrimIndex = 
-            _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
+            _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
                 primIndexPath);
 
         for (const auto& pathInMaster : mastersUsingPrimIndex) {
@@ -3984,7 +3985,7 @@ UsdStage::_HandleLayersDidChange(
                 const SdfPath primIndexPath = 
                     it->first.GetAbsoluteRootOrPrimPath();
                 for (const SdfPath& pathInMaster :
-                     _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
+                     _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
                          primIndexPath)) {
                     masterChanges.emplace_back(
                         it->first.ReplacePrefix(primIndexPath, pathInMaster), 
@@ -4163,7 +4164,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // for a master.
         if (_instanceCache->IsPathDescendantToAnInstance(path)) {
             const bool primIndexUsedByMaster = 
-                _instanceCache->MasterUsesPrimIndexPath(path);
+                _instanceCache->PrototypeUsesPrimIndexPath(path);
             if (!primIndexUsedByMaster) {
                 TF_DEBUG(USD_CHANGES).Msg(
                     "Ignoring elided prim <%s>\n", path.GetText());
@@ -4202,14 +4203,15 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // Add Corresponding inMasterPaths for any instance or proxy paths in
         // pathsToRecompose
         for (const SdfPath& inMasterPath :
-                 _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
+                 _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(path)) {
             masterToPrimIndexMap[inMasterPath] = path;
             (*pathsToRecompose)[inMasterPath];
         }
         // Add any unchanged masters whose instances are descendents of paths in
         // pathsToRecompose
         for (const std::pair<SdfPath, SdfPath>& masterSourceIndexPair:
-                _instanceCache->GetMastersUsingPrimIndexPathOrDescendents(path)) 
+                _instanceCache->GetPrototypesUsingPrimIndexPathOrDescendents(
+                    path)) 
         {
             const SdfPath& masterPath = masterSourceIndexPair.first;
             const SdfPath& sourceIndexPath = masterSourceIndexPair.second;
@@ -4219,17 +4221,17 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     }
 
     // Add new masters paths to pathsToRecompose 
-    for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
-        masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
-            instanceChanges.newMasterPrimIndexes[i];
-        (*pathsToRecompose)[instanceChanges.newMasterPrims[i]];
+    for (size_t i = 0; i != instanceChanges.newPrototypePrims.size(); ++i) {
+        masterToPrimIndexMap[instanceChanges.newPrototypePrims[i]] =
+            instanceChanges.newPrototypePrimIndexes[i];
+        (*pathsToRecompose)[instanceChanges.newPrototypePrims[i]];
     }
 
     // Add changed masters paths to pathsToRecompose 
-    for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
-        masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
-            instanceChanges.changedMasterPrimIndexes[i];
-        (*pathsToRecompose)[instanceChanges.changedMasterPrims[i]];
+    for (size_t i = 0; i != instanceChanges.changedPrototypePrims.size(); ++i) {
+        masterToPrimIndexMap[instanceChanges.changedPrototypePrims[i]] =
+            instanceChanges.changedPrototypePrimIndexes[i];
+        (*pathsToRecompose)[instanceChanges.changedPrototypePrims[i]];
     }
 
     // If pseudoRoot is present in pathsToRecompose, then the only other prims
@@ -4268,10 +4270,10 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
 
     // Destroy dead master subtrees, making sure to record them in
     // paths to recompose for notifications.
-    for (const SdfPath& p : instanceChanges.deadMasterPrims) {
+    for (const SdfPath& p : instanceChanges.deadPrototypePrims) {
         (*pathsToRecompose)[p];
     }
-    _DestroyPrimsInParallel(instanceChanges.deadMasterPrims);
+    _DestroyPrimsInParallel(instanceChanges.deadPrototypePrims);
 }
 
 
@@ -4303,7 +4305,7 @@ UsdStage::_ComputeSubtreesToRecompose(
 
         // Add masters to list of subtrees to recompose and instantiate any 
         // new master not present in the primMap from before
-        if (_instanceCache->IsMasterPath(*i)) {
+        if (_instanceCache->IsPrototypePath(*i)) {
             PathToNodeMap::const_iterator itr = _primMap.find(*i);
             Usd_PrimDataPtr masterPrim;
             if (itr != _primMap.end()) {
@@ -4342,7 +4344,7 @@ UsdStage::_ComputeSubtreesToRecompose(
                 PathToNodeMap::const_iterator primIt = _primMap.find(*i);
                 if (primIt != _primMap.end()) {
                     subtreesToRecompose->push_back(primIt->second.get());
-                } else if (_instanceCache->IsMasterPath(*i)) {
+                } else if (_instanceCache->IsPrototypePath(*i)) {
                     // If this path is a master path and is not present in the
                     // primMap, then this must be a newMaster added during this
                     // processing, instantiate and add it.
@@ -4432,9 +4434,9 @@ UsdStage::_ComposePrimIndexesInParallel(
     // need to change their source prim index. This may be because their
     // previous source prim index was destroyed or was no longer an
     // instance. Compose the new source prim indexes.
-    if (!changes.changedMasterPrims.empty()) {
+    if (!changes.changedPrototypePrims.empty()) {
         _ComposePrimIndexesInParallel(
-            changes.changedMasterPrimIndexes, context, instanceChanges);
+            changes.changedPrototypePrimIndexes, context, instanceChanges);
     }
 }
 
@@ -4634,7 +4636,7 @@ _RemoveMasterTargetPaths(const UsdProperty& srcProp,
 {
     auto removeIt = std::remove_if(
         targetPaths->begin(), targetPaths->end(),
-        Usd_InstanceCache::IsPathInMaster);
+        Usd_InstanceCache::IsPathInPrototype);
     if (removeIt == targetPaths->end()) {
         return;
     }

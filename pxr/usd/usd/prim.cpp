@@ -1130,13 +1130,13 @@ UsdPrim::IsPseudoRoot() const
 bool
 UsdPrim::IsMasterPath(const SdfPath& path)
 {
-    return Usd_InstanceCache::IsMasterPath(path);
+    return Usd_InstanceCache::IsPrototypePath(path);
 }
 
 bool
 UsdPrim::IsPathInMaster(const SdfPath& path)
 {
-    return Usd_InstanceCache::IsPathInMaster(path);
+    return Usd_InstanceCache::IsPathInPrototype(path);
 }
 
 UsdPrim

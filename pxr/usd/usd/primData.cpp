@@ -217,7 +217,7 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
     bool isInstance = p->IsInstance();
     bool isInstanceProxy = Usd_IsInstanceProxy(p, proxyPrimPath);
     bool isInMaster = isInstanceProxy ?
-        Usd_InstanceCache::IsPathInMaster(proxyPrimPath) : p->IsInMaster();
+        Usd_InstanceCache::IsPathInPrototype(proxyPrimPath) : p->IsInMaster();
     bool isMaster = p->IsMaster();
     Usd_PrimDataConstPtr masterForInstance =
         isInstance && p->_stage ? p->GetMaster() : nullptr;

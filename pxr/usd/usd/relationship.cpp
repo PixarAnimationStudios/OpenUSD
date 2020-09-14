@@ -76,7 +76,7 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
     if (!target.IsEmpty()) {
         SdfPath absTarget =
             target.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
-        if (Usd_InstanceCache::IsPathInMaster(absTarget)) {
+        if (Usd_InstanceCache::IsPathInPrototype(absTarget)) {
             if (whyNot) { 
                 *whyNot = "Cannot target a master or an object within a "
                     "master.";

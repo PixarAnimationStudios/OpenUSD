@@ -44,7 +44,7 @@ class PcpPrimIndex;
 ///
 /// Instancing key for prims. Instanceable prims that share the same
 /// instance key are guaranteed to have the same opinions for name children
-/// and properties and thus can share the same master.
+/// and properties and thus can share the same prototype.
 ///
 class Usd_InstanceKey
 {
