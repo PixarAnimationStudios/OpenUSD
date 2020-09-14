@@ -39,8 +39,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdxPresentTaskParams
 {
     HdxPresentTaskParams() 
-        : interopDst(HgiTokens->OpenGL),
-          compRegion(0)
+        : interopDst(HgiTokens->OpenGL)
+        , compRegion(0)
+        , enabled(true)
     {}
 
     // The graphics lib that is used by the application / viewer.
@@ -49,6 +50,10 @@ struct HdxPresentTaskParams
     // Subrectangular region of the framebuffer over which to composite aov
     // contents. Coordinates are (left, BOTTOM, width, height).
     GfVec4i compRegion;
+
+    // When not enabled, present task does not execute, but still calls
+    // Hgi::EndFrame.
+    bool enabled;
 };
 
 /// \class HdxPresentTask
