@@ -98,6 +98,7 @@ HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
             _GetRenderPassState(renderIndex);
 
     renderPassState->Prepare(renderIndex->GetResourceRegistry());
+    (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
 }
 
 void
