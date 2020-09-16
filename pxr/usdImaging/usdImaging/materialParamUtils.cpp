@@ -190,6 +190,16 @@ _ResolveAssetAttribute(
     const std::string::size_type prefixLength =
         firstTilePath.size() - suffix.size() - UDIM_TILE_NUMBER_LENGTH;
 
+    // If this new path is not a valid UDIM til, then just pass back the original UDIM path.
+    // i.e. /inpath/myImage.1001.exr may be a sym-link to /outpath/myImage_otherconvention.exr
+    // XXX: This may break down if other-convention also uses integer-frame
+    char* endPtr = nullptr;
+    const char* udimValue = firstTilePath.c_str() + prefixLength;
+    if ((strtol(udimValue, &endPtr, 10) < UDIM_START_TILE) ||
+        (endPtr-UDIM_TILE_NUMBER_LENGTH) != udimValue) {
+        return assetPath;
+    }
+
     return
         SdfAssetPath( 
             assetPath.GetAssetPath(),
