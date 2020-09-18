@@ -819,12 +819,13 @@ private:
 
     // Return the primData object at \p path.  If \p path indicates a prim
     // beneath an instance, return the primData object for the corresponding 
-    // prim in the instance's master.
+    // prim in the instance's prototype.
     Usd_PrimDataConstPtr 
-    _GetPrimDataAtPathOrInMaster(const SdfPath &path) const;
+    _GetPrimDataAtPathOrInPrototype(const SdfPath &path) const;
 
     /// See documentation on UsdPrim::GetInstances()
-    std::vector<UsdPrim> _GetInstancesForMaster(const UsdPrim& master) const;
+    std::vector<UsdPrim>
+    _GetInstancesForPrototype(const UsdPrim& prototype) const;
 
 public:
 
@@ -1780,7 +1781,7 @@ private:
 
     // Compose the prim indexes in the subtrees rooted at the paths in 
     // \p primIndexPaths.  If \p instanceChanges is given, returns
-    // changes to masters and instances due to the discovery of new instances
+    // changes to prototypes and instances due to the discovery of new instances
     // during composition.
     void _ComposePrimIndexesInParallel(
         const std::vector<SdfPath>& primIndexPaths,
@@ -1804,7 +1805,7 @@ private:
 
     // Compose subtree rooted at \p prim under \p parent.  This function
     // ensures that the appropriate prim index is specified for \p prim if
-    // \p parent is in a master.
+    // \p parent is in a prototype.
     void _ComposeChildSubtree(Usd_PrimDataPtr prim, 
                               Usd_PrimDataConstPtr parent,
                               UsdStagePopulationMask const *mask);
@@ -1826,9 +1827,9 @@ private:
     // at \p primPath.
     Usd_PrimDataPtr _InstantiatePrim(const SdfPath &primPath);
 
-    // Instantiate a master prim and sets its parent to pseudoroot.  
-    // There must not already be a master at \p primPath.
-    Usd_PrimDataPtr _InstantiateMasterPrim(const SdfPath &primPath);
+    // Instantiate a prototype prim and sets its parent to pseudoroot.  
+    // There must not already be a prototype at \p primPath.
+    Usd_PrimDataPtr _InstantiatePrototypePrim(const SdfPath &primPath);
 
     // For \p prim and all of its descendants, remove from _primMap and empty
     // their _children vectors.
@@ -1847,8 +1848,8 @@ private:
     bool _IsObjectDescendantOfInstance(const SdfPath& path) const;
 
     // If the given prim is an instance, returns the corresponding 
-    // master prim.  Otherwise, returns an invalid prim.
-    Usd_PrimDataConstPtr _GetMasterForInstance(Usd_PrimDataConstPtr p) const;
+    // prototype prim.  Otherwise, returns an invalid prim.
+    Usd_PrimDataConstPtr _GetPrototypeForInstance(Usd_PrimDataConstPtr p) const;
 
     // Returns the path of the Usd prim using the prim index at the given path.
     SdfPath _GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;

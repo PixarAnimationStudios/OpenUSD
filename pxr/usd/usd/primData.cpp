@@ -190,13 +190,13 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
 Usd_PrimDataConstPtr 
 Usd_PrimData::GetPrimDataAtPathOrInPrototype(const SdfPath &path) const
 {
-    return _stage->_GetPrimDataAtPathOrInMaster(path);
+    return _stage->_GetPrimDataAtPathOrInPrototype(path);
 }
 
 Usd_PrimDataConstPtr 
 Usd_PrimData::GetPrototype() const
 {
-    return _stage->_GetMasterForInstance(this);
+    return _stage->_GetPrototypeForInstance(this);
 }
 
 bool

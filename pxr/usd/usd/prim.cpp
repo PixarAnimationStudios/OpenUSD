@@ -1143,14 +1143,14 @@ UsdPrim
 UsdPrim::GetMaster() const
 {
     Usd_PrimDataConstPtr masterPrimData = 
-        _GetStage()->_GetMasterForInstance(get_pointer(_Prim()));
+        _GetStage()->_GetPrototypeForInstance(get_pointer(_Prim()));
     return UsdPrim(masterPrimData, SdfPath());
 }
 
 std::vector<UsdPrim>
 UsdPrim::GetInstances() const
 {
-    return _GetStage()->_GetInstancesForMaster(*this);
+    return _GetStage()->_GetInstancesForPrototype(*this);
 }
 
 SdfPrimSpecHandleVector 

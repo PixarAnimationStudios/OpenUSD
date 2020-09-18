@@ -519,7 +519,7 @@ UsdStage::_Close()
     // Destroy prim structure.
     vector<SdfPath> primsToDestroy;
     if (_pseudoRoot) {
-        // Instancing masters are not children of the pseudo-root so
+        // Instancing prototypes are not children of the pseudo-root so
         // we need to explicitly destroy those subtrees.
         primsToDestroy = _instanceCache->GetAllPrototypes();
         wd.Run([this, &primsToDestroy]() {
@@ -582,7 +582,7 @@ struct _NameChildrenPred
 
         // UsdStage doesn't expose any prims beneath instances, so we don't need
         // to compute indexes for children of instances unless the index will be
-        // used as a source for a master prim.
+        // used as a source for a prototype prim.
         if (index.IsInstanceable()) {
             return _instanceCache->RegisterInstancePrimIndex(
                 index, _mask, *_loadRules);
@@ -660,16 +660,16 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     subtreesToCompose.push_back(stage->_pseudoRoot);
     primIndexPathsForSubtrees.push_back(absoluteRootPath);
 
-    // We only need to add new masters since, during stage initialization there
-    // should not be any changed masters
+    // We only need to add new prototypes since, during stage initialization
+    // there should not be any changed prototypes
     for (size_t i = 0; i != instanceChanges.newPrototypePrims.size(); ++i) {
-        const SdfPath& masterPath = instanceChanges.newPrototypePrims[i];
-        const SdfPath& masterPrimIndexPath = 
+        const SdfPath& protoPath = instanceChanges.newPrototypePrims[i];
+        const SdfPath& protoPrimIndexPath = 
             instanceChanges.newPrototypePrimIndexes[i];
 
-        Usd_PrimDataPtr masterPrim = stage->_InstantiateMasterPrim(masterPath);
-        subtreesToCompose.push_back(masterPrim);
-        primIndexPathsForSubtrees.push_back(masterPrimIndexPath);
+        Usd_PrimDataPtr protoPrim = stage->_InstantiatePrototypePrim(protoPath);
+        subtreesToCompose.push_back(protoPrim);
+        primIndexPathsForSubtrees.push_back(protoPrimIndexPath);
     }
 
     stage->_ComposeSubtreesInParallel(
@@ -1826,8 +1826,8 @@ UsdStage::GetPrimAtPath(const SdfPath &path) const
 
     // If this path points to a prim beneath an instance, return
     // an instance proxy that uses the prim data from the corresponding
-    // prim in the master but appears to be a prim at the given path.
-    Usd_PrimDataConstPtr primData = _GetPrimDataAtPathOrInMaster(path);
+    // prim in the prototype but appears to be a prim at the given path.
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPathOrInPrototype(path);
     const SdfPath& proxyPrimPath = 
         primData && primData->GetPath() != path ? path : SdfPath::EmptyPath();
     return UsdPrim(primData, proxyPrimPath);
@@ -1898,19 +1898,19 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
 }
 
 Usd_PrimDataConstPtr 
-UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
+UsdStage::_GetPrimDataAtPathOrInPrototype(const SdfPath &path) const
 {
     Usd_PrimDataConstPtr primData = _GetPrimDataAtPath(path);
 
     // If no prim data exists at the given path, check if this
     // path is pointing to a prim beneath an instance. If so, we
     // need to return the prim data for the corresponding prim
-    // in the master.
+    // in the prototype.
     if (!primData) {
-        const SdfPath primInMasterPath = 
+        const SdfPath primInPrototypePath = 
             _instanceCache->GetPathInPrototypeForInstancePath(path);
-        if (!primInMasterPath.IsEmpty()) {
-            primData = _GetPrimDataAtPath(primInMasterPath);
+        if (!primInPrototypePath.IsEmpty()) {
+            primData = _GetPrimDataAtPath(primInPrototypePath);
         }
     }
 
@@ -1992,7 +1992,7 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         [this, unloadedOnly, primIndexPaths, usdPrimPaths,
          &primIndexPathsVec, &usdPrimPathsVec]
         (UsdPrim const &prim) {
-        // Inactive prims are never included in this query.  Masters are
+        // Inactive prims are never included in this query.  Prototypes are
         // also never included, since they aren't independently loadable.
         if (!prim.IsActive() || prim.IsMaster())
             return;
@@ -2208,7 +2208,7 @@ UsdStage::GetLoadSet()
     for (const auto& primIndexPath : _cache->GetIncludedPayloads()) {
         // Get the path of the Usd prim using this prim index path.
         // This ensures we return the appropriate path if this prim index
-        // is being used by a prim within a master.
+        // is being used by a prim within a prototype.
         //
         // If there is no Usd prim using this prim index, we return the
         // prim index path anyway. This could happen if the ancestor of
@@ -2343,36 +2343,36 @@ UsdStage::GetMasters() const
 }
 
 vector<UsdPrim>
-UsdStage::_GetInstancesForMaster(const UsdPrim& masterPrim) const
+UsdStage::_GetInstancesForPrototype(const UsdPrim& prototypePrim) const
 {
-    if (!masterPrim.IsMaster()) {
+    if (!prototypePrim.IsMaster()) {
         return {};
     }
 
     vector<UsdPrim> instances;
     SdfPathVector instancePaths = 
         _instanceCache->GetInstancePrimIndexesForPrototype(
-            masterPrim.GetPath());
+            prototypePrim.GetPath());
     instances.reserve(instancePaths.size());
     for (const SdfPath& instancePath : instancePaths) {
         Usd_PrimDataConstPtr primData = 
-            _GetPrimDataAtPathOrInMaster(instancePath);
+            _GetPrimDataAtPathOrInPrototype(instancePath);
         instances.push_back(UsdPrim(primData, SdfPath::EmptyPath()));
     }
     return instances;
 }
 
 Usd_PrimDataConstPtr 
-UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
+UsdStage::_GetPrototypeForInstance(Usd_PrimDataConstPtr prim) const
 {
     if (!prim->IsInstance()) {
         return nullptr;
     }
 
-    const SdfPath masterPath =
+    const SdfPath protoPath =
         _instanceCache->GetPrototypeForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
-    return masterPath.IsEmpty() ? nullptr : _GetPrimDataAtPath(masterPath);
+    return protoPath.IsEmpty() ? nullptr : _GetPrimDataAtPath(protoPath);
 }
 
 bool 
@@ -2380,7 +2380,7 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
 {
     // If the given path is a descendant of an instanceable
     // prim index, it would not be computed during composition unless
-    // it is also serving as the source prim index for a master prim
+    // it is also serving as the source prim index for a prototype prim
     // on this stage.
     return (_instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
@@ -2393,29 +2393,29 @@ UsdStage::_GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const
 
     // In general, the path of a UsdPrim on a stage is the same as the
     // path of its prim index. However, this is not the case when
-    // prims in masters are involved. In these cases, we need to use
-    // the instance cache to map the prim index path to the master
+    // prims in prototypes are involved. In these cases, we need to use
+    // the instance cache to map the prim index path to the prototype
     // prim on the stage.
     if (GetPrimAtPath(primIndexPath)) {
         primPath = primIndexPath;
     } 
     else if (_instanceCache->GetNumPrototypes() != 0) {
-        const vector<SdfPath> mastersUsingPrimIndex = 
+        const vector<SdfPath> prototypesUsingPrimIndex = 
             _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
                 primIndexPath);
 
-        for (const auto& pathInMaster : mastersUsingPrimIndex) {
+        for (const auto& pathInPrototype : prototypesUsingPrimIndex) {
             // If this path is a root prim path, it must be the path of a
-            // master prim. This function wants to ignore master prims,
+            // prototype prim. This function wants to ignore prototype prims,
             // since they appear to have no prim index to the outside
             // consumer.
             //
             // However, if this is not a root prim path, it must be the
-            // path of an prim nested inside a master, which we do want
+            // path of an prim nested inside a prototype, which we do want
             // to return. There will only ever be one of these, so we
             // can get this prim and break immediately.
-            if (!pathInMaster.IsRootPrimPath()) {
-                primPath = pathInMaster;
+            if (!pathInPrototype.IsRootPrimPath()) {
+                primPath = pathInPrototype;
                 break;
             }
         }
@@ -2447,16 +2447,16 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
 }
 
 Usd_PrimDataPtr
-UsdStage::_InstantiateMasterPrim(const SdfPath &primPath) 
+UsdStage::_InstantiatePrototypePrim(const SdfPath &primPath) 
 {
-    // Master prims are parented beneath the pseudo-root,
+    // Prototype prims are parented beneath the pseudo-root,
     // but are *not* children of the pseudo-root. This ensures
-    // that consumers never see master prims unless they are
+    // that consumers never see prototype prims unless they are
     // explicitly asked for. So, we don't need to set the child
     // link here.
-    Usd_PrimDataPtr masterPrim = _InstantiatePrim(primPath);
-    masterPrim->_SetParentLink(_pseudoRoot);
-    return masterPrim;
+    Usd_PrimDataPtr prototypePrim = _InstantiatePrim(primPath);
+    prototypePrim->_SetParentLink(_pseudoRoot);
+    return prototypePrim;
 }
 
 namespace {
@@ -2500,7 +2500,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
 
     // Instance prims do not directly expose any of their name children.
     // Discard any pre-existing children and add a task for composing
-    // the instance's master's subtree if it's root uses this instance's
+    // the instance's prototype's subtree if it's root uses this instance's
     // prim index as a source.
     if (prim->IsInstance()) {
         TF_DEBUG(USD_COMPOSITION).Msg("Instance prim <%s>\n",
@@ -2518,12 +2518,12 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // completely included, stop looking at the mask from here forward.
     if (mask) {
         // We always operate on the source prim index path here, not the prim
-        // path since that would be something like /_MasterX/../../.. for prims
-        // in masters.  Masks and load rules operate on the "uninstanced" view
-        // of the world, and are included in instancing keys, so whichever index
-        // we choose to be the source for a master must be included in the
-        // stage-wide pop mask & load rules, and identically for all instances
-        // that share a master.
+        // path since that would be something like /__Master_X/.. for prims
+        // in prototypes.  Masks and load rules operate on the "uninstanced"
+        // view of the world, and are included in instancing keys, so whichever
+        // index we choose to be the source for a prototype must be included in
+        // the stage-wide pop mask & load rules, and identically for all
+        // instances that share a prototype.
         const SdfPath& sourceIndexPath = prim->GetSourcePrimIndex().GetPath();
         if (mask->IncludesSubtree(sourceIndexPath)) {
             mask = nullptr;
@@ -2754,7 +2754,7 @@ UsdStage::_ComposeChildSubtree(Usd_PrimDataPtr prim,
                                UsdStagePopulationMask const *mask)
 {
     if (parent->IsInPrototype()) {
-        // If this UsdPrim is a child of an instance master, its 
+        // If this UsdPrim is a child of an instance prototype, its 
         // source prim index won't be at the same path as its stage path.
         // We need to construct the path from the parent's source index.
         const SdfPath sourcePrimIndexPath = 
@@ -2964,12 +2964,12 @@ UsdStage::_ComposeSubtreeImpl(
     parent = parent ? parent : prim->GetParent();
 
     // If this prim's parent is the pseudo-root and it has a different
-    // path from its source prim index, it must represent a master prim.
-    const bool isMasterPrim =
+    // path from its source prim index, it must represent a prototype prim.
+    const bool isPrototypePrim =
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
-    if (parent && !isMasterPrim) {
+    if (parent && !isPrototypePrim) {
         // Compose the type info full type ID for the prim which includes
         // the type name, applied schemas, and a possible mapped fallback type 
         // if the stage specifies it.
@@ -2990,7 +2990,7 @@ UsdStage::_ComposeSubtreeImpl(
     }
 
     // Compose type info and flags for prim.
-    prim->_ComposeAndCacheFlags(parent, isMasterPrim);
+    prim->_ComposeAndCacheFlags(parent, isPrototypePrim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.
@@ -3048,7 +3048,7 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
     for (const auto& path : paths) {
         Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
         // We *expect* every prim in paths to be valid as we iterate, but at
-        // one time had issues with deactivated master prims, so we preserve
+        // one time had issues with deactivated prototype prims, so we preserve
         // a guard for resiliency.  See testUsdBug141491.py
         if (TF_VERIFY(prim)) {
             _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
@@ -3976,19 +3976,20 @@ UsdStage::_HandleLayersDidChange(
     _Recompose(changes, &recomposeChanges);
 
     // Filter out all changes to objects beneath instances and remap
-    // them to the corresponding object in the instance's master. Do this
+    // them to the corresponding object in the instance's prototype. Do this
     // after _Recompose so that the instancing cache is up-to-date.
-    auto remapChangesToMasters = [this](_PathsToChangesMap* changes) {
-        std::vector<_PathsToChangesMap::value_type> masterChanges;
+    auto remapChangesToPrototypes = [this](_PathsToChangesMap* changes) {
+        std::vector<_PathsToChangesMap::value_type> prototypeChanges;
         for (auto it = changes->begin(); it != changes->end(); ) {
             if (_IsObjectDescendantOfInstance(it->first)) {
                 const SdfPath primIndexPath = 
                     it->first.GetAbsoluteRootOrPrimPath();
-                for (const SdfPath& pathInMaster :
+                for (const SdfPath& pathInPrototype :
                      _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
                          primIndexPath)) {
-                    masterChanges.emplace_back(
-                        it->first.ReplacePrefix(primIndexPath, pathInMaster), 
+                    prototypeChanges.emplace_back(
+                        it->first.ReplacePrefix(
+                            primIndexPath, pathInPrototype), 
                         it->second);
                 }
                 it = changes->erase(it);
@@ -3997,15 +3998,15 @@ UsdStage::_HandleLayersDidChange(
             ++it;
         }
 
-        for (const auto& entry : masterChanges) {
+        for (const auto& entry : prototypeChanges) {
             auto& value = (*changes)[entry.first];
             value.insert(value.end(), entry.second.begin(), entry.second.end());
         }
     };
 
-    remapChangesToMasters(&recomposeChanges);
-    remapChangesToMasters(&otherResyncChanges);
-    remapChangesToMasters(&otherInfoChanges);
+    remapChangesToPrototypes(&recomposeChanges);
+    remapChangesToPrototypes(&otherResyncChanges);
+    remapChangesToPrototypes(&otherInfoChanges);
 
     // Add in all other paths that are marked as resynced.
     if (recomposeChanges.empty()) {
@@ -4161,11 +4162,11 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // Instance prims don't expose any name children, so we don't
         // need to recompose any prim index beneath instance prim 
         // indexes *unless* they are being used as the source index
-        // for a master.
+        // for a prototype.
         if (_instanceCache->IsPathDescendantToAnInstance(path)) {
-            const bool primIndexUsedByMaster = 
+            const bool primIndexUsedByPrototype = 
                 _instanceCache->PrototypeUsesPrimIndexPath(path);
-            if (!primIndexUsedByMaster) {
+            if (!primIndexUsedByPrototype) {
                 TF_DEBUG(USD_CHANGES).Msg(
                     "Ignoring elided prim <%s>\n", path.GetText());
                 continue;
@@ -4186,10 +4187,10 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     _ComposePrimIndexesInParallel(
         primPathsToRecompose, "recomposing stage", &instanceChanges);
     
-    // Determine what instance master prims on this stage need to
+    // Determine what instance prototype prims on this stage need to
     // be recomposed due to instance prim index changes.
-    typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
-    _MasterToPrimIndexMap masterToPrimIndexMap;
+    typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PrototypeToPrimIndexMap;
+    _PrototypeToPrimIndexMap prototypeToPrimIndexMap;
 
     const bool pathsContainsAbsRoot = 
         pathsToRecompose->begin()->first == SdfPath::AbsoluteRootPath();
@@ -4200,44 +4201,45 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     const size_t origNumPathsToRecompose = pathsToRecompose->size();
     for (const auto& entry : *pathsToRecompose) {
         const SdfPath& path = entry.first;
-        // Add Corresponding inMasterPaths for any instance or proxy paths in
+        // Add corresponding inPrototypePaths for any instance or proxy paths in
         // pathsToRecompose
-        for (const SdfPath& inMasterPath :
+        for (const SdfPath& inPrototypePath :
                  _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(path)) {
-            masterToPrimIndexMap[inMasterPath] = path;
-            (*pathsToRecompose)[inMasterPath];
+            prototypeToPrimIndexMap[inPrototypePath] = path;
+            (*pathsToRecompose)[inPrototypePath];
         }
-        // Add any unchanged masters whose instances are descendents of paths in
-        // pathsToRecompose
-        for (const std::pair<SdfPath, SdfPath>& masterSourceIndexPair:
+        // Add any unchanged prototypes whose instances are descendents of paths
+        // in pathsToRecompose
+        for (const std::pair<SdfPath, SdfPath>& prototypeSourceIndexPair:
                 _instanceCache->GetPrototypesUsingPrimIndexPathOrDescendents(
-                    path)) 
+                    path))
         {
-            const SdfPath& masterPath = masterSourceIndexPair.first;
-            const SdfPath& sourceIndexPath = masterSourceIndexPair.second;
-            masterToPrimIndexMap[masterPath] = sourceIndexPath;
-            (*pathsToRecompose)[masterPath];
+            const SdfPath& prototypePath = prototypeSourceIndexPair.first;
+            const SdfPath& sourceIndexPath = prototypeSourceIndexPair.second;
+            prototypeToPrimIndexMap[prototypePath] = sourceIndexPath;
+            (*pathsToRecompose)[prototypePath];
         }
     }
 
-    // Add new masters paths to pathsToRecompose 
+    // Add new prototypes paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.newPrototypePrims.size(); ++i) {
-        masterToPrimIndexMap[instanceChanges.newPrototypePrims[i]] =
+        prototypeToPrimIndexMap[instanceChanges.newPrototypePrims[i]] =
             instanceChanges.newPrototypePrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.newPrototypePrims[i]];
     }
 
-    // Add changed masters paths to pathsToRecompose 
+    // Add changed prototypes paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.changedPrototypePrims.size(); ++i) {
-        masterToPrimIndexMap[instanceChanges.changedPrototypePrims[i]] =
+        prototypeToPrimIndexMap[instanceChanges.changedPrototypePrims[i]] =
             instanceChanges.changedPrototypePrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.changedPrototypePrims[i]];
     }
 
     // If pseudoRoot is present in pathsToRecompose, then the only other prims
-    // in pathsToRecompose can be master prims (added above), in which case we 
-    // do not want to remove these masters. If not we need to make sure any
-    // descendents of masters are removed if corresponding master is present
+    // in pathsToRecompose can be prototype prims (added above), in which case
+    // we do not want to remove these prototypes. If not we need to make sure
+    // any descendents of prototypes are removed if corresponding prototype is
+    // present
     if (!pathsContainsAbsRoot && 
             pathsToRecompose->size() != origNumPathsToRecompose) {
         _RemoveDescendentEntries(pathsToRecompose);
@@ -4253,7 +4255,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         &subtreesToRecompose);
 
     // Recompose subtrees.
-    if (masterToPrimIndexMap.empty()) {
+    if (prototypeToPrimIndexMap.empty()) {
         _ComposeSubtreesInParallel(subtreesToRecompose);
     }
     else {
@@ -4262,13 +4264,13 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         primIndexPathsForSubtrees.reserve(subtreesToRecompose.size());
         for (const auto& prim : subtreesToRecompose) {
             primIndexPathsForSubtrees.push_back(TfMapLookupByValue(
-                masterToPrimIndexMap, prim->GetPath(), prim->GetPath()));
+                prototypeToPrimIndexMap, prim->GetPath(), prim->GetPath()));
         }
         _ComposeSubtreesInParallel(
             subtreesToRecompose, &primIndexPathsForSubtrees);
     }
 
-    // Destroy dead master subtrees, making sure to record them in
+    // Destroy dead prototype subtrees, making sure to record them in
     // paths to recompose for notifications.
     for (const SdfPath& p : instanceChanges.deadPrototypePrims) {
         (*pathsToRecompose)[p];
@@ -4303,26 +4305,26 @@ UsdStage::_ComputeSubtreesToRecompose(
             continue;
         }
 
-        // Add masters to list of subtrees to recompose and instantiate any 
-        // new master not present in the primMap from before
+        // Add prototypes to list of subtrees to recompose and instantiate any 
+        // new prototype not present in the primMap from before
         if (_instanceCache->IsPrototypePath(*i)) {
             PathToNodeMap::const_iterator itr = _primMap.find(*i);
-            Usd_PrimDataPtr masterPrim;
+            Usd_PrimDataPtr prototypePrim;
             if (itr != _primMap.end()) {
-                // should be a changed master if already in the primMap
-                masterPrim = itr->second.get();
+                // should be a changed prototype if already in the primMap
+                prototypePrim = itr->second.get();
             } else {
-                // newMaster should be absent from the primMap, instantiate
+                // newPrototype should be absent from the primMap, instantiate
                 // these now to be added to subtreesToRecompose
-                masterPrim = _InstantiateMasterPrim(*i);
+                prototypePrim = _InstantiatePrototypePrim(*i);
             }
-            subtreesToRecompose->push_back(masterPrim);
+            subtreesToRecompose->push_back(prototypePrim);
             ++i;
             continue;
         }
 
-        // Collect all non-master prims (including descendants of masters) to be
-        // added to subtreesToRecompute
+        // Collect all non-prototype prims (including descendants of prototypes)
+        // to be added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
         PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
         if (parentIt != _primMap.end()) {
@@ -4345,11 +4347,11 @@ UsdStage::_ComputeSubtreesToRecompose(
                 if (primIt != _primMap.end()) {
                     subtreesToRecompose->push_back(primIt->second.get());
                 } else if (_instanceCache->IsPrototypePath(*i)) {
-                    // If this path is a master path and is not present in the
-                    // primMap, then this must be a newMaster added during this
-                    // processing, instantiate and add it.
-                    Usd_PrimDataPtr masterPrim = _InstantiateMasterPrim(*i);
-                    subtreesToRecompose->push_back(masterPrim);
+                    // If this path is a prototype path and is not present in
+                    // the primMap, then this must be a new prototype added
+                    // during this processing, instantiate and add it.
+                    Usd_PrimDataPtr protoPrim = _InstantiatePrototypePrim(*i);
+                    subtreesToRecompose->push_back(protoPrim);
                 }
                 ++i;
             } while (i != end && i->GetParentPath() == parentPath);
@@ -4430,7 +4432,7 @@ UsdStage::_ComposePrimIndexesInParallel(
         instanceChanges->AppendChanges(changes);
     }
 
-    // After processing changes, we may discover that some master prims
+    // After processing changes, we may discover that some prototype prims
     // need to change their source prim index. This may be because their
     // previous source prim index was destroyed or was no longer an
     // instance. Compose the new source prim indexes.
@@ -4628,10 +4630,10 @@ _RemapTargetPaths(SdfPathVector* targetPaths,
     }
 }
 
-// Remove any paths to master prims or descendants from given target paths
+// Remove any paths to prototype prims or descendants from given target paths
 // for srcProp. Issues a warning if any paths were removed.
 void
-_RemoveMasterTargetPaths(const UsdProperty& srcProp, 
+_RemovePrototypeTargetPaths(const UsdProperty& srcProp, 
                          SdfPathVector* targetPaths)
 {
     auto removeIt = std::remove_if(
@@ -4651,43 +4653,44 @@ _RemoveMasterTargetPaths(const UsdProperty& srcProp,
     targetPaths->erase(removeIt, targetPaths->end());
 }
 
-// We want to give generated masters in the flattened stage
+// We want to give generated prototypes in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
 // we don't want to use the '__Master' paths which have special
 // meaning to UsdStage. So we create a mapping between our generated
 // 'Flattened_Master'-style paths and the '__Master' paths.
 _PathRemapping
-_GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
+_GenerateFlattenedPrototypePath(const std::vector<UsdPrim>& prototypes)
 {
-    size_t primMasterId = 1;
+    size_t primPrototypeId = 1;
 
-    const auto generatePathName = [&primMasterId]() {
+    const auto generatePathName = [&primPrototypeId]() {
         return SdfPath(TfStringPrintf("/Flattened_Master_%lu", 
-                                      primMasterId++));
+                                      primPrototypeId++));
     };
 
-    _PathRemapping masterToFlattened;
+    _PathRemapping prototypeToFlattened;
 
-    for (auto const& masterPrim : masters) {
-        SdfPath flattenedMasterPath;
-        const auto masterPrimPath = masterPrim.GetPath();
+    for (auto const& prototypePrim : prototypes) {
+        SdfPath flattenedPrototypePath;
+        const auto prototypePrimPath = prototypePrim.GetPath();
 
-        auto masterPathLookup = masterToFlattened.find(masterPrimPath);
-        if (masterPathLookup == masterToFlattened.end()) {
+        auto prototypePathLookup = prototypeToFlattened.find(prototypePrimPath);
+        if (prototypePathLookup == prototypeToFlattened.end()) {
             // We want to ensure that we don't clash with user
             // prims in the unlikely even they named it Flatten_xxx
-            flattenedMasterPath = generatePathName();
-            const auto stage = masterPrim.GetStage();
-            while (stage->GetPrimAtPath(flattenedMasterPath)) {
-                flattenedMasterPath = generatePathName();
+            flattenedPrototypePath = generatePathName();
+            const auto stage = prototypePrim.GetStage();
+            while (stage->GetPrimAtPath(flattenedPrototypePath)) {
+                flattenedPrototypePath = generatePathName();
             }
-            masterToFlattened.emplace(masterPrimPath, flattenedMasterPath);
+            prototypeToFlattened.emplace(
+                prototypePrimPath, flattenedPrototypePath);
         } else {
-            flattenedMasterPath = masterPathLookup->second;
+            flattenedPrototypePath = prototypePathLookup->second;
         }     
     }
 
-    return masterToFlattened;
+    return prototypeToFlattened;
 }
 
 void
@@ -4773,7 +4776,7 @@ _CopyProperty(const UsdProperty &prop,
         attr.GetConnections(&sources);
         if (!sources.empty()) {
             _RemapTargetPaths(&sources, pathRemapping);
-            _RemoveMasterTargetPaths(prop, &sources);
+            _RemovePrototypeTargetPaths(prop, &sources);
             sdfAttr->GetConnectionPathList().GetExplicitItems() = sources;
         }
      }
@@ -4794,7 +4797,7 @@ _CopyProperty(const UsdProperty &prop,
          rel.GetTargets(&targets);
          if (!targets.empty()) {
              _RemapTargetPaths(&targets, pathRemapping);
-             _RemoveMasterTargetPaths(prop, &targets);
+             _RemovePrototypeTargetPaths(prop, &targets);
              sdfRel->GetTargetPathList().GetExplicitItems() = targets;
          }
      }
@@ -4803,7 +4806,7 @@ _CopyProperty(const UsdProperty &prop,
 void
 _CopyPrim(const UsdPrim &usdPrim, 
           const SdfLayerHandle &layer, const SdfPath &path,
-          const _PathRemapping &masterToFlattened)
+          const _PathRemapping &prototypeToFlattened)
 {
     SdfPrimSpecHandle newPrim;
     
@@ -4821,12 +4824,12 @@ _CopyPrim(const UsdPrim &usdPrim,
     }
 
     if (usdPrim.IsInstance()) {
-        const auto flattenedMasterPath = 
-            masterToFlattened.at(usdPrim.GetMaster().GetPath());
+        const auto flattenedPrototypePath = 
+            prototypeToFlattened.at(usdPrim.GetMaster().GetPath());
 
-        // Author an internal reference to our flattened master prim
+        // Author an internal reference to our flattened prototype prim
         newPrim->GetReferenceList().Add(SdfReference(std::string(),
-                                        flattenedMasterPath));
+                                        flattenedPrototypePath));
     }
     
     _CopyAuthoredMetadata(usdPrim, newPrim);
@@ -4843,27 +4846,27 @@ _CopyPrim(const UsdPrim &usdPrim,
     
     for (auto const &prop : usdPrim.GetProperties()) {
         if (prop.IsAuthored() || hasValue(prop)) {
-            _CopyProperty(prop, newPrim, prop.GetName(), masterToFlattened,
+            _CopyProperty(prop, newPrim, prop.GetName(), prototypeToFlattened,
                           SdfLayerOffset());
         }
     }
 }
 
 void
-_CopyMasterPrim(const UsdPrim &masterPrim,
-                const SdfLayerHandle &destinationLayer,
-                const _PathRemapping &masterToFlattened)
+_CopyPrototypePrim(const UsdPrim &prototypePrim,
+                   const SdfLayerHandle &destinationLayer,
+                   const _PathRemapping &prototypeToFlattened)
 {
-    const auto& flattenedMasterPath 
-        = masterToFlattened.at(masterPrim.GetPath());
+    const auto& flattenedPrototypePath 
+        = prototypeToFlattened.at(prototypePrim.GetPath());
 
-    for (UsdPrim child: UsdPrimRange::AllPrims(masterPrim)) {
+    for (UsdPrim child: UsdPrimRange::AllPrims(prototypePrim)) {
         // We need to update the child path to use the Flatten name.
         const auto flattenedChildPath = child.GetPath().ReplacePrefix(
-            masterPrim.GetPath(), flattenedMasterPath);
+            prototypePrim.GetPath(), flattenedPrototypePath);
 
         _CopyPrim(child, destinationLayer, flattenedChildPath, 
-                  masterToFlattened);
+                  prototypeToFlattened);
     }
 }
 
@@ -4973,16 +4976,17 @@ UsdStage::Flatten(bool addSourceFileComment) const
 
     // Preemptively populate our mapping. This allows us to populate
     // nested instances in the destination layer much more simply.
-    const auto masterToFlattened = _GenerateFlattenedMasterPath(GetMasters());
+    const auto prototypeToFlattened =
+        _GenerateFlattenedPrototypePath(GetMasters());
 
-    // We author the master overs first to produce simpler 
+    // We author the prototype overs first to produce simpler 
     // assets which have them grouped at the top of the file.
-    for (auto const& master : GetMasters()) {
-        _CopyMasterPrim(master, flatLayer, masterToFlattened);
+    for (auto const& prototype : GetMasters()) {
+        _CopyPrototypePrim(prototype, flatLayer, prototypeToFlattened);
     }
 
     for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
-        _CopyPrim(prim, flatLayer, prim.GetPath(), masterToFlattened);
+        _CopyPrim(prim, flatLayer, prim.GetPath(), prototypeToFlattened);
     }
 
     if (addSourceFileComment) {
@@ -6313,7 +6317,7 @@ _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
         return false;
     }
 
-    // Instance master prims are always defined -- see Usd_PrimData for
+    // Instance prototype prims are always defined -- see Usd_PrimData for
     // details. Since the fallback for specifier is 'over', we have to
     // handle these prims specially here.
     if (primData->IsPrototype()) {
