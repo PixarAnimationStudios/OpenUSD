@@ -56,7 +56,7 @@ public:
     HGIMETAL_API
     uint64_t GetRawResource() const override;
 
-    /// Returns the gl resource id of the shader.
+    /// Returns the metal resource id of the shader.
     HGIMETAL_API
     id<MTLFunction> GetShaderId() const;
 
