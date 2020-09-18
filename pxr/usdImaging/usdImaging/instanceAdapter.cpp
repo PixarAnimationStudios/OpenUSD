@@ -1883,7 +1883,7 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
         if (!materialId.IsEmpty()) {
             return materialId;
         } else {
-            // child prim doesn't one? fall back on instancerContext's
+            // child prim have doesn't one? fall back on instancerContext's
             // value
             return instancerContext.instancerMaterialUsdPath;
         }
