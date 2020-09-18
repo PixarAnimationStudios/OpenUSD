@@ -281,6 +281,12 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
 }
 
 void
+HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
+{
+    TF_CODING_ERROR("todo missing implementation");
+}
+
+void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());

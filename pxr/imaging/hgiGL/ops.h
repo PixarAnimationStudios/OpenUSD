@@ -89,6 +89,9 @@ public:
     static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 
     HGIGL_API
+    static HgiGLOpsFn CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp);
+
+    HGIGL_API
     static HgiGLOpsFn ResolveFramebuffer(
         HgiGLDevice* device,
         HgiGraphicsCmdsDesc const &graphicsCmds);

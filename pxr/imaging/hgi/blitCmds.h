@@ -38,6 +38,7 @@ struct HgiTextureGpuToCpuOp;
 struct HgiTextureCpuToGpuOp;
 struct HgiBufferGpuToGpuOp;
 struct HgiBufferCpuToGpuOp;
+struct HgiBufferGpuToCpuOp;
 struct HgiResolveImageOp;
 
 using HgiBlitCmdsUniquePtr = std::unique_ptr<class HgiBlitCmds>;
@@ -76,10 +77,14 @@ public:
     HGI_API
     virtual void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) = 0;
 
-    /// Copy new data from cpu into gpu buffer.
+    /// Copy new data from CPU into GPU buffer.
     /// For example copy new data into a uniform block or storage buffer.
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
+
+    /// Copy new data from GPU into CPU buffer.
+    HGI_API
+    virtual void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) = 0;
 
     /// Generate mip maps for a texture
     HGI_API

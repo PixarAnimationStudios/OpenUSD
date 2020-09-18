@@ -280,6 +280,37 @@ HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
     };
 }
 
+HgiGLOpsFn 
+HgiGLOps::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
+{
+    return [copyOp] {
+        if (copyOp.byteSize == 0 ||
+            !copyOp.cpuDestinationBuffer ||
+            !copyOp.gpuSourceBuffer)
+        {
+            return;
+        }
+
+        HgiGLBuffer* glBuffer = static_cast<HgiGLBuffer*>(
+            copyOp.gpuSourceBuffer.Get());
+
+        // Offset into the dst buffer
+        const char* dst = ((const char*) copyOp.cpuDestinationBuffer) +
+            copyOp.destinationByteOffset;
+
+        // Offset into the src buffer
+        GLintptr srcOffset = copyOp.sourceByteOffset;
+
+        glGetNamedBufferSubData(
+            glBuffer->GetBufferId(),
+            srcOffset,
+            copyOp.byteSize,
+            (void*)dst);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
 HgiGLOpsFn
 HgiGLOps::SetViewport(GfVec4i const& vp)
 {

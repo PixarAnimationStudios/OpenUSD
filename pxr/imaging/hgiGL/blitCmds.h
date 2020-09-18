@@ -61,6 +61,9 @@ public:
     void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
 
     HGIGL_API
+    void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) override;
+
+    HGIGL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
 
 protected:
