@@ -142,11 +142,8 @@ private:
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    // GLsync is not defined in gl.h. It's defined in spec as an opaque pointer:
-    typedef struct __GLsync *GLsync;
     void _EndGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const &resourceRegistry, 
-        GLsync resultSync,
         size_t * result);
 
     HdStDispatchBufferSharedPtr _dispatchBuffer;
@@ -173,10 +170,6 @@ private:
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;
-
-    // We'll use this fence to signal when GPU frustum culling is
-    // complete if we need to read back result data from the GPU.
-    GLsync _cullResultSync;
 };
 
 

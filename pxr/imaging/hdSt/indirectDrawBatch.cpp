@@ -41,6 +41,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -104,7 +107,6 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
 
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
-    , _cullResultSync(0)
 {
     _Init(drawItemInstance);
 }
@@ -1092,10 +1094,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
     if (gpuCulling && !freezeCulling) {
         if (IsEnabledGPUCountVisibleInstances()) {
-            _EndGPUCountVisibleInstances(
-                resourceRegistry, _cullResultSync, &_numVisibleItems);
-            glDeleteSync(_cullResultSync);
-            _cullResultSync = 0;
+            _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
         }
     }
 }
@@ -1452,14 +1451,6 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
         GL_COMMAND_BARRIER_BIT |         // instanceCount for MDI
         GL_SHADER_STORAGE_BARRIER_BIT |  // instanceCount for shader
         GL_UNIFORM_BARRIER_BIT);         // instanceIndices
-
-    // a fence has to be added after the memory barrier.
-    if (IsEnabledGPUCountVisibleInstances()) {
-        _cullResultSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    } else {
-        _cullResultSync = 0;
-    }
-
 }
 
 void
@@ -1531,13 +1522,6 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
         GL_SHADER_STORAGE_BARRIER_BIT // instanceCount for shader
     );
 
-    // a fence has to be added after the memory barrier.
-    if (IsEnabledGPUCountVisibleInstances()) {
-        _cullResultSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    } else {
-        _cullResultSync = 0;
-    }
-
     // unbind all
     binder.UnbindConstantBuffer(constantBar);
     binder.UnbindBufferArray(cullDispatchBar);
@@ -1603,10 +1587,26 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     }
 
     // Reset visible item count
-    int32_t count = 0;
-    glNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
-        sizeof(count), &count);
+    static const int32_t count = 0;
+    HgiBlitCmds* blitCmds = resourceRegistry->GetGlobalBlitCmds();
+    HgiBufferCpuToGpuOp op;
+    op.cpuSourceBuffer = &count;
+    op.sourceByteOffset = 0;
+    op.gpuDestinationBuffer = _resultBuffer->GetBuffer();
+    op.destinationByteOffset = 0;
+    op.byteSize = sizeof(count);
+    blitCmds->CopyBufferCpuToGpu(op);
 
+    // For now we need to submit here, because there are raw gl calls after
+    // _BeginGPUCountVisibleInstances that rely on this having executed on GPU.
+    // XXX Remove this once the rest of indirectDrawBatch is using Hgi.
+    resourceRegistry->SubmitBlitWork();
+
+// todo use HgiResourceBindings? But how to synch this with other buffers and
+// hgi resource bindings? The culling program should bind this internally via
+// HgiResourceBindings.
+
+// todo
     // XXX: temporarily hack during refactoring.
     // we'd like to use the same API as other buffers.
     int binding = _cullingProgram.GetBinder().GetBinding(
@@ -1618,36 +1618,28 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 void
 HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(
     HdStResourceRegistrySharedPtr const &resourceRegistry,
-    GLsync resultSync,
     size_t * result)
 {
-    // XXX Submit any work recorded before this call since we are using raw gl
-    // calls below. If we don't submit Hgi work, things are out of order.
-    // Code below needs to be converted to Hgi and the SubmitWork calls removed.
-    resourceRegistry->SubmitBlitWork();
-    resourceRegistry->SubmitComputeWork();
+    // Submit and wait for all the work recorded up to this point.
+    // The GPU work must complete before we can read-back the GPU buffer.
+    resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
+    resourceRegistry->SubmitComputeWork(HgiSubmitWaitTypeWaitUntilCompleted);
 
-    GLenum status = glClientWaitSync(resultSync,
-            GL_SYNC_FLUSH_COMMANDS_BIT, HD_CULL_RESULT_TIMEOUT_NS);
-
-    if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED) {
-        // We could loop, but we don't expect to timeout.
-        TF_RUNTIME_ERROR("Unexpected ClientWaitSync timeout");
-        *result = 0;
-        return;
-    }
-
-    // Return visible item count
     int32_t count = 0;
-    glGetNamedBufferSubData(_resultBuffer->GetBuffer()->GetRawResource(), 0,
-                            sizeof(count), &count);
-    *result = count;
 
-    // XXX: temporarily hack during refactoring.
-    // we'd like to use the same API as other buffers.
-    int binding = _cullingProgram.GetBinder().GetBinding(
-        _tokens->drawIndirectResult).GetLocation();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, 0);
+    // Submit GPU buffer read back
+    HgiBufferGpuToCpuOp copyOp;
+    copyOp.byteSize = sizeof(count);
+    copyOp.cpuDestinationBuffer = &count;
+    copyOp.destinationByteOffset = 0;
+    copyOp.gpuSourceBuffer = _resultBuffer->GetBuffer();
+    copyOp.sourceByteOffset = 0;
+
+    HgiBlitCmds* blitCmds = resourceRegistry->GetGlobalBlitCmds();
+    blitCmds->CopyBufferGpuToCpu(copyOp);
+    resourceRegistry->SubmitBlitWork();
+
+    *result = count;
 }
 
 void
