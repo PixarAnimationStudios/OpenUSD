@@ -1373,6 +1373,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
 
     if (IsEnabledGPUCountVisibleInstances()) {
         _BeginGPUCountVisibleInstances(resourceRegistry);
+        binder.BindBuffer(_tokens->drawIndirectResult, _resultBuffer);
     }
 
     // bind destination buffer (using entire buffer bind to start from offset=0)
@@ -1445,6 +1446,10 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     binder.UnbindBuffer(_tokens->dispatchBuffer,
                         _dispatchBuffer->GetEntireResource());
 
+    if (IsEnabledGPUCountVisibleInstances()) {
+        binder.UnbindBuffer(_tokens->drawIndirectResult, _resultBuffer);
+    }
+
     // make sure the culling results (instanceIndices and instanceCount)
     // are synchronized for the next drawing.
     glMemoryBarrier(
@@ -1491,6 +1496,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
 
     if (IsEnabledGPUCountVisibleInstances()) {
         _BeginGPUCountVisibleInstances(resourceRegistry);
+        binder.BindBuffer(_tokens->drawIndirectResult, _resultBuffer);
     }
 
     // set cull parameters
@@ -1525,6 +1531,10 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     // unbind all
     binder.UnbindConstantBuffer(constantBar);
     binder.UnbindBufferArray(cullDispatchBar);
+
+    if (IsEnabledGPUCountVisibleInstances()) {
+        binder.UnbindBuffer(_tokens->drawIndirectResult, _resultBuffer);
+    }
 
     glUseProgram(0);
 }
@@ -1581,9 +1591,13 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_resultBuffer) {
+        HdTupleType tupleType;
+        tupleType.type = HdTypeInt32;
+        tupleType.count = 1;
+
         _resultBuffer = 
-            resourceRegistry->RegisterPersistentBuffer(
-                _tokens->drawIndirectResult, sizeof(GLint), 0);
+            resourceRegistry->RegisterBufferResource(
+                _tokens->drawIndirectResult, tupleType);
     }
 
     // Reset visible item count
@@ -1592,7 +1606,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     HgiBufferCpuToGpuOp op;
     op.cpuSourceBuffer = &count;
     op.sourceByteOffset = 0;
-    op.gpuDestinationBuffer = _resultBuffer->GetBuffer();
+    op.gpuDestinationBuffer = _resultBuffer->GetId();
     op.destinationByteOffset = 0;
     op.byteSize = sizeof(count);
     blitCmds->CopyBufferCpuToGpu(op);
@@ -1601,18 +1615,6 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     // _BeginGPUCountVisibleInstances that rely on this having executed on GPU.
     // XXX Remove this once the rest of indirectDrawBatch is using Hgi.
     resourceRegistry->SubmitBlitWork();
-
-// todo use HgiResourceBindings? But how to synch this with other buffers and
-// hgi resource bindings? The culling program should bind this internally via
-// HgiResourceBindings.
-
-// todo
-    // XXX: temporarily hack during refactoring.
-    // we'd like to use the same API as other buffers.
-    int binding = _cullingProgram.GetBinder().GetBinding(
-        _tokens->drawIndirectResult).GetLocation();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding,
-        _resultBuffer->GetBuffer()->GetRawResource());
 }
 
 void
@@ -1632,12 +1634,12 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(
     copyOp.byteSize = sizeof(count);
     copyOp.cpuDestinationBuffer = &count;
     copyOp.destinationByteOffset = 0;
-    copyOp.gpuSourceBuffer = _resultBuffer->GetBuffer();
+    copyOp.gpuSourceBuffer = _resultBuffer->GetId();
     copyOp.sourceByteOffset = 0;
 
     HgiBlitCmds* blitCmds = resourceRegistry->GetGlobalBlitCmds();
     blitCmds->CopyBufferGpuToCpu(copyOp);
-    resourceRegistry->SubmitBlitWork();
+    resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
 
     *result = count;
 }

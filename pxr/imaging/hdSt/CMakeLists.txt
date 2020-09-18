@@ -73,7 +73,6 @@ pxr_library(hdSt
         mesh
         mixinShader
         package
-        persistentBuffer
         points
         renderBuffer
         renderDelegate

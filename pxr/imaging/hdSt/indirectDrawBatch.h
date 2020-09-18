@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
-#include "pxr/imaging/hdSt/persistentBuffer.h"
 
 #include <vector>
 
@@ -153,7 +152,7 @@ private:
     bool _drawCommandBufferDirty;
     size_t _bufferArraysHash;
 
-    HdStPersistentBufferSharedPtr _resultBuffer;
+    HdStBufferResourceSharedPtr _resultBuffer;
 
     size_t _numVisibleItems;
     size_t _numTotalVertices;

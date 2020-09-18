@@ -69,8 +69,8 @@ using HdStTextureHandleSharedPtr =
     std::shared_ptr<class HdStTextureHandle>;
 using HdStTextureObjectSharedPtr =
     std::shared_ptr<class HdStTextureObject>;
-using HdStPersistentBufferSharedPtr =
-    std::shared_ptr<class HdStPersistentBuffer>; 
+using HdStBufferResourceSharedPtr = 
+    std::shared_ptr<class HdStBufferResource>;
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
 using Hd_VertexAdjacencySharedPtr = 
@@ -306,7 +306,7 @@ public:
                         HdStComputeQueue const queue);
 
     /// ------------------------------------------------------------------------
-    /// Dispatch & persistent buffer API
+    /// Dispatch & buffer API
     /// ------------------------------------------------------------------------
 
     /// Register a buffer allocated with \a count * \a commandNumUints *
@@ -315,19 +315,23 @@ public:
     HdStDispatchBufferSharedPtr RegisterDispatchBuffer(
         TfToken const &role, int count, int commandNumUints);
 
-    /// Register a buffer initialized with \a dataSize bytes of \a data
-    /// to be used as a persistently mapped shader storage buffer.
+    /// Register a misc buffer resource.
+    /// Usually buffers are part of a buffer array (buffer aggregation) and are
+    /// managed via buffer array APIs.
+    /// RegisterBufferResource lets you create a standalone buffer that can
+    /// be used for misc purposes (Eg. GPU frustum cull prim count read back).
     HDST_API
-    HdStPersistentBufferSharedPtr RegisterPersistentBuffer(
-        TfToken const &role, size_t dataSize, void *data);
+    HdStBufferResourceSharedPtr RegisterBufferResource(
+        TfToken const &role, 
+        HdTupleType tupleType);
 
     /// Remove any entries associated with expired dispatch buffers.
     HDST_API
     void GarbageCollectDispatchBuffers();
 
-    /// Remove any entries associated with expired persistently mapped buffers.
+    /// Remove any entries associated with expired misc buffers.
     HDST_API
-    void GarbageCollectPersistentBuffers();
+    void GarbageCollectBufferResources();
 
     /// ------------------------------------------------------------------------
     /// Instance Registries
@@ -624,9 +628,9 @@ private:
         _DispatchBufferRegistry;
     _DispatchBufferRegistry _dispatchBufferRegistry;
 
-    typedef std::vector<HdStPersistentBufferSharedPtr>
-        _PersistentBufferRegistry;
-    _PersistentBufferRegistry _persistentBufferRegistry;
+    typedef std::vector<HdStBufferResourceSharedPtr>
+        _BufferResourceRegistry;
+    _BufferResourceRegistry _bufferResourceRegistry;
 
     // Register mesh topology.
     HdInstanceRegistry<HdSt_MeshTopologySharedPtr>
