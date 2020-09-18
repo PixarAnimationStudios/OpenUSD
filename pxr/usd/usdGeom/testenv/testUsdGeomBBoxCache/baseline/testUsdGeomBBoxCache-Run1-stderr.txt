@@ -1,5 +1,5 @@
 #  SEV_ENABLE_AUTO_CONFIGURATION is overridden to 'false'.  Default is 'true'.  #
-#  USD_ASSIGN_MASTERS_DETERMINISTICALLY is overridden to 'true'.  Default is 'false'.  #
+#  USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY is overridden to 'true'.  Default is 'false'.  #
 #################################################################################
 #################################################################################
 ########################################################################################

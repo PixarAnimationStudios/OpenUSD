@@ -39,8 +39,8 @@ using std::pair;
 using std::vector;
 
 TF_DEFINE_ENV_SETTING(
-    USD_ASSIGN_MASTERS_DETERMINISTICALLY, false,
-    "Set to true to cause instances to be assigned to masters in a "
+    USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY, false,
+    "Set to true to cause instances to be assigned to prototypes in a "
     "deterministic way, ensuring consistency across runs.  This incurs "
     "some additional overhead.");
 
@@ -161,7 +161,7 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
     }
 
     // Add newly-registered prim indexes to the cache.
-    if (TfGetEnvSetting(USD_ASSIGN_MASTERS_DETERMINISTICALLY)) {
+    if (TfGetEnvSetting(USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY)) {
         // The order in which we process newly-registered prim indexes
         // determines the name of the prototype prims assigned to instances.
         // We need to iterate over the hash map in a fixed ordering to

@@ -695,7 +695,7 @@ pxr_register_test(testUsdInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancing"
     ENV
-        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdInstanceProxy
@@ -752,6 +752,8 @@ pxr_register_test(testUsdPrimGetDescendants
 pxr_register_test(testUsdInstancingCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancingCpp"
     EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdPrims
@@ -880,6 +882,8 @@ pxr_register_test(testUsdFlatten2
     STDOUT_REDIRECT flat_BasicInstancingAndVariants.usda
     DIFF_COMPARE flat_BasicInstancingAndVariants.usda
     EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdFlatten3
@@ -888,6 +892,8 @@ pxr_register_test(testUsdFlatten3
     STDOUT_REDIRECT flat_BasicInstancing.usda
     DIFF_COMPARE flat_BasicInstancing.usda
     EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdFlatten4
@@ -897,7 +903,7 @@ pxr_register_test(testUsdFlatten4
     DIFF_COMPARE flat_BasicInstancingAndNestedInstances.usda
     EXPECTED_RETURN_CODE 0
     ENV
-        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdFlattenLayerStack

@@ -231,7 +231,7 @@ pxr_register_test(testUsdGeomBBoxCache
     EXPECTED_RETURN_CODE 0
     ENV 
         TF_DEBUG=USDGEOM_BBOX
-        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdGeomCamera
