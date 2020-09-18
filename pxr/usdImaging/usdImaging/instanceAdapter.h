@@ -352,6 +352,14 @@ private:
                                      SdfPath const& cachePath,
                                      UsdImagingInstancerContext* ctx) const;
 
+    // Gets the associated _ProtoPrim and instancerContext if cachePath is a 
+    // child path and returns \c true, otherwise returns \c false.
+    bool _GetProtoPrimForChild(
+            UsdPrim const& usdPrim,
+            SdfPath const& cachePath,
+            _ProtoPrim const** proto,
+            UsdImagingInstancerContext* ctx) const;
+
     // Computes the transforms for all instances corresponding to the given
     // instancer.
     struct _ComputeInstanceTransformFn;
