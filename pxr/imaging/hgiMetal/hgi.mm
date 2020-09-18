@@ -324,15 +324,25 @@ HgiMetal::CommitCommandBuffer(CommitCommandBufferWaitType waitType,
 }
 
 bool
-HgiMetal::_SubmitCmds(HgiCmds* cmds)
+HgiMetal::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
     TRACE_FUNCTION();
 
     if (cmds) {
-        _workToFlush = Hgi::_SubmitCmds(cmds);
+        _workToFlush = Hgi::_SubmitCmds(cmds, wait);
     }
 
-    CommitCommandBuffer();
+    CommitCommandBufferWaitType waitType;
+    switch(wait) {
+        case HgiSubmitWaitTypeNoWait:
+            waitType = CommitCommandBuffer_NoWait;
+            break;
+        case HgiSubmitWaitTypeWaitUntilCompleted:
+            waitType = CommitCommandBuffer_WaitUntilCompleted;
+            break;
+    }
+
+    CommitCommandBuffer(waitType);
 
     return _workToFlush;
 }

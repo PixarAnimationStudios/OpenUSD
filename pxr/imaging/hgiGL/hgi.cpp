@@ -272,9 +272,24 @@ HgiGL::EndFrame()
 }
 
 bool
-HgiGL::_SubmitCmds(HgiCmds* cmds)
+HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
-    bool result = Hgi::_SubmitCmds(cmds);
+    bool result = Hgi::_SubmitCmds(cmds, wait);
+
+    if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+        static const uint64_t timeOut = 100000000000;
+
+        GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        GLenum status = glClientWaitSync(
+            fence, GL_SYNC_FLUSH_COMMANDS_BIT, timeOut);
+
+        if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED) {
+            // We could loop, but we don't expect to timeout.
+            TF_RUNTIME_ERROR("Unexpected ClientWaitSync timeout");
+        }
+
+        glDeleteSync(fence);
+    }
 
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
     if (_frameDepth == 0) {

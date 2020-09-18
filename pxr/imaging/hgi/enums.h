@@ -483,6 +483,23 @@ enum HgiPrimitiveType
     HgiPrimitiveTypeCount
 };
 
+/// \enum HgiSubmitWaitType
+///
+/// Describes command submission wait behavior.
+///
+/// <ul>
+/// <li>HgiSubmitWaitTypeNoWait:
+///   CPU should not wait for the GPU to finish processing the cmds.</li>
+/// <li>HgiSubmitWaitTypeWaitUntilCompleted:
+///   The CPU waits ("blocked") until the GPU has consumed the cmds.</li>
+/// </ul>
+///
+enum HgiSubmitWaitType
+{
+    HgiSubmitWaitTypeNoWait = 0,
+    HgiSubmitWaitTypeWaitUntilCompleted,
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

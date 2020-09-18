@@ -287,7 +287,7 @@ HgiMetalGraphicsCmds::PopDebugGroup()
 }
 
 bool
-HgiMetalGraphicsCmds::_Submit(Hgi* hgi)
+HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_encoder) {
         [_encoder endEncoding];

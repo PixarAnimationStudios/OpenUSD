@@ -149,7 +149,7 @@ HgiGLGraphicsCmds::PopDebugGroup()
 }
 
 bool
-HgiGLGraphicsCmds::_Submit(Hgi* hgi)
+HgiGLGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_ops.empty()) {
         return false;

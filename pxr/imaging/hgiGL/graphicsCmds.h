@@ -103,7 +103,7 @@ protected:
         HgiGraphicsCmdsDesc const& desc);
 
     HGIGL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiGLGraphicsCmds() = delete;

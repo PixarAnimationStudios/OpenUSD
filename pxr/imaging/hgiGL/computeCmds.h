@@ -72,7 +72,7 @@ protected:
     HgiGLComputeCmds(HgiGLDevice* device);
 
     HGIGL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiGLComputeCmds() = delete;

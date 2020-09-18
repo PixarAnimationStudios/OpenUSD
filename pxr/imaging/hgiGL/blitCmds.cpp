@@ -94,7 +94,7 @@ HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 }
 
 bool
-HgiGLBlitCmds::_Submit(Hgi* hgi)
+HgiGLBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_ops.empty()) {
         return false;

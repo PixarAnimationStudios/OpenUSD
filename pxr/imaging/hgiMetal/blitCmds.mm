@@ -292,7 +292,7 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 }
 
 bool
-HgiMetalBlitCmds::_Submit(Hgi* hgi)
+HgiMetalBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_blitEncoder) {
         [_blitEncoder endEncoding];

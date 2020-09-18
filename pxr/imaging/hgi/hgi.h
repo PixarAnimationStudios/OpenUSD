@@ -300,7 +300,9 @@ protected:
     // Derived classes can override this function if they need customize the
     // command submission. The default implementation calls cmds->_Submit().
     HGI_API
-    virtual bool _SubmitCmds(HgiCmds* cmds);
+    virtual bool _SubmitCmds(
+        HgiCmds* cmds, 
+        HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
 private:
     Hgi & operator=(const Hgi&) = delete;

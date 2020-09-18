@@ -70,7 +70,7 @@ protected:
     HgiGLBlitCmds();
 
     HGIGL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiGLBlitCmds & operator=(const HgiGLBlitCmds&) = delete;

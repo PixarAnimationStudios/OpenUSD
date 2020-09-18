@@ -113,7 +113,7 @@ HgiMetalComputeCmds::PopDebugGroup()
 }
 
 bool
-HgiMetalComputeCmds::_Submit(Hgi* hgi)
+HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_encoder) {
         [_encoder endEncoding];

@@ -96,7 +96,7 @@ HgiGLComputeCmds::PopDebugGroup()
 }
 
 bool
-HgiGLComputeCmds::_Submit(Hgi* hgi)
+HgiGLComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_ops.empty()) {
         return false;

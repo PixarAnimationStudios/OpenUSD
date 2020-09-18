@@ -151,7 +151,7 @@ public:
 
 protected:
     HGIGL_API
-    bool _SubmitCmds(HgiCmds* cmds) override;
+    bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;
 
 private:
     HgiGL & operator=(const HgiGL&) = delete;

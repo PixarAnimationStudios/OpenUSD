@@ -71,7 +71,7 @@ protected:
     HgiMetalBlitCmds(HgiMetal* hgi);
 
     HGIMETAL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiMetalBlitCmds() = delete;

@@ -118,9 +118,9 @@ Hgi::GetUniqueId()
 }
 
 bool
-Hgi::_SubmitCmds(HgiCmds* cmds)
+Hgi::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
-    return cmds->_Submit(this);
+    return cmds->_Submit(this, wait);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -180,7 +180,7 @@ public:
 
 protected:
     HGIMETAL_API
-    bool _SubmitCmds(HgiCmds* cmds) override;
+    bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;
 
 private:
     HgiMetal & operator=(const HgiMetal&) = delete;

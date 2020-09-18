@@ -38,7 +38,7 @@ HgiCmds::IsSubmitted() const
 }
 
 bool
-HgiCmds::_Submit(Hgi* hgi)
+HgiCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     return false;
 }
