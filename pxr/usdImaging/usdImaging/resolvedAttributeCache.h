@@ -134,7 +134,7 @@ public:
 
     /// Clears all pre-cached values.
     void Clear() {
-        _cache.clear();
+        WorkSwapDestroyAsync(_cache);
         _cacheVersion = _GetInitialCacheVersion();
     }
 
