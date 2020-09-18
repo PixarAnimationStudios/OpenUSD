@@ -112,9 +112,6 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
                 "Copying from compressed GPU texture not supported.");
             return;
         }
-        
-        // Make sure writes are finished before we read from the texture
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
         glGetTextureSubImage(
             srcTexture->GetTextureId(),
@@ -202,9 +199,6 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
             break;
         }
 
-        // Make sure the copy is finished before reads from texture.
-        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
-
         HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
@@ -268,13 +262,6 @@ HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
             dstOffset,
             copyOp.byteSize,
             src);
-
-        // We do not need this barrier because (currently) no shaders write
-        // to these buffers from Storm. Meaning: we can rely on OpenGL's
-        // implicit synch. Adding this barrier would cause some performance
-        // regressions. If we do need this barrier in the future, we need to
-        // find a Hgi way of expressing when the barrier should be inserted.
-        // glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };

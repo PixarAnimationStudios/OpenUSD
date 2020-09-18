@@ -162,8 +162,21 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:cpuBuffer];
     }
-    memcpy(copyOp.cpuDestinationBuffer,
-        [cpuBuffer contents], copyOp.destinationBufferByteSize);
+    
+    // Offset into the dst buffer
+    char* dst = ((char*) copyOp.cpuDestinationBuffer) +
+        copyOp.destinationByteOffset;
+    
+    // Offset into the src buffer
+    const char* src = (const char*) [cpuBuffer contents];
+
+    // bytes to copy
+    size_t byteSize = copyOp.destinationBufferByteSize;
+
+    [_hgi->GetCommandBuffer() addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+        {
+            memcpy(dst, src, byteSize);
+        }];
     [cpuBuffer release];
 }
 

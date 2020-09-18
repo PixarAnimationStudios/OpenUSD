@@ -152,7 +152,7 @@ _ReadbackTexture(Hgi* const hgi,
     copyOp.destinationByteOffset = 0;
     copyOp.destinationBufferByteSize = alignedByteSize;
     blitCmds->CopyTextureGpuToCpu(copyOp);
-    hgi->SubmitCmds(blitCmds.get());
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 }
 
 static bool

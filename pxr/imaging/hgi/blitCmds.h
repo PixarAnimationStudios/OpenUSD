@@ -65,7 +65,8 @@ public:
     virtual void PopDebugGroup() = 0;
 
     /// Copy a texture resource from GPU to CPU.
-    /// This call is blocking until the data is ready to be read on CPU.
+    /// Synchronization between GPU writes and CPU reads must be managed by
+    /// the client by supplying the correct 'wait' flags in SubmitCmds.
     HGI_API
     virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
 
@@ -83,6 +84,8 @@ public:
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
 
     /// Copy new data from GPU into CPU buffer.
+    /// Synchronization between GPU writes and CPU reads must be managed by
+    /// the client by supplying the correct 'wait' flags in SubmitCmds.
     HGI_API
     virtual void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) = 0;
 
