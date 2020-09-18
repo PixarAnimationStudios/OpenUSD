@@ -323,6 +323,23 @@ UsdGeomCamera::CreateShutterCloseAttr(VtValue const &defaultValue, bool writeSpa
                        writeSparsely);
 }
 
+UsdAttribute
+UsdGeomCamera::GetExposureCompensationAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureCompensation);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureCompensationAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureCompensation,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -353,6 +370,7 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->stereoRole,
         UsdGeomTokens->shutterOpen,
         UsdGeomTokens->shutterClose,
+        UsdGeomTokens->exposureCompensation,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

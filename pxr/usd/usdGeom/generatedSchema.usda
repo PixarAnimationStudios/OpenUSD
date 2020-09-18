@@ -3411,6 +3411,11 @@ class Camera "Camera" (
         doc = """Near and far clipping distances in centimeters (or, more
                  general, world units)."""
     )
+    float exposureCompensation = 0 (
+        doc = """Exposure compensation, as a log base-2 value.  The default
+                 of 0.0 has no effect.  A value of 1.0 will double the image-plane
+                 intensities in a rendered image; a value of -1.0 will halve them."""
+    )
     float focalLength = 50 (
         doc = """Perspective focal length in millimeters (or, more general,
                  tenths of a world unit)."""
