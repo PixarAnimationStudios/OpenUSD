@@ -1421,7 +1421,7 @@ public:
     /// Return true if this prim is a master prim, false otherwise.
     ///
     /// \sa IsInMaster
-    bool IsMaster() const { return _Prim()->IsMaster(); }
+    bool IsMaster() const { return _Prim()->IsPrototype(); }
 
     /// Return true if this prim is a master prim or a descendant
     /// of a master prim, false otherwise.
@@ -1429,7 +1429,7 @@ public:
     /// \sa IsMaster
     bool IsInMaster() const { 
         return (IsInstanceProxy() ? 
-            IsPathInMaster(GetPrimPath()) : _Prim()->IsInMaster());
+            IsPathInMaster(GetPrimPath()) : _Prim()->IsInPrototype());
     }
 
     /// If this prim is an instance, return the UsdPrim for the corresponding

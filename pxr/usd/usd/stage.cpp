@@ -2753,7 +2753,7 @@ UsdStage::_ComposeChildSubtree(Usd_PrimDataPtr prim,
                                Usd_PrimDataConstPtr parent,
                                UsdStagePopulationMask const *mask)
 {
-    if (parent->IsInMaster()) {
+    if (parent->IsInPrototype()) {
         // If this UsdPrim is a child of an instance master, its 
         // source prim index won't be at the same path as its stage path.
         // We need to construct the path from the parent's source index.
@@ -4335,9 +4335,9 @@ UsdStage::_ComputeSubtreesToRecompose(
 
             // Recompose parent's list of children.
             auto parent = parentIt->second.get();
-            _ComposeChildren(parent,
-                             parent->IsInMaster() ? nullptr : &_populationMask,
-                             /*recurse=*/false);
+            _ComposeChildren(
+                parent, parent->IsInPrototype() ? nullptr : &_populationMask,
+                /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
             do {
@@ -6316,7 +6316,7 @@ _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
     // Instance master prims are always defined -- see Usd_PrimData for
     // details. Since the fallback for specifier is 'over', we have to
     // handle these prims specially here.
-    if (primData->IsMaster()) {
+    if (primData->IsPrototype()) {
         composer->ConsumeExplicitValue(SdfSpecifierDef);
         return true;
     }

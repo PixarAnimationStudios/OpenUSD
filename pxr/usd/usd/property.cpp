@@ -254,7 +254,7 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
                             &targetIndex, &pcpErrors);
     }
 
-    if (!targetIndex.paths.empty() && _Prim()->IsInMaster()) {
+    if (!targetIndex.paths.empty() && _Prim()->IsInPrototype()) {
 
         // Walk up to the root while we're in (nested) instance-land.  When we
         // hit an instance or a master, add a mapping for the master source prim
