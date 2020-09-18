@@ -1129,7 +1129,6 @@ UsdSkelImagingSkeletonAdapter::GetPurpose(
 
 const TfTokenVector &
 UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
-    SdfPath const& computationPath,
     SdfPath const& cachePath) const
 {
 
@@ -1190,9 +1189,62 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
 
     }  
 
-    return BaseAdapter::GetExtComputationSceneInputNames(
-        computationPath, cachePath);;
+    return BaseAdapter::GetExtComputationSceneInputNames(cachePath);;
 
+}
+
+HdExtComputationInputDescriptorVector
+UsdSkelImagingSkeletonAdapter::GetExtComputationInputs(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext *instancerContext) const
+{
+    if (_IsSkinningComputationPath(cachePath)) {
+
+        if (_IsEnabledAggregatorComputation()) {
+
+            // Computation inputs
+            static TfTokenVector compInputNames({
+                    _tokens->restPoints,
+                    _tokens->geomBindXform,
+                    _tokens->influences,
+                    _tokens->numInfluencesPerComponent,
+                    _tokens->hasConstantInfluences,
+                    _tokens->blendShapeOffsets,
+                    _tokens->blendShapeOffsetRanges,
+                    _tokens->numBlendShapeOffsetRanges
+            });
+
+            SdfPath skinnedPrimPath =
+                UsdImagingGprimAdapter::_ResolveCachePath(
+                            prim.GetPath(), instancerContext);
+            SdfPath renderIndexAggrCompId = _ConvertCachePathToIndexPath(
+                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath));
+            
+            HdExtComputationInputDescriptorVector compInputDescs;
+            for (auto const& input : compInputNames) {
+                compInputDescs.emplace_back(
+                    HdExtComputationInputDescriptor(input,
+                        renderIndexAggrCompId, input));
+            }
+
+            return compInputDescs;
+
+        } else {
+
+            // No computation inputs
+            return HdExtComputationInputDescriptorVector();
+
+        }
+    }
+
+    if (_IsSkinningInputAggregatorComputationPath(cachePath)) {
+        // No computation inputs
+        return HdExtComputationInputDescriptorVector();
+    }
+
+    return BaseAdapter::GetExtComputationInputs(prim, cachePath, 
+            instancerContext);
 }
 
 
@@ -1529,43 +1581,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             computationPath, HdTokens->elementCount) = VtValue(numPoints);
     }
 
-    if (requestedBits & HdExtComputation::DirtyInputDesc) {
-        if (_IsEnabledAggregatorComputation()) {
-
-            // Computation inputs
-            TfTokenVector compInputNames({
-                    _tokens->restPoints,
-                    _tokens->geomBindXform,
-                    _tokens->influences,
-                    _tokens->numInfluencesPerComponent,
-                    _tokens->hasConstantInfluences,
-                    _tokens->blendShapeOffsets,
-                    _tokens->blendShapeOffsetRanges,
-                    _tokens->numBlendShapeOffsetRanges
-            });
-            SdfPath skinnedPrimPath =
-                UsdImagingGprimAdapter::_ResolveCachePath(
-                            skinnedPrim.GetPath(), instancerContext);
-            SdfPath renderIndexAggrCompId = _ConvertCachePathToIndexPath(
-                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath));
-            
-            HdExtComputationInputDescriptorVector compInputDescs;
-            for (auto const& input : compInputNames) {
-                compInputDescs.emplace_back(
-                    HdExtComputationInputDescriptor(input,
-                        renderIndexAggrCompId, input));
-            }
-            valueCache->GetExtComputationInputs(computationPath)
-                = compInputDescs;
-
-        } else {
-
-            // No computation inputs
-            valueCache->GetExtComputationInputs(computationPath)
-                = HdExtComputationInputDescriptorVector();
-        }
-    }
-
     if (requestedBits & HdExtComputation::DirtySceneInput) {
         // XXX: The only time varying input here is the skinning xforms.
         // However, we don't have fine-grained tracking to tell which
@@ -1764,12 +1779,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
     if (requestedBits & HdExtComputation::DirtyElementCount) {
         valueCache->GetExtComputationInput(
             computationPath, HdTokens->elementCount) = size_t(0);
-    }
-
-    if (requestedBits & HdExtComputation::DirtyInputDesc) {
-
-        valueCache->GetExtComputationInputs(computationPath)
-            = HdExtComputationInputDescriptorVector();
     }
 
     if (requestedBits & HdExtComputation::DirtySceneInput) {

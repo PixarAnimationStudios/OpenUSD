@@ -187,6 +187,11 @@ public:
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
 
+    HdExtComputationInputDescriptorVector
+    GetExtComputationInputs(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            const UsdImagingInstancerContext* instancerContext)
+                                    const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

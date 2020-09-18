@@ -119,10 +119,6 @@ public:
             static TfToken attr("materialResource");
             return Key(path, attr);
         }
-        static Key ExtComputationInputs(SdfPath const& path) {
-            static TfToken attr("extComputationInputs");
-            return Key(path, attr);
-        }
         static Key ExtComputationOutputs(SdfPath const& path) {
             static TfToken attr("extComputationOutputs");
             return Key(path, attr);
@@ -275,11 +271,6 @@ public:
         }
 
         {
-            // Computed inputs are tied to the computation that computes them.
-            // We don't walk the dependency chain to clear them.
-            _Erase<HdExtComputationInputDescriptorVector>(
-                Key::ExtComputationInputs(path));
-
             HdExtComputationOutputDescriptorVector outputDescs;
             if (FindExtComputationOutputs(path, &outputDescs)) {
                 for (auto const& desc : outputDescs) {
@@ -321,11 +312,6 @@ public:
     }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
-    }
-    HdExtComputationInputDescriptorVector&
-    GetExtComputationInputs(SdfPath const& path) const {
-        return _Get<HdExtComputationInputDescriptorVector>(
-            Key::ExtComputationInputs(path));
     }
     HdExtComputationOutputDescriptorVector&
     GetExtComputationOutputs(SdfPath const& path) const {
@@ -372,11 +358,6 @@ public:
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
-    bool FindExtComputationInputs(
-        SdfPath const& path,
-        HdExtComputationInputDescriptorVector* value) const {
-        return _Find(Key::ExtComputationInputs(path), value);
-    }
     bool FindExtComputationOutputs(
         SdfPath const& path,
         HdExtComputationOutputDescriptorVector* value) const {
@@ -422,11 +403,6 @@ public:
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
-    bool ExtractExtComputationInputs(
-        SdfPath const& path,
-        HdExtComputationInputDescriptorVector* value) {
-        return _Extract(Key::ExtComputationInputs(path), value);
-    }
     bool ExtractExtComputationOutputs(
         SdfPath const& path,
         HdExtComputationOutputDescriptorVector* value) {
@@ -456,7 +432,6 @@ public:
         _GarbageCollect(_pviCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
-        _GarbageCollect(_extComputationInputsCache);
         _GarbageCollect(_extComputationOutputsCache);
         _GarbageCollect(_extComputationPrimvarsCache);
     }
@@ -486,10 +461,6 @@ private:
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
 
-    typedef _TypedCache<HdExtComputationInputDescriptorVector>
-        _ExtComputationInputsCache;
-    mutable _ExtComputationInputsCache _extComputationInputsCache;
-
     typedef _TypedCache<HdExtComputationOutputDescriptorVector>
         _ExtComputationOutputsCache;
     mutable _ExtComputationOutputsCache _extComputationOutputsCache;
@@ -515,9 +486,6 @@ private:
     }
     void _GetCache(_StringCache **cache) const {
         *cache = &_stringCache;
-    }
-    void _GetCache(_ExtComputationInputsCache **cache) const {
-        *cache = &_extComputationInputsCache;
     }
     void _GetCache(_ExtComputationOutputsCache **cache) const {
         *cache = &_extComputationOutputsCache;

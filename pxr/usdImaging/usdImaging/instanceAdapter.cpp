@@ -1894,6 +1894,26 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
 }
 
+HdExtComputationInputDescriptorVector
+UsdImagingInstanceAdapter::GetExtComputationInputs(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return HdExtComputationInputDescriptorVector();
+        }
+        return proto.adapter->GetExtComputationInputs(
+                _GetPrim(proto.path), cachePath, &instancerContext);
+    }
+
+    return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
+}
 
 void
 UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,

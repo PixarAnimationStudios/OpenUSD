@@ -2784,7 +2784,7 @@ UsdImagingDelegate::GetExtComputationSceneInputNames(
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
-            ->GetExtComputationSceneInputNames(computationId, cachePath);
+            ->GetExtComputationSceneInputNames(cachePath);
     }
     return TfTokenVector();
 }
@@ -2796,19 +2796,13 @@ UsdImagingDelegate::GetExtComputationInputDescriptors(
     HD_TRACE_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
-
-    HdExtComputationInputDescriptorVector inputs;
-    if (!_valueCache.ExtractExtComputationInputs(cachePath, &inputs)) {
-
-        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation input "
-                                   "descriptor fetch for %s\n", 
-                                   computationId.GetText());
-        
-        _UpdateSingleValue(cachePath, HdExtComputation::DirtyInputDesc);
-        TF_VERIFY(_valueCache.ExtractExtComputationInputs(cachePath, &inputs));
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetExtComputationInputs(primInfo->usdPrim, cachePath, 
+                                      nullptr /* instancerContext */);
     }
-
-    return inputs;
+    return HdExtComputationInputDescriptorVector();
 }
 
 HdExtComputationOutputDescriptorVector

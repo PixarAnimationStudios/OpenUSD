@@ -1261,11 +1261,20 @@ UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim,
 /*virtual*/
 const TfTokenVector &
 UsdImagingPrimAdapter::GetExtComputationSceneInputNames(
-    SdfPath const& computationPath,
     SdfPath const& cachePath) const
 {
     static TfTokenVector emptyTokenVector;
     return emptyTokenVector;
+}
+
+/*virtual*/
+HdExtComputationInputDescriptorVector
+UsdImagingPrimAdapter::GetExtComputationInputs(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    return HdExtComputationInputDescriptorVector();
 }
 
 VtArray<VtIntArray>

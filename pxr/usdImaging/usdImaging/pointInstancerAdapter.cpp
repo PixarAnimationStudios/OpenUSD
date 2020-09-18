@@ -1808,6 +1808,38 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
 
 
 /*virtual*/
+HdExtComputationInputDescriptorVector
+UsdImagingPointInstancerAdapter::GetExtComputationInputs(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    if (IsChildPath(cachePath)) {
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+
+        // The instancer path since IsChildPath is true
+        const SdfPath instancerPath = cachePath.GetParentPath();
+
+        UsdImagingInstancerContext ctx = {
+            instancerPath,       /* instancerCachePath */
+            cachePath.GetNameToken(), /* childName */
+            SdfPath(),           /* instancerMaterialUsdPath */
+            TfToken(),           /* instanceDrawMode */
+            TfToken(),           /* instanceInheritablePurpose */
+            const_cast<UsdImagingPointInstancerAdapter *>(this)->
+                shared_from_this()   /* instancerAdapter */
+        };
+
+        return proto.adapter->GetExtComputationInputs(
+                protoPrim, cachePath, &ctx);
+    }
+
+    return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
+}
+
+
+/*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
     HdSelection::HighlightMode const& highlightMode,

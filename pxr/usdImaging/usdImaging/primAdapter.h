@@ -498,8 +498,14 @@ public:
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
     virtual const TfTokenVector &GetExtComputationSceneInputNames(
-        SdfPath const& computationPath,
         SdfPath const& cachePath) const;
+
+    USDIMAGING_API
+    virtual HdExtComputationInputDescriptorVector
+    GetExtComputationInputs(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            const UsdImagingInstancerContext* instancerContext)
+                                    const;
 
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
