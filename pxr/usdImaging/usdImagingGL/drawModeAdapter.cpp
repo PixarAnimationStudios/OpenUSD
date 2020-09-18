@@ -460,6 +460,15 @@ UsdImagingGLDrawModeAdapter::GetDoubleSided(UsdPrim const& prim,
 }
 
 
+SdfPath
+UsdImagingGLDrawModeAdapter::GetMaterialId(UsdPrim const& prim, 
+                                           SdfPath const& cachePath, 
+                                           UsdTimeCode time) const
+{
+    return _GetMaterialPath(prim);
+}
+
+
 void
 UsdImagingGLDrawModeAdapter::_CheckForTextureVariability(
     UsdPrim const& prim, HdDirtyBits dirtyBits,
@@ -670,11 +679,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
     // Geometry aspect
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-        SdfPath materialPath = _GetMaterialPath(prim);
-        valueCache->GetMaterialId(cachePath) = materialPath;
-    }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         VtFloatArray widths = VtFloatArray(1);

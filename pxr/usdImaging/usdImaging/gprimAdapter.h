@@ -183,6 +183,10 @@ public:
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
+    USDIMAGING_API
+    SdfPath GetMaterialId(UsdPrim const& prim, 
+                          SdfPath const& cachePath, 
+                          UsdTimeCode time) const override;
 
 
 protected:

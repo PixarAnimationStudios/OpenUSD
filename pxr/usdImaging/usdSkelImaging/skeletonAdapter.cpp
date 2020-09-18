@@ -746,6 +746,20 @@ UsdSkelImagingSkeletonAdapter::GetDoubleSided(UsdPrim const& prim,
     }
 }
 
+/*virtual*/
+SdfPath
+UsdSkelImagingSkeletonAdapter::GetMaterialId(UsdPrim const& prim, 
+                                             SdfPath const& cachePath, 
+                                            UsdTimeCode time) const
+{
+    if (_IsCallbackForSkeleton(prim)) {
+        // skeleton has no material
+        return SdfPath();
+    } else {
+        return BaseAdapter::GetMaterialId(prim, cachePath, time);
+    }
+}
+
 
 namespace {
 
@@ -1232,10 +1246,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
                       HdInterpolationConstant);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-        // The bone mesh does not need a material.
-        valueCache->GetMaterialId(cachePath) = SdfPath();
-    }
 }
 
 

@@ -1248,6 +1248,17 @@ UsdImagingPrimAdapter::GetDoubleSided(UsdPrim const& prim,
     return false;
 }
 
+
+/*virtual*/
+SdfPath 
+UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim, 
+                                     SdfPath const& cachePath, 
+                                     UsdTimeCode time) const
+{
+    return SdfPath();
+}
+
+
 /*virtual*/
 const TfTokenVector &
 UsdImagingPrimAdapter::GetExtComputationSceneInputNames(

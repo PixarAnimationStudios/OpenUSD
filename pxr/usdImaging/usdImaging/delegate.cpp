@@ -2634,12 +2634,18 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(rprimId);
     SdfPath pathValue;
-    if (!_valueCache.ExtractMaterialId(cachePath, &pathValue)) {
-        _UpdateSingleValue(cachePath, HdChangeTracker::DirtyMaterialId);
-        TF_VERIFY(_valueCache.ExtractMaterialId(cachePath, &pathValue));
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        pathValue = primInfo->adapter->GetMaterialId(
+            primInfo->usdPrim, cachePath, _time);
     }
+
     return ConvertCachePathToIndexPath(pathValue);
 }
+
+
 
 VtValue
 UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)

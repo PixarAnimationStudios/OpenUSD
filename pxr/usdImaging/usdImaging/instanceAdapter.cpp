@@ -1862,6 +1862,39 @@ UsdImagingInstanceAdapter::GetTransform(UsdPrim const& prim,
     return BaseAdapter::GetTransform(prim, cachePath, time, ignoreRootTransform);
 }
 
+/*virtual*/
+SdfPath
+UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim, 
+                                      SdfPath const& cachePath, 
+                                      UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return SdfPath();
+        }
+        SdfPath materialId = proto.adapter->GetMaterialId(
+                _GetPrim(proto.path), cachePath, time);
+        
+
+        if (!materialId.IsEmpty()) {
+            return materialId;
+        } else {
+            // child prim doesn't one? fall back on instancerContext's
+            // value
+            return instancerContext.instancerMaterialUsdPath;
+        }
+
+    }
+
+
+    return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
+}
+
+
 void
 UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index,

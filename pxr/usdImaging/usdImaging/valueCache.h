@@ -115,10 +115,6 @@ public:
             static TfToken attr("normals");
             return Key(path, attr);
         }
-        static Key MaterialId(SdfPath const& path) {
-            static TfToken attr("materialId");
-            return Key(path, attr);
-        }
         static Key MaterialResource(SdfPath const& path) {
             static TfToken attr("materialResource");
             return Key(path, attr);
@@ -266,7 +262,6 @@ public:
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
-        _Erase<VtValue>(Key::MaterialId(path));
         _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
@@ -324,9 +319,6 @@ public:
     VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
-    SdfPath& GetMaterialId(SdfPath const& path) const {
-        return _Get<SdfPath>(Key::MaterialId(path));
-    }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
     }
@@ -377,9 +369,6 @@ public:
     bool FindNormals(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Normals(path), value);
     }
-    bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
-        return _Find(Key::MaterialId(path), value);
-    }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
@@ -427,9 +416,6 @@ public:
     bool ExtractNormals(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Normals(path), value);
     }
-    bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
-        return _Extract(Key::MaterialId(path), value);
-    }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
         return _Extract(Key::MaterialResource(path), value);
     }
@@ -468,7 +454,6 @@ public:
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
-        _GarbageCollect(_sdfPathCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
         _GarbageCollect(_extComputationInputsCache);
@@ -490,10 +475,6 @@ private:
     // color (will be VtValue)
     typedef _TypedCache<GfVec4f> _Vec4Cache;
     mutable _Vec4Cache _vec4Cache;
-
-    // sdfPath
-    typedef _TypedCache<SdfPath> _SdfPathCache;
-    mutable _SdfPathCache _sdfPathCache;
 
     // primvars, materialResources, extCompInputs
     typedef _TypedCache<VtValue> _ValueCache;
@@ -531,9 +512,6 @@ private:
     }
     void _GetCache(_PviCache **cache) const {
         *cache = &_pviCache;
-    }
-    void _GetCache(_SdfPathCache **cache) const {
-        *cache = &_sdfPathCache;
     }
     void _GetCache(_StringCache **cache) const {
         *cache = &_stringCache;

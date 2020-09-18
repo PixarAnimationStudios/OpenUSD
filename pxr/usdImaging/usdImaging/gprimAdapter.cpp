@@ -421,16 +421,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyMaterialId){
-        // Although the material binding cache generally holds
-        // cachePaths, not usdPaths, we can use the usdPath
-        // directly here since we do not instance sprims.
-        valueCache->GetMaterialId(cachePath) = materialUsdPath;
-
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
-                prim.GetPath().GetText(), materialUsdPath.GetText());
-
-    }
 }
 
 HdDirtyBits
@@ -605,6 +595,18 @@ UsdImagingGprimAdapter::GetDoubleSided(UsdPrim const& prim,
     gprim.GetDoubleSidedAttr().Get(&doubleSided, time);
     return doubleSided;
 }
+
+
+
+/*virtual*/
+SdfPath
+UsdImagingGprimAdapter::GetMaterialId(UsdPrim const& prim, 
+                                      SdfPath const& cachePath, 
+                                      UsdTimeCode time) const
+{
+    return GetMaterialUsdPath(prim);
+}
+
 
 // -------------------------------------------------------------------------- //
 

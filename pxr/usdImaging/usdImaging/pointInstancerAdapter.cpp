@@ -1790,6 +1790,23 @@ UsdImagingPointInstancerAdapter::GetDoubleSided(UsdPrim const& usdPrim,
     return BaseAdapter::GetDoubleSided(usdPrim, cachePath, time);
 }
 
+
+/*virtual*/
+SdfPath
+UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim, 
+                      SdfPath const& cachePath, 
+                      UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetMaterialId(protoPrim, cachePath, time);
+    }
+    return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
+}
+
+
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(

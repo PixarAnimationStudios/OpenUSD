@@ -145,6 +145,11 @@ public:
                             UsdTimeCode time,
                             bool ignoreRootTransform = false) const override;
 
+    USDIMAGINGGL_API
+    SdfPath GetMaterialId(UsdPrim const& prim, 
+                        SdfPath const& cachePath, 
+                        UsdTimeCode time) const override;
+
 protected:
     USDIMAGINGGL_API
     void _RemovePrim(SdfPath const& cachePath,
