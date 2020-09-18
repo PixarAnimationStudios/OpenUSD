@@ -280,7 +280,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // Likewise the render settings.
     HdRenderDelegate *renderDelegate = GetRenderIndex()->GetRenderDelegate();
     int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
-    if (_lastSettingsVersion != currentSettingsVersion) {
+    if (_lastSettingsVersion != currentSettingsVersion || camParamsChanged) {
         _interactiveContext->StopRender();
 
         _integrator = renderDelegate->GetRenderSetting<std::string>(
@@ -309,6 +309,10 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                 (HdPrmanRenderDelegate*)renderDelegate,
                 _integrator,
                  integratorParams);             
+            _interactiveContext->SetIntegratorParamsFromCamera(
+                (HdPrmanRenderDelegate*)renderDelegate, hdCam,
+                _integrator, integratorParams);
+
             riley::ShadingNode integratorNode {
                 riley::ShadingNode::k_Integrator,
                 RtUString(_integrator.c_str()),

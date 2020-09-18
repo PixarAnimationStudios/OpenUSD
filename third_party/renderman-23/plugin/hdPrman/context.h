@@ -51,6 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
 class HdSceneDelegate;
+class HdPrmanCamera;
 class HdPrmanRenderDelegate;
 
 // Context for HdPrman to communicate with an instance of PRMan.
@@ -120,6 +121,30 @@ struct HdPrman_Context
                         HdPrmanRenderDelegate *renderDelegate,
                         std::string& integratorName,
                         RtParamList& params);
+
+    // Set integrator params from the camera.
+    // This invokes any callbacks registered with
+    // RegisterIntegratorCallbackForCamera().
+    HDPRMAN_API
+    void SetIntegratorParamsFromCamera(
+                        HdPrmanRenderDelegate *renderDelegate,
+                        HdPrmanCamera *camera,
+                        std::string const& integratorName,
+                        RtParamList& params);
+
+    // Callback to convert any camera settings that should become
+    // parameters on the integrator.
+    using IntegratorCameraCallback = void (*)
+        (HdPrmanRenderDelegate *renderDelegate,
+         HdPrmanCamera *camera,
+         std::string const& integratorName,
+         RtParamList &integratorParams);
+
+    // Register a callback to process integrator settings
+    HDPRMAN_API
+    static void 
+    RegisterIntegratorCallbackForCamera(
+        IntegratorCameraCallback const& callback);
 
     HDPRMAN_API
     bool IsShutterInstantaneous() const;
