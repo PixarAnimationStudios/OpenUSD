@@ -21,9 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/diagnostic.h"
 
 #include <vector>
 
@@ -110,7 +108,7 @@ HdStVBOMemoryManager::GetResourceAllocation(
     HdBufferArraySharedPtr const &bufferArray, 
     VtDictionary &result) const 
 { 
-    std::set<GLuint> idSet;
+    std::set<uint64_t> idSet;
     size_t gpuMemoryUsed = 0;
 
     _StripedBufferArraySharedPtr bufferArray_ =
@@ -121,7 +119,7 @@ HdStVBOMemoryManager::GetResourceAllocation(
         HgiBufferHandle buffer = resource->GetId();
 
         // XXX avoid double counting of resources shared within a buffer
-        GLuint id = buffer ? buffer->GetRawResource() : 0;
+        uint64_t id = buffer ? buffer->GetRawResource() : 0;
         if (idSet.count(id) == 0) {
             idSet.insert(id);
 
@@ -300,8 +298,6 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         }
     }
 
-    GLF_GROUP_FUNCTION();
-
     // count up total elements and update new offsets
     size_t totalNumElements = 0;
     std::vector<size_t> newOffsets;
@@ -328,6 +324,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     
     Hgi* hgi = _resourceRegistry->GetHgi();
     HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
+    blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
 
     // resize each BufferResource
     HdStBufferResourceNamedList const& resources = GetResources();
@@ -386,12 +383,12 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                 //
                 int oldSize = range->GetCapacity();
                 int newSize = range->GetNumElements();
-                GLsizeiptr copySize =
+                ptrdiff_t copySize =
                     std::min(oldSize, newSize) * bytesPerElement;
                 int oldOffset = range->GetElementOffset();
                 if (copySize > 0) {
-                    GLintptr readOffset = oldOffset * bytesPerElement;
-                    GLintptr writeOffset = *newOffsetIt * bytesPerElement;
+                    ptrdiff_t readOffset = oldOffset * bytesPerElement;
+                    ptrdiff_t writeOffset = *newOffsetIt * bytesPerElement;
 
                     relocator.AddRange(readOffset, writeOffset, copySize);
                 }
@@ -421,6 +418,9 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         range->SetElementOffset(newOffsets[idx]);
         range->SetCapacity(range->GetNumElements());
     }
+
+    blitCmds->PopDebugGroup();
+
     _needsReallocation = false;
     _needsCompaction = false;
 
@@ -474,7 +474,7 @@ HdStVBOMemoryManager::_StripedBufferArray::GetResource() const
         TF_FOR_ALL (it, _resourceList) {
             if (it->second->GetId() != id) {
                 TF_CODING_ERROR("GetResource(void) called on"
-                                "HdBufferArray having multiple GL resources");
+                                "HdBufferArray having multiple GPU resources");
             }
         }
     }
@@ -639,8 +639,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
                    VBO->GetTupleType().count)) {
         return;
     }
-    GLF_GROUP_FUNCTION();
-    
+
     int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
 
     // overrun check. for graceful handling of erroneous assets,
@@ -667,7 +666,9 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     blitOp.destinationByteOffset = vboOffset;
 
     HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
+    blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
     blitCmds->CopyBufferCpuToGpu(blitOp);
+    blitCmds->PopDebugGroup();
 }
 
 int
@@ -702,11 +703,11 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) co
         return result;
     }
 
-    GLintptr vboOffset = _GetByteOffset(VBO);
+    size_t vboOffset = _GetByteOffset(VBO);
 
-    GLint glVbo = VBO->GetId() ? VBO->GetId()->GetRawResource() : 0;
+    uint64_t vbo = VBO->GetId() ? VBO->GetId()->GetRawResource() : 0;
 
-    result = HdStGLUtils::ReadBuffer(glVbo,
+    result = HdStGLUtils::ReadBuffer(vbo,
                                    VBO->GetTupleType(),
                                    vboOffset,
                                    /*stride=*/0, // not interleaved.

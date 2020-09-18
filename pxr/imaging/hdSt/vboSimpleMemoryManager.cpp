@@ -21,9 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
@@ -275,13 +272,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         return;
     }
 
-    GLF_GROUP_FUNCTION();
-
     int numElements = range->GetNumElements();
 
     // Use blit work to record resource copy commands.
     Hgi* hgi = _resourceRegistry->GetHgi();
     HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
+    blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
     
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceSharedPtr const &bres = bresIt->second;
@@ -336,6 +332,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         bres->SetAllocation(newId, bufferSize);
     }
 
+    blitCmds->PopDebugGroup();
+
     _capacity = numElements;
     _needsReallocation = false;
 
@@ -372,7 +370,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetResource() const
         TF_FOR_ALL (it, _resourceList) {
             if (it->second->GetId() != id) {
                 TF_CODING_ERROR("GetResource(void) called on"
-                                "HdBufferArray having multiple GL resources");
+                                "HdBufferArray having multiple GPU resources");
             }
         }
     }

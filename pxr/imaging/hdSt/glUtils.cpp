@@ -79,7 +79,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 }
 
 VtValue
-HdStGLUtils::ReadBuffer(GLint vbo,
+HdStGLUtils::ReadBuffer(uint64_t vbo,
                         HdTupleType tupleType,
                         int vboOffset,
                         int stride,
@@ -172,9 +172,9 @@ HdStGLUtils::ReadBuffer(GLint vbo,
 // ---------------------------------------------------------------------------
 
 void
-HdStBufferRelocator::AddRange(GLintptr readOffset,
-                              GLintptr writeOffset,
-                              GLsizeiptr copySize)
+HdStBufferRelocator::AddRange(ptrdiff_t readOffset,
+                              ptrdiff_t writeOffset,
+                              ptrdiff_t copySize)
 {
     _CopyUnit unit(readOffset, writeOffset, copySize);
     if (_queue.empty() || (!_queue.back().Concat(unit))) {

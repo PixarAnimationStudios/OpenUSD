@@ -25,7 +25,6 @@
 #define PXR_IMAGING_HD_ST_GL_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hgi/buffer.h"
@@ -40,7 +39,7 @@ public:
     /// Reads the content of VBO back to VtArray.
     /// The \p vboOffset is expressed in bytes.
     HDST_API
-    static VtValue ReadBuffer(GLint vbo,
+    static VtValue ReadBuffer(uint64_t vbo,
                               HdTupleType tupleType,
                               int vboOffset,
                               int stride,
