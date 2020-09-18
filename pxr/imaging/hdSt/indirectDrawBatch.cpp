@@ -1624,8 +1624,9 @@ HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(
 {
     // Submit and wait for all the work recorded up to this point.
     // The GPU work must complete before we can read-back the GPU buffer.
+    // GPU frustum culling is (currently) a vertex shader without a fragment
+    // shader, so we submit the blit work, but do not have any compute work.
     resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
-    resourceRegistry->SubmitComputeWork(HgiSubmitWaitTypeWaitUntilCompleted);
 
     int32_t count = 0;
 
