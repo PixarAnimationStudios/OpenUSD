@@ -68,8 +68,6 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
 {
-    _lightingContext->InitUniformBlockBindings(_bindingMap);
-    _lightingContext->InitSamplerUnitBindings(_bindingMap);
 }
 
 HdStSimpleLightingShader::~HdStSimpleLightingShader() = default;
@@ -154,10 +152,15 @@ HdStSimpleLightingShader::BindResources(const int program,
                                         HdRenderPassState const &state)
 {
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    //
+    _bindingMap->ResetUniformBindings(
+                binder.GetNumReservedUniformBlockLocations());
+    _lightingContext->InitUniformBlockBindings(_bindingMap);
     _bindingMap->AssignUniformBindingsToProgram(program);
     _lightingContext->BindUniformBlocks(_bindingMap);
 
+    _bindingMap->ResetSamplerBindings(
+                binder.GetNumReservedTextureUnits());
+    _lightingContext->InitSamplerUnitBindings(_bindingMap);
     _bindingMap->AssignSamplerUnitsToProgram(program);
     _lightingContext->BindSamplers(_bindingMap);
 

@@ -45,7 +45,7 @@ GlfBindingMap::GetSamplerUnit(TfToken const & name)
     int samplerUnit = -1;
     if (!TfMapLookup(_samplerBindings, name, &samplerUnit)) {
         // XXX error check < MAX_TEXTURE_IMAGE_UNITS
-        samplerUnit = _samplerBindings.size();
+        samplerUnit = _samplerBindingBaseIndex + (int)_samplerBindings.size();
         _samplerBindings[name] = samplerUnit;
     }
     TF_VERIFY(samplerUnit >= 0);
@@ -90,7 +90,7 @@ GlfBindingMap::GetUniformBinding(TfToken const & name)
 {
     int binding = -1;
     if (!TfMapLookup(_uniformBindings, name, &binding)) {
-        binding = (int)_uniformBindings.size();
+        binding = _uniformBindingBaseIndex + (int)_uniformBindings.size();
         _uniformBindings[name] = binding;
     }
     TF_VERIFY(binding >= 0);

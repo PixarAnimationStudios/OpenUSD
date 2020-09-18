@@ -143,7 +143,8 @@ namespace {
 }
 
 HdSt_ResourceBinder::HdSt_ResourceBinder()
-    : _numReservedTextureUnits(0)
+    : _numReservedUniformBlockLocations(0)
+    , _numReservedTextureUnits(0)
 {
 }
 
@@ -202,10 +203,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
     // binding assignments
     BindingLocator locator;
-    // XXX: Skip lighting context texture and UBO bindings.
-    // See HdStSimpleLightingShader::BindResources
-    locator.textureUnit = 5;
-    locator.uboLocation = 4;
 
     int bindlessTextureLocation = 0;
     // Note that these locations are used for hash keys only and
@@ -807,6 +804,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             }
         }
     }
+    _numReservedUniformBlockLocations = locator.uboLocation;
     _numReservedTextureUnits = locator.textureUnit;
 }
 
