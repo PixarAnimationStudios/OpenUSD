@@ -310,7 +310,7 @@ public:
     /// ------------------------------------------------------------------------
 
     /// Register a buffer allocated with \a count * \a commandNumUints *
-    /// sizeof(GLuint) to be used as an indirect dispatch buffer.
+    /// sizeof(uint32_t) to be used as an indirect dispatch buffer.
     HDST_API
     HdStDispatchBufferSharedPtr RegisterDispatchBuffer(
         TfToken const &role, int count, int commandNumUints);

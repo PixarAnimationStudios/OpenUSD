@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
-#include "pxr/imaging/garch/gl.h"
-
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/vt/value.h"

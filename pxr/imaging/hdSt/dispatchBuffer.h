@@ -42,14 +42,14 @@ using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 
 /// \class HdStDispatchBuffer
 ///
-/// A VBO of a simple array of GLuint.
+/// A VBO of a simple array of unsigned integers.
 ///
 /// This buffer is used to prepare data on the GPU for indirect dispatch i.e.
 /// to be consumed by glMultiDrawIndirect or glDispatchComputeIndirect. At the
 /// same time, interleaved subsets of the array are bound in several different
 /// ways to provide additional data interface to shaders.
 ///
-/// For each binding, we define 'BufferResourceView' on top of the GLuint array.
+/// For each binding, we define 'BufferResourceView' on top of the uint array.
 /// HdBufferArray aggregates those views and HdResourceBinder binds them
 /// with specified binding method and interleaved offset.
 ///
@@ -103,7 +103,7 @@ public:
 
     /// Update entire buffer data
     HDST_API
-    void CopyData(std::vector<GLuint> const &data);
+    void CopyData(std::vector<uint32_t> const &data);
 
     /// Add an interleaved view to this buffer.
     HDST_API
@@ -113,7 +113,7 @@ public:
     /// Returns the dispatch count
     int GetCount() const { return _count; }
 
-    /// Returns the number of GLuints in a single draw command.
+    /// Returns the number of uints in a single draw command.
     unsigned int GetCommandNumUints() const { return _commandNumUints; }
 
     /// Returns a bar which locates all interleaved resources of the entire

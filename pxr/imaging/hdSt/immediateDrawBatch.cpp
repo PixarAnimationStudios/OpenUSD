@@ -445,7 +445,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 geometricShader->GetPrimitiveMode(),
                 indexCount,
                 GL_UNSIGNED_INT, // GL_INT is invalid: indexBar->GetResource(HdTokens->indices)->GetGLDataType(),
-                (void *)(firstIndex * sizeof(GLuint)),
+                (void *)(firstIndex * sizeof(uint32_t)),
                 instanceCount,
                 baseVertex);
         } else if (vertexCount > 0) {

@@ -179,7 +179,7 @@ HdStDispatchBuffer::HdStDispatchBuffer(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    size_t stride = commandNumUints * sizeof(GLuint);
+    size_t stride = commandNumUints * sizeof(uint32_t);
     size_t dataSize = count * stride;
     
     // just allocate uninitialized
@@ -209,9 +209,9 @@ HdStDispatchBuffer::~HdStDispatchBuffer()
 }
 
 void
-HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
+HdStDispatchBuffer::CopyData(std::vector<uint32_t> const &data)
 {
-    if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
+    if (!TF_VERIFY(data.size()*sizeof(uint32_t) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
     HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
@@ -233,7 +233,7 @@ void
 HdStDispatchBuffer::AddBufferResourceView(
     TfToken const &name, HdTupleType tupleType, int offset)
 {
-    size_t stride = _commandNumUints * sizeof(GLuint);
+    size_t stride = _commandNumUints * sizeof(uint32_t);
 
     // add a binding view (resource binder iterates and automatically binds)
     HdStBufferResourceSharedPtr view =

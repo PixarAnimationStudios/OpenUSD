@@ -30,8 +30,6 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
-#include "pxr/imaging/garch/gl.h"
-
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/vt/value.h"

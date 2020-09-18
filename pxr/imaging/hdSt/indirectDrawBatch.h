@@ -148,7 +148,7 @@ private:
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
 
-    std::vector<GLuint> _drawCommandBuffer;
+    std::vector<uint32_t> _drawCommandBuffer;
     bool _drawCommandBufferDirty;
     size_t _bufferArraysHash;
 
