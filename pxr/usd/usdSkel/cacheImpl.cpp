@@ -276,8 +276,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
 
         UsdSkelSkeleton skel;
         if (binding.GetSkeleton(&skel)) {
-            key.skel = !skel.GetPrim().IsInstanceProxy() ?
-                skel.GetPrim() : skel.GetPrim().GetPrimInMaster();
+            key.skel = skel.GetPrim();
         }
 
         // XXX: When looking for binding properties, only include

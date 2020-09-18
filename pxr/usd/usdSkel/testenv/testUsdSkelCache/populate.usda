@@ -1,6 +1,9 @@
 #usda 1.0
 
-def SkelAnimation "Anim1" {}
+def SkelAnimation "Anim1" 
+{
+    uniform token[] blendShapes = ["override", "shape"]
+}
 
 def SkelAnimation "Anim2" {}
 
@@ -95,6 +98,8 @@ def Scope "InstancedModelSkelBindings" (
 
 def SkelRoot "SkelBinding"
 {
+    rel skel:animationSource = </Anim1>
+
     def Scope "Scope" (
         prepend apiSchemas = ["SkelBindingAPI"]
     )
