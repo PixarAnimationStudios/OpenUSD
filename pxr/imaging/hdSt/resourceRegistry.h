@@ -468,18 +468,18 @@ public:
     /// Submits blit work queued in global blit cmds for GPU execution.
     /// We can call this when we want to submit some work to the GPU to ensure
     /// the GPU isn't starved for work or if we need synchronization (barriers)
-    /// between two Hgi*Cmds objects 
-    /// (Eg. if we need barriers between buffer writes and reads)
+    /// between two Hgi*Cmds objects.
+    /// (Eg. if we need barriers between buffer writes and reads).
     HDST_API
-    void SubmitBlitWork();
+    void SubmitBlitWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
     /// Submits compute work queued in global compute cmds for GPU execution.
     /// We can call this when we want to submit some work to the GPU to ensure
     /// the GPU isn't starved for work or if we need synchronization (barriers)
-    /// between two Hgi*Cmds objects 
-    /// (Eg. if we need barriers between compute shaders)
+    /// between two Hgi*Cmds objects.
+    /// (Eg. if we need barriers between compute shaders).
     HDST_API
-    void SubmitComputeWork();
+    void SubmitComputeWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
 public:
     //

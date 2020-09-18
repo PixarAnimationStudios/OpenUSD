@@ -690,19 +690,19 @@ HdStResourceRegistry::GetGlobalComputeCmds()
 }
 
 void
-HdStResourceRegistry::SubmitBlitWork()
+HdStResourceRegistry::SubmitBlitWork(HgiSubmitWaitType wait)
 {
     if (_blitCmds) {
-        _hgi->SubmitCmds(_blitCmds.get());
+        _hgi->SubmitCmds(_blitCmds.get(), wait);
         _blitCmds.reset();
     }
 }
 
 void
-HdStResourceRegistry::SubmitComputeWork()
+HdStResourceRegistry::SubmitComputeWork(HgiSubmitWaitType wait)
 {
     if (_computeCmds) {
-        _hgi->SubmitCmds(_computeCmds.get());
+        _hgi->SubmitCmds(_computeCmds.get(), wait);
         _computeCmds.reset();
     }
 }

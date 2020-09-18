@@ -42,12 +42,12 @@ Hgi::Hgi()
 Hgi::~Hgi() = default;
 
 void
-Hgi::SubmitCmds(HgiCmds* cmds)
+Hgi::SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
     TRACE_FUNCTION();
 
     if (cmds && TF_VERIFY(!cmds->IsSubmitted())) {
-        _SubmitCmds(cmds);
+        _SubmitCmds(cmds, wait);
         cmds->_SetSubmitted();
     }
 }
