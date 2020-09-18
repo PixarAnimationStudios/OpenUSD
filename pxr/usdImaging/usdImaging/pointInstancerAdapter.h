@@ -280,6 +280,17 @@ private:
     _ProtoPrim const& _GetProtoPrim(SdfPath const& instancerPath, 
                                     SdfPath const& cachePath) const;
 
+    // Gets the associated _ProtoPrim and instancerContext if cachePath is a 
+    // child path and returns \c true, otherwise returns \c false.
+    //
+    // Note that the returned instancer context may not be as fully featured as
+    // your needs may be.
+    bool _GetProtoPrimForChild(
+            UsdPrim const& usdPrim,
+            SdfPath const& cachePath,
+            _ProtoPrim const** proto,
+            UsdImagingInstancerContext* ctx) const;
+
     // Gets the UsdPrim to use from the given _ProtoPrim.
     const UsdPrim _GetProtoUsdPrim(_ProtoPrim const& proto) const;
 

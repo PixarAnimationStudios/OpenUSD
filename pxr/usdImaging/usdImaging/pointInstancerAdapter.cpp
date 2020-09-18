@@ -1028,6 +1028,33 @@ UsdImagingPointInstancerAdapter::_GetProtoPrim(SdfPath const& instrPath,
     return protoPrimIt->second;
 }
 
+bool 
+UsdImagingPointInstancerAdapter::_GetProtoPrimForChild(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    _ProtoPrim const** proto,
+    UsdImagingInstancerContext* ctx) const
+{
+    if (IsChildPath(cachePath)) {
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+
+        // The instancer path since IsChildPath is true
+        const SdfPath instancerPath = cachePath.GetParentPath();
+
+        ctx->instancerCachePath = instancerPath;
+        ctx->childName = cachePath.GetNameToken();
+        ctx->instancerMaterialUsdPath = SdfPath();
+        ctx->instanceDrawMode = TfToken();
+        ctx->instanceInheritablePurpose = TfToken();
+        ctx->instancerAdapter = const_cast<UsdImagingPointInstancerAdapter *>
+            (this)->shared_from_this();
+        return true;
+    } else {
+        return false;
+    }
+}
+
 const UsdPrim
 UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(
     _ProtoPrim const& proto) const
@@ -1837,27 +1864,13 @@ UsdImagingPointInstancerAdapter::GetExtComputationInputs(
     SdfPath const& cachePath,
     const UsdImagingInstancerContext* /*unused*/) const
 {
-    if (IsChildPath(cachePath)) {
-        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
-        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+    UsdImagingInstancerContext ctx;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &ctx)) {
 
-        // The instancer path since IsChildPath is true
-        const SdfPath instancerPath = cachePath.GetParentPath();
-
-        UsdImagingInstancerContext ctx = {
-            instancerPath,       /* instancerCachePath */
-            cachePath.GetNameToken(), /* childName */
-            SdfPath(),           /* instancerMaterialUsdPath */
-            TfToken(),           /* instanceDrawMode */
-            TfToken(),           /* instanceInheritablePurpose */
-            const_cast<UsdImagingPointInstancerAdapter *>(this)->
-                shared_from_this()   /* instancerAdapter */
-        };
-
-        return proto.adapter->GetExtComputationInputs(
-                protoPrim, cachePath, &ctx);
+        return proto->adapter->GetExtComputationInputs(
+                _GetProtoUsdPrim(*proto), cachePath, &ctx);
     }
-
     return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
 }
 
