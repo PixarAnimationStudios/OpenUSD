@@ -41,13 +41,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingBasisCurvesAdapter : public UsdImagingGprimAdapter 
 {
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingBasisCurvesAdapter()
         : UsdImagingGprimAdapter()
     {}
+
     USDIMAGING_API
-    virtual ~UsdImagingBasisCurvesAdapter();
+    ~UsdImagingBasisCurvesAdapter() override;
 
     USDIMAGING_API
     SdfPath Populate(
@@ -98,6 +99,12 @@ public:
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
+
+    USDIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API

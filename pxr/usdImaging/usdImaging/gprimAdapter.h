@@ -45,16 +45,17 @@ class UsdGeomGprim;
 /// Gprim data support, such as visibility, doubleSided, extent, displayColor,
 /// displayOpacity, purpose, and transform.
 ///
-class UsdImagingGprimAdapter : public UsdImagingPrimAdapter {
+class UsdImagingGprimAdapter : public UsdImagingPrimAdapter
+{
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingGprimAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
-    virtual ~UsdImagingGprimAdapter();
+    ~UsdImagingGprimAdapter() override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -62,20 +63,20 @@ public:
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void TrackVariability(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const override;
+    void TrackVariability(UsdPrim const& prim,
+                          SdfPath const& cachePath,
+                          HdDirtyBits* timeVaryingBits,
+                          UsdImagingInstancerContext const* 
+                              instancerContext = nullptr) const override;
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const override;
+    void UpdateForTime(UsdPrim const& prim,
+                       SdfPath const& cachePath, 
+                       UsdTimeCode time,
+                       HdDirtyBits requestedBits,
+                       UsdImagingInstancerContext const* 
+                           instancerContext = nullptr) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 

@@ -102,10 +102,6 @@ public:
             static TfToken attr("widths");
             return Key(path, attr);
         }
-        static Key Normals(SdfPath const& path) {
-            static TfToken attr("normals");
-            return Key(path, attr);
-        }
         static Key MaterialResource(SdfPath const& path) {
             static TfToken attr("materialResource");
             return Key(path, attr);
@@ -246,7 +242,6 @@ public:
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
-        _Erase<VtValue>(Key::Normals(path));
         _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
@@ -287,9 +282,6 @@ public:
     VtValue& GetWidths(SdfPath const& path) const {
         return _Get<VtValue>(Key::Widths(path));
     }
-    VtValue& GetNormals(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Normals(path));
-    }
     VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
@@ -329,9 +321,6 @@ public:
     bool FindWidths(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Widths(path), value);
     }
-    bool FindNormals(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Normals(path), value);
-    }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
@@ -364,9 +353,6 @@ public:
     }
     bool ExtractWidths(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Widths(path), value);
-    }
-    bool ExtractNormals(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Normals(path), value);
     }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
         return _Extract(Key::MaterialResource(path), value);

@@ -232,10 +232,10 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
 
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
-
     if (requestedBits & HdChangeTracker::DirtyNormals) {
+        UsdImagingValueCache* valueCache = _GetValueCache();
+        HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+
         TfToken schemeToken;
         _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
         // Only populate normals for polygonal meshes.
@@ -251,7 +251,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
 
             if (pv) {
                 _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, valueCache, &primvars);
+                    prim, cachePath, pv, time, nullptr, &primvars);
             } else {
                 UsdGeomMesh mesh(prim);
                 VtVec3fArray normals;
@@ -260,7 +260,6 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                         UsdGeomTokens->normals,
                         _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
                         HdPrimvarRoleTokens->normal);
-                    valueCache->GetNormals(cachePath) = VtValue(normals);
                 } else {
                     _RemovePrimvar(&primvars, UsdGeomTokens->normals);
                 }
@@ -448,6 +447,49 @@ UsdImagingMeshAdapter::GetSubdivTags(UsdPrim const& prim,
     return tags;
 }
 
+/*virtual*/
+VtValue
+UsdImagingMeshAdapter::Get(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           TfToken const &key,
+                           UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (key == HdTokens->normals) {
+        TfToken schemeToken;
+        _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
+
+        // Only populate normals for polygonal meshes.
+        if (schemeToken == PxOsdOpenSubdivTokens->none) {
+            // First check for "primvars:normals"
+            UsdGeomPrimvarsAPI primvarsApi(prim);
+            UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+                    UsdImagingTokens->primvarsNormals);
+            if (!pv) {
+                // If it's not found locally, see if it's inherited
+                pv = _GetInheritedPrimvar(prim, HdTokens->normals);
+            }
+
+            VtValue value;
+
+            if (pv && pv.ComputeFlattened(&value, time)) {
+                return value;
+            } 
+
+            // If there's no "primvars:normals",
+            // fall back to UsdGeomMesh's "normals" attribute. 
+            UsdGeomMesh mesh(prim);
+            VtVec3fArray normals;
+            if (mesh && mesh.GetNormalsAttr().Get(&normals, time)) {
+                value = normals;
+                return value;
+            }
+        }
+    }
+
+    return BaseAdapter::Get(prim, cachePath, key, time);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

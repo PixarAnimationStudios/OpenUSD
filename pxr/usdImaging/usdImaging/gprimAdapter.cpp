@@ -659,6 +659,13 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
         VtFloatArray vec(1, 1.0f);
         value = VtValue(vec);
         return value;
+
+    } else if (key == HdTokens->normals) {
+        // Fallback
+        VtVec3fArray vec(1, GfVec3f(0,0,0));
+        value = VtValue(vec);
+        return value;
+
     } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
 
         // XXX : We use cachePath directly as usdPath above,
