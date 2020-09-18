@@ -46,7 +46,7 @@ def __findExe_Win(name):
     if cmd and os.access(cmd + '.cmd', os.X_OK):
         return cmd + '.cmd'
 
-    # find_executable under Windows only returns *.EXE files (Python 3.7+)
+    # find_executable under Windows only returns *.EXE files
     # so we need to traverse PATH.
     for path in os.environ['PATH'].split(os.pathsep):
         base = os.path.join(path, name)
