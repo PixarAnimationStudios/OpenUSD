@@ -389,7 +389,30 @@ string
 Sdf_GetExtension(
     const string& identifier)
 {
-    return ArGetResolver().GetExtension(identifier);
+    // Split the identifier to get the layer asset path without
+    // any file format arguments.
+    string assetPath;
+    std::string dummyArgs;
+    Sdf_SplitIdentifier(identifier, &assetPath, &dummyArgs);
+
+    if (Sdf_IsAnonLayerIdentifier(assetPath)) {
+        // Strip off the "anon:0x...:" portion of the anonymous layer
+        // identifier and look for an extension in the remainder. This
+        // allows clients to create anonymous layers using tags that
+        // match their asset path scheme and retrieve the extension
+        // via ArResolver.
+        assetPath = Sdf_GetAnonLayerDisplayName(assetPath);
+    }
+
+    // XXX: If the asset path is a dot file (e.g. ".sdf"), we append
+    // a temporary name so that the path we pass to Ar is not 
+    // interpreted as a directory name. This is legacy behavior that
+    // should be fixed.
+    if (!assetPath.empty() && assetPath[0] == '.') {
+        assetPath = "temp_file_name" + assetPath;
+    }
+
+    return ArGetResolver().GetExtension(assetPath);
 }
 
 bool

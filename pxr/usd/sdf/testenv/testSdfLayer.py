@@ -61,6 +61,52 @@ class TestSdfLayer(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             l = Sdf.Layer.OpenAsAnonymous('foo.invalid')
 
+    def test_FindWithAnonymousIdentifier(self):
+        def _TestWithTag(tag):
+            layer = Sdf.Layer.CreateAnonymous(tag)
+            layerId = layer.identifier
+            self.assertEqual(Sdf.Layer.Find(layerId), layer)
+
+            del layer
+            self.assertNotIn(
+                layerId, [l.identifier for l in Sdf.Layer.GetLoadedLayers()])
+
+            self.assertFalse(Sdf.Layer.Find(layerId))
+
+        _TestWithTag("")
+        _TestWithTag(".sdf")
+        _TestWithTag(".invalid")
+        _TestWithTag("test")
+        _TestWithTag("test.invalid")
+        _TestWithTag("test.sdf")
+
+    def test_FindOrOpenWithAnonymousIdentifier(self):
+        def _TestWithTag(tag, validExtension):
+            layer = Sdf.Layer.CreateAnonymous(tag)
+            layerId = layer.identifier
+            self.assertEqual(Sdf.Layer.FindOrOpen(layerId), layer)
+
+            del layer
+            self.assertFalse(
+                [l for l in Sdf.Layer.GetLoadedLayers() 
+                 if l.identifier == layerId])
+
+            # FindOrOpen currently throws a coding error when given an
+            # anonymous layer identifier with an unrecognized (or no)
+            # extension.
+            if validExtension:
+                self.assertFalse(Sdf.Layer.FindOrOpen(layerId))
+            else:
+                with self.assertRaises(Tf.ErrorException):
+                    self.assertFalse(Sdf.Layer.FindOrOpen(layerId))
+
+        _TestWithTag("", validExtension=False)
+        _TestWithTag(".sdf", validExtension=True)
+        _TestWithTag(".invalid", validExtension=False)
+        _TestWithTag("test", validExtension=False)
+        _TestWithTag("test.invalid", validExtension=False)
+        _TestWithTag("test.sdf", validExtension=True)
+
     def test_AnonymousIdentifiersDisplayName(self):
         # Ensure anonymous identifiers work as expected
 
