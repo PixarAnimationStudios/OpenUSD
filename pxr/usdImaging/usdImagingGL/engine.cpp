@@ -1112,11 +1112,10 @@ UsdImagingGLEngine::SetColorCorrectionSettings(
     _taskController->SetColorCorrectionParams(hdParams);
 }
 
-bool 
+bool
 UsdImagingGLEngine::IsColorCorrectionCapable()
 {
-    return GlfContextCaps::GetInstance().floatingPointBuffersEnabled && 
-           IsHydraEnabled();
+    return true;
 }
 
 //----------------------------------------------------------------------------
