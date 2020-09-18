@@ -120,6 +120,12 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGINGGL_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
+
+    USDIMAGINGGL_API
     HdCullStyle GetCullStyle(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              UsdTimeCode time) const override;

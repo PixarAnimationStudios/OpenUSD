@@ -248,8 +248,10 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                 // If it's not found locally, see if it's inherited
                 pv = _GetInheritedPrimvar(prim, HdTokens->normals);
             }
+
             if (pv) {
-                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+                _ComputeAndMergePrimvar(
+                    prim, cachePath, pv, time, valueCache, &primvars);
             } else {
                 UsdGeomMesh mesh(prim);
                 VtVec3fArray normals;

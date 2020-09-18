@@ -348,16 +348,12 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        // XXX: need to validate gprim schema
-        UsdGeomGprim gprim(prim);
-
         // Handle color/opacity specially, since they can be shadowed by
         // material parameters.  If we don't find them, check inherited
         // primvars.
         TfToken colorInterp;
         VtValue color;
         if (GetColor(prim, time, &colorInterp, &color)) {
-            valueCache->GetColor(cachePath) = color;
             _MergePrimvar(
                 &vPrimvars,
                 HdTokens->displayColor,
@@ -367,14 +363,14 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPrimvar pv =
                 _GetInheritedPrimvar(prim, HdTokens->displayColor);
             if (pv) {
-                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+                _ComputeAndMergePrimvar(
+                    prim, cachePath, pv, time, nullptr, &vPrimvars);
             }
         }
 
         TfToken opacityInterp;
         VtValue opacity;
         if (GetOpacity(prim, time, &opacityInterp, &opacity)) {
-            valueCache->GetOpacity(cachePath) = opacity;
             _MergePrimvar(
                 &vPrimvars,
                 HdTokens->displayOpacity,
@@ -383,7 +379,8 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPrimvar pv =
                 _GetInheritedPrimvar(prim, HdTokens->displayOpacity);
             if (pv) {
-                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+                _ComputeAndMergePrimvar(
+                    prim, cachePath, pv, time, nullptr, &vPrimvars);
             }
         }
 
@@ -394,6 +391,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (inheritedPrimvarRecord) {
             primvars = inheritedPrimvarRecord->primvars;
         }
+
         UsdGeomPrimvarsAPI primvarsAPI(prim);
         std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
         primvars.insert(primvars.end(), local.begin(), local.end());
@@ -402,8 +400,8 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // We filter the list of primvars based on what the material needs.
         TfTokenVector matPrimvarNames;
         if (_IsPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
-                matPrimvarNames = _CollectMaterialPrimvars(
-                    valueCache, materialUsdPath);
+            matPrimvarNames = _CollectMaterialPrimvars(
+                valueCache, materialUsdPath);
         }
 
         for (auto const &pv : primvars) {
@@ -417,7 +415,8 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 continue;
             }
 
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            _ComputeAndMergePrimvar(
+                prim, cachePath, pv, time, valueCache, &vPrimvars);
         }
     }
 
@@ -596,8 +595,6 @@ UsdImagingGprimAdapter::GetDoubleSided(UsdPrim const& prim,
     return doubleSided;
 }
 
-
-
 /*virtual*/
 SdfPath
 UsdImagingGprimAdapter::GetMaterialId(UsdPrim const& prim, 
@@ -607,6 +604,75 @@ UsdImagingGprimAdapter::GetMaterialId(UsdPrim const& prim,
     return GetMaterialUsdPath(prim);
 }
 
+/*virtual*/
+VtValue
+UsdImagingGprimAdapter::Get(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            TfToken const &key,
+                            UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    VtValue value;
+    UsdGeomGprim gprim(prim);
+    if (!TF_VERIFY(gprim)) {
+        return value;
+    }
+
+    if (key == HdTokens->displayColor) {
+        // First we try to obtain color from the prim, 
+        // if not present, we try to get if through inheritance,
+        // and lastly, we use a fallback value.
+        TfToken interp;
+        if (GetColor(prim, time, &interp, &value)) {
+            return value;
+        } 
+
+        // Inheritance
+        UsdGeomPrimvar pv = _GetInheritedPrimvar(prim, HdTokens->displayColor);
+        if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
+
+        // Fallback
+        VtVec3fArray vec(1, GfVec3f(.5,.5,.5));
+        value = vec;
+        return value;
+
+    } else if (key == HdTokens->displayOpacity) {
+        // First we try to obtain color from the prim, 
+        // if not present, we try to get if through inheritance,
+        // and lastly, we use a fallback value.
+        TfToken interp;
+        if (GetOpacity(prim, time, &interp, &value)) {
+            return value;
+        }
+
+        // Inheritance
+        UsdGeomPrimvar pv = _GetInheritedPrimvar(prim, HdTokens->displayColor);
+        if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
+
+        // Fallback
+        VtFloatArray vec(1, 1.0f);
+        value = VtValue(vec);
+        return value;
+    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
+
+        // XXX : We use cachePath directly as usdPath above,
+        // but should do the proper transformation.  Maybe we can use
+        // the primInfo.usdPrim?
+        // Note here that Hydra requested "color" (e.g.) and we've converted
+        // it to primvars:color automatically by virtue of UsdGeomPrimvar.
+        TF_VERIFY(pv.ComputeFlattened(&value, time), "%s, %s\n", 
+                prim.GetPath().GetText(), key.GetText());
+        return value;
+    }
+
+    return BaseAdapter::Get(prim, cachePath, key, time);
+}
 
 // -------------------------------------------------------------------------- //
 
@@ -617,7 +683,7 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
                                  TfToken* interpolation,
                                  VtValue* color)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     VtVec3fArray result(1, GfVec3f(0.5f));

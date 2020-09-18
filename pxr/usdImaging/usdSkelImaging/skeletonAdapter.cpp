@@ -734,6 +734,43 @@ UsdSkelImagingSkeletonAdapter::GetExtent(UsdPrim const& prim,
 }
 
 /*virtual*/
+VtValue
+UsdSkelImagingSkeletonAdapter::Get(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   TfToken const& key,
+                                   UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (_IsCallbackForSkeleton(prim)) {
+        _SkelData* skelData = _GetSkelData(cachePath);
+        if (!TF_VERIFY(skelData)) {
+            return VtValue();
+        }
+        if (key == HdTokens->displayColor) {
+            GfVec3f color = _GetSkeletonDisplayColor(prim, time);
+            return VtValue(color);
+        } else if (key == HdTokens->displayOpacity) {
+            float opacity = _GetSkeletonDisplayOpacity(prim, time);
+            return VtValue(opacity);
+        }
+    }
+
+    if (_IsSkinnedPrimPath(cachePath)) {
+        UsdPrim const& skinnedPrim = prim;
+        SdfPath const& skinnedPrimPath = cachePath;
+
+        // Since The SkeletonAdapter hijacks skinned prims (see SkelRootAdapter)
+        // make sure to delegate to the actual adapter registered for the prim.
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skinnedPrim);
+        return adapter->Get(skinnedPrim, skinnedPrimPath, key, time);
+    }
+
+    return BaseAdapter::Get(prim, cachePath, key, time);
+}
+
+/*virtual*/
 bool
 UsdSkelImagingSkeletonAdapter::GetDoubleSided(UsdPrim const& prim, 
                                               SdfPath const& cachePath, 
@@ -1283,12 +1320,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
                       HdTokens->points,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
-        
-        valueCache->GetColor(cachePath) =
-            _GetSkeletonDisplayColor(prim, time);
-        valueCache->GetOpacity(cachePath) =
-            _GetSkeletonDisplayOpacity(prim, time);
-
         _MergePrimvar(&valueCache->GetPrimvars(cachePath),
                       HdTokens->displayColor,
                       HdInterpolationConstant,

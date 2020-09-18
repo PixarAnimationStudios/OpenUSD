@@ -2372,20 +2372,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtVec3fArray vec;
                 value = VtValue(vec);
             }
-        } else if (key == HdTokens->displayColor) {
-            // XXX: Getting all primvars here when we only want color is wrong.
-            _UpdateSingleValue(cachePath,HdChangeTracker::DirtyPrimvar);
-            if (!TF_VERIFY(_valueCache.ExtractColor(cachePath, &value))){
-                VtVec3fArray vec(1, GfVec3f(.5,.5,.5));
-                value = VtValue(vec);
-            }
-        } else if (key == HdTokens->displayOpacity) {
-            // XXX: Getting all primvars here when we only want opacity is bad.
-            _UpdateSingleValue(cachePath,HdChangeTracker::DirtyPrimvar);
-            if (!TF_VERIFY(_valueCache.ExtractOpacity(cachePath, &value))){
-                VtFloatArray vec(1, 1.0f);
-                value = VtValue(vec);
-            }
         } else if (key == HdTokens->widths) {
             _UpdateSingleValue(cachePath,HdChangeTracker::DirtyWidths);
             if (!TF_VERIFY(_valueCache.ExtractWidths(cachePath, &value))){
@@ -2398,18 +2384,8 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtVec3fArray vec(1, GfVec3f(0,0,0));
                 value = VtValue(vec);
             }
-        } else if (UsdGeomPrimvar pv = UsdGeomGprim(_GetUsdPrim(cachePath))
-                                                .GetPrimvar(key)) {
-            // XXX(UsdImaging): We use cachePath directly as usdPath above,
-            // but should do the proper transformation.  Maybe we can use
-            // the primInfo.usdPrim?
-
-            // Note here that Hydra requested "color" (e.g.) and we've converted
-            // it to primvars:color automatically by virtue of UsdGeomPrimvar.
-            TF_VERIFY(pv.ComputeFlattened(&value, _time), "%s, %s\n", 
-                      id.GetText(), key.GetText());
         } else {
-            _HdPrimInfo  const *primInfo = _GetHdPrimInfo(cachePath);
+            _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
             if (!TF_VERIFY(primInfo)) {
                 return value;
             }
@@ -2417,11 +2393,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             if (!TF_VERIFY(prim)) {
                 return value;
             }
-            value = primInfo->adapter->Get(
-                prim,
-                cachePath,
-                key,
-                _time);
+            value = primInfo->adapter->Get(prim, cachePath, key, _time);
         }
     }
 

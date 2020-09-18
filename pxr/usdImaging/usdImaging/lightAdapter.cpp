@@ -106,7 +106,9 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
     // animated lights, since we do not call UpdateForTime() for sprims.
     {
         // Establish a valueCache entry.
-        valueCache->GetPrimvars(cachePath);
+        HdPrimvarDescriptorVector& vPrimvars = 
+            valueCache->GetPrimvars(cachePath);
+
         // Compile a list of primvars to check.
         std::vector<UsdGeomPrimvar> primvars;
         UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
@@ -114,12 +116,13 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         if (inheritedPrimvarRecord) {
             primvars = inheritedPrimvarRecord->primvars;
         }
+
         UsdGeomPrimvarsAPI primvarsAPI(prim);
         std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
         primvars.insert(primvars.end(), local.begin(), local.end());
         for (auto const &pv : primvars) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, UsdTimeCode(),
-                                    valueCache);
+            _ComputeAndMergePrimvar(
+                prim, cachePath, pv, UsdTimeCode(), valueCache, &vPrimvars);
         }
     }
 }

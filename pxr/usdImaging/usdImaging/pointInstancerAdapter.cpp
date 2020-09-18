@@ -626,6 +626,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             UsdGeomPointInstancer instancer(prim);
 
+            HdPrimvarDescriptorVector& vPrimvars = 
+                valueCache->GetPrimvars(cachePath);
+
             // PERFORMANCE: It would be nice to track variability of individual
             // primvars separately, since uniform values will  needlessly be
             // sent to the GPU on every frame.
@@ -634,7 +637,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 valueCache->GetPrimvar(cachePath, _tokens->translate) = 
                                                                     positions;
                 _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
+                    &vPrimvars,
                     _tokens->translate,
                     HdInterpolationInstance,
                     HdPrimvarRoleTokens->vector);
@@ -658,7 +661,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
 
                 valueCache->GetPrimvar(cachePath, _tokens->rotate) = rotations;
                 _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
+                    &vPrimvars,
                     _tokens->rotate,
                     HdInterpolationInstance);
             }
@@ -667,7 +670,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
                 _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
+                    &vPrimvars,
                     _tokens->scale,
                     HdInterpolationInstance);
             }
@@ -683,7 +686,13 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     interp != UsdGeomTokens->uniform) {
                     HdInterpolation interp = HdInterpolationInstance;
                     _ComputeAndMergePrimvar(
-                        prim, cachePath, pv, time, valueCache, &interp);
+                        prim, 
+                        cachePath,
+                        pv, 
+                        time, 
+                        valueCache, 
+                        &vPrimvars, 
+                        &interp);
                 }
             }
         }
@@ -1790,7 +1799,6 @@ UsdImagingPointInstancerAdapter::GetDoubleSided(UsdPrim const& usdPrim,
     return BaseAdapter::GetDoubleSided(usdPrim, cachePath, time);
 }
 
-
 /*virtual*/
 SdfPath
 UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim, 
@@ -1806,6 +1814,21 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
 }
 
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
+                                     SdfPath const& cachePath,
+                                     TfToken const &key,
+                                     UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->Get(protoPrim, cachePath, key, time);
+    }
+    return BaseAdapter::Get(usdPrim, cachePath, key, time);
+}
 
 /*virtual*/
 HdExtComputationInputDescriptorVector

@@ -1878,8 +1878,6 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
         }
         SdfPath materialId = proto.adapter->GetMaterialId(
                 _GetPrim(proto.path), cachePath, time);
-        
-
         if (!materialId.IsEmpty()) {
             return materialId;
         } else {
@@ -1887,13 +1885,12 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
             // value
             return instancerContext.instancerMaterialUsdPath;
         }
-
     }
-
 
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
 }
 
+/*virtual*/
 HdExtComputationInputDescriptorVector
 UsdImagingInstanceAdapter::GetExtComputationInputs(
     UsdPrim const& usdPrim,
@@ -1913,6 +1910,27 @@ UsdImagingInstanceAdapter::GetExtComputationInputs(
     }
 
     return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
+}
+
+/*virtual*/
+VtValue 
+UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim, 
+                               SdfPath const& cachePath,
+                               TfToken const &key,
+                               UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                                                cachePath,
+                                                &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return VtValue();
+        }
+        return proto.adapter->Get(
+                _GetPrim(proto.path), cachePath, key, time);
+    }
+    return BaseAdapter::Get(usdPrim, cachePath, key, time);
 }
 
 void

@@ -459,7 +459,41 @@ UsdImagingGLDrawModeAdapter::GetDoubleSided(UsdPrim const& prim,
     return false;
 }
 
+/*virtual*/
+VtValue 
+UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim, 
+                               SdfPath const& cachePath,
+                               TfToken const &key,
+                               UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
 
+    VtValue value;
+    UsdGeomModelAPI model(prim);
+
+    if (key == HdTokens->displayColor) {
+        VtVec3fArray color = VtVec3fArray(1);
+        GfVec3f drawModeColor;
+        if (model) {
+            model.GetModelDrawModeColorAttr().Get(&drawModeColor);
+        } else {
+            drawModeColor = _schemaColor;
+        }
+
+        color[0] = drawModeColor;
+        value = color;
+    } else if (key == HdTokens->displayOpacity) {
+        VtFloatArray opacity = VtFloatArray(1);
+
+        // Full opacity.
+        opacity[0] = 1.0f;
+        value = opacity;
+    }
+
+    return value;
+}
+
+/*virtual*/
 SdfPath
 UsdImagingGLDrawModeAdapter::GetMaterialId(UsdPrim const& prim, 
                                            SdfPath const& cachePath, 
@@ -467,7 +501,6 @@ UsdImagingGLDrawModeAdapter::GetMaterialId(UsdPrim const& prim,
 {
     return _GetMaterialPath(prim);
 }
-
 
 void
 UsdImagingGLDrawModeAdapter::_CheckForTextureVariability(
@@ -689,24 +722,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        VtVec3fArray color = VtVec3fArray(1);
-        GfVec3f drawModeColor;
-        if (model) {
-            model.GetModelDrawModeColorAttr().Get(&drawModeColor);
-        } else {
-            drawModeColor = _schemaColor;
-        }
-        color[0] = drawModeColor;
-        valueCache->GetColor(cachePath) = color;
-
         _MergePrimvar(&primvars, HdTokens->displayColor,
                       HdInterpolationConstant, HdPrimvarRoleTokens->color);
-
-        VtFloatArray opacity = VtFloatArray(1);
-        // Full opacity.
-        opacity[0] = 1.0f;
-        valueCache->GetOpacity(cachePath) = opacity;
-
         _MergePrimvar(&primvars, HdTokens->displayOpacity,
                       HdInterpolationConstant);
     }

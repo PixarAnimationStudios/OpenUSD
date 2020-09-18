@@ -187,7 +187,13 @@ public:
     SdfPath GetMaterialId(UsdPrim const& prim, 
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
-
+    /// Gets the value of the parameter named key for the given prim (which
+    /// has the given cache path) and given time.
+    USDIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
 
 protected:
 

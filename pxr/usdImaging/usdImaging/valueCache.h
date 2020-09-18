@@ -82,15 +82,6 @@ public:
         };
 
     private:
-        static Key Color(SdfPath const& path) {
-            static TfToken attr("displayColor");
-            return Key(path, attr);
-        }
-        static Key Opacity(SdfPath const& path) {
-            static TfToken attr("displayOpacity");
-            return Key(path, attr);
-        }
-
         static Key InstancerTransform(SdfPath const& path) {
             static TfToken attr("instancerTransform");
             return Key(path, attr);
@@ -252,8 +243,6 @@ public:
 
     /// Clear all data associated with a specific path.
     void Clear(SdfPath const& path) {
-        _Erase<VtValue>(Key::Color(path));
-        _Erase<VtValue>(Key::Opacity(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
@@ -286,12 +275,6 @@ public:
         }
     }
 
-    VtValue& GetColor(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Color(path));
-    }
-    VtValue& GetOpacity(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Opacity(path));
-    }
     VtValue& GetInstanceIndices(SdfPath const& path) const {
         return _Get<VtValue>(Key::InstanceIndices(path));
     }
@@ -334,12 +317,6 @@ public:
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
     }
-    bool FindColor(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Color(path), value);
-    }
-    bool FindOpacity(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Opacity(path), value);
-    }
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
     }
@@ -376,12 +353,6 @@ public:
         return _Find(Key::ExtComputationKernel(path), value);
     }
 
-    bool ExtractColor(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Color(path), value);
-    }
-    bool ExtractOpacity(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Opacity(path), value);
-    }
     bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
         return _Extract(Key::InstanceIndices(path), value);
     }

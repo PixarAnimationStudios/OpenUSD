@@ -686,12 +686,15 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     UsdGeomPrimvar const& primvar,
     UsdTimeCode time,
     UsdImagingValueCache* valueCache,
+    HdPrimvarDescriptorVector* primvarDescs,
     HdInterpolation *interpOverride) const
 {
     VtValue v;
     TfToken primvarName = primvar.GetPrimvarName();
     if (primvar.ComputeFlattened(&v, time)) {
-        valueCache->GetPrimvar(cachePath, primvarName) = v;
+        if (valueCache) {
+            valueCache->GetPrimvar(cachePath, primvarName) = v;
+        }
         HdInterpolation interp = interpOverride ? *interpOverride
             : _UsdToHdInterpolation(primvar.GetInterpolation());
         TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
@@ -701,13 +704,13 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
                  cachePath.GetText(),
                  primvarName.GetText(),
                  TfEnum::GetName(interp).c_str());
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
-                      primvarName, interp, role);
+        _MergePrimvar(primvarDescs, primvarName, interp, role);
+
     } else {
         TF_DEBUG(USDIMAGING_SHADERS)
             .Msg( "\t\t No primvar on <%s> named %s\n",
                   gprim.GetPath().GetText(), primvarName.GetText());
-        _RemovePrimvar(&valueCache->GetPrimvars(cachePath), primvarName);
+        _RemovePrimvar(primvarDescs, primvarName);
     }
 }
 

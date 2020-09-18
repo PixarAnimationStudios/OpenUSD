@@ -177,8 +177,10 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             // If it's not found locally, see if it's inherited
             pv = _GetInheritedPrimvar(prim, HdTokens->widths);
         }
+
         if (pv) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            _ComputeAndMergePrimvar(
+                prim, cachePath, pv, time, valueCache, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             HdInterpolation interpolation;
@@ -204,8 +206,10 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             // If it's not found locally, see if it's inherited
             pv = _GetInheritedPrimvar(prim, HdTokens->normals);
         }
+
         if (pv) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            _ComputeAndMergePrimvar(
+                prim, cachePath, pv, time, valueCache, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             VtVec3fArray normals;

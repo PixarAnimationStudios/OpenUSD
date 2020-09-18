@@ -636,18 +636,19 @@ protected:
         HdPrimvarDescriptorVector* vec,
         TfToken const& name) const;
 
-    // Convenience method for computing a primvar. THe primvar will only be
-    // added to the list in the valueCache if there is no primvar of the same
+    // Convenience method for computing a primvar. The primvar will only be
+    // added to the list of prim desc if there is no primvar of the same
     // name already present.  Thus, "local" primvars should be merged before
     // inherited primvars.
     USDIMAGING_API
-    void _ComputeAndMergePrimvar(UsdPrim const& prim,
-                                 SdfPath const& cachePath,
-                                 UsdGeomPrimvar const& primvar,
-                                 UsdTimeCode time,
-                                 UsdImagingValueCache* valueCache,
-                                 HdInterpolation *interpOverride = nullptr)
-                                 const;
+    void _ComputeAndMergePrimvar(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        UsdGeomPrimvar const& primvar,
+        UsdTimeCode time,
+        UsdImagingValueCache* valueCache,
+        HdPrimvarDescriptorVector* primvarDescs,
+        HdInterpolation *interpOverride = nullptr) const;
 
     // Returns true if the property name has the "primvars:" prefix.
     USDIMAGING_API

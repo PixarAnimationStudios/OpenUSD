@@ -47,7 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Support for drawing bones of a UsdSkelSkeleton.  
 ///
-class UsdSkelImagingSkeletonAdapter : public UsdImagingPrimAdapter {
+class UsdSkelImagingSkeletonAdapter : public UsdImagingPrimAdapter 
+{
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
@@ -208,7 +209,11 @@ public:
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
 
-
+    USDSKELIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
 
 protected:
     // ---------------------------------------------------------------------- //

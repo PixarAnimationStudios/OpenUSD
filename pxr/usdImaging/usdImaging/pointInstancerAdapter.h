@@ -193,6 +193,11 @@ public:
                             const UsdImagingInstancerContext* instancerContext)
                                     const override;
 
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
