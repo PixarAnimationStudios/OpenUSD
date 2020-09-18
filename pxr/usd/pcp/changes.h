@@ -325,7 +325,7 @@ private:
 
     // Optimize path changes.
     void _OptimizePathChanges(const PcpCache* cache, PcpCacheChanges* changes,
-                              _PathEditMap* pathChanges);
+                              const _PathEditMap* pathChanges);
 
     // Sublayer change type for _DidChangeSublayer.
     enum _SublayerChangeType {

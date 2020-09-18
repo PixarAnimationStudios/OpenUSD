@@ -1663,28 +1663,23 @@ void
 PcpChanges::_OptimizePathChanges(
     const PcpCache* cache,
     PcpCacheChanges* changes,
-    _PathEditMap* pathChanges)
+    const _PathEditMap* pathChanges)
 {
     // XXX: DidChangePaths handles rename chains. I.e. A renamed to B
     //      then renamed to C. pathChanges is a map but we may need to handle 
     //      one oldPath appearing multiple times in didChangePath, e.g. 
     //      A -> B -> C and D -> B -> E, where B appears in two chains.
 
-    // Discard any path change that's also in changes->didChangePath.
-    typedef std::pair<SdfPath, SdfPath> PathPair;
-    std::vector<PathPair> sdOnly;
-
-    // Custom compare function to handle the type mismatch between the
-    // map's value type pair<const SdfPath, SdfPath> and pair<SdfPath, SdfPath>.
-    auto compareFunc = 
-        [](const _PathEditMap::value_type &lhs, const PathPair &rhs) {
-             return lhs.first < rhs.first ||
-                (lhs.first == rhs.first && lhs.second < rhs.second); };
-    std::set_difference(pathChanges->begin(), pathChanges->end(),
-                        changes->didChangePath.begin(),
-                        changes->didChangePath.end(),
-                        std::back_inserter(sdOnly), 
-                        compareFunc);
+    // Copy the path changes and discard any that are also in 
+    // changes->didChangePath.
+    _PathEditMap sdOnly(*pathChanges);
+    for (const auto &pathPair : changes->didChangePath) {
+        auto it = sdOnly.find(pathPair.first);
+        // Note that we check for exact matches of mapping oldPath to newPath.
+        if (it != sdOnly.end() && it->second == pathPair.second) {
+            sdOnly.erase(it);
+        }
+    }
 
     std::string summary;
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
