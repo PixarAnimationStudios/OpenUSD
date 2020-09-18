@@ -103,11 +103,17 @@ private:
     HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
+    void _CreateEncoder();
+    
     HgiMetal* _hgi;
+    MTLRenderPassDescriptor* _renderPassDescriptor;
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     bool _hasWork;
+    MTLViewport _viewport;
+    NSString* _debugLabel;
+    bool _viewportSet;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
