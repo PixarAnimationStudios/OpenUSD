@@ -57,7 +57,7 @@ public:
         bool premultiplyAlpha = true);
 
     HDST_API
-    ~HdStGlfTextureCpuData();
+    ~HdStGlfTextureCpuData() override;
     
     HDST_API
     const HgiTextureDesc &GetTextureDesc() const override;

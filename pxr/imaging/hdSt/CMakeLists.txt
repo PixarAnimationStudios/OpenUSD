@@ -90,6 +90,7 @@ pxr_library(hdSt
         surfaceShader
         texture
         textureBinder
+        textureCpuData
         textureHandle
         textureHandleRegistry
         textureIdentifier
@@ -106,7 +107,6 @@ pxr_library(hdSt
     PUBLIC_HEADERS
         api.h
         dynamicUvTextureImplementation.h
-        textureCpuData.h
 
     PRIVATE_CLASSES
         basisCurvesComputations
