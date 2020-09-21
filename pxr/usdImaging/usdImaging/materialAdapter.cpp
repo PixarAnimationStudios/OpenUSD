@@ -271,12 +271,14 @@ _ExtractPrimvarsFromNode(
 // NodeGraphs that can be processed once and shared, or even look for a
 // pre-baked implementation. Currently neither the material processing in Hydra
 // nor any of the back-ends (like HdPrman) can make use of this anyway.
+using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+
 static
 void _WalkGraph(
     UsdShadeShader const & shadeNode,
     HdMaterialNetwork* materialNetwork,
     TfToken const& networkSelector,
-    SdfPathSet* visitedNodes,
+    _PathSet* visitedNodes,
     TfTokenVector const & shaderSourceTypes,
     UsdTimeCode time,
     bool* timeVarying)
@@ -293,6 +295,7 @@ void _WalkGraph(
     if (visitedNodes->count(node.path) > 0) {
         return;
     }
+    visitedNodes->emplace(node.path);
 
     // Visit the inputs of this node to ensure they are emitted first.
     const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
@@ -362,10 +365,9 @@ void _WalkGraph(
         // primvar names from the material node to ensure these primvars are
         // not filtered-out by GprimAdapter.
         _ExtractPrimvarsFromNode(node, materialNetwork, networkSelector);
-    } 
-    
+    }
+
     materialNetwork->nodes.push_back(node);
-    visitedNodes->emplace(node.path);
 }
 
 static void
@@ -380,7 +382,7 @@ _BuildHdMaterialNetworkFromTerminal(
 {
     HdMaterialNetwork& network = materialNetworkMap->map[terminalIdentifier];
     std::vector<HdMaterialNode>& nodes = network.nodes;
-    SdfPathSet visitedNodes;
+    _PathSet visitedNodes;
 
     _WalkGraph(
         usdTerminal,
