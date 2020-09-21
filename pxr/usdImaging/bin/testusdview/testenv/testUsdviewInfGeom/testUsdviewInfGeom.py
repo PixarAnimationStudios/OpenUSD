@@ -32,11 +32,6 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 def _fixInfPoint(appController):
     stage = appController._dataModel.stage
     mesh = UsdGeom.Mesh(stage.GetPrimAtPath("/PentagonWithInfPoint"))
@@ -45,7 +40,7 @@ def _fixInfPoint(appController):
     mesh.GetPointsAttr().Set(points)
 
     appController._stageView.updateView(resetCam=True, forceComputeBBox=True)
-    _takeShot(appController, "fixedGeom.png")
+    appController._takeShot("fixedGeom.png")
 
 # Test rendering of a scene wherein an infinite point (in all dimensions) is
 # authored on a prim, but extents aren't.
@@ -55,5 +50,5 @@ def _fixInfPoint(appController):
 # the infinite point.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
-    _takeShot(appController, "infGeom.png")
+    appController._takeShot("infGeom.png")
     _fixInfPoint(appController)

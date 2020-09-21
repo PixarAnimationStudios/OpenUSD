@@ -33,25 +33,20 @@ def _setFOV(appController, fov):
     appController._dataModel.viewSettings.freeCamera.fov = fov
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test 45 degree FOV.
 def _test45Degree(appController):
     _setFOV(appController, 45)
-    _takeShot(appController, "fov45.png")
+    appController._takeShot("fov45.png")
 
 # Test 60 degree FOV.
 def _test60Degree(appController):
     _setFOV(appController, 60)
-    _takeShot(appController, "fov60.png")
+    appController._takeShot("fov60.png")
 
 # Test 90 degree FOV.
 def _test90Degree(appController):
     _setFOV(appController, 90)
-    _takeShot(appController, "fov90.png")
+    appController._takeShot("fov90.png")
 
 # Test that the FOV setting work properly in usdview.
 def testUsdviewInputFunction(appController):

@@ -46,39 +46,33 @@ def _getRendererAppendedImageName(appController, filename):
     imageName = filename + "_" + rendererName + ".png"
     return imageName
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    # Wait until the image is converged
-    if appController._stageView._renderer:
-        while not appController._stageView._renderer.IsConverged():
-            QtWidgets.QApplication.processEvents()
-    
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test with no masking.
 def _testNoMask(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None)
     imgName = _getRendererAppendedImageName(appController, "none")
-    _takeShot(appController, imgName)
+    # We are using a progressive renderer, so wait for images to converge
+    appController._takeShot(imgName, waitForConvergence=True)
 
 # Test with outline enabled but no masking.
 def _testOutline(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None, outline=True)
     imgName = _getRendererAppendedImageName(appController, "outline")
-    _takeShot(appController, imgName)
+    # We are using a progressive renderer, so wait for images to converge
+    appController._takeShot(imgName, waitForConvergence=True)
 
 # Test with partial masking.
 def _testPartial(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Partial)
     imgName = _getRendererAppendedImageName(appController, "partial")
-    _takeShot(appController, imgName)
+    # We are using a progressive renderer, so wait for images to converge
+    appController._takeShot(imgName, waitForConvergence=True)
 
 # Test with full masking.
 def _testFull(appController):
     _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Full)
     imgName = _getRendererAppendedImageName(appController, "full")
-    _takeShot(appController, imgName)
+    # We are using a progressive renderer, so wait for images to converge
+    appController._takeShot(imgName, waitForConvergence=True)
 
 # Test that the complexity setting works properly in usdview.
 def testUsdviewInputFunction(appController):

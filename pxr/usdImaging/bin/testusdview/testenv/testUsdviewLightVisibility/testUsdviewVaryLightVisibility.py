@@ -26,8 +26,6 @@
 
 from __future__ import print_function
 import sys
-from pxr.Usdviewq.qt import QtWidgets
-
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
@@ -44,21 +42,13 @@ def _turnLightsOff(appController):
 
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-
-    QtWidgets.QApplication.processEvents()
-    appController._mainWindow.update()
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test light visibility varying over time.
 def _testVaryingVisibility(appController):
 
     appController.setFrame(0)
-    _takeShot(appController, "visible.png")
+    appController._takeShot("visible.png")
     appController.setFrame(5)
-    _takeShot(appController, "invisible.png")
+    appController._takeShot("invisible.png")
 
 
 # Test that the complexity setting works properly in usdview.

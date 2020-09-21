@@ -23,23 +23,12 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr.Usdviewq.qt import QtWidgets
-
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
 
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 def testUsdviewInputFunction(appController):
 
     _modifySettings(appController)
-
-    # Wait until the image is converged
-    if appController._stageView._renderer:
-        while not appController._stageView._renderer.IsConverged():
-            QtWidgets.QApplication.processEvents()
-
-    _takeShot(appController, "viewport.png")
+    # We are using a progressive renderer, so wait for images to converge
+    appController._takeShot("viewport.png", waitForConvergence=True)

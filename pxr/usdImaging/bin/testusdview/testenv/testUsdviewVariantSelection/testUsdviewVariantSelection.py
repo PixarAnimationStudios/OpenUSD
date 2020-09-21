@@ -65,10 +65,6 @@ def _getVariantSelector(appController, whichVariant):
 
     return None
 
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 def _selectVariant(appController, variantPos, whichVariant):
     selector = _getVariantSelector(appController, whichVariant)
     selector.setCurrentIndex(variantPos)
@@ -83,37 +79,37 @@ def _testBasic(appController):
 
     # select capsule
     _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(appController, _makeFileName(CAPSULE, 1))
+    appController._takeShot(_makeFileName(CAPSULE, 1))
 
     # select cone
     _selectVariant(appController, CONE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(appController, _makeFileName(CONE, 1))
+    appController._takeShot(_makeFileName(CONE, 1))
 
     # select cube
     _selectVariant(appController, CUBE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(appController, _makeFileName(CUBE, 1))
+    appController._takeShot(_makeFileName(CUBE, 1))
 
     # select cylinder 
     _selectVariant(appController, CYLINDER[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(appController, _makeFileName(CYLINDER, 1))
+    appController._takeShot(_makeFileName(CYLINDER, 1))
 
     # select items from the second variant
 
     # select capsule
     _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(appController, _makeFileName(CAPSULE, 2))
+    appController._takeShot(_makeFileName(CAPSULE, 2))
 
     # select cone
     _selectVariant(appController, CONE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(appController, _makeFileName(CONE, 2))
+    appController._takeShot(_makeFileName(CONE, 2))
 
     # select cube
     _selectVariant(appController, CUBE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(appController, _makeFileName(CUBE, 2))
+    appController._takeShot(_makeFileName(CUBE, 2))
 
     # select cylinder 
     _selectVariant(appController, CYLINDER[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(appController, _makeFileName(CYLINDER, 2))
+    appController._takeShot(_makeFileName(CYLINDER, 2))
 
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)

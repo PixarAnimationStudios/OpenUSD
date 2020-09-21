@@ -36,15 +36,10 @@ def _setBackgroundColorAction(appController, action):
     appController._changeBgColor(action)
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test with a dark grey background color.
 def _testGreyDarkBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionGrey_Dark)
-    _takeShot(appController, "ocio_grey_dark.png")
+    appController._takeShot("ocio_grey_dark.png")
 
 # Test OpenColorIO in UsdView
 def testUsdviewInputFunction(appController):

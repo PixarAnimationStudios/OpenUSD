@@ -44,14 +44,6 @@ def _turnLightsOff(appController):
 
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-
-    QtWidgets.QApplication.processEvents()
-    appController._mainWindow.update()
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Select one or more prim paths, then set visible state of those prims.
 def _selectAndSetVisible(appController, visible, paths):
     selection = appController._dataModel.selection
@@ -72,11 +64,11 @@ def _selectAndSetVisible(appController, visible, paths):
 # Test making a single light invisible then make it visible.
 def _testSingleVisible(appController):
     _selectAndSetVisible(appController, False, ["/lights/light1"])
-    _takeShot(appController, "singleInvisible1.png")
+    appController._takeShot("singleInvisible1.png")
     _selectAndSetVisible(appController, True, ["/lights/light1"])
 
     _selectAndSetVisible(appController, False, ["/lights/light2"])
-    _takeShot(appController, "singleInvisible2.png")
+    appController._takeShot("singleInvisible2.png")
     _selectAndSetVisible(appController, True, ["/lights/light2"])
 
 # Test all lights visible/invisible.
@@ -84,12 +76,12 @@ def _testAllVisible(appController):
     _selectAndSetVisible(appController, False, ["/lights/light1"])
     _selectAndSetVisible(appController, False, ["/lights/light2"])
 
-    _takeShot(appController, "allInvisible.png")
+    appController._takeShot("allInvisible.png")
 
     _selectAndSetVisible(appController, True, ["/lights/light1"])
     _selectAndSetVisible(appController, True, ["/lights/light2"])
 
-    _takeShot(appController, "allVisible.png")
+    appController._takeShot("allVisible.png")
 
 
 # Test that the complexity setting works properly in usdview.

@@ -34,30 +34,25 @@ def _setBackgroundColorAction(appController, action):
     appController._changeBgColor(action)
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test with a black background color.
 def _testBlackBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionBlack)
-    _takeShot(appController, "black.png")
+    appController._takeShot("black.png")
 
 # Test with a dark grey background color.
 def _testGreyDarkBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionGrey_Dark)
-    _takeShot(appController, "grey_dark.png")
+    appController._takeShot("grey_dark.png")
 
 # Test with a light grey background color.
 def _testGreyLightBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionGrey_Light)
-    _takeShot(appController, "grey_light.png")
+    appController._takeShot("grey_light.png")
 
 # Test with a white background color.
 def _testWhiteBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionWhite)
-    _takeShot(appController, "white.png")
+    appController._takeShot("white.png")
 
 # Test that the background color setting works properly in usdview.
 def testUsdviewInputFunction(appController):
