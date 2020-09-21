@@ -30,7 +30,6 @@
 #include "pxr/imaging/hgi/cmds.h"
 #include "pxr/imaging/hgi/texture.h"
 #include <memory>
-#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -100,20 +99,6 @@ protected:
 private:
     HgiBlitCmds & operator=(const HgiBlitCmds&) = delete;
     HgiBlitCmds(const HgiBlitCmds&) = delete;
-    
-    struct BufferFlushListEntry {
-        BufferFlushListEntry(HgiBufferHandle const& _buffer,
-                             uint64_t _start, uint64_t _end) {
-            buffer = _buffer;
-            start = _start;
-            end = _end;
-        }
-        HgiBufferHandle buffer;
-        uint64_t start;
-        uint64_t end;
-    };
-
-    std::unordered_map<class HgiBuffer*, BufferFlushListEntry> queuedBuffers;
 };
 
 
