@@ -965,7 +965,6 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
-    if (!glBindBuffer) return; // glew initialized
 
     GLF_GROUP_FUNCTION();
 
@@ -1021,76 +1020,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
             _GPUFrustumNonInstanceCulling(
                 batchItem, renderPassState, resourceRegistry);
         }
-    }
 
-    if (TfDebug::IsEnabled(HD_DRAWITEM_DRAWN)) {
-        void const *bufferData = NULL;
-        // instanceCount is a second entry of drawcommand for both
-        // DrawArraysIndirect and DrawElementsIndirect.
-        const void *instanceCountOffset =
-            (const void*)
-            (_dispatchBuffer->GetResource(HdTokens->drawDispatch)->GetOffset()
-             + sizeof(uint32_t));
-        const int dispatchBufferStride =
-            _dispatchBuffer->GetEntireResource()->GetStride();
-
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-        if (gpuCulling) {
-            HgiBufferHandle const& buffer =
-                _dispatchBuffer->GetEntireResource()->GetId();
-            if (caps.directStateAccessEnabled) {
-                bufferData = glMapNamedBuffer(
-                    buffer->GetRawResource(), GL_READ_ONLY);
-            } else {
-                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
-                bufferData = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-        }
-
-        for (size_t item=0; item<_drawItemInstances.size(); ++item) {
-            HdStDrawItemInstance const * drawItemInstance =
-                _drawItemInstances[item];
-
-            if(!drawItemInstance->IsVisible()) {
-                continue;
-            }
-
-            HdStDrawItem const * drawItem = drawItemInstance->GetDrawItem();
-
-            if (gpuCulling) {
-                GLint const *instanceCount =
-                    (GLint const *)(
-                        (ptrdiff_t)(bufferData)
-                        + (ptrdiff_t)(instanceCountOffset)
-                        + item*dispatchBufferStride);
-
-                bool isVisible = (*instanceCount > 0);
-                if (!isVisible) {
-                    continue;
-                }
-            }
-
-            std::stringstream ss;
-            ss << *drawItem;
-            TF_DEBUG(HD_DRAWITEM_DRAWN).Msg("PREP DRAW: \n%s\n", 
-                    ss.str().c_str());
-        }
-
-        if (gpuCulling) {
-            HgiBufferHandle const& buffer =
-                _dispatchBuffer->GetEntireResource()->GetId();
-            if (caps.directStateAccessEnabled) {
-                glUnmapNamedBuffer(buffer->GetRawResource());
-            } else {
-                glBindBuffer(GL_ARRAY_BUFFER, buffer->GetRawResource());
-                glUnmapBuffer(GL_ARRAY_BUFFER);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-            }
-        }
-    }
-
-    if (gpuCulling && !freezeCulling) {
         if (IsEnabledGPUCountVisibleInstances()) {
             _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
         }
@@ -1239,8 +1169,6 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
         programId, binder, *renderPassState);
 
     uint32_t batchCount = _dispatchBuffer->GetCount();
-
-    TF_DEBUG(HD_DRAWITEM_DRAWN).Msg("DRAW (indirect): %d\n", batchCount);
 
     if (_useDrawArrays) {
         TF_DEBUG(HD_MDI).Msg("MDI Drawing Arrays:\n"

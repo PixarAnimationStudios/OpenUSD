@@ -181,12 +181,6 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdStDrawItem const * drawItem = (*drawItemIt)->GetDrawItem();
 
         ++numItemsDrawn;
-        if (TfDebug::IsEnabled(HD_DRAWITEM_DRAWN)) {
-            std::stringstream ss;
-            ss << *drawItem;
-            TF_DEBUG(HD_DRAWITEM_DRAWN).Msg("DRAW: \n%s\n", 
-                    ss.str().c_str());
-        }
 
         //
         // index buffer data

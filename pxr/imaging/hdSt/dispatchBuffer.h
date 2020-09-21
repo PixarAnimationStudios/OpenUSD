@@ -45,7 +45,7 @@ using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 /// A VBO of a simple array of unsigned integers.
 ///
 /// This buffer is used to prepare data on the GPU for indirect dispatch i.e.
-/// to be consumed by glMultiDrawIndirect or glDispatchComputeIndirect. At the
+/// to be consumed by MultiDrawIndirect or DispatchComputeIndirect. At the
 /// same time, interleaved subsets of the array are bound in several different
 /// ways to provide additional data interface to shaders.
 ///
@@ -144,9 +144,9 @@ public:
     HdStBufferResourceSharedPtr GetResource() const;
 
     /// Returns the named GPU resource. This method returns the first found
-    /// resource. In HDST_SAFE_MODE it checks all underlying GL buffers
+    /// resource. In HDST_SAFE_MODE it checks all underlying GPU buffers
     /// in _resourceMap and raises a coding error if there are more than
-    /// one GL buffers exist.
+    /// one GPU buffers exist.
     HDST_API
     HdStBufferResourceSharedPtr GetResource(TfToken const& name);
 
