@@ -47,6 +47,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _lineWidth(1.0f)
     , _cullFace(true)
     , _cullMode(GL_BACK)
+    , _frontFace(GL_CCW)
     , _rasterizerDiscard(true)
 {
     #if defined(GL_KHR_debug)
@@ -77,6 +78,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetFloatv(GL_LINE_WIDTH, &_lineWidth);
     glGetBooleanv(GL_CULL_FACE, (GLboolean*)&_cullFace);
     glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
+    glGetIntegerv(GL_FRONT_FACE, &_frontFace);
     glGetBooleanv(GL_RASTERIZER_DISCARD, (GLboolean*)&_rasterizerDiscard);
 
     HGIGL_POST_PENDING_GL_ERRORS();
@@ -132,6 +134,7 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glDisable(GL_CULL_FACE);
     }
     glCullFace(_cullMode);
+    glFrontFace(_frontFace);
 
     if (_rasterizerDiscard) {
         glEnable(GL_RASTERIZER_DISCARD);

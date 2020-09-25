@@ -77,6 +77,7 @@ private:
     float _lineWidth;
     bool _cullFace;
     int32_t _cullMode;
+    int32_t _frontFace;
     bool _rasterizerDiscard;
 };
 
