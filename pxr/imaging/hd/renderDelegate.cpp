@@ -120,9 +120,15 @@ HdRenderDelegate::GetRenderSettingDescriptors() const
 void
 HdRenderDelegate::SetRenderSetting(TfToken const& key, VtValue const& value)
 {
-    _settingsMap[key] = value;
-    _settingsVersion++;
-
+    auto iter = _settingsMap.find(key);
+    if (iter == _settingsMap.end()) {
+        _settingsMap[key] = value;
+        ++_settingsVersion;
+    } else if (iter->second != value) {
+        iter->second = value;
+        ++_settingsVersion;
+    }
+    
     if (TfDebug::IsEnabled(HD_RENDER_SETTINGS)) {
         std::cout << "Render Setting [" << key << "] = " << value << std::endl;
     }
