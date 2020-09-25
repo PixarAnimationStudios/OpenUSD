@@ -507,6 +507,13 @@ public:
                             const UsdImagingInstancerContext* instancerContext)
                                     const;
 
+    USDIMAGING_API
+    virtual HdExtComputationOutputDescriptorVector
+    GetExtComputationOutputs(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             const UsdImagingInstancerContext* instancerContext)
+                                    const;
+
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //

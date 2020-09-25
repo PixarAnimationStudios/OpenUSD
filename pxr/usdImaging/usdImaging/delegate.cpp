@@ -2772,20 +2772,13 @@ UsdImagingDelegate::GetExtComputationOutputDescriptors(
     HD_TRACE_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
-
-    HdExtComputationOutputDescriptorVector outputs;
-    if (!_valueCache.ExtractExtComputationOutputs(cachePath, &outputs)) {
-
-        TF_DEBUG(HD_SAFE_MODE).Msg("WARNING: Slow extComputation output "
-                                   "descriptor fetch for %s\n", 
-                                   computationId.GetText());
-        
-        _UpdateSingleValue(cachePath, HdExtComputation::DirtyOutputDesc);
-        TF_VERIFY(_valueCache.ExtractExtComputationOutputs(
-            cachePath, &outputs));
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetExtComputationOutputs(
+                   primInfo->usdPrim, cachePath, 
+                   nullptr /* instancerContext */); 
     }
-
-    return outputs;
+    return HdExtComputationOutputDescriptorVector();
 }
 
 HdExtComputationPrimvarDescriptorVector

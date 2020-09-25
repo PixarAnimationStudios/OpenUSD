@@ -1874,6 +1874,24 @@ UsdImagingPointInstancerAdapter::GetExtComputationInputs(
     return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
 }
 
+/*virtual*/
+HdExtComputationOutputDescriptorVector
+UsdImagingPointInstancerAdapter::GetExtComputationOutputs(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+
+{
+    UsdImagingInstancerContext ctx;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &ctx)) {
+
+        return proto->adapter->GetExtComputationOutputs(
+                _GetProtoUsdPrim(*proto), cachePath, &ctx);
+    }
+    return BaseAdapter::GetExtComputationOutputs(usdPrim, cachePath, nullptr);
+}
+
 
 /*virtual*/
 bool

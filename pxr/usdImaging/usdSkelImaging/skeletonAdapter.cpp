@@ -1284,6 +1284,27 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationInputs(
             instancerContext);
 }
 
+HdExtComputationOutputDescriptorVector
+UsdSkelImagingSkeletonAdapter::GetExtComputationOutputs(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    if (_IsSkinningComputationPath(cachePath)) {
+    
+        HdTupleType pointsType;
+        pointsType.type = HdTypeFloatVec3;
+        pointsType.count = 1;
+        
+        HdExtComputationOutputDescriptorVector outputsEntry;
+        outputsEntry.emplace_back(_tokens->skinnedPoints, pointsType);
+
+        return outputsEntry;
+    }
+
+    return BaseAdapter::GetExtComputationOutputs(prim, cachePath, 
+            instancerContext);
+}
 
 void
 UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
@@ -1753,17 +1774,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
                 computationPath, _tokens->skelLocalToWorld) = skelLocalToWorld;
         }
     }
-    
-    if (requestedBits & HdExtComputation::DirtyOutputDesc) {
-        HdTupleType pointsType;
-        pointsType.type = HdTypeFloatVec3;
-        pointsType.count = 1;
-        
-        HdExtComputationOutputDescriptorVector& outputsEntry =
-            valueCache->GetExtComputationOutputs(computationPath);
-        outputsEntry.clear();
-        outputsEntry.emplace_back(_tokens->skinnedPoints, pointsType);
-    }
 
     if (requestedBits & HdExtComputation::DirtyKernel) {
         if (_IsEnabledCPUComputations()) {
@@ -1889,11 +1899,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
         }
     }
     
-    if (requestedBits & HdExtComputation::DirtyOutputDesc) {
-        valueCache->GetExtComputationOutputs(computationPath)
-            = HdExtComputationOutputDescriptorVector();
-    }
-
     if (requestedBits & HdExtComputation::DirtyKernel) {
         valueCache->GetExtComputationKernel(computationPath)
             = std::string();

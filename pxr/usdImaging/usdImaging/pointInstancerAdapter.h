@@ -193,6 +193,14 @@ public:
                             const UsdImagingInstancerContext* instancerContext)
                                     const override;
 
+    USDIMAGING_API
+    HdExtComputationOutputDescriptorVector
+    GetExtComputationOutputs(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             const UsdImagingInstancerContext* instancerContext)
+                                    const override;
+
+
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,

@@ -194,6 +194,12 @@ public:
 
 
     USDSKELIMAGING_API
+    SdfPath GetMaterialId(UsdPrim const& prim, 
+                          SdfPath const& cachePath, 
+                          UsdTimeCode time) const override;
+
+
+    USDSKELIMAGING_API
     const TfTokenVector &GetExtComputationSceneInputNames(
         SdfPath const& cachePath) const override;
 
@@ -204,11 +210,11 @@ public:
                             const UsdImagingInstancerContext *instancerContext) 
                                         const override;
 
-    USDSKELIMAGING_API
-    SdfPath GetMaterialId(UsdPrim const& prim, 
-                          SdfPath const& cachePath, 
-                          UsdTimeCode time) const override;
-
+    HdExtComputationOutputDescriptorVector
+    GetExtComputationOutputs(UsdPrim const& prim,
+                             SdfPath const& cachePath,
+                             const UsdImagingInstancerContext* instancerContext)
+                                    const override;
     USDSKELIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
