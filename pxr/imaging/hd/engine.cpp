@@ -85,6 +85,12 @@ HdEngine::RemoveTaskContextData(const TfToken &id)
 }
 
 void
+HdEngine::ClearTaskContextData()
+{
+    _taskContext.clear();
+}
+
+void
 HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
 {
     if ((index == nullptr) || (tasks == nullptr)) {
