@@ -88,3 +88,10 @@ if (PXR_ENABLE_PYTHON_SUPPORT)
 else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
+
+# Set safety/performance configuration
+if (PXR_PREFER_SAFETY_OVER_SPEED)
+   set(PXR_PREFER_SAFETY_OVER_SPEED "1")
+else()
+   set(PXR_PREFER_SAFETY_OVER_SPEED "0")
+endif()
