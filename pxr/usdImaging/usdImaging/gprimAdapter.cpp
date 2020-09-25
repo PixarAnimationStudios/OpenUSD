@@ -608,7 +608,7 @@ UsdImagingGprimAdapter::GetMaterialId(UsdPrim const& prim,
 VtValue
 UsdImagingGprimAdapter::Get(UsdPrim const& prim,
                             SdfPath const& cachePath,
-                            TfToken const &key,
+                            TfToken const& key,
                             UsdTimeCode time) const
 {
     TRACE_FUNCTION();
@@ -663,6 +663,12 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
     } else if (key == HdTokens->normals) {
         // Fallback
         VtVec3fArray vec(1, GfVec3f(0,0,0));
+        value = VtValue(vec);
+        return value;
+
+    } else if (key == HdTokens->widths) {
+        // Fallback
+        VtFloatArray vec(1, 1.0f);
         value = VtValue(vec);
         return value;
 

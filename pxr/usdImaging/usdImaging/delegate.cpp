@@ -2372,12 +2372,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 VtVec3fArray vec;
                 value = VtValue(vec);
             }
-        } else if (key == HdTokens->widths) {
-            _UpdateSingleValue(cachePath,HdChangeTracker::DirtyWidths);
-            if (!TF_VERIFY(_valueCache.ExtractWidths(cachePath, &value))){
-                VtFloatArray vec(1, 1.0f);
-                value = VtValue(vec);
-            }
         } else {
             _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
             if (!TF_VERIFY(primInfo)) {

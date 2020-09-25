@@ -98,10 +98,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key Widths(SdfPath const& path) {
-            static TfToken attr("widths");
-            return Key(path, attr);
-        }
         static Key MaterialResource(SdfPath const& path) {
             static TfToken attr("materialResource");
             return Key(path, attr);
@@ -241,7 +237,6 @@ public:
     void Clear(SdfPath const& path) {
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<VtValue>(Key::Points(path));
-        _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
@@ -279,9 +274,6 @@ public:
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
-    VtValue& GetWidths(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Widths(path));
-    }
     VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
@@ -318,9 +310,6 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindWidths(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Widths(path), value);
-    }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
@@ -350,9 +339,6 @@ public:
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
-    }
-    bool ExtractWidths(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Widths(path), value);
     }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
         return _Extract(Key::MaterialResource(path), value);

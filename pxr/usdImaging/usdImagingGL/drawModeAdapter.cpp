@@ -462,9 +462,9 @@ UsdImagingGLDrawModeAdapter::GetDoubleSided(UsdPrim const& prim,
 /*virtual*/
 VtValue 
 UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim, 
-                               SdfPath const& cachePath,
-                               TfToken const &key,
-                               UsdTimeCode time) const
+                                 SdfPath const& cachePath,
+                                 TfToken const& key,
+                                 UsdTimeCode time) const
 {
     TRACE_FUNCTION();
 
@@ -482,12 +482,19 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
 
         color[0] = drawModeColor;
         value = color;
+
     } else if (key == HdTokens->displayOpacity) {
         VtFloatArray opacity = VtFloatArray(1);
 
         // Full opacity.
         opacity[0] = 1.0f;
         value = opacity;
+
+    } else if (key == HdTokens->widths) {
+        VtFloatArray widths = VtFloatArray(1);
+        widths[0] = 1.0f;
+        value = widths;
+
     }
 
     return value;
@@ -714,9 +721,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
-        VtFloatArray widths = VtFloatArray(1);
-        widths[0] = 1.0f;
-        valueCache->GetWidths(cachePath) = VtValue(widths);
         _MergePrimvar(&primvars, UsdGeomTokens->widths,
                       HdInterpolationConstant);
     }

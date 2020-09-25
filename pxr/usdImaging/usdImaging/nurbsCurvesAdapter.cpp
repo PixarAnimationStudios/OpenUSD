@@ -166,8 +166,8 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
+    
     UsdImagingValueCache* valueCache = _GetValueCache();
-
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
@@ -182,23 +182,21 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
 
         if (pv) {
             _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, valueCache, &primvars);
+                prim, cachePath, pv, time, nullptr, &primvars);
         } else {
-            UsdGeomNurbsCurves curves(prim);            
+            UsdGeomNurbsCurves curves(prim);
             HdInterpolation interpolation;
             VtFloatArray widths;
             if (curves.GetWidthsAttr().Get(&widths, time)) {
                 interpolation = _UsdToHdInterpolation(
                     curves.GetWidthsInterpolation());
             } else {
-                widths = VtFloatArray(1);
-                widths[0] = 1.0f;
                 interpolation = HdInterpolationConstant;
             }
             _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
-            valueCache->GetWidths(cachePath) = VtValue(widths);
         }
     }
+
     if (requestedBits & HdChangeTracker::DirtyNormals) {
         // First check for "primvars:normals"
         UsdGeomPrimvarsAPI primvarsApi(prim);
@@ -291,7 +289,7 @@ UsdImagingNurbsCurvesAdapter::GetTopology(UsdPrim const& prim,
 VtValue
 UsdImagingNurbsCurvesAdapter::Get(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  TfToken const &key,
+                                  TfToken const& key,
                                   UsdTimeCode time) const
 {
     TRACE_FUNCTION();
@@ -319,6 +317,30 @@ UsdImagingNurbsCurvesAdapter::Get(UsdPrim const& prim,
         VtVec3fArray normals;
         if (curves && curves.GetNormalsAttr().Get(&normals, time)) {
             value = normals;
+            return value;
+        }
+
+    } else if (key == HdTokens->widths) {
+        // First check for "primvars:widths"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsWidths);
+        if (!pv) {
+            // If it's not found locally, see if it's inherited
+            pv = _GetInheritedPrimvar(prim, HdTokens->widths);
+        }
+
+        VtValue value;
+
+        if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
+
+        // Fall back to UsdGeomNurbsCurves' "normals" attribute.
+        UsdGeomNurbsCurves curves(prim);
+        VtFloatArray widths;
+        if (curves && curves.GetWidthsAttr().Get(&widths, time)) {
+            value = widths;
             return value;
         }
     }
