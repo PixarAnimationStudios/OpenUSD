@@ -55,6 +55,7 @@
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
                             "Selection.DecodeUtils",
+                            "Selection.RenderUnselected",
                             "Selection.ComputeColor",
                             "RenderPass.ApplyColorOverrides",
                             "HdxRenderPass.RenderOitOpaquePixels" ]

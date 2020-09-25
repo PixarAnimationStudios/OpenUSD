@@ -1,7 +1,7 @@
 -- glslfx version 0.1
 
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -24,9 +24,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
---- This is what an import might look like.
---- #import $TOOLS/hdx/shaders/renderPassOitShader.glslfx
-
+// This render pass shader configuration renders ONLY selected fragments.
 #import $TOOLS/hdSt/shaders/renderPass.glslfx
 #import $TOOLS/hdx/shaders/renderPass.glslfx
 #import $TOOLS/hdx/shaders/selection.glslfx
@@ -55,11 +53,10 @@
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
                             "Selection.DecodeUtils",
-                            "Selection.RenderUnselected",
+                            "Selection.DiscardUnselected",
                             "Selection.ComputeColor",
                             "RenderPass.ApplyColorOverrides",
-                            "HdxRenderPass.WriteOitLayersToBufferCommon",
-                            "HdxRenderPass.WriteOitLayersToBufferVolume" ]
+                            "RenderPass.RenderColor" ]
             }
         }
     }

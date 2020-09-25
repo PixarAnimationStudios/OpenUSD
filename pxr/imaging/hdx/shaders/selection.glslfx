@@ -312,6 +312,24 @@ bool IsFaceSelected(int mode, int elementId)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Selection.RenderUnselected
+
+void DiscardBasedOnSelection(bool isSelected)
+{
+    // Nothing to do. 
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Selection.DiscardUnselected
+
+void DiscardBasedOnSelection(bool isSelected)
+{
+    if (!isSelected) {
+        discard;
+    }
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Selection.ComputeColor
 
 #if defined(HD_HAS_hdxSelectionBuffer)
@@ -364,20 +382,25 @@ vec4 ApplySelectionColor(vec4 color)
 
     const int numSelectionModes = GetNumSelectionHighlightModes();
 
+    bool isSelected = false;
     for (int mode = 0; mode < numSelectionModes; mode++) {
         SelectionResult res =
             GetSelectionResult(mode, elementId, edgeId, pointId);
 
         if (res.primOrInstanceSel) {
+            isSelected = true;
             vec4 s = GetSelectionColor(mode);
             color.rgb = mix(color.rgb, s.rgb, s.a);
         }
         if (IsAnySubprimSelected(res.subprimSel)) {
+            isSelected = true;
             vec4 ss = GetSubprimSelectionColor(mode, res.subprimSel);
             color.rgb = mix(color.rgb, ss.rgb, ss.a);
         }
     } // for each highlight mode
     
+    DiscardBasedOnSelection(isSelected);
+
 #endif
     return color;
 }
