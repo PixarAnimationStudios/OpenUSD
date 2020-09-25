@@ -143,7 +143,7 @@ public:
     static HgiGLOpsFn DrawIndirect(
         HgiPrimitiveType primitiveType,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t bufferOffset,
+        uint32_t drawBufferOffset,
         uint32_t drawCount,
         uint32_t stride);
 
@@ -159,8 +159,9 @@ public:
     HGIGL_API
     static HgiGLOpsFn DrawIndexedIndirect(
         HgiPrimitiveType primitiveType,
+        HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t bufferOffset,
+        uint32_t drawBufferOffset,
         uint32_t drawCount,
         uint32_t stride);
 

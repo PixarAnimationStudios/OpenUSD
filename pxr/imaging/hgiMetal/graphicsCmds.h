@@ -96,8 +96,9 @@ public:
 
     HGIMETAL_API
     void DrawIndexedIndirect(
+        HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t bufferOffset,
+        uint32_t drawBufferOffset,
         uint32_t drawCount,
         uint32_t stride) override;
 

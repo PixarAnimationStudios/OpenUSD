@@ -129,7 +129,7 @@ HgiGLGraphicsCmds::Draw(
 void
 HgiGLGraphicsCmds::DrawIndirect(
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t bufferOffset,
+    uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
@@ -137,7 +137,7 @@ HgiGLGraphicsCmds::DrawIndirect(
         HgiGLOps::DrawIndirect(
             _primitiveType,
             drawParameterBuffer,
-            bufferOffset,
+            drawBufferOffset,
             drawCount,
             stride)
         );
@@ -164,16 +164,18 @@ HgiGLGraphicsCmds::DrawIndexed(
 
 void
 HgiGLGraphicsCmds::DrawIndexedIndirect(
+    HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t bufferOffset,
+    uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
     _ops.push_back(
         HgiGLOps::DrawIndexedIndirect(
             _primitiveType,
+            indexBuffer,
             drawParameterBuffer,
-            bufferOffset,
+            drawBufferOffset,
             drawCount,
             stride)
         );

@@ -446,11 +446,11 @@ HgiGLOpsFn
 HgiGLOps::DrawIndirect(
     HgiPrimitiveType primitiveType,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t bufferOffset,
+    uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
-    return [primitiveType, drawParameterBuffer, bufferOffset, drawCount, 
+    return [primitiveType, drawParameterBuffer, drawBufferOffset, drawCount, 
             stride] {
 
         HgiGLBuffer* drawBuf =
@@ -460,7 +460,7 @@ HgiGLOps::DrawIndirect(
 
         glMultiDrawArraysIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
-            reinterpret_cast<const void*>(bufferOffset),
+            reinterpret_cast<const void*>(drawBufferOffset),
             drawCount,
             stride);
 
@@ -504,14 +504,22 @@ HgiGLOps::DrawIndexed(
 HgiGLOpsFn
 HgiGLOps::DrawIndexedIndirect(
     HgiPrimitiveType primitiveType,
+    HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t bufferOffset,
+    uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
-    return [primitiveType, drawParameterBuffer, bufferOffset, drawCount,
-            stride] {
+    return [primitiveType, indexBuffer, drawParameterBuffer, drawBufferOffset,
+            drawCount, stride] {
 
+        HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
+        HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
+
+        // We assume 32bit indices: GL_UNSIGNED_INT
+        TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
 
         HgiGLBuffer* drawBuf =
             static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
@@ -521,7 +529,7 @@ HgiGLOps::DrawIndexedIndirect(
         glMultiDrawElementsIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             GL_UNSIGNED_INT,
-            reinterpret_cast<const void*>(bufferOffset),
+            reinterpret_cast<const void*>(drawBufferOffset),
             drawCount,
             stride);
 
