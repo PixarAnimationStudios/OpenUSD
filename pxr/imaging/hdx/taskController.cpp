@@ -398,16 +398,25 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
     if (materialTag == HdxMaterialTagTokens->additive) {
         // Additive blend -- so no sorting of drawItems is needed
         renderParams->blendEnable = true;
-        // We are setting all factors to ONE, This means we are expecting
-        // pre-multiplied alpha coming out of the shader: vec4(rgb*a, a).
-        // Setting ColorSrc to HdBlendFactorSourceAlpha would give less
-        // control on the shader side, since it means we would force a
-        // pre-multiplied alpha step on the color coming out of the shader.
+        // For color, we are setting all factors to ONE.
+        //
+        // This means we are expecting pre-multiplied alpha coming out
+        // of the shader: vec4(rgb*a, a).  Setting ColorSrc to
+        // HdBlendFactorSourceAlpha would give less control on the
+        // shader side, since it means we would force a pre-multiplied
+        // alpha step on the color coming out of the shader.
+        // 
         renderParams->blendColorOp = HdBlendOpAdd;
-        renderParams->blendAlphaOp = HdBlendOpAdd;
         renderParams->blendColorSrcFactor = HdBlendFactorOne;
         renderParams->blendColorDstFactor = HdBlendFactorOne;
-        renderParams->blendAlphaSrcFactor = HdBlendFactorOne;
+
+        // For alpha, we set the factors so that the alpha in the
+        // framebuffer won't change.  Recall that the geometry in the
+        // additive render pass is supposed to be emitting light but
+        // be fully transparent, that is alpha = 0, so that the order
+        // in which it is drawn doesn't matter.
+        renderParams->blendAlphaOp = HdBlendOpAdd;
+        renderParams->blendAlphaSrcFactor = HdBlendFactorZero;
         renderParams->blendAlphaDstFactor = HdBlendFactorOne;
 
         // Translucent objects should not block each other in depth buffer
