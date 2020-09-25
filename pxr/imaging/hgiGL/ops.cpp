@@ -558,6 +558,7 @@ HgiGLOps::BindFramebufferOp(
         uint32_t framebuffer = device->AcquireFramebuffer(desc);
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
         bool blendEnabled = false;
 
@@ -661,6 +662,7 @@ HgiGLOps::ResolveFramebuffer(
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFramebuffer);
+        glEnable(GL_FRAMEBUFFER_SRGB);
         glBlitFramebuffer(0, 0, graphicsCmds.width, graphicsCmds.height,
                           0, 0, graphicsCmds.width, graphicsCmds.height,
                           mask,

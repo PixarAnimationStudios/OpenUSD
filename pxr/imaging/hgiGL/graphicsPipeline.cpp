@@ -113,8 +113,10 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
     } else {
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     }
 
     //

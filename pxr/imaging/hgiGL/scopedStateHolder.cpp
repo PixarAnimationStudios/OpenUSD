@@ -44,11 +44,13 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _restoreColorOp(0)
     , _restoreAlphaOp(0)
     , _restoreAlphaToCoverage(false)
+    , _restoreSampleAlphaToOne(false)
     , _lineWidth(1.0f)
     , _cullFace(true)
     , _cullMode(GL_BACK)
     , _frontFace(GL_CCW)
     , _rasterizerDiscard(true)
+    , _restoreFramebufferSRGB(false)
 {
     #if defined(GL_KHR_debug)
     if (GLEW_KHR_debug) {
@@ -75,11 +77,15 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetBooleanv(
         GL_SAMPLE_ALPHA_TO_COVERAGE, 
         (GLboolean*)&_restoreAlphaToCoverage);
+    glGetBooleanv(
+        GL_SAMPLE_ALPHA_TO_ONE,
+        (GLboolean*)&_restoreSampleAlphaToOne);
     glGetFloatv(GL_LINE_WIDTH, &_lineWidth);
     glGetBooleanv(GL_CULL_FACE, (GLboolean*)&_cullFace);
     glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
     glGetIntegerv(GL_FRONT_FACE, &_frontFace);
     glGetBooleanv(GL_RASTERIZER_DISCARD, (GLboolean*)&_rasterizerDiscard);
+    glGetBooleanv(GL_FRAMEBUFFER_SRGB, (GLboolean*)&_restoreFramebufferSRGB);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -101,6 +107,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     } else {
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    }
+
+    if (_restoreSampleAlphaToOne) {
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
+    } else {
+        glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     }
 
     glBlendFuncSeparate(_restoreColorSrcFnOp, _restoreColorDstFnOp, 
@@ -140,6 +152,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glEnable(GL_RASTERIZER_DISCARD);
     } else {
         glDisable(GL_RASTERIZER_DISCARD);
+    }
+
+    if (_restoreFramebufferSRGB) {
+       glEnable(GL_FRAMEBUFFER_SRGB);
+    } else {
+       glDisable(GL_FRAMEBUFFER_SRGB);
     }
 
     static const GLuint samplers[8] = {0};
