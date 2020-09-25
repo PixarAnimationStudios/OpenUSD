@@ -847,10 +847,11 @@ _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
 // ---------------------------------------------------------------------- //
 void
 UsdSkelImagingSkeletonAdapter::InvokeComputation(
-    SdfPath const& computationPath,
+    SdfPath const& cachePath,
     HdExtComputationContext* context)
 {
     HD_TRACE_FUNCTION();
+    SdfPath const &computationPath = cachePath;
 
     VtValue restPoints
         = context->GetInputValue(_tokens->restPoints);

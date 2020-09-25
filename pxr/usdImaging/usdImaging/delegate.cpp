@@ -2847,11 +2847,12 @@ void
 UsdImagingDelegate::InvokeExtComputation(SdfPath const& computationId,
                                          HdExtComputationContext *context)
 {
-    _HdPrimInfo *primInfo = _GetHdPrimInfo(computationId);
+    SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo, "%s\n", computationId.GetText()) &&
-        TF_VERIFY(primInfo->adapter, "%s\n", computationId.GetText())) {
-        primInfo->adapter->InvokeComputation(computationId, context);
+    if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) &&
+        TF_VERIFY(primInfo->adapter, "%s\n", cachePath.GetText())) {
+        primInfo->adapter->InvokeComputation(cachePath, context);
     }
 }
 

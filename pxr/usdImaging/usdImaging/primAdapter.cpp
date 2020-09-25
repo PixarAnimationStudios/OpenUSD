@@ -245,7 +245,7 @@ UsdImagingPrimAdapter::MarkWindowPolicyDirty(UsdPrim const& prim,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
+UsdImagingPrimAdapter::InvokeComputation(SdfPath const& cachePath,
                                          HdExtComputationContext* context)
 {
 }

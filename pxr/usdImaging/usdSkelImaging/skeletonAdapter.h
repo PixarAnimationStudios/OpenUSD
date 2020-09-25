@@ -152,7 +152,7 @@ public:
     /// \name Computation API
     // ---------------------------------------------------------------------- //
     USDSKELIMAGING_API
-    void InvokeComputation(SdfPath const& computationPath,
+    void InvokeComputation(SdfPath const& cachePath,
                            HdExtComputationContext* context) override;
 
     // ---------------------------------------------------------------------- //

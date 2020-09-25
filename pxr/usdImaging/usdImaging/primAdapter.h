@@ -257,7 +257,7 @@ public:
     /// \name Computations 
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual void InvokeComputation(SdfPath const& computationPath,
+    virtual void InvokeComputation(SdfPath const& cachePath,
                                    HdExtComputationContext* context);
 
     // ---------------------------------------------------------------------- //
