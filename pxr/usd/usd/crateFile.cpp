@@ -552,6 +552,31 @@ struct _MmapStream {
     }
     
     inline void Read(void *dest, size_t nBytes) {
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        const bool doRangeChecks = true;
+#else
+        const bool doRangeChecks = false;
+#endif
+
+        // Range check first.
+        if (doRangeChecks) {
+            char const *mapStart = _mapping->GetMapStart();
+            size_t mapLen = _mapping->GetLength();
+            
+            bool inRange = mapStart <= _cur &&
+                (_cur + nBytes) <= (mapStart + mapLen);
+            
+            if (ARCH_UNLIKELY(!inRange)) {
+                ptrdiff_t offset = _cur - mapStart;
+                TF_RUNTIME_ERROR(
+                    "Read out-of-bounds: %zd bytes at offset %td in "
+                    "a mapping of length %zd",
+                    nBytes, offset, mapLen);
+                memset(dest, 0x99, nBytes);
+                return;
+            }
+        }
+
         if (ARCH_UNLIKELY(_debugPageMap)) {
             auto mapStart = _mapping->GetMapStart();
             int64_t pageZero = GetPageNumber(mapStart);
@@ -595,6 +620,20 @@ struct _MmapStream {
 
     Vt_ArrayForeignDataSource *
     CreateZeroCopyDataSource(void *addr, size_t numBytes) {
+        char const *mapStart = _mapping->GetMapStart();
+        char const *chAddr = static_cast<char *>(addr);
+        size_t mapLen = _mapping->GetLength();
+        bool inRange = mapStart <= chAddr &&
+            (chAddr + numBytes) <= (mapStart + mapLen);
+        
+        if (ARCH_UNLIKELY(!inRange)) {
+            ptrdiff_t offset = chAddr - mapStart;
+            TF_RUNTIME_ERROR(
+                "Zero-copy data range out-of-bounds: %zd bytes at offset "
+                "%td in a mapping of length %zd",
+                numBytes, offset, mapLen);
+            return nullptr;
+        }
         return _mapping->AddRangeReference(addr, numBytes);
     }
 
@@ -1739,10 +1778,16 @@ _ReadUncompressedArray(
         // already -- it needs to know if it's taken the count from 0 to 1 or
         // not.
         void *addr = reader.src.TellMemoryAddress();
-        *out = std::move(
-            VtArray<T>(reader.src.CreateZeroCopyDataSource(addr, numBytes),
-                       static_cast<T *>(addr), size, /*addRef=*/false)
-            );
+
+        if (Vt_ArrayForeignDataSource *foreignSrc =
+            reader.src.CreateZeroCopyDataSource(addr, numBytes)) {
+            *out = VtArray<T>(
+                foreignSrc, static_cast<T *>(addr), size, /*addRef=*/false);
+        }
+        else {
+            // In case of error, return an empty array.
+            out->clear();
+        }
     }
     else {
         // Copy the data instead.
@@ -3153,6 +3198,12 @@ CrateFile::_ReadFieldSets(Reader reader)
                 _fieldSets[i].value = tmp[i];
             }
         }
+
+        // FieldSets must be terminated by a default-constructed FieldIndex.
+        if (!_fieldSets.empty() && _fieldSets.back() != FieldIndex()) {
+            TF_RUNTIME_ERROR("Corrupt field sets in crate file");
+            _fieldSets.back() = FieldIndex();
+        }
     }
 }
 
@@ -3263,6 +3314,7 @@ CrateFile::_ReadTokens(Reader reader)
     auto numTokens = reader.template Read<uint64_t>();
 
     RawDataPtr chars;
+    char const *charsEnd = nullptr;
     
     Version fileVer(_boot);
     if (fileVer < Version(0,4,0)) {
@@ -3271,16 +3323,24 @@ CrateFile::_ReadTokens(Reader reader)
         // which we can just construct from the chars directly.
         auto tokensNumBytes = reader.template Read<uint64_t>();
         chars.reset(new char[tokensNumBytes]);
+        charsEnd = chars.get() + tokensNumBytes;
         reader.ReadContiguous(chars.get(), tokensNumBytes);
     } else {
         // Compressed token data.
         uint64_t uncompressedSize = reader.template Read<uint64_t>();
         uint64_t compressedSize = reader.template Read<uint64_t>();
         chars.reset(new char[uncompressedSize]);
+        charsEnd = chars.get() + uncompressedSize;
         RawDataPtr compressed(new char[compressedSize]);
         reader.ReadContiguous(compressed.get(), compressedSize);
         TfFastCompression::DecompressFromBuffer(
             compressed.get(), chars.get(), compressedSize, uncompressedSize);
+    }
+
+    // Check/ensure that we're null terminated.
+    if (chars.get() != charsEnd && charsEnd[-1] != '\0') {
+        TF_RUNTIME_ERROR("Tokens section not null-terminated in crate file");
+        const_cast<char *>(charsEnd)[-1] = '\0';
     }
 
     // Now we read that many null-terminated strings into _tokens.
@@ -3295,12 +3355,18 @@ CrateFile::_ReadTokens(Reader reader)
         size_t index;
         char const *str;
     };
-    for (size_t i = 0; i != numTokens; ++i) {
+    size_t i = 0;
+    for (; p < charsEnd && i != numTokens; ++i) {
         MakeToken mt { &_tokens, i, p };
         wd.Run(mt);
         p += strlen(p) + 1;
     }
     wd.Wait();
+
+    if (i != numTokens) {
+        TF_RUNTIME_ERROR("Crate file claims %zu tokens, found %zu",
+                         numTokens, i);
+    }
 
     WorkSwapDestroyAsync(chars);
 }
@@ -3823,6 +3889,29 @@ CrateFile::_IsKnownSection(char const *name) {
     }
     return false;
 }
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+CrateFile::Field const &
+CrateFile::_GetEmptyField() const
+{
+    static Field empty;
+    return empty;
+}
+
+std::string const &
+CrateFile::_GetEmptyString() const
+{
+    static std::string empty;
+    return empty;
+}
+
+TfToken const &
+CrateFile::_GetEmptyToken() const
+{
+    static TfToken empty;
+    return empty;
+}
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 
 CrateFile::Spec::Spec(Spec_0_0_1 const &s) 
     : Spec(s.pathIndex, s.specType, s.fieldSetIndex) {}

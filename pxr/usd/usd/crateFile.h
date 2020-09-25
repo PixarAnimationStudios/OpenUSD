@@ -615,7 +615,16 @@ public:
     string const &GetAssetPath() const { return _assetPath; }
 
     inline Field const &
-    GetField(FieldIndex i) const { return _fields[i.value]; }
+    GetField(FieldIndex i) const {
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_LIKELY(i.value < _fields.size())) {
+            return _fields[i.value];
+        }
+        return _GetEmptyField();
+#else
+        return _fields[i.value];
+#endif
+    }
 
     inline vector<Field> const & GetFields() const { return _fields; }
 
@@ -628,7 +637,16 @@ public:
     }
 
     inline SdfPath const &
-    GetPath(PathIndex i) const { return _paths[i.value]; }
+    GetPath(PathIndex i) const {
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_LIKELY(i.value < _paths.size())) {
+            return _paths[i.value];
+        }
+        return SdfPath::EmptyPath();
+#else
+        return _paths[i.value];
+#endif
+    }
 
     inline vector<SdfPath> const &GetPaths() const { return _paths; }
 
@@ -648,13 +666,29 @@ public:
     }
 
     inline TfToken const &
-    GetToken(TokenIndex i) const { return _tokens[i.value]; }
+    GetToken(TokenIndex i) const {
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_LIKELY(i.value < _tokens.size())) {
+            return _tokens[i.value];
+        }
+        return _GetEmptyToken();
+#else
+        return _tokens[i.value];
+#endif
+    }
 
     inline vector<TfToken> const &GetTokens() const { return _tokens; }
     
     inline std::string const &
     GetString(StringIndex i) const {
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_LIKELY(i.value < _strings.size())) {
+            return GetToken(_strings[i.value]).GetString();
+        }
+        return _GetEmptyString();
+#else
         return GetToken(_strings[i.value]).GetString();
+#endif
     }
     inline vector<TokenIndex> const &GetStrings() const { return _strings; }
 
@@ -822,6 +856,13 @@ private:
     void _ClearValueHandlerDedupTables();
 
     static bool _IsKnownSection(char const *name);
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+    // Helpers for error cases.
+    Field const &_GetEmptyField() const;
+    std::string const &_GetEmptyString() const;
+    TfToken const &_GetEmptyToken() const;
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 
     struct _PackingContext;
 
