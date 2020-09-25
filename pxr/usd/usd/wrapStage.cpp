@@ -558,6 +558,8 @@ void wrapUsdStage()
 
         .def("GetMasters", &UsdStage::GetMasters,
              return_value_policy<TfPySequenceToList>())
+        .def("GetPrototypes", &UsdStage::GetPrototypes,
+             return_value_policy<TfPySequenceToList>())
 
         .def("_GetPcpCache", &Usd_PcpCacheAccess::GetPcpCache,
              return_internal_reference<>())

@@ -1259,9 +1259,9 @@ UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 bool
 UsdStage::_ValidateEditPrim(const UsdPrim &prim, const char* operation) const
 {
-    if (ARCH_UNLIKELY(prim.IsInMaster())) {
+    if (ARCH_UNLIKELY(prim.IsInPrototype())) {
         TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing master is not allowed.",
+                        "authoring to an instancing prototype is not allowed.",
                         operation, prim.GetPath().GetText());
         return false;
     }
@@ -1282,7 +1282,7 @@ UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath,
 {
     if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
         TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing master is not allowed.",
+                        "authoring to an instancing prototype is not allowed.",
                         operation, primPath.GetText());
         return false;
     }
@@ -1926,7 +1926,7 @@ UsdStage::_IsValidForUnload(const SdfPath& path) const
         return false;
     }
     if (_instanceCache->IsPathInPrototype(path)) {
-        TF_CODING_ERROR("Attempted to load/unload a master path <%s>",
+        TF_CODING_ERROR("Attempted to load/unload a prototype path <%s>",
                         path.GetText());
         return false;
     }
@@ -1969,8 +1969,8 @@ UsdStage::_IsValidForLoad(const SdfPath& path) const
         return false;
     }
 
-    if (curPrim.IsMaster()) {
-        TF_CODING_ERROR("Attempt to load instance master <%s>",
+    if (curPrim.IsPrototype()) {
+        TF_CODING_ERROR("Attempt to load instance prototype <%s>",
                         path.GetString().c_str());
         return false;
     }
@@ -1994,7 +1994,7 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         (UsdPrim const &prim) {
         // Inactive prims are never included in this query.  Prototypes are
         // also never included, since they aren't independently loadable.
-        if (!prim.IsActive() || prim.IsMaster())
+        if (!prim.IsActive() || prim.IsPrototype())
             return;
         
         if (prim._GetSourcePrimIndex().HasAnyPayloads()) {
@@ -2326,26 +2326,32 @@ UsdStage::ExpandPopulationMask(
 vector<UsdPrim>
 UsdStage::GetMasters() const
 {
-    // Sort the instance master paths to provide a stable ordering for
-    // this function.
-    SdfPathVector masterPaths = _instanceCache->GetAllPrototypes();
-    std::sort(masterPaths.begin(), masterPaths.end());
+    return GetPrototypes();
+}
 
-    vector<UsdPrim> masterPrims;
-    for (const auto& path : masterPaths) {
+vector<UsdPrim>
+UsdStage::GetPrototypes() const
+{
+    // Sort the instance prototype paths to provide a stable ordering for
+    // this function.
+    SdfPathVector prototypePaths = _instanceCache->GetAllPrototypes();
+    std::sort(prototypePaths.begin(), prototypePaths.end());
+
+    vector<UsdPrim> prototypePrims;
+    for (const auto& path : prototypePaths) {
         UsdPrim p = GetPrimAtPath(path);
-        if (TF_VERIFY(p, "Failed to find prim at master path <%s>.\n",
+        if (TF_VERIFY(p, "Failed to find prim at prototype path <%s>.\n",
                       path.GetText())) {
-            masterPrims.push_back(p);
+            prototypePrims.push_back(p);
         }                   
     }
-    return masterPrims;
+    return prototypePrims;
 }
 
 vector<UsdPrim>
 UsdStage::_GetInstancesForPrototype(const UsdPrim& prototypePrim) const
 {
-    if (!prototypePrim.IsMaster()) {
+    if (!prototypePrim.IsPrototype()) {
         return {};
     }
 
@@ -4645,7 +4651,7 @@ _RemovePrototypeTargetPaths(const UsdProperty& srcProp,
 
     TF_WARN(
         "Some %s paths from <%s> could not be flattened because "
-        "they targeted objects within an instancing master.",
+        "they targeted objects within an instancing prototype.",
         srcProp.Is<UsdAttribute>() ? 
             "attribute connection" : "relationship target",
         srcProp.GetPath().GetText());
@@ -4825,7 +4831,7 @@ _CopyPrim(const UsdPrim &usdPrim,
 
     if (usdPrim.IsInstance()) {
         const auto flattenedPrototypePath = 
-            prototypeToFlattened.at(usdPrim.GetMaster().GetPath());
+            prototypeToFlattened.at(usdPrim.GetPrototype().GetPath());
 
         // Author an internal reference to our flattened prototype prim
         newPrim->GetReferenceList().Add(SdfReference(std::string(),
@@ -4977,11 +4983,11 @@ UsdStage::Flatten(bool addSourceFileComment) const
     // Preemptively populate our mapping. This allows us to populate
     // nested instances in the destination layer much more simply.
     const auto prototypeToFlattened =
-        _GenerateFlattenedPrototypePath(GetMasters());
+        _GenerateFlattenedPrototypePath(GetPrototypes());
 
     // We author the prototype overs first to produce simpler 
     // assets which have them grouped at the top of the file.
-    for (auto const& prototype : GetMasters()) {
+    for (auto const& prototype : GetPrototypes()) {
         _CopyPrototypePrim(prototype, flatLayer, prototypeToFlattened);
     }
 

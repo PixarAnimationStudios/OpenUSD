@@ -545,8 +545,8 @@ public:
     ///       absolute root). If the given path has no such ancestor, it is an
     ///       error.
     ///     - Specifying a path to an inactive prim is an error.
-    ///     - Specifying a path to a master prim or a prim within a master is an
-    ///       error.
+    ///     - Specifying a path to a prototype prim or a prim within a
+    ///       prototype is an error.
     ///
     /// If an instance prim (or a path identifying a prim descendant to an
     /// instance) is encountered during a Load/Unload operation, these functions
@@ -745,8 +745,8 @@ public:
     /// Return the UsdPrim at \p path, or an invalid UsdPrim if none exists.
     /// 
     /// If \p path indicates a prim beneath an instance, returns an instance
-    /// proxy prim if a prim exists at the corresponding path in that instance's 
-    /// master.
+    /// proxy prim if a prim exists at the corresponding path in that instance's
+    /// prototype.
     ///
     /// Unlike OverridePrim() and DefinePrim(), this method will never author
     /// scene description, and therefore is safe to use as a "reader" in the Usd
@@ -757,9 +757,10 @@ public:
     /// Return the UsdObject at \p path, or an invalid UsdObject if none exists.
     ///
     /// If \p path indicates a prim beneath an instance, returns an instance
-    /// proxy prim if a prim exists at the corresponding path in that instance's 
-    /// master. If \p path indicates a property beneath a child of an instance, 
-    /// returns a property whose parent prim is an instance proxy prim.
+    /// proxy prim if a prim exists at the corresponding path in that instance's
+    /// prototype. If \p path indicates a property beneath a child of an
+    /// instance, returns a property whose parent prim is an instance proxy
+    /// prim.
     ///
     /// Example:
     ///
@@ -1150,9 +1151,9 @@ public:
     ///
     /// Flatten preserves 
     /// \ref Usd_Page_ScenegraphInstancing "scenegraph instancing" by creating 
-    /// independent roots for each master currently composed on this stage, and
-    /// adding a single internal reference arc on each instance prim to its 
-    /// corresponding master.
+    /// independent roots for each prototype currently composed on this stage,
+    /// and adding a single internal reference arc on each instance prim to its 
+    /// corresponding prototype.
     ///
     /// Time samples across sublayer offsets will will have the time offset and
     /// scale applied to each time index.
@@ -1581,9 +1582,14 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Returns all master prims.
+    /// Returns all native instancing prototype prims.
+    /// \deprecated Use UsdStage::GetPrototypes instead.
     USD_API
     std::vector<UsdPrim> GetMasters() const;
+
+    /// Returns all native instancing prototype prims.
+    USD_API
+    std::vector<UsdPrim> GetPrototypes() const;
 
     /// @}
 
