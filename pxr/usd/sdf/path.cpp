@@ -49,12 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool _IsValidIdentifier(TfToken const &name);
 
-static VtValue
-_CastFromSdfPathToTfToken(const VtValue &val)
-{
-    return VtValue(val.Get<SdfPath>().GetAsToken());
-}
-
 // XXX: Enable this define to make bad path strings
 // cause runtime errors.  This can be useful when trying to track down cases
 // of bad path strings originating from python code.
@@ -65,16 +59,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfPath>();
     TfType::Define< vector<SdfPath> >()
         .Alias(TfType::GetRoot(), "vector<SdfPath>");    
-}
-
-// Register with VtValue that SdfPaths can be cast to TfTokens.  The only
-// reason we need this is because we need to cast AnimSplines that contain
-// SdfPaths to ones that contain TfTokens, and we need that to succeed.  The
-// only reason we need that, is in execution we can't use SdfPaths directly
-// due to performance and threadsafety reasons.
-TF_REGISTRY_FUNCTION(VtValue)
-{
-    VtValue::RegisterCast<SdfPath, TfToken>(&_CastFromSdfPathToTfToken);
 }
 
 SdfPath::SdfPath(const std::string &path) {
