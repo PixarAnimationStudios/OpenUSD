@@ -487,15 +487,16 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
     _vertexAdjacency = adjacencyInstance.GetValue();
 }
 
-static HdBufferSourceSharedPtr
+static void
 _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
                       HdStComputationSharedPtrVector *computations,
                       HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id,
                       HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
-    if (!TF_VERIFY(computations)) return source;
-
+    if (!TF_VERIFY(computations)) {
+        return;
+    }
     // GPU quadrangulation computation needs original vertices to be transfered
     HdComputationSharedPtr computation =
         topology->GetQuadrangulateComputationGPU(
@@ -504,7 +505,6 @@ _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
     if (computation) {
         computations->emplace_back(computation, _RefinePrimvarCompQueue);
     }
-    return source;
 }
 
 static HdBufferSourceSharedPtr
@@ -542,14 +542,14 @@ _TriangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
     return triSource;
 }
 
-static HdBufferSourceSharedPtr
+static void
 _RefinePrimvar(HdBufferSourceSharedPtr const &source,
-               bool varying,
                HdStComputationSharedPtrVector *computations,
                HdSt_MeshTopologySharedPtr const &topology)
 {
-    if (!TF_VERIFY(computations)) return source;
-
+    if (!TF_VERIFY(computations)) {
+        return;
+    }
     // GPU subdivision
     HdComputationSharedPtr computation =
         topology->GetOsdRefineComputationGPU(
@@ -560,7 +560,6 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
         computations->emplace_back(computation, _RefinePrimvarCompQueue);
     }
 
-    return source;
 }
 
 void
@@ -652,17 +651,12 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Schedule refinement/quadrangulation of computed primvars.
     for (HdBufferSourceSharedPtr const & source: reserveOnlySources) {
-        HdBufferSourceSharedPtr compSource; 
         if (refineLevel > 0) {
-            compSource = _RefinePrimvar(
-                source, false, // Should support varying
-                &computations, _topology);
+            _RefinePrimvar(source, &computations, _topology);
         } else if (_UseQuadIndices(renderIndex, _topology)) {
-            compSource = _QuadrangulatePrimvar(
-                source, &computations, _topology,
+            _QuadrangulatePrimvar(source, &computations, _topology,
                 GetId(), resourceRegistry);
         }
-        // Don't schedule compSource for commit
 
         // See if points are being produced by gpu computations
         if (source->GetName() == HdTokens->points) {
@@ -742,10 +736,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
 
             if (refineLevel > 0) {
-                source = _RefinePrimvar(
-                    source, isVarying, &computations, _topology);
+                _RefinePrimvar(source, &computations, _topology);
             } else if (_UseQuadIndices(renderIndex, _topology)) {
-                source = _QuadrangulatePrimvar(
+                _QuadrangulatePrimvar(
                     source, &computations, _topology, GetId(),resourceRegistry);
             }
 
@@ -755,11 +748,11 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             if (primvar.name == HdTokens->points) {
                 if (!TF_VERIFY(points == nullptr)) {
                     HF_VALIDATION_WARN(id, 
-                        "'points' specified as both computed and authored primvar."
-                        " Skipping authored value.");
+                        "'points' specified as both computed and authored "
+                        "primvar. Skipping authored value.");
                     continue;
                 }
-                points = source; // For CPU Smooth Normals
+                points = source; // For GPU Smooth Normals
             }
 
             sources.push_back(source);
