@@ -49,7 +49,6 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #endif
     }
 
-    defaultStorageMode = MTLResourceStorageModeShared;
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
