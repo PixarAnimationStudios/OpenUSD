@@ -110,6 +110,11 @@ public:
     USD_API
     bool ClearVariantSelection();
 
+    /// Blocks any weaker selection for this VariantSet, setting it to empty in
+    /// the stage's current EditTarget. Return true on success, false otherwise.
+    USD_API
+    bool BlockVariantSelection();
+
     /// Return a \a UsdEditTarget that edits the currently selected variant in
     /// this VariantSet in \a layer.  If there is no currently
     /// selected variant in this VariantSet, return an invalid EditTarget.

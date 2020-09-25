@@ -148,6 +148,17 @@ UsdVariantSet::ClearVariantSelection()
     return SetVariantSelection(string());
 }
 
+bool
+UsdVariantSet::BlockVariantSelection()
+{
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+        spec->BlockVariantSelection(_variantSetName);
+        return true;
+    }
+
+    return false;
+}
+
 UsdEditTarget
 UsdVariantSet::GetVariantEditTarget(const SdfLayerHandle &layer) const
 {
