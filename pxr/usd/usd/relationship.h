@@ -95,16 +95,16 @@ typedef std::vector<UsdRelationship> UsdRelationshipVector;
 /// tree in the same layer, that relationship would dangle, and the client
 /// will error in GetTargets() or GetForwardedTargets().
 ///
-/// Authoring targets to objects within masters is not allowed, since master
-/// prims do not have a stable identity across runs.  Consumers must author
-/// targets to the object within an instance instead.
+/// Authoring targets to objects within prototypes is not allowed, since
+/// prototype prims do not have a stable identity across runs.  Consumers must 
+/// author targets to the object within an instance instead.
 ///
 /// Relationships authored in a descendent prim of a referenced prim may not
 /// target the referenced prim itself or any of its immediate child properties
 /// if the referencing prim is instanceable.  Allowing this would break the
 /// ability for this relationship to be instanced and shared by multiple
-/// instances -- it would force consumers of relationships within masters
-/// to resolve targets in the context of each of that master's instances.
+/// instances -- it would force consumers of relationships within prototypes
+/// to resolve targets in the context of each of that prototype's instances.
 ///
 /// \section usd_relationship_forwarding Relationship Forwarding
 ///
@@ -142,8 +142,8 @@ public:
     /// Adds \p target to the list of targets, in the position specified
     /// by \p position.
     ///
-    /// Passing paths to master prims or any other objects in masters will 
-    /// cause an error to be issued. It is not valid to author targets to
+    /// Passing paths to prototype prims or any other objects in prototypes
+    /// will cause an error to be issued. It is not valid to author targets to
     /// these objects.
     ///
     /// What data this actually authors depends on what data is currently
@@ -155,8 +155,8 @@ public:
 
     /// Removes \p target from the list of targets.
     ///
-    /// Passing paths to master prims or any other objects in masters will 
-    /// cause an error to be issued. It is not valid to author targets to
+    /// Passing paths to prototype prims or any other objects in prototypes
+    /// will cause an error to be issued. It is not valid to author targets to
     /// these objects.
     USD_API
     bool RemoveTarget(const SdfPath& target) const;
@@ -172,8 +172,8 @@ public:
     /// Make the authoring layer's opinion of the targets list explicit,
     /// and set exactly to \p targets.
     ///
-    /// Passing paths to master prims or any other objects in masters will 
-    /// cause an error to be issued. It is not valid to author targets to
+    /// Passing paths to prototype prims or any other objects in prototypes
+    /// will cause an error to be issued. It is not valid to author targets to
     /// these objects.
     ///
     /// If any target in \p targets is invalid, no targets will be authored

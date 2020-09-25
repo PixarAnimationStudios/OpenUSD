@@ -369,8 +369,8 @@ UsdAttribute::_GetPathForAuthoring(const SdfPath &path,
             path.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
         if (Usd_InstanceCache::IsPathInPrototype(absPath)) {
             if (whyNot) { 
-                *whyNot = "Cannot refer to a master or an object within a "
-                    "master.";
+                *whyNot = "Cannot refer to a prototype or an object within a "
+                    "prototype.";
             }
             return result;
         }

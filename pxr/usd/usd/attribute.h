@@ -516,9 +516,9 @@ public:
     /// Adds \p source to the list of connections, in the position
     /// specified by \p position.
     ///
-    /// Issue an error if \p source identifies a master prim or an object
-    /// descendant to a master prim.  It is not valid to author connections to
-    /// these objects. 
+    /// Issue an error if \p source identifies a prototype prim or an object
+    /// descendant to a prototype prim.  It is not valid to author connections
+    /// to these objects. 
     ///
     /// What data this actually authors depends on what data is currently
     /// authored in the authoring layer, with respect to list-editing
@@ -529,9 +529,9 @@ public:
 
     /// Removes \p target from the list of targets.
     ///
-    /// Issue an error if \p source identifies a master prim or an object
-    /// descendant to a master prim.  It is not valid to author connections to
-    /// these objects.
+    /// Issue an error if \p source identifies a prototype prim or an object
+    /// descendant to a prototype prim.  It is not valid to author connections
+    /// to these objects.
     USD_API
     bool RemoveConnection(const SdfPath& source) const;
 
@@ -546,9 +546,9 @@ public:
     /// Make the authoring layer's opinion of the connection list explicit,
     /// and set exactly to \p sources.
     ///
-    /// Issue an error if \p source identifies a master prim or an object
-    /// descendant to a master prim.  It is not valid to author connections to
-    /// these objects.
+    /// Issue an error if \p source identifies a prototype prim or an object
+    /// descendant to a prototype prim.  It is not valid to author connections
+    /// to these objects.
     ///
     /// If any path in \p sources is invalid, issue an error and return false.
     USD_API
