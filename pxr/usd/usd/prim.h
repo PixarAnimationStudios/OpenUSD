@@ -1387,11 +1387,11 @@ public:
         return HasAuthoredMetadata(SdfFieldKeys->Instanceable);
     }
 
-    /// Return true if this prim is an instance of a master, false
+    /// Return true if this prim is an instance of a prototype, false
     /// otherwise.
     ///
-    /// If this prim is an instance, calling GetMaster() will return
-    /// the UsdPrim for the corresponding master prim.
+    /// If this prim is an instance, calling GetPrototype() will return
+    /// the UsdPrim for the corresponding prototype prim.
     bool IsInstance() const { return _Prim()->IsInstance(); }
 
     /// Return true if this prim is an instance proxy, false otherwise.
@@ -1401,57 +1401,105 @@ public:
         return Usd_IsInstanceProxy(_Prim(), _ProxyPrimPath());
     }
 
-    /// Return true if the given \p path identifies a master prim,
+    /// Return true if the given \p path identifies a prototype prim,
     /// false otherwise.
     ///
     /// This function will return false for prim and property paths
-    /// that are descendants of a master prim path.
+    /// that are descendants of a prototype prim path.
     ///
-    /// \sa IsPathInMaster
+    /// \sa IsPathInPrototype
     USD_API
-    static bool IsMasterPath(const SdfPath& path);
+    static bool IsPrototypePath(const SdfPath& path);
 
-    /// Return true if the given \p path identifies a master prim or
-    /// a prim or property descendant of a master prim, false otherwise.
+    /// Return true if the given \p path identifies a prototype prim or
+    /// a prim or property descendant of a prototype prim, false otherwise.
     ///
-    /// \sa IsMasterPath
+    /// \sa IsPrototypePath
     USD_API
-    static bool IsPathInMaster(const SdfPath& path);
+    static bool IsPathInPrototype(const SdfPath& path);
 
-    /// Return true if this prim is a master prim, false otherwise.
+    /// Return true if this prim is an instancing prototype prim,
+    /// false otherwise.
     ///
-    /// \sa IsInMaster
-    bool IsMaster() const { return _Prim()->IsPrototype(); }
+    /// \sa IsInPrototype
+    bool IsPrototype() const { return _Prim()->IsPrototype(); }
 
-    /// Return true if this prim is a master prim or a descendant
-    /// of a master prim, false otherwise.
+    /// Return true if this prim is a prototype prim or a descendant
+    /// of a prototype prim, false otherwise.
     ///
-    /// \sa IsMaster
-    bool IsInMaster() const { 
+    /// \sa IsPrototype
+    bool IsInPrototype() const { 
         return (IsInstanceProxy() ? 
-            IsPathInMaster(GetPrimPath()) : _Prim()->IsInPrototype());
+            IsPathInPrototype(GetPrimPath()) : _Prim()->IsInPrototype());
     }
 
     /// If this prim is an instance, return the UsdPrim for the corresponding
-    /// master. Otherwise, return an invalid UsdPrim.
+    /// prototype. Otherwise, return an invalid UsdPrim.
     USD_API
-    UsdPrim GetMaster() const;
+    UsdPrim GetPrototype() const;
 
     /// If this prim is an instance proxy, return the UsdPrim for the
-    /// corresponding prim in the instance's master. Otherwise, return an
+    /// corresponding prim in the instance's prototype. Otherwise, return an
     /// invalid UsdPrim.
-    UsdPrim GetPrimInMaster() const {
+    UsdPrim GetPrimInPrototype() const {
         if (IsInstanceProxy()) {
             return UsdPrim(_Prim(), SdfPath());
         }
         return UsdPrim();
     }
 
-    /// If this prim is a master prim, returns all prims that are instances of 
-    /// this master. Otherwise, returns an empty vector.
+    /// Return true if the given \p path identifies a prototype prim,
+    /// false otherwise.
     ///
-    /// Note that this function will return prims in masters for instances that 
-    /// are nested beneath other instances.
+    /// This function will return false for prim and property paths
+    /// that are descendants of a prototype prim path.
+    ///
+    /// \deprecated Use UsdPrim::IsPrototypePath instead
+    USD_API
+    static bool IsMasterPath(const SdfPath& path);
+
+    /// Return true if the given \p path identifies a prototype prim or
+    /// a prim or property descendant of a prototype prim, false otherwise.
+    ///
+    /// \deprecated Use UsdPrim::IsPathInPrototype instead
+    USD_API
+    static bool IsPathInMaster(const SdfPath& path);
+
+    /// Return true if this prim is an instancing prototype prim,
+    /// false otherwise.
+    ///
+    /// \deprecated Use UsdPrim::IsPrototype instead.
+    bool IsMaster() const { return IsPrototype(); }
+
+    /// Return true if this prim is a prototype prim or a descendant
+    /// of a prototype prim, false otherwise.
+    ///
+    /// \deprecated Use UsdPrim::IsInPrototype instead.
+    bool IsInMaster() const { 
+        return IsInPrototype();
+    }
+
+    /// If this prim is an instance, return the UsdPrim for the corresponding
+    /// prototype. Otherwise, return an invalid UsdPrim.
+    ///
+    /// \deprecated Use UsdPrim::GetPrototype instead.
+    USD_API
+    UsdPrim GetMaster() const;
+
+    /// If this prim is an instance proxy, return the UsdPrim for the
+    /// corresponding prim in the instance's prototype. Otherwise, return an
+    /// invalid UsdPrim.
+    ///
+    /// \deprecated Use UsdPrim::GetPrimInPrototype instead.
+    UsdPrim GetPrimInMaster() const {
+        return GetPrimInPrototype();
+    }
+
+    /// If this prim is a prototype prim, returns all prims that are instances
+    /// of this prototype. Otherwise, returns an empty vector.
+    ///
+    /// Note that this function will return prims in prototypes for instances
+    /// that are nested beneath other instances.
     USD_API
     std::vector<UsdPrim> GetInstances() const;
     /// @}
@@ -1473,11 +1521,11 @@ public:
     /// UsdPrim::ComputeExpandedPrimIndex to compute a prim index that includes 
     /// all possible sites that could contribute opinions.
     ///
-    /// This prim index will be empty for master prims. This ensures that these 
-    /// prims do not provide any attribute or metadata values. For all other 
-    /// prims in masters, this is the prim index that was chosen to be shared 
-    /// with all other instances. In either case, the prim index's path will 
-    /// not be the same as the prim's path.
+    /// This prim index will be empty for prototype prims. This ensures that
+    /// these prims do not provide any attribute or metadata values. For all
+    /// other prims in prototypes, this is the prim index that was chosen to
+    /// be shared with all other instances. In either case, the prim index's
+    /// path will not be the same as the prim's path.
     ///
     /// Prim indexes may be invalidated by changes to the UsdStage and cannot
     /// detect if they are expired. Clients should avoid keeping copies of the 
@@ -1563,9 +1611,9 @@ private:
     friend const PcpPrimIndex &Usd_PrimGetSourcePrimIndex(const UsdPrim&);
     // Return a const reference to the source PcpPrimIndex for this prim.
     //
-    // For all prims in masters (which includes the master prim itself), 
+    // For all prims in prototypes (which includes the prototype prim itself), 
     // this is the prim index for the instance that was chosen to serve
-    // as the master for all other instances.  This prim index will not
+    // as the prototype for all other instances.  This prim index will not
     // have the same path as the prim's path.
     //
     // This is a private helper but is also wrapped out to Python

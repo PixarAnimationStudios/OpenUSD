@@ -1082,8 +1082,8 @@ UsdPrim::HasAuthoredPayloads() const
 void
 UsdPrim::Load(UsdLoadPolicy policy) const
 {
-    if (IsInMaster()) {
-        TF_CODING_ERROR("Attempted to load a prim in a master <%s>",
+    if (IsInPrototype()) {
+        TF_CODING_ERROR("Attempted to load a prim in a prototype <%s>",
                         GetPath().GetText());
         return;
     }
@@ -1093,8 +1093,8 @@ UsdPrim::Load(UsdLoadPolicy policy) const
 void
 UsdPrim::Unload() const
 {
-    if (IsInMaster()) {
-        TF_CODING_ERROR("Attempted to unload a prim in a master <%s>",
+    if (IsInPrototype()) {
+        TF_CODING_ERROR("Attempted to unload a prim in a prototype <%s>",
                         GetPath().GetText());
         return;
     }
@@ -1128,23 +1128,41 @@ UsdPrim::IsPseudoRoot() const
 }
 
 bool
-UsdPrim::IsMasterPath(const SdfPath& path)
+UsdPrim::IsPrototypePath(const SdfPath& path)
 {
     return Usd_InstanceCache::IsPrototypePath(path);
 }
 
 bool
-UsdPrim::IsPathInMaster(const SdfPath& path)
+UsdPrim::IsPathInPrototype(const SdfPath& path)
 {
     return Usd_InstanceCache::IsPathInPrototype(path);
+}
+
+bool
+UsdPrim::IsMasterPath(const SdfPath& path)
+{
+    return IsPrototypePath(path);
+}
+
+bool
+UsdPrim::IsPathInMaster(const SdfPath& path)
+{
+    return IsPathInPrototype(path);
 }
 
 UsdPrim
 UsdPrim::GetMaster() const
 {
-    Usd_PrimDataConstPtr masterPrimData = 
+    return GetPrototype();
+}
+
+UsdPrim
+UsdPrim::GetPrototype() const
+{
+    Usd_PrimDataConstPtr protoPrimData = 
         _GetStage()->_GetPrototypeForInstance(get_pointer(_Prim()));
-    return UsdPrim(masterPrimData, SdfPath());
+    return UsdPrim(protoPrimData, SdfPath());
 }
 
 std::vector<UsdPrim>
