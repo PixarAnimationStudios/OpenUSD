@@ -361,6 +361,7 @@ void wrapPrimSpec()
         .def("GetAttributeAtPath", &This::GetAttributeAtPath)
         .def("GetRelationshipAtPath", &This::GetRelationshipAtPath)
         .def("GetVariantNames", &This::GetVariantNames)
+        .def("BlockVariantSelection", &This::BlockVariantSelection)
 
         .add_property("variantSelections",
             &This::GetVariantSelections,

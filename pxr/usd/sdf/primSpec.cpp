@@ -762,6 +762,18 @@ SdfPrimSpec::SetVariantSelection(const std::string& variantSetName,
     }
 }
 
+void
+SdfPrimSpec::BlockVariantSelection(const std::string& variantSetName)
+{
+    if (_ValidateEdit(SdfFieldKeys->VariantSelection)) {
+        SdfVariantSelectionProxy proxy = GetVariantSelections();
+        if (proxy) {
+            SdfChangeBlock block;
+            proxy[variantSetName] = std::string();
+        }
+    }
+}
+
 //
 // Relocates
 //

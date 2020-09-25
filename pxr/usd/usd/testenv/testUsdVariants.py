@@ -62,6 +62,19 @@ class TestUsdVariants(unittest.TestCase):
                          "localDanglingVariant"))
         self.assertFalse(prim.GetVariantSets().HasVariantSet(
                          "referencedDanglingVariant"))
+        # ClearVariantSelection clears the variant set selection from the edit target,
+        # permitting any weaker layer selection to take effect
+        stage.SetEditTarget(stage.GetSessionLayer())
+        prim.GetVariantSet('modelingVariant').SetVariantSelection('Carton_Sealed')
+        self.assertEqual(prim.GetVariantSet('modelingVariant').GetVariantSelection(),
+                        'Carton_Sealed')
+        prim.GetVariantSet('modelingVariant').ClearVariantSelection()
+        self.assertEqual(prim.GetVariantSet('modelingVariant').GetVariantSelection(),
+                        'Carton_Opened')
+        # BlockVariantSelection sets the selection to empty, which blocks weaker variant
+        # selection opinions
+        prim.GetVariantSet('modelingVariant').BlockVariantSelection()
+        self.assertEqual(prim.GetVariantSet('modelingVariant').GetVariantSelection(), '')
 
     def test_VariantSelectionPathAbstraction(self):
         for fmt in allFormats:

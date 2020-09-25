@@ -695,6 +695,11 @@ public:
     void SetVariantSelection(const std::string& variantSetName,
                              const std::string& variantName);
 
+    /// Blocks the variant selected for the given variant set by setting
+    /// the variant selection to empty.
+    SDF_API
+    void BlockVariantSelection(const std::string& variantSetName);
+
     /// @}
     /// \name Relocates
     /// @{
