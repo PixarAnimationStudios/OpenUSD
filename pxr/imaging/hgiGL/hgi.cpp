@@ -277,6 +277,12 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     bool result = Hgi::_SubmitCmds(cmds, wait);
 
     if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+        //
+        // CPU - GPU synchronization
+        //
+        // This only happens by request of the client since it stalls the CPU.
+        // This is only used when the CPU needs wait to read by the GPU results.
+        //
         static const uint64_t timeOut = 100000000000;
 
         GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -290,9 +296,14 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 
         glDeleteSync(fence);
     } else {
+        //
+        // GPU - GPU synchronization
+        //
         // We assume the client has grouped together all async work into
         // one Hgi*Cmds and that we must set barriers between Hgi*Cmds to
-        // respect dependencies / synchronization needs.
+        // ensure that memory writes are fully visible to SubmitCmds coming
+        // after this submission.
+        //
         if (glMemoryBarrier) {
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
         }
