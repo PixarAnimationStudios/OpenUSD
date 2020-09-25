@@ -99,6 +99,10 @@ public:
                                    SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual VtValue GetMaterialResource(UsdPrim const& prim, 
+                                  SdfPath const& cachePath, 
+                                  UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API

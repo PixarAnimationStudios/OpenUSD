@@ -1260,6 +1260,14 @@ UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim,
     return SdfPath();
 }
 
+/*virtual*/
+VtValue
+UsdImagingPrimAdapter::GetMaterialResource(UsdPrim const& prim, 
+                              SdfPath const& cachePath, 
+                              UsdTimeCode time) const
+{
+    return VtValue();
+}
 
 /*virtual*/
 const TfTokenVector &

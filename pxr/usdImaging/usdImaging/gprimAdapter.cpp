@@ -56,13 +56,8 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 static TfTokenVector
-_CollectMaterialPrimvars(
-    UsdImagingValueCache* valueCache,
-    SdfPath const& materialPath)
+_CollectMaterialPrimvars(const VtValue & vtMaterial)
 {
-    VtValue vtMaterial;
-    valueCache->FindMaterialResource(materialPath, &vtMaterial);
-
     TfTokenVector primvars;
 
     if (vtMaterial.IsHolding<HdMaterialNetworkMap>()) {
@@ -400,8 +395,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // We filter the list of primvars based on what the material needs.
         TfTokenVector matPrimvarNames;
         if (_IsPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
-            matPrimvarNames = _CollectMaterialPrimvars(
-                valueCache, materialUsdPath);
+            if (UsdPrim matPrim = _GetPrim(materialUsdPath)) {
+                // NOTE: We need to directly access the registered instance
+                //       of UsdImagingMaterialAdaptor in order to query its
+                //       material resource. Those are registered to match
+                //       the USD prim type name.
+                if (UsdImagingPrimAdapterSharedPtr materialAdapter
+                            =_GetAdapter(matPrim.GetTypeName())) {
+                    VtValue vtMaterial = 
+                            materialAdapter->GetMaterialResource(
+                                    matPrim, matPrim.GetPath(), time);
+                    matPrimvarNames = _CollectMaterialPrimvars(vtMaterial);
+                }
+            }
         }
 
         for (auto const &pv : primvars) {

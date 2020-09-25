@@ -493,6 +493,11 @@ public:
                                   SdfPath const& cachePath, 
                                   UsdTimeCode time) const;
 
+    USDIMAGING_API
+    virtual VtValue GetMaterialResource(UsdPrim const& prim, 
+                                  SdfPath const& cachePath, 
+                                  UsdTimeCode time) const;
+
     // ---------------------------------------------------------------------- //
     /// \name ExtComputations
     // ---------------------------------------------------------------------- //

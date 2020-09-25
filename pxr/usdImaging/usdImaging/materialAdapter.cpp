@@ -132,17 +132,6 @@ UsdImagingMaterialAdapter::UpdateForTime(
     UsdImagingInstancerContext const*
     instancerContext) const
 {
-    if (requestedBits & HdMaterial::DirtyResource) {
-        // Walk the material network and generate a HdMaterialNetworkMap
-        // structure to store it in the value cache.
-        bool timeVarying = false;
-        HdMaterialNetworkMap map;
-        TfToken const& networkSelector = _GetMaterialNetworkSelector();
-        _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
-
-        UsdImagingValueCache* valueCache = _GetValueCache();
-        valueCache->GetMaterialResource(cachePath) = map;
-    }
 }
 
 /* virtual */
@@ -196,6 +185,18 @@ UsdImagingMaterialAdapter::MarkMaterialDirty(
     MarkDirty(prim, cachePath, HdMaterial::DirtyResource, index);
 }
 
+/* virtual */
+VtValue
+UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const& prim, 
+                                               SdfPath const& cachePath, 
+                                               UsdTimeCode time) const
+{
+    bool timeVarying = false;
+    HdMaterialNetworkMap map;
+    TfToken const& networkSelector = _GetMaterialNetworkSelector();
+    _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
+    return VtValue(map);
+}
 
 /* virtual */
 void
