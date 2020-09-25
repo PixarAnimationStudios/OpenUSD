@@ -566,6 +566,12 @@ HgiGLOps::BindFramebufferOp(
             HgiAttachmentDesc const& colorAttachment =
                 desc.colorAttachmentDescs[i];
 
+            if (colorAttachment.format == HgiFormatInvalid) {
+                TF_CODING_ERROR(
+                    "Binding framebuffer with invalid format "
+                    "for color attachment %zu.", i);
+            }
+
             if (colorAttachment.loadOp == HgiAttachmentLoadOpClear) {
                 glClearBufferfv(GL_COLOR, i, colorAttachment.clearValue.data());
             }
@@ -593,6 +599,15 @@ HgiGLOps::BindFramebufferOp(
 
         HgiAttachmentDesc const& depthAttachment =
             desc.depthAttachmentDesc;
+
+        if (desc.depthTexture) {
+            if (depthAttachment.format == HgiFormatInvalid) {
+                TF_CODING_ERROR(
+                    "Binding framebuffer with invalid format "
+                    "for depth attachment.");
+            }
+        }
+
         if (desc.depthTexture &&
             depthAttachment.loadOp == HgiAttachmentLoadOpClear) {
             glClearBufferfv(GL_DEPTH, 0, depthAttachment.clearValue.data());
