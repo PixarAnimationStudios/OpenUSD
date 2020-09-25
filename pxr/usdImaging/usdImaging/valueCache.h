@@ -90,10 +90,6 @@ public:
             static TfToken attr("instanceIndices");
             return Key(path, attr);
         }
-        static Key Points(SdfPath const& path) {
-            static TfToken attr("points");
-            return Key(path, attr);
-        }
         static Key Primvars(SdfPath const& path) {
             static TfToken attr("primvars");
             return Key(path, attr);
@@ -228,7 +224,6 @@ public:
     /// Clear all data associated with a specific path.
     void Clear(SdfPath const& path) {
         _Erase<VtValue>(Key::InstanceIndices(path));
-        _Erase<VtValue>(Key::Points(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
         // access the map directly, if we need to for performance reasons.
@@ -249,9 +244,6 @@ public:
 
     VtValue& GetInstanceIndices(SdfPath const& path) const {
         return _Get<VtValue>(Key::InstanceIndices(path));
-    }
-    VtValue& GetPoints(SdfPath const& path) const {
-        return _Get<VtValue>(Key::Points(path));
     }
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
@@ -278,9 +270,6 @@ public:
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
     }
-    bool FindPoints(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::Points(path), value);
-    }
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
@@ -299,9 +288,6 @@ public:
 
     bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
         return _Extract(Key::InstanceIndices(path), value);
-    }
-    bool ExtractPoints(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::Points(path), value);
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);

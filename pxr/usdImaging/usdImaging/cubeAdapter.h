@@ -91,7 +91,6 @@ public:
     USDIMAGING_API
     VtValue GetPoints(
         UsdPrim const& prim,
-        SdfPath const& cachePath,
         UsdTimeCode time) const override;
 
     USDIMAGING_API

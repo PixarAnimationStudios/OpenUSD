@@ -124,11 +124,9 @@ UsdImagingCylinderAdapter::ProcessPropertyChange(UsdPrim const& prim,
 /*virtual*/
 VtValue
 UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
-                                     SdfPath const& cachePath,
                                      UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
-    return GetMeshPoints(prim, time);   
+    return GetMeshPoints(prim, time);
 }
 
 /*static*/

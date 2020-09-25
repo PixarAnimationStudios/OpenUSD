@@ -495,7 +495,24 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
         widths[0] = 1.0f;
         value = widths;
 
-    }
+    } else if (key == HdTokens->points) {
+        TRACE_FUNCTION_SCOPE("points");
+
+        TfToken drawMode = UsdGeomTokens->default_;
+        _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+        if (TF_VERIFY(it != _drawModeMap.end())) {
+            drawMode = it->second;
+        }
+
+        VtValue topology;
+        VtValue points;
+        VtValue uv;
+        VtValue assign;
+        GfRange3d extent;
+        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv, &assign);
+        return points;
+    } 
 
     return value;
 }
@@ -754,7 +771,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
         VtValue topology;
         GfRange3d extent;
-        VtValue& points = valueCache->GetPoints(cachePath);
+        VtValue points;
         VtValue& uv = valueCache->GetPrimvar(cachePath, _tokens->cardsUv);
         VtValue& assign = valueCache->GetPrimvar(cachePath, 
             _tokens->cardsTexAssign);
@@ -776,7 +793,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         // Merge "points" primvar
-        _MergePrimvar(&primvars, HdTokens->points,
+        _MergePrimvar(&primvars, 
+            HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
     }

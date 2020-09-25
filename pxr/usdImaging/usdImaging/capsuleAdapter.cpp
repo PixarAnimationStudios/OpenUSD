@@ -120,11 +120,9 @@ UsdImagingCapsuleAdapter::ProcessPropertyChange(UsdPrim const& prim,
 /*virtual*/
 VtValue
 UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
-                 		    SdfPath const& cachePath,
                                     UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
-    return GetMeshPoints(prim, time);   
+    return GetMeshPoints(prim, time);
 }
 
 /*static*/

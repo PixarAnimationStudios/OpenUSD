@@ -89,7 +89,6 @@ public:
     USDIMAGING_API
     VtValue GetPoints(
         UsdPrim const& prim,
-        SdfPath const& cachePath,
         UsdTimeCode time) const override;
 
     // Used by the legacyEngine.

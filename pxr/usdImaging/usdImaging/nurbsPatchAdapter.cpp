@@ -92,10 +92,8 @@ UsdImagingNurbsPatchAdapter::TrackVariability(UsdPrim const& prim,
 /*virtual*/
 VtValue
 UsdImagingNurbsPatchAdapter::GetPoints(UsdPrim const& prim,
-                                       SdfPath const& cachePath,
                                        UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
     return GetMeshPoints(prim, time);   
 }
 

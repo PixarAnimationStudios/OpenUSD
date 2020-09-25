@@ -286,8 +286,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 
     if (requestedBits & HdChangeTracker::DirtyPoints) {
 
-        valueCache->GetPoints(cachePath) = GetPoints(prim, cachePath, time);
-
         // Expose points as a primvar.
         _MergePrimvar(
             &vPrimvars,
@@ -540,10 +538,8 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
 /*virtual*/
 VtValue
 UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
                                   UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
@@ -678,8 +674,10 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
         value = VtValue(vec);
         return value;
 
-    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
+    } else if (key == HdTokens->points) {
+        return GetPoints(prim, time);
 
+    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
         // XXX : We use cachePath directly as usdPath above,
         // but should do the proper transformation.  Maybe we can use
         // the primInfo.usdPrim?

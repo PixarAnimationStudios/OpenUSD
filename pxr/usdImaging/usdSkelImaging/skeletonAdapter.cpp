@@ -748,13 +748,19 @@ UsdSkelImagingSkeletonAdapter::Get(UsdPrim const& prim,
         if (!TF_VERIFY(skelData)) {
             return VtValue();
         }
+
         if (key == HdTokens->displayColor) {
             GfVec3f color = _GetSkeletonDisplayColor(prim, time);
             return VtValue(color);
+
         } else if (key == HdTokens->displayOpacity) {
             float opacity = _GetSkeletonDisplayOpacity(prim, time);
             return VtValue(opacity);
-        }
+
+        } else if (key == HdTokens->points) {
+            skelData->ComputeTopologyAndRestState();
+            return VtValue(skelData->ComputePoints(time));
+        } 
     }
 
     if (_IsSkinnedPrimPath(cachePath)) {
@@ -1324,17 +1330,8 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[UpdateForTime] Cache path: <%s>\n",
                                      cachePath.GetText());
 
-    // Act as the mesh adapter for the non-existent bone mesh, and populate
-    // the value cache with the necessary info.
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        // Necessary for ComputePoints to work correctly.
-        skelData->ComputeTopologyAndRestState();
-        valueCache->GetPoints(cachePath) = skelData->ComputePoints(time);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
+        UsdImagingValueCache* valueCache = _GetValueCache();
 
         // Expose points as a primvar.
         _MergePrimvar(&valueCache->GetPrimvars(cachePath),
@@ -1349,7 +1346,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
                       HdTokens->displayOpacity,
                       HdInterpolationConstant);
     }
-
 }
 
 
@@ -1481,8 +1477,7 @@ UsdSkelImagingSkeletonAdapter::_GetSkinnedPrimPoints(
         return VtVec3fArray();
     }
 
-    VtValue points = 
-        gprimAdapter->GetPoints(skinnedPrim, skinnedPrimCachePath, time);
+    VtValue points = gprimAdapter->GetPoints(skinnedPrim, time);
     if (!TF_VERIFY(points.IsHolding<VtVec3fArray>())) {
         return VtVec3fArray();
     }

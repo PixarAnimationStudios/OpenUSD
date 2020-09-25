@@ -389,6 +389,16 @@ UsdImagingPrimAdapter::SamplePrimvar(
     // instead synthesize them -- ex: Cube, Cylinder, Capsule.
     if (maxNumSamples > 0) {
         sampleTimes[0] = 0;
+        // Transition code until all primvars are handled without value cache.
+        if (key == HdTokens->displayColor || 
+            key == HdTokens->displayOpacity ||
+            key == HdTokens->points || 
+            key == HdTokens->normals || 
+            key == HdTokens->widths) { 
+            sampleValues[0] = Get(usdPrim, cachePath, key, time);
+            return sampleValues[0].IsEmpty() ? 0 : 1;
+        } 
+        
         if (_GetValueCache()->ExtractPrimvar(cachePath, key, &sampleValues[0])){
             return sampleValues[0].IsEmpty() ? 0 : 1;
         }

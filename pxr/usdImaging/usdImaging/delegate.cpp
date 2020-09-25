@@ -2366,23 +2366,15 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     VtValue value;
 
     if (!_valueCache.ExtractPrimvar(cachePath, key, &value)) {
-        if (key == HdTokens->points) {
-            _UpdateSingleValue(cachePath,HdChangeTracker::DirtyPoints);
-            if (!TF_VERIFY(_valueCache.ExtractPoints(cachePath, &value))) {
-                VtVec3fArray vec;
-                value = VtValue(vec);
-            }
-        } else {
-            _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
-            if (!TF_VERIFY(primInfo)) {
-                return value;
-            }
-            UsdPrim const & prim = primInfo->usdPrim;
-            if (!TF_VERIFY(prim)) {
-                return value;
-            }
-            value = primInfo->adapter->Get(prim, cachePath, key, _time);
+        _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
+        if (!TF_VERIFY(primInfo)) {
+            return value;
         }
+        UsdPrim const & prim = primInfo->usdPrim;
+        if (!TF_VERIFY(prim)) {
+            return value;
+        }
+        value = primInfo->adapter->Get(prim, cachePath, key, _time);
     }
 
     if (value.IsEmpty()) {

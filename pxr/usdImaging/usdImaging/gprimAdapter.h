@@ -135,7 +135,6 @@ public:
     /// a prim. This is useful for implicit primitives.
     USDIMAGING_API
     virtual VtValue GetPoints(UsdPrim const& prim,
-                              SdfPath const& cachePath,
                               UsdTimeCode time) const;
 
     /// Returns color and Usd interpolation token for a given
