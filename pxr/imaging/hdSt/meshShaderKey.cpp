@@ -61,13 +61,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,       "MeshPatchWire.Fragment.EdgeOnSurface"))
 
-    ((selOffsetGS,              "MeshWire.Geometry.SelOffset"))
-    ((selNoOffsetGS,            "MeshWire.Geometry.SelNoOffset"))
+    ((selWireOffsetGS,         "Selection.Geometry.WireSelOffset"))
+    ((selWireNoOffsetGS,       "Selection.Geometry.WireSelNoOffset"))
     
     // selection decoding
     ((selDecodeUtils,          "Selection.DecodeUtils"))
     ((selPointSelVS,           "Selection.Vertex.PointSel"))
-    ((selElementSelFS,         "Selection.Fragment.ElementSel"))
+    ((selElementSelGS,         "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
@@ -232,15 +232,16 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                              : _tokens->edgeIdEdgeParamGS;
     GS[gsIndex++] = gsEdgeIdMixin;
 
-    // emit "ApplySelectionOffset" GS function.
-    if (geomStyle == HdMeshGeomStyleEdgeOnly ||
-        geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-
+    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
+                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
+    // emit "ComputeSelectionOffset" GS function.
+    if (renderWireframe) {
+        // emit necessary selection decoding and helper mixins
         GS[gsIndex++] = _tokens->selDecodeUtils;
-        GS[gsIndex++] = _tokens->selElementSelFS;
-        GS[gsIndex++] = _tokens->selOffsetGS;
+        GS[gsIndex++] = _tokens->selElementSelGS;
+        GS[gsIndex++] = _tokens->selWireOffsetGS;
     } else {
-        GS[gsIndex++] = _tokens->selNoOffsetGS;
+        GS[gsIndex++] = _tokens->selWireNoOffsetGS;
     }
 
     // Displacement shading can be disabled explicitly, or if the entrypoint

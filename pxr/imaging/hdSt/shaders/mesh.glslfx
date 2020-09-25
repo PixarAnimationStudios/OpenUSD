@@ -353,7 +353,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
     EmitVertex();
 }
 
-vec4 ComputeSelectionOffset();
+vec4 ComputeSelectionOffset(); // selection.glslfx
 
 void main(void)
 {
