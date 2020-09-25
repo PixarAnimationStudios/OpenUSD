@@ -289,6 +289,13 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
         }
 
         glDeleteSync(fence);
+    } else {
+        // We assume the client has grouped together all async work into
+        // one Hgi*Cmds and that we must set barriers between Hgi*Cmds to
+        // respect dependencies / synchronization needs.
+        if (glMemoryBarrier) {
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        }
     }
 
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
