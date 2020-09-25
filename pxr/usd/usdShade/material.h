@@ -336,6 +336,16 @@ public:
     UsdShadeOutput GetSurfaceOutput(const TfToken &renderContext
             =UsdShadeTokens->universalRenderContext) const;
 
+    /// Returns the "surface" outputs of this material for all available
+    /// renderContexts.
+    ///
+    /// The returned vector will include all authored "surface" outputs with
+    /// the <i>universal</i> renderContext output first, if present. Outputs
+    /// are returned regardless of whether they are connected to a valid
+    /// source.
+    USDSHADE_API
+    std::vector<UsdShadeOutput> GetSurfaceOutputs() const;
+
     /// Computes the resolved "surface" output source for the given 
     /// \p renderContext.
     /// 
@@ -374,6 +384,16 @@ public:
     USDSHADE_API 
     UsdShadeOutput GetDisplacementOutput(const TfToken &renderContext
             =UsdShadeTokens->universalRenderContext) const;
+
+    /// Returns the "displacement" outputs of this material for all available
+    /// renderContexts.
+    ///
+    /// The returned vector will include all authored "displacement" outputs
+    /// with the <i>universal</i> renderContext output first, if present.
+    /// Outputs are returned regardless of whether they are connected to a
+    /// valid source.
+    USDSHADE_API
+    std::vector<UsdShadeOutput> GetDisplacementOutputs() const;
 
     /// Computes the resolved "displacement" output source for the given 
     /// \p renderContext.
@@ -414,6 +434,15 @@ public:
     UsdShadeOutput GetVolumeOutput(const TfToken &renderContext
             =UsdShadeTokens->universalRenderContext) const;
 
+    /// Returns the "volume" outputs of this material for all available
+    /// renderContexts.
+    ///
+    /// The returned vector will include all authored "volume" outputs with the
+    /// <i>universal</i> renderContext output first, if present. Outputs are
+    /// returned regardless of whether they are connected to a valid source.
+    USDSHADE_API
+    std::vector<UsdShadeOutput> GetVolumeOutputs() const;
+
     /// Computes the resolved "volume" output source for the given 
     /// \p renderContext.
     /// 
@@ -450,6 +479,11 @@ private:
         const TfToken &renderContext,
         TfToken *sourceName, 
         UsdShadeAttributeType *sourceType) const;
+
+    // Helper method to retrieve outputs in all renderContexts that match the
+    // given terminalName.
+    std::vector<UsdShadeOutput> _GetOutputsForTerminalName(
+        const TfToken& terminalName) const;
 
 public:
     // --------------------------------------------------------------------- //

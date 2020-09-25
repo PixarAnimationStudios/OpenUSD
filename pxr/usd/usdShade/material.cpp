@@ -196,7 +196,11 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/token.h"
+
 #include "pxr/usd/pcp/mapExpression.h"
+
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/specializes.h"
@@ -206,8 +210,13 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/connectableAPIBehavior.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/utils.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -556,6 +565,35 @@ UsdShadeMaterial::_ComputeNamedOutputShader(
     return source;
 }
 
+std::vector<UsdShadeOutput>
+UsdShadeMaterial::_GetOutputsForTerminalName(const TfToken& terminalName) const
+{
+    std::vector<UsdShadeOutput> outputs;
+
+    UsdShadeOutput universalOutput = GetOutput(
+        _GetOutputName(terminalName, UsdShadeTokens->universalRenderContext));
+    if (universalOutput) {
+        outputs.push_back(std::move(universalOutput));
+    }
+
+    for (const UsdShadeOutput& output : GetOutputs()) {
+        // For an output to be considered specific to a renderContext, its base
+        // name should be of the form "<renderContext>:...", so there must be
+        // at least two components to the base name.
+        const std::vector<std::string> baseNameComponents =
+            SdfPath::TokenizeIdentifier(output.GetBaseName());
+        if (baseNameComponents.size() < 2u) {
+            continue;
+        }
+
+        if (baseNameComponents.back() == terminalName) {
+            outputs.push_back(output);
+        }
+    }
+
+    return outputs;
+}
+
 UsdShadeOutput 
 UsdShadeMaterial::CreateSurfaceOutput(const TfToken &renderContext) const
 {
@@ -567,6 +605,12 @@ UsdShadeOutput
 UsdShadeMaterial::GetSurfaceOutput(const TfToken &renderContext) const
 {
     return GetOutput(_GetOutputName(UsdShadeTokens->surface, renderContext));
+}
+
+std::vector<UsdShadeOutput>
+UsdShadeMaterial::GetSurfaceOutputs() const
+{
+    return _GetOutputsForTerminalName(UsdShadeTokens->surface);
 }
 
 UsdShadeShader 
@@ -592,6 +636,12 @@ UsdShadeMaterial::GetDisplacementOutput(const TfToken &renderContext) const
     return GetOutput(_GetOutputName(UsdShadeTokens->displacement, renderContext));
 }
 
+std::vector<UsdShadeOutput>
+UsdShadeMaterial::GetDisplacementOutputs() const
+{
+    return _GetOutputsForTerminalName(UsdShadeTokens->displacement);
+}
+
 UsdShadeShader 
 UsdShadeMaterial::ComputeDisplacementSource(
     const TfToken &renderContext,
@@ -613,6 +663,12 @@ UsdShadeOutput
 UsdShadeMaterial::GetVolumeOutput(const TfToken &renderContext) const
 {
     return GetOutput(_GetOutputName(UsdShadeTokens->volume, renderContext));
+}
+
+std::vector<UsdShadeOutput>
+UsdShadeMaterial::GetVolumeOutputs() const
+{
+    return _GetOutputsForTerminalName(UsdShadeTokens->volume);
 }
 
 UsdShadeShader 
