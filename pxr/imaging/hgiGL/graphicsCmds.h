@@ -87,12 +87,32 @@ public:
         std::vector<uint32_t> const& byteOffsets) override;
 
     HGIGL_API
+    void Draw(
+        uint32_t vertexCount,
+        uint32_t vertexOffset,
+        uint32_t instanceCount) override;
+
+    HGIGL_API
+    void DrawIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
+
+    HGIGL_API
     void DrawIndexed(
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
         uint32_t instanceCount) override;
+
+    HGIGL_API
+    void DrawIndexedIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
 
 protected:
     friend class HgiGL;

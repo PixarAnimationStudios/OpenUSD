@@ -112,6 +112,38 @@ HgiGLGraphicsCmds::BindVertexBuffers(
 }
 
 void
+HgiGLGraphicsCmds::Draw(
+    uint32_t vertexCount,
+    uint32_t vertexOffset,
+    uint32_t instanceCount)
+{
+    _ops.push_back(
+        HgiGLOps::Draw(
+            _primitiveType,
+            vertexCount,
+            vertexOffset,
+            instanceCount)
+        );
+}
+
+void
+HgiGLGraphicsCmds::DrawIndirect(
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    _ops.push_back(
+        HgiGLOps::DrawIndirect(
+            _primitiveType,
+            drawParameterBuffer,
+            bufferOffset,
+            drawCount,
+            stride)
+        );
+}
+
+void
 HgiGLGraphicsCmds::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
@@ -127,6 +159,23 @@ HgiGLGraphicsCmds::DrawIndexed(
             indexBufferByteOffset,
             vertexOffset,
             instanceCount)
+        );
+}
+
+void
+HgiGLGraphicsCmds::DrawIndexedIndirect(
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    _ops.push_back(
+        HgiGLOps::DrawIndexedIndirect(
+            _primitiveType,
+            drawParameterBuffer,
+            bufferOffset,
+            drawCount,
+            stride)
         );
 }
 

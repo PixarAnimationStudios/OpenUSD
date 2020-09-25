@@ -297,6 +297,25 @@ HgiMetalGraphicsCmds::BindVertexBuffers(
 }
 
 void
+HgiMetalGraphicsCmds::Draw(
+    uint32_t vertexCount,
+    uint32_t vertexOffset,
+    uint32_t instanceCount)
+{
+    TF_CODING_ERROR("Todo missing implementation");
+}
+
+void
+HgiMetalGraphicsCmds::DrawIndirect(
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    TF_CODING_ERROR("Todo missing implementation");
+}
+
+void
 HgiMetalGraphicsCmds::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
@@ -326,6 +345,16 @@ HgiMetalGraphicsCmds::DrawIndexed(
                        baseInstance:0];
 
     _hasWork = true;
+}
+
+void
+HgiMetalGraphicsCmds::DrawIndexedIndirect(
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    TF_CODING_ERROR("Todo missing implementation");
 }
 
 void

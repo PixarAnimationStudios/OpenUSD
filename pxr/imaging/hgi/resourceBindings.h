@@ -59,7 +59,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>resourceType:
 ///    The type of buffer(s) that is to be bound.
 ///    All buffers in the array must have the same type.
-///    Note that vertex and index buffers are not bound to a resourceSet.
+///    Vertex, index and indirect buffers are not bound to a resourceSet.
 ///    They are instead passed to the draw command.</li>
 /// <li>bindingIndex:
 ///    Binding location for the buffer(s).</li>

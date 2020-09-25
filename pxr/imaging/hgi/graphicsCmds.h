@@ -109,15 +109,50 @@ public:
         std::vector<uint32_t> const& byteOffsets) = 0;
 
     /// Records a draw command that renders one or more instances of primitives
-    /// using an indexBuffer starting from the base vertex of the base instance.
+    /// using the number of vertices provided.
     /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
     /// the bound HgiPipeline.
-    /// `indexCount`: The type of primitive to is the number of vertices.
-    /// `indexBufferByteOffset`: Byte offset within indexBuffer to start reading
-    ///                          indices from.
-    /// `vertexOffset`: the value added to the vertex index before indexing into
-    ///                 the vertex buffer (baseVertex).
-    /// `instanceCount`: number of instances (min 1) of the primitves to render.
+    /// `vertexCount`: The number of vertices to draw.
+    /// `vertexOffset`: The value added to the vertex index before indexing
+    ///                 into the vertex buffer (baseVertex).
+    /// `instanceCount`: Number of instances to draw.
+    HGI_API
+    virtual void Draw(
+        uint32_t vertexCount,
+        uint32_t vertexOffset,
+        uint32_t instanceCount) = 0;
+
+    /// Records a multi-draw command that reads the draw parameters
+    /// from a provided drawParameterBuffer.
+    /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
+    /// the bound HgiPipeline.
+    /// `drawParameterBuffer`: an array of structures:
+    //     struct IndirectCommand {
+    //         uint32_t vertexCount;
+    //         uint32_t instanceCount;
+    //         uint32_t firstVertex;
+    //         uint32_t firstInstance;
+    //     }
+    /// `bufferOffset`: Byte offset where the draw parameters begin.
+    /// `drawCount`: The number of draws to execute.
+    /// `stride`: byte stride between successive sets of draw parameters.
+    HGI_API
+    virtual void DrawIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) = 0;
+
+    /// Records a draw command that renders one or more instances of primitives
+    /// using an indexBuffer starting from the base vertex.
+    /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
+    /// the bound HgiPipeline.
+    /// `indexCount`: The number of indices in the index buffer (num vertices).
+    /// `indexBufferByteOffset`: Byte offset within index buffer to start
+    ///                          reading the indices from.
+    /// `vertexOffset`: The value added to the vertex index before indexing
+    ///                 into the vertex buffer (baseVertex).
+    /// `instanceCount`: Number of instances to draw.
     HGI_API
     virtual void DrawIndexed(
         HgiBufferHandle const& indexBuffer,
@@ -125,6 +160,28 @@ public:
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
         uint32_t instanceCount) = 0;
+
+    /// Records a indexed multi-draw command that reads the draw parameters
+    /// from a provided drawParameterBuffer.
+    /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
+    /// the bound HgiPipeline.
+    /// `drawParameterBuffer`: an array of structures:
+    //     struct IndirectCommand {
+    //         uint32_t indexCount;
+    //         uint32_t instanceCount;
+    //         uint32_t firstIndex;
+    //         uint32_t vertexOffset;
+    //         uint32_t firstInstance;
+    //     }
+    /// `bufferOffset`: Byte offset where the draw parameters begin.
+    /// `drawCount`: The number of draws to execute.
+    /// `stride`: byte stride between successive sets of draw parameters.
+    HGI_API
+    virtual void DrawIndexedIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) = 0;
 
 protected:
     HGI_API

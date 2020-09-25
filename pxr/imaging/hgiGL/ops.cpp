@@ -423,6 +423,52 @@ HgiGLOps::BindVertexBuffers(
 }
 
 HgiGLOpsFn
+HgiGLOps::Draw(
+    HgiPrimitiveType primitiveType,
+    uint32_t vertexCount,
+    uint32_t vertexOffset,
+    uint32_t instanceCount)
+{
+    return [primitiveType, vertexCount, vertexOffset, instanceCount] {
+        TF_VERIFY(instanceCount>0);
+
+        glDrawArraysInstanced(
+            HgiGLConversions::GetPrimitiveType(primitiveType),
+            vertexOffset,
+            vertexCount,
+            instanceCount);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::DrawIndirect(
+    HgiPrimitiveType primitiveType,
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    return [primitiveType, drawParameterBuffer, bufferOffset, drawCount, 
+            stride] {
+
+        HgiGLBuffer* drawBuf =
+            static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
+
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawBuf->GetBufferId());
+
+        glMultiDrawArraysIndirect(
+            HgiGLConversions::GetPrimitiveType(primitiveType),
+            reinterpret_cast<const void*>(bufferOffset),
+            drawCount,
+            stride);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn
 HgiGLOps::DrawIndexed(
     HgiPrimitiveType primitiveType,
     HgiBufferHandle const& indexBuffer,
@@ -450,6 +496,34 @@ HgiGLOps::DrawIndexed(
             (void*)(uintptr_t(indexBufferByteOffset)),
             instanceCount,
             vertexOffset);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::DrawIndexedIndirect(
+    HgiPrimitiveType primitiveType,
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t bufferOffset,
+    uint32_t drawCount,
+    uint32_t stride)
+{
+    return [primitiveType, drawParameterBuffer, bufferOffset, drawCount,
+            stride] {
+
+
+        HgiGLBuffer* drawBuf =
+            static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
+
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawBuf->GetBufferId());
+
+        glMultiDrawElementsIndirect(
+            HgiGLConversions::GetPrimitiveType(primitiveType),
+            GL_UNSIGNED_INT,
+            reinterpret_cast<const void*>(bufferOffset),
+            drawCount,
+            stride);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };

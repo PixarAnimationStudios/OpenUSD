@@ -133,6 +133,21 @@ public:
         std::vector<uint32_t> const& byteOffsets);
 
     HGIGL_API
+    static HgiGLOpsFn Draw(
+        HgiPrimitiveType primitiveType,
+        uint32_t vertexCount,
+        uint32_t vertexOffset,
+        uint32_t instanceCount);
+
+    HGIGL_API
+    static HgiGLOpsFn DrawIndirect(
+        HgiPrimitiveType primitiveType,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride);
+
+    HGIGL_API
     static HgiGLOpsFn DrawIndexed(
         HgiPrimitiveType primitiveType,
         HgiBufferHandle const& indexBuffer,
@@ -140,6 +155,14 @@ public:
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
         uint32_t instanceCount);
+
+    HGIGL_API
+    static HgiGLOpsFn DrawIndexedIndirect(
+        HgiPrimitiveType primitiveType,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride);
 
     HGIGL_API
     static HgiGLOpsFn BindFramebufferOp(
