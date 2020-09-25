@@ -39,8 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiMetalBlitCmds::HgiMetalBlitCmds(HgiMetal *hgi)
     : _hgi(hgi)
+    , _commandBuffer(nil)
     , _blitEncoder(nil)
     , _label(nil)
+    , _secondaryCommandBuffer(false)
 {
 }
 
@@ -58,7 +60,13 @@ void
 HgiMetalBlitCmds::_CreateEncoder()
 {
     if (!_blitEncoder) {
-        _blitEncoder = [_hgi->GetCommandBuffer() blitCommandEncoder];
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        if (_commandBuffer == nil) {
+            _commandBuffer = _hgi->GetSecondaryCommandBuffer();
+            _secondaryCommandBuffer = true;
+        }
+        _blitEncoder = [_commandBuffer blitCommandEncoder];
+
         if (_label) {
             if (HgiMetalDebugEnabled()) {
                 _blitEncoder.label = _label;
@@ -173,7 +181,7 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
     // bytes to copy
     size_t byteSize = copyOp.destinationBufferByteSize;
 
-    [_hgi->GetCommandBuffer() addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+    [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
         {
             memcpy(dst, src, byteSize);
         }];
@@ -322,7 +330,7 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     // bytes to copy
     size_t size = copyOp.byteSize;
 
-    [_hgi->GetCommandBuffer() addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+    [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
         {
             memcpy(dst, src, size);
         }];
@@ -342,12 +350,36 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 bool
 HgiMetalBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
+    bool submittedWork = false;
     if (_blitEncoder) {
         [_blitEncoder endEncoding];
         _blitEncoder = nil;
-        return true;
+        submittedWork = true;
+
+        HgiMetal::CommitCommandBufferWaitType waitType;
+        switch(wait) {
+            case HgiSubmitWaitTypeNoWait:
+                waitType = HgiMetal::CommitCommandBuffer_NoWait;
+                break;
+            case HgiSubmitWaitTypeWaitUntilCompleted:
+                waitType = HgiMetal::CommitCommandBuffer_WaitUntilCompleted;
+                break;
+        }
+
+        if (_secondaryCommandBuffer) {
+            _hgi->CommitSecondaryCommandBuffer(_commandBuffer, waitType);
+        }
+        else {
+            _hgi->CommitPrimaryCommandBuffer(waitType);
+        }
     }
-    return false;
+    
+    if (_secondaryCommandBuffer) {
+        _hgi->ReleaseSecondaryCommandBuffer(_commandBuffer);
+    }
+    _commandBuffer = nil;
+
+    return submittedWork;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

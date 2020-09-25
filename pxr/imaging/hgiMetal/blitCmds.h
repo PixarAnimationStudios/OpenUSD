@@ -84,8 +84,10 @@ private:
     void _CreateEncoder();
 
     HgiMetal* _hgi;
+    id<MTLCommandBuffer> _commandBuffer;
     id<MTLBlitCommandEncoder> _blitEncoder;
     NSString* _label;
+    bool _secondaryCommandBuffer;
 
     // BlitCmds is used only one frame so storing multi-frame state on BlitCmds
     // will not survive.

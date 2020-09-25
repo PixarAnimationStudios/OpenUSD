@@ -185,7 +185,8 @@ void
 HgiMetalGraphicsCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        _encoder = [_hgi->GetCommandBuffer(false)
+        _encoder = [
+            _hgi->GetPrimaryCommandBuffer(false)
             renderCommandEncoderWithDescriptor:_renderPassDescriptor];
         
         if (_debugLabel) {
@@ -383,6 +384,18 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     if (_encoder) {
         [_encoder endEncoding];
         _encoder = nil;
+
+        HgiMetal::CommitCommandBufferWaitType waitType;
+        switch(wait) {
+            case HgiSubmitWaitTypeNoWait:
+                waitType = HgiMetal::CommitCommandBuffer_NoWait;
+                break;
+            case HgiSubmitWaitTypeWaitUntilCompleted:
+                waitType = HgiMetal::CommitCommandBuffer_WaitUntilCompleted;
+                break;
+        }
+
+        _hgi->CommitPrimaryCommandBuffer(waitType);
     }
 
     return _hasWork;
