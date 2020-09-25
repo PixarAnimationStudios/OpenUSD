@@ -199,6 +199,10 @@ static GfVec3i
 _ViewportToAovDimension(const GfVec4d& viewport)
 {
     // Ignore the viewport offset and use its size as the aov size.
+    // XXX: This is fragile and doesn't handle viewport tricks,
+    // such as camera zoom. In the future, we expect to improve the
+    // API to better communicate AOV sizing, fill region and camera
+    // zoom.
     int w = viewport[2];
     int h = viewport[3];
     return GfVec3i(w, h, 1);
@@ -209,6 +213,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     : _index(renderIndex)
     , _controllerId(controllerId)
     , _delegate(renderIndex, controllerId)
+    , _viewport(0, 0, 1, 1)
 {
     _CreateRenderGraph();
 }
@@ -262,7 +267,7 @@ HdxTaskController::_CreateRenderGraph()
         _CreateCamera();
     }
 
-    // XXX: The general assumption is that we have "stream" backends which are
+    // XXX: The general assumption is that we have "Storm" backends which are
     // rasterization based and have their own rules, like multipass for
     // transparency; and other backends are more single-pass.  As render
     // delegate capabilities evolve, we'll need a more complicated switch
@@ -294,7 +299,9 @@ HdxTaskController::_CreateRenderGraph()
 
         // XXX AOVs are OFF by default for Storm TaskController because hybrid
         // rendering in Presto spawns an ImagineGLEngine, which creates a task
-        // controlller. But the Hydrid rendering setups are not yet AOV ready.
+        // controlller. But the Hydrid rendering setups are not yet AOV ready
+        // since it breaks main cam zoom operations expressed via viewport
+        // manipulation.
         // App (UsdView) for now calls engine->SetRendererAov(color) to enable.
         // SetRenderOutputs({HdAovTokens->color});
     } else {
@@ -348,7 +355,7 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
 
     HdxRenderTaskParams renderParams;
     renderParams.camera = _freeCamId;
-    renderParams.viewport = GfVec4d(0,0,1,1);
+    renderParams.viewport = _viewport;
 
     // Set the blend state based on material tag.
     _SetBlendStateForMaterialTag(materialTag, &renderParams);
@@ -642,6 +649,12 @@ HdxTaskController::_CamerasSupported() const
         HdPrimTypeTokens->camera);
 }
 
+bool
+HdxTaskController::_UsingAovs() const
+{
+    return !_aovBufferIds.empty();
+}
+
 HdTaskSharedPtrVector const
 HdxTaskController::GetRenderingTasks() const
 {
@@ -867,16 +880,8 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     }
     _aovBufferIds.clear();
 
-    // All RenderTasks share the same AOV buffers, so we update the AOVs by
-    // using the dimension of the first RenderTask. Then push the updated
-    // aov bindings to all render tasks.
-    const SdfPath& firstRenderTask = _renderTaskIds.front();
-    HdxRenderTaskParams renderParams =
-        _delegate.GetParameter<HdxRenderTaskParams>(firstRenderTask,
-            HdTokens->params);
-
     // Get the viewport dimensions (for renderbuffer allocation)
-    GfVec3i dimensions = _ViewportToAovDimension(renderParams.viewport);
+    GfVec3i dimensions = _ViewportToAovDimension(_viewport);
 
     // Get default AOV descriptors from the render delegate.
     HdAovDescriptorList outputDescs;
@@ -947,6 +952,10 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     } else {
         SetViewportRenderOutput(TfToken());
     }
+
+    // XXX: The viewport data plumbed to tasks unfortunately depends on whether
+    // aovs are being used.
+    _SetViewportForTasks();
 }
 
 void
@@ -1563,82 +1572,17 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 void
 HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
 {
-    // Suppress the viewport offset from the rendering tasks. This is relevant
-    // only for the composition step (i.e. present task),
-    GfVec4d zeroOffsetViewport(0, 0, viewport[2], viewport[3]);
-    HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
-
-    for (SdfPath const& renderTaskId : _renderTaskIds) {
-        HdxRenderTaskParams params =
-            _delegate.GetParameter<HdxRenderTaskParams>(
-                renderTaskId, HdTokens->params);
-
-        if (params.viewport == zeroOffsetViewport) {
-            continue;
-        }
-
-        params.viewport = zeroOffsetViewport;
-        _delegate.SetParameter(renderTaskId, HdTokens->params, params);
-        changeTracker.MarkTaskDirty(
-            renderTaskId, HdChangeTracker::DirtyParams);
+    if (_viewport == viewport) {
+        return;
     }
+    _viewport = viewport;
 
-    if (!_shadowTaskId.IsEmpty()) {
-        // The shadow and camera viewport should be the same
-        // so we don't have to double check what the shadow task has.
-        HdxShadowTaskParams params =
-            _delegate.GetParameter<HdxShadowTaskParams>(
-                _shadowTaskId, HdTokens->params);
-        if (params.viewport != zeroOffsetViewport) {
-            params.viewport = zeroOffsetViewport;
-            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _shadowTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
-        HdxPickFromRenderBufferTaskParams params =
-            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
-                _pickFromRenderBufferTaskId, HdTokens->params);
-        if (params.viewport != zeroOffsetViewport) {
-            params.viewport = zeroOffsetViewport;
-            _delegate.SetParameter(
-                _pickFromRenderBufferTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    if (!_presentTaskId.IsEmpty()) {
-        HdxPresentTaskParams params =
-            _delegate.GetParameter<HdxPresentTaskParams>(
-                _presentTaskId, HdTokens->params);
-        // The composition step uses the viewport passed in by the application,
-        // which may have a non-zero offset for things like camera masking.
-        GfVec4i iViewport = GfVec4i(int(viewport[0]), int(viewport[1]),
-                                    int(viewport[2]), int(viewport[3]));
-        if (params.compRegion != iViewport) {
-            params.compRegion = iViewport;
-            _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _presentTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
+    // Update the params for tasks that consume viewport info.
+    _SetViewportForTasks();
+    
     // Update all of the render buffer sizes as well.
     GfVec3i dimensions = _ViewportToAovDimension(viewport);
-    for (auto const& id : _aovBufferIds) {
-        HdRenderBufferDescriptor desc =
-            _delegate.GetParameter<HdRenderBufferDescriptor>(id,
-                _tokens->renderBufferDescriptor);
-        if (desc.dimensions != dimensions) {
-            desc.dimensions = dimensions;
-            _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
-            changeTracker.MarkBprimDirty(id,
-                HdRenderBuffer::DirtyDescription);
-        }
-    }
+    _UpdateAovDimensions(dimensions);
 }
 
 void
@@ -1813,6 +1757,96 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
+HdxTaskController::_SetViewportForTasks()
+{
+    GfVec4d adjustedViewport = _viewport;
+    if (_UsingAovs()) {
+        // When aovs are in use, the expectation is that each aov is resized to
+        // the non-masked region and we render only the necessary pixels.
+        // The composition step (i.e., the present task) uses the viewport
+        // offset to update the unmasked region of the bound framebuffer.
+        adjustedViewport = GfVec4d(0, 0, _viewport[2], _viewport[3]);
+    }
+    HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
+
+    for (SdfPath const& renderTaskId : _renderTaskIds) {
+        HdxRenderTaskParams params =
+            _delegate.GetParameter<HdxRenderTaskParams>(
+                renderTaskId, HdTokens->params);
+
+        if (params.viewport == adjustedViewport) {
+            continue;
+        }
+
+        params.viewport = adjustedViewport;
+        _delegate.SetParameter(renderTaskId, HdTokens->params, params);
+        changeTracker.MarkTaskDirty(
+            renderTaskId, HdChangeTracker::DirtyParams);
+    }
+
+    if (!_shadowTaskId.IsEmpty()) {
+        // The shadow and camera viewport should be the same
+        // so we don't have to double check what the shadow task has.
+        HdxShadowTaskParams params =
+            _delegate.GetParameter<HdxShadowTaskParams>(
+                _shadowTaskId, HdTokens->params);
+        if (params.viewport != adjustedViewport) {
+            params.viewport = adjustedViewport;
+            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _shadowTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+        HdxPickFromRenderBufferTaskParams params =
+            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                _pickFromRenderBufferTaskId, HdTokens->params);
+        if (params.viewport != adjustedViewport) {
+            params.viewport = adjustedViewport;
+            _delegate.SetParameter(
+                _pickFromRenderBufferTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_presentTaskId.IsEmpty()) {
+        HdxPresentTaskParams params =
+            _delegate.GetParameter<HdxPresentTaskParams>(
+                _presentTaskId, HdTokens->params);
+        // The composition step uses the viewport passed in by the application,
+        // which may have a non-zero offset for things like camera masking.
+        GfVec4i iViewport = GfVec4i(int(_viewport[0]), int(_viewport[1]),
+                                    int(_viewport[2]), int(_viewport[3]));
+        if (params.compRegion != iViewport) {
+            params.compRegion = iViewport;
+            _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _presentTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
+HdxTaskController::_UpdateAovDimensions(GfVec3i const& dimensions)
+{
+    HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
+
+    for (auto const& id : _aovBufferIds) {
+        HdRenderBufferDescriptor desc =
+            _delegate.GetParameter<HdRenderBufferDescriptor>(id,
+                _tokens->renderBufferDescriptor);
+        if (desc.dimensions != dimensions) {
+            desc.dimensions = dimensions;
+            _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
+            changeTracker.MarkBprimDirty(id,
+                HdRenderBuffer::DirtyDescription);
         }
     }
 }
