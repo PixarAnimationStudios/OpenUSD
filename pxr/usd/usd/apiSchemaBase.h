@@ -222,7 +222,7 @@ protected:
     /// 
     /// A coding error is issued and an invalid schema object is returned if 
     /// <li>if \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance master OR</li>
+    /// within an instance prototype OR</li>
     /// <li>\p apiSchemaName cannot be added to the apiSchemas listOp 
     /// metadata.</li></ul>
     /// 
@@ -256,7 +256,7 @@ protected:
     /// 
     /// A coding error is issued and an invalid schema object is returned if 
     /// <li>the \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance master OR</li>
+    /// within an instance prototype OR</li>
     /// <li>\p instanceName is empty OR</li>
     /// <li><i>apiSchemaName:instanceName</i> cannot be added to the apiSchemas 
     /// listOp metadata.</li></ul>
