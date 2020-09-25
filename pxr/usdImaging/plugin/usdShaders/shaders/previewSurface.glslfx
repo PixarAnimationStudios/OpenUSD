@@ -216,12 +216,12 @@ evaluateLight(
 
     // Evaluate specular first lobe
     vec3 s1 = vec3(0.0);
+    const float R = (1.0 - ior) / (1.0 + ior);
     if (specularAmount > 0.0) {
         vec3 F0 = specularColor;
         vec3 F90 = vec3(1.0);
 
         if (!useSpecularWorkflow) {
-            float R = (1.0 - ior) / (1.0 + ior);
             vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
             F0 = mix(R * R * specColor, specColor, metallic);
             F90 = specColor;
@@ -245,7 +245,7 @@ evaluateLight(
     vec3 s2 = vec3(0.0);
     if (clearcoatAmount > 0.0) {
         s2 = clearcoatAmount * evaluateDirectSpecular(
-             clearcoatColor,              // Clearcoat color 0
+             R * R * clearcoatColor,      // Clearcoat color 0
              clearcoatColor,              // Clearcoat color 90
              clearcoatRoughness,          // Roughness
              fresnel,                     // Fresnel
@@ -295,6 +295,9 @@ evaluateIndirectLighting(
         float occlusion,
         float roughness,
         bool useSpecularWorkflow,
+        float clearcoatAmount, 
+        vec3 clearcoatColor, 
+        float clearcoatRoughness,
         mat4 worldToLightTransform)
 {
     vec3 indirect = vec3(0.0);
@@ -303,8 +306,8 @@ evaluateIndirectLighting(
     vec3 F0 = specularColor;
     vec3 F90 = vec3(1.0);
     vec3 d = diffuseColor;
+    const float R = (1.0 - ior) / (1.0 + ior);
     if (!useSpecularWorkflow) {
-        float R = (1.0 - ior) / (1.0 + ior);
         vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
         F0 = mix(R * R * specColor, specColor, metallic);
         F90 = specColor;
@@ -336,8 +339,21 @@ evaluateIndirectLighting(
 
     vec3 specular = prefilter * (F * brdf.x + brdf.y);
 
+    // Clearcoat Component
+    vec3 clearcoat = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        const vec3 clearcoatF = clearcoatAmount * mix(
+            R * R * clearcoatColor, // Clearcoat F0
+            clearcoatColor,         // Clearcoat F90
+            fresnel);
+        lod = clearcoatRoughness * MAX_REFLECTION_LOD;
+        prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
+                                Rcoord, lod).rgb;
+        clearcoat = prefilter * (clearcoatF * brdf.x + brdf.y);
+    }
+
     // Indirect Lighting
-    indirect = (d * diffuse + specular) * occlusion;
+    indirect = (d * diffuse + specular + clearcoat) * occlusion;
 #endif
 
     return indirect;
@@ -426,6 +442,8 @@ evaluateLights(
                                     specularColor, Neye, Reye, NdotE,
                                     EdotH, ior, metallic, occlusion,
                                     specularRoughness, useSpecularWorkflow,
+                                    clearcoatAmount, clearcoatColor, 
+                                    clearcoatRoughness, 
                                     lightSource[i].worldToLightTransform);
         }
         // all other light sources contribute to the direct lighting

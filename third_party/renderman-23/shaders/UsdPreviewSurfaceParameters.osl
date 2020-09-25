@@ -111,13 +111,13 @@ shader UsdPreviewSurfaceParameters
 
     // Specular
     // Assumes "Physical" for both Specular and Rough Specular
+    float r = (1.0 - ior) / (1.0 + ior);
     if (useSpecularWorkflow) {
         specularFaceColorOut = specularColor;
         specularEdgeColorOut = color(1.0,1.0,1.0);
     } else {
         float metal = clamp(metallic, 0.0, 1.0); 
         color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
-        float r = (1.0 - ior) / (1.0 + ior);
         specularFaceColorOut = mix(r * r * spec, spec, metal);
         specularEdgeColorOut = spec;
 
@@ -128,7 +128,9 @@ shader UsdPreviewSurfaceParameters
 
     // Clearcoat
     if (clearcoat > 0.0) {
-        clearcoatFaceColorOut = clearcoat * color(1.0, 1.0, 1.0);
+        color clearcoatColor = color(1.0, 1.0, 1.0);
+        clearcoatFaceColorOut = clearcoat * r * r * clearcoatColor;
+        clearcoatEdgeColorOut = clearcoat * clearcoatColor;
         clearcoatRoughnessOut = clearcoatRoughness;
     }
 
