@@ -482,13 +482,6 @@ UsdPrim::GetPropertyOrder() const
     return order;
 }
 
-void
-UsdPrim::SetPropertyOrder(const TfTokenVector &order) const
-{
-    SetMetadata(SdfFieldKeys->PropertyOrder, order);
-}
-
-
 static void
 _ComposePrimPropertyNames( 
     const PcpPrimIndex& primIndex,
@@ -1099,6 +1092,44 @@ UsdPrim::Unload() const
         return;
     }
     _GetStage()->Unload(GetPath());
+}
+
+TfTokenVector 
+UsdPrim::GetChildrenNames() const
+{
+    TfTokenVector names;
+    for (const auto &child : GetChildren()) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector 
+UsdPrim::GetAllChildrenNames() const
+{
+    TfTokenVector names;
+    for (const auto &child : GetAllChildren()) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector 
+UsdPrim::GetFilteredChildrenNames(const Usd_PrimFlagsPredicate &predicate) const
+{
+    TfTokenVector names;
+    for (const auto &child : GetFilteredChildren(predicate)) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector
+UsdPrim::GetChildrenReorder() const
+{
+    TfTokenVector reorder;
+    GetMetadata(SdfFieldKeys->PrimOrder, &reorder);
+    return reorder;
 }
 
 UsdPrim

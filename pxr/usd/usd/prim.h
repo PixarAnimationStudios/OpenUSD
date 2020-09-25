@@ -428,8 +428,15 @@ public:
 
     /// Author an opinion for propertyOrder metadata on this prim at the current
     /// EditTarget.
-    USD_API
-    void SetPropertyOrder(const TfTokenVector &order) const;
+    void SetPropertyOrder(const TfTokenVector &order) const {
+        SetMetadata(SdfFieldKeys->PropertyOrder, order);
+    }
+
+    /// Remove the opinion for propertyOrder metadata on this prim at the current
+    /// EditTarget.
+    void ClearPropertyOrder() const {
+        ClearMetadata(SdfFieldKeys->PropertyOrder);
+    }
 
     /// Remove all scene description for the property with the
     /// given \p propName <em>in the current UsdEditTarget</em>.
@@ -852,6 +859,22 @@ public:
     inline SiblingRange
     GetFilteredChildren(const Usd_PrimFlagsPredicate &predicate) const;
 
+    /// Return the names of the child prims in the order they appear when
+    /// iterating over GetChildren.  
+    USD_API
+    TfTokenVector GetChildrenNames() const;
+
+    /// Return the names of the child prims in the order they appear when
+    /// iterating over GetAllChildren.  
+    USD_API
+    TfTokenVector GetAllChildrenNames() const;
+
+    /// Return the names of the child prims in the order they appear when
+    /// iterating over GetFilteredChildren(\p predicate).  
+    USD_API
+    TfTokenVector GetFilteredChildrenNames(
+        const Usd_PrimFlagsPredicate &predicate) const;
+
     /// Return this prim's active, loaded, defined, non-abstract descendants as
     /// an iterable range.  Equivalent to:
     /// \code
@@ -901,6 +924,26 @@ public:
     /// and \c UsdPrimRange for more general Stage traversal behaviors.
     inline SubtreeRange
     GetFilteredDescendants(const Usd_PrimFlagsPredicate &predicate) const;
+
+    /// Return the strongest opinion for the metadata used to reorder children 
+    /// of this prim. Due to how reordering of prim children is composed,
+    /// this value cannot be relied on to get the actual order of the prim's 
+    /// children. Use GetChidrenNames, GetAllChildrenNames, 
+    /// GetFilteredChildrenNames to get the true child order if needed.
+    USD_API
+    TfTokenVector GetChildrenReorder() const;
+
+    /// Author an opinion for the metadata used to reorder children of this 
+    /// prim at the current EditTarget.
+    void SetChildrenReorder(const TfTokenVector &order) const {
+        SetMetadata(SdfFieldKeys->PrimOrder, order);
+    }
+
+    /// Remove the opinion for the metadata used to reorder children of this 
+    /// prim at the current EditTarget.
+    void ClearChildrenReorder() const {
+        ClearMetadata(SdfFieldKeys->PrimOrder);
+    }
 
 public:
     // --------------------------------------------------------------------- //

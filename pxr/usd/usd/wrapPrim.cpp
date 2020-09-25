@@ -229,8 +229,8 @@ void wrapUsdPrim()
 
         .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder,
              return_value_policy<TfPySequenceToList>())
-
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
+        .def("ClearPropertyOrder", &UsdPrim::ClearPropertyOrder)
 
         .def("IsA",
             (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
@@ -260,6 +260,18 @@ void wrapUsdPrim()
         .def("GetFilteredChildren", &UsdPrim::GetFilteredChildren,
              arg("predicate"),
              return_value_policy<TfPySequenceToList>())
+
+        .def("GetChildrenNames", &UsdPrim::GetChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetAllChildrenNames", &UsdPrim::GetAllChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetFilteredChildrenNames", &UsdPrim::GetFilteredChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("GetChildrenReorder", &UsdPrim::GetChildrenReorder,
+             return_value_policy<TfPySequenceToList>())
+        .def("SetChildrenReorder", &UsdPrim::SetChildrenReorder, arg("order"))
+        .def("ClearChildrenReorder", &UsdPrim::ClearChildrenReorder)
 
         .def("GetParent", &UsdPrim::GetParent)
         .def("GetNextSibling", (UsdPrim (UsdPrim::*)() const)
