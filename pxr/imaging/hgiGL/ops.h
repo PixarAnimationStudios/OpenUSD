@@ -136,7 +136,7 @@ public:
     static HgiGLOpsFn Draw(
         HgiPrimitiveType primitiveType,
         uint32_t vertexCount,
-        uint32_t vertexOffset,
+        uint32_t firstVertex,
         uint32_t instanceCount);
 
     HGIGL_API

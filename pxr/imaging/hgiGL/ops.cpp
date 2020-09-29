@@ -426,15 +426,15 @@ HgiGLOpsFn
 HgiGLOps::Draw(
     HgiPrimitiveType primitiveType,
     uint32_t vertexCount,
-    uint32_t vertexOffset,
+    uint32_t firstVertex,
     uint32_t instanceCount)
 {
-    return [primitiveType, vertexCount, vertexOffset, instanceCount] {
+    return [primitiveType, vertexCount, firstVertex, instanceCount] {
         TF_VERIFY(instanceCount>0);
 
         glDrawArraysInstanced(
             HgiGLConversions::GetPrimitiveType(primitiveType),
-            vertexOffset,
+            firstVertex,
             vertexCount,
             instanceCount);
 

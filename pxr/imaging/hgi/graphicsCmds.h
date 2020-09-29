@@ -113,13 +113,12 @@ public:
     /// The 'primitive type' (eg. Lines, Triangles, etc) can be acquired from
     /// the bound HgiPipeline.
     /// `vertexCount`: The number of vertices to draw.
-    /// `vertexOffset`: The value added to the vertex index before indexing
-    ///                 into the vertex buffer (baseVertex).
+    /// `firstVertex`: The index of the first vertex to draw.
     /// `instanceCount`: Number of instances to draw.
     HGI_API
     virtual void Draw(
         uint32_t vertexCount,
-        uint32_t vertexOffset,
+        uint32_t firstVertex,
         uint32_t instanceCount) = 0;
 
     /// Records a multi-draw command that reads the draw parameters

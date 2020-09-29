@@ -300,7 +300,7 @@ HgiMetalGraphicsCmds::BindVertexBuffers(
 void
 HgiMetalGraphicsCmds::Draw(
     uint32_t vertexCount,
-    uint32_t vertexOffset,
+    uint32_t firstVertex,
     uint32_t instanceCount)
 {
     TF_VERIFY(instanceCount>0);
@@ -311,12 +311,11 @@ HgiMetalGraphicsCmds::Draw(
 
     if (instanceCount == 1) {
         [_encoder drawPrimitives:type
-                     vertexStart:vertexOffset
-                     vertexCount:vertexCount
-                   instanceCount:instanceCount];
+                     vertexStart:firstVertex
+                     vertexCount:vertexCount];
     } else {
         [_encoder drawPrimitives:type
-                     vertexStart:vertexOffset
+                     vertexStart:firstVertex
                      vertexCount:vertexCount
                    instanceCount:instanceCount];
     }
