@@ -119,6 +119,10 @@ HgiGLBuffer::GetCPUStagingAddress()
     if (!_cpuStaging) {
         _cpuStaging = malloc(_descriptor.byteSize);
     }
+
+    // This lets the client code memcpy into the cpu staging buffer directly.
+    // The staging data must be explicitely copied to the GPU buffer
+    // via CopyBufferCpuToGpu cmd by the client.
     return _cpuStaging;
 }
 
