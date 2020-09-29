@@ -339,7 +339,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(len(incObjects), 2)
         for obj in incObjects:
             self.assertTrue(obj.IsInstanceProxy())
-            self.assertFalse(obj.IsInMaster())
+            self.assertFalse(obj.IsInPrototype())
         
         coneProperties = Usd.CollectionAPI(testPrim, "coneProperties")
         (valid, reason) = coneProperties.Validate()

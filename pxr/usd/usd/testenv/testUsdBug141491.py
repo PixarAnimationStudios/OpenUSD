@@ -50,11 +50,11 @@ def TestBug141491():
     # 'Set' prim that the instance was referencing.
     stage.GetPrimAtPath('/Set').GetInherits().AddInherit('/Class')
 
-    # Prior to the bug fix, the above would cause a new master prim
+    # Prior to the bug fix, the above would cause a new prototype prim
     # to be registered internally. However, since the parent of
     # the instance was deactivated, we would never actually instantiate
-    # that master prim on the stage. This would lead to a crash later
-    # on, as the stage would expect to find this master prim.
+    # that prototype prim on the stage. This would lead to a crash later
+    # on, as the stage would expect to find this prototype prim.
 
 if __name__ == "__main__":
     TestBug141491()

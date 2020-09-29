@@ -283,144 +283,151 @@ class TestUsdPayloads(unittest.TestCase):
 
             # Since there is no composition arc to instanceable data
             # (due to the payloads not being loaded), these prims have no
-            # master.
-            self.assertTrue(not sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
+            # prototype.
+            self.assertTrue(not sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
 
-            self.assertTrue(not bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
+            self.assertTrue(not bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
 
-            self.assertTrue(not grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
+            self.assertTrue(not grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
 
-            self.assertTrue(not intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
+            self.assertTrue(not intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
 
             # Instances should be independently loadable. This should
-            # cause a master to be created for the loaded prim.
+            # cause a prototype to be created for the loaded prim.
             sad.Load()
             self.assertTrue(sad.IsLoaded())
             self.assertTrue(not sad_1.IsLoaded())
-            self.assertTrue(sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
+            self.assertTrue(sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
 
             bar.Load()
             self.assertTrue(bar.IsLoaded())
             self.assertTrue(not bar_1.IsLoaded())
-            self.assertTrue(bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
+            self.assertTrue(bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
 
             grizzly.Load()
             self.assertTrue(grizzly.IsLoaded())
             self.assertTrue(not grizzly_1.IsLoaded())
-            self.assertTrue(grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
+            self.assertTrue(grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
 
             intPayload.Load()
             self.assertTrue(intPayload.IsLoaded())
             self.assertTrue(not intPayload_1.IsLoaded())
-            self.assertTrue(intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
+            self.assertTrue(intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
 
-            # The master prim should not report that it has a loadable
+            # The prototype prim should not report that it has a loadable
             # payload. Its load state cannot be independently controlled.
-            master = sad.GetMaster()
-            self.assertTrue(not master.HasAuthoredPayloads())
-            self.assertTrue(master not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
-                             ["Panda"])
+            prototype = sad.GetPrototype()
+            self.assertTrue(not prototype.HasAuthoredPayloads())
+            self.assertTrue(prototype not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Panda"])
 
-            master2 = bar.GetMaster()
-            self.assertTrue(not master2.HasAuthoredPayloads())
-            self.assertTrue(master2 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master2.GetChildren()],
-                             ["Fred"])
+            prototype2 = bar.GetPrototype()
+            self.assertTrue(not prototype2.HasAuthoredPayloads())
+            self.assertTrue(prototype2 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype2.GetChildren()],
+                ["Fred"])
 
-            master3 = grizzly.GetMaster()
-            self.assertTrue(not master3.HasAuthoredPayloads())
-            self.assertTrue(master3 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master3.GetChildren()],
-                             ["Onis", "Market"])
+            prototype3 = grizzly.GetPrototype()
+            self.assertTrue(not prototype3.HasAuthoredPayloads())
+            self.assertTrue(prototype3 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype3.GetChildren()],
+                ["Onis", "Market"])
 
-            master4 = intPayload.GetMaster()
-            self.assertTrue(not master4.HasAuthoredPayloads())
-            self.assertTrue(master4 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master4.GetChildren()],
-                             ["IntContents"])
+            prototype4 = intPayload.GetPrototype()
+            self.assertTrue(not prototype4.HasAuthoredPayloads())
+            self.assertTrue(prototype4 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype4.GetChildren()],
+                ["IntContents"])
 
             # Loading the second instance will cause Usd to assign it to the
-            # first instance's master.
+            # first instance's prototype.
             sad_1.Load()
-            self.assertEqual(sad.GetMaster(), sad_1.GetMaster())
+            self.assertEqual(sad.GetPrototype(), sad_1.GetPrototype())
 
             sad.Unload()
             sad_1.Unload()
             self.assertTrue(not sad.IsLoaded())
             self.assertTrue(not sad_1.IsLoaded())
-            self.assertTrue(not sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
-            self.assertTrue(not master)
+            self.assertTrue(not sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
+            self.assertTrue(not prototype)
 
             bar_1.Load()
-            self.assertEqual(bar.GetMaster(), bar_1.GetMaster())
+            self.assertEqual(bar.GetPrototype(), bar_1.GetPrototype())
 
             bar.Unload()
             bar_1.Unload()
             self.assertTrue(not bar.IsLoaded())
             self.assertTrue(not bar_1.IsLoaded())
-            self.assertTrue(not bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
-            self.assertTrue(not master2)
+            self.assertTrue(not bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
+            self.assertTrue(not prototype2)
 
             grizzly_1.Load()
-            self.assertEqual(grizzly.GetMaster(), grizzly_1.GetMaster())
+            self.assertEqual(grizzly.GetPrototype(), grizzly_1.GetPrototype())
 
             grizzly.Unload()
             grizzly_1.Unload()
             self.assertTrue(not grizzly.IsLoaded())
             self.assertTrue(not grizzly_1.IsLoaded())
-            self.assertTrue(not grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
-            self.assertTrue(not master3)
+            self.assertTrue(not grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
+            self.assertTrue(not prototype3)
 
             intPayload_1.Load()
-            self.assertEqual(intPayload.GetMaster(), intPayload_1.GetMaster())
+            self.assertEqual(intPayload.GetPrototype(),
+                             intPayload_1.GetPrototype())
 
             intPayload.Unload()
             intPayload_1.Unload()
             self.assertTrue(not intPayload.IsLoaded())
             self.assertTrue(not intPayload_1.IsLoaded())
-            self.assertTrue(not intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
-            self.assertTrue(not master4)
+            self.assertTrue(not intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
+            self.assertTrue(not prototype4)
 
             # Loading the payload for an instanceable prim will cause
-            # payloads nested in descendants of that prim's master to be 
+            # payloads nested in descendants of that prim's prototype to be 
             # loaded as well.
             baz = p.stage.GetPrimAtPath("/Foo/Baz")
             baz_1 = p.stage.GetPrimAtPath("/Foo/Baz_1")
 
             baz.Load()
             self.assertTrue(baz.IsLoaded())
-            self.assertTrue(baz.GetMaster())
+            self.assertTrue(baz.GetPrototype())
 
-            master = baz.GetMaster()
+            prototype = baz.GetPrototype()
             self.assertEqual(
-                [prim.GetName() for prim in master.GetChildren()], ["Garply"])
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Garply"])
 
-            garply = master.GetChild("Garply")
+            garply = prototype.GetChild("Garply")
             self.assertTrue(garply.HasAuthoredPayloads())
             self.assertTrue(garply.IsLoaded())
-            self.assertTrue(garply.GetMaster())
+            self.assertTrue(garply.GetPrototype())
 
-            master = garply.GetMaster()
-            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
-                             ["Qux"])
+            prototype = garply.GetPrototype()
+            self.assertEqual(
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Qux"])
 
             baz_1.Load()
-            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
+            self.assertEqual(baz.GetPrototype(), baz_1.GetPrototype())
 
-            # Prims in masters cannot be individually (un)loaded.
+            # Prims in prototypes cannot be individually (un)loaded.
             with self.assertRaises(Tf.ErrorException):
                 garply.Unload()
 

@@ -229,49 +229,49 @@ class TestUsdRelationships(unittest.TestCase):
             }
             ''')
 
-            master = s.GetPrimAtPath('/Root').GetMaster()
-            self.assertTrue(master)
+            prototype = s.GetPrimAtPath('/Root').GetPrototype()
+            self.assertTrue(prototype)
 
             # Simple target list with correct order
-            r = master.GetChild("Foo").GetRelationship("testRel")
-            sol = [master.GetPath().AppendChild('Qux'), 
-                   master.GetPath().AppendChild('Bar'), 
-                   master.GetPath().AppendChild('Baz'), 
-                   master.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
+            r = prototype.GetChild("Foo").GetRelationship("testRel")
+            sol = [prototype.GetPath().AppendChild('Qux'), 
+                   prototype.GetPath().AppendChild('Bar'), 
+                   prototype.GetPath().AppendChild('Baz'), 
+                   prototype.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
             self.assertEqual(r.GetTargets(), sol) 
 
             # Forwarded targets
-            r = master.GetChild("Bar").GetRelationship("fwd")
-            sol = [master.GetPath().AppendChild('Baz'), 
-                   master.GetPath().AppendChild('Qux'), 
-                   master.GetPath().AppendChild('Bar'), 
-                   master.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
+            r = prototype.GetChild("Bar").GetRelationship("fwd")
+            sol = [prototype.GetPath().AppendChild('Baz'), 
+                   prototype.GetPath().AppendChild('Qux'), 
+                   prototype.GetPath().AppendChild('Bar'), 
+                   prototype.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Forwarded targets
-            r = master.GetChild("Bar").GetRelationship("fwd2")
-            sol = [master.GetPath().AppendChild('Qux'), 
-                   master.GetPath().AppendChild('Baz'), 
-                   master.GetPath().AppendChild('Bar')]
+            r = prototype.GetChild("Bar").GetRelationship("fwd2")
+            sol = [prototype.GetPath().AppendChild('Qux'), 
+                   prototype.GetPath().AppendChild('Baz'), 
+                   prototype.GetPath().AppendChild('Bar')]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Cycle detection
-            r = master.GetChild("Bar").GetRelationship("cycle")
-            sol = [master.GetPath().AppendChild('Baz'), 
-                   master.GetPath().AppendChild('Qux'), 
-                   master.GetPath().AppendChild('Bar'), 
-                   master.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
+            r = prototype.GetChild("Bar").GetRelationship("cycle")
+            sol = [prototype.GetPath().AppendChild('Baz'), 
+                   prototype.GetPath().AppendChild('Qux'), 
+                   prototype.GetPath().AppendChild('Bar'), 
+                   prototype.GetPath().AppendPath(Sdf.Path('Foo.someAttr'))]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Bogus target path
-            r = master.GetChild("Baz").GetRelationship("bogus")
-            sol = [master.GetPath().AppendChild("MissingTargetPath")]
+            r = prototype.GetChild("Baz").GetRelationship("bogus")
+            sol = [prototype.GetPath().AppendChild("MissingTargetPath")]
             self.assertEqual(r.GetTargets(), sol)
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Path inside an instance that points to the instance root
-            r = master.GetChild("Baz").GetRelationship("root")
-            sol = [master.GetPath()]
+            r = prototype.GetChild("Baz").GetRelationship("root")
+            sol = [prototype.GetPath()]
             self.assertEqual(r.GetTargets(), sol)
             self.assertEqual(r.GetForwardedTargets(), sol)
 
@@ -408,23 +408,24 @@ class TestUsdRelationships(unittest.TestCase):
             }
             ''')
 
-            master = stage.GetPrimAtPath("/Root/Instance_1").GetMaster()
-            nestedMaster = master.GetChild("NestedInstance_1").GetMaster()
+            prototype = stage.GetPrimAtPath("/Root/Instance_1").GetPrototype()
+            nestedPrototype = \
+                prototype.GetChild("NestedInstance_1").GetPrototype()
 
             # Test retrieving relationship targets that point to instances and
             # prims within instances.
             def _TestRelationship(rel):
                 self.assertTrue(rel)
 
-                # Targets to objects in masters cannot be authored.
-                primInMasterPath = master.GetPath().AppendChild("A")
+                # Targets to objects in prototypes cannot be authored.
+                primInPrototypePath = prototype.GetPath().AppendChild("A")
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertFalse(rel.AddTarget(primInMasterPath))
+                    self.assertFalse(rel.AddTarget(primInPrototypePath))
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertFalse(rel.RemoveTarget(primInMasterPath))
+                    self.assertFalse(rel.RemoveTarget(primInPrototypePath))
                 with self.assertRaises(Tf.ErrorException):
                     self.assertFalse(rel.SetTargets(
-                        ["/Root/Instance_1", primInMasterPath]))
+                        ["/Root/Instance_1", primInPrototypePath]))
 
                 targets = rel.GetTargets()
                 expected = [
@@ -460,29 +461,29 @@ class TestUsdRelationships(unittest.TestCase):
             rel = stage.GetPrimAtPath("/Root/Instance_1").GetRelationship("rel")
             _TestRelationship(rel)
 
-            def _TestRelationshipInMaster(rel):
+            def _TestRelationshipInPrototype(rel):
                 self.assertTrue(rel)
-                self.assertTrue(rel.GetPrim().IsInMaster())
+                self.assertTrue(rel.GetPrim().IsInPrototype())
 
                 targets = rel.GetTargets()
-                masterPath = master.GetPath()
+                prototypePath = prototype.GetPath()
                 expected = [
-                    masterPath,
-                    masterPath.AppendPath(".attr"),
-                    masterPath.AppendPath("A"),
-                    masterPath.AppendPath("A.attr"),
-                    masterPath.AppendPath("NestedInstance_1"),
-                    masterPath.AppendPath("NestedInstance_1.attr"),
-                    masterPath.AppendPath("NestedInstance_1/B"),
-                    masterPath.AppendPath("NestedInstance_1/B.attr"),
-                    masterPath.AppendPath("NestedInstance_2"),
-                    masterPath.AppendPath("NestedInstance_2.attr"),
-                    masterPath.AppendPath("NestedInstance_2/B"),
-                    masterPath.AppendPath("NestedInstance_2/B.attr")]
+                    prototypePath,
+                    prototypePath.AppendPath(".attr"),
+                    prototypePath.AppendPath("A"),
+                    prototypePath.AppendPath("A.attr"),
+                    prototypePath.AppendPath("NestedInstance_1"),
+                    prototypePath.AppendPath("NestedInstance_1.attr"),
+                    prototypePath.AppendPath("NestedInstance_1/B"),
+                    prototypePath.AppendPath("NestedInstance_1/B.attr"),
+                    prototypePath.AppendPath("NestedInstance_2"),
+                    prototypePath.AppendPath("NestedInstance_2.attr"),
+                    prototypePath.AppendPath("NestedInstance_2/B"),
+                    prototypePath.AppendPath("NestedInstance_2/B.attr")]
                 self.assertEqual(targets, expected)
 
-            rel = master.GetChild("A").GetRelationship("rel")
-            _TestRelationshipInMaster(rel)
+            rel = prototype.GetChild("A").GetRelationship("rel")
+            _TestRelationshipInPrototype(rel)
 
             def _TestRelationshipForwarding(rel):
                 self.assertTrue(rel)

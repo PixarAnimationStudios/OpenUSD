@@ -185,7 +185,7 @@ class TestUsdPrimRange(unittest.TestCase):
             x4 = list(Usd.PrimRange(foo, Usd.PrimIsLoaded))
             self.assertEqual(x4, [foo])
 
-    def test_PrimIsInstanceOrMasterOrRoot(self):
+    def test_PrimIsInstanceOrPrototypeOrRoot(self):
         for fmt in allFormats:
             refStage = Usd.Stage.CreateInMemory("reference."+fmt)
             refStage.DefinePrim("/Ref/Child")
@@ -276,18 +276,19 @@ class TestUsdPrimRange(unittest.TestCase):
             n.GetReferences().AddReference(refStage.GetRootLayer().identifier, "/Ref")
             nChild = stage.GetPrimAtPath('/Root/NonInstance/Child')
 
-            master = stage.GetMasters()[0]
-            masterChild = master.GetChild('Child')
+            prototype = stage.GetPrototypes()[0]
+            prototypeChild = prototype.GetChild('Child')
 
             # A default traversal of a stage with instances should not descend into 
-            # instance masters
+            # instance prototypes
             self.assertEqual(list(Usd.PrimRange.Stage(stage)), [root, i, n, nChild])
             self.assertEqual(list(Usd.PrimRange(stage.GetPseudoRoot())),
                         [stage.GetPseudoRoot(), root, i, n, nChild])
 
-            # But the tree iterator should allow traversal of the masters if
+            # But the tree iterator should allow traversal of the prototypes if
             # explicitly specified.
-            self.assertEqual(list(Usd.PrimRange(master)), [master, masterChild])
+            self.assertEqual(list(Usd.PrimRange(prototype)), 
+                             [prototype, prototypeChild])
 
 if __name__ == "__main__":
     unittest.main()

@@ -411,7 +411,7 @@ class TestUsdFlattenProperties(unittest.TestCase):
                           "/RemapTargetPathsCopy.b"])
 
     def test_FlattenInstanceProperty(self):
-        """Tests flattening properties from instancing masters"""
+        """Tests flattening properties from instancing prototypes"""
         def ExplicitPathListOp(paths):
             listOp = Sdf.PathListOp()
             listOp.explicitItems = paths
@@ -419,9 +419,9 @@ class TestUsdFlattenProperties(unittest.TestCase):
 
         for dstStage in [self.srcStage, self.stage2]:
             srcAttr = self.srcStage.GetPrimAtPath("/FlattenInstanceProperty") \
-                                .GetMaster().GetChild("Instance") \
+                                .GetPrototype().GetChild("Instance") \
                                 .GetAttribute("builtinAttr")
-            # Flattening a property from a prim in a master should behave
+            # Flattening a property from a prim in a prototype should behave
             # the same as with any other property for the most part.
             dstPrim = dstStage.DefinePrim("/FlattenInstanceProperty_1",
                                             "FlattenPropertyTest")
@@ -441,11 +441,11 @@ class TestUsdFlattenProperties(unittest.TestCase):
                   "typeName": "string",
                   "variability": Sdf.VariabilityVarying })
 
-            # However, if the property has an attribute connection or relationship
-            # target that points to an object in a master that can't be remapped,
-            # a warning is issued and that path is ignored.
+            # However, if the property has an attribute connection or
+            # relationship target that points to an object in a prototype that
+            # can't be remapped, a warning is issued and that path is ignored.
             srcAttr = self.srcStage.GetPrimAtPath("/FlattenInstanceProperty") \
-                                .GetMaster().GetChild("Instance2") \
+                                .GetPrototype().GetChild("Instance2") \
                                 .GetAttribute("builtinAttr")
             dstPrim = dstStage.DefinePrim("/FlattenInstanceProperty_2",
                                             "FlattenPropertyTest")

@@ -876,14 +876,14 @@ class TestUsdPrim(unittest.TestCase):
             _ValidatePrimIndexes(s.GetPrimAtPath('/Ref'))
             _ValidatePrimIndexes(s.GetPrimAtPath('/Ref/Child'))
 
-            # Master prims do not expose a valid prim index.
-            master = s.GetMasters()[0]
-            _ValidateNoPrimIndexes(master)
+            # Prototype prims do not expose a valid prim index.
+            prototype = s.GetPrototypes()[0]
+            _ValidateNoPrimIndexes(prototype)
 
-            # However, prims beneath masters do expose a valid prim index.
+            # However, prims beneath prototypes do expose a valid prim index.
             # Note this prim index may change from run to run depending on
-            # which is selected as the source for the master.
-            _ValidatePrimIndexes(master.GetChild('Child'))
+            # which is selected as the source for the prototype.
+            _ValidatePrimIndexes(prototype.GetChild('Child'))
             
     def test_PseudoRoot(self):
         for fmt in allFormats:
