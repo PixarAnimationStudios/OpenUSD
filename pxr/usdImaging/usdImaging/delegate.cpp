@@ -2810,22 +2810,21 @@ UsdImagingDelegate::GetExtComputationInput(SdfPath const& computationId,
 std::string
 UsdImagingDelegate::GetExtComputationKernel(SdfPath const& computationId)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     
-    std::string kernel;
-    if (!computationId.IsEmpty()) {
-
-        SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
-        if (!_valueCache.ExtractExtComputationKernel(cachePath, &kernel)) {
-            TF_DEBUG(HD_SAFE_MODE).Msg(
-                "WARNING: Slow extComputation kernel fetch for %s\n",
-                computationId.GetText());
-            _UpdateSingleValue(cachePath, HdExtComputation::DirtyKernel);
-            TF_VERIFY(_valueCache.ExtractExtComputationKernel(
-                          cachePath, &kernel));
-        }
+    if (computationId.IsEmpty()) {
+        return std::string();
     }
-    return kernel;
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetExtComputationKernel(
+                       primInfo->usdPrim, cachePath,
+                       nullptr /* instancerContext */); 
+    }
+
+    return std::string();
 }
 
 void

@@ -90,10 +90,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key ExtComputationKernel(SdfPath const& path) {
-            const TfToken attr("extComputationKernel");
-            return Key(path, attr);
-        }
     };
 
     UsdImagingValueCache()
@@ -226,10 +222,6 @@ public:
             }
             _Erase<HdPrimvarDescriptorVector>(Key::Primvars(path));
         }
-
-        {
-            _Erase<std::string>(Key::ExtComputationKernel(path));
-        }
     }
 
     VtValue& GetInstanceIndices(SdfPath const& path) const {
@@ -242,9 +234,6 @@ public:
                                     TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
-    std::string& GetExtComputationKernel(SdfPath const& path) const {
-        return _Get<std::string>(Key::ExtComputationKernel(path));
-    }
 
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
@@ -255,9 +244,6 @@ public:
     bool FindExtComputationInput(
         SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
-    }
-    bool FindExtComputationKernel(SdfPath const& path, std::string* value) const {
-        return _Find(Key::ExtComputationKernel(path), value);
     }
 
     bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
@@ -270,16 +256,12 @@ public:
                                     VtValue* value) {
         return _Extract(Key(path, name), value);
     }
-    bool ExtractExtComputationKernel(SdfPath const& path, std::string* value) {
-        return _Extract(Key::ExtComputationKernel(path), value);
-    }
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
     {
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
-        _GarbageCollect(_stringCache);
     }
 
 private:
@@ -291,17 +273,11 @@ private:
     typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
 
-    typedef _TypedCache<std::string> _StringCache;
-    mutable _StringCache _stringCache;
-
     void _GetCache(_ValueCache **cache) const {
         *cache = &_valueCache;
     }
     void _GetCache(_PviCache **cache) const {
         *cache = &_pviCache;
-    }
-    void _GetCache(_StringCache **cache) const {
-        *cache = &_stringCache;
     }
 };
 

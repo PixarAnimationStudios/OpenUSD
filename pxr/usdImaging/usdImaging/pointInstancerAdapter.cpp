@@ -1941,6 +1941,23 @@ UsdImagingPointInstancerAdapter::GetExtComputationPrimvars(
             interpolation, nullptr);
 }
 
+/*virtual*/
+std::string 
+UsdImagingPointInstancerAdapter::GetExtComputationKernel(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    UsdImagingInstancerContext ctx;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &ctx)) {
+
+        return proto->adapter->GetExtComputationKernel(
+                _GetProtoUsdPrim(*proto), cachePath, &ctx);
+    }
+    return BaseAdapter::GetExtComputationKernel(usdPrim, cachePath, nullptr);
+}
+
 
 /*virtual*/
 bool

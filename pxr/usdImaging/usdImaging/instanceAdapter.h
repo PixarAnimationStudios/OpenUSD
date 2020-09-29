@@ -261,6 +261,11 @@ public:
             HdInterpolation interpolation,
             const UsdImagingInstancerContext* instancerContext) const override;
 
+    std::string 
+    GetExtComputationKernel(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            const UsdImagingInstancerContext* instancerContext) const override;
 
 
     VtValue Get(UsdPrim const& prim,

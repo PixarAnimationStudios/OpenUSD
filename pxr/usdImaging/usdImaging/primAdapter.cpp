@@ -1294,6 +1294,16 @@ UsdImagingPrimAdapter::GetExtComputationPrimvars(
     return HdExtComputationPrimvarDescriptorVector();
 }
 
+/*virtual*/ 
+std::string 
+UsdImagingPrimAdapter::GetExtComputationKernel(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    return std::string();
+}
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

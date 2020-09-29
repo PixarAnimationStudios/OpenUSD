@@ -1889,6 +1889,22 @@ UsdImagingInstanceAdapter::GetExtComputationPrimvars(
 }
 
 /*virtual*/
+std::string 
+UsdImagingInstanceAdapter::GetExtComputationKernel(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &instancerContext)) {
+        return proto->adapter->GetExtComputationKernel(
+                _GetPrim(proto->path), cachePath, &instancerContext);
+    }
+    return BaseAdapter::GetExtComputationKernel(usdPrim, cachePath, nullptr);
+}
+
+/*virtual*/
 VtValue 
 UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim, 
                                SdfPath const& cachePath,

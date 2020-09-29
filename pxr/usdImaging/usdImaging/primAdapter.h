@@ -527,6 +527,13 @@ public:
             HdInterpolation interpolation,
             const UsdImagingInstancerContext* instancerContext) const;
 
+    USDIMAGING_API
+    virtual std::string 
+    GetExtComputationKernel(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            const UsdImagingInstancerContext* instancerContext) const;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility

@@ -1355,6 +1355,31 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationPrimvars(
               interpolation, instancerContext);
 }
 
+std::string 
+UsdSkelImagingSkeletonAdapter::GetExtComputationKernel(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    TRACE_FUNCTION();
+
+    if (_IsSkinningComputationPath(cachePath)) {
+        if (_IsEnabledCPUComputations()) {
+            return std::string();
+        } else {
+            return _GetSkinningComputeKernel();
+        }
+    }
+
+    if (_IsSkinningInputAggregatorComputationPath(cachePath)) {
+        return std::string();
+    }
+
+    return BaseAdapter::GetExtComputationKernel(prim, cachePath, 
+                instancerContext);
+
+}
+
 void
 UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
     const UsdPrim& prim,
@@ -1812,16 +1837,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
                 computationPath, _tokens->skelLocalToWorld) = skelLocalToWorld;
         }
     }
-
-    if (requestedBits & HdExtComputation::DirtyKernel) {
-        if (_IsEnabledCPUComputations()) {
-            valueCache->GetExtComputationKernel(computationPath) = 
-                std::string();
-        } else {
-            valueCache->GetExtComputationKernel(computationPath)
-                = _GetSkinningComputeKernel();
-        }
-    }
 }
 
 
@@ -1935,11 +1950,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningInputAggregatorComputationForTime(
                 computationPath, _tokens->numBlendShapeOffsetRanges)
                 = VtValue(static_cast<int>(ranges.size()));
         }
-    }
-    
-    if (requestedBits & HdExtComputation::DirtyKernel) {
-        valueCache->GetExtComputationKernel(computationPath)
-            = std::string();
     }
 }
 
