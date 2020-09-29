@@ -82,10 +82,6 @@ public:
         };
 
     private:
-        static Key InstancerTransform(SdfPath const& path) {
-            static TfToken attr("instancerTransform");
-            return Key(path, attr);
-        }
         static Key InstanceIndices(SdfPath const& path) {
             static TfToken attr("instanceIndices");
             return Key(path, attr);
@@ -242,9 +238,6 @@ public:
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
-    VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
-        return _Get<VtValue>(Key(path, name));
-    }
     VtValue& GetExtComputationInput(SdfPath const& path,
                                     TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
@@ -253,9 +246,6 @@ public:
         return _Get<std::string>(Key::ExtComputationKernel(path));
     }
 
-    bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
-        return _Find(Key(path, name), value);
-    }
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
     }
@@ -276,9 +266,6 @@ public:
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
     }
-    bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
-        return _Extract(Key(path, name), value);
-    }
     bool ExtractExtComputationInput(SdfPath const& path, TfToken const& name,
                                     VtValue* value) {
         return _Extract(Key(path, name), value);
@@ -290,32 +277,14 @@ public:
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
     {
-
-        _GarbageCollect(_tokenCache);
-        _GarbageCollect(_tokenVectorCache);
-        _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
-        // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
     }
 
 private:
     bool _locked;
 
-    // purpose
-    typedef _TypedCache<TfToken> _TokenCache;
-    mutable _TokenCache _tokenCache;
-
-    // extComputationSceneInputNames
-    typedef _TypedCache<TfTokenVector> _TokenVectorCache;
-    mutable _TokenVectorCache _tokenVectorCache;
-
-    // color (will be VtValue)
-    typedef _TypedCache<GfVec4f> _Vec4Cache;
-    mutable _Vec4Cache _vec4Cache;
-
-    // primvars, extCompInputs
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 
@@ -325,15 +294,6 @@ private:
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
 
-    void _GetCache(_TokenCache **cache) const {
-        *cache = &_tokenCache;
-    }
-    void _GetCache(_TokenVectorCache **cache) const {
-        *cache = &_tokenVectorCache;
-    }
-    void _GetCache(_Vec4Cache **cache) const {
-        *cache = &_vec4Cache;
-    }
     void _GetCache(_ValueCache **cache) const {
         *cache = &_valueCache;
     }

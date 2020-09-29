@@ -634,8 +634,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             // sent to the GPU on every frame.
             VtVec3fArray positions;
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
-                valueCache->GetPrimvar(cachePath, _tokens->translate) = 
-                                                                    positions;
                 _MergePrimvar(
                     &vPrimvars,
                     _tokens->translate,
@@ -645,21 +643,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
 
             VtQuathArray orientations;
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                // convert to Vec4Array that hydra instancer requires.
-                // Also note that hydra's instancer takes GfQuaterion layout
-                // (real, imaginary) which differs from GfQuath's
-                // (imaginary, real)
-                VtVec4fArray rotations;
-                rotations.reserve(orientations.size());
-                for (const GfQuath& orientation : orientations) {
-                    rotations.push_back(
-                        GfVec4f(orientation.GetReal(),
-                                orientation.GetImaginary()[0],
-                                orientation.GetImaginary()[1],
-                                orientation.GetImaginary()[2]));
-                }
-
-                valueCache->GetPrimvar(cachePath, _tokens->rotate) = rotations;
                 _MergePrimvar(
                     &vPrimvars,
                     _tokens->rotate,
@@ -668,7 +651,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
 
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {
-                valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
                 _MergePrimvar(
                     &vPrimvars,
                     _tokens->scale,
@@ -685,14 +667,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 if (interp != UsdGeomTokens->constant &&
                     interp != UsdGeomTokens->uniform) {
                     HdInterpolation interp = HdInterpolationInstance;
-                    _ComputeAndMergePrimvar(
-                        prim, 
-                        cachePath,
-                        pv, 
-                        time, 
-                        valueCache, 
-                        &vPrimvars, 
-                        &interp);
+                    _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars, &interp);
                 }
             }
         }
@@ -1848,15 +1823,67 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
 VtValue
 UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                                      SdfPath const& cachePath,
-                                     TfToken const &key,
+                                     TfToken const& key,
                                      UsdTimeCode time) const
 {
+    TRACE_FUNCTION();
+
     if (IsChildPath(cachePath)) {
         // Delegate to prototype adapter and USD prim.
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
         return proto.adapter->Get(protoPrim, cachePath, key, time);
+
+    } else  if (_InstancerData const* instrData =
+                TfMapLookupPtr(_instancerData, cachePath)) {
+        TF_UNUSED(instrData);
+
+        if (key == _tokens->translate) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtVec3fArray positions;
+            if (instancer.GetPositionsAttr().Get(&positions, time)) {
+                return VtValue(positions);
+            }
+
+        } else if (key == _tokens->rotate) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtQuathArray orientations;
+            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
+                // convert to Vec4Array that hydra instancer requires.
+                // Also note that hydra's instancer takes GfQuaterion layout
+                // (real, imaginary) which differs from GfQuath's
+                // (imaginary, real)
+                VtVec4fArray rotations;
+                rotations.reserve(orientations.size());
+                for (const GfQuath& orientation : orientations) {
+                    rotations.push_back(
+                        GfVec4f(orientation.GetReal(),
+                                orientation.GetImaginary()[0],
+                                orientation.GetImaginary()[1],
+                                orientation.GetImaginary()[2]));
+                }
+                return VtValue(rotations);
+            }
+
+        } else if (key == _tokens->scale) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtVec3fArray scales;
+            if (instancer.GetScalesAttr().Get(&scales, time)) {
+                return VtValue(scales);
+            }
+
+        } else {
+            UsdGeomPointInstancer instancer(usdPrim);
+            UsdGeomPrimvarsAPI primvars(instancer);
+            UsdGeomPrimvar pv = primvars.GetPrimvar(key);
+            VtValue value;
+            if (pv) {
+                pv.ComputeFlattened(&value, time);
+            }
+            return value;
+        }
     }
+
     return BaseAdapter::Get(usdPrim, cachePath, key, time);
 }
 

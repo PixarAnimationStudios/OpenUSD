@@ -306,8 +306,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdTokens->velocities,
                 HdInterpolationVertex,
                 HdPrimvarRoleTokens->vector);
-            valueCache->GetPrimvar(cachePath, HdTokens->velocities) = 
-                VtValue(velocities);
         }
 
         // Acceleration information is expected to be authored at the same sample
@@ -322,8 +320,6 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdTokens->accelerations,
                 HdInterpolationVertex,
                 HdPrimvarRoleTokens->vector);
-            valueCache->GetPrimvar(cachePath, HdTokens->accelerations) = 
-                VtValue(accelerations);
         }
     }
 
@@ -356,8 +352,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPrimvar pv =
                 _GetInheritedPrimvar(prim, HdTokens->displayColor);
             if (pv) {
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, nullptr, &vPrimvars);
+                _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
             }
         }
 
@@ -372,8 +367,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPrimvar pv =
                 _GetInheritedPrimvar(prim, HdTokens->displayOpacity);
             if (pv) {
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, nullptr, &vPrimvars);
+                _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
             }
         }
 
@@ -419,11 +413,9 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 continue;
             }
 
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, valueCache, &vPrimvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
         }
     }
-
 }
 
 HdDirtyBits
@@ -677,15 +669,29 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
     } else if (key == HdTokens->points) {
         return GetPoints(prim, time);
 
+    } else if (key == HdTokens->velocities) {
+        UsdGeomPointBased pointBased(prim);
+        VtVec3fArray velocities;
+        if (pointBased.GetVelocitiesAttr() &&
+            pointBased.GetVelocitiesAttr().Get(&velocities, time)) {
+            return VtValue(velocities);
+        }
+
+    } else if (key == HdTokens->accelerations) {
+        // Acceleration information is expected to be authored @ the same sample
+        // rate as points data, so use the points dirty bit to let us know when
+        // to publish accelerations.
+        UsdGeomPointBased pointBased(prim);
+        VtVec3fArray accelerations;
+        if (pointBased.GetAccelerationsAttr() &&
+            pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
+            return VtValue(accelerations);
+        }
+
     } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
-        // XXX : We use cachePath directly as usdPath above,
-        // but should do the proper transformation.  Maybe we can use
-        // the primInfo.usdPrim?
-        // Note here that Hydra requested "color" (e.g.) and we've converted
-        // it to primvars:color automatically by virtue of UsdGeomPrimvar.
-        TF_VERIFY(pv.ComputeFlattened(&value, time), "%s, %s\n", 
-                prim.GetPath().GetText(), key.GetText());
-        return value;
+        if (pv.ComputeFlattened(&value, time)) {
+            return value;
+        }
     }
 
     return BaseAdapter::Get(prim, cachePath, key, time);

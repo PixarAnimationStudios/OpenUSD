@@ -168,8 +168,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomPoints points(prim);
             VtFloatArray widths;
@@ -194,8 +193,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
         }
     
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomPoints points(prim);
             VtVec3fArray normals;

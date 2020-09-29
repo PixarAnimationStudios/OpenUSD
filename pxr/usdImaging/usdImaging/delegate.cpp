@@ -2365,17 +2365,16 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     VtValue value;
 
-    if (!_valueCache.ExtractPrimvar(cachePath, key, &value)) {
-        _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
-        if (!TF_VERIFY(primInfo)) {
-            return value;
-        }
-        UsdPrim const & prim = primInfo->usdPrim;
-        if (!TF_VERIFY(prim)) {
-            return value;
-        }
-        value = primInfo->adapter->Get(prim, cachePath, key, _time);
+    _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo)) {
+        return value;
     }
+
+    UsdPrim const & prim = primInfo->usdPrim;
+    if (!TF_VERIFY(prim)) {
+        return value;
+    }
+    value = primInfo->adapter->Get(prim, cachePath, key, _time);
 
     if (value.IsEmpty()) {
         TF_WARN("Empty VtValue: <%s> %s\n", id.GetText(), key.GetText());
@@ -2418,11 +2417,6 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id,
         size_t nSamples = primInfo->adapter
             ->SamplePrimvar(primInfo->usdPrim, cachePath, key,
                             _time, maxNumSamples, sampleTimes, sampleValues);
-        // Make sure to clear the primvar out of the value cache so we don't
-        // leak memory...
-        VtValue value;
-        _valueCache.ExtractPrimvar(cachePath, key, &value);
-
         return nSamples;
     }
     return 0;

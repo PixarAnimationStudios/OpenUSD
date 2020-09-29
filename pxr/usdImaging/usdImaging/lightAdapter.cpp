@@ -102,8 +102,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         // prims with the DirtyCollections flag.
     }
 
-    // XXX Cache primvars for lights.  Note that this does not yet support
-    // animated lights, since we do not call UpdateForTime() for sprims.
+    // XXX Cache primvars for lights.
     {
         // Establish a valueCache entry.
         HdPrimvarDescriptorVector& vPrimvars = 
@@ -121,8 +120,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
         primvars.insert(primvars.end(), local.begin(), local.end());
         for (auto const &pv : primvars) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, UsdTimeCode(), valueCache, &vPrimvars);
+            _ComputeAndMergePrimvar(prim, pv, UsdTimeCode(), &vPrimvars);
         }
     }
 }

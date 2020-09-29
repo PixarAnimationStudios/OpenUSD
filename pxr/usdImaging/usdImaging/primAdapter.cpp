@@ -389,19 +389,8 @@ UsdImagingPrimAdapter::SamplePrimvar(
     // instead synthesize them -- ex: Cube, Cylinder, Capsule.
     if (maxNumSamples > 0) {
         sampleTimes[0] = 0;
-        // Transition code until all primvars are handled without value cache.
-        if (key == HdTokens->displayColor || 
-            key == HdTokens->displayOpacity ||
-            key == HdTokens->points || 
-            key == HdTokens->normals || 
-            key == HdTokens->widths) { 
-            sampleValues[0] = Get(usdPrim, cachePath, key, time);
-            return sampleValues[0].IsEmpty() ? 0 : 1;
-        } 
-        
-        if (_GetValueCache()->ExtractPrimvar(cachePath, key, &sampleValues[0])){
-            return sampleValues[0].IsEmpty() ? 0 : 1;
-        }
+        sampleValues[0] = Get(usdPrim, cachePath, key, time);
+        return sampleValues[0].IsEmpty() ? 0 : 1;
     }
 
     return 0;
@@ -692,26 +681,22 @@ UsdImagingPrimAdapter::_UsdToHdRole(TfToken const& usdRole)
 void 
 UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     UsdPrim const& gprim,
-    SdfPath const& cachePath,
     UsdGeomPrimvar const& primvar,
     UsdTimeCode time,
-    UsdImagingValueCache* valueCache,
     HdPrimvarDescriptorVector* primvarDescs,
     HdInterpolation *interpOverride) const
 {
+    TRACE_FUNCTION();
+
     VtValue v;
     TfToken primvarName = primvar.GetPrimvarName();
     if (primvar.ComputeFlattened(&v, time)) {
-        if (valueCache) {
-            valueCache->GetPrimvar(cachePath, primvarName) = v;
-        }
         HdInterpolation interp = interpOverride ? *interpOverride
             : _UsdToHdInterpolation(primvar.GetInterpolation());
         TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
         TF_DEBUG(USDIMAGING_SHADERS)
-            .Msg("UsdImaging: found primvar (%s %s) %s, interp %s\n",
+            .Msg("UsdImaging: found primvar (%s) %s, interp %s\n",
                  gprim.GetPath().GetText(),
-                 cachePath.GetText(),
                  primvarName.GetText(),
                  TfEnum::GetName(interp).c_str());
         _MergePrimvar(primvarDescs, primvarName, interp, role);
@@ -1129,21 +1114,11 @@ UsdImagingPrimAdapter::Get(
     TfToken const &key,
     UsdTimeCode time) const
 {
-    // XXX: This does not work for point instancer child
-    // prims; while we do not hit this code path given the
-    // current state of the universe, we need to rethink
-    // UsdImagingDelegate::Get().
-    //
-    // XXX(UsdImaging): We use cachePath directly as
-    // usdPath here, but should do the proper
-    // transformation.  Maybe we can use the
-    // primInfo.usdPrim?
-
     UsdAttribute const &attr = prim.GetAttribute(key);
     VtValue value;
-    TF_VERIFY(attr && attr.Get(&value, time),
-              "%s, %s\n", cachePath.GetText(), key.GetText());
-
+    if (attr) {
+        attr.Get(&value, time);
+    }
     return value;
 }
 

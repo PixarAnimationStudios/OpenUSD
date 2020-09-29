@@ -497,7 +497,6 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
 
     } else if (key == HdTokens->points) {
         TRACE_FUNCTION_SCOPE("points");
-
         TfToken drawMode = UsdGeomTokens->default_;
         _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
         if (TF_VERIFY(it != _drawModeMap.end())) {
@@ -512,7 +511,44 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
         _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
             &points, &extent, &uv, &assign);
         return points;
-    } 
+
+    } else if (key == _tokens->cardsUv) {
+        TRACE_FUNCTION_SCOPE("cardsUV");
+        TfToken drawMode = UsdGeomTokens->default_;
+        _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+        if (TF_VERIFY(it != _drawModeMap.end())) {
+            drawMode = it->second;
+        }
+
+        VtValue topology;
+        VtValue points;
+        VtValue uv;
+        VtValue assign;
+        GfRange3d extent;
+        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv, &assign);
+        return uv;
+
+    } else if (key == _tokens->cardsTexAssign) {
+        TRACE_FUNCTION_SCOPE("cardsTexAssign");
+        TfToken drawMode = UsdGeomTokens->default_;
+        _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+        if (TF_VERIFY(it != _drawModeMap.end())) {
+            drawMode = it->second;
+        }
+
+        VtValue topology;
+        VtValue points;
+        VtValue uv;
+        VtValue assign;
+        GfRange3d extent;
+        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv, &assign);
+        return assign;
+
+    } else if (key == _tokens->displayRoughness) {
+        return VtValue(1.0f);
+    }
 
     return value;
 }
@@ -772,9 +808,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         VtValue topology;
         GfRange3d extent;
         VtValue points;
-        VtValue& uv = valueCache->GetPrimvar(cachePath, _tokens->cardsUv);
-        VtValue& assign = valueCache->GetPrimvar(cachePath, 
-            _tokens->cardsTexAssign);
+        VtValue uv;
+        VtValue assign;
         _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
             &points, &extent, &uv, &assign);
 
@@ -786,8 +821,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 HdInterpolationUniform);
 
             // XXX: backdoor into the material system.
-            valueCache->GetPrimvar(cachePath, _tokens->displayRoughness) =
-                VtValue(1.0f);
             _MergePrimvar(&primvars, _tokens->displayRoughness, 
                 HdInterpolationConstant);
         }

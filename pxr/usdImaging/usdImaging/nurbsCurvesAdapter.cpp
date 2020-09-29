@@ -181,8 +181,7 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomNurbsCurves curves(prim);
             HdInterpolation interpolation;
@@ -208,8 +207,7 @@ UsdImagingNurbsCurvesAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomNurbsCurves curves(prim);
             VtVec3fArray normals;

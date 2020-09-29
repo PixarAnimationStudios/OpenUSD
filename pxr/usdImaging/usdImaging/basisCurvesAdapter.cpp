@@ -180,8 +180,7 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(
         }
 
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             HdInterpolation interpolation;
@@ -207,8 +206,7 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(
         }
 
         if (pv) {
-            _ComputeAndMergePrimvar(
-                prim, cachePath, pv, time, nullptr, &primvars);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             VtVec3fArray normals;

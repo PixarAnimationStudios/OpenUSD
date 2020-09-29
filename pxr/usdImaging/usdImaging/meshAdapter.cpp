@@ -250,8 +250,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             }
 
             if (pv) {
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, nullptr, &primvars);
+                _ComputeAndMergePrimvar(prim, pv, time, &primvars);
             } else {
                 UsdGeomMesh mesh(prim);
                 VtVec3fArray normals;

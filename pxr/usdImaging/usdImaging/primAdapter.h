@@ -664,10 +664,8 @@ protected:
     USDIMAGING_API
     void _ComputeAndMergePrimvar(
         UsdPrim const& prim,
-        SdfPath const& cachePath,
         UsdGeomPrimvar const& primvar,
         UsdTimeCode time,
-        UsdImagingValueCache* valueCache,
         HdPrimvarDescriptorVector* primvarDescs,
         HdInterpolation *interpOverride = nullptr) const;
 

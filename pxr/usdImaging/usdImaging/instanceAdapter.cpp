@@ -1242,9 +1242,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             VtMatrix4dArray instanceXforms;
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
-                valueCache->GetPrimvar(
-                    cachePath,
-                    HdInstancerTokens->instanceTransform) = instanceXforms;
                 _MergePrimvar(
                     &valueCache->GetPrimvars(cachePath),
                     HdInstancerTokens->instanceTransform,
@@ -1254,7 +1251,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                 VtValue val;
                 if (_ComputeInheritedPrimvar(prim, ipv.name, ipv.type,
                                              &val, time)) {
-                    valueCache->GetPrimvar(cachePath, ipv.name) = val;
                     _MergePrimvar(&valueCache->GetPrimvars(cachePath),
                                   ipv.name, HdInterpolationInstance,
                                   _UsdToHdRole(ipv.type.GetRole()));
@@ -1899,6 +1895,8 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
                                TfToken const &key,
                                UsdTimeCode time) const
 {
+    TRACE_FUNCTION();
+
     if (_IsChildPrim(usdPrim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
@@ -1909,6 +1907,24 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
         }
         return proto.adapter->Get(
                 _GetPrim(proto.path), cachePath, key, time);
+    } else if (_InstancerData const* instrData =
+        TfMapLookupPtr(_instancerData, usdPrim.GetPath())) {
+
+        if (key == HdInstancerTokens->instanceTransform) {
+            VtMatrix4dArray instanceXforms;
+            if (_ComputeInstanceTransforms(usdPrim, &instanceXforms, time)) {
+                return VtValue(instanceXforms);
+            }
+        }
+        
+        for (auto const& ipv : instrData->inheritedPrimvars) {
+            VtValue val;
+            if (_ComputeInheritedPrimvar(usdPrim, ipv.name, ipv.type,
+                                         &val, time)) {
+                return val;
+            }
+        }
+            
     }
     return BaseAdapter::Get(usdPrim, cachePath, key, time);
 }
