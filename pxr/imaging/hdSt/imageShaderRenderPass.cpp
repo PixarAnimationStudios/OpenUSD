@@ -54,7 +54,6 @@ _ExecuteDraw(
     HdStRenderPassStateSharedPtr const& stRenderPassState,
     HdStResourceRegistrySharedPtr const& resourceRegistry)
 {
-    drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
     drawBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
@@ -153,6 +152,8 @@ HdSt_ImageShaderRenderPass::_Execute(
         std::dynamic_pointer_cast<HdStResourceRegistry>(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
+
+    _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =

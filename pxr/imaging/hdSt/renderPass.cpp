@@ -60,7 +60,6 @@ _ExecuteDraw(
     HdStRenderPassStateSharedPtr const& stRenderPassState,
     HdStResourceRegistrySharedPtr const& resourceRegistry)
 {
-    cmdBuffer->PrepareDraw(stRenderPassState, resourceRegistry);
     cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
@@ -122,6 +121,8 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         std::dynamic_pointer_cast<HdStResourceRegistry>(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
+
+    _cmdBuffer.PrepareDraw(stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =

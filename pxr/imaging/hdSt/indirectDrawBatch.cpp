@@ -70,11 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (instanceCountInput)
 
-    (ulocDrawCommandNumUints)
-    (ulocResetPass)
-    (ulocCullMatrix)
-    (ulocDrawRangeNDC)
-
+    (ulocCullParams)
 );
 
 
@@ -1237,6 +1233,41 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     glUseProgram(0);
 }
 
+static HgiGraphicsPipelineSharedPtr
+_GetCullPipeline(
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
+    HdStGLSLProgramSharedPtr const& shaderProgram,
+    size_t byteSizeUniforms)
+{
+    // Culling pipeline is compatible as long as the shader is the same.
+    HgiShaderProgramHandle const& prg = shaderProgram->GetProgram();
+    uint64_t hash = reinterpret_cast<uint64_t>(prg.Get());
+
+    HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
+        resourceRegistry->RegisterGraphicsPipeline(hash);
+
+    if (pipelineInstance.IsFirstInstance()) {
+        // Create a points primitive, vertex shader only pipeline that uses
+        // a uniform block data for the 'cullParams' in the shader.
+        HgiGraphicsPipelineDesc pipeDesc;
+        pipeDesc.shaderConstantsDesc.stageUsage = HgiShaderStageVertex;
+        pipeDesc.shaderConstantsDesc.byteSize = byteSizeUniforms;
+        pipeDesc.depthState.depthTestEnabled = false;
+        pipeDesc.depthState.depthWriteEnabled = false;
+        pipeDesc.primitiveType = HgiPrimitiveTypePointList;
+        pipeDesc.shaderProgram = shaderProgram->GetProgram();
+        pipeDesc.rasterizationState.rasterizerEnabled = false;
+
+        Hgi* hgi = resourceRegistry->GetHgi();
+        HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
+
+        pipelineInstance.SetValue(
+            std::make_shared<HgiGraphicsPipelineHandle>(pso));
+    }
+
+    return pipelineInstance.GetValue();
+}
+
 void
 HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     HdStDrawItem const *batchItem,
@@ -1273,6 +1304,13 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
+    struct Uniforms {
+        GfMatrix4f cullMatrix;
+        GfVec2f drawRangeNDC;
+        uint32_t drawCommandNumUints;
+        int32_t resetPass;
+    } cullParams;
+
     // We perform frustum culling on the GPU with the rasterizer disabled,
     // stomping the instanceCount of each drawing command in the
     // dispatch buffer to 0 for primitives that are culled, skipping
@@ -1280,6 +1318,8 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
 
     const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
 
+    // XXX Remove this once we switch the resource bindings below to Hgi.
+    // Right now we need this since 'binder' uses raw gl calls.
     GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
@@ -1307,14 +1347,10 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
                       _dispatchBuffer->GetEntireResource());
 
     // set cull parameters
-    unsigned int drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-    GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
-    GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
-    binder.BindUniformui(_tokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
-    binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    if (_useTinyPrimCulling) {
-        binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
-    }
+    cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+    cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
+    cullParams.drawRangeNDC = renderPassState->GetDrawingRangeNDC();
+    cullParams.resetPass = 1;
 
     // run culling shader
     bool validProgram = true;
@@ -1327,32 +1363,66 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     }
 
     if (validProgram) {
-        glEnable(GL_RASTERIZER_DISCARD);
+        Hgi* hgi = resourceRegistry->GetHgi();
 
-        int resetPass = 1;
-        binder.BindUniformi(_tokens->ulocResetPass, 1, &resetPass);
-        glMultiDrawArraysIndirect(
-            GL_POINTS,
-            reinterpret_cast<const GLvoid*>(
-                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
+        HgiGraphicsPipelineSharedPtr const& pso =
+            _GetCullPipeline(resourceRegistry, glslProgram, sizeof(Uniforms));
+        HgiGraphicsPipelineHandle psoHandle = *pso.get();
+
+        // Get the bind index for the 'cullParams' uniform block
+        HdBinding binding = binder.GetBinding(_tokens->ulocCullParams);
+        int bindLoc = binding.GetLocation();
+
+        //
+        // Reset culling pass
+        //
+
+        // GfxCmds has no attachment since it is a vertex only shader.
+        HgiGraphicsCmdsDesc gfxDesc;
+        HgiGraphicsCmdsUniquePtr resetGfxCmds= hgi->CreateGraphicsCmds(gfxDesc);
+        resetGfxCmds->PushDebugGroup("GPU frustum culling reset pass");
+        resetGfxCmds->BindPipeline(psoHandle);
+        resetGfxCmds->SetConstantValues(
+            psoHandle, HgiShaderStageVertex, 
+            bindLoc, sizeof(Uniforms), &cullParams);
+
+        resetGfxCmds->DrawIndirect(
+            cullCommandBuffer->GetId(),
+            cullCommandBuffer->GetOffset(),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
-        // dispatch buffer is bound via SSBO
-        // (see _CullingProgram::_GetCustomBindings)
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        // Since we do two shader passes that read/write to the SSBO
+        // (reset then cull) we need synchronization inbetween via SubmitCmds.
+        resetGfxCmds->PopDebugGroup();
+        hgi->SubmitCmds(resetGfxCmds.get());
 
-        resetPass = 0;
-        binder.BindUniformi(_tokens->ulocResetPass, 1, &resetPass);
-        glMultiDrawArraysIndirect(
-            GL_POINTS,
-            reinterpret_cast<const GLvoid*>(
-                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
+        //
+        // Perform Culling
+        //
+
+        HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
+        cullGfxCmds->PushDebugGroup("GPU frustum instance culling");
+        cullGfxCmds->BindPipeline(psoHandle);
+
+        cullParams.resetPass = 0;
+        cullGfxCmds->SetConstantValues(
+            psoHandle, HgiShaderStageVertex,
+            bindLoc, sizeof(Uniforms), &cullParams);
+
+        cullGfxCmds->DrawIndirect(
+            cullCommandBuffer->GetId(),
+            cullCommandBuffer->GetOffset(),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
-        glDisable(GL_RASTERIZER_DISCARD);
+        cullGfxCmds->PopDebugGroup();
+        hgi->SubmitCmds(cullGfxCmds.get());
     }
+
+    // XXX Remove the unbinding since it uses raw gl calls.
+    // We can unbind the dispatchBuffer inside Hgi::DrawIndirect or
+    // we can add this unbinding logic inside HgiGl's scoped state holder.
 
     // Reset all vertex attribs and their divisors. Note that the drawing
     // program has different bindings from the culling program does
@@ -1375,13 +1445,6 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     if (IsEnabledGPUCountVisibleInstances()) {
         binder.UnbindBuffer(_tokens->drawIndirectResult, _resultBuffer);
     }
-
-    // make sure the culling results (instanceIndices and instanceCount)
-    // are synchronized for the next drawing.
-    glMemoryBarrier(
-        GL_COMMAND_BARRIER_BIT |         // instanceCount for MDI
-        GL_SHADER_STORAGE_BARRIER_BIT |  // instanceCount for shader
-        GL_UNIFORM_BARRIER_BIT);         // instanceIndices
 }
 
 void
@@ -1410,6 +1473,14 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
+    struct Uniforms {
+        GfMatrix4f cullMatrix;
+        GfVec2f drawRangeNDC;
+        uint32_t drawCommandNumUints;
+    } cullParams;
+
+    // XXX Remove this once we switch the resource bindings below to Hgi.
+    // Right now we need this since 'binder' uses raw gl calls.
     GLuint programId = glslProgram->GetProgram()->GetRawResource();
     glUseProgram(programId);
 
@@ -1426,33 +1497,49 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     }
 
     // set cull parameters
-    unsigned int drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-    GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
-    GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
-    binder.BindUniformf(_tokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    binder.BindUniformui(_tokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
-    if (_useTinyPrimCulling) {
-        binder.BindUniformf(_tokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
-    }
+    cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+    cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
+    cullParams.drawRangeNDC = renderPassState->GetDrawingRangeNDC();
 
     // bind destination buffer (using entire buffer bind to start from offset=0)
     binder.BindBuffer(_tokens->dispatchBuffer,
                       _dispatchBuffer->GetEntireResource());
 
-    glEnable(GL_RASTERIZER_DISCARD);
-    glDrawArrays(GL_POINTS, 0, _dispatchBufferCullInput->GetCount());
-    glDisable(GL_RASTERIZER_DISCARD);
+    Hgi* hgi = resourceRegistry->GetHgi();
+
+    HgiGraphicsPipelineSharedPtr const& pso =
+        _GetCullPipeline(resourceRegistry, glslProgram, sizeof(Uniforms));
+    HgiGraphicsPipelineHandle psoHandle = *pso.get();
+
+    // Get the bind index for the 'resetPass' uniform
+    HdBinding binding = binder.GetBinding(_tokens->ulocCullParams);
+    int bindLoc = binding.GetLocation();
+
+    //
+    // Perform Culling
+    //
+
+    // GfxCmds has no attachment since it is a vertex only shader.
+    HgiGraphicsCmdsDesc gfxDesc;
+    HgiGraphicsCmdsUniquePtr cullGfxCmds= hgi->CreateGraphicsCmds(gfxDesc);
+    cullGfxCmds->PushDebugGroup("GPU frustum culling (Non-instanced)");
+    cullGfxCmds->BindPipeline(psoHandle);
+    cullGfxCmds->SetConstantValues(
+        psoHandle, HgiShaderStageVertex,
+        bindLoc, sizeof(Uniforms), &cullParams);
+
+    cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1);
+
+    cullGfxCmds->PopDebugGroup();
+    hgi->SubmitCmds(cullGfxCmds.get());
+
+    // XXX Remove the unbinding since it uses raw gl calls.
+    // We can unbind the dispatchBuffer inside Hgi::DrawIndirect or
+    // we can add this unbinding logic inside HgiGl's scoped state holder.
 
     // unbind destination dispatch buffer
     binder.UnbindBuffer(_tokens->dispatchBuffer,
                         _dispatchBuffer->GetEntireResource());
-
-    // make sure the culling results (instanceCount)
-    // are synchronized for the next drawing.
-    glMemoryBarrier(
-        GL_COMMAND_BARRIER_BIT |      // instanceCount for MDI
-        GL_SHADER_STORAGE_BARRIER_BIT // instanceCount for shader
-    );
 
     // unbind all
     binder.UnbindConstantBuffer(constantBar);
@@ -1461,8 +1548,6 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     if (IsEnabledGPUCountVisibleInstances()) {
         binder.UnbindBuffer(_tokens->drawIndirectResult, _resultBuffer);
     }
-
-    glUseProgram(0);
 }
 
 void
@@ -1600,21 +1685,13 @@ HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
                                   _tokens->drawIndirectResult));
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
                                   _tokens->dispatchBuffer));
-    customBindings->push_back(HdBindingRequest(HdBinding::UNIFORM,
-                                               _tokens->ulocDrawRangeNDC));
-    customBindings->push_back(HdBindingRequest(HdBinding::UNIFORM,
-                                               _tokens->ulocCullMatrix));
+    customBindings->push_back(HdBindingRequest(HdBinding::UBO,
+                                               _tokens->ulocCullParams));
 
     if (_useInstanceCulling) {
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX_INSTANCE,
                 _tokens->drawCommandIndex));
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::UNIFORM,
-                _tokens->ulocDrawCommandNumUints));
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::UNIFORM,
-                _tokens->ulocResetPass));
     } else {
         // non-instance culling
         customBindings->push_back(
@@ -1623,9 +1700,6 @@ HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX,
                 _tokens->instanceCountInput));
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::UNIFORM,
-                _tokens->ulocDrawCommandNumUints));
     }
 
     // set instanceDraw true if instanceCulling is enabled.
