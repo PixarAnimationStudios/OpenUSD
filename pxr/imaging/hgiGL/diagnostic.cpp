@@ -154,5 +154,22 @@ HgiGLMeetsMinimumRequirements()
     return (glVersion >= 450);
 }
 
+void HgiGLObjectLabel(
+    const uint32_t identifier,
+    const uint32_t name,
+    const std::string &label)
+{
+    GLint maxLength;
+    glGetIntegerv(GL_MAX_LABEL_LENGTH, &maxLength);
+
+    glObjectLabel(
+        identifier, name,
+        std::min(
+            label.size(),
+            size_t(maxLength - 1)), // Account for 0-terminator.
+        label.c_str());
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

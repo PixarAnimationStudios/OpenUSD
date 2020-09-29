@@ -53,6 +53,11 @@ void HgiGLSetupGL4Debug();
 HGIGL_API
 bool HgiGLMeetsMinimumRequirements();
 
+/// Calls glObjectLabel making sure the label is not too long.
+HGIGL_API
+void HgiGLObjectLabel(uint32_t identifier,
+                      uint32_t name,
+                      const std::string &label);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

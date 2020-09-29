@@ -41,8 +41,8 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
         glCreateVertexArrays(1, &_vao);
 
         if (!_descriptor.debugName.empty()) {
-            glObjectLabel(
-                GL_VERTEX_ARRAY, _vao, -1, _descriptor.debugName.c_str());
+            HgiGLObjectLabel(
+                GL_VERTEX_ARRAY, _vao, _descriptor.debugName);
         }
 
         // Configure the vertex buffers in the vertex array object.

@@ -40,7 +40,7 @@ HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
     glCreateSamplers(1, &_samplerId);
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_SAMPLER, _samplerId,-1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_SAMPLER, _samplerId, _descriptor.debugName);
     }
 
     glSamplerParameteri(

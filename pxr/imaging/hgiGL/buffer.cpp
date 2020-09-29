@@ -42,7 +42,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     glCreateBuffers(1, &_bufferId);
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_BUFFER, _bufferId,  _descriptor.debugName);
     }
 
     if ((_descriptor.usage & HgiBufferUsageVertex)  ||

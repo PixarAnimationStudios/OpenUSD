@@ -41,7 +41,7 @@ HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
     _programId = glCreateProgram();
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_PROGRAM, _programId,-1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_PROGRAM, _programId, _descriptor.debugName);
     }
 
     for (HgiShaderFunctionHandle const& shd : desc.shaderFunctions) {
