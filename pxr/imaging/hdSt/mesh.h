@@ -133,7 +133,8 @@ protected:
                            HdDirtyBits *dirtyBits,
                            const HdMeshReprDesc &desc);
 
-    void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
+    void _PopulateAdjacency(
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
