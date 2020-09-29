@@ -271,6 +271,8 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
 
     HgiMetalBuffer* metalBuffer = static_cast<HgiMetalBuffer*>(
         copyOp.gpuDestinationBuffer.Get());
+    bool sharedBuffer =
+        [metalBuffer->GetBufferId() storageMode] == MTLStorageModeShared;
 
     uint8_t *dst = static_cast<uint8_t*>([metalBuffer->GetBufferId() contents]);
     size_t dstOffset = copyOp.destinationByteOffset;
@@ -289,8 +291,9 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
         memcpy(dst + dstOffset, src, copyOp.byteSize);
     }
 
-    if([metalBuffer->GetBufferId()
-            respondsToSelector:@selector(didModifyRange:)]) {
+    if (!sharedBuffer &&
+        [metalBuffer->GetBufferId()
+             respondsToSelector:@selector(didModifyRange:)]) {
         NSRange range = NSMakeRange(dstOffset, copyOp.byteSize);
         id<MTLResource> resource = metalBuffer->GetBufferId();
         
