@@ -519,6 +519,15 @@ public:
                              const UsdImagingInstancerContext* instancerContext)
                                     const;
 
+    USDIMAGING_API
+    virtual HdExtComputationPrimvarDescriptorVector
+    GetExtComputationPrimvars(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            HdInterpolation interpolation,
+            const UsdImagingInstancerContext* instancerContext) const;
+
+
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //

@@ -1308,6 +1308,17 @@ UsdImagingPrimAdapter::GetExtComputationOutputs(
     return HdExtComputationOutputDescriptorVector();
 }
 
+/*virtual*/
+HdExtComputationPrimvarDescriptorVector
+UsdImagingPrimAdapter::GetExtComputationPrimvars(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    HdInterpolation interpolation,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    return HdExtComputationPrimvarDescriptorVector();
+}
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

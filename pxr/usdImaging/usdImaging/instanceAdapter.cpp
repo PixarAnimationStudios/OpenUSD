@@ -1857,6 +1857,7 @@ UsdImagingInstanceAdapter::GetExtComputationInputs(
     return BaseAdapter::GetExtComputationInputs(usdPrim, cachePath, nullptr);
 }
 
+/*virtual*/
 HdExtComputationOutputDescriptorVector
 UsdImagingInstanceAdapter::GetExtComputationOutputs(
     UsdPrim const& usdPrim,
@@ -1870,7 +1871,25 @@ UsdImagingInstanceAdapter::GetExtComputationOutputs(
                 _GetPrim(proto->path), cachePath, &instancerContext);
     }
     return BaseAdapter::GetExtComputationOutputs(usdPrim, cachePath, nullptr);
+}
 
+/*virtual*/
+HdExtComputationPrimvarDescriptorVector
+UsdImagingInstanceAdapter::GetExtComputationPrimvars(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    HdInterpolation interpolation,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &instancerContext)) {
+        return proto->adapter->GetExtComputationPrimvars(
+                _GetPrim(proto->path), cachePath, interpolation,
+                &instancerContext);
+    }
+    return BaseAdapter::GetExtComputationPrimvars(usdPrim, cachePath, 
+            interpolation, nullptr);
 }
 
 /*virtual*/

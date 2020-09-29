@@ -215,6 +215,15 @@ public:
                              SdfPath const& cachePath,
                              const UsdImagingInstancerContext* instancerContext)
                                     const override;
+
+    HdExtComputationPrimvarDescriptorVector
+    GetExtComputationPrimvars(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            HdInterpolation interpolation,
+            const UsdImagingInstancerContext* instancerContext) const override;
+
+
     USDSKELIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,

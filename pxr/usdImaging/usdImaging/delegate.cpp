@@ -2777,24 +2777,15 @@ UsdImagingDelegate::GetExtComputationPrimvarDescriptors(
     HD_TRACE_FUNCTION();
     SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
 
-    HdExtComputationPrimvarDescriptorVector allPrimvars;
-    // We don't require an entry to be populated.
-    _valueCache.FindExtComputationPrimvars(cachePath, &allPrimvars);
-    
-    // Don't use a verify below because it is often the case that there are
-    // no computed primvars on an rprim.
-    if (allPrimvars.empty()) {
-        return allPrimvars;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetExtComputationPrimvars(
+                   primInfo->usdPrim, cachePath, interpolation,
+                   nullptr /* instancerContext */); 
     }
 
-    HdExtComputationPrimvarDescriptorVector primvars;
-    for (const auto& pv : allPrimvars) {
-        // Filter the stored primvars to just ones of the requested type.
-        if (pv.interpolation == interpolation) {
-            primvars.push_back(pv);
-        }
-    }
-    return primvars;
+    return HdExtComputationPrimvarDescriptorVector();
+
 }
 
 VtValue

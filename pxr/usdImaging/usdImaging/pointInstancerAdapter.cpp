@@ -1036,8 +1036,11 @@ UsdImagingPointInstancerAdapter::_GetProtoPrimForChild(
     UsdImagingInstancerContext* ctx) const
 {
     if (IsChildPath(cachePath)) {
-        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
-        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        *proto = &_GetProtoPrim(usdPrim.GetPath(), cachePath);
+        if (!TF_VERIFY(*proto)) {
+            return false;
+        }
+        UsdPrim protoPrim = _GetProtoUsdPrim(**proto);
 
         // The instancer path since IsChildPath is true
         const SdfPath instancerPath = cachePath.GetParentPath();
@@ -1879,7 +1882,7 @@ HdExtComputationOutputDescriptorVector
 UsdImagingPointInstancerAdapter::GetExtComputationOutputs(
     UsdPrim const& usdPrim,
     SdfPath const& cachePath,
-    const UsdImagingInstancerContext* instancerContext) const
+    const UsdImagingInstancerContext* /*unused*/) const
 
 {
     UsdImagingInstancerContext ctx;
@@ -1890,6 +1893,25 @@ UsdImagingPointInstancerAdapter::GetExtComputationOutputs(
                 _GetProtoUsdPrim(*proto), cachePath, &ctx);
     }
     return BaseAdapter::GetExtComputationOutputs(usdPrim, cachePath, nullptr);
+}
+
+/*virtual*/
+HdExtComputationPrimvarDescriptorVector
+UsdImagingPointInstancerAdapter::GetExtComputationPrimvars(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    HdInterpolation interpolation,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    UsdImagingInstancerContext ctx;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &ctx)) {
+
+        return proto->adapter->GetExtComputationPrimvars(
+                _GetProtoUsdPrim(*proto), cachePath, interpolation, &ctx);
+    }
+    return BaseAdapter::GetExtComputationPrimvars(usdPrim, cachePath, 
+            interpolation, nullptr);
 }
 
 

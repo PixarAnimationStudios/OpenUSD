@@ -94,10 +94,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key ExtComputationPrimvars(SdfPath const& path) {
-            const TfToken attr("extComputationPrimvars");
-            return Key(path, attr);
-        }
         static Key ExtComputationKernel(SdfPath const& path) {
             const TfToken attr("extComputationKernel");
             return Key(path, attr);
@@ -236,8 +232,6 @@ public:
         }
 
         {
-            _Erase<HdExtComputationPrimvarDescriptorVector>(
-                Key::ExtComputationPrimvars(path));
             _Erase<std::string>(Key::ExtComputationKernel(path));
         }
     }
@@ -250,11 +244,6 @@ public:
     }
     VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
-    }
-    HdExtComputationPrimvarDescriptorVector&
-    GetExtComputationPrimvars(SdfPath const& path) const {
-        return _Get<HdExtComputationPrimvarDescriptorVector>(
-            Key::ExtComputationPrimvars(path));
     }
     VtValue& GetExtComputationInput(SdfPath const& path,
                                     TfToken const& name) const {
@@ -273,11 +262,6 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindExtComputationPrimvars(
-        SdfPath const& path,
-        HdExtComputationPrimvarDescriptorVector* value) const {
-        return _Find(Key::ExtComputationPrimvars(path), value);
-    }
     bool FindExtComputationInput(
         SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
@@ -294,11 +278,6 @@ public:
     }
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
-    }
-    bool ExtractExtComputationPrimvars(
-        SdfPath const& path,
-        HdExtComputationPrimvarDescriptorVector* value) {
-        return _Extract(Key::ExtComputationPrimvars(path), value);
     }
     bool ExtractExtComputationInput(SdfPath const& path, TfToken const& name,
                                     VtValue* value) {
@@ -319,7 +298,6 @@ public:
         _GarbageCollect(_pviCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
-        _GarbageCollect(_extComputationPrimvarsCache);
     }
 
 private:
@@ -347,10 +325,6 @@ private:
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
 
-    typedef _TypedCache<HdExtComputationPrimvarDescriptorVector>
-        _ExtComputationPrimvarsCache;
-    mutable _ExtComputationPrimvarsCache _extComputationPrimvarsCache;
-
     void _GetCache(_TokenCache **cache) const {
         *cache = &_tokenCache;
     }
@@ -368,9 +342,6 @@ private:
     }
     void _GetCache(_StringCache **cache) const {
         *cache = &_stringCache;
-    }
-    void _GetCache(_ExtComputationPrimvarsCache **cache) const {
-        *cache = &_extComputationPrimvarsCache;
     }
 };
 

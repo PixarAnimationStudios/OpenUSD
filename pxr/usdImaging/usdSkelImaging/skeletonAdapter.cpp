@@ -1313,6 +1313,48 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationOutputs(
             instancerContext);
 }
 
+HdExtComputationPrimvarDescriptorVector
+UsdSkelImagingSkeletonAdapter::GetExtComputationPrimvars(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    HdInterpolation interpolation,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+
+    if (_IsSkinnedPrimPath(cachePath)) {
+
+        // We only support 'points' which is vertex interpolation
+        if (interpolation != HdInterpolationVertex) {
+            return HdExtComputationPrimvarDescriptorVector();
+        }
+
+        // Note: We don't specify the # of points, since the prim already knows
+        // how many to expect for a given topology.
+        // The count field below indicates that we have one vec3f per point.
+        HdTupleType pointsType;
+        pointsType.type = HdTypeFloatVec3;
+        pointsType.count = 1;
+
+        const SdfPath skinnedPrimPath =
+            UsdImagingGprimAdapter::_ResolveCachePath(
+                                        prim.GetPath(), instancerContext);
+
+        HdExtComputationPrimvarDescriptorVector compPrimvars;
+        compPrimvars.emplace_back(
+                        HdTokens->points,
+                        HdInterpolationVertex,
+                        HdPrimvarRoleTokens->point,
+                        _ConvertCachePathToIndexPath(
+                            _GetSkinningComputationPath(skinnedPrimPath)),
+                        _tokens->skinnedPoints,
+                        pointsType);
+
+        return compPrimvars;
+    }
+    return BaseAdapter::GetExtComputationPrimvars(prim, cachePath, 
+              interpolation, instancerContext);
+}
+
 void
 UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
     const UsdPrim& prim,
@@ -1990,39 +2032,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
         "[UpdateForTime] Skinned prim path: <%s>\n", prim.GetPath().GetText());
     TF_DEBUG(USDIMAGING_CHANGES).Msg
         ("[UpdateForTime] Cache path: <%s>\n", cachePath.GetText());
-
-    // Register points as a computed primvar on the skinned prim.
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
-
-        HdExtComputationPrimvarDescriptorVector& computedPrimvarsEntry =
-            valueCache->GetExtComputationPrimvars(skinnedPrimPath);
-
-        // Note: We don't specify the # of points, since the prim already knows
-        // how many to expect for a given topology.
-        // The count field below indicates that we have one vec3f per point.
-        HdTupleType pointsType;
-        pointsType.type = HdTypeFloatVec3;
-        pointsType.count = 1;
-        
-        TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
-                "[SkeletonAdapter::_UpdateSkinnedPrimForTime] Adding "
-                " points as a computed primvar for prim %s\n",
-                skinnedPrimPath.GetText());
-
-        HdExtComputationPrimvarDescriptorVector compPrimvars;
-        compPrimvars.emplace_back(
-                        HdTokens->points,
-                        HdInterpolationVertex,
-                        HdPrimvarRoleTokens->point,
-                        _ConvertCachePathToIndexPath(
-                            _GetSkinningComputationPath(skinnedPrimPath)),
-                        _tokens->skinnedPoints,
-                        pointsType);
-        
-        // Overwrite the entire entry (i.e., don't use emplace_back)
-        computedPrimvarsEntry = compPrimvars;
-    }
 
     // Suppress the dirtybit for points, so we don't publish 'points' as a
     // primvar. Also suppressing normals: normals will instead be computed
