@@ -808,6 +808,12 @@ pxr_register_test(testUsdStage
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdStagePopulationMasks
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStagePopulationMasks"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdTimeCodeRepr
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCodeRepr"
