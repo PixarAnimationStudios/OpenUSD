@@ -138,8 +138,7 @@ protected:
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
-                                 bool requireSmoothNormals,
-                                 HdBufferSourceSharedPtr *outPoints);
+                                 bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdStDrawItem *drawItem,
@@ -149,12 +148,9 @@ protected:
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
-                                  bool requireFlatNormals,
-                                  HdBufferSourceSharedPtr const &points);
+                                  bool requireFlatNormals);
 
     int _GetRefineLevelForDesc(const HdMeshReprDesc &desc) const;
-
-    HdType _GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const;
 
 private:
     enum DrawingCoord {
@@ -178,6 +174,7 @@ private:
     HdTopology::ID _vertexPrimvarId;
     HdDirtyBits _customDirtyBitsInUse;
 
+    HdType _pointsDataType;
     HdInterpolation _sceneNormalsInterpolation;
     HdCullStyle _cullStyle;
 

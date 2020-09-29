@@ -95,6 +95,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _topologyId(0)
     , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
+    , _pointsDataType(HdTypeInvalid)
     , _sceneNormalsInterpolation()
     , _cullStyle(HdCullStyleDontCare)
     , _doubleSided(false)
@@ -566,8 +567,7 @@ void
 HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
-                                  bool requireSmoothNormals,
-                                  HdBufferSourceSharedPtr *outPoints)
+                                  bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -647,25 +647,29 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &separateComputationSources,
         &computations);
     
-    HdBufferSourceSharedPtr points;
+    bool isPointsComputedPrimvar = false;
 
-    // Schedule refinement/quadrangulation of computed primvars.
-    for (HdBufferSourceSharedPtr const & source: reserveOnlySources) {
-        if (refineLevel > 0) {
-            _RefinePrimvar(source, &computations, _topology);
-        } else if (_UseQuadIndices(renderIndex, _topology)) {
-            _QuadrangulatePrimvar(source, &computations, _topology,
-                GetId(), resourceRegistry);
-        }
+    // Schedule refinement/quadrangulation of GPU and CPU computed primvars.
+    for (HdBufferSourceSharedPtrVector const& computedSources :
+        {reserveOnlySources, sources}) {
+        for (HdBufferSourceSharedPtr const& source: computedSources) {
+            if (refineLevel > 0) {
+                _RefinePrimvar(source, &computations, _topology);
+            } else if (_UseQuadIndices(renderIndex, _topology)) {
+                _QuadrangulatePrimvar(source, &computations, _topology,
+                    GetId(), resourceRegistry);
+            }
 
-        // See if points are being produced by gpu computations
-        if (source->GetName() == HdTokens->points) {
-            points = source;
-        }
-        // See if normals are being produced by gpu computations
-        if (source->GetName() == HdTokens->normals) {
-            _sceneNormalsInterpolation = HdInterpolationVertex;
-            _sceneNormals = true;
+            // See if points are being produced by gpu computations
+            if (source->GetName() == HdTokens->points) {
+                isPointsComputedPrimvar = true;
+                _pointsDataType = source->GetTupleType().type;
+            }
+            // See if normals are being produced by gpu computations
+            if (source->GetName() == HdTokens->normals) {
+                _sceneNormalsInterpolation = HdInterpolationVertex;
+                _sceneNormals = true;
+            }
         }
     }
 
@@ -746,13 +750,13 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // We need to capture state about the points primvar
             // for use with smooth normal computation.
             if (primvar.name == HdTokens->points) {
-                if (!TF_VERIFY(points == nullptr)) {
+                if (!TF_VERIFY(!isPointsComputedPrimvar)) {
                     HF_VALIDATION_WARN(id, 
                         "'points' specified as both computed and authored "
                         "primvar. Skipping authored value.");
                     continue;
                 }
-                points = source; // For GPU Smooth Normals
+                _pointsDataType = source->GetTupleType().type;
             }
 
             sources.push_back(source);
@@ -780,19 +784,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         generatedNormalsName = usePackedSmoothNormals ? 
             HdStTokens->packedSmoothNormals : HdStTokens->smoothNormals;
         
-        // The smooth normals computation uses the points primvar as a source.
-        //
-        // If we don't have the buffer source, we can get the points
-        // data type from the bufferspec in the vertex bar. We need it
-        // so we know what type normals should be.
-        HdType pointsDataType = HdTypeInvalid;
-        if (points) {
-            pointsDataType = points->GetTupleType().type;
-        } else {
-            pointsDataType = _GetPointsDataTypeFromBar(drawItem);
-        }
-
-        if (pointsDataType != HdTypeInvalid) {
+        if (_pointsDataType != HdTypeInvalid) {
             // Smooth normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
@@ -801,7 +793,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     _vertexAdjacency.get(),
                     HdTokens->points,
                     generatedNormalsName,
-                    pointsDataType,
+                    _pointsDataType,
                     usePackedSmoothNormals));
             computations.emplace_back(
                 smoothNormalsComputation, _NormalsCompQueue);
@@ -817,7 +809,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             if (doRefine) {
                 HdComputationSharedPtr computation =
                     _topology->GetOsdRefineComputationGPU(
-                        HdStTokens->smoothNormals, pointsDataType);
+                        HdStTokens->smoothNormals, _pointsDataType);
 
                 // computation can be null for empty mesh
                 if (computation) {
@@ -828,7 +820,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 HdComputationSharedPtr computation =
                     _topology->GetQuadrangulateComputationGPU(
                         HdStTokens->smoothNormals,
-                        pointsDataType, GetId());
+                        _pointsDataType, GetId());
 
                 // computation can be null for all-quad mesh
                 if (computation) {
@@ -838,8 +830,6 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
         }
     }
-
-    *outPoints = points;
 
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimvarRange();
     
@@ -1016,14 +1006,6 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &_sharedData,
         sceneDelegate->GetRenderIndex());
 
-    // if we've identified a "points" buffer, but sources is empty, this means
-    // we're using primvar sharing and not computing our own points. flat
-    // normals still needs the point data, so add it as a dependent source (i.e.
-    // not scheduled for upload to a bar).
-    if (points && sources.empty()) {
-        resourceRegistry->AddSource(points);
-    }
-
     // schedule buffer sources
     if (!sources.empty()) {
         // add sources to update queue
@@ -1159,8 +1141,7 @@ void
 HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
-                                   bool requireFlatNormals,
-                                   HdBufferSourceSharedPtr const& points)
+                                   bool requireFlatNormals)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1218,19 +1199,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         generatedNormalsName = usePackedNormals ?
             HdStTokens->packedFlatNormals : HdStTokens->flatNormals;
 
-        // the flat normals computation uses the points primvar as a source.
-        //
-        // If we don't have the buffer source, we can get the points
-        // data type from the bufferspec in the vertex bar. We need it
-        // so we know what type normals should be.
-        HdType pointsDataType = HdTypeInvalid;
-        if (points) {
-            pointsDataType = points->GetTupleType().type;
-        } else {
-            pointsDataType = _GetPointsDataTypeFromBar(drawItem);
-        }
-
-        if (pointsDataType != HdTypeInvalid) {
+        if (_pointsDataType != HdTypeInvalid) {
             // Flat normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
@@ -1241,7 +1210,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                     numFaces,
                     HdTokens->points,
                     generatedNormalsName,
-                    pointsDataType,
+                    _pointsDataType,
                     usePackedNormals));
             computations.emplace_back(flatNormalsComputation, _NormalsCompQueue);
         }
@@ -1301,37 +1270,6 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         resourceRegistry->AddComputation(
             drawItem->GetElementPrimvarRange(), comp, queue);
     }
-}
-
-HdType
-HdStMesh::_GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const
-{
-    // GPU normal computations can read points data out of the vertex bar,
-    // but they need to know the type to generate buffer layouts and to
-    // properly type the normal output.
-    //
-    // We can read the type data from the GPU resource, but one gotcha is that
-    // the topology might have changed, such that the GPU resource no longer
-    // matches the topology. Therefore, the code needs to check that the gpu
-    // buffer is valid for the current topology before using it.
-
-    HdType pointsDataType = HdTypeInvalid;
-
-    if (HdBufferArrayRangeSharedPtr const &bar =
-            drawItem->GetVertexPrimvarRange()) {
-        if (bar->IsValid()) {
-            HdStBufferArrayRangeSharedPtr bar_ =
-                std::static_pointer_cast<HdStBufferArrayRange>
-                (bar);
-            HdStBufferResourceSharedPtr pointsResource =
-                bar_->GetResource(HdTokens->points);
-            if (pointsResource) {
-                pointsDataType = pointsResource->GetTupleType().type;
-            }
-        }
-    }
-
-    return pointsDataType;
 }
 
 bool
@@ -1572,13 +1510,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdBufferSourceSharedPtr points;
-
     /* VERTEX PRIMVARS */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits,
-                                requireSmoothNormals, &points);
+        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits, requireSmoothNormals);
     }
 
     /* FACEVARYING PRIMVARS */
@@ -1589,8 +1524,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* ELEMENT PRIMVARS */
     if ((requireFlatNormals && (*dirtyBits & DirtyFlatNormals)) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits,
-                                 requireFlatNormals, points);
+        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits, requireFlatNormals);
     }
 
     // When we have multiple drawitems for the same mesh we need to clean the
