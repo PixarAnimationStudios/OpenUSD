@@ -46,7 +46,7 @@ public:
     GlfBaseTextureData() = default;
 
     GLF_API
-    virtual ~GlfBaseTextureData();
+    virtual ~GlfBaseTextureData() override;
 
     // Disallow copies
     GlfBaseTextureData(const GlfBaseTextureData&) = delete;
@@ -74,11 +74,7 @@ public:
 
     virtual int ResizedDepth(int mipLevel = 0) const = 0;
 
-    virtual GLenum GLInternalFormat() const = 0;
-
-    virtual GLenum GLFormat() const = 0;
-
-    virtual GLenum GLType() const = 0;
+    virtual HioFormat GetHioFormat() const = 0;
 
     virtual size_t TargetMemory() const = 0;
 
@@ -100,14 +96,8 @@ public:
     virtual int GetNumMipLevels() const = 0;
 
     virtual bool IsCompressed() const {
-        return GlfIsCompressedFormat(GLFormat());
+        return HioIsCompressed(GetHioFormat());
     }
-
-protected:
-    // Map image format and type and encoding to GL format.
-    GLF_API
-    static GLenum _GLInternalFormatFromImageData(
-        GLenum format, GLenum type, bool isSRGB);
 
 };
 

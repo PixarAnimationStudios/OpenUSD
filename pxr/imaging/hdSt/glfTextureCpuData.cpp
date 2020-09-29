@@ -359,9 +359,7 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
     //   by modern graphics APIs)
     // - Pre-multiply alpha.
 
-    const HioFormat hioFormat = GlfGetHioFormat(textureData->GLFormat(), 
-                                          textureData->GLType(), 
-                                          textureData->GLInternalFormat());
+    const HioFormat hioFormat = textureData->GetHioFormat();
 
     _ConversionFunction conversionFunction = nullptr;
     _GetHgiFormatAndConversionFunction(hioFormat,

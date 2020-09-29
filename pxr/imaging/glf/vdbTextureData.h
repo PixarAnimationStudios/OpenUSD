@@ -71,11 +71,7 @@ public:
     GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
-    GLenum GLInternalFormat() const override;
-
-    GLenum GLFormat() const override;
-
-    GLenum GLType() const override;
+    HioFormat GetHioFormat() const override;
 
     size_t TargetMemory() const override;
 
@@ -111,7 +107,7 @@ private:
     int _resizedWidth, _resizedHeight, _resizedDepth;
     int _bytesPerPixel;
 
-    GLenum  _glInternalFormat, _glFormat, _glType;
+    HioFormat _hioFormat;
 
     WrapInfo _wrapInfo;
 

@@ -67,6 +67,12 @@ enum HioFormat
     HioFormatFloat32Vec3,
     HioFormatFloat32Vec4,
 
+    // Double64 - a 8-byte IEEE double.
+    HioFormatDouble64,
+    HioFormatDouble64Vec2,
+    HioFormatDouble64Vec3,
+    HioFormatDouble64Vec4,
+
     // UInt16 - a 2-byte unsigned short integer. 
     HioFormatUInt16,
     HioFormatUInt16Vec2,

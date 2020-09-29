@@ -59,6 +59,22 @@ int GlfGetNumElements(GLenum format);
 GLF_API 
 int GlfGetNumElements(HioFormat format);
 
+/// Byte size of a GL type.
+///
+/// Returns the size in bytes of a given GL type.
+///
+/// Supported types are : GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, 
+/// GL_SHORT, GL_FLOAT, GL_DOUBLE
+GLF_API
+int GlfGetElementSize(GLenum type);
+
+/// Byte size of the element type of a given HioFormat.
+///
+/// Returns the size in bytes for an element in the given hioFormat. 
+GLF_API
+int GlfGetElementSize(HioFormat hioFormat);
+
+
 /// GL type.
 ///
 /// Returns the GL type for a given HioFormat.
@@ -70,6 +86,12 @@ GLenum GlfGetGLType(HioFormat format);
 /// Returns the GL format for a given HioFormat.
 GLF_API
 GLenum GlfGetGLFormat(HioFormat format);
+
+/// GL Internal Format.
+///
+/// Returns the GL Internal Format for a given HioFormat.
+GLF_API
+GLenum GlfGetGLInternalFormat(HioFormat format);
 
 /// HioFormat
 ///
@@ -83,18 +105,6 @@ GLenum GlfGetGLFormat(HioFormat format);
 GLF_API
 HioFormat GlfGetHioFormat(GLenum glFormat, GLenum glType, bool isSRGB);
 
-GLF_API
-HioFormat GlfGetHioFormat(GLenum glFormat, GLenum glType,
-                          GLenum glInternalFormat);
-
-/// Byte size of a GL type.
-///
-/// Returns the size in bytes of a given GL type.
-///
-/// Supported types are : GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, 
-/// GL_SHORT, GL_FLOAT, GL_DOUBLE
-GLF_API
-int GlfGetElementSize(GLenum type);
 
 /// Checks the valitidy of a GL framebuffer
 ///
@@ -103,25 +113,6 @@ int GlfGetElementSize(GLenum type);
 GLF_API
 bool GlfCheckGLFrameBufferStatus(GLuint target, std::string * reason);
 
-/// Check if the format is compressed.
-///
-/// Supported GL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
-/// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
-GLF_API
-bool GlfIsCompressedFormat(GLenum format);
-
-/// Check if the format is compressed.
-///
-/// Supported Hio compressed formats : HioFormatBC7UNorm8Vec4, 
-/// HioFormatBC6UFloatVec3
-GLF_API
-bool GlfIsCompressedFormat(HioFormat hioFormat);
-
-/// Calculate the byte size of compressed textures.
-///
-/// Supported Hio compressed formats : HioFormatBC7UNorm8Vec4, 
-/// HioFormatBC6UFloatVec3
-size_t GlfGetCompressedTextureSize(int width, int height, HioFormat hioFormat);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
