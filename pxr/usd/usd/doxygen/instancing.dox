@@ -460,14 +460,14 @@ def "ParkingLot"
 {
     def "Car_1" (
         instanceable = true
-        references = @./Car2.usda@</Car>
+        references = @./Car.usd@</Car>
     )
     {
     }
 
     def "Car_2" (
         instanceable = true
-        references = @./Car2.usda@</Car>
+        references = @./Car.usd@</Car>
     )
     {
     }
