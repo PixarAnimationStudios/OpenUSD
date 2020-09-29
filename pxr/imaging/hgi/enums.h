@@ -171,6 +171,8 @@ enum HgiSampleCount
     HgiSampleCount1  = 1,
     HgiSampleCount4  = 4,
     HgiSampleCount16 = 16,
+
+    HgiSampleCountEnd
 };
 
 /// \enum HgiAttachmentLoadOp
@@ -274,6 +276,8 @@ enum HgiShaderStageBits : HgiBits
     HgiShaderStageTessellationControl  = 1 << 3,
     HgiShaderStageTessellationEval     = 1 << 4,
     HgiShaderStageGeometry             = 1 << 5,
+
+    HgiShaderStageCustomBitsBegin      = 1 << 6,
 };
 using HgiShaderStage = HgiBits;
 
