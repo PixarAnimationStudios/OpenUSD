@@ -27,6 +27,7 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/vdbTextureData.h"
+#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
@@ -231,8 +232,12 @@ public:
         // Allocate dense grid of given size
         : _denseGrid(bbox)
     {
-        TRACE_FUNCTION_SCOPE("GlfVdbTextureData: Copy to dense");
-        openvdb::tools::copyToDense(grid->tree(), _denseGrid);
+        HF_MALLOC_TAG_FUNCTION();
+        {
+            TRACE_FUNCTION_SCOPE("GlfVdbTextureData: Copy to dense");
+            HF_MALLOC_TAG("Copy to dense");
+            openvdb::tools::copyToDense(grid->tree(), _denseGrid);
+        }
     }
 
     const unsigned char * GetData() const override {
@@ -449,6 +454,7 @@ _GridHolderBase::New(const openvdb::GridBase::Ptr &grid)
 _GridHolderBase*
 _LoadGrid(const std::string &filePath, std::string const &gridName)
 {
+    HF_MALLOC_TAG_FUNCTION();
     TRACE_FUNCTION();
 
     openvdb::initialize();
@@ -474,7 +480,12 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
         return nullptr;
     }
     
-    openvdb::GridBase::Ptr const result = f.readGrid(gridName);
+    openvdb::GridBase::Ptr result;
+
+    {
+        HF_MALLOC_TAG("readGrid");
+        result = f.readGrid(gridName);
+    }
 
     {
         TRACE_FUNCTION_SCOPE("Closing VDB file");

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/base/work/loops.h"
 
@@ -153,6 +154,7 @@ HdSt_TextureObjectRegistry::Commit()
 
     {
         TRACE_FUNCTION_SCOPE("Loading textures");
+        HF_TRACE_FUNCTION_SCOPE("Loading textures");
 
         if (_isGlfBaseTextureDataThreadSafe) {
             // Loading a texture file of a previously unseen type might
@@ -173,6 +175,7 @@ HdSt_TextureObjectRegistry::Commit()
 
     {
         TRACE_FUNCTION_SCOPE("Commiting textures");
+        HF_TRACE_FUNCTION_SCOPE("Committing textures");
 
         // Commit loaded files to GPU.
         for (const HdStTextureObjectSharedPtr &texture : result) {
