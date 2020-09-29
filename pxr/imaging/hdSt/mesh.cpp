@@ -759,6 +759,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    TfToken generatedNormalsName;
+
     if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals)) {
         // note: normals gets dirty when points are marked as dirty,
         // at changetracker.
@@ -775,7 +777,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         bool usePackedSmoothNormals =
             IsEnabledPackedNormals() && !(doRefine || doQuadrangulate);
 
-        TfToken normalsName = usePackedSmoothNormals ? 
+        generatedNormalsName = usePackedSmoothNormals ? 
             HdStTokens->packedSmoothNormals : HdStTokens->smoothNormals;
         
         // The smooth normals computation uses the points primvar as a source.
@@ -798,7 +800,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 new HdSt_SmoothNormalsComputationGPU(
                     _vertexAdjacency.get(),
                     HdTokens->points,
-                    normalsName,
+                    generatedNormalsName,
                     pointsDataType,
                     usePackedSmoothNormals));
             computations.emplace_back(
@@ -850,8 +852,16 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
     HdBufferSpecVector removedSpecs;
     if (hasDirtyPrimvarDesc) {
-        static TfTokenVector internallyGeneratedPrimvars =
-            { HdStTokens->packedSmoothNormals, HdStTokens->smoothNormals };
+        // If we've just generated normals then make sure those
+        // are preserved, otherwise allow either previously existing
+        // packed or non-packed normals to remain.
+        TfTokenVector internallyGeneratedPrimvars;
+        if (! generatedNormalsName.IsEmpty()) {
+            internallyGeneratedPrimvars = { generatedNormalsName };
+        } else {
+            internallyGeneratedPrimvars =
+                { HdStTokens->packedSmoothNormals, HdStTokens->smoothNormals };
+        }
 
         removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, primvars,
             compPrimvars, internallyGeneratedPrimvars, id);
@@ -1197,13 +1207,15 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     HdStComputationSharedPtrVector computations;
 
+    TfToken generatedNormalsName;
+
     if (requireFlatNormals && (*dirtyBits & DirtyFlatNormals))
     {
         *dirtyBits &= ~DirtyFlatNormals;
         TF_VERIFY(_topology);
 
         bool usePackedNormals = IsEnabledPackedNormals();
-        TfToken normalsName = usePackedNormals ?
+        generatedNormalsName = usePackedNormals ?
             HdStTokens->packedFlatNormals : HdStTokens->flatNormals;
 
         // the flat normals computation uses the points primvar as a source.
@@ -1228,7 +1240,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                     drawItem->GetVertexPrimvarRange(),
                     numFaces,
                     HdTokens->points,
-                    normalsName,
+                    generatedNormalsName,
                     pointsDataType,
                     usePackedNormals));
             computations.emplace_back(flatNormalsComputation, _NormalsCompQueue);
@@ -1246,8 +1258,17 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
     HdBufferSpecVector removedSpecs;
     if (hasDirtyPrimvarDesc) {
-        static TfTokenVector internallyGeneratedPrimvars =
-            { HdStTokens->flatNormals, HdStTokens->packedFlatNormals };
+        // If we've just generated normals then make sure those
+        // are preserved, otherwise allow either previously existing
+        // packed or non-packed normals to remain.
+        TfTokenVector internallyGeneratedPrimvars;
+        if (! generatedNormalsName.IsEmpty()) {
+            internallyGeneratedPrimvars = { generatedNormalsName };
+        } else {
+            internallyGeneratedPrimvars =
+                { HdStTokens->packedFlatNormals, HdStTokens->flatNormals };
+        }
+
         removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, primvars, 
             internallyGeneratedPrimvars, id);
     }
