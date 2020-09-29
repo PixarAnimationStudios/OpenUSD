@@ -863,7 +863,17 @@ def InstallTIFF(context, force, buildArgs):
         PatchFile("CMakeLists.txt", 
                    [("add_subdirectory(tools)", "# add_subdirectory(tools)"),
                     ("add_subdirectory(test)", "# add_subdirectory(test)")])
-        RunCMake(context, force, buildArgs)
+
+        # The libTIFF CMakeScript says the ld-version-script 
+        # functionality is only for compilers using GNU ld on 
+        # ELF systems or systems which provide an emulation; therefore
+        # skipping it completely on mac and windows.
+        if MacOS() or Windows():
+            extraArgs = ["-Dld-version-script=OFF"]
+        else:
+            extraArgs = []
+        extraArgs += buildArgs
+        RunCMake(context, force, extraArgs)
 
 TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 
