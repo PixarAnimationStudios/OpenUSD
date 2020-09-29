@@ -1935,7 +1935,8 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
         
         for (auto const& ipv : instrData->inheritedPrimvars) {
             VtValue val;
-            if (_ComputeInheritedPrimvar(usdPrim, ipv.name, ipv.type,
+            if (ipv.name == key && 
+                _ComputeInheritedPrimvar(usdPrim, ipv.name, ipv.type,
                                          &val, time)) {
                 return val;
             }

@@ -692,6 +692,11 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
         if (pv.ComputeFlattened(&value, time)) {
             return value;
         }
+
+    } else if (UsdGeomPrimvar pv = _GetInheritedPrimvar(prim, key)) {
+        if (pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
     }
 
     return BaseAdapter::Get(prim, cachePath, key, time);
