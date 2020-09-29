@@ -3084,8 +3084,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
 
     // Store any external asset dependencies so we have an initial state to
     // compare during reload.
-    layer->_externalAssetModificationTimes = 
-        std::move(_GetExternalAssetModificationTimes(*layer));
+    layer->_externalAssetModificationTimes =
+        _GetExternalAssetModificationTimes(*layer);
 
     layer->_MarkCurrentStateAsClean();
 
