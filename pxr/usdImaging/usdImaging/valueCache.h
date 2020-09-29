@@ -230,10 +230,6 @@ public:
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
-    VtValue& GetExtComputationInput(SdfPath const& path,
-                                    TfToken const& name) const {
-        return _Get<VtValue>(Key(path, name));
-    }
 
     bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
         return _Find(Key::InstanceIndices(path), value);
@@ -241,20 +237,12 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindExtComputationInput(
-        SdfPath const& path, TfToken const& name, VtValue* value) const {
-        return _Find(Key(path, name), value);
-    }
 
     bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
         return _Extract(Key::InstanceIndices(path), value);
     }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
-    }
-    bool ExtractExtComputationInput(SdfPath const& path, TfToken const& name,
-                                    VtValue* value) {
-        return _Extract(Key(path, name), value);
     }
 
     /// Remove any items from the cache that are marked for defered deletion.

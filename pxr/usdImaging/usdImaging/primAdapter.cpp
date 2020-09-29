@@ -1294,6 +1294,18 @@ UsdImagingPrimAdapter::GetExtComputationPrimvars(
     return HdExtComputationPrimvarDescriptorVector();
 }
 
+/*virtual*/
+VtValue 
+UsdImagingPrimAdapter::GetExtComputationInput(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* instancerContext) const
+{
+    return VtValue();
+}
+
 /*virtual*/ 
 std::string 
 UsdImagingPrimAdapter::GetExtComputationKernel(

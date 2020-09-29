@@ -224,6 +224,15 @@ public:
             const UsdImagingInstancerContext* instancerContext) const override;
 
     USDIMAGING_API
+    virtual VtValue 
+    GetExtComputationInput(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext) const override;
+
+    USDIMAGING_API
     virtual std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,
@@ -301,20 +310,6 @@ private:
     VtVec3fArray _GetSkinnedPrimPoints(const UsdPrim& skinnedPrim,
                                        const SdfPath& skinnedPrimCachePath,
                                        UsdTimeCode time) const;
-
-    void _UpdateSkinningComputationForTime(
-            const UsdPrim& skinnedPrim,
-            const SdfPath& computationPath, 
-            UsdTimeCode time,
-            HdDirtyBits requestedBits,
-            const UsdImagingInstancerContext* instancerContext=nullptr) const;
-
-    void _UpdateSkinningInputAggregatorComputationForTime(
-            const UsdPrim& skinnedPrim,
-            const SdfPath& computationPath, 
-            UsdTimeCode time,
-            HdDirtyBits requestedBits,
-            const UsdImagingInstancerContext* instancerContext=nullptr) const;
     
     SdfPath _GetSkinningComputationPath(const SdfPath& skinnedPrimPath) const;
 
@@ -346,6 +341,26 @@ private:
             UsdTimeCode time,
             HdDirtyBits requestedBits,
             const UsdImagingInstancerContext* instancerContext=nullptr) const;
+
+    // ---------------------------------------------------------------------- //
+    /// GetExtComputationInput() helpers
+    // ---------------------------------------------------------------------- //
+
+    VtValue 
+    _GetExtComputationInputForSkinningComputation(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext) const;
+
+    VtValue 
+    _GetExtComputationInputForInputAggregator(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext) const;
 
 
     // ---------------------------------------------------------------------- //

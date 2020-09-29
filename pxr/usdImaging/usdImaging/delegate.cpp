@@ -2786,25 +2786,18 @@ VtValue
 UsdImagingDelegate::GetExtComputationInput(SdfPath const& computationId,
                                            TfToken const& input)
 {
+    TRACE_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
-    VtValue value;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (!_valueCache.ExtractExtComputationInput(cachePath, input, &value)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow fetch for token %s for computation %s\n", 
-                            input.GetText(), computationId.GetText());
-        if (input == HdTokens->dispatchCount) {
-            _UpdateSingleValue(cachePath, HdExtComputation::DirtyDispatchCount);
-        } else if (input == HdTokens->elementCount) {
-            _UpdateSingleValue(cachePath, HdExtComputation::DirtyElementCount);
-        } else {
-            _UpdateSingleValue(cachePath, HdExtComputation::DirtySceneInput);
-        }
-
-        TF_VERIFY(_valueCache.ExtractExtComputationInput(cachePath, input, 
-                                                         &value));
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->GetExtComputationInput(
+                       primInfo->usdPrim, cachePath, input, GetTime(),
+                       nullptr /* instancerContext */); 
     }
-    return value;
+
+    return VtValue();
 }
 
 std::string

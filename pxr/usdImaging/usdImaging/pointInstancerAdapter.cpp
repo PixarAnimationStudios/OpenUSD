@@ -1942,6 +1942,26 @@ UsdImagingPointInstancerAdapter::GetExtComputationPrimvars(
 }
 
 /*virtual*/
+VtValue 
+UsdImagingPointInstancerAdapter::GetExtComputationInput(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* /*unused*/) const
+{
+    UsdImagingInstancerContext ctx;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &ctx)) {
+
+        return proto->adapter->GetExtComputationInput(
+                _GetProtoUsdPrim(*proto), cachePath, name, time, &ctx);
+    }
+    return BaseAdapter::GetExtComputationInput(usdPrim, cachePath, name, time,
+                nullptr);
+}
+
+/*virtual*/
 std::string 
 UsdImagingPointInstancerAdapter::GetExtComputationKernel(
     UsdPrim const& usdPrim,

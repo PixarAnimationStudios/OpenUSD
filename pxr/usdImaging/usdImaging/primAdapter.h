@@ -528,6 +528,15 @@ public:
             const UsdImagingInstancerContext* instancerContext) const;
 
     USDIMAGING_API
+    virtual VtValue 
+    GetExtComputationInput(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext) const;
+
+    USDIMAGING_API
     virtual std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,
