@@ -206,18 +206,18 @@ public:
         return true;
     }
 
-    inline bool _GetTargetOrConnectionListOp(
-        SdfPath const &path, SdfPathListOp *listOp) const {
+    inline VtValue
+    _GetTargetOrConnectionListOpValue(SdfPath const &path) const {
+        VtValue targetPaths;
         if (path.IsPrimPropertyPath()) {
-            VtValue targetPaths;
             if ((Has(path, SdfFieldKeys->TargetPaths, &targetPaths) ||
-                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths)) &&
-                targetPaths.IsHolding<SdfPathListOp>()) {
-                targetPaths.UncheckedSwap(*listOp);
-                return true;
+                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths))) {
+                if (!targetPaths.IsHolding<SdfPathListOp>()) {
+                    targetPaths = VtValue();
+                }
             }
         }
-        return false;
+        return targetPaths;
     }
     
     inline bool _HasTargetOrConnectionSpec(SdfPath const &path) const {
@@ -228,8 +228,10 @@ public:
         using std::find;
         SdfPath parentPath = path.GetParentPath();
         SdfPath targetPath = path.GetTargetPath();
-        SdfPathListOp listOp;
-        if (_GetTargetOrConnectionListOp(parentPath, &listOp)) {
+        VtValue listOpVal = _GetTargetOrConnectionListOpValue(parentPath);
+        if (!listOpVal.IsEmpty()) {
+            SdfPathListOp const &listOp =
+                listOpVal.UncheckedGet<SdfPathListOp>();
             if (listOp.IsExplicit()) {
                 auto const &items = listOp.GetExplicitItems();
                 return find(
@@ -385,7 +387,10 @@ public:
                 specType == SdfSpecTypeRelationship) {
                 SdfPathListOp listOp;
                 SdfPathVector specs;
-                if (_GetTargetOrConnectionListOp(path, &listOp)) {
+                VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
+                if (!listOpVal.IsEmpty()) {
+                    SdfPathListOp const &listOp =
+                        listOpVal.UncheckedGet<SdfPathListOp>();
                     if (listOp.IsExplicit()) {
                         specs = listOp.GetExplicitItems();
                     }
