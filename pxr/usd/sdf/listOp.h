@@ -286,6 +286,13 @@ private:
     ItemVector _orderedItems;
 };
 
+// ADL swap.
+template <class T>
+void swap(SdfListOp<T> &x, SdfListOp<T> &y)
+{
+    x.Swap(y);
+}
+
 // Helper function for applying an ordering operation described by \p orderVector
 // to vector \p v.
 template <class ItemType>
