@@ -129,6 +129,10 @@ public:
     /// Some implementations (e.g. Metal) may have build in support for
     /// queueing up CPU->GPU copies. Those implementations can return the
     /// CPU pointer to the buffer's content directly.
+    /// The caller should not assume that the data from the CPU staging area
+    /// is automatically flushed to the GPU. Instead, after copying is finished,
+    /// the caller should use BlitCmds CopyBufferCpuToGpu to ensure the transfer
+    /// from the staging area to the GPU is scheduled.
     HGI_API
     virtual void* GetCPUStagingAddress() = 0;
 
