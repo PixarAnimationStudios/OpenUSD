@@ -137,51 +137,51 @@ class InstancedAndPayloadedScene(PayloadedScene):
         # make them instanceable. This yields:
         #
         # stage.fmt                  payload1.fmt
-        #   /__Master_<#A> ---(P)---> /Sad
-        #   |                         /Sad/Panda
+        #   /__Prototype_<#A> --(P)--> /Sad
+        #   |                          /Sad/Panda
         #   |
         #   |                         payload2.fmt
-        #   /__Master_<#B> ---(P)---> /Baz
-        #   |                         /Baz/Garply ---(inst)---> /__Master_<#C>
+        #   /__Prototype_<#B> --(P)--> /Baz
+        #   |                          /Baz/Garply --(inst)--> /__Prototype_<#C>
         #   |
         #   |                         payload3.fmt
-        #   /__Master_<#C> ---(P)---> /Garply
-        #   |                         /Garply/Qux
+        #   /__Prototype_<#C> --(P)--> /Garply
+        #   |                          /Garply/Qux
         #   |
         #   |                         payload4.fmt
-        #   |                         /Corge
-        #   /__Master_<#D> ---(P)---> /Corge/Waldo
-        #   |                         /Corge/Waldo/Fred
+        #   |                          /Corge
+        #   /__Prototype_<#D> --(P)--> /Corge/Waldo
+        #   |                          /Corge/Waldo/Fred
         #   |
-        #   |                         payload5.fmt
-        #   /__Master_<#E> ---(P)---> /Bear
-        #   |                  |      /Bear/Market
-        #   |                  |
-        #   |                  |      payload6.fmt
-        #   |                 (P)---> /Adams
-        #   |                         /Adams/Onis
+        #   |                          payload5.fmt
+        #   /__Prototype_<#E> --(P)--> /Bear
+        #   |                    |     /Bear/Market
+        #   |                    |
+        #   |                    |     payload6.fmt
+        #   |                   (P)--> /Adams
+        #   |                          /Adams/Onis
         #   |
         #   /IntBase
         #   /IntBase/IntContents
         #   |
-        #   /__Master_<#F> ---(P) ---> /IntBase
-        #                              /IntBase/IntContents
+        #   /__Prototype_<#F> --(P) --> /IntBase
+        #                               /IntBase/IntContents
         #
-        #   /Sad   ---(instance)---> /__Master_<#A>
-        #   /Sad_1 ---(instance)---> /__Master_<#A>
+        #   /Sad   --(instance)--> /__Prototype_<#A>
+        #   /Sad_1 --(instance)--> /__Prototype_<#A>
         #   |  
         #   /Foo
-        #   /Foo/Baz   ---(instance)---> /__Master_<#B>
-        #   /Foo/Baz_1 ---(instance)---> /__Master_<#B>
+        #   /Foo/Baz   --(instance)--> /__Prototype_<#B>
+        #   /Foo/Baz_1 --(instance)--> /__Prototype_<#B>
         #   |
-        #   /Bar   ---(instance)---> /__Master<#D>
-        #   /Bar_1 ---(instance)---> /__Master<#D>
+        #   /Bar   --(instance)--> /__Prototype<#D>
+        #   /Bar_1 --(instance)--> /__Prototype<#D>
         #   |
-        #   /Grizzly   ---(instance)---> /__Master<#E>
-        #   /Grizzly_1 ---(instance)---> /__Master<#E>
+        #   /Grizzly   --(instance)--> /__Prototype<#E>
+        #   /Grizzly_1 --(instance)--> /__Prototype<#E>
         #   |
-        #   /IntPayload   ---(instance)---> /__Master<#F>
-        #   /IntPayload_1 ---(instance)---> /__Master<#F>
+        #   /IntPayload   --(instance)--> /__Prototype<#F>
+        #   /IntPayload_1 --(instance)--> /__Prototype<#F>
 
 
         super(InstancedAndPayloadedScene, self).__init__(fmt)

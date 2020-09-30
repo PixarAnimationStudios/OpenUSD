@@ -185,8 +185,8 @@ class TestUsdInstancing(unittest.TestCase):
         nl = NoticeListener()
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                              '/World/sets/Set_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1/Prop_1', 
+                                 '/World/sets/Set_1/Prop_2'] })
 
         print("-" * 60)
         print("Adding prim /Prop/Scope to referenced prop")
@@ -195,24 +195,25 @@ class TestUsdInstancing(unittest.TestCase):
                              'Scope', Sdf.SpecifierDef)
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                              '/World/sets/Set_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1/Prop_1', 
+                                 '/World/sets/Set_1/Prop_2'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_3/Scope', '/__Master_1/Scope'])
+            ['/World/sets/Set_1/Prop_3/Scope', '/__Prototype_1/Scope'])
 
         print("-" * 60)
         print("Adding prim /Prop/Scope/Scope2 to referenced prop")
         scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                              '/World/sets/Set_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1/Prop_1', 
+                                 '/World/sets/Set_1/Prop_2'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_3/Scope/Scope2', '/__Master_1/Scope/Scope2'])
+            ['/World/sets/Set_1/Prop_3/Scope/Scope2',
+             '/__Prototype_1/Scope/Scope2'])
 
         # Test that making a prototype prim's source prim index uninstanceable
         # causes Usd to assign another index as that prototype prim's source.
-        prototype = s.GetPrimAtPath('/__Master_1')
+        prototype = s.GetPrimAtPath('/__Prototype_1')
         primPathToUninstance = prototype._GetSourcePrimIndex().rootNode.path
 
         print("-" * 60)
@@ -222,14 +223,14 @@ class TestUsdInstancing(unittest.TestCase):
 
         if primPathToUninstance == '/World/sets/Set_1/Prop_1':
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/World/sets/Set_1/Prop_2'] })
+                { '/__Prototype_1': ['/World/sets/Set_1/Prop_2'] })
             ValidateExpectedChanges(nl,
-                ['/World/sets/Set_1/Prop_1', '/__Master_1'])
+                ['/World/sets/Set_1/Prop_1', '/__Prototype_1'])
         elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/World/sets/Set_1/Prop_1'] })
+                { '/__Prototype_1': ['/World/sets/Set_1/Prop_1'] })
             ValidateExpectedChanges(nl,
-                ['/World/sets/Set_1/Prop_2', '/__Master_1'])
+                ['/World/sets/Set_1/Prop_2', '/__Prototype_1'])
         else:
             assert False, 'Unexpected prim <%s>' % primPathToUninstance
 
@@ -245,10 +246,10 @@ class TestUsdInstancing(unittest.TestCase):
 
         if primPathToUninstance == '/World/sets/Set_1/Prop_1':
             ValidateExpectedChanges(nl,
-                ['/World/sets/Set_1/Prop_1', '/__Master_1'])
+                ['/World/sets/Set_1/Prop_1', '/__Prototype_1'])
         elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
             ValidateExpectedChanges(nl,
-                ['/World/sets/Set_1/Prop_2', '/__Master_1'])
+                ['/World/sets/Set_1/Prop_2', '/__Prototype_1'])
         else:
             assert False, 'Unexpected prim <%s>' % primPathToUninstance
 
@@ -262,9 +263,9 @@ class TestUsdInstancing(unittest.TestCase):
         p3.SetInstanceable(True)
 
         ValidateExpectedInstances(s, 
-            { '/__Master_2': ['/World/sets/Set_1/Prop_3'] })
+            { '/__Prototype_2': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_3', '/__Master_2'])
+            ['/World/sets/Set_1/Prop_3', '/__Prototype_2'])
 
         # Test that modifying the composition structure of an instanceable
         # prim index causes new prototypes to be created.
@@ -274,22 +275,22 @@ class TestUsdInstancing(unittest.TestCase):
         propSpec.inheritPathList.ClearEdits()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_3': ['/World/sets/Set_1/Prop_3'] })
+            { '/__Prototype_3': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
              '/World/sets/Set_1/Prop_3', 
-             '/__Master_2', '/__Master_3'])
+             '/__Prototype_2', '/__Prototype_3'])
 
         print("-" * 60)
         print("Re-add inherit arc from referenced prop")
         propSpec.inheritPathList.Add('/_class_Prop')
 
         ValidateExpectedInstances(s, 
-            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+            { '/__Prototype_4': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
              '/World/sets/Set_1/Prop_3', 
-             '/__Master_3', '/__Master_4'])
+             '/__Prototype_3', '/__Prototype_4'])
 
         # Test that removing prims from beneath instanceable prim indexes
         # only affects the prototype.
@@ -298,22 +299,22 @@ class TestUsdInstancing(unittest.TestCase):
         del scope2.nameParent.nameChildren[scope2.name]
 
         ValidateExpectedInstances(s, 
-            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+            { '/__Prototype_4': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_1/Scope/Scope2', 
              '/World/sets/Set_1/Prop_2/Scope/Scope2', 
-             '/__Master_4/Scope/Scope2'])
+             '/__Prototype_4/Scope/Scope2'])
 
         print("-" * 60)
         print("Remove /Prop/Scope from referenced prop")
         del scope.nameParent.nameChildren[scope.name]
 
         ValidateExpectedInstances(s, 
-            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+            { '/__Prototype_4': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_1/Scope', 
              '/World/sets/Set_1/Prop_2/Scope', 
-             '/__Master_4/Scope'])
+             '/__Prototype_4/Scope'])
 
     def test_Nested(self):
         """Test instancing and change processing with basic asset structure
@@ -322,8 +323,9 @@ class TestUsdInstancing(unittest.TestCase):
         nl = NoticeListener()
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_2': ['/__Prototype_1/Prop_1',
+                                 '/__Prototype_1/Prop_2'] })
 
         print("-" * 60)
         print("Adding prim /Prop/Scope to referenced prop")
@@ -332,26 +334,29 @@ class TestUsdInstancing(unittest.TestCase):
                              'Scope', Sdf.SpecifierDef)    
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_2': ['/__Prototype_1/Prop_1',
+                                 '/__Prototype_1/Prop_2'] })
         ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_3/Scope', '/__Master_2/Scope'])
+            ['/__Prototype_1/Prop_3/Scope', '/__Prototype_2/Scope'])
 
         print("-" * 60)
         print("Adding prim /Prop/Scope/Scope2 to referenced prop")
         scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_2': ['/__Prototype_1/Prop_1', 
+                                 '/__Prototype_1/Prop_2'] })
         ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_3/Scope/Scope2', '/__Master_2/Scope/Scope2'])
+            ['/__Prototype_1/Prop_3/Scope/Scope2',
+             '/__Prototype_2/Scope/Scope2'])
 
         setLayer = Sdf.Layer.Find('nested/set.usda')
 
         # Test that making a prototype prim's source prim index uninstanceable
         # causes Usd to assign another index as that prototype prim's source.
-        prototype = s.GetPrimAtPath('/__Master_2')
+        prototype = s.GetPrimAtPath('/__Prototype_2')
         primPathToUninstance = prototype._GetSourcePrimIndex().rootNode.path
 
         print("-" * 60)
@@ -362,19 +367,19 @@ class TestUsdInstancing(unittest.TestCase):
             p2.SetInfo('instanceable', False)
 
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/World/sets/Set_1'],
-                  '/__Master_2': ['/__Master_1/Prop_2'] })
+                { '/__Prototype_1': ['/World/sets/Set_1'],
+                  '/__Prototype_2': ['/__Prototype_1/Prop_2'] })
             ValidateExpectedChanges(nl, 
-                ['/__Master_1/Prop_1', '/__Master_2'])
+                ['/__Prototype_1/Prop_1', '/__Prototype_2'])
         elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
             p2 = setLayer.GetPrimAtPath("/Set/Prop_2")
             p2.SetInfo('instanceable', False)
 
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/World/sets/Set_1'],
-                  '/__Master_2': ['/__Master_1/Prop_1'] })
+                { '/__Prototype_1': ['/World/sets/Set_1'],
+                  '/__Prototype_2': ['/__Prototype_1/Prop_1'] })
             ValidateExpectedChanges(nl, 
-                ['/__Master_1/Prop_2', '/__Master_2'])
+                ['/__Prototype_1/Prop_2', '/__Prototype_2'])
         else:
             assert False, 'Unexpected prim <%s>' % primPathToUninstance
 
@@ -390,17 +395,17 @@ class TestUsdInstancing(unittest.TestCase):
             p1 = setLayer.GetPrimAtPath('/Set/Prop_1')
             p1.SetInfo('instanceable', False)
             ValidateExpectedChanges(nl, 
-                ['/__Master_1/Prop_1', '/__Master_2'])
+                ['/__Prototype_1/Prop_1', '/__Prototype_2'])
         elif primPathToUninstance == "/World/sets/Set_1/Prop_2":
             p1 = setLayer.GetPrimAtPath('/Set/Prop_2')
             p1.SetInfo('instanceable', False)
             ValidateExpectedChanges(nl, 
-               ['/__Master_1/Prop_2', '/__Master_2'])
+               ['/__Prototype_1/Prop_2', '/__Prototype_2'])
         else:
             assert False, 'Unexpected prim <%s>' % primPathToUninstance
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/World/sets/Set_1'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'] })
 
         # Test that making a prim index instanceable causes a new prototype to
         # be created if it's the first one.
@@ -410,10 +415,10 @@ class TestUsdInstancing(unittest.TestCase):
         p3.SetInfo('instanceable', True)
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_3': ['/__Master_1/Prop_3'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_3': ['/__Prototype_1/Prop_3'] })
         ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_3', '/__Master_3'])
+            ['/__Prototype_1/Prop_3', '/__Prototype_3'])
 
         # Test that modifying the composition structure of an instanceable
         # prim index causes new prototypes to be created.
@@ -423,22 +428,22 @@ class TestUsdInstancing(unittest.TestCase):
         propSpec.inheritPathList.ClearEdits()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_4': ['/__Master_1/Prop_3'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_4': ['/__Prototype_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
-             '/__Master_3', '/__Master_4',])
+            ['/__Prototype_1/Prop_1', '/__Prototype_1/Prop_2',
+             '/__Prototype_1/Prop_3', '/__Prototype_3', '/__Prototype_4',])
 
         print("-" * 60)
         print("Re-add inherit arc from referenced prop")
         propSpec.inheritPathList.Add('/_class_Prop')
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_5': ['/__Master_1/Prop_3'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_5': ['/__Prototype_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
-             '/__Master_4', '/__Master_5',])
+            ['/__Prototype_1/Prop_1', '/__Prototype_1/Prop_2', 
+             '/__Prototype_1/Prop_3', '/__Prototype_4', '/__Prototype_5',])
 
         # Test that removing prims from beneath instanceable prim indexes
         # only affects the prototype.
@@ -447,22 +452,23 @@ class TestUsdInstancing(unittest.TestCase):
         del scope2.nameParent.nameChildren[scope2.name]
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_5': ['/__Master_1/Prop_3'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_5': ['/__Prototype_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/__Master_1/Prop_1/Scope/Scope2', '/__Master_1/Prop_2/Scope/Scope2', 
-             '/__Master_5/Scope/Scope2',])
+            ['/__Prototype_1/Prop_1/Scope/Scope2', 
+             '/__Prototype_1/Prop_2/Scope/Scope2', 
+             '/__Prototype_5/Scope/Scope2',])
 
         print("-" * 60)
         print("Remove /Prop/Scope from referenced prop")
         del scope.nameParent.nameChildren[scope.name]
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_5': ['/__Master_1/Prop_3'] })
+            { '/__Prototype_1': ['/World/sets/Set_1'],
+              '/__Prototype_5': ['/__Prototype_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', 
-             '/__Master_5/Scope',])
+            ['/__Prototype_1/Prop_1/Scope', '/__Prototype_1/Prop_2/Scope', 
+             '/__Prototype_5/Scope',])
 
     def test_Nested2(self):
         """Test loading and unloading instances with nested instances."""
@@ -473,15 +479,15 @@ class TestUsdInstancing(unittest.TestCase):
 
         instances = ['/A_1', '/A_2', '/A_3']
         ValidateExpectedInstances(s,
-            { '/__Master_1': instances })
+            { '/__Prototype_1': instances })
 
         print("-" * 60)
         print("Loading instances")
 
         s.LoadAndUnload(instances, [])
         ValidateExpectedInstances(s,
-            { '/__Master_2': instances,
-              '/__Master_3': ['/__Master_2/B'] })
+            { '/__Prototype_2': instances,
+              '/__Prototype_3': ['/__Prototype_2/B'] })
         ValidateExpectedChanges(nl,
             ['/A_1', '/A_2', '/A_3'])
 
@@ -490,7 +496,7 @@ class TestUsdInstancing(unittest.TestCase):
 
         s.LoadAndUnload([], instances)
         ValidateExpectedInstances(s,
-            { '/__Master_4': instances })
+            { '/__Prototype_4': instances })
         ValidateExpectedChanges(nl,
             ['/A_1', '/A_2', '/A_3'])
 
@@ -514,8 +520,8 @@ class TestUsdInstancing(unittest.TestCase):
         s = OpenStage('payloads/root.usda')
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/ModelGroup_1', '/ModelGroup_2'],
-              '/__Master_2': ['/Model_1', '/Model_2', '/__Master_1/Model'] })
+            { '/__Prototype_1': ['/ModelGroup_1', '/ModelGroup_2'],
+              '/__Prototype_2': ['/Model_1', '/Model_2', '/__Prototype_1/Model'] })
 
         print("-" * 60)
         print("Opening stage with nothing loaded initially")
@@ -528,7 +534,7 @@ class TestUsdInstancing(unittest.TestCase):
         model_1 = s.GetPrimAtPath('/Model_1')
         model_1.Load()
 
-        ValidateExpectedInstances(s, { '/__Master_1': ['/Model_1'] })
+        ValidateExpectedInstances(s, { '/__Prototype_1': ['/Model_1'] })
         ValidateExpectedChanges(nl, ['/Model_1'])
 
         print("-" * 60)
@@ -537,14 +543,14 @@ class TestUsdInstancing(unittest.TestCase):
         model_2.Load()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/Model_1', '/Model_2'] })
+            { '/__Prototype_1': ['/Model_1', '/Model_2'] })
         ValidateExpectedChanges(nl, ['/Model_2'])
 
         print("-" * 60)
         print("Unloading instance /Model_1")
         model_1.Unload()
 
-        ValidateExpectedInstances(s, { '/__Master_1': ['/Model_2'] })
+        ValidateExpectedInstances(s, { '/__Prototype_1': ['/Model_2'] })
         ValidateExpectedChanges(nl, ['/Model_1'])
 
         print("-" * 60)
@@ -553,8 +559,8 @@ class TestUsdInstancing(unittest.TestCase):
         group_1.Load()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
-              '/__Master_2': ['/ModelGroup_1'] })
+            { '/__Prototype_1': ['/Model_2', '/__Prototype_2/Model'],
+              '/__Prototype_2': ['/ModelGroup_1'] })
         ValidateExpectedChanges(nl, ['/ModelGroup_1'])
 
         print("-" * 60)
@@ -563,8 +569,8 @@ class TestUsdInstancing(unittest.TestCase):
         group_2.Load()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
-              '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
+            { '/__Prototype_1': ['/Model_2', '/__Prototype_2/Model'],
+              '/__Prototype_2': ['/ModelGroup_1', '/ModelGroup_2'] })
         ValidateExpectedChanges(nl, ['/ModelGroup_2'])
 
         print("-" * 60)
@@ -572,8 +578,8 @@ class TestUsdInstancing(unittest.TestCase):
         group_1.Unload()
 
         ValidateExpectedInstances(s, 
-            { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
-              '/__Master_2': ['/ModelGroup_2'] })
+            { '/__Prototype_1': ['/Model_2', '/__Prototype_2/Model'],
+              '/__Prototype_2': ['/ModelGroup_2'] })
         ValidateExpectedChanges(nl, ['/ModelGroup_1'])
 
     def test_Payloads2(self):
@@ -586,7 +592,8 @@ class TestUsdInstancing(unittest.TestCase):
         s = OpenStage('payloads_2/root.usda', Usd.Stage.LoadNone)
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3', '/Model_4' ] })
+            { '/__Prototype_1': 
+              ['/Model_1', '/Model_2', '/Model_3', '/Model_4' ] })
 
         # Loading Model_1 should result in two different prototypes, one for
         # Model_1 and one shared by all the unloaded instances.
@@ -595,8 +602,8 @@ class TestUsdInstancing(unittest.TestCase):
         s.Load('/Model_1')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_2', '/Model_3', '/Model_4' ],
-              '/__Master_2': ['/Model_1'] })
+            { '/__Prototype_1': ['/Model_2', '/Model_3', '/Model_4' ],
+              '/__Prototype_2': ['/Model_1'] })
         ValidateExpectedChanges(nl, ['/Model_1'])
 
         # Now unload Model_1 and load Model_2 in the same call. Model_2
@@ -608,8 +615,8 @@ class TestUsdInstancing(unittest.TestCase):
         s.LoadAndUnload(['/Model_2'], ['/Model_1'])
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_1', '/Model_3', '/Model_4' ],
-              '/__Master_2': ['/Model_2'] })
+            { '/__Prototype_1': ['/Model_1', '/Model_3', '/Model_4' ],
+              '/__Prototype_2': ['/Model_2'] })
         ValidateExpectedChanges(nl, ['/Model_1', '/Model_2'])
 
         # Continue loading and unloading instances in the same way.
@@ -618,8 +625,8 @@ class TestUsdInstancing(unittest.TestCase):
         s.LoadAndUnload(['/Model_3'], ['/Model_2'])
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_4' ],
-              '/__Master_2': ['/Model_3'] })
+            { '/__Prototype_1': ['/Model_1', '/Model_2', '/Model_4' ],
+              '/__Prototype_2': ['/Model_3'] })
         ValidateExpectedChanges(nl, ['/Model_2', '/Model_3'])
 
         print("-" * 60)
@@ -627,8 +634,8 @@ class TestUsdInstancing(unittest.TestCase):
         s.LoadAndUnload(['/Model_4'], ['/Model_3'])
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3' ],
-              '/__Master_2': ['/Model_4'] })
+            { '/__Prototype_1': ['/Model_1', '/Model_2', '/Model_3' ],
+              '/__Prototype_2': ['/Model_4'] })
         ValidateExpectedChanges(nl, ['/Model_3', '/Model_4'])
 
     def test_Deactivated(self):
@@ -639,38 +646,38 @@ class TestUsdInstancing(unittest.TestCase):
         s = OpenStage('deactivated/root.usda')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Instance_1', '/Instance_2' ] })
+            { '/__Prototype_1': ['/Instance_1', '/Instance_2' ] })
 
         # Deactivate the primary instance being used by the prototype.
         # This should cause the prototype to select the other available
         # instance.
         primPathToDeactivate = \
-            s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
+            s.GetPrimAtPath('/__Prototype_1')._GetSourcePrimIndex().rootNode.path
 
         print("-" * 60)
         print("Deactivating instance %s" % primPathToDeactivate)
         s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
         if primPathToDeactivate == '/Instance_1':
-            ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_2' ] })
-            ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_1'])
+            ValidateExpectedInstances(s, { '/__Prototype_1': ['/Instance_2' ] })
+            ValidateExpectedChanges(nl, ['/Instance_1', '/__Prototype_1'])
         elif primPathToDeactivate == '/Instance_2':
-            ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_1' ] })
-            ValidateExpectedChanges(nl, ['/Instance_2', '/__Master_1'])
+            ValidateExpectedInstances(s, { '/__Prototype_1': ['/Instance_1' ] })
+            ValidateExpectedChanges(nl, ['/Instance_2', '/__Prototype_1'])
         else:
             assert False, 'Unexpected prim <%s>' % primPathToDeactivate
 
         # Deactivate the last remaining instance. This should cause the
         # prototype to be removed.
         primPathToDeactivate = \
-            s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
+            s.GetPrimAtPath('/__Prototype_1')._GetSourcePrimIndex().rootNode.path
 
         print("-" * 60)
         print("Deactivating instance %s" % primPathToDeactivate)
         s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
         ValidateExpectedInstances(s, {})
-        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
+        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Prototype_1'])
 
         # Reactivate /Instance_1, which should cause a new prototype to be
         # created
@@ -678,8 +685,8 @@ class TestUsdInstancing(unittest.TestCase):
         print("Activating instance /Instance_1")
         s.GetPrimAtPath('/Instance_1').SetActive(True)
 
-        ValidateExpectedInstances(s, { '/__Master_2': ['/Instance_1'] })
-        ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_2'])
+        ValidateExpectedInstances(s, { '/__Prototype_2': ['/Instance_1'] })
+        ValidateExpectedChanges(nl, ['/Instance_1', '/__Prototype_2'])
 
         # Reactivate /Instance_2, which should attach to the existing prototype
         print("-" * 60)
@@ -687,7 +694,7 @@ class TestUsdInstancing(unittest.TestCase):
         s.GetPrimAtPath('/Instance_2').SetActive(True)
 
         ValidateExpectedInstances(s, 
-            { '/__Master_2': ['/Instance_1', '/Instance_2'] })
+            { '/__Prototype_2': ['/Instance_1', '/Instance_2'] })
         ValidateExpectedChanges(nl, ['/Instance_2'])
 
     def test_Deactivated2(self):
@@ -697,14 +704,14 @@ class TestUsdInstancing(unittest.TestCase):
         s = OpenStage('deactivated_2/root.usda')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/Set_1/Instance_1', 
-                              '/World/Set_2/Instance_2'] })
+            { '/__Prototype_1': 
+              ['/World/Set_1/Instance_1', '/World/Set_2/Instance_2'] })
 
         # Deactivate the parent of the prim on the stage that corresponds 
         # to the source prim index for the prototype. This will cause the
         # other instance to be assigned as the prototype's source index.
         primPathToDeactivate = \
-            (s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex()
+            (s.GetPrimAtPath('/__Prototype_1')._GetSourcePrimIndex()
              .rootNode.path.GetParentPath())
 
         if primPathToDeactivate == '/World/Set_1':
@@ -714,16 +721,16 @@ class TestUsdInstancing(unittest.TestCase):
 
         s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
-        ValidateExpectedInstances(s, { '/__Master_1' : [expectedInstance] })
-        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
+        ValidateExpectedInstances(s, { '/__Prototype_1' : [expectedInstance] })
+        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Prototype_1'])
 
         # Now author a significant change to the prim referenced by both
         # instances. This should cause a new prototype to be created and the
         # old prototype to be removed.
         s.GetPrimAtPath('/Reference').GetInherits().AddInherit('/Class')
-        ValidateExpectedInstances(s, { '/__Master_2' : [expectedInstance] })
+        ValidateExpectedInstances(s, { '/__Prototype_2' : [expectedInstance] })
         ValidateExpectedChanges(nl, ['/Reference', expectedInstance, 
-                                     '/__Master_1', '/__Master_2'])
+                                     '/__Prototype_1', '/__Prototype_2'])
 
     def test_VariantSelections(self):
         """Test instancing and change processing with variant selections."""
@@ -732,17 +739,17 @@ class TestUsdInstancing(unittest.TestCase):
         s = OpenStage('variants/root.usda')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_A_1', '/Model_A_2'],
-              '/__Master_2': ['/Model_B_1', '/Model_B_2'] })
+            { '/__Prototype_1': ['/Model_A_1', '/Model_A_2'],
+              '/__Prototype_2': ['/Model_B_1', '/Model_B_2'] })
 
         # Ensure the prototype prims have the expected children based
         # on variant selection.
-        assert s.GetPrimAtPath('/__Master_1/Child_A')
-        assert s.GetPrimAtPath('/__Master_2/Child_B')
+        assert s.GetPrimAtPath('/__Prototype_1/Child_A')
+        assert s.GetPrimAtPath('/__Prototype_2/Child_B')
 
         # Changing the variant selections on the /Model_B_* prims should
-        # cause them to attach to /__Master_1.
-        prototype = s.GetPrimAtPath('/__Master_2')
+        # cause them to attach to /__Prototype_1.
+        prototype = s.GetPrimAtPath('/__Prototype_2')
         primPathToSwitch = prototype._GetSourcePrimIndex().rootNode.path
 
         print("-" * 60)
@@ -752,15 +759,15 @@ class TestUsdInstancing(unittest.TestCase):
 
         if primPathToSwitch == '/Model_B_1':
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_1'],
-                  '/__Master_2': ['/Model_B_2'] })
+                { '/__Prototype_1': ['/Model_A_1', '/Model_A_2', '/Model_B_1'],
+                  '/__Prototype_2': ['/Model_B_2'] })
         else:
             ValidateExpectedInstances(s,
-                { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
-                  '/__Master_2': ['/Model_B_1'] })
-        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Master_2'])
+                { '/__Prototype_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
+                  '/__Prototype_2': ['/Model_B_1'] })
+        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Prototype_2'])
 
-        # Since all instances are now assigned to __Master_1, __Master_2
+        # Since all instances are now assigned to __Prototype_1, __Prototype_2
         # is reaped.
         if primPathToSwitch == '/Model_B_1':
             primPathToSwitch = '/Model_B_2'
@@ -773,9 +780,9 @@ class TestUsdInstancing(unittest.TestCase):
         primToSwitch.GetVariantSet('type').SetVariantSelection('a')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_1', 
-                              '/Model_B_2']})
-        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Master_2'])
+            { '/__Prototype_1': 
+              ['/Model_A_1', '/Model_A_2', '/Model_B_1', '/Model_B_2']})
+        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Prototype_2'])
 
         # Changing a variant selection back to "type=b" should cause a new
         # prototype to be generated.
@@ -784,20 +791,20 @@ class TestUsdInstancing(unittest.TestCase):
         s.GetPrimAtPath('/Model_B_1').GetVariantSet('type').SetVariantSelection('b')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
-              '/__Master_3': ['/Model_B_1'] })
-        ValidateExpectedChanges(nl, ['/Model_B_1', '/__Master_3'])
+            { '/__Prototype_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
+              '/__Prototype_3': ['/Model_B_1'] })
+        ValidateExpectedChanges(nl, ['/Model_B_1', '/__Prototype_3'])
 
     def test_LocalVariants(self):
         """Test expected instancing behavior for prims with local variants"""
         s = OpenStage('local_variants/root.usda')
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Model_LocalVariants_1'],
-              '/__Master_2': ['/Model_LocalVariants_2'] })
+            { '/__Prototype_1': ['/Model_LocalVariants_1'],
+              '/__Prototype_2': ['/Model_LocalVariants_2'] })
 
-        assert s.GetPrimAtPath('/__Master_1/Child_1')
-        assert s.GetPrimAtPath('/__Master_2/Child_2')
+        assert s.GetPrimAtPath('/__Prototype_1/Child_1')
+        assert s.GetPrimAtPath('/__Prototype_2/Child_2')
 
     def test_Inherits(self):
         """Test expected instancing behavior for prims with inherits"""
@@ -810,7 +817,7 @@ class TestUsdInstancing(unittest.TestCase):
         # either SetA or SetB. Because of this, /Set/SetA/Model and
         # /Set/SetB/Model can share the same prototype prim initially.
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+            { '/__Prototype_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
 
         # Overriding _class_Model in the local layer stack causes
         # the instancing key to change, so a new prototype prim is
@@ -822,7 +829,7 @@ class TestUsdInstancing(unittest.TestCase):
         s.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
-            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+            { '/__Prototype_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
 
         # Overriding _class_Model in SetA means that SetA/Model may
         # have name children or other opinions that SetB/Model would
@@ -834,8 +841,8 @@ class TestUsdInstancing(unittest.TestCase):
         s2.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
-            { '/__Master_2': ['/Set/SetB/Model'],
-              '/__Master_3': ['/Set/SetA/Model'] })
+            { '/__Prototype_2': ['/Set/SetB/Model'],
+              '/__Prototype_3': ['/Set/SetA/Model'] })
 
     def test_Specializes(self):
         """Test expected instancing behavior for prims with specializes"""
@@ -848,7 +855,7 @@ class TestUsdInstancing(unittest.TestCase):
         # either SetA or SetB. Because of this, /Set/SetA/Model and
         # /Set/SetB/Model can share the same prototype prim initially.
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+            { '/__Prototype_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
 
         # Overriding _class_Model in the local layer stack causes
         # the instancing key to change, so a new prototype prim is
@@ -860,7 +867,7 @@ class TestUsdInstancing(unittest.TestCase):
         s.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
-            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+            { '/__Prototype_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
 
         # Overriding _class_Model in SetA means that SetA/Model may
         # have name children or other opinions that SetB/Model would
@@ -872,8 +879,8 @@ class TestUsdInstancing(unittest.TestCase):
         s2.OverridePrim('/_class_Model')
 
         ValidateExpectedInstances(s,
-            { '/__Master_2': ['/Set/SetB/Model'],
-              '/__Master_3': ['/Set/SetA/Model'] })
+            { '/__Prototype_2': ['/Set/SetB/Model'],
+              '/__Prototype_3': ['/Set/SetA/Model'] })
     
     def test_SubrootReferences(self):
         """Test expected instancing behavior for prims with subroot
@@ -885,13 +892,13 @@ class TestUsdInstancing(unittest.TestCase):
         # The SubrootRef_1 and SubrootRef_2 prims should share the 
         # same prototype, as they both have the same sub-root reference. 
         # However, note that they do *not* share the same prototype as 
-        # the nested instance /__Master_1/Ref1_Child, even though
+        # the nested instance /__Prototype_1/Ref1_Child, even though
         # they ultimately have the same child prims. This is something
         # that could be examined for further optimization in the future.
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/Ref_1'],
-              '/__Master_2': ['/__Master_1/Ref1_Child'],
-              '/__Master_3': ['/SubrootRef_1', '/SubrootRef_2'] })
+            { '/__Prototype_1': ['/Ref_1'],
+              '/__Prototype_2': ['/__Prototype_1/Ref1_Child'],
+              '/__Prototype_3': ['/SubrootRef_1', '/SubrootRef_2'] })
 
     def test_PropertyChanges(self):
         """Test that changes to properties that affect prototypes cause the
@@ -900,8 +907,8 @@ class TestUsdInstancing(unittest.TestCase):
         nl = NoticeListener()
 
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                              '/World/sets/Set_1/Prop_2'] })
+            { '/__Prototype_1': ['/World/sets/Set_1/Prop_1', 
+                                 '/World/sets/Set_1/Prop_2'] })
 
         instancedPropLayer = Sdf.Layer.Find('basic/prop.usda')
 
@@ -916,7 +923,7 @@ class TestUsdInstancing(unittest.TestCase):
 
         ValidateExpectedChanges(nl,
             ['/World/sets/Set_1/Prop_3/geom/Scope.attr', 
-             '/__Master_1/geom/Scope.attr'])
+             '/__Prototype_1/geom/Scope.attr'])
 
         print("-" * 60)
         print("Changing value for attribute spec on child of referenced prop")
@@ -925,7 +932,7 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl,
             expectedChangedInfo = [
                 '/World/sets/Set_1/Prop_3/geom/Scope.attr', 
-                '/__Master_1/geom/Scope.attr'])
+                '/__Prototype_1/geom/Scope.attr'])
 
         # Author to an attribute on the referenced prop asset. This should
         # *not* cause change notices on the prototype prim, since prototype
@@ -971,7 +978,7 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl,
             expectedChangedInfo = [
                 '/World/sets/Set_1/Prop_3/geom/Scope', 
-                '/__Master_1/geom/Scope'])
+                '/__Prototype_1/geom/Scope'])
 
         # Author metadata on the referenced prop asset. This should
         # *not* cause change notices on the prototype prim, since prototype
@@ -1008,8 +1015,8 @@ class TestUsdInstancing(unittest.TestCase):
 
         prototype2 = s.GetPrototypes()[1]
         expectedInstancePathsForPrototype2 = \
-                                        ['/__Master_1/Prop_1',
-                                        '/__Master_1/Prop_2']
+                                        ['/__Prototype_1/Prop_1',
+                                         '/__Prototype_1/Prop_2']
         instancePathsForPrototype2 = \
                 [p.GetPath().pathString for p in prototype2.GetInstances()]
         
@@ -1092,15 +1099,15 @@ class TestUsdInstancing(unittest.TestCase):
 
     def test_IsPrototypeOrInPrototypePath(self):
         """Test Usd.Prim.IsPrototypePath and Usd.Prim.IsPathInPrototype"""
-        self.assertTrue(Usd.Prim.IsPrototypePath('/__Master_1'))
-        self.assertFalse(Usd.Prim.IsPrototypePath('/__Master_1/Child'))
-        self.assertFalse(Usd.Prim.IsPrototypePath('/__Master_1.property'))
+        self.assertTrue(Usd.Prim.IsPrototypePath('/__Prototype_1'))
+        self.assertFalse(Usd.Prim.IsPrototypePath('/__Prototype_1/Child'))
+        self.assertFalse(Usd.Prim.IsPrototypePath('/__Prototype_1.property'))
         self.assertFalse(Usd.Prim.IsPrototypePath('/NotAPrototype'))
         self.assertFalse(Usd.Prim.IsPrototypePath('/NotAPrototype.property'))
 
-        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Master_1'))
-        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Master_1/Child'))
-        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Master_1.property'))
+        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Prototype_1'))
+        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Prototype_1/Child'))
+        self.assertTrue(Usd.Prim.IsPathInPrototype('/__Prototype_1.property'))
         self.assertFalse(Usd.Prim.IsPathInPrototype('/NotAPrototype'))
         self.assertFalse(Usd.Prim.IsPathInPrototype('/NotAPrototype.property'))
 

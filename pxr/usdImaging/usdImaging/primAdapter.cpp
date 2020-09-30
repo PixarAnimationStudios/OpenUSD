@@ -524,8 +524,8 @@ UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
     //   +-- ProtoA ----------+
     //
     // paths = 
-    //    /__Master__1/cube
-    //    /__Master__2/ProtoCube
+    //    /__Prototype_1/cube
+    //    /__Prototype_2/ProtoCube
     //    /PointInstancer/ProtoA
     //
     // This function uses the path chain to recreate the instance path:

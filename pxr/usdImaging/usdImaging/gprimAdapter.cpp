@@ -97,7 +97,7 @@ UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& usdPath,
     // For non-instanced prims, cachePath and usdPath will be the same, however
     // for instanced prims, cachePath will be something like:
     //
-    // primPath: /__Master_1/cube
+    // primPath: /__Prototype_1/cube
     // cachePath: /Models/cube_0.proto_cube_id0
     //
     // The name-mangling is so that multiple instancers/adapters can track the

@@ -7,69 +7,69 @@
     """
 )
 
-over "Flattened_Master_1"
+over "Flattened_Prototype_1"
 {
     def "PropInstance_1" (
         instanceable = true
-        add references = </Flattened_Master_2>
+        add references = </Flattened_Prototype_2>
     )
     {
         int foo = 1
         int propInstanceAttr.connect = [
-            </Flattened_Master_1/PropInstance_1/geom.foo>,
-            </Flattened_Master_1/PropInstance_2/geom.foo>,
-            </Flattened_Master_1/PropNotAnInstance_1/geom.foo>,
+            </Flattened_Prototype_1/PropInstance_1/geom.foo>,
+            </Flattened_Prototype_1/PropInstance_2/geom.foo>,
+            </Flattened_Prototype_1/PropNotAnInstance_1/geom.foo>,
         ]
         rel propInstanceRel = [
-            </Flattened_Master_1/PropInstance_1/geom>,
-            </Flattened_Master_1/PropInstance_2/geom>,
-            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+            </Flattened_Prototype_1/PropInstance_1/geom>,
+            </Flattened_Prototype_1/PropInstance_2/geom>,
+            </Flattened_Prototype_1/PropNotAnInstance_1/geom>,
         ]
-        rel propRel = </Flattened_Master_1/PropInstance_1/geom>
+        rel propRel = </Flattened_Prototype_1/PropInstance_1/geom>
     }
 
     def "PropInstance_2" (
         instanceable = true
-        add references = </Flattened_Master_2>
+        add references = </Flattened_Prototype_2>
     )
     {
         int foo = 1
         int propInstanceAttr.connect = [
-            </Flattened_Master_1/PropInstance_1/geom.foo>,
-            </Flattened_Master_1/PropInstance_2/geom.foo>,
-            </Flattened_Master_1/PropNotAnInstance_1/geom.foo>,
+            </Flattened_Prototype_1/PropInstance_1/geom.foo>,
+            </Flattened_Prototype_1/PropInstance_2/geom.foo>,
+            </Flattened_Prototype_1/PropNotAnInstance_1/geom.foo>,
         ]
         rel propInstanceRel = [
-            </Flattened_Master_1/PropInstance_1/geom>,
-            </Flattened_Master_1/PropInstance_2/geom>,
-            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+            </Flattened_Prototype_1/PropInstance_1/geom>,
+            </Flattened_Prototype_1/PropInstance_2/geom>,
+            </Flattened_Prototype_1/PropNotAnInstance_1/geom>,
         ]
-        rel propRel = </Flattened_Master_1/PropInstance_2/geom>
+        rel propRel = </Flattened_Prototype_1/PropInstance_2/geom>
     }
 
     def "PropNotAnInstance_1"
     {
         int foo = 1
-        rel propRel = </Flattened_Master_1/PropNotAnInstance_1/geom>
+        rel propRel = </Flattened_Prototype_1/PropNotAnInstance_1/geom>
 
         def "geom"
         {
-            int foo.connect = </Flattened_Master_1/PropNotAnInstance_1.foo>
+            int foo.connect = </Flattened_Prototype_1/PropNotAnInstance_1.foo>
         }
     }
 }
 
-over "Flattened_Master_2"
+over "Flattened_Prototype_2"
 {
     def "geom"
     {
-        int foo.connect = </Flattened_Master_2.foo>
+        int foo.connect = </Flattened_Prototype_2.foo>
     }
 }
 
 def "Set_1" (
     instanceable = true
-    add references = </Flattened_Master_1>
+    add references = </Flattened_Prototype_1>
 )
 {
     int setAttr.connect = [

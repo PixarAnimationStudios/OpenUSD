@@ -39,7 +39,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
 
         # An instance proxy is not in a prototype unless it came from
         # explicitly traversing within a prototype. For instance, calling
-        # GetPrimAtPath('/__Master_1/Instance/Child') will return
+        # GetPrimAtPath('/__Prototype_1/Instance/Child') will return
         # an instance proxy at that path, which is inside a prototype.
         if expectedPathInPrototype:
             self.assertTrue(prim.IsInPrototype())

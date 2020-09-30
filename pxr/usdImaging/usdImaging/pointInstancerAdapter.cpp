@@ -299,8 +299,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         //   +-- ProtoA ----------+
         //
         // paths = 
-        //    /__Master__1/cube
-        //    /__Master__2/ProtoCube
+        //    /__Prototype_1/cube
+        //    /__Prototype_2/ProtoCube
         //    /PointInstancer/ProtoA
 
         SdfPathVector instancerChain;
@@ -1040,13 +1040,13 @@ UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(
     // proto.paths.front() is the most local path for the rprim.
     // If it's not native-instanced, proto.paths will be size 1.
     // If it is native-instanced, proto.paths may look like
-    //   /__Master_1/prim
+    //   /__Prototype_1/prim
     //   /Instance
-    // where /__Master_1/prim is the pointer to the actual prim in question.
+    // where /__Prototype_1/prim is the pointer to the actual prim in question.
     UsdPrim prim = _GetPrim(proto.paths.front());
 
     // One exception: if the prototype is an instance, proto.paths looks like
-    //   /__Master_1
+    //   /__Prototype_1
     //   /Instance
     // ... in which case, we want to return /Instance since masters drop all
     // attributes.
@@ -1310,8 +1310,8 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     // 2.) recursing gives us the fully-qualified version of instancerPath.
     //
     // If:
-    // - primPath is /_Master_1/Instancer/protos/A
-    // - instancerPath is /_Master_1/Instancer
+    // - primPath is /__Prototype_1/Instancer/protos/A
+    // - instancerPath is /__Prototype_1/Instancer
     // - parentPath is /World/Foo/Instance
     //
     // Let fqInstancerPath = parentAdapter->GetScenePrimPath(instancerPath);
@@ -2009,8 +2009,8 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         // If there's no native instancing, paths will have size 1.
         // If "usdPrim" is a parent of any of these paths, that counts
         // as a selection of this prototype.  e.g.
-        // - /World/Instancer/protos (-> /Master_1)
-        // - /Master_1/trees/tree_1 (a gprim)
+        // - /World/Instancer/protos (-> /__Prototype_1)
+        // - /__Prototype_1/trees/tree_1 (a gprim)
         bool foundPrefix = false;
         SdfPath usdPath = usdPrim.GetPath();
         for (auto const& path : proto.paths) {

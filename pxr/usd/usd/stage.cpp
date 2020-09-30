@@ -2524,7 +2524,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // completely included, stop looking at the mask from here forward.
     if (mask) {
         // We always operate on the source prim index path here, not the prim
-        // path since that would be something like /__Master_X/.. for prims
+        // path since that would be something like /__Prototype_X/.. for prims
         // in prototypes.  Masks and load rules operate on the "uninstanced"
         // view of the world, and are included in instancing keys, so whichever
         // index we choose to be the source for a prototype must be included in
@@ -4661,16 +4661,16 @@ _RemovePrototypeTargetPaths(const UsdProperty& srcProp,
 
 // We want to give generated prototypes in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
-// we don't want to use the '__Master' paths which have special
+// we don't want to use the '__Prototype' paths which have special
 // meaning to UsdStage. So we create a mapping between our generated
-// 'Flattened_Master'-style paths and the '__Master' paths.
+// 'Flattened_Prototype'-style paths and the '__Prototype' paths.
 _PathRemapping
 _GenerateFlattenedPrototypePath(const std::vector<UsdPrim>& prototypes)
 {
     size_t primPrototypeId = 1;
 
     const auto generatePathName = [&primPrototypeId]() {
-        return SdfPath(TfStringPrintf("/Flattened_Master_%lu", 
+        return SdfPath(TfStringPrintf("/Flattened_Prototype_%lu", 
                                       primPrototypeId++));
     };
 

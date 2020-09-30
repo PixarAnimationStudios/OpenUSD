@@ -121,7 +121,7 @@ This is a simple example of what the scene description in a .usd file might
 look like for the scenegraph above.  In this case, UsdStage will recognize that 
 all of the instanceable Car prims reference the same Car model and will have 
 the same scenegraph hierarchy.  UsdStage will then generate a prototype prim
-/__Master_1 to contain this common hierarchy and associate the Car instances 
+/__Prototype_1 to contain this common hierarchy and associate the Car instances 
 with this prototype.
 
 Prototype prims do not exist in scene description -- they are generated and 
@@ -242,10 +242,10 @@ is part of a shared prototype.
 
 | Function | Purpose | Example |
 | -------- | ------- | ------- |
-| UsdStage::GetPrototypes | Return a list of all prototype prims on the stage | Returns the prim /__Master_1 |
-| UsdPrim::GetPrototype | If prim is an instance, get the corresponding prototype prim. | Returns prim /__Master_1 for Car_1 or Car_2, an invalid UsdPrim for all other prims, including Car_3. |
-| UsdPrim::IsPrototype  | Check if this prim is a prototype prim. | Returns true for prim /__Master_1, false for all other prims. |
-| UsdPrim::IsInPrototype | Check if this prim is in a subtree rooted at a prototype prim. | Returns true for prims /__Master_1, /__Master_1/Body, and /__Master_1/Door, false for all other prims. |
+| UsdStage::GetPrototypes | Return a list of all prototype prims on the stage | Returns the prim /__Prototype_1 |
+| UsdPrim::GetPrototype | If prim is an instance, get the corresponding prototype prim. | Returns prim /__Prototype_1 for Car_1 or Car_2, an invalid UsdPrim for all other prims, including Car_3. |
+| UsdPrim::IsPrototype  | Check if this prim is a prototype prim. | Returns true for prim /__Prototype_1, false for all other prims. |
+| UsdPrim::IsInPrototype | Check if this prim is in a subtree rooted at a prototype prim. | Returns true for prims /__Prototype_1, /__Prototype_1/Body, and /__Prototype_1/Door, false for all other prims. |
 
 Prototype prims do not have metadata or properties, only children prims.
 Prototype prims have root prim paths (e.g., /__Master_1) that can be used
@@ -264,7 +264,7 @@ instance's prototype at runtime.
 \code{.py}
 >>> stage = Usd.Stage.Open('ParkingLot.usd')
 >>> stage.GetPrototypes()
-[Usd.Prim(</__Master_1>)]
+[Usd.Prim(</__Prototype_1>)]
 
 # Prototype prims are not included in stage traversals.  Note how the below
 # functions do not include the prototype prims above.
@@ -295,9 +295,9 @@ True
 
 # Consumers can query the instance's prototype for its child prims.
 >>> car_1.GetPrototype().GetChildren()
-[Usd.Prim(</__Master_1/Body>), Usd.Prim(</__Master_1/Door>)]
+[Usd.Prim(</__Prototype_1/Body>), Usd.Prim(</__Prototype_1/Door>)]
 >>> list(Usd.PrimRange(car_1.GetPrototype()))
-[Usd.Prim(</__Master_1>), Usd.Prim(</__Master_1/Body>), Usd.Prim(</__Master_1/Door>)]
+[Usd.Prim(</__Prototype_1>), Usd.Prim(</__Prototype_1/Body>), Usd.Prim(</__Prototype_1/Door>)]
 
 # Car_3's child prims can be accessed directly since it's not an instance prim.
 >>> car_3 = stage.GetPrimAtPath('/ParkingLot/Car_3')
@@ -367,7 +367,7 @@ Usd.Prim(</ParkingLot/Car_1>)
 # From an instance proxy, you can retrieve the corresponding prim in the
 # instance's prototype.
 >>> car_1_body.GetPrimInPrototype()
-Usd.Prim(</__Master_1/Body>)
+Usd.Prim(</__Prototype_1/Body>)
 
 # Instance proxies can be used for read-only operations anywhere a Usd.Prim
 # is used.
@@ -534,10 +534,10 @@ def "Car"
 >>> prototype_doorRel = prototype.GetChild('Body').GetRelationship('doorRel')
 
 >>> prototype_doorRel.GetPath()
-Sdf.Path('/__Master_1/Body.doorRel')
+Sdf.Path('/__Prototype_1/Body.doorRel')
 
 >>> prototype_doorRel.GetTargets()
-[Sdf.Path('/__Master_1/Door')]
+[Sdf.Path('/__Prototype_1/Door')]
 
 # If the relationship is accessed through instance proxies, the relationship
 # target API behaves as though instancing is not present.
@@ -733,8 +733,8 @@ When \ref Usd_ScenegraphInstancing_Prototypes "traversing the scenegraph using p
 it is important to note that, in the nested case, prims in prototypes may also
 be instances and requiring accessing the associated prototypes to continue
 traversal. In this example, the prototype prim for the ParkingLot prims,
-/__Master_2, contains instance Car prims that are associated with their
-prototype prim, /__Master_1.  
+/__Prototype_2, contains instance Car prims that are associated with their
+prototype prim, /__Prototype_1.  
 
 When \ref Usd_ScenegraphInstancing_InstanceProxies "working with instance proxies",
 nested instancing will be taken into account and resolved as if instancing were

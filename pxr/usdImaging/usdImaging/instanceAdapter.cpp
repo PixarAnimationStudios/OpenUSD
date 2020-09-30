@@ -373,10 +373,12 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // parent native instances.
         //
         // Note: instead of getting the parent "instancer" path, we get the
-        // instance proxy path.  So for /World/A -> /Master_1/B -> /Master_2/C,
+        // instance proxy path. So for:
+        //     /World/A -> /Prototype_1/B -> /Prototype_2/C,
+        // 
         // we have instancer = /World/A, parentProxy = /;
-        // instancer = /Master_1/B, parentProxy = /World/A;
-        // instancer = /Master_2/C, parentProxy = /World/A/B.
+        // instancer = /Prototype_1/B, parentProxy = /World/A;
+        // instancer = /Prototype_2/C, parentProxy = /World/A/B.
         // If parentProxy is an instance proxy, take the prim in master.
         if (parentProxyPath != SdfPath::AbsoluteRootPath()) {
             UsdPrim parent = _GetPrim(parentProxyPath);
@@ -2451,30 +2453,30 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
         // To illustrate the below algorithm, imagine the following scene:
-        // /World/A, /World/A2 -> /__Master_1
-        // /__Master_1/B -> /__Master_2
-        // /__Master_2/C,D are gprims.
-        // We want to be able to select /World/A/B as well as /__Master_1/B.
+        // /World/A, /World/A2 -> /__Prototype_1
+        // /__Prototype_1/B -> /__Prototype_2
+        // /__Prototype_2/C,D are gprims.
+        // We want to be able to select /World/A/B as well as /__Prototype_1/B.
         // ... to do this, we break the selection path down into components
-        // in PopulateSelection: /World/A, /__Master_1/B.
+        // in PopulateSelection: /World/A, /__Prototype_1/B.
         //
         // The matrix of things we can select:
         // 1.) One instance, one gprim (e.g. /World/A/B/C):
-        //     - selection context [/World/A, /__Master_1/B, /__Master_2/C]
-        //     - instance context [/World/A, /__Master_1/B]
-        //     /__Master_2/C needs to be checked against primMap.
+        //     - selection context [/World/A, /__Prototype_1/B, /__Prototype_2/C]
+        //     - instance context [/World/A, /__Prototype_1/B]
+        //     /__Prototype_2/C needs to be checked against primMap.
         // 2.) One instance, multiple gprims (e.g. /World/A/B):
-        //     - selection context [/World/A, /__Master_1/B]
-        //     - instance context [/World/A, /__Master_1/B]
-        // 3.) Multiple instances, one gprim (e.g. /__Master_1/B/C)
-        //     - selection context [/__Master_1/B, /__Master_2/C]
-        //     - instance context [/World/A, /__Master_1/B]
-        //     - instance context [/World/A2, /__Master_1/B]
-        //     /__Master_2/C needs to be checked against primMap.
-        // 4.) Multiple instances, multiple gprims (e.g. /__Master_1/B)
-        //     - selection context [/__Master_1/B]
-        //     - instance context [/World/A, /__Master_1/B]
-        //     - instance context [/World/A2, /__Master_1/B]
+        //     - selection context [/World/A, /__Prototype_1/B]
+        //     - instance context [/World/A, /__Prototype_1/B]
+        // 3.) Multiple instances, one gprim (e.g. /__Prototype_1/B/C)
+        //     - selection context [/__Prototype_1/B, /__Prototype_2/C]
+        //     - instance context [/World/A, /__Prototype_1/B]
+        //     - instance context [/World/A2, /__Prototype_1/B]
+        //     /__Prototype_2/C needs to be checked against primMap.
+        // 4.) Multiple instances, multiple gprims (e.g. /__Prototype_1/B)
+        //     - selection context [/__Prototype_1/B]
+        //     - instance context [/World/A, /__Prototype_1/B]
+        //     - instance context [/World/A2, /__Prototype_1/B]
         //
         // The algorithm, then:
         // - If selectionContext[0] is not in instanceContext, continue.

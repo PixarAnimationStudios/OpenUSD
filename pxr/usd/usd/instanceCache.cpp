@@ -453,14 +453,14 @@ Usd_InstanceCache::IsPathInPrototype(const SdfPath& path)
         rootPath = rootPath.GetParentPath();
     }
 
-    return TfStringStartsWith(rootPath.GetName(), "__Master_");
+    return TfStringStartsWith(rootPath.GetName(), "__Prototype_");
 }
 
 bool 
 Usd_InstanceCache::IsPrototypePath(const SdfPath& path) 
 {
     return path.IsRootPrimPath() && 
-        TfStringStartsWith(path.GetName(), "__Master_");
+        TfStringStartsWith(path.GetName(), "__Prototype_");
 }
 
 vector<SdfPath>
@@ -478,7 +478,7 @@ SdfPath
 Usd_InstanceCache::_GetNextPrototypePath(const Usd_InstanceKey& key)
 {
     return SdfPath::AbsoluteRootPath().AppendChild(
-        TfToken(TfStringPrintf("__Master_%zu", ++_lastPrototypeIndex)));
+        TfToken(TfStringPrintf("__Prototype_%zu", ++_lastPrototypeIndex)));
 }
 
 vector<SdfPath> 
@@ -581,15 +581,15 @@ Usd_InstanceCache::_PrototypeUsesPrimIndexPath(
     // to deal with nested instances. Consider this case:
     //
     // /World
-    //   Set_1     [prototype: </__Master_1>]
-    // /__Master_1 [index: </World/Set_1>]
-    //   Prop_1    [prototype: </__Master_2>, index: </World/Set_1/Prop_1> ]
-    //   Prop_2    [prototype: </__Master_2>, index: </World/Set_1/Prop_2> ]
-    // /__Master_2 [index: </World/Set_1/Prop_1>]
+    //   Set_1     [prototype: </__Prototype_1>]
+    // /__Prototype_1 [index: </World/Set_1>]
+    //   Prop_1    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_1> ]
+    //   Prop_2    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_2> ]
+    // /__Prototype_2 [index: </World/Set_1/Prop_1>]
     //   Scope     [index: </World/Set_1/Prop_1/Scope>]
     // 
     // Asking if the prim index /World/Set_1/Prop_1/Scope is used by a
-    // prototype should return true, because it is used by /__Master_2/Scope.
+    // prototype should return true, because it is used by /__Prototype_2/Scope.
     // But this function should return false for /World/Set_1/Prop_2/Scope.
     // The naive implementation that looks through 
     // _sourcePrimIndexToPrototypeMap would wind up returning true for both
@@ -700,7 +700,7 @@ Usd_InstanceCache::GetPathInPrototypeForInstancePath(
 
     // Without instancing, the path of a prim on a stage will be the same
     // as the path for its prim index. However, this is not the case for
-    // prims in prototypes (e.g., /__Master_1/Instance/Child). In this case,
+    // prims in prototypes (e.g., /__Prototype_1/Instance/Child). In this case,
     // we need to figure out what the source prim index path would be.
     if (IsPathInPrototype(primPath)) {
         // If primPath is prefixed by a prototype prim path, replace it
@@ -734,21 +734,21 @@ Usd_InstanceCache::GetPathInPrototypeForInstancePath(
     // to deal with nested instances. Consider this case:
     //
     // /World
-    //   Set_1     [prototype: </__Master_1>, index: </World/Set_1>]
-    //   Set_2     [prototype: </__Master_1>, index: </World/Set_2>]
-    // /__Master_1 [index: </World/Set_1>]
-    //   Prop_1    [prototype: </__Master_2>, index: </World/Set_1/Prop_1> ]
-    //   Prop_2    [prototype: </__Master_2>, index: </World/Set_1/Prop_2> ]
-    // /__Master_2 [index: </World/Set_1/Prop_1>]
+    //   Set_1     [prototype: </__Prototype_1>, index: </World/Set_1>]
+    //   Set_2     [prototype: </__Prototype_1>, index: </World/Set_2>]
+    // /__Prototype_1 [index: </World/Set_1>]
+    //   Prop_1    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_1> ]
+    //   Prop_2    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_2> ]
+    // /__Prototype_2 [index: </World/Set_1/Prop_1>]
     //   Scope     [index: </World/Set_1/Prop_1/Scope>]
     // 
     // Asking for the prim in prototype for the prim index 
-    // /World/Set_2/Prop_1/Scope should return /__Master_2/Scope, since
-    // /World/Set_2 is an instance of /__Master_1, and /__Master_1/Prop_1
-    // is an instance of /__Master_2.
+    // /World/Set_2/Prop_1/Scope should return /__Prototype_2/Scope, since
+    // /World/Set_2 is an instance of /__Prototype_1, and /__Prototype_1/Prop_1
+    // is an instance of /__Prototype_2.
     //
     // The naive implementation would look through _primIndexToPrototypeMap
-    // and do a prefix replacement, but that gives /__Master_1/Prop_1/Scope. 
+    // and do a prefix replacement, but that gives /__Prototype_1/Prop_1/Scope. 
     // This is because the prim index /World/Set_2/Prop_1/Scope has never been 
     // computed in this example!
 

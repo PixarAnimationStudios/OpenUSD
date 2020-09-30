@@ -445,23 +445,24 @@ private:
     //
     // Suppose we have:
     //    /Root
-    //        Instance_A (master: /__Master_1)
-    //        Instance_B (master: /__Master_1)
-    //    /__Master_1
-    //        AnotherInstance_A (master: /__Master_2)
-    //    /__Master_2
+    //        Instance_A (master: /__Prototype_1)
+    //        Instance_B (master: /__Prototype_1)
+    //    /__Prototype_1
+    //        AnotherInstance_A (master: /__Prototype_2)
+    //    /__Prototype_2
     //
-    // /__Master_2 has only one associated instance in the Usd scenegraph: 
-    // /__Master_1/AnotherInstance_A. However, imaging actually needs to draw 
-    // two instances of /__Master_2, because AnotherInstance_A is a nested 
-    // instance beneath /__Master_1, and there are two instances of /__Master_1.
+    // /__Prototype_2 has only one associated instance in the Usd scenegraph: 
+    // /__Prototype_1/AnotherInstance_A. However, imaging actually needs to draw
+    // two instances of /__Prototype_2, because AnotherInstance_A is a nested 
+    // instance beneath /__Prototype_1, and there are two instances of
+    // /__Prototype_1.
     //
     // Each instance to be drawn is addressed by the chain of instances
     // that caused it to be drawn. In the above example, the two instances 
-    // of /__Master_2 to be drawn are:
+    // of /__Prototype_2 to be drawn are:
     //
-    //  [ /Root/Instance_A, /__Master_1/AnotherInstance_A ],
-    //  [ /Root/Instance_B, /__Master_1/AnotherInstance_A ]
+    //  [ /Root/Instance_A, /__Prototype_1/AnotherInstance_A ],
+    //  [ /Root/Instance_B, /__Prototype_1/AnotherInstance_A ]
     //
     // This "instance context" describes the chain of opinions that
     // ultimately affect the final drawn instance. For example, the 
@@ -595,7 +596,7 @@ private:
     //
     // Instead, we use the first instance of a master with a given set of
     // inherited attributes as our instancer. For example, if /A and /B are
-    // both instances of /__Master_1 but /A and /B have different material
+    // both instances of /__Prototype_1 but /A and /B have different material
     // bindings authored on them, both /A and /B will be instancers,
     // with their own set of rprims and instance indices.
     //
