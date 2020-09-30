@@ -100,7 +100,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
             // consider things to be okay and do not issue an error.
             const SdfPath specPath = 
                 ChildPolicy::GetChildPath(propertyPath, *child);
-            if (layer->GetObjectAtPath(specPath)) {
+            if (layer->HasSpec(specPath)) {
                 TF_CODING_ERROR("Failed to remove spec at <%s>",
                                 specPath.GetText());
             }
@@ -114,7 +114,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
                         std::back_inserter(childrenToAdd));
     TF_FOR_ALL(child, childrenToAdd) {
         const SdfPath specPath = ChildPolicy::GetChildPath(propertyPath, *child);
-        if (layer->GetObjectAtPath(specPath)) {
+        if (layer->HasSpec(specPath)) {
             continue;
         }
 
