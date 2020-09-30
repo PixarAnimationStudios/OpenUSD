@@ -1374,7 +1374,7 @@ class StageView(QtOpenGL.QGLWidget):
     def getSelectionBBox(self):
         bbox = Gf.BBox3d()
         for n in self._dataModel.selection.getLCDPrims():
-            if n.IsActive() and not n.IsInMaster():
+            if n.IsActive() and not n.IsInPrototype():
                 primBBox = self._dataModel.computeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox

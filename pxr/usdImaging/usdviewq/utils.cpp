@@ -68,16 +68,16 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
     isDefined = prim.IsDefined();
     isAbstract = prim.IsAbstract();
 
-    // isInMaster is meant to guide UI to consider the prim's "source",
-    // so even if the prim is a proxy prim, then unlike the core 
-    // UsdPrim.IsInMaster(), we want to consider it as coming from a master
-    // to make it visually distinctive.  If in future we need to decouple
-    // the two concepts we can, but we're sensitive here to python marshalling
-    // costs.
-    isInMaster = prim.IsInMaster() || prim.IsInstanceProxy();
+    // isInPrototype is meant to guide UI to consider the prim's "source", so
+    // even if the prim is a proxy prim, then unlike the core
+    // UsdPrim.IsInPrototype(), we want to consider it as coming from a
+    // prototype to make it visually distinctive.  If in future we need to
+    // decouple the two concepts we can, but we're sensitive here to python
+    // marshalling costs.
+    isInPrototype = prim.IsInPrototype() || prim.IsInstanceProxy();
 
     supportsDrawMode = isActive && isDefined && 
-        !isInMaster && prim.GetPath() != SdfPath::AbsoluteRootPath() &&
+        !isInPrototype && prim.GetPath() != SdfPath::AbsoluteRootPath() &&
         UsdModelAPI(prim).IsModel();
 
     isInstance = prim.IsInstance();

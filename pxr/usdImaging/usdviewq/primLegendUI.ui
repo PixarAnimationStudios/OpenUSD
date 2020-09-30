@@ -93,7 +93,7 @@
       </widget>
      </item>
      <item row="0" column="4">
-      <widget class="QGraphicsView" name="primLegendColorMaster">
+      <widget class="QGraphicsView" name="primLegendColorPrototype">
        <property name="maximumSize">
         <size>
          <width>20</width>
@@ -103,7 +103,7 @@
       </widget>
      </item>
      <item row="0" column="5">
-      <widget class="QLabel" name="primLegendLabelMaster">
+      <widget class="QLabel" name="primLegendLabelPrototype">
        <property name="font">
         <font>
          <weight>50</weight>
@@ -112,7 +112,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Master</string>
+        <string>Prototype</string>
        </property>
       </widget>
      </item>

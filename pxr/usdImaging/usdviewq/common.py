@@ -59,7 +59,7 @@ class UIPrimTypeColors(ConstantGroup):
     HAS_ARCS = UIBaseColors.DARK_YELLOW
     NORMAL = QtGui.QBrush(QtGui.QColor(227, 227, 227))
     INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
-    MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
+    PROTOTYPE = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
 class UIPrimTreeColors(ConstantGroup):
     SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84))

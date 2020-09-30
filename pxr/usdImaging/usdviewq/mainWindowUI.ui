@@ -156,7 +156,7 @@
             <addaction name="menuPrim_View_Depth"/>
             <addaction name="separator"/>
             <addaction name="actionShow_Inactive_Prims"/>
-            <addaction name="actionShow_All_Master_Prims"/>
+            <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
            </widget>
@@ -2561,12 +2561,12 @@
     <string>Geom Id</string>
    </property>
   </action>
-  <action name="actionShow_All_Master_Prims">
+  <action name="actionShow_All_Prototype_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Master Prims</string>
+    <string>Prototype Prims</string>
    </property>
   </action>
   <action name="actionShow_Undefined_Prims">
