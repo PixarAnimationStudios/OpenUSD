@@ -309,6 +309,35 @@ GlfSimpleLight::SetDomeLightTextureFile(const SdfAssetPath &path)
     _domeLightTextureFile = path;
 }
 
+TfToken const &
+GlfSimpleLight::GetPostSurfaceIdentifier() const
+{
+    return _postSurfaceIdentifier;
+}
+
+std::string const &
+GlfSimpleLight::GetPostSurfaceShaderSource() const
+{
+    return _postSurfaceShaderSource;
+}
+
+
+VtUCharArray const &
+GlfSimpleLight::GetPostSurfaceShaderParams() const
+{
+    return _postSurfaceShaderParams;
+}
+
+void
+GlfSimpleLight::SetPostSurfaceParams(TfToken const & identifier,
+                                     std::string const & shaderSource,
+                                     VtUCharArray const & shaderParams)
+{
+    _postSurfaceIdentifier = identifier;
+    _postSurfaceShaderSource = shaderSource;
+    _postSurfaceShaderParams = shaderParams;
+}
+
 // -------------------------------------------------------------------------- //
 // VtValue requirements
 // -------------------------------------------------------------------------- //
@@ -336,6 +365,9 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _isCameraSpaceLight == other._isCameraSpaceLight
         &&  _isDomeLight == other._isDomeLight
         &&  _domeLightTextureFile == other._domeLightTextureFile
+        &&  _postSurfaceIdentifier == other._postSurfaceIdentifier
+        &&  _postSurfaceShaderSource == other._postSurfaceShaderSource
+        &&  _postSurfaceShaderParams == other._postSurfaceShaderParams
         &&  _id == other._id;
 }
 
@@ -366,6 +398,9 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._isCameraSpaceLight
         << v._isDomeLight
         << v._domeLightTextureFile
+        << v._postSurfaceIdentifier
+        << v._postSurfaceShaderSource
+        << v._postSurfaceShaderParams
         << v._id;
     for (auto const& m : v._shadowMatrices) {
         out << m;

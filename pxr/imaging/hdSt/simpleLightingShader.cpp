@@ -90,6 +90,7 @@ HdStSimpleLightingShader::ComputeHash() const
     boost::hash_combine(hash, numLights);
     boost::hash_combine(hash, useShadows);
     boost::hash_combine(hash, numShadows);
+    boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
 
     return (ID)hash;
 }
@@ -122,7 +123,14 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
                      << int(useBindlessShadowMaps) << "\n";
     }
 
-    return defineStream.str() + source;
+    const std::string postSurfaceShader =
+        _lightingContext->ComputeShaderSource(shaderStageKey);
+
+    if (!postSurfaceShader.empty()) {
+        defineStream << "#define HD_HAS_postSurfaceShader\n";
+    }
+
+    return defineStream.str() + postSurfaceShader + source;
 }
 
 /* virtual */
