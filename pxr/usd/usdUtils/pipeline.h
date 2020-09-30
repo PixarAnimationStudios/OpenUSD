@@ -90,9 +90,9 @@ const std::set<UsdUtilsRegisteredVariantSet>& UsdUtilsGetRegisteredVariantSets()
 
 /// If a valid UsdPrim already exists at \p path on the USD stage \p stage, 
 /// returns it. It not, it checks to see if the path belongs to a prim 
-/// underneath an instance and returns the corresponding master prim. 
+/// underneath an instance and returns the corresponding prototype prim. 
 /// 
-/// This returns an invalid UsdPrim if no corresponding master prim can be 
+/// This returns an invalid UsdPrim if no corresponding prototype prim can be 
 /// found and if no prim exists at the path.
 ///
 /// This method is similar to UsdStage::GetPrimAtPath(), in that it will never 
@@ -102,10 +102,10 @@ USDUTILS_API
 UsdPrim UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage, 
                                             const SdfPath &path);
 
-/// Given a path, uninstances all the instanced prims in the namespace chain and 
-/// returns the resulting prim at the requested path. Returns a NULL prim if the 
-/// given path doesn't exist and does not correspond to a valid prim inside a 
-/// master.
+/// Given a path, uninstances all the instanced prims in the namespace chain and
+/// returns the resulting prim at the requested path. Returns a NULL prim if the
+/// given path doesn't exist and does not correspond to a valid prim inside a
+/// prototype.
 USDUTILS_API
 UsdPrim UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage, 
                                      const SdfPath &path);

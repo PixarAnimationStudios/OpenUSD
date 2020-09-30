@@ -203,9 +203,9 @@ UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage,
     // If the given path refers to a prim beneath an instance,
     // UsdStage::GetPrimAtPath will return an instance proxy
     // from which we can retrieve the corresponding prim in
-    // the master.
+    // the prototype.
     UsdPrim p = stage->GetPrimAtPath(path);
-    return (p && p.IsInstanceProxy()) ? p.GetPrimInMaster() : p;
+    return (p && p.IsInstanceProxy()) ? p.GetPrimInPrototype() : p;
 }
 
 UsdPrim 

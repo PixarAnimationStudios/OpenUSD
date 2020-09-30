@@ -51,11 +51,11 @@ SDF_DECLARE_HANDLES(SdfLayer);
     (modelCount)                        \
     (instancedModelCount)               \
     (assetCount)                        \
-    (masterCount)                       \
+    (prototypeCount)                    \
     (totalInstanceCount)                \
     (usedLayerCount)                    \
     (primary)                           \
-    (masters)                           \
+    (prototypes)                        \
     (primCounts)                        \
         /*(totalPrimCount)*/            \
         (activePrimCount)               \
@@ -78,10 +78,10 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys,
 ///  * modelCount - number of models
 ///  * instancedModelCount - number of instanced models
 ///  * assetCount - number of assets
-///  * masterCount - number of masters
+///  * prototypeCount - number of prototypes
 ///  * totalInstanceCount - total number of instances (including nested instances)
-///  * two sub-dictionaries, 'primary' and 'masters' for the "primary" prim tree
-///  and for all the master subtrees respectively, containing the following 
+///  * two sub-dictionaries, 'primary' and 'prototypes' for the "primary" prim tree
+///  and for all the prototype subtrees respectively, containing the following 
 ///  stats:
 ///  * primCounts - a sub-dictionary containing the following 
 ///     * totalPrimCount - number of prims
@@ -94,7 +94,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys,
 ///
 /// Returns the stage that was opened.
 /// 
-/// The "masters" subdictionary is populated only if the stage has one ore more 
+/// The "prototypes" subdictionary is populated only if the stage has one or more 
 /// instanced models.
 /// 
 /// \note The approximate memory allocated when opening the stage is computed 
@@ -115,7 +115,7 @@ UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
 /// Computes stats on an already opened USD stage.
 /// 
 /// Returns the total number of prims on the stage, including active, inactive.
-/// pure overs, prims inside masters etc.
+/// pure overs, prims inside prototypes etc.
 /// 
 USDUTILS_API
 size_t UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage, 

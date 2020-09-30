@@ -28,7 +28,7 @@ import unittest
 class TestUsdUtilsIntrospection(unittest.TestCase):
     def test_UsdUtilsComputeStageStats(self):
         expectedStageStats = {
-            'masters': {
+            'prototypes': {
                 'primCountsByType': {'untyped': 4, 'Mesh': 7, 'Xform': 2}, 
                 'primCounts': {'activePrimCount': 13, 'inactivePrimCount': 0,
                                 'instanceCount': 2, 'pureOverCount': 4, 
@@ -43,7 +43,7 @@ class TestUsdUtilsIntrospection(unittest.TestCase):
             'instancedModelCount': 1, 
             'totalPrimCount': 47, 
             'totalInstanceCount': 8, 
-            'masterCount': 4, 
+            'prototypeCount': 4, 
             'assetCount': 1}
 
         self.assertEqual(UsdUtils.ComputeUsdStageStats('stageStats.usda'),
