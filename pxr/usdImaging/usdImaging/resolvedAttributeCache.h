@@ -971,6 +971,15 @@ struct UsdImaging_CoordSysBindingStrategy
                 }
                 for (auto const& binding:
                      query->coordSysAPI.GetLocalBindings()) {
+                    if (!prim.GetStage()->GetPrimAtPath(
+                        binding.coordSysPrimPath).IsValid()) {
+                        // The target xform prim does not exist, so ignore
+                        // this coord sys binding.
+                        TF_WARN("UsdImaging: Ignoring coordinate system "
+                                "binding to non-existent prim <%s>\n",
+                                binding.coordSysPrimPath.GetText());
+                        continue;
+                    }
                     bool found = false;
                     for (size_t i=0, n=hdIds.size(); i<n; ++i) {
                         if (usdBindings[i].name == binding.name) {
