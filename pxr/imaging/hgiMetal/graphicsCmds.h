@@ -108,6 +108,9 @@ public:
     HGIMETAL_API
     void PopDebugGroup() override;
 
+    HGIMETAL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+
 protected:
     friend class HgiMetal;
 

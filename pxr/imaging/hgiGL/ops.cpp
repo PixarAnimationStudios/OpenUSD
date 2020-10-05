@@ -670,4 +670,14 @@ HgiGLOps::ResolveFramebuffer(
     };
 }
 
+HgiGLOpsFn
+HgiGLOps::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    return [barrier] {
+        if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        }
+    };
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

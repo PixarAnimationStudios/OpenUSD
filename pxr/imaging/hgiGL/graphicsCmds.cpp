@@ -199,6 +199,12 @@ HgiGLGraphicsCmds::PopDebugGroup()
     }
 }
 
+void
+HgiGLGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+}
+
 bool
 HgiGLGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

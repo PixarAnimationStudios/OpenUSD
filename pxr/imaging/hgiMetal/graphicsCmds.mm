@@ -427,6 +427,24 @@ HgiMetalGraphicsCmds::PopDebugGroup()
     }
 }
 
+void
+HgiMetalGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
+
+    MTLBarrierScope scope =
+        MTLBarrierScopeBuffers |
+        MTLBarrierScopeTextures |
+        MTLBarrierScopeRenderTargets;
+
+    MTLRenderStages srcStages = MTLRenderStageVertex | MTLRenderStageFragment;
+    MTLRenderStages dstStages = MTLRenderStageVertex | MTLRenderStageFragment;
+
+    [_encoder memoryBarrierWithScope:scope
+                         afterStages:srcStages
+                         beforeStages:dstStages];
+}
+
 bool
 HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

@@ -1373,38 +1373,28 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
         HdBinding binding = binder.GetBinding(_tokens->ulocCullParams);
         int bindLoc = binding.GetLocation();
 
-        //
-        // Reset culling pass
-        //
-
         // GfxCmds has no attachment since it is a vertex only shader.
         HgiGraphicsCmdsDesc gfxDesc;
-        HgiGraphicsCmdsUniquePtr resetGfxCmds= hgi->CreateGraphicsCmds(gfxDesc);
-        resetGfxCmds->PushDebugGroup("GPU frustum culling reset pass");
-        resetGfxCmds->BindPipeline(psoHandle);
-        resetGfxCmds->SetConstantValues(
+        HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
+        cullGfxCmds->PushDebugGroup("GPU frustum instance culling");
+        cullGfxCmds->BindPipeline(psoHandle);
+
+        // Reset Pass
+        cullGfxCmds->SetConstantValues(
             psoHandle, HgiShaderStageVertex, 
             bindLoc, sizeof(Uniforms), &cullParams);
 
-        resetGfxCmds->DrawIndirect(
+        cullGfxCmds->DrawIndirect(
             cullCommandBuffer->GetId(),
             cullCommandBuffer->GetOffset(),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
-        // Since we do two shader passes that read/write to the SSBO
-        // (reset then cull) we need synchronization inbetween via SubmitCmds.
-        resetGfxCmds->PopDebugGroup();
-        hgi->SubmitCmds(resetGfxCmds.get());
+        // Make sure the reset-pass memory writes
+        // are visible to the culling shader pass.
+        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
 
-        //
         // Perform Culling
-        //
-
-        HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
-        cullGfxCmds->PushDebugGroup("GPU frustum instance culling");
-        cullGfxCmds->BindPipeline(psoHandle);
-
         cullParams.resetPass = 0;
         cullGfxCmds->SetConstantValues(
             psoHandle, HgiShaderStageVertex,
@@ -1415,6 +1405,10 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
             cullCommandBuffer->GetOffset(),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
+
+        // Make sure culling memory writes are
+        // visible to execute draw.
+        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
 
         cullGfxCmds->PopDebugGroup();
         hgi->SubmitCmds(cullGfxCmds.get());

@@ -99,6 +99,12 @@ HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     _ops.push_back( HgiGLOps::GenerateMipMaps(texture) );
 }
 
+void
+HgiGLBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+}
+
 bool
 HgiGLBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

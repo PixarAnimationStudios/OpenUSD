@@ -176,6 +176,9 @@ public:
     HGIGL_API
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
 
+    HGIGL_API
+    static HgiGLOpsFn MemoryBarrier(HgiMemoryBarrier barrier);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

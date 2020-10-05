@@ -504,6 +504,24 @@ enum HgiSubmitWaitType
     HgiSubmitWaitTypeWaitUntilCompleted,
 };
 
+/// \enum HgiMemoryBarrier
+///
+/// Describes what objects the memory barrier affects.
+///
+/// <ul>
+/// <li>HgiMemoryBarrierNone:
+///   No barrier (no-op).</li>
+/// <li>HgiMemoryBarrierAll:
+///   The barrier affects all memory writes and reads.</li>
+/// </ul>
+///
+enum HgiMemoryBarrierBits
+{
+    HgiMemoryBarrierNone = 0,
+    HgiMemoryBarrierAll  = 1 << 0
+};
+using HgiMemoryBarrier = HgiBits;
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

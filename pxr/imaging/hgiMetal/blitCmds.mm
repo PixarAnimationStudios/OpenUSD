@@ -350,6 +350,13 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     }
 }
 
+void
+HgiMetalBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
+    // Do nothing. All blit encoder work will be visible to next encoder.
+}
+
 bool
 HgiMetalBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

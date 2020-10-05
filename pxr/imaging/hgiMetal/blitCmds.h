@@ -67,6 +67,9 @@ public:
     HGIMETAL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
 
+    HGIMETAL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+
 protected:
     friend class HgiMetal;
 
