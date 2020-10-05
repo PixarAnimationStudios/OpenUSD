@@ -39,8 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Describes the properties of a framebuffer attachment.
 ///
 /// <ul>
-/// <li>texture:
-///   The texture used as render target attachment.</li>
+/// <li>format:
+///   The format of the attachment.
+///   Must match what is set in HgiTextureDesc.</li>
+/// <li>dimensions:
+///   Attachment size (in texels).
+///   Must match what is set in HgiTextureDesc.</li>
+/// <li>usage:
+///   Describes how the texture is intended to be used.
+///   Must match what is set in HgiTextureDesc.</li>
 /// <li>loadOp:
 ///   The operation to perform on the attachment pixel data prior to rendering.</li>
 /// <li>storeOp:
@@ -58,6 +65,8 @@ struct HgiAttachmentDesc
 {
     HgiAttachmentDesc() 
     : format(HgiFormatInvalid)
+    , dimensions(0)
+    , usage(0)
     , loadOp(HgiAttachmentLoadOpLoad)
     , storeOp(HgiAttachmentStoreOpStore)
     , clearValue(0)
@@ -71,6 +80,8 @@ struct HgiAttachmentDesc
     {}
 
     HgiFormat format;
+    GfVec3i dimensions;
+    HgiTextureUsage usage;
     HgiAttachmentLoadOp loadOp;
     HgiAttachmentStoreOp storeOp;
     GfVec4f clearValue;

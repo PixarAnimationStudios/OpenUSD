@@ -560,14 +560,11 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
             hgiResolveHandle = resolveRes.UncheckedGet<HgiTextureHandle>();
         }
 
-        // Assume AOVs have the same dimensions so pick size of any.
-        desc.width = renderBuffer->GetWidth();
-        desc.height = renderBuffer->GetHeight();
-
         HgiAttachmentDesc attachmentDesc;
 
-        attachmentDesc.format =
-            HdStHgiConversions::GetHgiFormat(renderBuffer->GetFormat());
+        attachmentDesc.format = hgiTexHandle->GetDescriptor().format;
+        attachmentDesc.dimensions = hgiTexHandle->GetDescriptor().dimensions;
+        attachmentDesc.usage = hgiTexHandle->GetDescriptor().usage;
 
         // We need to use LoadOpLoad instead of DontCare because we can have
         // multiple render passes that use the same attachments.

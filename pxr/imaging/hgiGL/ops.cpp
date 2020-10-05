@@ -655,11 +655,18 @@ HgiGLOps::ResolveFramebuffer(
             mask |= GL_DEPTH_BUFFER_BIT;
         }
 
+        GfVec3i dim(0);
+        if (!graphicsCmds.colorAttachmentDescs.empty()) {
+            dim = graphicsCmds.colorAttachmentDescs.front().dimensions;
+        } else if (graphicsCmds.depthAttachmentDesc.format != HgiFormatInvalid) {
+            dim = graphicsCmds.depthAttachmentDesc.dimensions;
+        }
+
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFramebuffer);
         glEnable(GL_FRAMEBUFFER_SRGB);
-        glBlitFramebuffer(0, 0, graphicsCmds.width, graphicsCmds.height,
-                          0, 0, graphicsCmds.width, graphicsCmds.height,
+        glBlitFramebuffer(0, 0, dim[0], dim[1],
+                          0, 0, dim[0], dim[1],
                           mask,
                           GL_NEAREST);
     };

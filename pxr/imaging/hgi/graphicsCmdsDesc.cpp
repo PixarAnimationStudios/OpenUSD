@@ -31,9 +31,7 @@ bool operator==(
     const HgiGraphicsCmdsDesc& lhs,
     const HgiGraphicsCmdsDesc& rhs) 
 {
-    return  lhs.width == rhs.width &&
-            lhs.height == rhs.height &&
-            lhs.depthAttachmentDesc == rhs.depthAttachmentDesc &&
+    return  lhs.depthAttachmentDesc == rhs.depthAttachmentDesc &&
             lhs.colorAttachmentDescs == rhs.colorAttachmentDescs &&
             lhs.depthTexture == rhs.depthTexture &&
             lhs.depthResolveTexture == rhs.depthResolveTexture &&
@@ -53,8 +51,6 @@ std::ostream& operator<<(
     const HgiGraphicsCmdsDesc& desc)
 {
     out << "HgiGraphicsCmdsDesc: {";
-    out << "width: " << desc.width << ", ";
-    out << "height: " << desc.height << ", ";
 
     for (HgiAttachmentDesc const& a : desc.colorAttachmentDescs) {
         out << a;

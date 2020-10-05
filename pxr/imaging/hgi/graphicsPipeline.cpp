@@ -188,7 +188,9 @@ bool operator==(
            lhs.rasterizationState == rhs.rasterizationState &&
            lhs.vertexBuffers == rhs.vertexBuffers &&
            lhs.colorAttachmentDescs == rhs.colorAttachmentDescs &&
+           lhs.colorResolveAttachmentDescs == rhs.colorResolveAttachmentDescs &&
            lhs.depthAttachmentDesc == rhs.depthAttachmentDesc &&
+           lhs.depthResolveAttachmentDesc == rhs.depthResolveAttachmentDesc &&
            lhs.shaderConstantsDesc == rhs.shaderConstantsDesc;
 }
 

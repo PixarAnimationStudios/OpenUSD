@@ -46,7 +46,6 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _debugLabel(nil)
     , _viewportSet(false)
 {
-    TF_VERIFY(desc.width>0 && desc.height>0);
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());
     
     if (!desc.colorResolveTextures.empty() &&

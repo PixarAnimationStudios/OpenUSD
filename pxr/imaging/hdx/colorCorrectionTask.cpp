@@ -349,7 +349,8 @@ bool
 HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
 {
     if (_pipeline) {
-        if (_attachment0.format == aovTexture->GetDescriptor().format) {
+        if (_attachment0.format == aovTexture->GetDescriptor().format &&
+            _attachment0.dimensions == aovTexture->GetDescriptor().dimensions) {
             return true;
         }
         
@@ -395,7 +396,9 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
     _attachment0.storeOp = HgiAttachmentStoreOpStore;
     _attachment0.format = aovTexture->GetDescriptor().format;
-    desc.colorAttachmentDescs.push_back(_attachment0);
+    _attachment0.dimensions = aovTexture->GetDescriptor().dimensions;
+    _attachment0.usage = aovTexture->GetDescriptor().usage;
+    desc.colorAttachmentDescs.emplace_back(_attachment0);
 
     _pipeline = _GetHgi()->CreateGraphicsPipeline(desc);
 
@@ -430,10 +433,8 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
 
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
-    gfxDesc.width = dimensions[0];
-    gfxDesc.height = dimensions[1];
-    gfxDesc.colorAttachmentDescs.push_back(_attachment0);
-    gfxDesc.colorTextures.push_back(aovTexture);
+    gfxDesc.colorAttachmentDescs.emplace_back(_attachment0);
+    gfxDesc.colorTextures.emplace_back(aovTexture);
 
     // Begin rendering
     HgiGraphicsCmdsUniquePtr gfxCmds = _GetHgi()->CreateGraphicsCmds(gfxDesc);
