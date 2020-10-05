@@ -141,6 +141,14 @@ size_t HgiGetDataSizeOfFormat(
 HGI_API
 bool HgiIsCompressed(HgiFormat f);
 
+/// Returns the size necessary to allocate a buffer of given dimensions
+/// and format, rounding dimensions up to suitable multiple when
+/// using a compressed format.
+HGI_API
+size_t HgiGetDataSize(
+    HgiFormat f,
+    const GfVec3i &dimensions);
+
 /// Returns mip infos.
 ///
 /// If dataByteSize is specified, the levels stops when the total memory

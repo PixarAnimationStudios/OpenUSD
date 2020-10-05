@@ -152,6 +152,21 @@ HgiIsCompressed(const HgiFormat f)
     }
 }
 
+size_t
+HgiGetDataSize(
+    const HgiFormat format,
+    const GfVec3i &dimensions)
+{
+    size_t blockWidth, blockHeight;
+    const size_t bpt =
+        HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
+    return
+        ((dimensions[0] + blockWidth  - 1) / blockWidth ) *
+        ((dimensions[1] + blockHeight - 1) / blockHeight) *
+        std::max(1, dimensions[2]) *
+        bpt;
+}
+
 uint16_t
 _ComputeNumMipLevels(const GfVec3i &dimensions)
 {
@@ -179,17 +194,11 @@ HgiGetMipInfos(
     std::vector<HgiMipInfo> result;
     result.reserve(numMips);
     
-    size_t blockWidth, blockHeight;
-    const size_t bpt =
-        HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
     size_t byteOffset = 0;
     GfVec3i size = dimensions;
 
     for (uint16_t mipLevel = 0; mipLevel < numMips; mipLevel++) {
-        const size_t byteSize = 
-            ((size[0] + blockWidth  - 1) / blockWidth ) *
-            ((size[1] + blockHeight - 1) / blockHeight) *
-            size[2] * bpt;
+        const size_t byteSize = HgiGetDataSize(format, size);
 
         result.push_back({ byteOffset, size, byteSize });
 

@@ -188,6 +188,10 @@ public:
 
 protected:
     HGI_API
+    static
+    size_t _GetByteSizeOfResource(const HgiTextureDesc &descriptor);
+
+    HGI_API
     HgiTexture(HgiTextureDesc const& desc);
 
     HgiTextureDesc _descriptor;
