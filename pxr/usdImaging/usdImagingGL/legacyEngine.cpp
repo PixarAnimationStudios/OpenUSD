@@ -405,6 +405,7 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
         // Will need to revisit this for semi-transparent geometry.
         glDisable( GL_ALPHA_TEST );
         glDisable( GL_BLEND );
+        glDisable( GL_SAMPLE_ALPHA_TO_COVERAGE );
         drawID = true;
     } else {
         glShadeModel(GL_SMOOTH);

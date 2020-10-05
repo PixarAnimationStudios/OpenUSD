@@ -1195,14 +1195,6 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         glDisable(GL_BLEND);
     }
 
-    // note: to get benefit of alpha-to-coverage, the target framebuffer
-    // has to be a MSAA buffer.
-    if (params.enableIdRender) {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else if (params.enableSampleAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    }
-
     // for points width
     glEnable(GL_PROGRAM_POINT_SIZE);
 

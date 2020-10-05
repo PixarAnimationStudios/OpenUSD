@@ -173,9 +173,6 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     renderPassState->SetBlendConstantColor(params.blendConstantColor);
     
     // alpha to coverage
-    // XXX:  Long-term Alpha to Coverage will be a render style on the
-    // task.  However, as there isn't a fallback we current force it
-    // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
     renderPassState->SetAlphaToCoverageUseDefault(
         delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     renderPassState->SetAlphaToCoverageEnabled(

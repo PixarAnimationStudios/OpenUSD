@@ -154,11 +154,6 @@ HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id,
 bool
 HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 {
-    // The client using this task controller is responsible for setting
-    // GL_SAMPLE_ALPHA_TO_COVERAGE.
-    if (option == HdxOptionTokens->taskSetAlphaToCoverage) {
-        return true;
-    }
     return HdSceneDelegate::IsEnabled(option);
 }
 
@@ -435,6 +430,12 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
+    }
+
+    // For ID renders, a non-MSAA buffer is used. To get benefit of 
+    // alpha-to-coverage, the target framebuffer has to be an MSAA buffer.
+    if (renderParams->enableIdRender) {
+        renderParams->enableAlphaToCoverage = false;
     }
 }
 
