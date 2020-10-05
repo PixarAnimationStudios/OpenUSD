@@ -32,6 +32,9 @@ HdxPickFromRenderBufferTask::HdxPickFromRenderBufferTask(
     , _primId(nullptr)
     , _instanceId(nullptr)
     , _elementId(nullptr)
+    , _normal(nullptr)
+    , _depth(nullptr)
+    , _camera(nullptr)
     , _converged(false)
 {
 }
@@ -79,6 +82,9 @@ HdxPickFromRenderBufferTask::Prepare(HdTaskContext* ctx,
     _elementId = static_cast<HdRenderBuffer*>(
         renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
                               _params.elementIdBufferPath));
+    _normal = static_cast<HdRenderBuffer*>(
+        renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
+                              _params.normalBufferPath));
     _depth = static_cast<HdRenderBuffer*>(
         renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
                               _params.depthBufferPath));
@@ -116,6 +122,18 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
         return;
     }
 
+    if (_normal) {
+        _normal->Resolve();
+        _converged = _converged && _normal->IsConverged();
+        if (_normal->GetWidth() != _primId->GetWidth() ||
+            _normal->GetHeight() != _primId->GetHeight()) {
+            TF_WARN("Normal buffer %s has different dimensions "
+                    "than Prim Id buffer %s",
+                    _params.normalBufferPath.GetText(),
+                    _params.primIdBufferPath.GetText());
+            return;
+        }
+    }
     if (_elementId) {
         _elementId->Resolve();
         _converged = _converged && _elementId->IsConverged();
@@ -143,6 +161,9 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
 
     uint8_t *primIdPtr = reinterpret_cast<uint8_t*>(_primId->Map());
     uint8_t *depthPtr = reinterpret_cast<uint8_t*>(_depth->Map());
+    uint8_t *normalPtr = _normal ?
+                         reinterpret_cast<uint8_t*>(_normal->Map()) :
+                         nullptr;
     uint8_t *elementIdPtr = _elementId ? 
                             reinterpret_cast<uint8_t*>(_elementId->Map()) : 
                             nullptr;
@@ -216,7 +237,7 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
             reinterpret_cast<int32_t*>(elementIdPtr),
             nullptr,
             nullptr,
-            nullptr,
+            reinterpret_cast<int32_t*>(normalPtr),
             reinterpret_cast<float*>(depthPtr),
             _index, _contextParams.pickTarget,
             renderView, renderProj, depthRange,
@@ -242,6 +263,8 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
 
     if (primIdPtr)
         _primId->Unmap();
+    if (normalPtr)
+        _normal->Unmap();
     if (elementIdPtr)
         _elementId->Unmap();
     if (instanceIdPtr)
@@ -261,6 +284,7 @@ std::ostream& operator<<(std::ostream& out,
         << pv.primIdBufferPath << " "
         << pv.instanceIdBufferPath << " "
         << pv.elementIdBufferPath << " "
+        << pv.normalBufferPath << " "
         << pv.depthBufferPath << " "
         << pv.cameraId;
     return out;
@@ -272,6 +296,7 @@ bool operator==(const HdxPickFromRenderBufferTaskParams& lhs,
     return lhs.primIdBufferPath     == rhs.primIdBufferPath     &&
            lhs.instanceIdBufferPath == rhs.instanceIdBufferPath &&
            lhs.elementIdBufferPath  == rhs.elementIdBufferPath  &&
+           lhs.normalBufferPath     == rhs.normalBufferPath     &&
            lhs.depthBufferPath      == rhs.depthBufferPath      &&
            lhs.cameraId             == rhs.cameraId;
 }

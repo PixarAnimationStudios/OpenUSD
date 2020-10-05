@@ -42,6 +42,7 @@ struct HdxPickFromRenderBufferTaskParams
         : primIdBufferPath()
         , instanceIdBufferPath()
         , elementIdBufferPath()
+        , normalBufferPath()
         , depthBufferPath()
         , cameraId()
         , viewport()
@@ -50,6 +51,7 @@ struct HdxPickFromRenderBufferTaskParams
     SdfPath primIdBufferPath;
     SdfPath instanceIdBufferPath;
     SdfPath elementIdBufferPath;
+    SdfPath normalBufferPath;
     SdfPath depthBufferPath;
 
     // The id of the camera used to generate the id buffers.
@@ -104,6 +106,7 @@ private:
     HdRenderBuffer *_primId;
     HdRenderBuffer *_instanceId;
     HdRenderBuffer *_elementId;
+    HdRenderBuffer *_normal;
     HdRenderBuffer *_depth;
     const HdCamera *_camera;
 
