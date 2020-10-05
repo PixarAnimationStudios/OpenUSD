@@ -60,7 +60,7 @@ _IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
 
 using _Data = std::unique_ptr<const unsigned char[]>;
 
-template<typename T, T alpha>
+template<typename T, uint32_t alpha>
 _Data
 _ConvertRGBToRGBA(
     const void * const data,
@@ -81,7 +81,7 @@ _ConvertRGBToRGBA(
         typedConvertedData[4 * i + 0] = typedData[3 * i + 0];
         typedConvertedData[4 * i + 1] = typedData[3 * i + 1];
         typedConvertedData[4 * i + 2] = typedData[3 * i + 2];
-        typedConvertedData[4 * i + 3] = alpha;
+        typedConvertedData[4 * i + 3] = T(alpha);
     }
 
     return std::move(result);
@@ -258,10 +258,14 @@ _GetHgiFormatAndConversionFunction(
             *hgiFormat = HgiFormatUNorm8Vec4srgb;
             break;
         case HioFormatFloat16Vec3:
-            *hgiFormat = HgiFormatFloat16Vec3;
+            // RGB (48bit) is not supported on MTL, so we need to convert it.
+            *conversionFunction = _ConvertRGBToRGBA<GfHalf, 1>;
+            *hgiFormat = HgiFormatFloat16Vec4;
             break;
         case HioFormatFloat32Vec3:
-            *hgiFormat = HgiFormatFloat32Vec3;
+            // RGB (96bit) is not supported on MTL, so we need to convert it.
+            *conversionFunction = _ConvertRGBToRGBA<float, 1>;
+            *hgiFormat = HgiFormatFloat32Vec4;
             break;
         case HioFormatSNorm8Vec3:
         case HioFormatUInt16Vec3:
