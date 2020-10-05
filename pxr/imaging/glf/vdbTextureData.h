@@ -27,13 +27,8 @@
 /// \file glf/vdbTextureData.h
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/fieldTextureData.h"
-
-#include "pxr/base/gf/bbox3d.h"
 
 #include <memory>
 
@@ -48,7 +43,8 @@ class GlfVdbTextureData_DenseGridHolderBase;
 /// Implements GlfBaseTextureData to read grid with given name from
 /// OpenVDB file at given path.
 ///
-class GlfVdbTextureData final : public GlfFieldTextureData {
+class GlfVdbTextureData final : public GlfFieldTextureData
+{
 public:
     GLF_API
     static GlfVdbTextureDataRefPtr
@@ -105,7 +101,6 @@ private:
 
     int _nativeWidth, _nativeHeight, _nativeDepth;
     int _resizedWidth, _resizedHeight, _resizedDepth;
-    int _bytesPerPixel;
 
     HioFormat _hioFormat;
 
