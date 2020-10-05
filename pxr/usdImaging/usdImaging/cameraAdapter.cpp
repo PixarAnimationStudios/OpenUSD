@@ -182,9 +182,9 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
         }
         if ((*timeVaryingBits & HdCamera::DirtyParams) == 0) {
             _IsVarying(prim,
-                UsdGeomTokens->exposureCompensation,
+                UsdGeomTokens->exposure,
                 HdCamera::DirtyParams,
-                HdCameraTokens->exposureCompensation,
+                HdCameraTokens->exposure,
                 timeVaryingBits,
                 false);
         }
@@ -284,9 +284,9 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
         return vShutterClose;
 
-    } else if (key == HdCameraTokens->exposureCompensation) {
+    } else if (key == HdCameraTokens->exposure) {
         VtValue v;
-        cam.GetExposureCompensationAttr().Get(&v, time); // conversion n/a
+        cam.GetExposureAttr().Get(&v, time); // conversion n/a
         return v;
     }
 
@@ -320,7 +320,7 @@ UsdImagingCameraAdapter::ProcessPropertyChange(UsdPrim const& prim,
              propertyName == UsdGeomTokens->focusDistance ||
              propertyName == UsdGeomTokens->shutterOpen ||
              propertyName == UsdGeomTokens->shutterClose ||
-             propertyName == UsdGeomTokens->exposureCompensation)
+             propertyName == UsdGeomTokens->exposure)
         return HdCamera::DirtyParams;
 
     // XXX: There's no catch-all dirty bit for weird camera params.

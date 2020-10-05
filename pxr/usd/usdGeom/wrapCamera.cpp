@@ -141,9 +141,9 @@ _CreateShutterCloseAttr(UsdGeomCamera &self,
 }
         
 static UsdAttribute
-_CreateExposureCompensationAttr(UsdGeomCamera &self,
+_CreateExposureAttr(UsdGeomCamera &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateExposureCompensationAttr(
+    return self.CreateExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
@@ -280,10 +280,10 @@ void wrapUsdGeomCamera()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetExposureCompensationAttr",
-             &This::GetExposureCompensationAttr)
-        .def("CreateExposureCompensationAttr",
-             &_CreateExposureCompensationAttr,
+        .def("GetExposureAttr",
+             &This::GetExposureAttr)
+        .def("CreateExposureAttr",
+             &_CreateExposureAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

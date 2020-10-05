@@ -1958,12 +1958,13 @@ class Camera "Camera" (
                  should be authored, otherwise there is no exposure and a
                  renderer should produce a black image."""
     )
-
-    # exposure compensation
-    float exposureCompensation = 0.0 (
-        doc = """Exposure compensation, as a log base-2 value.  The default
-                 of 0.0 has no effect.  A value of 1.0 will double the image-plane
-                 intensities in a rendered image; a value of -1.0 will halve them."""
+    
+    # exposure adjustment
+    float exposure = 0.0 (
+        doc = """Exposure adjustment, as a log base-2 value.  The default
+                 of 0.0 has no effect.  A value of 1.0 will double the
+                 image-plane intensities in a rendered image; a value of
+                 -1.0 will halve them."""
     )
 }
 

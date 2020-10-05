@@ -490,27 +490,28 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // EXPOSURECOMPENSATION 
+    // EXPOSURE 
     // --------------------------------------------------------------------- //
-    /// Exposure compensation, as a log base-2 value.  The default
-    /// of 0.0 has no effect.  A value of 1.0 will double the image-plane
-    /// intensities in a rendered image; a value of -1.0 will halve them.
+    /// Exposure adjustment, as a log base-2 value.  The default
+    /// of 0.0 has no effect.  A value of 1.0 will double the
+    /// image-plane intensities in a rendered image; a value of
+    /// -1.0 will halve them.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float exposureCompensation = 0` |
+    /// | Declaration | `float exposure = 0` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDGEOM_API
-    UsdAttribute GetExposureCompensationAttr() const;
+    UsdAttribute GetExposureAttr() const;
 
-    /// See GetExposureCompensationAttr(), and also 
+    /// See GetExposureAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateExposureCompensationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateExposureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

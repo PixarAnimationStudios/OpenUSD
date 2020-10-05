@@ -62,7 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
                                                 \
     (shutterOpen)                               \
     (shutterClose)                              \
-    (exposureCompensation)
+    (exposure)
 
 
 TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);

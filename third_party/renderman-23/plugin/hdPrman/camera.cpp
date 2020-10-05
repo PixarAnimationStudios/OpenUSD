@@ -75,7 +75,7 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             HdCameraTokens->focusDistance,
             HdCameraTokens->shutterOpen,
             HdCameraTokens->shutterClose,
-            HdCameraTokens->exposureCompensation
+            HdCameraTokens->exposure
         };
 
         for (TfToken const& param : params) {
