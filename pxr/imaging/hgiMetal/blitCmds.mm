@@ -110,11 +110,6 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    if (!TF_VERIFY(texDesc.layerCount > copyOp.sourceTexelOffset[2],
-        "Trying to copy an invalid texture layer/slice")) {
-        return;
-    }
-
     MTLPixelFormat metalFormat = MTLPixelFormatInvalid;
 
     if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
