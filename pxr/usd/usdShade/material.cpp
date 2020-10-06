@@ -688,8 +688,9 @@ class UsdShadeMaterial_ConnectableAPIBehavior : public UsdShadeNodeGraph::Connec
                             const UsdAttribute &source,
                             std::string *reason) override
     {
-        *reason = "Material inputs are not connectable.";
-        return false;
+        // TODO: In the future we will only allows connections whose path
+        // contains the Material's path as a prefix (i.e. encapsulation)
+        return true;
     }
 };
 
