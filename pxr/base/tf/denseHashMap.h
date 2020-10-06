@@ -510,8 +510,7 @@ public:
     void shrink_to_fit() {
 
         // Shrink the vector to best size.
-        //XXX: When switching to c++0x we should call _vec().shrink_to_fit().
-        _Vector(_vec()).swap(_vec());
+        _vec().shrink_to_fit();
 
         if (!_h)
             return;
