@@ -606,7 +606,18 @@ HgiGLOps::BindFramebufferOp(
 
         if (desc.depthTexture &&
             depthAttachment.loadOp == HgiAttachmentLoadOpClear) {
-            glClearBufferfv(GL_DEPTH, 0, depthAttachment.clearValue.data());
+            if (depthAttachment.usage & HgiTextureUsageBitsStencilTarget) {
+                glClearBufferfi(
+                    GL_DEPTH_STENCIL,
+                    0,
+                    depthAttachment.clearValue[0],
+                    depthAttachment.clearValue[1]);
+            } else {
+                glClearBufferfv(
+                    GL_DEPTH,
+                    0,
+                    depthAttachment.clearValue.data());
+            }
         }
 
         // Setup blending
