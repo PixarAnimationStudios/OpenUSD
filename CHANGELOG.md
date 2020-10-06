@@ -1,5 +1,259 @@
 # Change Log
 
+## [20.11] - 2020-10-14
+
+### Build
+- Updated CMakeLists.txt to conform to recommended practice. (Issue #1241)
+- The build system now sets `Boost_NO_BOOST_CMAKE=ON` by default to
+  work around issues with boost's cmake files. (Issue #1255)
+
+- Various fixes and changes to build_usd.py:
+  - Added `--toolset` option for specifying CMake toolset. (PR #1325)
+  - Added `--prefer-safety-over-speed` and `--prefer-speed-over-safety`
+    options. See below for more details.
+  - Fixed issue with building libTIFF with Xcode 12. (PR #1315)
+
+### USD
+- Fixed incorrect underlying container type for TfHashMultiMap. (PR #1281)
+- Fixed invalid conversions of Gf containers like GfVec3f in Python. Note this
+  issue is still present in Python 3. (Issue #1290)
+- Fixed various tests to accommodate `PXR_OVERRIDE_PLUGINPATH_NAME`. (PR #1275)
+
+- Added GetExternalAssetDependencies to SdfLayer and SdfFileFormat to allow
+  file format plugins to declare additional dependencies that determine when
+  a layer produced from that file format should be reloaded.
+
+- Reduced memory usage from SdfPath::GetString and added SdfPath::GetAsString
+  and SdfPath::GetAsToken to avoid populating internal caches. (Issue #1287)
+
+- Various fixes to composition behavior:
+  - Fixed issues with sub-root references, payloads, and inherits, and
+    ancestral variant selections.
+  - Fixed issue with payloads on ancestors of sub-root references/payloads.
+  - Fixed issue with combinations of root, sub-root, and ancestral inherits.
+
+- Fixed bug in .usda file writer that could cause data corruption. (Issue #1331)
+- Fixed performance issue when writing many relationship targets or attribute
+  connections to .usdc files. (Issue #1345)
+
+- Improved performance for certain queries with .usdc files. In one example,
+  this decreased draw times in usdview after transform changes by ~90%.
+  (Issue #1300)
+
+- New .usdc files now default to version 0.8.0. These files cannot be read in
+  USD releases prior to v19.03. Users can revert to writing older versions by
+  setting the environment variable `USD_WRITE_NEW_USDC_FILES_AS_VERSION` to an
+  older version.
+
+- Added safety checks to guard against reading malformed .usdc files. These
+  checks may negatively impact performance and may be disabled by specifying
+  `PXR_PREFER_SAFETY_OVER_SPEED=OFF` when running CMake or
+  `--prefer-speed-over-safety` with build_usd.py.
+
+- Native instancing "master" prims are now referred to as "prototype" prims.
+  The generated paths of prototype prims has been changed from /__Master_<X>
+  to /__Prototype_<X>. Clients can use new UsdPrim::IsPrototypePath and
+  UsdPrim::IsPathInPrototype API to determine if a given path is related
+  to a prototype.
+
+  UsdStage and UsdPrim API using "master" terminology like UsdPrim::GetMaster
+  and UsdStage::GetMasters have been deprecated and will be removed in a future
+  release.
+
+- Added Get/Set/ClearChildrenReorder to UsdPrim for reordering prim children.
+- UsdProperty::FlattenTo now allows flattening properties across stages.
+- Deprecated UsdRelationship::BlockTargets and UsdAttribute::BlockConnections.
+  Clients should use SetTargets({}) and SetConnections({}) instead.
+- Changed UsdRelationship::GetTargets and UsdAttribute::GetConnections to return
+  false when HasAuthored would return false.
+- Fixed bug where UsdFlattenLayerStack was not applying the asset path
+  resolution callback to asset paths in `clips` metadata. (PR #1266)
+- Added UsdNotice::LayerMutingChanged notice. (Issue #676)
+- Fixed resource leak with Usd.PrimCompositionQuery in Python. (PR #1297)
+- Fixed crashes when printing expired Sdf.Layer and Usd.Stage objects in
+  Python. (PR #1012)
+- Removed `isPrivateApply` functionality from schema generation.
+- Fixed error in UsdUtilsComputeAllDependencies when an invalid
+  templateAssetPath value is specified. (PR #1289)
+- Improved UsdUtilsGetPrimaryUVSetName and UsdUtilsGetPrefName. (PR #1283)
+- Fixed bug in UsdUtilsStitchClips that led to inconsistent stitched results.
+
+- Added CanContainPropertyName to UsdCollectionAPI, UsdGeomPrimvars,
+  UsdShadeMaterialBindingAPI, and UsdShadeCoordSysAPI for checking if a
+  property name is valid for these schemas.
+
+- Deprecated UsdCollectionAPI::ApplyCollection in favor of Apply.
+- Added fallback values for texture card attributes on UsdGeomModelAPI schema.
+- Added exposure control to UsdGeomCamera.
+- Added ease-of-use API to UsdGeom primitives for querying the size of primary
+  geometric properties (e.g. UsdGeomMesh::GetFaceCount).
+- Fixed plugin extent computations for primitives in UsdGeom to respect
+  given timecode parameter. (PR #1284)
+- Fixed crash in UsdGeomSubset::GetUnassignedIndices when a given subset had
+  negative indices. (Issue #1227)
+- Added UsdShadeNodeDefAPI schema to represent connectable nodes in a graph.
+  UsdShadeShader has been modified to build off of this schema.
+- Added UsdShadeConnectableAPIBehavior to allow plugins to customize
+  connectability by prim type.
+- Added API to retrieve material outputs for standard terminals in all
+  render contexts on UsdShadeMaterial.
+- Added more instancing support to UsdSkel. (PR #1258)
+- Updated UsdVol FieldAsset schemas.
+- Various documentation fixes. (Issue #1162, PR #1335)
+
+### Imaging
+- Added new "sourceColorSpace" input to UsdUVTexture with values "raw", "sRGB",
+  and "auto" for better control of with which color space a texture is read.
+- Added ability to use mip maps authored in a file in the new texture system in
+  Storm.
+- Added UsdImagingPrimAdapter::ShouldIgnoreNativeInstanceSubtrees() to allow
+  adapters to disable instancing of itself and its descendants.
+- Added pre-multiply alpha functionality for UDIM textures. Also added sRGB
+  internal formats for UDIMs.
+- Added checks in HioGlslfxConfig to make sure the default value for an
+  attribute and its type match.
+- Added HdEngine::ClearTaskContextData() to avoid the task context to hold on to
+  resources that are about to become invalid as the render delegate is destroyed.
+- Added HDST_DUMP_FAILING_SHADER_SOURCEFILE debug flag to facilitate shader
+  debugging.
+- Added texture filepath resolution for symlinks.
+- Added an "outHitNormal" parameter to UsdImagingGLEngine::TestIntersection().
+- Added ReloadResource in Storm which reloads shader files when they change.
+
+- Improvements to Hgi:
+  - Added Draw, DrawIndirect and DrawIndexedIndirect to Hgi and backends.
+  - Added tracking of HgiCmds submission to ensure they only get submitted once.
+  - Added TextureCpuToGpu copy on BlitCmd, and CopyBufferGpuToCpu to read back
+    the GPU frustum cull results.
+  - Added guarantees that HgiGLInterop will restore GL state after interop.
+  - Added guarantees that Hgi GPU-GPU sync between SubmitCmds calls.
+  - Added TextureView to Hgi and convert domelight to use Hgi compute and
+    texture views.
+  - Added staging buffer in Hgi to reduce the amount of times small amounts of
+    data are copied into the same GPU buffer.
+  - Added HgiPrimitiveType, and added HgiSampleCount on HgiPipelineDesc.
+  - Added support for BC texture compression.
+  - Added component mapping to HgiTextureDesc and implementations for GL and
+    Metal.
+  - Added ability to share HgiCmds objects in Storm.
+  - Added optional wait behavior for command submission in Hgi.
+
+- Changed GLenum usage in GlfBaseTextureData and others to use new HioFormat.
+- Changed Storm's frustum culling to be done via a vertex shader without a
+  fragment shader.
+- Changed HdxShadowTask to specify that it should only render opaque and masked
+  materials.
+- Changed cards UVs from face-varying to vertex interpolated.
+- Changed to GL_SAMPLE_ALPHA_TO_ONE when using alpha to coverage, the alpha
+  computed after the framebuffer resolve is more meaningful.
+- Changed texture cards to require prims with UsdGeomModelAPI schema applied.
+- Changed type of UsdPrimvarReader.varname input from token to string.
+- Renamed various HdSt*GL classes to just HdSt*, this is part of the transition
+  of Storm to support multiple rendering APIs.
+- Enabled bindless shadow maps by default in Storm.
+- On first material sync in Storm, now we try to batch prims with identical
+  textures together.
+- HdStDrawTarget's preferred mechanism are AOVs not GlfDrawTarget's. This change
+  allows us to remove all GlfDrawTarget support from HdStDrawTarget.
+- Since HdStDrawTarget's no longer rely on the resolve task, removing code to
+  communicate the draw target task render passes to the resolve task.
+- Deprecated HdSceneDelegate::GetTextureResource and will eventually be removed.
+- An application can now disable the PresentTask in hdx task controller.
+- When imaging basis curves, treat empty normals array the same as missing
+  normals (i.e. draw as tube and not ribbon at higher complexities).
+- Store HgiResourceBindings and HgiPipeline objects on HdSt resource registry.
+- Switched (most of) the GPU frustum culling code from raw GL to Hgi.
+- With the addition of HgiMetal, all platforms we currently support (for Storm)
+  support color correction and 16F targets.
+- Use BufferResource for GPU frustum cull result buffer so we can use the
+  regular buffer binding APIs.
+- Load mipmap data in HgiMetal textures.
+- Changed signature of HgiDataSizeOfFormat so that it can return blockWidth and
+  blockHeight. Returning block size in bytes for compressed formats.
+- Describe shader constants (push constants) in pipeline.
+- Using HgiCompute in smooth normals computation, switched flat normals and
+  quadrangulate to HgiCompute, and converted HdStExtCompGpuComputation to Hgi.
+
+- Removed UsdImaging value cache API for all data except primvar descriptors and
+  instance indices.
+- Removed unused hitMode field from HdxPickTaskContextParams.
+- Removed UsdImagingGLEngine::InvalidateBuffers().
+- Removed pre-multiply alpha behavior from volume.glslfx and changed
+  renderPass.glslfx to allow fully transparent but still emissive volumes.
+- Removed pre-multiply alpha behavior from stb_image and make it optional via
+  SubtextureIdentifier within the HdSt texture system.
+- Removed support of old-style draw targets using GlfDrawTarget instead of AOVs
+  and render buffers.
+- Removed UsdUvTexture's rgba output, and updated the cards draw mode to now use
+  "rgb" and "a" outputs rather than rgba.
+- Removed ReloadAllShaders from HdEngine.
+- Removed HD_DRAWITEM_DRAWN as it uses raw gl calls that map/unmap a buffer.
+- Removed HgiPipelineType. We split HgiPipeline into HgiComputePipeline and
+  HgiGraphicsPipeline a little bit ago.
+- Removed resource bindings handle from pipeline.
+- Removed smooth normals CPU fallback path. Since previous releases required
+  OpenGL 4.5 for Hgi to work, OpenGL compute must always be available.
+- Removed HdBinding::TBO.
+- Removed the implicit barriers from Hgi and let the external client manage
+  synchronization via SubmitCmds.
+
+- Fixed potential dead-lock caused by parallel loading plugins.
+- Fixed lights to be turned off when invisible in UsdImaging.
+- Fixed issue with UsdImagingGLEngine::TestIntersection such that it now
+  correctly populates. Callers of this function are reminded to provide the
+  "frame" field in UsdImagingGLRenderParams for correct and performant results.
+- Fixed handling of computed primvar sources for meshes.
+- Fixed normals after complexity change.
+- Fixed HgiGL garbage collector leak when Hgi is recreated during process.
+- Fixed HgiGL to better protect against long labels when using glObjectLabel.
+- Fixed render settings behaviors so we test whether or not we're really
+  changing anything before incrementing the settings version.
+- Fixed for cycle detection in material network processing.
+- Fixed Glf lighting resource binding.
+- Fixed USD edit dependency tracking for cards prims.
+
+- Updated UsdPreviewSurface clearcoat calculations to better match expected
+  inputs for a specular lobe in Storm, and added clearcoat component to indirect
+  lighting calculation in Storm. (Issue #1307)
+- Added support for UsdPreviewSurface's opacityThreshold parameter in
+  Storm. (Issue #990)
+- Added support for normal mapping for UsdPreviewSurfaces in Storm. (Issue #701)
+- Metallic materials should have an F0 equal to their base color in
+  UsdPreviewSurface in Storm. (Issue #1174)
+
+- Removed pre-multiplication behavior from OIT resolve shader. The preview
+  surface (and other shaders) pre-multiply within the fragment shader (unless
+  the "diffuseColor" and "opacity" params are connected to the same
+  texture). (Issue #1269)
+
+- Added support for UDIM texture scale and bias in Storm. (Issue #1129)
+- Converted render index to usdImaging cachePath before calling the adapter
+  InvokeComputation method. (Issue #1333)
+- Fix draw mode adapter handling of transforms for instanced card prims. (Issue #1251)
+- _IsVarying no longer clears dirty bit and now ProcessPropertyChange is filled
+  out to provide more efficiency. (Issue #1250)
+
+### usdview
+- Added 'Enable Scene Lights' option.
+- Changed UI to use bundled Roboto and Roboto Mono fonts.
+- Fixed build issues due to stricter checks in PySide2 5.15.1. (PR #1320)
+
+### Alembic Plugin
+- Alembic uv's are now converted to texCoord2f[] primvars:st. This can
+  be disabled by setting the `USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY`
+  environment variable to 0.
+
+### RenderMan Plugin
+- Fixed infinite loop in material processing.
+- Initial implementation of exposure.
+- Volumes can react to changes to a field prim. 
+- Fixed UsdUVTexture wrap mode support. 
+- Add support for UsdPreviewSurface's opacityThreshold param in HdPrman. (Issue #990)
+- Updated UsdPreviewSurface clearcoat calculations to better match expected
+  inputs for a specular lobe in HdPrman. (Issue #1307)
+- Metallic materials should have an F0 equal to their base color in
+  UsdPreviewSurface in HdPrman. (Issue #1174)
+
 ## [20.08] - 2020-07-21
 
 ### Build
