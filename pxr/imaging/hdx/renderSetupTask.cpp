@@ -172,6 +172,12 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
             params.blendAlphaSrcFactor, params.blendAlphaDstFactor);
     renderPassState->SetBlendConstantColor(params.blendConstantColor);
     
+    if (HdStRenderPassState * const hdStRenderPassState =
+                dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
+        hdStRenderPassState->SetResolveAovMultiSample(
+            params.resolveAovMultiSample);
+    }
+
     // alpha to coverage
     renderPassState->SetAlphaToCoverageUseDefault(
         delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));

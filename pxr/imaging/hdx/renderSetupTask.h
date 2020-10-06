@@ -166,6 +166,7 @@ struct HdxRenderTaskParams
         , enableAlphaToCoverage(true)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         , aovBindings()
+        , resolveAovMultiSample(true)
         , camera()
         , viewport(0.0)
         {}
@@ -226,6 +227,10 @@ struct HdxRenderTaskParams
     // XXX: As a transitional API, if this is empty it indicates the renderer
     // should write color and depth to the GL framebuffer.
     HdRenderPassAovBindingVector aovBindings;
+    
+    // If true (default), multi-sampled AOVs will be resolved at the end of a
+    // render pass.
+    bool resolveAovMultiSample;
 
     // RasterState index objects
     SdfPath camera;

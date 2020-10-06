@@ -70,6 +70,7 @@ HdStRenderPassState::HdStRenderPassState(
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
+    , _resolveMultiSampleAov(true)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -265,6 +266,18 @@ HdStRenderPassState::Prepare(
     // However, geometric shader also sets cullstyle during batch
     // execution.
     _renderPassShader->SetCullStyle(_cullStyle);
+}
+
+void
+HdStRenderPassState::SetResolveAovMultiSample(bool state)
+{
+    _resolveMultiSampleAov = state;
+}
+
+bool
+HdStRenderPassState::GetResolveAovMultiSample() const
+{
+    return _resolveMultiSampleAov;
 }
 
 void
@@ -521,6 +534,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
     static const size_t maxColorTex = 8;
     const bool useMultiSample = GetUseAovMultiSample();
+    const bool resolveMultiSample = GetResolveAovMultiSample();
 
     HgiGraphicsCmdsDesc desc;
 
@@ -552,7 +566,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         // Get resolve texture target.
         HgiTextureHandle hgiResolveHandle;
-        if (multiSampled) {
+        if (multiSampled && resolveMultiSample) {
             VtValue resolveRes = renderBuffer->GetResource(/*ms*/false);
             if (!TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
                 continue;
@@ -578,7 +592,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         // Don't store multisample images. Only store the resolved versions.
         // This saves a bunch of bandwith (especially on tiled gpu's).
-        attachmentDesc.storeOp = multiSampled ?
+        attachmentDesc.storeOp = (multiSampled && resolveMultiSample) ?
             HgiAttachmentStoreOpDontCare :
             HgiAttachmentStoreOpStore;
 
