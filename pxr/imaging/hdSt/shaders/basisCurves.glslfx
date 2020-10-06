@@ -782,9 +782,11 @@ void main(void)
                     ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
                     GetLightingBlendAmount());
 
+#ifdef HD_MATERIAL_TAG_MASKED   
     if (ShouldDiscardByAlpha(color)) {
         discard;
     }
+#endif
 
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
@@ -826,9 +828,11 @@ void main(void)
                     ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
                     GetLightingBlendAmount());
 
+#ifdef HD_MATERIAL_TAG_MASKED   
     if (ShouldDiscardByAlpha(color)) {
         discard;
     }
+#endif
 
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }

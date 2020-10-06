@@ -26,6 +26,9 @@
 
 -- configuration
 {
+    "metadata": {
+        "materialTag": "masked"
+    },
     "techniques": {
         "default": {
             "surfaceShader": {

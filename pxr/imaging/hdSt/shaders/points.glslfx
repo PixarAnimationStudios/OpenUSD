@@ -100,9 +100,11 @@ void main(void)
     vec4 patchCoord = vec4(0);
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
 
+#ifdef HD_MATERIAL_TAG_MASKED   
     if (ShouldDiscardByAlpha(color)) {
         discard;
     }
+#endif
 
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }

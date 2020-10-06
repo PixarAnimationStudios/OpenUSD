@@ -350,6 +350,35 @@ HdStUpdateDrawItemBAR(
     sharedData->barContainer.Set(drawCoordIndex, newRange);
 }
 
+bool HdStIsPrimvarExistentAndValid(
+    HdRprim *prim,
+    HdSceneDelegate *delegate,
+    HdPrimvarDescriptorVector const& primvars,
+    TfToken const& primvarName)
+{
+    SdfPath const& id = prim->GetId();
+    
+    for (const HdPrimvarDescriptor& pv: primvars) {
+        if (pv.name == primvarName) {
+            VtValue value = delegate->Get(id, pv.name);
+
+            if (value.IsHolding<std::string>() ||
+                value.IsHolding<VtStringArray>()) {
+                return false;
+            }
+
+            if (value.IsArrayValued() && value.GetArraySize() == 0) {
+                // Catch empty arrays
+                return false;
+            }
+            
+            return (!value.IsEmpty());
+        }
+    }
+
+    return false;
+}
+
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities
 // -----------------------------------------------------------------------------

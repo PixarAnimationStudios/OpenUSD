@@ -169,6 +169,11 @@ public:
     HD_API
     bool GetVisible() const { return _sharedData->visible; }
 
+    HD_API
+    TfToken const& GetMaterialTag() const {
+        return _sharedData->materialTag;
+    }
+
     /// Returns true if the drawItem has instancer.
     HD_API
     bool HasInstancer() const {

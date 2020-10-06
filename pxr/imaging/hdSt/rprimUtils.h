@@ -140,6 +140,15 @@ void HdStUpdateDrawItemBAR(
     HdRprimSharedData *sharedData,
     HdRenderIndex &renderIndex);
 
+// Returns true if primvar with primvarName exists within primvar descriptor 
+// vector primvars and primvar has a valid value
+HDST_API
+bool HdStIsPrimvarExistentAndValid(
+    HdRprim *prim,
+    HdSceneDelegate *delegate,
+    HdPrimvarDescriptorVector const& primvars,
+    TfToken const& primvarName);
+
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities
 // -----------------------------------------------------------------------------

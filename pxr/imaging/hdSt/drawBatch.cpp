@@ -296,7 +296,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
         (*it)->AddBindings(&customBindings);
     }
 
-    HdSt_CodeGen codeGen(_geometricShader, shaders);
+    HdSt_CodeGen codeGen(_geometricShader, shaders, drawItem->GetMaterialTag());
 
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.

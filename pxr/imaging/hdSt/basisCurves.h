@@ -139,7 +139,7 @@ private:
     bool _SupportsUserNormals(HdStDrawItem* drawItem);
     
     const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-
+    
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
@@ -158,6 +158,7 @@ private:
     HdTopology::ID _topologyId;
     HdDirtyBits _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
+    bool _displayOpacity;
 };
 
 

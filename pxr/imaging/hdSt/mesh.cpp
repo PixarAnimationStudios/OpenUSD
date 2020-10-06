@@ -104,6 +104,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _limitNormals(false)
     , _sceneNormals(false)
     , _hasVaryingTopology(false)
+    , _displayOpacity(false)
 {
     /*NOTHING*/
 }
@@ -121,11 +122,11 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 {
     TF_UNUSED(renderParam);
 
+    bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
                        delegate->GetMaterialId(GetId()));
-
-        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+        updateMaterialTag = true;
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -146,7 +147,13 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
         updateGeometricShader = true;
     }
 
+    bool displayOpacity = _displayOpacity;
     _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (updateMaterialTag || 
+        (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
+        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+    }
 
     if (updateMaterialShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate,
@@ -752,6 +759,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 _sceneNormalsInterpolation =
                     isVarying ? HdInterpolationVarying : HdInterpolationVertex;
                 _sceneNormals = true;
+            } else if (source->GetName() == HdTokens->displayOpacity) {
+                _displayOpacity = true;
             }
 
             // Special handling of points primvar.
@@ -1095,6 +1104,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
             if (source->GetName() == HdTokens->normals) {
                 _sceneNormalsInterpolation = HdInterpolationFaceVarying;
                 _sceneNormals = true;
+            } else if (source->GetName() == HdTokens->displayOpacity) {
+                _displayOpacity = true;
             }
 
             // FaceVarying primvar requires quadrangulation or triangulation,
@@ -1200,6 +1211,8 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             if (source->GetName() == HdTokens->normals) {
                 _sceneNormalsInterpolation = HdInterpolationUniform;
                 _sceneNormals = true;
+            } else if (source->GetName() == HdTokens->displayOpacity) {
+                _displayOpacity = true;
             }
             sources.push_back(source);
         }
@@ -1363,7 +1376,8 @@ HdStMesh::_GetMaterialTag(const HdRenderIndex &renderIndex) const
     }
 
     // A material may have been unbound, we should clear the old tag
-    return HdMaterialTagTokens->defaultMaterialTag;
+    return _displayOpacity ? HdStMaterialTagTokens->masked :
+                             HdMaterialTagTokens->defaultMaterialTag;
 }
 
 static std::string
@@ -1501,6 +1515,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _PopulateAdjacency(resourceRegistry);
     }
 
+    // Reset value of _displayOpacity
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        _displayOpacity = false;
+    }
+
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
         HdPrimvarDescriptorVector constantPrimvars =
@@ -1517,6 +1536,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                 _sceneNormals = true;
             }
         }
+
+        // Also want to check existence of displayOpacity primvar
+        _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
+            constantPrimvars, HdTokens->displayOpacity);
     }
 
     /* INSTANCE PRIMVARS */
@@ -1526,6 +1549,13 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         if (TF_VERIFY(instancer)) {
             instancer->PopulateDrawItem(this, drawItem,
                                         &_sharedData, *dirtyBits);
+
+            HdPrimvarDescriptorVector primvars =
+                sceneDelegate->GetPrimvarDescriptors(instancer->GetId(),
+                                        HdInterpolationInstance);
+
+            _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
+                primvars, HdTokens->displayOpacity);
         }
     }
 

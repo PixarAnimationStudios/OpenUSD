@@ -426,15 +426,13 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->enableAlphaToCoverage = false;
         renderParams->depthMaskEnable = false;
-    } else {
+    } else if (materialTag == HdStMaterialTagTokens->masked) {
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
-    }
-
-    // For ID renders, a non-MSAA buffer is used. To get benefit of 
-    // alpha-to-coverage, the target framebuffer has to be an MSAA buffer.
-    if (renderParams->enableIdRender) {
+    } else {
+        renderParams->blendEnable = false;
+        renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = false;
     }
 }

@@ -35,6 +35,7 @@
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/base/arch/hash.h"
 
@@ -63,6 +64,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)
+    , _displayOpacity(false)
 {
     /*NOTHING*/
 }
@@ -78,11 +80,11 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
 {
     TF_UNUSED(renderParam);
 
+    bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
                        delegate->GetMaterialId(GetId()));
-
-        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+        updateMaterialTag = true;
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -101,7 +103,13 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
         updateGeometricShader = true;
     }
 
+    bool displayOpacity = _displayOpacity;
     _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (updateMaterialTag || 
+        (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
+        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+    }
 
     if (updateMaterialShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate,
@@ -129,7 +137,8 @@ HdStBasisCurves::_GetMaterialTag(const HdRenderIndex &renderIndex) const
     }
 
     // A material may have been unbound, we should clear the old tag
-    return HdMaterialTagTokens->defaultMaterialTag;
+    return _displayOpacity ? HdStMaterialTagTokens->masked :
+                             HdMaterialTagTokens->defaultMaterialTag;
 }
 
 void
@@ -153,6 +162,11 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
     }
 
+    // Reset value of _displayOpacity
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        _displayOpacity = false;
+    }
+
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
         HdPrimvarDescriptorVector constantPrimvars =
@@ -161,6 +175,9 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
         HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate,
             drawItem, dirtyBits, constantPrimvars);
+
+        _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
+            constantPrimvars, HdTokens->displayOpacity);
     }
 
     /* INSTANCE PRIMVARS */
@@ -170,6 +187,13 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         if (TF_VERIFY(instancer)) {
             instancer->PopulateDrawItem(this, drawItem,
                                         &_sharedData, *dirtyBits);
+
+            HdPrimvarDescriptorVector primvars =
+                sceneDelegate->GetPrimvarDescriptors(instancer->GetId(),
+                                        HdInterpolationInstance);
+
+            _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
+                primvars, HdTokens->displayOpacity);
         }
     }
 
@@ -722,6 +746,10 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             } else {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdVtBufferSource(primvar.name, value)));
+
+                if (primvar.name == HdTokens->displayOpacity) {
+                    _displayOpacity = true;
+                }
             }
         }
     }
@@ -814,6 +842,10 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         if (!value.IsEmpty()) {
             sources.push_back(HdBufferSourceSharedPtr(
                               new HdVtBufferSource(primvar.name, value)));
+                              
+            if (primvar.name == HdTokens->displayOpacity) {
+                _displayOpacity = true;
+            }
         }
     }
 

@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -98,8 +97,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
-                       HdStShaderCodeSharedPtrVector const &shaders)
-    : _geometricShader(geometricShader), _shaders(shaders)
+                       HdStShaderCodeSharedPtrVector const &shaders,
+                       TfToken const &materialTag)
+    : _geometricShader(geometricShader), _shaders(shaders), 
+      _materialTag(materialTag)
 {
     TF_VERIFY(geometricShader);
 }
@@ -118,6 +119,7 @@ HdSt_CodeGen::ComputeHash() const
     ID hash = _geometricShader ? _geometricShader->ComputeHash() : 0;
     boost::hash_combine(hash, _metaData.ComputeHash());
     boost::hash_combine(hash, HdStShaderCode::ComputeHash(_shaders));
+    boost::hash_combine(hash, _materialTag.Hash());
 
     return hash;
 }
@@ -530,15 +532,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genCommon << _GetPackedTypeDefinitions();
 
-    // check if surface shader has masked material tag
-    for (auto const& shader : _shaders) {
-        if (HdStSurfaceShaderSharedPtr surfaceShader = 
-            std::dynamic_pointer_cast<HdStSurfaceShader>(shader)) {
-            if (surfaceShader->GetMaterialTag() == 
-                HdStMaterialTagTokens->masked) {
-                _genCommon << "#define HD_MATERIAL_TAG_MASKED 1\n";
-            }
-        }
+    if (_materialTag == HdStMaterialTagTokens->masked) {
+        _genFS << "#define HD_MATERIAL_TAG_MASKED 1\n";
     }
 
     // ------------------
