@@ -35,7 +35,7 @@
 /// selection state.
 
 // This should match the HdSelection enum.
-const int GetMaxNumSelectionHighlightModes()
+int GetMaxNumSelectionHighlightModes()
 {
     return 2;
 }
@@ -365,7 +365,7 @@ bool IsSelected()
 --- --------------------------------------------------------------------------
 -- glsl Selection.Geometry.WireSelOffset
 
-const int GetMaxNumSelectionHighlightModes();
+int GetMaxNumSelectionHighlightModes();
 bool IsElementSelected(int mode);
 int GetElementID(); // code gen
 
