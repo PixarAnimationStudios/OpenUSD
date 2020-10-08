@@ -304,6 +304,10 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
         return;
     }
 
+    // Explicitly erase clear flag so that it can be re-used by subsequent
+    // OIT render and resolve tasks.
+    ctx->erase(HdxTokens->oitClearedFlag);
+
     if (!TF_VERIFY(_renderPassState)) return;
     if (!TF_VERIFY(_renderPassShader)) return;
 

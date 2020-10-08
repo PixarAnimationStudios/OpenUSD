@@ -105,6 +105,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
 
     HdxOitBufferAccessor oitBufferAccessor(ctx);
 
+    oitBufferAccessor.RequestOitBuffers();
     oitBufferAccessor.InitializeOitBuffersIfNecessary();
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
