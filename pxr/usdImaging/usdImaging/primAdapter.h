@@ -597,8 +597,8 @@ protected:
     // XXX: Transitional API
     // Returns the instance proxy prim path for a USD-instanced prim, given the
     // instance chain leading to that prim. The paths are sorted from more to
-    // less local; the first path is the prim path (possibly in master), then
-    // instance paths (possibly in master); the last path is the prim or
+    // less local; the first path is the prim path (possibly in prototype), then
+    // instance paths (possibly in prototype); the last path is the prim or
     // instance path in the scene.
     USDIMAGING_API
     SdfPath _GetPrimPathFromInstancerChain(

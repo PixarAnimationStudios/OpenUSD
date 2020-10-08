@@ -622,9 +622,10 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
 
-        // _Populate should never be called on master prims or prims in master.
+        // _Populate should never be called on prototype prims or prims in
+        // prototypes.
         UsdPrim prim = _GetUsdPrim(usdPath);
-        if (prim && (prim.IsMaster() || prim.IsInMaster())) {
+        if (prim && (prim.IsPrototype() || prim.IsInPrototype())) {
             continue;
         }
 

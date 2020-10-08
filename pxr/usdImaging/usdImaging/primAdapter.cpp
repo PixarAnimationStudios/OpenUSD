@@ -537,19 +537,20 @@ UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
 
     SdfPath primPath = instancerChain[0];
 
-    // Every path except the last path should be a path in master.  The idea is
-    // to replace the master path with the instance path that comes next in the
-    // chain, and continue until we're back at scene scope.
+    // Every path except the last path should be a path in prototype.  The idea
+    // is to replace the prototype path with the instance path that comes next
+    // in the chain, and continue until we're back at scene scope.
     for (size_t i = 1; i < instancerChain.size(); ++i)
     {
         UsdPrim prim = _GetPrim(primPath);
-        TF_VERIFY(prim.IsInMaster());
+        TF_VERIFY(prim.IsInPrototype());
 
-        UsdPrim master = prim;
-        while (!master.IsMaster()) {
-            master = master.GetParent();
+        UsdPrim prototype = prim;
+        while (!prototype.IsPrototype()) {
+            prototype = prototype.GetParent();
         }
-        primPath = primPath.ReplacePrefix(master.GetPath(), instancerChain[i]);
+        primPath = primPath.ReplacePrefix(
+            prototype.GetPath(), instancerChain[i]);
     }
 
     return primPath;

@@ -121,9 +121,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         return SdfPath();
     }
 
-    const UsdPrim& masterPrim = prim.GetMaster();
+    const UsdPrim& prototypePrim = prim.GetPrototype();
     if (!TF_VERIFY(
-            masterPrim, "Cannot get master prim for <%s>",
+            prototypePrim, "Cannot get prototype prim for <%s>",
             instancePath.GetString().c_str())) {
         return SdfPath();
     }
@@ -140,15 +140,15 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
     // Construct the instance proxy path for "instancePath" to look up the
     // draw mode and inherited primvars for this instance.  If this is a
-    // nested instance (meaning "prim" is part of a master), parentProxyPath
-    // contains the instance proxy path for the master we're currently in,
+    // nested instance (meaning "prim" is part of a prototype), parentProxyPath
+    // contains the instance proxy path for the prototype we're currently in,
     // so we can stitch the full proxy path together.
     TfToken instanceDrawMode;
     TfToken instanceInheritablePurpose;
     std::vector<_InstancerData::PrimvarInfo> inheritedPrimvars;
     {
         instancerChain = { instancePath };
-        if (prim.IsInMaster()) {
+        if (prim.IsInPrototype()) {
             instancerChain.push_back(parentProxyPath);
         }
         SdfPath instanceChainPath =
@@ -169,18 +169,18 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         } else {
             TF_CODING_ERROR("Could not find USD instance prim at "
                             "instanceChainPath <%s> given instancePath <%s>, "
-                            "parentProxyPath <%s>; isInMaster %i",
+                            "parentProxyPath <%s>; isInPrototype %i",
                             instanceChainPath.GetText(),
                             instancePath.GetText(),
                             parentProxyPath.GetText(),
-                            int(prim.IsInMaster()));
+                            int(prim.IsInPrototype()));
         }
     }
 
-    // Check if there's an instance in use as a hydra instancer for this master
-    // with the appropriate inherited attributes.
+    // Check if there's an instance in use as a hydra instancer for this
+    // prototype with the appropriate inherited attributes.
     SdfPath instancerPath;
-    auto range = _masterToInstancerMap.equal_range(masterPrim.GetPath());
+    auto range = _prototypeToInstancerMap.equal_range(prototypePrim.GetPath());
     for (auto it = range.first; it != range.second; ++it) {
         _InstancerData& instancerData = _instancerData[it->second];
         // If material ID, draw mode, or inherited primvar set differ,
@@ -194,11 +194,11 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         }
     }
 
-    // If we didn't find a suitable hydra instancer for this master,
+    // If we didn't find a suitable hydra instancer for this prototype,
     // add a new one.
     if (instancerPath.IsEmpty()) {
-        _masterToInstancerMap.insert(
-            std::make_pair(masterPrim.GetPath(), instancePath));
+        _prototypeToInstancerMap.insert(
+            std::make_pair(prototypePrim.GetPath(), instancePath));
         instancerPath = instancePath;
     }
 
@@ -207,7 +207,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     // Compute the instancer proxy path (which might be different than the
     // one computed above, if instancePath and instancerPath are different...)
     instancerChain = { instancerPath };
-    if (_GetPrim(instancerPath).IsInMaster()) {
+    if (_GetPrim(instancerPath).IsInPrototype()) {
         instancerChain.push_back(parentProxyPath);
     }
     SdfPath instancerProxyPath = _GetPrimPathFromInstancerChain(instancerChain);
@@ -215,7 +215,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     std::vector<UsdPrim> nestedInstances;
 
     if(instancerData.instancePaths.empty()) {
-        instancerData.masterPath = masterPrim.GetPath();
+        instancerData.prototypePath = prototypePrim.GetPath();
         instancerData.materialUsdPath = instancerMaterialUsdPath;
         instancerData.drawMode = instanceDrawMode;
         instancerData.inheritablePurpose = instanceInheritablePurpose;
@@ -232,20 +232,20 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // Allocate prototype prims.
         // -------------------------------------------------------------- //
 
-        UsdPrimRange range(masterPrim, _GetDisplayPredicate());
+        UsdPrimRange range(prototypePrim, _GetDisplayPredicate());
         int protoID = 0;
         int primCount = 0;
 
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
-            // If we encounter an instance in this master, save it aside
+            // If we encounter an instance in this prototype, save it aside
             // for a subsequent population pass since we'll need to populate
-            // its master once we're done with this one.
+            // its prototype once we're done with this one.
             if (iter->IsInstance()) {
                 nestedInstances.push_back(*iter);
                 continue;
             }
 
-            // Stitch the current prim-in-master path to the instancer proxy
+            // Stitch the current prim-in-prototype path to the instancer proxy
             // path to get a full scene-scoped path that we can pass to
             // _GetPrimAdapter (since _GetPrimAdapter needs the instance proxy
             // path for inherited value resolution).
@@ -280,7 +280,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             //
             // (Note: any prim type that implements CanPopulateUsdInstance will
             // need extensive code support in this adapter as well).
-            if (iter->IsMaster() && primAdapter &&
+            if (iter->IsPrototype() && primAdapter &&
                 !primAdapter->CanPopulateUsdInstance()) {
                 TF_WARN("The gprim at path <%s> was directly instanced. "
                         "In order to instance this prim, put the prim under an "
@@ -316,9 +316,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Update instancer data.
             //
             _ProtoPrim& proto = instancerData.primMap[protoPath];
-            if (iter->IsMaster()) {
-                // If the prototype we're populating is the master prim,
-                // our prim handle should be to the instance, since the master
+            if (iter->IsPrototype()) {
+                // If the prototype we're populating is the prototype prim,
+                // our prim handle should be to the instance, since the prototype
                 // prim doesn't have attributes.
                 proto.path = instancerPath;
             } else {
@@ -379,11 +379,11 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // we have instancer = /World/A, parentProxy = /;
         // instancer = /Prototype_1/B, parentProxy = /World/A;
         // instancer = /Prototype_2/C, parentProxy = /World/A/B.
-        // If parentProxy is an instance proxy, take the prim in master.
+        // If parentProxy is an instance proxy, take the prim in prototype..
         if (parentProxyPath != SdfPath::AbsoluteRootPath()) {
             UsdPrim parent = _GetPrim(parentProxyPath);
             if (parent.IsInstanceProxy()) {
-                parent = parent.GetPrimInMaster();
+                parent = parent.GetPrimInPrototype();
             }
             SdfPath parentPath = parent.GetPath();
 
@@ -474,9 +474,9 @@ UsdImagingInstanceAdapter::_InsertProtoPrim(
     bool *isLeafInstancer)
 {
     UsdPrim prim = **it;
-    if ((*it)->IsMaster()) {
-        // If the prototype we're populating is the master prim,
-        // our prim handle should be to the instance, since the master
+    if ((*it)->IsPrototype()) {
+        // If the prototype we're populating is the prototype prim,
+        // our prim handle should be to the instance, since the prototype
         // prim doesn't have attributes.
         prim = _GetPrim(instancerPath);
     }
@@ -601,31 +601,31 @@ UsdImagingInstanceAdapter::_RunForAllInstancesToDrawImpl(
     for (SdfPath const& path : instancerData->instancePaths) {
         const UsdPrim instancePrim = _GetPrim(path);
         if (!TF_VERIFY(instancePrim, 
-                "Invalid instance <%s> for master <%s>",
+                "Invalid instance <%s> for prototype <%s>",
                 path.GetText(),
-                instancerData->masterPath.GetText())) {
+                instancerData->prototypePath.GetText())) {
             break;
         }
         
         instanceContext->push_back(instancePrim);
 
         bool continueIteration = true;
-        if (!instancePrim.IsInMaster()) {
+        if (!instancePrim.IsInPrototype()) {
             continueIteration = (*fn)(*instanceContext, (*instanceIdx)++);
         }
         else {
-            // In this case, instancePrim is a descendent of a master prim.
-            // Walk up the parent chain to find the master prim.
-            UsdPrim parentMaster = instancePrim;
-            while (!parentMaster.IsMaster()) {
-                parentMaster = parentMaster.GetParent();
+            // In this case, instancePrim is a descendent of a prototype prim.
+            // Walk up the parent chain to find the prototype prim.
+            UsdPrim parentPrototype = instancePrim;
+            while (!parentPrototype.IsPrototype()) {
+                parentPrototype = parentPrototype.GetParent();
             }
 
             // Iterate over all instancers corresponding to different
-            // variations of this master prim, since each instancer
-            // will cause another copy of this master prim to be drawn.
+            // variations of this prototype prim, since each instancer
+            // will cause another copy of this prototype prim to be drawn.
             auto range =
-                _masterToInstancerMap.equal_range(parentMaster.GetPath());
+                _prototypeToInstancerMap.equal_range(parentPrototype.GetPath());
             for (auto it = range.first; it != range.second; ++it) {
                 const UsdPrim instancer = _GetPrim(it->second);
                 if (TF_VERIFY(instancer)) {
@@ -690,23 +690,23 @@ UsdImagingInstanceAdapter::_CountAllInstancesToDrawImpl(
     for (SdfPath const& path : instancerData->instancePaths) {
         const UsdPrim instancePrim = _GetPrim(path);
         if (!TF_VERIFY(instancePrim, 
-                "Invalid instance <%s> for master <%s>",
+                "Invalid instance <%s> for prototype <%s>",
                 path.GetText(),
-                instancerData->masterPath.GetText())) {
+                instancerData->prototypePath.GetText())) {
             return 0;
         }
 
-        if (!instancePrim.IsInMaster()) {
+        if (!instancePrim.IsInPrototype()) {
             ++drawCount;
         }
         else {
-            UsdPrim parentMaster = instancePrim;
-            while (!parentMaster.IsMaster()) {
-                parentMaster = parentMaster.GetParent();
+            UsdPrim parentPrototype = instancePrim;
+            while (!parentPrototype.IsPrototype()) {
+                parentPrototype = parentPrototype.GetParent();
             }
 
             auto range =
-                _masterToInstancerMap.equal_range(parentMaster.GetPath());
+                _prototypeToInstancerMap.equal_range(parentPrototype.GetPath());
             for (auto it = range.first; it != range.second; ++it) {
                 const UsdPrim instancer = _GetPrim(it->second);
                 if (TF_VERIFY(instancer)) {
@@ -1296,7 +1296,7 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
 {
     // Cache path corresponds to a hydra instancer path that we want to remove
     // or reload.  While we only create one hydra instancer per native instance
-    // group, we keep instancerData entries for each level of master.  So we
+    // group, we keep instancerData entries for each level of prototype.  So we
     // need to traverse up to the top-level native instances, and then go back
     // down through all of the nested native instances, resyncing each.
     //
@@ -2006,11 +2006,12 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         pair.second.adapter->ProcessPrimRemoval(pair.first, index);
     }
 
-    // Remove this instancer's entry from the master -> instancer map.
-    auto range = _masterToInstancerMap.equal_range(instIt->second.masterPath);
+    // Remove this instancer's entry from the prototype -> instancer map.
+    auto range =_prototypeToInstancerMap.equal_range(
+        instIt->second.prototypePath);
     for (auto it = range.first; it != range.second; ++it) {
         if (it->second == instancerPath) {
-            _masterToInstancerMap.erase(it);
+            _prototypeToInstancerMap.erase(it);
             break;
         }
     }
@@ -2038,7 +2039,7 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     if (repopulate) {
         for (SdfPath const &path : instancePaths) {
             UsdPrim prim = _GetPrim(path);
-            if (prim && prim.IsActive() && !prim.IsInMaster()) {
+            if (prim && prim.IsActive() && !prim.IsInPrototype()) {
                 index->Repopulate(path);
             }
         }
@@ -2335,17 +2336,18 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        // If this iteration is the right instance index, compose all the master
-        // paths together to get the instance proxy path.  Include the proto
-        // path, if one was provided.
+        // If this iteration is the right instance index, compose all the
+        // prototype paths together to get the instance proxy path.  Include the
+        // proto path, if one was provided.
         if (instanceIdx == instanceIndex) {
             SdfPathVector instanceChain;
-            // To get the correct prim-in-master, we need to add the prototype
-            // path to the instance chain.  However, there's a case in _Populate
-            // where we populate prototype prims that are just a master (used
-            // by e.g. cards).  In this case, the proto path is overridden to
-            // be the instance path, and we don't want to add it to the instance
-            // chain since instanceContext.front would duplicate it.
+            // To get the correct prim-in-prototype, we need to add the
+            // prototype path to the instance chain.  However, there's a case in
+            // _Populate where we populate prototype prims that are just a
+            // prototype (used by e.g. cards).  In this case, the proto path is
+            // overridden to be the instance path, and we don't want to add it
+            // to the instance chain since instanceContext.front would duplicate
+            // it.
             UsdPrim p = adapter->_GetPrim(protoPath);
             if (p && !p.IsInstance()) {
                 instanceChain.push_back(protoPath);
@@ -2458,11 +2460,11 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         // In order to check selectionPath against the instance context,
         // we need to decompose selectionPath into a path vector.  We can't
         // just assemble instanceContext into a proxy prim because
-        // selectionPath might point to something inside master.
+        // selectionPath might point to something inside prototype.
         // See comment in operator().
         UsdPrim p = usdPrim;
         while (p.IsInstanceProxy()) {
-            selectionPathVec.push_front(p.GetPrimInMaster().GetPath());
+            selectionPathVec.push_front(p.GetPrimInPrototype().GetPath());
             do {
                 p = p.GetParent();
             } while (!p.IsInstance());
@@ -2616,7 +2618,7 @@ UsdImagingInstanceAdapter::PopulateSelection(
 {
     HD_TRACE_FUNCTION();
 
-    // cachePath will either point to a gprim-in-master (which ends up here
+    // cachePath will either point to a gprim-in-prototype (which ends up here
     // because of adapter hijacking), or a USD native instance prim. We can
     // distinguish between the two with _IsChildPrim.
     if (_IsChildPrim(
@@ -2645,12 +2647,12 @@ UsdImagingInstanceAdapter::PopulateSelection(
             cachePath.GetText(), instancerContext.instancerCachePath.GetText());
 
         // If we're getting called on behalf of a child prim, we're inside a
-        // master and need to add a selection for that proto for all instances
-        // of this master.  (If we're called on behalf of an instance proxy,
-        // we fall into the else case below; and if we're called on an
-        // un-instanced prim something has gone wrong). If the selection path
-        // is a prefix of the proto path in master, we can highlight the whole
-        // proto; otherwise, we should pass the full selection path to the
+        // prototype and need to add a selection for that proto for all
+        // instances of this prototype.  (If we're called on behalf of an
+        // instance proxy, we fall into the else case below; and if we're called
+        // on an un-instanced prim something has gone wrong). If the selection
+        // path is a prefix of the proto path in prototype, we can highlight the
+        // whole proto; otherwise, we should pass the full selection path to the
         // child adapter (e.g. to process partial PI selection).
 
         UsdPrim selectionPrim;

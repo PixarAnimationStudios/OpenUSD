@@ -277,9 +277,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         // If we encounter native instances, continue traversing inside them.
         // XXX: Should we delegate to instanceAdapter here?
         if (iter->IsInstance()) {
-            UsdPrim master = iter->GetMaster();
-            UsdPrimRange masterRange(master, _GetDisplayPredicate());
-            treeStack.push_back(masterRange);
+            UsdPrim prototype = iter->GetPrototype();
+            UsdPrimRange prototypeRange(prototype, _GetDisplayPredicate());
+            treeStack.push_back(prototypeRange);
 
             // Make sure to register a dependency on this instancer with the
             // parent PI.
@@ -289,7 +289,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 
         // construct instance chain
         // note: paths is stored in the backward of treeStack
-        //       (master, master, ... , instance path)
+        //       (prototype, prototype, ... , instance path)
         //       to get the UsdPrim, use paths.front()
         //
         // for example:
@@ -381,7 +381,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                         iter->GetPath().GetName().c_str(), protoID++));
 
                 UsdPrim populatePrim = *iter;
-                if (iter->IsMaster() && TF_VERIFY(instancerChain.size() > 1)) {
+                if (iter->IsPrototype() && 
+                    TF_VERIFY(instancerChain.size() > 1)) {
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
 
@@ -472,15 +473,16 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
         if (!(proto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
-            // the populated prototype over all time.
-            // protoPrim may be across an instance boundary from protoRootPrim,
-            // so compute visibility for each master subtree, and then for the
-            // final path relative to the proto root.
+            // the populated prototype over all time.  protoPrim may be across
+            // an instance boundary from protoRootPrim, so compute visibility
+            // for each prototype subtree, and then for the final path relative
+            // to the proto root.
             UsdPrim protoRootPrim = _GetPrim(proto.protoRootPath);
             for (size_t i = 0; i < proto.paths.size()-1; ++i) {
-                _ComputeProtoVisibility(_GetPrim(proto.paths[i+1]).GetMaster(),
-                                        _GetPrim(proto.paths[i+0]),
-                                        time, &proto.visible);
+                _ComputeProtoVisibility(
+                    _GetPrim(proto.paths[i+1]).GetPrototype(),
+                    _GetPrim(proto.paths[i+0]),
+                    time, &proto.visible);
             }
             _ComputeProtoVisibility(protoRootPrim, _GetPrim(proto.paths.back()),
                                     time, &proto.visible);
@@ -1034,9 +1036,9 @@ UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(
     // One exception: if the prototype is an instance, proto.paths looks like
     //   /__Prototype_1
     //   /Instance
-    // ... in which case, we want to return /Instance since masters drop all
+    // ... in which case, we want to return /Instance since prototypes drop all
     // attributes.
-    if (prim.IsMaster() && TF_VERIFY(proto.paths.size() > 1)) {
+    if (prim.IsPrototype() && TF_VERIFY(proto.paths.size() > 1)) {
         prim = _GetPrim(proto.paths.at(1));
     }
     return prim;
@@ -1056,7 +1058,7 @@ UsdImagingPointInstancerAdapter::_GetInstancerVisible(
             = _instancerData.find(instancerPath);
         if (it != _instancerData.end()) {
             // note that parent instancer may not be a namespace parent
-            // (e.g. master -> instance)
+            // (e.g. prototype -> instance)
             SdfPath const &parentInstancerCachePath =
                 it->second.parentInstancerCachePath;
             if (!parentInstancerCachePath.IsEmpty()) {
@@ -1190,8 +1192,8 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
     // Recurse until we get to the protoRoot. With this recursion, we'll
     // process the protoRoot first, then a child, down to the protoGprim.
     //
-    // Skip all masters, since they can't have an opinion.
-    if (!protoGprim.IsMaster() &&
+    // Skip all prototypes, since they can't have an opinion.
+    if (!protoGprim.IsPrototype() &&
         protoRoot != protoGprim && protoGprim.GetParent()) {
         _ComputeProtoVisibility(protoRoot, protoGprim.GetParent(), time, vis);
     }
@@ -1260,9 +1262,9 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     }
     SdfPath primPath = _GetPrimPathFromInstancerChain(proto.paths);
 
-    // If the prim path is in master, we need the help of the parent
+    // If the prim path is in prototype, we need the help of the parent
     // instancer to figure out what the right instance is.  We assume:
-    // 1.) primPath and instancerPath are inside the same master.
+    // 1.) primPath and instancerPath are inside the same prototype.
     // 2.) recursing gives us the fully-qualified version of instancerPath.
     //
     // If:
@@ -1322,17 +1324,17 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
             std::make_pair(fqInstancerPath, localIndex));
     }
 
-    // Check if primPath is in master, and if so check if the instancer
-    // is in the same master...
+    // Check if primPath is in prototype, and if so check if the instancer
+    // is in the same prototype...
     UsdPrim prim = _GetPrim(primPath);
-    if (!prim || !prim.IsInMaster()) {
+    if (!prim || !prim.IsInPrototype()) {
         return primPath;
     }
     UsdPrim instancer = _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath());
-    if (!instancer || !instancer.IsInMaster() ||
-        prim.GetMaster() != instancer.GetMaster()) {
+    if (!instancer || !instancer.IsInPrototype() ||
+        prim.GetPrototype() != instancer.GetPrototype()) {
         TF_CODING_ERROR("primPath <%s> and instancerPath <%s> are not in "
-                        "the same master", primPath.GetText(),
+                        "the same prototype", primPath.GetText(),
                         instancerPath.GetText());
         return SdfPath();
     }
@@ -1527,10 +1529,10 @@ UsdImagingPointInstancerAdapter::GetTransform(UsdPrim const& prim,
         time,
         ignoreRootTransform);
 
-    // If the prototype we're processing is a master, _GetProtoUsdPrim
+    // If the prototype we're processing is a prototype, _GetProtoUsdPrim
     // will return us the instance for attribute lookup; but the
     // instance transform for that instance is already accounted for in
-    // _CorrectTransform.  Masters don't have any transform aside from
+    // _CorrectTransform.  Prototypes don't have any transform aside from
     // the root transform, so override the result of UpdateForTime.
     if (protoPrim.IsInstance()) {
         output = GetRootTransform();
@@ -1648,7 +1650,7 @@ UsdImagingPointInstancerAdapter::GetVisible(UsdPrim const& prim,
             // prim to the model instance root.
             for (size_t i = 0; i < proto.paths.size()-1; ++i) {
                 _ComputeProtoVisibility(
-                    _GetPrim(proto.paths[i+1]).GetMaster(),
+                    _GetPrim(proto.paths[i+1]).GetPrototype(),
                     _GetPrim(proto.paths[i+0]),
                     time, &vis);
             }
@@ -2102,7 +2104,7 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         std::deque<SdfPath> selectionPathVec;
         UsdPrim p = usdPrim;
         while (p.IsInstanceProxy()) {
-            selectionPathVec.push_front(p.GetPrimInMaster().GetPath());
+            selectionPathVec.push_front(p.GetPrimInPrototype().GetPath());
             do {
                 p = p.GetParent();
             } while (!p.IsInstance());
@@ -2297,7 +2299,7 @@ UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
     //
     bool isProtoRoot = false;
     UsdPrim prim = _GetPrim(cachePath.GetPrimPath());
-    bool inMaster = prim.IsInMaster();
+    bool inPrototype = prim.IsInPrototype();
 
     if (!parentInstancerCachePath.IsEmpty()) {
         // this instancer has a parent instancer. see if this instancer 
@@ -2313,10 +2315,10 @@ UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
             //
             // we need to extract relative transform to root.
             //
-            if (inMaster) {
-                // if the instancer is in master, set the target
+            if (inPrototype) {
+                // if the instancer is in prototype, set the target
                 // root transform to world, since the parent
-                // instancer (if the parent is also in master,
+                // instancer (if the parent is also in prototype,
                 // native instancer which instances that parent) 
                 // has delegate's root transform.
                 transformRoot = GetRootTransform();
@@ -2347,13 +2349,13 @@ UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
         //    val = InstancerXfm * RootTransform * 1^-1
         //        = InstancerXfm * RootTransform
         //
-        // 2. If the instancer has a parent and in master,
+        // 2. If the instancer has a parent and in prototype,
         //    transformRoot is RootTransform.
         //
         //    val = InstancerXfm * RootTransform * (RootTransform)^-1
         //        = InstancerXfm
         //
-        // 3. If the instaner has a parent but not in master,
+        // 3. If the instaner has a parent but not in prototype,
         //    transformRoot is (ProtoRoot * RootTransform).
         //
         //    val = InstancerXfm * RootTransform * (ProtoRoot * RootTransform)^-1

@@ -450,10 +450,10 @@ private:
     //
     // Suppose we have:
     //    /Root
-    //        Instance_A (master: /__Prototype_1)
-    //        Instance_B (master: /__Prototype_1)
+    //        Instance_A (prototype: /__Prototype_1)
+    //        Instance_B (prototype: /__Prototype_1)
     //    /__Prototype_1
-    //        AnotherInstance_A (master: /__Prototype_2)
+    //        AnotherInstance_A (prototype: /__Prototype_2)
     //    /__Prototype_2
     //
     // /__Prototype_2 has only one associated instance in the Usd scenegraph: 
@@ -507,8 +507,8 @@ private:
     struct _InstancerData {
         _InstancerData() : numInstancesToDraw(0), refreshVariability(false) { }
 
-        // The master prim path associated with this instancer.
-        SdfPath masterPath;
+        // The prototype prim path associated with this instancer.
+        SdfPath prototypePath;
 
         // The USD material path associated with this instancer.
         SdfPath materialUsdPath;
@@ -591,26 +591,26 @@ private:
     // Hd and UsdImaging think of instancing in terms of an 'instancer' that
     // specifies a list of 'prototype' prims that are shared per instance.
     //
-    // For Usd scenegraph instancing, a master prim and its descendents
+    // For Usd scenegraph instancing, a prototype prim and its descendents
     // roughly correspond to the instancer and prototype prims. However,
     // Hd requires a different instancer and rprims for different combinations
     // of inherited attributes (material binding, draw mode, etc).
-    // This means we cannot use the Usd master prim as the instancer, because
+    // This means we cannot use the Usd prototype prim as the instancer, because
     // we can't represent this in the case where multiple Usd instances share
-    // the same master but have different bindings.
+    // the same prototype but have different bindings.
     //
-    // Instead, we use the first instance of a master with a given set of
+    // Instead, we use the first instance of a prototype with a given set of
     // inherited attributes as our instancer. For example, if /A and /B are
     // both instances of /__Prototype_1 but /A and /B have different material
     // bindings authored on them, both /A and /B will be instancers,
     // with their own set of rprims and instance indices.
     //
-    // The below is a multimap from master path to the cache path of the
+    // The below is a multimap from prototype path to the cache path of the
     // hydra instancer. The data for the instancer is located in the
     // _InstancerDataMap.
     typedef TfHashMultiMap<SdfPath, SdfPath, SdfPath::Hash>
-        _MasterToInstancerMap;
-    _MasterToInstancerMap _masterToInstancerMap;
+        _PrototypeToInstancerMap;
+    _PrototypeToInstancerMap _prototypeToInstancerMap;
 };
 
 

@@ -113,7 +113,7 @@ public:
     {
         TRACE_FUNCTION();
         if (!prim.GetPath().HasPrefix(_rootPath) 
-            && !prim.IsInMaster()) {
+            && !prim.IsInPrototype()) {
             TF_CODING_ERROR("Attempt to get value for: %s "
                             "which is not within the specified root: %s",
                             prim.GetPath().GetString().c_str(),
@@ -403,7 +403,7 @@ UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetValue(
     static value_type const default_ = Strategy::MakeDefault();
 
     // Base case.
-    if (!prim || prim.IsMaster() || prim.GetPath() == _rootPath)
+    if (!prim || prim.IsPrototype() || prim.GetPath() == _rootPath)
         return &default_;
 
     _Entry* entry = _GetCacheEntryForPrim(prim);
