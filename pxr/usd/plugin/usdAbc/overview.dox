@@ -38,8 +38,8 @@ Setting Name                        | Meaning                                   
 ------------------------------------|-----------------------------------------------------------------|-------
 USD_ABC_NUM_OGAWA_STREAMS           | The number of threads available for reading ogawa-backed files. | 4 
 USD_ABC_EXPAND_INSTANCES            | Force alembic instances to be expanded                          | false 
-USD_ABC_DISABLE_INSTANCES           | Disable instancing on masters created from alembic              | false
-USD_ABC_PARENT_INSTANCES            | Make parent of instance source into masters where possible      | true
+USD_ABC_DISABLE_INSTANCES           | Disable instancing on prototypes created from alembic           | false
+USD_ABC_PARENT_INSTANCES            | Make parent of instance source into prototypes where possible   | true
 USD_ABC_WARN_ALL_UNSUPPORTED_VALUES | Issue warnings for all unsupported values encountered.          | false
 
 */
