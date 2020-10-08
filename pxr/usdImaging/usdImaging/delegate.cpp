@@ -2486,47 +2486,15 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
 {
     HD_TRACE_FUNCTION();
 
-    // If prototypeId is also a point instancer (nested case),
-    // this function may be called multiple times with the same arguments:
-    //
-    //  instancer1
-    //    |
-    //    +-- instancer2
-    //          |
-    //          +-- protoMesh1
-    //          +-- protoMesh2
-    //
-    //  a) (instancer2, protoMesh1) then (instancer1, instancer2)
-    //  b) (instancer2, protoMesh2) then (instancer1, instancer2)
-    //
-    //  The scene delegate will also call this function separately for
-    //  a) (instancer2, protoMesh1)
-    //  b) (instancer2, protoMesh2)
-    //
-    //  ... so we can't use ExtractInstanceIndices here, only Find().
-    //
-    //  XXX: It would be nice to change the API to be extract-friendly;
-    //  that would require changes to the signature of this function.
-
-    // XXX: Since instancers can have many prototypes, but prototypes can
-    // only have one instancer, we treat indices as instancer data (meaning,
-    // the dirty bit is set on the instancer), but store it in the prototype's
-    // value cache.
-
     SdfPath prototypeCachePath = ConvertIndexPathToCachePath(prototypeId);
     VtValue indices;
 
-    if (!_valueCache.FindInstanceIndices(prototypeCachePath, &indices)) {
-        // Slow path, we should not hit this.
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow instance indices fetch for (%s, %s)\n", 
-            instancerId.GetText(), prototypeId.GetText());
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-        SdfPath instancerCachePath = ConvertIndexPathToCachePath(instancerId);
-        _UpdateSingleValue(instancerCachePath,
-                HdChangeTracker::DirtyInstanceIndex);
-        TF_VERIFY(
-            _valueCache.FindInstanceIndices(prototypeCachePath, &indices));
+    if (TF_VERIFY(primInfo)) {
+        indices = primInfo->adapter->GetInstanceIndices(
+            primInfo->usdPrim, cachePath, prototypeCachePath, _time);
     }
 
     if (indices.IsEmpty()) {

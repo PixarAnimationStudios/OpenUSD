@@ -275,6 +275,11 @@ public:
             SdfPath const& cachePath,
             const UsdImagingInstancerContext* instancerContext) const override;
 
+    VtValue
+    GetInstanceIndices(UsdPrim const& instancerPrim,
+                       SdfPath const& instancerCachePath,
+                       SdfPath const& prototypeCachePath,
+                       UsdTimeCode time) const override;
 
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,

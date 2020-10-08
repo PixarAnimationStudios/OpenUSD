@@ -1224,21 +1224,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             time, requestedBits, &instancerContext);
     } else if (_InstancerData const* instrData =
                TfMapLookupPtr(_instancerData, prim.GetPath())) {
-
-        // We handle per-instance visibility by pulling stuff out of the
-        // instance indices, so DirtyInstanceIndex means we need to recompute
-        // that map.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            VtIntArray indices = _ComputeInstanceMap(prim, *instrData, time);
-            // XXX: See UsdImagingDelegate::GetInstanceIndices;
-            // the change-tracking is on the instancer prim, but for simplicity
-            // we store each prototype's index buffer in that prototype's value
-            // cache (since each prototype can only have one instancer).
-            for (auto const& pair : instrData->primMap) {
-                valueCache->GetInstanceIndices(pair.first) = indices;
-            }
-        }
-
         // Per-instance transforms and inherited primvars are handled by
         // DirtyPrimvar.
         if (requestedBits & HdChangeTracker::DirtyPrimvar) {
@@ -1924,6 +1909,42 @@ UsdImagingInstanceAdapter::GetExtComputationKernel(
                 _GetPrim(proto->path), cachePath, &instancerContext);
     }
     return BaseAdapter::GetExtComputationKernel(usdPrim, cachePath, nullptr);
+}
+
+/*virtual*/
+VtValue
+UsdImagingInstanceAdapter::GetInstanceIndices(
+    UsdPrim const& instancerPrim,
+    SdfPath const& instancerCachePath,
+    SdfPath const& prototypeCachePath,
+    UsdTimeCode time) const
+{
+    if (_IsChildPrim(instancerPrim, instancerCachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const *proto;
+        if (_GetProtoPrimForChild(instancerPrim, instancerCachePath, &proto,
+                &instancerContext)) {
+            return proto->adapter->GetInstanceIndices(_GetPrim(proto->path),
+                instancerCachePath, prototypeCachePath, time);
+        }
+
+        return BaseAdapter::GetInstanceIndices(
+                instancerPrim, instancerCachePath, prototypeCachePath, time);
+    }
+
+    // XXX Attention code reviewers!
+    //     Will be called per prototype, resulting in repeated computation
+    //     of the same thing as the previous behavior would store the same
+    //     value across all of its prototypes.
+    if (_InstancerData const* instrData =
+               TfMapLookupPtr(_instancerData, instancerCachePath)) {
+        VtIntArray indices = _ComputeInstanceMap(
+                instancerPrim, *instrData, time);
+        return VtValue(indices);
+    }
+
+    return BaseAdapter::GetInstanceIndices(
+                instancerPrim, instancerCachePath, prototypeCachePath, time);
 }
 
 /*virtual*/

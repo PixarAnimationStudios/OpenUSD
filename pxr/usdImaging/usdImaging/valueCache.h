@@ -82,10 +82,6 @@ public:
         };
 
     private:
-        static Key InstanceIndices(SdfPath const& path) {
-            static TfToken attr("instanceIndices");
-            return Key(path, attr);
-        }
         static Key Primvars(SdfPath const& path) {
             static TfToken attr("primvars");
             return Key(path, attr);
@@ -211,7 +207,6 @@ public:
 
     /// Clear all data associated with a specific path.
     void Clear(SdfPath const& path) {
-        _Erase<VtValue>(Key::InstanceIndices(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
         // access the map directly, if we need to for performance reasons.
@@ -224,23 +219,14 @@ public:
         }
     }
 
-    VtValue& GetInstanceIndices(SdfPath const& path) const {
-        return _Get<VtValue>(Key::InstanceIndices(path));
-    }
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
 
-    bool FindInstanceIndices(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::InstanceIndices(path), value);
-    }
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
 
-    bool ExtractInstanceIndices(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::InstanceIndices(path), value);
-    }
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
     }

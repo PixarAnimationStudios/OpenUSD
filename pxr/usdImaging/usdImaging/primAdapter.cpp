@@ -1316,6 +1316,16 @@ UsdImagingPrimAdapter::GetExtComputationKernel(
     return std::string();
 }
 
+/*virtual*/
+VtValue
+UsdImagingPrimAdapter::GetInstanceIndices(UsdPrim const& instancerPrim,
+                                          SdfPath const& instancerCachePath,
+                                          SdfPath const& prototypeCachePath,
+                                          UsdTimeCode time) const
+{
+    return VtValue();
+}
+
 VtArray<VtIntArray>
 UsdImagingPrimAdapter::GetPerPrototypeIndices(UsdPrim const& prim,
                                               UsdTimeCode time) const

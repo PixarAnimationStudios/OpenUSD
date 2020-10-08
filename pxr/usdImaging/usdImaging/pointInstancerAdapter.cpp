@@ -178,6 +178,7 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // we're squeezing memory in the future, we could be a little more efficient
     // here.
     instrData.prototypePaths.resize(usdProtoPaths.size());
+    instrData.prototypePathIndices.clear();
     instrData.visible = true;
     instrData.variableVisibility = true;
     instrData.parentInstancerCachePath = parentInstancerCachePath;
@@ -210,7 +211,9 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
         // -------------------------------------------------------------- //
         // Initialize this prototype.
         // -------------------------------------------------------------- //
-        instrData.prototypePaths[protoIndex] = usdProtoPaths[protoIndex];
+        const SdfPath & prototypePath = usdProtoPaths[protoIndex];
+        instrData.prototypePaths[protoIndex] = prototypePath;
+        instrData.prototypePathIndices[prototypePath] = protoIndex;
         UsdPrim protoRootPrim = _GetPrim(instrData.prototypePaths[protoIndex]);
         if (!protoRootPrim) {
             TF_WARN("Targeted prototype was not found <%s>\n",
@@ -602,24 +605,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             proto.adapter->UpdateForTime(
                 protoPrim, cachePath, time, requestedBits);
         }
-    } else  if (_InstancerData const* instrData =
-                TfMapLookupPtr(_instancerData, cachePath)) {
-
-        // On DirtyInstanceIndex, recompute the per-prototype index map.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            _InstanceMap instanceMap =
-                _ComputeInstanceMap(cachePath, *instrData, time);
-
-            // XXX: See UsdImagingDelegate::GetInstanceIndices;
-            // the change-tracking is on the instancer prim, but for simplicity
-            // we store each prototype's index buffer in that prototype's value
-            // cache (since each prototype can have only one instancer).
-            for (auto const& pair : instrData->protoPrimMap) {
-                valueCache->GetInstanceIndices(pair.first) =
-                    instanceMap[pair.second.protoRootPath];
-            }
-        }
-
+    } else if (_instancerData.find(cachePath) != _instancerData.end()) {
         // For the instancer itself, we only send translate, rotate and scale
         // back as primvars, which all fall into the DirtyPrimvar bucket
         // currently.
@@ -1959,6 +1945,67 @@ UsdImagingPointInstancerAdapter::GetExtComputationInput(
     }
     return BaseAdapter::GetExtComputationInput(usdPrim, cachePath, name, time,
                 nullptr);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetInstanceIndices(
+    UsdPrim const& instancerPrim,
+    SdfPath const& instancerCachePath,
+    SdfPath const& prototypeCachePath,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(instancerCachePath)) {
+        UsdImagingInstancerContext ctx;
+        _ProtoPrim const *proto;
+        if (_GetProtoPrimForChild(
+                instancerPrim, instancerCachePath, &proto, &ctx)) {
+             return proto->adapter->GetInstanceIndices(
+                    _GetProtoUsdPrim(*proto), instancerCachePath,
+                            prototypeCachePath, time);
+        }
+    }
+
+    if (_InstancerData const* instrData =
+                TfMapLookupPtr(_instancerData, instancerCachePath)) {
+
+        // need to find the prototypeRootPath for this prototypeCachePath
+        const auto protoPrimIt =
+                instrData->protoPrimMap.find(prototypeCachePath);
+        if (protoPrimIt != instrData->protoPrimMap.end()) {
+            const SdfPath & prototypeRootPath =
+                    protoPrimIt->second.protoRootPath;
+
+            // find index of prototypeRootPath within expected array-of-arrays
+            const auto pathIndexIt =
+                    instrData->prototypePathIndices.find(prototypeRootPath);
+            if (pathIndexIt != instrData->prototypePathIndices.end()) {
+                size_t pathIndex = (*pathIndexIt).second;
+
+                UsdPrim instancerPrim = _GetPrim(
+                        instancerCachePath.GetPrimPath());
+                VtArray<VtIntArray> indices = GetPerPrototypeIndices(
+                        instancerPrim, time);
+
+                if (pathIndex >= indices.size()) {
+                    TF_WARN("ProtoIndex %lu out of bounds "
+                            "(prototypes size = %lu) for (%s, %s)",
+                                    pathIndex,
+                                    indices.size(),
+                                    instancerCachePath.GetText(),
+                                    prototypeCachePath.GetText());
+                    
+                    return VtValue();
+                }
+                return VtValue(indices[pathIndex]);
+            }
+        }
+
+        TF_WARN("No matching ProtoRootPath found for (%s, %s)",
+                instancerCachePath.GetText(), prototypeCachePath.GetText());
+    }
+
+    return VtValue();
 }
 
 /*virtual*/

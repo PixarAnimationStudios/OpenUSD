@@ -27,6 +27,7 @@
 /// \file usdImaging/pointInstancerAdapter.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/denseHashMap.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
@@ -220,6 +221,11 @@ public:
             SdfPath const& cachePath,
             const UsdImagingInstancerContext* instancerContext) const override;
 
+    VtValue
+    GetInstanceIndices(UsdPrim const& instancerPrim,
+                       SdfPath const& instancerCachePath,
+                       SdfPath const& prototypeCachePath,
+                       UsdTimeCode time) const override;
 
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
@@ -390,6 +396,10 @@ private:
         SdfPath parentInstancerCachePath;
         _ProtoPrimMap protoPrimMap;
         SdfPathVector prototypePaths;
+
+        using PathToIndexMap = TfDenseHashMap<SdfPath, size_t, SdfPath::Hash>;
+        PathToIndexMap prototypePathIndices;
+
 
         // XXX: We keep a bunch of state around visibility that's set in
         // TrackVariability and UpdateForTime.  "visible", and "visibleTime"

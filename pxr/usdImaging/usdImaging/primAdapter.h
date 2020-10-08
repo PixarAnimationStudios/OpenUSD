@@ -543,6 +543,12 @@ public:
             SdfPath const& cachePath,
             const UsdImagingInstancerContext* instancerContext) const;
 
+    USDIMAGING_API
+    virtual VtValue
+    GetInstanceIndices(UsdPrim const& instancerPrim,
+                       SdfPath const& instancerCachePath,
+                       SdfPath const& prototypeCachePath,
+                       UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
