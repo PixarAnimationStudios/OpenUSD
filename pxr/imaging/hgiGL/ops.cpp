@@ -714,7 +714,7 @@ HgiGLOpsFn
 HgiGLOps::MemoryBarrier(HgiMemoryBarrier barrier)
 {
     return [barrier] {
-        if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
+        if (glMemoryBarrier && TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
         }
     };

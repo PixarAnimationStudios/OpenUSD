@@ -887,6 +887,10 @@ HdStResourceRegistry::_Commit()
         _uniformSsboAggregationStrategy->Flush();
         _singleAggregationStrategy->Flush();
 
+        // Make sure the writes are visible to computations that follow
+        if (_blitCmds) {
+            _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        }
         SubmitBlitWork();
     }
 
