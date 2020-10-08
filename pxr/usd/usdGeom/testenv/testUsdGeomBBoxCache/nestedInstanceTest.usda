@@ -62,7 +62,7 @@ class "_Depth_1"
 
 def Xform "Root"
 {
-    # Instance with no explicit purpose. Master children cannot inherit this
+    # Instance with no explicit purpose. Prototype children cannot inherit this
     # purpose.
     def Xform "OuterFallbackXform" (
         inherits = </_Depth_1>
@@ -73,7 +73,7 @@ def Xform "Root"
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    # Instance with explicit render purpose. Master children can inherit this 
+    # Instance with explicit render purpose. Prototype children can inherit this 
     # purpose.
     def Xform "OuterRenderXform" (
         inherits = </_Depth_1>

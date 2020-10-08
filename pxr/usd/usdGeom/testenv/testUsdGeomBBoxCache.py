@@ -479,7 +479,7 @@ def TestPurposeWithInstancing():
 
     # Stage with all instancing disabled.
     stage = Usd.Stage.Open("disableAllInstancing.usda")
-    assert len(stage.GetMasters()) == 0
+    assert len(stage.GetPrototypes()) == 0
     root = stage.GetPrimAtPath("/Root")
 
     assert defaultCache.ComputeWorldBound(root) == defaultBBox
@@ -487,7 +487,7 @@ def TestPurposeWithInstancing():
 
     # Stage with one set of instances.
     stage = Usd.Stage.Open("disableInnerInstancing.usda")
-    assert len(stage.GetMasters()) == 1
+    assert len(stage.GetPrototypes()) == 1
     root = stage.GetPrimAtPath("/Root")
 
     assert defaultCache.ComputeWorldBound(root) == defaultBBox
@@ -495,7 +495,7 @@ def TestPurposeWithInstancing():
 
     # Stage with one different set of instances.
     stage = Usd.Stage.Open("disableOuterInstancing.usda")
-    assert len(stage.GetMasters()) == 1
+    assert len(stage.GetPrototypes()) == 1
     root = stage.GetPrimAtPath("/Root")
 
     assert defaultCache.ComputeWorldBound(root) == defaultBBox
@@ -503,7 +503,7 @@ def TestPurposeWithInstancing():
 
     # Stage with both sets of instances which are nested.
     stage = Usd.Stage.Open("nestedInstanceTest.usda")
-    assert len(stage.GetMasters()) == 2
+    assert len(stage.GetPrototypes()) == 2
     root = stage.GetPrimAtPath("/Root")
 
     assert defaultCache.ComputeWorldBound(root) == defaultBBox

@@ -487,8 +487,8 @@ public:
     /// on a stack as you traverse.
     ///
     /// \note Currently the returned prim will not contain any instancing
-    /// context if it is inside a master - its path will be relative to the
-    /// master's root.  Once UsdPrim is instancing-aware in the core, we can
+    /// context if it is inside a prototype - its path will be relative to the
+    /// prototype's root.  Once UsdPrim is instancing-aware in the core, we can
     /// change this method to return a context-aware result.
     ///
     /// \sa SetProxyPrim(), GetProxyPrimRel()

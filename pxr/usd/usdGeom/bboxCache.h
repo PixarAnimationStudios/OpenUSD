@@ -370,29 +370,30 @@ private:
     // Worker task.
     class _BBoxTask;
 
-    // Helper object for computing bounding boxes for instance masters.
-    class _MasterBBoxResolver;
+    // Helper object for computing bounding boxes for instance prototypes.
+    class _PrototypeBBoxResolver;
 
     // Map of purpose tokens to associated bboxes.
     typedef std::map<TfToken, GfBBox3d,  TfTokenFastArbitraryLessThan>
         _PurposeToBBoxMap;
 
-    // Each individual prim will have it's own entry in the bbox cache.
-    // When instancing is involved we store the master prims and their children
-    // in the cache for use by each prim that instances each master.
-    // However, because of the way we compute and inherit purpose, we may end
-    // up needed to compute multitple different bboxes for masters and their 
-    // children if the prims that instance them would cause these masters to 
-    // inherit a different purpose value when the prims under the master don't 
-    // have an authored purpose of their own.
+    // Each individual prim will have it's own entry in the bbox cache.  When
+    // instancing is involved we store the prototype prims and their children in
+    // the cache for use by each prim that instances each prototype.  However,
+    // because of the way we compute and inherit purpose, we may end up needed
+    // to compute multitple different bboxes for prototypes and their children
+    // if the prims that instance them would cause these prototypes to inherit a
+    // different purpose value when the prims under the prototype don't have an
+    // authored purpose of their own.
     //
     // This struct is here to represent a prim and the purpose that it would
-    // inherit from the prim that instances it. It is used as the key for the 
-    // map of prim's to the cached entries, allowing prim's in masters to have
-    // more than one bbox cache entry for each distinct context needed to 
+    // inherit from the prim that instances it. It is used as the key for the
+    // map of prim's to the cached entries, allowing prims in prototypes to have
+    // more than one bbox cache entry for each distinct context needed to
     // appropriately compute for all instances. instanceInheritablePurpose will
-    // always be empty for prims that aren't masters or children of masters, 
-    // meaning that prims not in masters will only have one context each.
+    // always be empty for prims that aren't prototypes or children of
+    // prototypes, meaning that prims not in prototypes will only have one
+    // context each.
     struct _PrimContext {
         // The prim itself
         UsdPrim prim;
@@ -484,12 +485,12 @@ private:
 
     // Returns the cache entry for the given \p prim if one already exists.
     // If no entry exists, creates (but does not resolve) entries for
-    // \p prim and all of its descendents. In this case, the master prims
+    // \p prim and all of its descendents. In this case, the prototype prims
     // whose bounding boxes need to be resolved in order to resolve \p prim
-    // will be returned in \p masterPrims.
+    // will be returned in \p prototypePrimContexts.
     _Entry* _FindOrCreateEntriesForPrim(
         const _PrimContext& prim,
-        std::vector<_PrimContext> *masterPrimContexts);
+        std::vector<_PrimContext> *prototypePrimContexts);
 
     // Returns the combined bounding box for the currently included set of
     // purposes given a _PurposeToBBoxMap.
