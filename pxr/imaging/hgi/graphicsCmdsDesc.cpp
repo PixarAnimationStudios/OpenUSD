@@ -57,7 +57,9 @@ std::ostream& operator<<(
     }
     
     for (size_t i=0; i<desc.colorTextures.size(); i++) {
-        out << "colorTexture" << i << ", ";
+        out << "colorTexture" << i << " ";
+        out << "dimensions:" << 
+            desc.colorTextures[i]->GetDescriptor().dimensions << ", ";
     }
 
     for (size_t i=0; i<desc.colorResolveTextures.size(); i++) {
@@ -66,7 +68,8 @@ std::ostream& operator<<(
 
     if (desc.depthTexture) {
         out << desc.depthAttachmentDesc;
-        out << "depthTexture";
+        out << "depthTexture ";
+        out << "dimensions:" << desc.depthTexture->GetDescriptor().dimensions;
     }
 
     if (desc.depthResolveTexture) {

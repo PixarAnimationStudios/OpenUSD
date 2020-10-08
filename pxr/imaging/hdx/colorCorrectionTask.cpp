@@ -349,8 +349,7 @@ bool
 HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
 {
     if (_pipeline) {
-        if (_attachment0.format == aovTexture->GetDescriptor().format &&
-            _attachment0.dimensions == aovTexture->GetDescriptor().dimensions) {
+        if (_attachment0.format == aovTexture->GetDescriptor().format) {
             return true;
         }
         
@@ -396,7 +395,6 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
     _attachment0.storeOp = HgiAttachmentStoreOpStore;
     _attachment0.format = aovTexture->GetDescriptor().format;
-    _attachment0.dimensions = aovTexture->GetDescriptor().dimensions;
     _attachment0.usage = aovTexture->GetDescriptor().usage;
     desc.colorAttachmentDescs.emplace_back(_attachment0);
 

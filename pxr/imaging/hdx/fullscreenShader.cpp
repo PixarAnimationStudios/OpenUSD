@@ -386,13 +386,9 @@ HdxFullscreenShader::_CreatePipeline(
 {
     if (_pipeline) {
         if ((!colorDst || (_attachment0.format ==
-                          colorDst.Get()->GetDescriptor().format && 
-                          _attachment0.dimensions == 
-                          colorDst.Get()->GetDescriptor().dimensions)) &&
+                          colorDst.Get()->GetDescriptor().format)) &&
             (!depthDst || (_depthAttachment.format ==
-                           depthDst.Get()->GetDescriptor().format &&
-                           _depthAttachment.dimensions ==
-                           depthDst.Get()->GetDescriptor().dimensions))) {
+                           depthDst.Get()->GetDescriptor().format))) {
             return true;
         }
 
@@ -411,7 +407,6 @@ HdxFullscreenShader::_CreatePipeline(
     _attachment0.alphaBlendOp = _alphaBlendOp;
     if (colorDst) {
         _attachment0.format = colorDst.Get()->GetDescriptor().format;
-        _attachment0.dimensions = colorDst.Get()->GetDescriptor().dimensions;
         _attachment0.usage = colorDst.Get()->GetDescriptor().usage;
     }
 
@@ -419,7 +414,6 @@ HdxFullscreenShader::_CreatePipeline(
     _depthAttachment.storeOp = HgiAttachmentStoreOpStore;
     if (depthDst) {
         _depthAttachment.format = depthDst.Get()->GetDescriptor().format;
-        _depthAttachment.dimensions= depthDst.Get()->GetDescriptor().dimensions;
         _depthAttachment.usage = depthDst.Get()->GetDescriptor().usage;
     }
 

@@ -32,7 +32,6 @@ bool operator==(
     const HgiAttachmentDesc& rhs) 
 {
     return  lhs.format == rhs.format &&
-            lhs.dimensions == rhs.dimensions &&
             lhs.usage == rhs.usage &&
             lhs.clearValue == rhs.clearValue &&
             lhs.loadOp == rhs.loadOp &&
@@ -59,7 +58,6 @@ std::ostream& operator<<(
 {
     out << "HgiAttachmentDesc: {"
         << "format: " << attachment.format << ", "
-        << "dimensions: " << attachment.dimensions << ", "
         << "usage: " << attachment.usage << ", "
         << "clearValue: " << attachment.clearValue << ", "
         << "loadOp: " << attachment.loadOp << ", "

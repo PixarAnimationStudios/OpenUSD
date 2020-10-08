@@ -577,7 +577,6 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         HgiAttachmentDesc attachmentDesc;
 
         attachmentDesc.format = hgiTexHandle->GetDescriptor().format;
-        attachmentDesc.dimensions = hgiTexHandle->GetDescriptor().dimensions;
         attachmentDesc.usage = hgiTexHandle->GetDescriptor().usage;
 
         // We need to use LoadOpLoad instead of DontCare because we can have

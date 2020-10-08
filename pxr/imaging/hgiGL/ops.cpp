@@ -657,20 +657,18 @@ HgiGLOps::ResolveFramebuffer(
 
         const uint32_t framebuffer = device->AcquireFramebuffer(
             graphicsCmds);
-        
+
+        GfVec3i dim(0);
         GLbitfield mask = 0;
         if (!graphicsCmds.colorResolveTextures.empty()) {
             mask |= GL_COLOR_BUFFER_BIT;
+            HgiTextureHandle const& tex = 
+                graphicsCmds.colorResolveTextures.front();
+            dim = tex->GetDescriptor().dimensions;
         }
         if (graphicsCmds.depthResolveTexture) {
             mask |= GL_DEPTH_BUFFER_BIT;
-        }
-
-        GfVec3i dim(0);
-        if (!graphicsCmds.colorAttachmentDescs.empty()) {
-            dim = graphicsCmds.colorAttachmentDescs.front().dimensions;
-        } else if (graphicsCmds.depthAttachmentDesc.format != HgiFormatInvalid) {
-            dim = graphicsCmds.depthAttachmentDesc.dimensions;
+            dim = graphicsCmds.depthResolveTexture->GetDescriptor().dimensions;
         }
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);

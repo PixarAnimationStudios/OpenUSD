@@ -42,9 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format:
 ///   The format of the attachment.
 ///   Must match what is set in HgiTextureDesc.</li>
-/// <li>dimensions:
-///   Attachment size (in texels).
-///   Must match what is set in HgiTextureDesc.</li>
 /// <li>usage:
 ///   Describes how the texture is intended to be used.
 ///   Must match what is set in HgiTextureDesc.</li>
@@ -65,7 +62,6 @@ struct HgiAttachmentDesc
 {
     HgiAttachmentDesc() 
     : format(HgiFormatInvalid)
-    , dimensions(0)
     , usage(0)
     , loadOp(HgiAttachmentLoadOpLoad)
     , storeOp(HgiAttachmentStoreOpStore)
@@ -80,7 +76,6 @@ struct HgiAttachmentDesc
     {}
 
     HgiFormat format;
-    GfVec3i dimensions;
     HgiTextureUsage usage;
     HgiAttachmentLoadOp loadOp;
     HgiAttachmentStoreOp storeOp;
