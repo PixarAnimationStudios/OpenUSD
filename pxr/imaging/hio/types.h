@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hio/api.h"
+#include "pxr/base/gf/vec3i.h"
 #include <stdlib.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -120,13 +121,44 @@ enum HioFormat
     HioFormatCount
 };
 
+enum HioType 
+{
+    HioTypeUnsignedByte,
+    HioTypeSignedByte,
+    HioTypeUnsignedShort,
+    HioTypeSignedShort,
+    HioTypeUnsignedInt,
+    HioTypeInt,
+    HioTypeHalfFloat,
+    HioTypeFloat,
+    HioTypeDouble,
+};
+
+/// Return the HioType corresponding to the given HioFormat
+HIO_API
+HioType HioGetHioType(HioFormat);
+
+/// Return the count of components (channels) in the given HioFormat.
+HIO_API 
+int HioGetComponentCount(HioFormat format);
+
+/// Return the size in bytes for a component (channel) in the given HioFormat. 
+HIO_API
+size_t HioGetDataSizeOfType(HioFormat hioFormat);
+
+/// Returns the size of bytes per pixel for the given HioFormat
+HIO_API
+size_t HioGetDataSizeOfFormat(HioFormat format,
+                             size_t *blockWidth = nullptr,
+                             size_t *blockHeight = nullptr);
+
 /// Return if the given format is compressed.
 HIO_API
 bool HioIsCompressed(HioFormat format);
 
 /// Calculate the byte size of compressed textures.
 HIO_API
-size_t HioGetCompressedTextureSize(int width, int height, HioFormat hioFormat);
+size_t HioGetDataSize(const HioFormat hioFormat, const GfVec3i &dimensions);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

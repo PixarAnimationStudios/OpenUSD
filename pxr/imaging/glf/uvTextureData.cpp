@@ -97,8 +97,8 @@ GlfUVTextureData_ComputeMemory(GlfImageSharedPtr const &img,
     const double scale = generateMipmap ? 4.0 / 3 : 1.0;
 
     if (HioIsCompressed(img->GetHioFormat())) {
-         return scale * HioGetCompressedTextureSize(img->GetWidth(), 
-                            img->GetHeight(), img->GetHioFormat());
+        return scale * HioGetDataSize(img->GetHioFormat(), 
+                            GfVec3i(img->GetWidth(), img->GetHeight(), 1));
     }
 
     const size_t numPixels = img->GetWidth() * img->GetHeight();
@@ -404,9 +404,9 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         mip.height = needsResizeOnLoad ? _resizedHeight : image->GetHeight();
         
         const size_t numPixels = mip.width * mip.height;
-        mip.size   = isCompressed ? HioGetCompressedTextureSize( 
-                                    mip.width, mip.height, _hioFormat):
-                                    numPixels * _bytesPerPixel;
+        mip.size   = isCompressed ? HioGetDataSize(_hioFormat, 
+                                        GfVec3i(mip.width, mip.height,1))
+                                  : numPixels * _bytesPerPixel;
         mip.offset = _size;
         _size += mip.size;
     }
