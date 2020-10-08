@@ -31,6 +31,7 @@
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,6 +67,8 @@ HgiGLOpsFn
 HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
 {
     return [copyOp] {
+        TRACE_FUNCTION();
+
         HgiTextureHandle texHandle = copyOp.gpuSourceTexture;
         HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(texHandle.Get());
 
@@ -130,6 +133,8 @@ HgiGLOpsFn
 HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
 {
     return [copyOp] {
+        TRACE_FUNCTION();
+
         HgiTextureDesc const& desc =
             copyOp.gpuDestinationTexture->GetDescriptor();
 
@@ -202,6 +207,8 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
 {
     return [copyOp] {
+        TRACE_FUNCTION();
+
         HgiBufferHandle const& srcBufHandle = copyOp.gpuSourceBuffer;
         HgiGLBuffer* srcBuffer = static_cast<HgiGLBuffer*>(srcBufHandle.Get());
 
@@ -235,6 +242,8 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 {
     return [copyOp] {
+        TRACE_FUNCTION();
+
         if (copyOp.byteSize == 0 ||
             !copyOp.cpuSourceBuffer ||
             !copyOp.gpuDestinationBuffer)
@@ -266,6 +275,8 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 {
     return [copyOp] {
+        TRACE_FUNCTION();
+
         if (copyOp.byteSize == 0 ||
             !copyOp.cpuDestinationBuffer ||
             !copyOp.gpuSourceBuffer)
@@ -313,6 +324,7 @@ HgiGLOpsFn
 HgiGLOps::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     return [pipeline] {
+        TRACE_FUNCTION();
         if (HgiGLGraphicsPipeline* p = static_cast<HgiGLGraphicsPipeline*>(pipeline.Get())) {
             p->BindPipeline();
         }
@@ -323,6 +335,7 @@ HgiGLOpsFn
 HgiGLOps::BindPipeline(HgiComputePipelineHandle pipeline)
 {
     return [pipeline] {
+        TRACE_FUNCTION();
         if (HgiGLComputePipeline* p = static_cast<HgiGLComputePipeline*>(pipeline.Get())) {
             p->BindPipeline();
         }
@@ -333,6 +346,7 @@ HgiGLOpsFn
 HgiGLOps::BindResources(HgiResourceBindingsHandle res)
 {
     return [res] {
+        TRACE_FUNCTION();
         if (HgiGLResourceBindings* rb =
             static_cast<HgiGLResourceBindings*>(res.Get()))
         {
@@ -355,6 +369,7 @@ HgiGLOps::SetConstantValues(
     memcpy(dataCopy, data, byteSize);
 
     return [pipeline, bindIndex, byteSize, dataCopy] {
+        TRACE_FUNCTION();
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
@@ -378,6 +393,7 @@ HgiGLOps::SetConstantValues(
     memcpy(dataCopy, data, byteSize);
 
     return [pipeline, bindIndex, byteSize, dataCopy] {
+        TRACE_FUNCTION();
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
@@ -395,6 +411,7 @@ HgiGLOps::BindVertexBuffers(
     std::vector<uint32_t> const& byteOffsets)
 {
     return [firstBinding, vertexBuffers, byteOffsets] {
+        TRACE_FUNCTION();
         TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
         TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
 
@@ -425,6 +442,7 @@ HgiGLOps::Draw(
     uint32_t instanceCount)
 {
     return [primitiveType, vertexCount, firstVertex, instanceCount] {
+        TRACE_FUNCTION();
         TF_VERIFY(instanceCount>0);
 
         glDrawArraysInstanced(
@@ -447,6 +465,7 @@ HgiGLOps::DrawIndirect(
 {
     return [primitiveType, drawParameterBuffer, drawBufferOffset, drawCount, 
             stride] {
+        TRACE_FUNCTION();
 
         HgiGLBuffer* drawBuf =
             static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
@@ -474,6 +493,7 @@ HgiGLOps::DrawIndexed(
 {
     return [primitiveType, indexBuffer, indexCount, indexBufferByteOffset,
             vertexOffset, instanceCount] {
+        TRACE_FUNCTION();
         TF_VERIFY(instanceCount>0);
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
@@ -507,6 +527,7 @@ HgiGLOps::DrawIndexedIndirect(
 {
     return [primitiveType, indexBuffer, drawParameterBuffer, drawBufferOffset,
             drawCount, stride] {
+        TRACE_FUNCTION();
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
         HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
@@ -536,6 +557,8 @@ HgiGLOpsFn
 HgiGLOps::Dispatch(int dimX, int dimY)
 {
     return [dimX, dimY] {
+        TRACE_FUNCTION();
+
         glDispatchCompute(dimX, dimY, 1);
 
         HGIGL_POST_PENDING_GL_ERRORS();
@@ -548,6 +571,8 @@ HgiGLOps::BindFramebufferOp(
     HgiGraphicsCmdsDesc const& desc)
 {
     return [device, desc] {
+        TRACE_FUNCTION();
+
         TF_VERIFY(desc.HasAttachments(), "Missing attachments");
 
         uint32_t framebuffer = device->AcquireFramebuffer(desc);
@@ -635,6 +660,8 @@ HgiGLOpsFn
 HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     return [texture] {
+        TRACE_FUNCTION();
+
         HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texture.Get());
         if (glTex) {
             glGenerateTextureMipmap(glTex->GetTextureId());
@@ -649,6 +676,8 @@ HgiGLOps::ResolveFramebuffer(
     HgiGraphicsCmdsDesc const &graphicsCmds)
 {
     return [device, graphicsCmds] {
+        TRACE_FUNCTION();
+
         const uint32_t resolvedFramebuffer = device->AcquireFramebuffer(
             graphicsCmds, /* resolved = */ true);
         if (!resolvedFramebuffer) {
