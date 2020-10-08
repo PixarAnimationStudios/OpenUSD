@@ -1068,36 +1068,6 @@ UsdImagingPointInstancerAdapter::_GetInstancerVisible(
     return visible;
 }
 
-UsdImagingPointInstancerAdapter::_InstanceMap
-UsdImagingPointInstancerAdapter::_ComputeInstanceMap(
-                    SdfPath const& instancerPath,
-                    _InstancerData const& instrData,
-                    UsdTimeCode time) const
-{
-    TRACE_FUNCTION();
-
-    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-        "[PointInstancer::_ComputeInstanceMap] %s\n",
-        instancerPath.GetText());
-
-    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
-    VtArray<VtIntArray> indices =
-        GetPerPrototypeIndices(instancerPrim, time);
-
-    if (indices.size() > instrData.prototypePaths.size()) {
-        TF_WARN("ProtoIndex %lu out of bounds (prototypes size = %lu)",
-                indices.size() - 1, instrData.prototypePaths.size());
-    }
-    indices.resize(instrData.prototypePaths.size());
-
-    _InstanceMap instanceMap;
-    for (size_t i = 0; i < instrData.prototypePaths.size(); ++i) {
-        instanceMap[instrData.prototypePaths[i]] = indices[i];
-    }
-
-    return instanceMap;
-}
-
 void
 UsdImagingPointInstancerAdapter::_UpdateInstancerVisibility(
         SdfPath const& instancerPath,
@@ -1320,9 +1290,14 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     SdfPath parentPath = it->second.parentInstancerCachePath;
 
     // Compute the local & parent instance index.
-    _InstanceMap instanceMap = _ComputeInstanceMap(
-            instancerPath, it->second, _GetTimeWithOffset(0.0));
-    VtIntArray const& indices = instanceMap[proto.protoRootPath];
+    VtValue indicesValue = GetInstanceIndices(_GetPrim(instancerPath),
+            instancerPath, cachePath, _GetTimeWithOffset(0.0));
+
+    if (!indicesValue.IsHolding<VtIntArray>()) {
+        return SdfPath();
+    }
+    VtIntArray const & indices = indicesValue.UncheckedGet<VtIntArray>();
+
     // instanceIndex = parentIndex * indices.size() + i.
     int parentIndex = instanceIndex / indices.size();
     // indices[i] gives the offset into the index buffers (i.e. protoIndices).
@@ -2081,10 +2056,17 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
             if (instrData == nullptr) {
                 return false;
             }
+            
             // XXX: Using _GetTimeWithOffset here is a bit of a hack?
-            _InstanceMap instanceMap = _ComputeInstanceMap(
-                cachePath, *instrData, _GetTimeWithOffset(0.0));
-            VtIntArray const& indices = instanceMap[proto.protoRootPath];
+            VtValue indicesValue = GetInstanceIndices(_GetPrim(instancerPath),
+                    instancerPath, cachePath, _GetTimeWithOffset(0.0));
+            if (!indicesValue.IsHolding<VtIntArray>()) {
+                return false;
+            }
+
+            VtIntArray const & indices =
+                    indicesValue.UncheckedGet<VtIntArray>();
+
             for (const int pi : parentInstanceIndices) {
                 for (size_t i = 0; i < indices.size(); ++i) {
                     instanceIndices.push_back(pi * indices.size() + i);
@@ -2127,10 +2109,6 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
         }
         selectionPathVec.push_front(p.GetPath());
 
-        // Precompute the instance map.
-        _InstanceMap instanceMap = _ComputeInstanceMap(
-                cachePath, *instrData, _GetTimeWithOffset(0.0));
-
         // If "cachePath" and "usdPrim" are equal, and hydraInstanceIndex
         // has a value, we're responding to "AddSelected(/World/PI, N)";
         // we can treat it as an instance index for this PI, rather than
@@ -2144,8 +2122,15 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
 
             bool added = false;
             for (auto const& pair : instrData->protoPrimMap) {
-                VtIntArray const& indices =
-                    instanceMap[pair.second.protoRootPath];
+                VtValue indicesValue =  GetInstanceIndices(_GetPrim(cachePath),
+                        cachePath, pair.first, _GetTimeWithOffset(0.0));
+
+                if (!indicesValue.IsHolding<VtIntArray>()) {
+                    continue;
+                }
+                VtIntArray const & indices =
+                        indicesValue.UncheckedGet<VtIntArray>();
+
                 int foundIndex = -1;
                 for (size_t i = 0; i < indices.size(); ++i) {
                     if (indices[i] == hydraInstanceIndex) {
@@ -2232,8 +2217,18 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
 
             // Compose instance indices.
             VtIntArray instanceIndices;
-            VtIntArray const& indices =
-                instanceMap[pair.second.protoRootPath];
+
+            VtValue indicesValue = 
+                    GetInstanceIndices(_GetPrim(cachePath), cachePath,
+                            pair.first, _GetTimeWithOffset(0.0));
+
+            if (!indicesValue.IsHolding<VtIntArray>()) {
+                continue;
+            }
+            VtIntArray const & indices =
+                    indicesValue.UncheckedGet<VtIntArray>();
+
+
             if (parentInstanceIndices.size() > 0) {
                 for (const int pi : parentInstanceIndices) {
                     for (size_t i = 0; i < indices.size(); ++i) {
