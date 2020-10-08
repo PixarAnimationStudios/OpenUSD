@@ -187,9 +187,9 @@ std::mutex _ShaderInfoEntry::_cachedEntryMutex;
 
 static void
 _ResolveVstructsForNode(
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const SdfPath & nodeId,
-    MatfiltNode & node,
+    HdMaterialNode2 & node,
     std::set<SdfPath> resolvedNodeNames,
     const NdrTokenVec & shaderTypePriority,
     bool enableConditions)
@@ -322,7 +322,7 @@ _ResolveVstructsForNode(
 void
 MatfiltResolveVstructs(
     const SdfPath & networkId,
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
@@ -341,7 +341,7 @@ MatfiltResolveVstructs(
 
     for (auto & I : network.nodes) {
         const SdfPath & nodeId = I.first;
-        MatfiltNode & node = I.second;
+        HdMaterialNode2 & node = I.second;
         _ResolveVstructsForNode(
                 network,
                 nodeId,

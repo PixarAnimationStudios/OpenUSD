@@ -92,18 +92,18 @@ TF_DEFINE_PRIVATE_TOKENS(
 void
 MatfiltConvertPreviewMaterial(
     const SdfPath & networkId,
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    std::map<SdfPath, MatfiltNode> nodesToAdd;
+    std::map<SdfPath, HdMaterialNode2> nodesToAdd;
 
     SdfPath pxrSurfacePath;
 
     for (auto& nodeEntry: network.nodes) {
         SdfPath const& nodePath = nodeEntry.first;
-        MatfiltNode &node = nodeEntry.second;
+        HdMaterialNode2 &node = nodeEntry.second;
 
         if (node.nodeTypeId == _tokens->UsdPreviewSurface) {
             if (!pxrSurfacePath.IsEmpty()) {
@@ -121,7 +121,7 @@ MatfiltConvertPreviewMaterial(
                 nodePath.GetParentPath().AppendChild(
                 TfToken(nodePath.GetName() + "_PxrSurface"));
 
-            nodesToAdd[pxrSurfacePath] = MatfiltNode {
+            nodesToAdd[pxrSurfacePath] = HdMaterialNode2 {
                 _tokens->PxrSurface, 
                 // parameters:
                 {

@@ -31,7 +31,7 @@ void
 MatfiltExecFilterChain(
     MatfiltFilterChain const& filterChain,
     const SdfPath & networkId,
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)

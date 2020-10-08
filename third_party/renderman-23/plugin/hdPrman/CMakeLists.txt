@@ -46,7 +46,6 @@ pxr_shared_library(${PXR_PACKAGE}
         lightFilter
         lightFilterUtils
         material
-        matfiltConversions
         matfiltConvertPreviewMaterial
         matfiltFilterChain
         matfiltResolveVstructs
