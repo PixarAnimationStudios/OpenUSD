@@ -67,7 +67,7 @@ HgiGLOpsFn
 HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
 {
     return [copyOp] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::CopyTextureGpuToCpu");
 
         HgiTextureHandle texHandle = copyOp.gpuSourceTexture;
         HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(texHandle.Get());
@@ -133,7 +133,7 @@ HgiGLOpsFn
 HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
 {
     return [copyOp] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::CopyTextureCpuToGpu");
 
         HgiTextureDesc const& desc =
             copyOp.gpuDestinationTexture->GetDescriptor();
@@ -207,7 +207,7 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
 {
     return [copyOp] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::CopyBufferGpuToGpu");
 
         HgiBufferHandle const& srcBufHandle = copyOp.gpuSourceBuffer;
         HgiGLBuffer* srcBuffer = static_cast<HgiGLBuffer*>(srcBufHandle.Get());
@@ -242,7 +242,7 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp)
 {
     return [copyOp] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::CopyBufferCpuToGpu");
 
         if (copyOp.byteSize == 0 ||
             !copyOp.cpuSourceBuffer ||
@@ -275,7 +275,7 @@ HgiGLOpsFn
 HgiGLOps::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 {
     return [copyOp] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::CopyBufferGpuToCpu");
 
         if (copyOp.byteSize == 0 ||
             !copyOp.cpuDestinationBuffer ||
@@ -324,7 +324,7 @@ HgiGLOpsFn
 HgiGLOps::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     return [pipeline] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::BindPipeline");
         if (HgiGLGraphicsPipeline* p = static_cast<HgiGLGraphicsPipeline*>(pipeline.Get())) {
             p->BindPipeline();
         }
@@ -335,7 +335,7 @@ HgiGLOpsFn
 HgiGLOps::BindPipeline(HgiComputePipelineHandle pipeline)
 {
     return [pipeline] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::BindPipeline");
         if (HgiGLComputePipeline* p = static_cast<HgiGLComputePipeline*>(pipeline.Get())) {
             p->BindPipeline();
         }
@@ -346,7 +346,7 @@ HgiGLOpsFn
 HgiGLOps::BindResources(HgiResourceBindingsHandle res)
 {
     return [res] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::BindResources");
         if (HgiGLResourceBindings* rb =
             static_cast<HgiGLResourceBindings*>(res.Get()))
         {
@@ -369,7 +369,7 @@ HgiGLOps::SetConstantValues(
     memcpy(dataCopy, data, byteSize);
 
     return [pipeline, bindIndex, byteSize, dataCopy] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::SetConstantValues");
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
@@ -393,7 +393,7 @@ HgiGLOps::SetConstantValues(
     memcpy(dataCopy, data, byteSize);
 
     return [pipeline, bindIndex, byteSize, dataCopy] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::SetConstantValues");
         HgiGLShaderProgram* glProgram =
             static_cast<HgiGLShaderProgram*>(
                 pipeline->GetDescriptor().shaderProgram.Get());
@@ -411,7 +411,7 @@ HgiGLOps::BindVertexBuffers(
     std::vector<uint32_t> const& byteOffsets)
 {
     return [firstBinding, vertexBuffers, byteOffsets] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::BindVertexBuffers");
         TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
         TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
 
@@ -442,7 +442,7 @@ HgiGLOps::Draw(
     uint32_t instanceCount)
 {
     return [primitiveType, vertexCount, firstVertex, instanceCount] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::Draw");
         TF_VERIFY(instanceCount>0);
 
         glDrawArraysInstanced(
@@ -465,7 +465,7 @@ HgiGLOps::DrawIndirect(
 {
     return [primitiveType, drawParameterBuffer, drawBufferOffset, drawCount, 
             stride] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::DrawIndirect");
 
         HgiGLBuffer* drawBuf =
             static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
@@ -493,7 +493,7 @@ HgiGLOps::DrawIndexed(
 {
     return [primitiveType, indexBuffer, indexCount, indexBufferByteOffset,
             vertexOffset, instanceCount] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::DrawIndexed");
         TF_VERIFY(instanceCount>0);
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
@@ -527,7 +527,7 @@ HgiGLOps::DrawIndexedIndirect(
 {
     return [primitiveType, indexBuffer, drawParameterBuffer, drawBufferOffset,
             drawCount, stride] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::DrawIndexedIndirect");
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
         HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
@@ -557,7 +557,7 @@ HgiGLOpsFn
 HgiGLOps::Dispatch(int dimX, int dimY)
 {
     return [dimX, dimY] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::Dispatch");
 
         glDispatchCompute(dimX, dimY, 1);
 
@@ -571,7 +571,7 @@ HgiGLOps::BindFramebufferOp(
     HgiGraphicsCmdsDesc const& desc)
 {
     return [device, desc] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::BindFramebufferOp");
 
         TF_VERIFY(desc.HasAttachments(), "Missing attachments");
 
@@ -660,7 +660,7 @@ HgiGLOpsFn
 HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     return [texture] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::GenerateMipMaps");
 
         HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texture.Get());
         if (glTex) {
@@ -676,7 +676,7 @@ HgiGLOps::ResolveFramebuffer(
     HgiGraphicsCmdsDesc const &graphicsCmds)
 {
     return [device, graphicsCmds] {
-        TRACE_FUNCTION();
+        TRACE_SCOPE("HgiGLOps::ResolveFramebuffer");
 
         const uint32_t resolvedFramebuffer = device->AcquireFramebuffer(
             graphicsCmds, /* resolved = */ true);
