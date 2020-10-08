@@ -1632,13 +1632,19 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         if (name == _tokens->skelLocalToWorld) {
             // PERFORMANCE:
             // Would be better if we could access a shared xformCache here?
-
             UsdGeomXformCache xformCache(time);
-            UsdPrim const& skelPrim = skelData->skelQuery.GetPrim();
+
+            UsdPrim skelPrim(skelData->skelQuery.GetPrim());
+            if (skelPrim.IsInPrototype()) {
+                const auto bindingIt = 
+                    _skelBindingMap.find(skinnedPrimData->skelPath);
+                if (bindingIt != _skelBindingMap.end()) {
+                    skelPrim = bindingIt->second.GetSkeleton().GetPrim();
+                }
+            }
             GfMatrix4d skelLocalToWorld =
                 xformCache.GetLocalToWorldTransform(skelPrim);
             return VtValue(skelLocalToWorld);
-
         }
     }
 
