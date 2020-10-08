@@ -95,7 +95,7 @@ class TestUsdSkelCache(unittest.TestCase):
         query = cache.GetSkelQuery(
             UsdSkel.Skeleton.Get(stage, "/AnimBinding/Instance/Override"))
         self.assertTrue(query)
-        self.assertTrue(query.GetAnimQuery().GetPrim().IsInMaster())
+        self.assertTrue(query.GetAnimQuery().GetPrim().IsInPrototype())
 
 
     def test_InheritedSkeletonBinding(self):
@@ -237,7 +237,7 @@ class TestUsdSkelCache(unittest.TestCase):
         self.assertFalse(cache.GetSkinningQuery(inheritBindingMesh))
         self.assertFalse(cache.GetSkinningQuery(overrideBindingMesh))
 
-        # Need to explicitly traverse instance masters to see these bindings.
+        # Need to explicitly traverse instance prototypes to see these bindings.
         cache.Populate(root, Usd.TraverseInstanceProxies())
 
         query = cache.GetSkinningQuery(inheritBindingMesh)
