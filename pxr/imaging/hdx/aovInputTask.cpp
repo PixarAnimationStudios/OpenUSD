@@ -29,6 +29,8 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -202,33 +204,47 @@ HdxAovInputTask::_UpdateTexture(
         buffer->GetHeight(),
         buffer->GetDepth());
 
+    HgiFormat bufFormat = HdxHgiConversions::GetHgiFormat(buffer->GetFormat());
     size_t pixelByteSize = HdDataSizeOfFormat(buffer->GetFormat());
+    size_t dataByteSize = dim[0] * dim[1] * dim[2] * pixelByteSize;
 
-    // XXX If dimension and format have not changed we could try to re-use the
-    // existing texture resource and upload new pixels instead of destroying.
-    // But atm we don't have Hgi api for this.
-    if (texture) {
-        _GetHgi()->DestroyTexture(&texture);
+    // Update the existing texture if specs are compatible. This is more
+    // efficient than re-creating, because the underlying framebuffer that
+    // had the old texture attached would also need to be re-created.
+    if (texture && texture->GetDescriptor().dimensions == dim &&
+            texture->GetDescriptor().format == bufFormat) {
+        const void* pixelData = buffer->Map();
+        HgiTextureCpuToGpuOp copyOp;
+        copyOp.bufferByteSize = dataByteSize;
+        copyOp.cpuSourceBuffer = pixelData;
+        copyOp.gpuDestinationTexture = texture;
+        HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
+        blitCmds->PushDebugGroup("Upload CPU texels");
+        blitCmds->CopyTextureCpuToGpu(copyOp);
+        blitCmds->PopDebugGroup();
+        _GetHgi()->SubmitCmds(blitCmds.get());
+        buffer->Unmap();
+    } else {
+        // Create a new texture
+        HgiTextureDesc texDesc;
+        texDesc.debugName = "AovInput Texture";
+        texDesc.dimensions = dim;
+
+        const void* pixelData = buffer->Map();
+
+        texDesc.format = bufFormat;
+        texDesc.initialData = pixelData;
+        texDesc.layerCount = 1;
+        texDesc.mipLevels = 1;
+        texDesc.pixelsByteSize = dataByteSize;
+        texDesc.sampleCount = HgiSampleCount1;
+        texDesc.usage = HgiTextureUsageBitsColorTarget | 
+                        HgiTextureUsageBitsShaderRead;
+
+        texture = _GetHgi()->CreateTexture(texDesc);
+
+        buffer->Unmap();
     }
-
-    HgiTextureDesc texDesc;
-    texDesc.debugName = "AovInput Texture";
-    texDesc.dimensions = dim;
-
-    const void* pixelData = buffer->Map();
-
-    texDesc.format = HdxHgiConversions::GetHgiFormat(buffer->GetFormat());
-    texDesc.initialData = pixelData;
-    texDesc.layerCount = 1;
-    texDesc.mipLevels = 1;
-    texDesc.pixelsByteSize = dim[0] * dim[1] * dim[2] * pixelByteSize;
-    texDesc.sampleCount = HgiSampleCount1;
-    texDesc.usage = HgiTextureUsageBitsColorTarget | 
-                    HgiTextureUsageBitsShaderRead;
-
-    texture = _GetHgi()->CreateTexture(texDesc);
-
-    buffer->Unmap();
 }
 
 void

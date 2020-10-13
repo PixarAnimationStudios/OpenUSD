@@ -64,7 +64,9 @@ void main(void)
 -- glsl ColorCorrection.Fragment
 
 layout (binding=0) uniform sampler2D colorIn;
-layout (binding=1) uniform sampler3D LUT3dIn;
+#if defined(GLSLFX_USE_OCIO)
+    layout (binding=1) uniform sampler3D LUT3dIn;
+#endif
 
 // Similar to D3DX_DXGIFormatConvert.inl, but branchless
 // https://www.shadertoy.com/view/wds3zM

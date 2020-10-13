@@ -64,7 +64,8 @@ HgiGLResourceBindings::BindResources()
             images.resize(unit+1, 0);
         }
 
-        if (texDesc.resourceType == HgiBindResourceTypeSamplerImage) {
+        if (texDesc.resourceType == HgiBindResourceTypeSamplerImage ||
+            texDesc.resourceType == HgiBindResourceTypeCombinedSamplerImage) {
             // Texture sampling (for graphics pipeline)
             hasTex = true;
             HgiTextureHandle const& texHandle = texDesc.textures.front();
