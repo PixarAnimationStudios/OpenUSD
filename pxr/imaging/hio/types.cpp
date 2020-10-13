@@ -168,80 +168,38 @@ HioGetComponentCount(HioFormat format)
 }
 
 size_t
+HioGetDataSizeOfType(HioType type)
+{
+    switch (type) {
+        case HioTypeUnsignedByte:
+        case HioTypeSignedByte:
+            return 1;
+
+        case HioTypeUnsignedShort:
+        case HioTypeSignedShort:
+            return 2;
+
+        case HioTypeUnsignedInt:
+        case HioTypeInt:
+            return 4;
+
+        case HioTypeHalfFloat:
+            return 2;
+
+        case HioTypeFloat:
+            return 4;
+
+        case HioTypeDouble:
+            return 8;
+    }
+    TF_CODING_ERROR("Missing type");
+    return 1;
+}
+
+size_t
 HioGetDataSizeOfType(HioFormat format)
 {
-    switch (format) {
-        case HioFormatUNorm8:
-        case HioFormatUNorm8Vec2:
-        case HioFormatUNorm8Vec3:
-        case HioFormatUNorm8Vec4:
-
-        case HioFormatUNorm8srgb:
-        case HioFormatUNorm8Vec2srgb:
-        case HioFormatUNorm8Vec3srgb:
-        case HioFormatUNorm8Vec4srgb:
-
-        case HioFormatBC7UNorm8Vec4:
-        case HioFormatBC7UNorm8Vec4srgb:
-            return sizeof(unsigned char);
-
-        case HioFormatSNorm8:
-        case HioFormatSNorm8Vec2:
-        case HioFormatSNorm8Vec3:
-        case HioFormatSNorm8Vec4:
-            return sizeof(signed char);
-
-        case HioFormatFloat16:
-        case HioFormatFloat16Vec2:
-        case HioFormatFloat16Vec3:
-        case HioFormatFloat16Vec4:
-            return sizeof(GfHalf);
-
-        case HioFormatFloat32:
-        case HioFormatFloat32Vec2:
-        case HioFormatFloat32Vec3:
-        case HioFormatFloat32Vec4:
-        case HioFormatBC6FloatVec3:
-        case HioFormatBC6UFloatVec3:
-            return sizeof(float);
-
-        case HioFormatDouble64:
-        case HioFormatDouble64Vec2:
-        case HioFormatDouble64Vec3:
-        case HioFormatDouble64Vec4:
-            return sizeof(double);
-
-        case HioFormatUInt16:
-        case HioFormatUInt16Vec2:
-        case HioFormatUInt16Vec3:
-        case HioFormatUInt16Vec4:
-            return sizeof(unsigned short);
-
-        case HioFormatInt16:
-        case HioFormatInt16Vec2:
-        case HioFormatInt16Vec3:
-        case HioFormatInt16Vec4:
-            return sizeof(signed short);
-
-        case HioFormatUInt32:
-        case HioFormatUInt32Vec2:
-        case HioFormatUInt32Vec3:
-        case HioFormatUInt32Vec4:
-            return sizeof(unsigned int);
-
-        case HioFormatInt32:
-        case HioFormatInt32Vec2:
-        case HioFormatInt32Vec3:
-        case HioFormatInt32Vec4:
-            return sizeof(int);
-
-        case HioFormatInvalid:
-        case HioFormatCount:
-            TF_CODING_ERROR("Unsupported format");
-            return 1;
-    }
-    TF_CODING_ERROR("Missing Format");
-    return 1;
+    return HioGetDataSizeOfType(HioGetHioType(format));
 }
 
 size_t

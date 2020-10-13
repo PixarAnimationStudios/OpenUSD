@@ -142,6 +142,10 @@ HioType HioGetHioType(HioFormat);
 HIO_API 
 int HioGetComponentCount(HioFormat format);
 
+/// Return the size in bytes for given type.
+HIO_API
+size_t HioGetDataSizeOfType(HioType type);
+
 /// Return the size in bytes for a component (channel) in the given HioFormat. 
 HIO_API
 size_t HioGetDataSizeOfType(HioFormat hioFormat);
