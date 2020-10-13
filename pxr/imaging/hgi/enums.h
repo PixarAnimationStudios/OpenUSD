@@ -84,9 +84,11 @@ enum HgiTextureType
 /// <li>HgiTextureUsageBitsStencilTarget:
 ///   The texture is a stencil attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsShaderRead:
-///   The texture is sampled from in a shader (image load / sampling)</li>
+///   The texture is sampled from in a shader (sampling)</li>
 /// <li>HgiTextureUsageBitsShaderWrite:
-///   The texture is written into from in a shader (image store)</li>
+///   The texture is written into from in a shader (image store)
+///   When a texture is used as HgiBindResourceTypeStorageImage you must
+///   add this flag (even if you only read from the image).</li>
 ///
 /// <li>HgiTextureUsageCustomBitsBegin:
 ///   This bit (and any bit after) can be used to attached custom, backend
