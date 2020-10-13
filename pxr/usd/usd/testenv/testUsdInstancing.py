@@ -895,10 +895,34 @@ class TestUsdInstancing(unittest.TestCase):
         # the nested instance /__Prototype_1/Ref1_Child, even though
         # they ultimately have the same child prims. This is something
         # that could be examined for further optimization in the future.
+        # SubrootRef_3 also shares the same prototype as SubrootRef_1 and 
+        # SubrootRef_2 even though its subroot reference is to 
+        # /RootRef/Ref1_Child. This subroot reference provides an ancestral 
+        # reference to /Ref1/Ref1_Child that can be included in the instance key
+        # because it belongs to the direct subroot reference arc (as opposed to
+        # being strictly ancestral). This combined with /RootRef/Ref1_Child 
+        # having no specs means it can share its prototype with the other 
+        # SubrootRef prims.
         ValidateExpectedInstances(s,
-            { '/__Prototype_1': ['/Ref_1'],
+            { '/__Prototype_1': ['/RootRef'],
               '/__Prototype_2': ['/__Prototype_1/Ref1_Child'],
-              '/__Prototype_3': ['/SubrootRef_1', '/SubrootRef_2'] })
+              '/__Prototype_3': ['/SubrootRef_1', 
+                                 '/SubrootRef_2', 
+                                 '/SubrootRef_3'] })
+
+        # Now add an over for /RootRef/Ref1_Child. This now gets included in 
+        # the instance key for SubrootRef_3 so it uses a different prototype
+        # SubrootRef 1 and 2.
+        rootLayer = s.GetRootLayer()
+        Sdf.PrimSpec(rootLayer.GetPrimAtPath('/RootRef'), 'Ref1_Child', 
+                     Sdf.SpecifierOver)
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/RootRef'],
+              '/__Prototype_2': ['/__Prototype_1/Ref1_Child'],
+              '/__Prototype_3': ['/SubrootRef_1', 
+                                 '/SubrootRef_2'],
+              '/__Prototype_4': ['/SubrootRef_3'] })
+
 
     def test_PropertyChanges(self):
         """Test that changes to properties that affect prototypes cause the

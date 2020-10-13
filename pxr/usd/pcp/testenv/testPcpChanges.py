@@ -24,6 +24,7 @@
 
 from pxr import Sdf, Pcp, Tf
 import unittest
+from contextlib import contextmanager
 
 class TestPcpChanges(unittest.TestCase):
     def test_EmptySublayerChanges(self):
@@ -668,8 +669,6 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetSpecChanges(), [])
             self.assertEqual(cp.GetPrimChanges(), [])
 
-    # Instancing is disabled in Usd mode, so we don't test there.
-    # TestInstancingChanges(usd = False)
     def test_InstancingChanges(self):
         refLayer = Sdf.Layer.CreateAnonymous()
         refParentSpec = Sdf.PrimSpec(refLayer, 'Parent', Sdf.SpecifierDef)
@@ -681,6 +680,7 @@ class TestPcpChanges(unittest.TestCase):
             Sdf.Reference(refLayer.identifier, '/Parent'))
         childSpec = Sdf.PrimSpec(parentSpec, 'DirectChild', Sdf.SpecifierDef)
 
+        # Instancing is only enabled in Usd mode.
         pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer), usd=True)
 
         # /Parent is initially not tagged as an instance, so we should
@@ -716,6 +716,147 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(len(err), 0)
         self.assertFalse(pi.IsInstanceable())
         self.assertEqual(pi.ComputePrimChildNames(), (['RefChild', 'DirectChild'], []))
+
+    def test_InstancingChangesForSubrootArcs(self):
+        # First layer: Build up the first reference structure 
+        refLayer = Sdf.Layer.CreateAnonymous()
+        # Base spec name space hierarchy: /Base/Child/BaseLeaf.
+        baseSpec = Sdf.PrimSpec(refLayer, 'Base', Sdf.SpecifierDef)
+        baseChildSpec = Sdf.PrimSpec(baseSpec, 'Child', Sdf.SpecifierDef)
+        baseLeafSpec = Sdf.PrimSpec(baseChildSpec, 'BaseLeaf', Sdf.SpecifierDef)
+
+        # /A references /Base
+        refASpec = Sdf.PrimSpec(refLayer, 'A', Sdf.SpecifierDef)
+        refASpec.referenceList.Add(Sdf.Reference('', '/Base'))
+
+        # /B references /A
+        refBSpec = Sdf.PrimSpec(refLayer, 'B', Sdf.SpecifierDef)
+        refBSpec.referenceList.Add(Sdf.Reference('', '/A'))
+
+        # Second layer: Same structure as layer with incmented names for clarity
+        # when both layers have prims referenced
+        refLayer2 = Sdf.Layer.CreateAnonymous()
+        base2Spec = Sdf.PrimSpec(refLayer2, 'Base2', Sdf.SpecifierDef)
+        base2ChildSpec = Sdf.PrimSpec(base2Spec, 'Child', Sdf.SpecifierDef)
+        base2LeafSpec = Sdf.PrimSpec(base2ChildSpec, 'Base2Leaf', 
+                                     Sdf.SpecifierDef)
+
+        # /A2 references /Base2
+        refA2Spec = Sdf.PrimSpec(refLayer2, 'A2', Sdf.SpecifierDef)
+        refA2Spec.referenceList.Add(Sdf.Reference('', '/Base2'))
+
+        # /B2 references /A2
+        refB2Spec = Sdf.PrimSpec(refLayer2, 'B2', Sdf.SpecifierDef)
+        refB2Spec.referenceList.Add(Sdf.Reference('', '/A2'))
+
+        # Root layer: 
+        # Instance spec namespace hierarchy: /Instance/Child/InstanceLeaf
+        # /Instance references /B2. 
+        # /Instance/Child subroot references /B/Child
+        # 
+        # What this gives us is the following prim index graph for
+        # /Instance/Child:
+        # 
+        # /Instance/Child --> /B/Child -a-> /A/Child -a-> /Base/Child
+        #         |
+        #         +-a-> /B2/Child -a-> /A2/Child -a-> /Base2/Child
+        #
+        # All reference arcs are "ancestral" except the direct reference from 
+        # /Instance/Child to /B/Child. Ancestral arcs under a direct arc are 
+        # treated differently for instancing than normal ancestral arcs.
+        layer = Sdf.Layer.CreateAnonymous()
+        instanceSpec = Sdf.PrimSpec(layer, 'Instance', Sdf.SpecifierDef)
+        instanceSpec.referenceList.Add(
+            Sdf.Reference(refLayer2.identifier, '/B2'))
+        instanceChildSpec = Sdf.PrimSpec(instanceSpec, 'Child', 
+                                         Sdf.SpecifierDef)
+        instanceChildSpec.referenceList.Add(
+            Sdf.Reference(refLayer.identifier, '/B/Child'))
+        instanceLeafSpec = Sdf.PrimSpec(instanceChildSpec, 'InstanceLeaf', 
+                                        Sdf.SpecifierDef)
+
+        # Instancing is only enabled in Usd mode.
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(layer), usd=True)
+
+        # Compute our initial prim index. It is not yet instanceable and
+        # all leaf nodes appear when computing prim child names.
+        (pi, err) = pcp.ComputePrimIndex('/Instance/Child')
+        self.assertEqual(len(err), 0)
+        self.assertFalse(pi.IsInstanceable())
+        self.assertEqual(pi.ComputePrimChildNames(), 
+                         (['Base2Leaf', 'BaseLeaf', 'InstanceLeaf'], []))
+
+        # Helper context for verifying the change processing of the changes
+        # affecting /Instance/Child
+        @contextmanager
+        def _VerifyChanges(significant=False, spec=False, prim=False):
+            primIndexPath = '/Instance/Child'
+            # Verify that we have a computed prim index for /Instance/Child
+            # before making the change .
+            self.assertTrue(pcp.FindPrimIndex(primIndexPath))
+            with Pcp._TestChangeProcessor(pcp) as cp:
+                try: 
+                    yield cp
+                finally:
+                    self.assertEqual(cp.GetSignificantChanges(), 
+                                     [primIndexPath] if significant else [])
+                    self.assertEqual(cp.GetSpecChanges(), 
+                                     [primIndexPath] if spec else [])
+                    self.assertEqual(cp.GetPrimChanges(), 
+                                     [primIndexPath] if prim else [])
+                    # Significant and prim changes do invalidate the prim index.
+                    if significant or prim:
+                        self.assertFalse(pcp.FindPrimIndex(primIndexPath))
+                    else:
+                        self.assertTrue(pcp.FindPrimIndex(primIndexPath))
+
+        # Add Child spec to /A. This is just a spec change to /Instance/Child
+        # as /Instance/Child is not instanceable yet.
+        with _VerifyChanges(spec=True):
+            Sdf.PrimSpec(refASpec, 'Child', Sdf.SpecifierOver)
+
+        # Add Child spec to /A2. This is just a spec change to /Instance/Child.
+        with _VerifyChanges(spec=True):
+            Sdf.PrimSpec(refA2Spec, 'Child', Sdf.SpecifierOver)
+
+        # Delete both Child specs we just added.
+        with _VerifyChanges(spec=True):
+            del refASpec.nameChildren['Child']
+        with _VerifyChanges(spec=True):
+            del refA2Spec.nameChildren['Child']
+
+        # Now set /Base/Child to instanceable which is always a significant 
+        # change.
+        with _VerifyChanges(significant=True):
+            baseChildSpec.instanceable = True
+
+        # /Instance/Child is now instanceable. BaseLeaf is still returned by
+        # ComputePrimChildren because the ancestral node that provides it comes 
+        # from a subtree composed for a direct subroot reference arc so it is 
+        # part of the instance. Base2Leaf comes from an actual ancestral arc so
+        # it gets skipped when computing children as does the local child 
+        # opinion for InstanceLeaf.
+        (pi, err) = pcp.ComputePrimIndex('/Instance/Child')
+        self.assertEqual(len(err), 0)
+        self.assertTrue(pi.IsInstanceable())
+        self.assertEqual(pi.ComputePrimChildNames(), (['BaseLeaf'], []))
+
+        # Add Child spec to /A2 again now that /Instance/Child is instanceable. 
+        # This is still just a spec change to /Instance/Child as true ancestral
+        # nodes are ignored by the instance key.
+        with _VerifyChanges(spec=True):
+            Sdf.PrimSpec(refA2Spec, 'Child', Sdf.SpecifierOver)
+
+        # Add Child spec to /A again. This is a significant change as /A/Child
+        # is an ancestral node that's part of a direct arc's subtree and is
+        # part of the instance key.
+        with _VerifyChanges(significant=True):
+            Sdf.PrimSpec(refASpec, 'Child', Sdf.SpecifierOver)
+
+        (pi, err) = pcp.ComputePrimIndex('/Instance/Child')
+        self.assertEqual(len(err), 0)
+        self.assertTrue(pi.IsInstanceable())
+        self.assertEqual(pi.ComputePrimChildNames(), (['BaseLeaf'], []))
 
     def test_InertPrimChanges(self):
         refLayer = Sdf.Layer.CreateAnonymous()
