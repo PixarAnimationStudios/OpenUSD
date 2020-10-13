@@ -80,6 +80,11 @@ const HioFormat FORMAT_DESC[] =
     HioFormatFloat32Vec3,   // Float32Vec3
     HioFormatFloat32Vec4,   // Float32Vec4
 
+    HioFormatUInt16,         // UInt16
+    HioFormatUInt16Vec2,     // UInt16Vec2
+    HioFormatUInt16Vec3,     // UInt16Vec3
+    HioFormatUInt16Vec4,     // UInt16Vec4
+
     HioFormatInt32,         // Int32
     HioFormatInt32Vec2,     // Int32Vec2
     HioFormatInt32Vec3,     // Int32Vec3
@@ -100,11 +105,13 @@ const HioFormat FORMAT_DESC[] =
 // A few random format validations to make sure out Hio table stays aligned
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (TfArraySize(FORMAT_DESC) == HgiFormatCount &&
+    return (HgiFormatCount==28 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
-            HgiFormatUNorm8Vec4srgb == 18) ? true : false;
+            HgiFormatUInt16Vec4 == 17 &&
+            HgiFormatInt32Vec4 == 21 &&
+            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 

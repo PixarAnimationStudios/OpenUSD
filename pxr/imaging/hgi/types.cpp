@@ -35,6 +35,7 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8:
     case HgiFormatFloat16:
     case HgiFormatFloat32:
+    case HgiFormatUInt16:
     case HgiFormatInt32:
     case HgiFormatFloat32UInt8: // treat as a single component
         return 1;
@@ -42,12 +43,14 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8Vec2:
     case HgiFormatFloat16Vec2:
     case HgiFormatFloat32Vec2:
+    case HgiFormatUInt16Vec2:
     case HgiFormatInt32Vec2:
         return 2;
     // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     case HgiFormatFloat16Vec3:
     case HgiFormatFloat32Vec3:
+    case HgiFormatUInt16Vec3:
     case HgiFormatInt32Vec3:
     case HgiFormatBC6FloatVec3:
     case HgiFormatBC6UFloatVec3:
@@ -56,6 +59,7 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8Vec4:
     case HgiFormatFloat16Vec4:
     case HgiFormatFloat32Vec4:
+    case HgiFormatUInt16Vec4:
     case HgiFormatInt32Vec4:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
@@ -98,12 +102,16 @@ HgiGetDataSizeOfFormat(
     case HgiFormatUNorm8Vec4srgb:
         return 4;
     case HgiFormatFloat16:
+    case HgiFormatUInt16:
         return 2;
     case HgiFormatFloat16Vec2:
+    case HgiFormatUInt16Vec2:
         return 4;
     case HgiFormatFloat16Vec3:
+    case HgiFormatUInt16Vec3:
         return 6;
     case HgiFormatFloat16Vec4:
+    case HgiFormatUInt16Vec4:
         return 8;
     case HgiFormatFloat32:
     case HgiFormatInt32:

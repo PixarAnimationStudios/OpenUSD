@@ -54,6 +54,11 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatInvalid,      // Unsupported by Metal
     MTLPixelFormatRGBA32Float,  // HgiFormatFloat32Vec4,
 
+    MTLPixelFormatR16Uint,      // HgiFormatUInt16,
+    MTLPixelFormatRG16Uint,     // HgiFormatUInt16Vec2,
+    MTLPixelFormatInvalid,      // Unsupported by Metal
+    MTLPixelFormatRGBA16Uint,   // HgiFormatUInt16Vec4,
+
     MTLPixelFormatR32Sint,      // HgiFormatInt32,
     MTLPixelFormatRG32Sint,     // HgiFormatInt32Vec2,
     MTLPixelFormatInvalid,      // Unsupported by Metal
@@ -76,11 +81,12 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
 // A few random format validations to make sure out GL table stays aligned
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (TfArraySize(_PIXEL_FORMAT_DESC) == HgiFormatCount &&
+    return (HgiFormatCount==28 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
-            HgiFormatUNorm8Vec4srgb == 18) ? true : false;
+            HgiFormatUInt16Vec4 == 17 &&
+            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(),
@@ -112,6 +118,11 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
     MTLVertexFormatFloat3,              // HgiFormatFloat32Vec3,
     MTLVertexFormatFloat4,              // HgiFormatFloat32Vec4,
 
+    MTLVertexFormatUShort,              // HgiFormatUInt16,
+    MTLVertexFormatUShort2,             // HgiFormatUInt16Vec2,
+    MTLVertexFormatUShort3,             // HgiFormatUInt16Vec3,
+    MTLVertexFormatUShort4,             // HgiFormatUInt16Vec4,
+
     MTLVertexFormatInt,                 // HgiFormatInt32,
     MTLVertexFormatInt2,                // HgiFormatInt32Vec2,
     MTLVertexFormatInt3,                // HgiFormatInt32Vec3,
@@ -130,11 +141,12 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
 };
 
 constexpr bool _CompileTimeValidateHgiVertexFormatTable() {
-    return (TfArraySize(_VERTEX_FORMAT_DESC) == HgiFormatCount &&
+    return (HgiFormatCount==28 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
-            HgiFormatUNorm8Vec4srgb == 18) ? true : false;
+            HgiFormatUInt16Vec4 == 17 &&
+            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiVertexFormatTable(),

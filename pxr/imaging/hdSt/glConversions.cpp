@@ -55,6 +55,11 @@ static const HioFormat FORMAT_DESC[] =
     HioFormatFloat32Vec3,   // HdFormatFloat32Vec3,
     HioFormatFloat32Vec4,   // HdFormatFloat32Vec4,
 
+    HioFormatUInt16,        // HdFormatUInt16,
+    HioFormatUInt16Vec2,    // HdFormatUInt16Vec2,
+    HioFormatUInt16Vec3,    // HdFormatUInt16Vec3,
+    HioFormatUInt16Vec4,    // HdFormatUInt16Vec4,
+
     HioFormatInt32,         // HdFormatInt32,
     HioFormatInt32Vec2,     // HdFormatInt32Vec2,
     HioFormatInt32Vec3,     // HdFormatInt32Vec3,

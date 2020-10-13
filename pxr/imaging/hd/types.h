@@ -417,6 +417,12 @@ enum HdFormat
     HdFormatFloat32Vec3,
     HdFormatFloat32Vec4,
 
+    // UInt16 - a 2-byte unsigned integer
+    HdFormatUInt16,
+    HdFormatUInt16Vec2,
+    HdFormatUInt16Vec3,
+    HdFormatUInt16Vec4,
+
     // Int32 - a 4-byte signed integer
     HdFormatInt32,
     HdFormatInt32Vec2,
