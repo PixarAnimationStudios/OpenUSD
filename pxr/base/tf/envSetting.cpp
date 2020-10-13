@@ -67,47 +67,48 @@ public:
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
             int lineNo = 0;
-            while (fgets(buffer, 1024, fp)) {
-                if (buffer[strlen(buffer)-1] != '\n') {
-                    fprintf(stderr, "File '%s' "
-                            "(from PIXAR_TF_ENV_SETTING_FILE): "
-                            "line %d is too long: ignored\n",
-                            fileName.c_str(), lineNo+1);
-                    continue;
-                }
+            auto emitError = [&fileName, &lineNo](char const *fmt, ...)
+                /*ARCH_PRINTF_FUNCTION(1, 2)*/ {
+                va_list ap;
+                va_start(ap, fmt);
+                fprintf(stderr, "File '%s' (From PIXAR_TF_ENV_SETTING_FILE) "
+                        "line %d: %s.\n", fileName.c_str(), lineNo,
+                        TfVStringPrintf(fmt, ap).c_str());
+                va_end(ap);
+            };
+
+            while (fgets(buffer, sizeof(buffer), fp)) {
                 ++lineNo;
-
-                if (TfStringTrim(buffer).empty() || buffer[0] == '#')
+                string line = string(buffer);
+                if (line.back() != '\n') {
+                    emitError("line too long; ignored");
                     continue;
+                }
 
-                if (char* eqPtr = strchr(buffer, '=')) {
-                    string key = TfStringTrim(string(buffer, eqPtr));
-                    string value = TfStringTrim(string(eqPtr+1));
-                    if (!key.empty()) {
-                        ArchSetEnv(key, value, false /* overwrite */);
+                string trimmed = TfStringTrim(line);
+                if (trimmed.empty() || trimmed.front() == '#') {
+                    continue;
+                }
 
+                size_t eqPos = trimmed.find('=');
+                if (eqPos == std::string::npos) {
+                    emitError("no '=' found");
+                    continue;
+                }
+                    
+                string key = TfStringTrim(trimmed.substr(0, eqPos));
+                string value = TfStringTrim(trimmed.substr(eqPos+1));
+                if (key.empty()) {
+                    emitError("empty key");
+                    continue;
+                }
+                    
+                ArchSetEnv(key, value, /*overwrite=*/false);
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-                        if (syncPython) {
-                            if (ArchGetEnv(key) == value) {
-                                TfPySetenv(key, value);
-                            }
-                        }
+                if (syncPython && ArchGetEnv(key) == value) {
+                    TfPySetenv(key, value);
+                }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-
-                    }
-                    else {
-                        fprintf(stderr, "File '%s' "
-                                "(from PIXAR_TF_ENV_SETTING_FILE): "
-                                "empty key on line %d\n",
-                                fileName.c_str(), lineNo);
-                    }
-                }
-                else {
-                    fprintf(stderr, "File '%s' "
-                            "(from PIXAR_TF_ENV_SETTING_FILE): "
-                            "no '=' found on line %d\n",
-                            fileName.c_str(), lineNo);
-                }
             }
 
             fclose(fp);
@@ -155,14 +156,13 @@ public:
         }
     }
 
-    VariantType LookupByName(string const& name) {
+    VariantType const *LookupByName(string const& name) const {
         std::lock_guard<std::mutex> lock(_lock);
-        VariantType* v = TfMapLookupPtr(_valuesByName, name);
-        return v ? *v : VariantType(); 
+        return TfMapLookupPtr(_valuesByName, name);
     }
 
 private:
-    std::mutex _lock;
+    mutable std::mutex _lock;
     TfHashMap<string, VariantType, TfHash> _valuesByName;
     bool _printAlerts;
 };
@@ -226,7 +226,7 @@ template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
 TF_API
-boost::variant<int, bool, std::string>
+boost::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
