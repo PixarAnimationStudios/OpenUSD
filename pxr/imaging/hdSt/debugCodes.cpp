@@ -45,6 +45,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print composed GLSLFX configuration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_FAILING_SHADER_SOURCE,
         "Print generated shader source code for shaders that fail compilation");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_FAILING_SHADER_SOURCEFILE,
+        "Write out generated shader source code to files for shaders that "
+        "fail compilation");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCE,
         "Print generated shader source code");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCEFILE,

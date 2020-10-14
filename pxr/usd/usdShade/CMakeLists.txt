@@ -13,10 +13,12 @@ pxr_library(usdShade
 
     PUBLIC_CLASSES
         connectableAPI
+        connectableAPIBehavior
         coordSysAPI
         input
         material
         materialBindingAPI
+        nodeDefAPI
         output
         shader
         shaderDefParser
@@ -38,6 +40,7 @@ pxr_library(usdShade
         wrapInput.cpp
         wrapMaterial.cpp
         wrapMaterialBindingAPI.cpp
+        wrapNodeDefAPI.cpp
         wrapOutput.cpp
         wrapShader.cpp
         wrapShaderDefParser.cpp

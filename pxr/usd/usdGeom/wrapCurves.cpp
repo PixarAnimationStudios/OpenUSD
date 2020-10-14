@@ -184,6 +184,8 @@ WRAP_CUSTOM {
         .def("ComputeExtent",
             &_ComputeExtent, 
             (arg("points"), arg("widths")))
+        .def("GetCurveCount", &UsdGeomCurves::GetCurveCount,
+            arg("timeCode")=UsdTimeCode::Default())
         .staticmethod("ComputeExtent")
         ;
 }

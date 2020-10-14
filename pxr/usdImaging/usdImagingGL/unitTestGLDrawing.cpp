@@ -244,6 +244,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _showRender(UsdImagingGLRenderParams().showRender)
     , _showProxy(UsdImagingGLRenderParams().showProxy)
     , _clearOnce(false)
+    , _presentDisabled(false)
 {
 }
 
@@ -600,6 +601,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-clearOnce") == 0) {
             _clearOnce = true;
+        }
+        else if (strcmp(argv[i], "-presentDisabled") == 0) {
+            _presentDisabled = true;
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);

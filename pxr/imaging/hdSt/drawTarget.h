@@ -27,41 +27,30 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
-#include "pxr/imaging/hdSt/textureResourceHandle.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hgi/texture.h"
-#include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define HDST_DRAW_TARGET_TOKENS                 \
-    (attachments)                               \
     (camera)                                    \
     (collection)                                \
-    (depthClearValue)                           \
     (drawTargetSet)                             \
     (enable)                                    \
     (resolution)                                \
     (aovBindings)                               \
-    (depth)                                     \
     (depthPriority)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_API, HDST_DRAW_TARGET_TOKENS);
 
 class HdCamera;
-class HdStDrawTargetAttachmentDescArray;
-
-using GlfGLContextSharedPtr = std::shared_ptr<class GlfGLContext>;
-
+class HdRenderIndex;
 using HdStDrawTargetPtrVector = std::vector<class HdStDrawTarget *>;
 
 /// \class HdStDrawTarget
@@ -89,42 +78,16 @@ public:
         DirtyDTEnable           = 1 <<  0,
         DirtyDTCamera           = 1 <<  1,
         DirtyDTResolution       = 1 <<  2,
-        DirtyDTAttachment       = 1 <<  3, // Legacy
         DirtyDTAovBindings      = 1 <<  4,
-        DirtyDTDepthClearValue  = 1 <<  5, // Legacy
         DirtyDTDepthPriority    = 1 <<  6,
         DirtyDTCollection       = 1 <<  7,
         AllDirty                = (DirtyDTEnable
                                    |DirtyDTCamera
                                    |DirtyDTResolution
-                                   |DirtyDTAttachment
                                    |DirtyDTAovBindings
-                                   |DirtyDTDepthClearValue
                                    |DirtyDTDepthPriority
                                    |DirtyDTCollection)
     };
-
-    /// If true, the draw target attachments are managed by the
-    /// Storm texture system. This also makes the draw target task
-    /// use HgiGraphicsCmdDesc to bind the attachments as render
-    /// targets. Shaders who want to read the attachments can bind
-    /// the textures like any other texture in the Storm texture
-    /// system.
-    /// Note: draw targets managed by the Storm texture system do not
-    /// work when bindless textures are enabled.
-    ///
-    /// If false, uses GlfDrawTarget.
-    ///
-    HDST_API
-    static bool GetUseStormTextureSystem();
-
-    /// Returns the version of the under-lying GlfDrawTarget.
-    /// The version changes if the draw target attachments texture ids
-    /// are changed in anyway (for example switching to a new
-    /// GlfDrawTarget object or resize the resources).
-    /// The version does not increment if only the contents of the
-    /// texture resources change
-    unsigned int GetVersion() const { return _version; }
 
     /// Synchronizes state from the delegate to this object.
     HDST_API
@@ -143,21 +106,14 @@ public:
     /// \name Draw Target API
     // ---------------------------------------------------------------------- //
     bool                       IsEnabled()        const { return  _enabled;    }
-    const GlfDrawTargetRefPtr &GetGlfDrawTarget() const { return  _drawTarget; }
-    const HdStDrawTargetRenderPassState *GetRenderPassState() const
+    const HdStDrawTargetRenderPassState *GetDrawTargetRenderPassState() const
     {
-        return &_renderPassState;
+        return &_drawTargetRenderPassState;
     }
 
     /// Returns collection of rprims the draw target draws.
     HDST_API
     HdRprimCollection const &GetCollection() const { return _collection; }
-
-    /// Debug api to output the contents of the draw target to a png file.
-    HDST_API
-    bool WriteToFile(const HdRenderIndex &renderIndex,
-                     const std::string &attachment,
-                     const std::string &path) const;
 
     /// returns all HdStDrawTargets in the render index
     HDST_API
@@ -173,40 +129,11 @@ public:
     }
 
 private:
-    unsigned int     _version;
-
     bool                    _enabled;
-    SdfPath                 _cameraId;
     GfVec2i                 _resolution;
-    float                   _depthClearValue;
     HdRprimCollection       _collection;
 
-    HdStDrawTargetRenderPassState _renderPassState;
-    std::vector<HdStTextureResourceHandleSharedPtr> _colorTextureResourceHandles;
-    HdStTextureResourceHandleSharedPtr              _depthTextureResourceHandle;
-
-    /// The context which owns the draw target object.
-    GlfGLContextSharedPtr  _drawTargetContext;
-    GlfDrawTargetRefPtr    _drawTarget;
-
-    // Is it necessary to create GPU resources because they are uninitialized
-    // or the attachments/resolution changed.
-    bool _texturesDirty;
-
-    void _SetAttachments(HdSceneDelegate *sceneDelegate,
-                         const HdStDrawTargetAttachmentDescArray &attachments);
-
-    // Set clear value for depth attachments.
-    void _SetAttachmentDataDepthClearValue();
-
-    void _SetCamera(const SdfPath &cameraPath);
-
-    const HdCamera *_GetCamera(const HdRenderIndex &renderIndex) const;
-
-    void _ResizeDrawTarget();
-    void _RegisterTextureResourceHandle(HdSceneDelegate *sceneDelegate,
-                                  const std::string &name,
-                                  HdStTextureResourceHandleSharedPtr *handlePtr);
+    HdStDrawTargetRenderPassState _drawTargetRenderPassState;
 
     // No copy
     HdStDrawTarget()                                   = delete;

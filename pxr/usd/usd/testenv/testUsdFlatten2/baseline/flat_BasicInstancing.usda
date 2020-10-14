@@ -8,7 +8,7 @@
     """
 )
 
-over "Flattened_Master_1"
+over "Flattened_Prototype_1"
 {
     def "geom"
     {
@@ -42,7 +42,7 @@ def "Set_1"
 {
     def "InstancedProp" (
         instanceable = true
-        add references = </Flattened_Master_1>
+        add references = </Flattened_Prototype_1>
     )
     {
         double a = 3

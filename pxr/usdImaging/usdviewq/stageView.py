@@ -40,7 +40,8 @@ from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 from .common import (RenderModes, ColorCorrectionModes, ShadedRenderModes, Timer,
-                     ReportMetricSize, SelectionHighlightModes, DEBUG_CLIPPING)
+                     ReportMetricSize, SelectionHighlightModes, DEBUG_CLIPPING,
+                     DefaultFontFamily)
 from .rootDataModel import RootDataModel
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from .viewSettingsDataModel import ViewSettingsDataModel
@@ -474,7 +475,8 @@ class HUD():
     def __init__(self):
         self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
         self._HUDLineSpacing = 15
-        self._HUDFont = QtGui.QFont("Menv Mono Numeric", 9*self._pixelRatio)
+        self._HUDFont = QtGui.QFont(DefaultFontFamily.MONOSPACE_FONT_FAMILY, 
+                9*self._pixelRatio)
         self._groups = {}
         self._glslProgram = None
         self._glMajorVersion = 0
@@ -833,6 +835,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.viewSettings.signalVisibleSettingChanged.connect(
             self.update)
 
+        self._dataModel.viewSettings.signalAutoComputeClippingPlanesChanged\
+                                    .connect(self._onAutoComputeClippingChanged)
+
         self._dataModel.signalStageReplaced.connect(self._stageReplaced)
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
@@ -1136,9 +1141,12 @@ class StageView(QtOpenGL.QGLWidget):
 
     def DrawBBox(self, viewProjectionMatrix):
         col = self._dataModel.viewSettings.clearColor
-        color = Gf.Vec3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
-                         col[1]-.5 if col[1]>0.5 else col[1]+.5,
-                         col[2]-.5 if col[2]>0.5 else col[2]+.5)
+        color = Gf.Vec3f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
+                         col[1]-.6 if col[1]>0.5 else col[1]+.6,
+                         col[2]-.6 if col[2]>0.5 else col[2]+.6)
+        color[0] = Gf.Clamp(color[0], 0, 1); 
+        color[1] = Gf.Clamp(color[1], 0, 1); 
+        color[2] = Gf.Clamp(color[2], 0, 1);                 
 
         # Draw axis-aligned bounding box
         if self._dataModel.viewSettings.showAABBox:
@@ -1288,10 +1296,11 @@ class StageView(QtOpenGL.QGLWidget):
         validFrameRange = (not self._selectionBrange.IsEmpty() and
             self._selectionBrange.GetMax() != self._selectionBrange.GetMin())
         if validFrameRange:
-            self.switchToFreeCamera()
+            self.switchToFreeCamera(False)
             self._dataModel.viewSettings.freeCamera.frameSelection(self._selectionBBox,
                 frameFit)
-            self.computeAndSetClosestDistance()
+            if self._dataModel.viewSettings.autoComputeClippingPlanes:
+                self.computeAndSetClosestDistance()
 
     def updateView(self, resetCam=False, forceComputeBBox=False, frameFit=1.1):
         '''Updates bounding boxes and camera. resetCam = True causes the camera to reframe
@@ -1365,7 +1374,7 @@ class StageView(QtOpenGL.QGLWidget):
     def getSelectionBBox(self):
         bbox = Gf.BBox3d()
         for n in self._dataModel.selection.getLCDPrims():
-            if n.IsActive() and not n.IsInMaster():
+            if n.IsActive() and not n.IsInPrototype():
                 primBBox = self._dataModel.computeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
@@ -1395,8 +1404,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
+        self._renderParams.enableSceneLights = self._dataModel.viewSettings.enableSceneLights
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
-        self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
+        self._renderParams.clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
@@ -1657,17 +1667,10 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            cam_pos = frustum.position
-            cam_up = frustum.ComputeUpVector()
-            cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
-
-            # not using the actual camera dist ...
-            cam_light_dist = self._dist
-            
-            sceneCam = self.getActiveSceneCamera()
             renderer.SetRenderViewport(viewport)
             renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
+            sceneCam = self.getActiveSceneCamera()
             if sceneCam:
                 # When using a USD camera, simply set it as the active camera.
                 # Window policy conformance is handled in the engine/hydra.
@@ -1681,8 +1684,6 @@ class StageView(QtOpenGL.QGLWidget):
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())
 
-
-            GL.glViewport(*windowViewport)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
             # ensure viewport is right for the camera framing
@@ -1693,6 +1694,7 @@ class StageView(QtOpenGL.QGLWidget):
                                             gfCamera.clippingPlanes]
 
             if len(self._dataModel.selection.getLCDPrims()) > 0:
+                cam_pos = frustum.position
                 sceneAmbient = (0.01, 0.01, 0.01, 1.0)
                 material = Glf.SimpleMaterial()
                 lights = []
@@ -1733,10 +1735,19 @@ class StageView(QtOpenGL.QGLWidget):
                         UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
 
                     GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-                    # Use display space for the second clear because we
+
+                    # Use display space for the second clear when color 
+                    # correction is performed by the engine because we
                     # composite the framebuffer contents with the
                     # color-corrected (i.e., display space) aov contents.
-                    clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
+                    clearColor = Gf.ConvertLinearToDisplay(Gf.Vec4f(
+                        self._dataModel.viewSettings.clearColor))
+
+                    if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                        # Use linear color when using the sRGB extension
+                        clearColor = Gf.Vec4f(
+                            self._dataModel.viewSettings.clearColor)
+
                     GL.glClearColor(*clearColor)
                     GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
@@ -2050,14 +2061,15 @@ class StageView(QtOpenGL.QGLWidget):
                 1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
         self.updateGL()
 
-    def detachAndReClipFromCurrentCamera(self):
+    def _onAutoComputeClippingChanged(self):
         """If we are currently rendering from a prim camera, switch to the
         FreeCamera.  Then reset the near/far clipping planes based on
-        distance to closest geometry."""
-        if not self._dataModel.viewSettings.freeCamera:
-            self.switchToFreeCamera()
-        else:
-            self.computeAndSetClosestDistance()
+        distance to closest geometry.  But only when autoClip has turned on!"""
+        if self._dataModel.viewSettings.autoComputeClippingPlanes:
+            if not self._dataModel.viewSettings.freeCamera:
+                self.switchToFreeCamera()
+            else:
+                self.computeAndSetClosestDistance()
 
     def computeAndSetClosestDistance(self):
         '''Using the current FreeCamera's frustum, determine the world-space
@@ -2081,28 +2093,28 @@ class StageView(QtOpenGL.QGLWidget):
         cameraFrustum.nearFar = \
             Gf.Range1d(smallNear, smallNear*FreeCamera.maxSafeZResolution)
         pickResults = self.pick(cameraFrustum)
-        if pickResults[0] is None or pickResults[1] == Sdf.Path.emptyPath:
+        if pickResults[0] is None or pickResults[2] == Sdf.Path.emptyPath:
             cameraFrustum.nearFar = \
                 Gf.Range1d(trueFar/FreeCamera.maxSafeZResolution, trueFar)
             pickResults = self.pick(cameraFrustum)
             if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
                 print("computeAndSetClosestDistance: Needed to call pick() a second time")
 
-        if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
+        if pickResults[0] is not None and pickResults[2] != Sdf.Path.emptyPath:
             self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
             self.updateView()
 
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.
-        Returns a quintuple:
-          selectedPoint, selectedPrimPath, selectedInstancerPath,
-          selectedInstanceIndex, selectedInstancerContext
+        Returns a sextuple:
+          selectedPoint, selectedNormal, selectedPrimPath,
+          selectedInstancerPath, selectedInstanceIndex, selectedInstancerContext
         '''
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
             # error has already been issued
-            return None, Sdf.Path.emptyPath, None, None, None
+            return None, None, Sdf.Path.emptyPath, None, None, None
 
         # this import is here to make sure the create_first_image stat doesn't
         # regress..
@@ -2127,6 +2139,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
+        self._renderParams.enableSceneLights = self._dataModel.viewSettings.enableSceneLights
 
         results = renderer.TestIntersection(
                 pickFrustum.ComputeViewMatrix(),
@@ -2180,15 +2193,15 @@ class StageView(QtOpenGL.QGLWidget):
             (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
             if inImageBounds:
-                selectedPoint, selectedPrimPath, \
+                selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
                 self.pick(pickFrustum)
             else:
                 # If we're picking outside the image viewport (maybe because
                 # camera guides are on), treat that as a de-select.
-                selectedPoint, selectedPrimPath, \
+                selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                    None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
+                    None, None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
         
             # Correct for high DPI displays
             coord = self._scaleMouseCoords( \

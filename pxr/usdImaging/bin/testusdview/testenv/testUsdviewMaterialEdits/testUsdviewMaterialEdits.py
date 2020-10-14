@@ -30,12 +30,6 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    appController._stageView.updateGL()
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Update mesh binding.
 def _updateMeshBinding(path, appController):
     s = appController._dataModel.stage
@@ -50,8 +44,8 @@ def _updateMeshBinding(path, appController):
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
     _updateMeshBinding('/Scene/Looks/MainMaterial_1', appController)
-    _takeShot(appController, "1.png")
+    appController._takeShot("1.png")
     _updateMeshBinding('/Scene/Looks/MainMaterial_2', appController)
-    _takeShot(appController, "2.png")
+    appController._takeShot("2.png")
     _updateMeshBinding('/Scene/Looks/MainMaterial_1', appController)
-    _takeShot(appController, "3.png")
+    appController._takeShot("3.png")

@@ -44,7 +44,7 @@ HgiGLShaderFunction::HgiGLShaderFunction(
     _shaderId = glCreateShader(stages[0]);
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_SHADER, _shaderId, _descriptor.debugName);
     }
 
     const char* src = desc.shaderCode;

@@ -162,5 +162,16 @@ class testUsdGeomSubset(unittest.TestCase):
                 UsdGeom.Imageable(sphere))
         self.assertEqual(len(allGeomSubsets), 21)
 
+        # Check that invalid negative indices are ignored when getting 
+        # unassigned indices.
+        invalidIndices = Vt.IntArray([-3, -2, 0, 1, 2])
+        invalidSubset = UsdGeom.Subset.CreateUniqueGeomSubset(geom, "testSubset", 
+            UsdGeom.Tokens.face, invalidIndices, familyName='testFamily', 
+            familyType=UsdGeom.Tokens.partition)
+        invalidSubset.GetIndicesAttr().Set(invalidIndices)
+        self.assertTrue(invalidSubset)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([invalidSubset], 5), 
+                         Vt.IntArray([3,4]))
+
 if __name__ == "__main__":
     unittest.main()

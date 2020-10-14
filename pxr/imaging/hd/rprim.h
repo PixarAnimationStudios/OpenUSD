@@ -281,16 +281,6 @@ protected:
     void _SetMaterialId(HdChangeTracker &changeTracker,
                         SdfPath const& materialId);
 
-    // methods to assist allocating and migrating shared primvar ranges
-    HD_API
-    static bool _IsEnabledSharedVertexPrimvar();
-
-    HD_API
-    uint64_t
-    _ComputeSharedPrimvarId(uint64_t baseId,
-                      HdBufferSourceSharedPtrVector const &sources,
-                      HdComputationSharedPtrVector const &computations) const;
-
 private:
     SdfPath _instancerId;
     SdfPath _materialId;

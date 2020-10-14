@@ -435,10 +435,6 @@ TfToTokenVector(const std::vector<std::string> &sv);
 TF_API std::vector<std::string>
 TfToStringVector(const std::vector<TfToken> &tv);
 
-/// Overload TfHashValue for TfToken to prevent hashing via TfToken's implicit
-/// conversion to std::string.
-inline size_t TfHashValue(const TfToken &x) { return x.Hash(); }
-
 /// Overload hash_value for TfToken.
 inline size_t hash_value(const TfToken& x) { return x.Hash(); }
 

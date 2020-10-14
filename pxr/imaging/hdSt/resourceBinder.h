@@ -41,10 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 
-using HdStBufferResourceGLSharedPtr = 
-    std::shared_ptr<class HdStBufferResourceGL>;
-using HdStBufferArrayRangeGLSharedPtr =
-    std::shared_ptr<class HdStBufferArrayRangeGL>;
+using HdStBufferResourceSharedPtr = 
+    std::shared_ptr<class HdStBufferResource>;
+using HdStBufferArrayRangeSharedPtr =
+    std::shared_ptr<class HdStBufferArrayRange>;
 
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
@@ -216,15 +216,18 @@ public:
                                      TfToken const &dataType,
                                      std::string const &swizzle=std::string(),
                                      TfTokenVector const &inPrimvars=TfTokenVector(),
-                                     bool const processTextureFallbackValue = false)
+                                     bool const isPremultiplied=false,
+                                     bool const processTextureFallbackValue=false)
                  : name(name), dataType(dataType), swizzle(swizzle),
-                  inPrimvars(inPrimvars),
+                  inPrimvars(inPrimvars), isPremultiplied(isPremultiplied),
                   processTextureFallbackValue(processTextureFallbackValue) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
              std::string swizzle; // e.g. xyzw
              TfTokenVector inPrimvars; // for primvar renaming and texture
                                        // coordinates,
+             bool isPremultiplied; // indicates if texture parameter has been 
+                                   // pre-multiplied by alpha on the CPU
              bool processTextureFallbackValue; // use NAME_fallback from shader
                                                // bar if texture is not valid
                                                // (determineed from bool
@@ -312,35 +315,35 @@ public:
 
     /// bind/unbind BufferArray
     HDST_API
-    void BindBufferArray(HdStBufferArrayRangeGLSharedPtr const &bar) const;
+    void BindBufferArray(HdStBufferArrayRangeSharedPtr const &bar) const;
     HDST_API
-    void UnbindBufferArray(HdStBufferArrayRangeGLSharedPtr const &bar) const;
+    void UnbindBufferArray(HdStBufferArrayRangeSharedPtr const &bar) const;
 
     /// bind/unbind interleaved constant buffer
     HDST_API
     void BindConstantBuffer(
-        HdStBufferArrayRangeGLSharedPtr const & constantBar) const;
+        HdStBufferArrayRangeSharedPtr const & constantBar) const;
     HDST_API
     void UnbindConstantBuffer(
-        HdStBufferArrayRangeGLSharedPtr const &constantBar) const;
+        HdStBufferArrayRangeSharedPtr const &constantBar) const;
 
     /// bind/unbind interleaved buffer
     HDST_API
     void BindInterleavedBuffer(
-        HdStBufferArrayRangeGLSharedPtr const & constantBar,
+        HdStBufferArrayRangeSharedPtr const & constantBar,
         TfToken const &name) const;
     HDST_API
     void UnbindInterleavedBuffer(
-        HdStBufferArrayRangeGLSharedPtr const &constantBar,
+        HdStBufferArrayRangeSharedPtr const &constantBar,
         TfToken const &name) const;
 
     /// bind/unbind nested instance BufferArray
     HDST_API
     void BindInstanceBufferArray(
-        HdStBufferArrayRangeGLSharedPtr const &bar, int level) const;
+        HdStBufferArrayRangeSharedPtr const &bar, int level) const;
     HDST_API
     void UnbindInstanceBufferArray(
-        HdStBufferArrayRangeGLSharedPtr const &bar, int level) const;
+        HdStBufferArrayRangeSharedPtr const &bar, int level) const;
 
     /// bind/unbind shader parameters and textures
     HDST_API
@@ -352,14 +355,14 @@ public:
     /// (to be used for frustum culling, draw indirect result)
     HDST_API
     void BindBuffer(TfToken const &name,
-                    HdStBufferResourceGLSharedPtr const &resource) const;
+                    HdStBufferResourceSharedPtr const &resource) const;
     HDST_API
     void BindBuffer(TfToken const &name,
-                    HdStBufferResourceGLSharedPtr const &resource,
+                    HdStBufferResourceSharedPtr const &resource,
                     int offset, int level=-1) const;
     HDST_API
     void UnbindBuffer(TfToken const &name,
-                      HdStBufferResourceGLSharedPtr const &resource,
+                      HdStBufferResourceSharedPtr const &resource,
                       int level=-1) const;
 
     /// bind(update) a standalone uniform (unsigned int)
@@ -388,6 +391,10 @@ public:
         return binding;
     }
 
+    int GetNumReservedUniformBlockLocations() const {
+        return _numReservedUniformBlockLocations;
+    }
+
     int GetNumReservedTextureUnits() const {
         return _numReservedTextureUnits;
     }
@@ -407,6 +414,7 @@ private:
     };
     typedef std::map<NameAndLevel, HdBinding> _BindingMap;
     _BindingMap _bindingMap;
+    int _numReservedUniformBlockLocations;
     int _numReservedTextureUnits;
 };
 

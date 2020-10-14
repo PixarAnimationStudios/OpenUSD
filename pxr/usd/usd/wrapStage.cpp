@@ -89,6 +89,10 @@ _ExportToString(const UsdStagePtr &self, bool addSourceFileComment=true)
 static string
 __repr__(const UsdStagePtr &self)
 {
+    if (self.IsExpired()) {
+        return "invalid " + UsdDescribe(self);
+    }
+    
     string result = TF_PY_REPR_PREFIX + TfStringPrintf(
         "Stage.Open(rootLayer=%s, sessionLayer=%s",
         TfPyRepr(self->GetRootLayer()).c_str(),
@@ -169,10 +173,10 @@ _ExpandPopulationMask(UsdStage &self,
     using AttrPredicate = std::function<bool (UsdAttribute const &)>;
     RelPredicate relPred;
     AttrPredicate attrPred;
-    if (pyRelPred != boost::python::object()) {
+    if (!pyRelPred.is_none()) {
         relPred = boost::python::extract<RelPredicate>(pyRelPred);
     }
-    if (pyAttrPred != boost::python::object()) {
+    if (!pyAttrPred.is_none()) {
         attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
     }
     return self.ExpandPopulationMask(relPred, attrPred);
@@ -553,6 +557,8 @@ void wrapUsdStage()
         .staticmethod("IsSupportedFile")
 
         .def("GetMasters", &UsdStage::GetMasters,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetPrototypes", &UsdStage::GetPrototypes,
              return_value_policy<TfPySequenceToList>())
 
         .def("_GetPcpCache", &Usd_PcpCacheAccess::GetPcpCache,

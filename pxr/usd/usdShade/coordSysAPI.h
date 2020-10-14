@@ -169,7 +169,7 @@ public:
     /// Returns true if the prim has local coordinate system binding
     /// opinions.  Note that the resulting binding list may still be
     /// empty.
-    USDGEOM_API
+    USDSHADE_API
     bool HasLocalBindings() const;
 
     /// Get the list of coordinate system bindings local to this prim.
@@ -177,7 +177,7 @@ public:
     /// validate that a prim exists at the indicated path.
     /// If the binding relationship has multiple targets,
     /// only the first is used.
-    USDGEOM_API
+    USDSHADE_API
     std::vector<Binding> GetLocalBindings() const;
 
     /// Find the list of coordinate system bindings that apply
@@ -192,13 +192,13 @@ public:
     /// entirely.
     ///
     /// Binding relationships with no resolved targets are skipped.
-    USDGEOM_API
+    USDSHADE_API
     std::vector<Binding> FindBindingsWithInheritance() const;
 
     /// Bind the name to the given path.
     /// The prim at the given path is expected to be UsdGeomXformable,
     /// in order for the binding to be succesfully resolved.
-    USDGEOM_API
+    USDSHADE_API
     bool Bind(const TfToken &name, const SdfPath &path) const;
 
     /// Clear the indicated coordinate system binding on this prim
@@ -207,18 +207,23 @@ public:
     /// Only remove the spec if \p removeSpec is true (leave the spec to
     /// preserve meta-data we may have intentionally authored on the
     /// relationship)
-    USDGEOM_API
+    USDSHADE_API
     bool ClearBinding(const TfToken &name, bool removeSpec) const;
 
     /// Block the indicated coordinate system binding on this prim
     /// by blocking targets on the underlying relationship.
-    USDGEOM_API
+    USDSHADE_API
     bool BlockBinding(const TfToken &name) const;
 
     /// Returns the fully namespaced coordinate system relationship
     /// name, given the coordinate system name.
-    USDGEOM_API
+    USDSHADE_API
     static TfToken GetCoordSysRelationshipName(const std::string &coordSysName);
+
+    /// Test whether a given \p name contains the "coordSys:" prefix
+    ///
+    USDSHADE_API
+    static bool CanContainPropertyName(const TfToken &name);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

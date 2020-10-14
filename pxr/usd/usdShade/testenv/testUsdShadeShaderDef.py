@@ -43,14 +43,24 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         self.assertIsNone(SSI('Primvar_float2_3_nonNumber'))
         self.assertIsNone(SSI('Primvar_4_nonNumber'))
 
-    def test_ShaderDefParser(self):
-        stage = Usd.Stage.CreateNew('shaderDef.usda')
+    def test_ShaderDefParser_NodeDefAPI(self):
+        # Test the NodeDefAPI path.
+        self.test_ShaderDefParser(useForwardedAPI=False)
 
-        shaderDef = UsdShade.Shader.Define(stage, "/Primvar_float_2")
+    def test_ShaderDefParser(self, useForwardedAPI=True):
+        stage = Usd.Stage.CreateNew('shaderDef.usda' if useForwardedAPI else 'shaderDef2.usda')
+        shaderPrim = UsdShade.Shader.Define(stage, "/Primvar_float_2")
+        if useForwardedAPI:
+            # UsdShadeShader has API that covers UsdShadeNodeDefAPI methods;
+            # test that they work.
+            nodeDefAPI = shaderPrim
+        else:
+            # Use the methods as implemented on UsdShadeNodeDefAPI.
+            nodeDefAPI = UsdShade.NodeDefAPI(shaderPrim)
 
-        shaderDef.SetSdrMetadataByKey(Sdr.NodeMetadata.Role, 
+        shaderPrim.SetSdrMetadataByKey(Sdr.NodeMetadata.Role, 
                                       Sdr.NodeRole.Primvar)
-        shaderDef.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+        nodeDefAPI.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
 
         # Create the files referenced by the sourceAsset attributes.
         osoPath = os.path.normpath(os.path.join(os.path.realpath(os.curdir), 
@@ -63,46 +73,46 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         open(osoPath, "a").close()
         open(glslfxPath, "a").close()
 
-        shaderDef.SetSourceAsset(Sdf.AssetPath(osoPath), "OSL")
-        shaderDef.SetSourceAsset(Sdf.AssetPath(glslfxPath), "glslfx")
+        nodeDefAPI.SetSourceAsset(Sdf.AssetPath(osoPath), "OSL")
+        nodeDefAPI.SetSourceAsset(Sdf.AssetPath(glslfxPath), "glslfx")
 
-        primvarNameInput = shaderDef.CreateInput('primvarName', 
+        primvarNameInput = shaderPrim.CreateInput('primvarName', 
                 Sdf.ValueTypeNames.Token)
         primvarNameInput.SetConnectability(UsdShade.Tokens.interfaceOnly)
         primvarNameInput.SetSdrMetadataByKey('primvarProperty', "1")
 
-        primvarFileInput = shaderDef.CreateInput('primvarFile', 
+        primvarFileInput = shaderPrim.CreateInput('primvarFile', 
                 Sdf.ValueTypeNames.Asset)
         primvarFileInput.SetConnectability(UsdShade.Tokens.interfaceOnly)
 
-        fallbackInput = shaderDef.CreateInput('fallback', 
+        fallbackInput = shaderPrim.CreateInput('fallback', 
                 Sdf.ValueTypeNames.Float)
         fallbackInput.SetSdrMetadataByKey('defaultInput', "1")
 
         # Create dummy inputs of other types for testing.
-        float2Input = shaderDef.CreateInput('float2Val', 
+        float2Input = shaderPrim.CreateInput('float2Val', 
                 Sdf.ValueTypeNames.Float2)
-        float3Input = shaderDef.CreateInput('float3Val', 
+        float3Input = shaderPrim.CreateInput('float3Val', 
                 Sdf.ValueTypeNames.Float3)
-        float4Input = shaderDef.CreateInput('float4Val', 
+        float4Input = shaderPrim.CreateInput('float4Val', 
                 Sdf.ValueTypeNames.Float4)
 
-        colorInput = shaderDef.CreateInput('someColor', 
+        colorInput = shaderPrim.CreateInput('someColor', 
                 Sdf.ValueTypeNames.Color3f)
-        vectorInput = shaderDef.CreateInput('someVector', 
+        vectorInput = shaderPrim.CreateInput('someVector', 
                 Sdf.ValueTypeNames.Vector3f)
-        normalInput = shaderDef.CreateInput('normalVector', 
+        normalInput = shaderPrim.CreateInput('normalVector', 
                 Sdf.ValueTypeNames.Normal3f)
-        matrixInput = shaderDef.CreateInput('someVector', 
+        matrixInput = shaderPrim.CreateInput('someVector', 
                 Sdf.ValueTypeNames.Matrix4d)
 
-        resultOutput = shaderDef.CreateOutput('result', 
+        resultOutput = shaderPrim.CreateOutput('result', 
                 Sdf.ValueTypeNames.Float)
-        result2Output = shaderDef.CreateOutput('result2', 
+        result2Output = shaderPrim.CreateOutput('result2', 
                 Sdf.ValueTypeNames.Float2)
 
         discoveryResults = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(
-                shaderDef, stage.GetRootLayer().realPath)
+                shaderPrim, stage.GetRootLayer().realPath)
         self.assertEqual(len(discoveryResults), 2)
 
         parserPlugin = UsdShade.ShaderDefParserPlugin()
@@ -139,7 +149,7 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                 self.assertEqual(n.GetResolvedImplementationURI(), glslfxPath)
 
         # Clean-up files.
-        os.remove("shaderDef.usda")
+        os.remove(stage.GetRootLayer().realPath)
         os.remove(osoPath)
         os.remove(glslfxPath)
 

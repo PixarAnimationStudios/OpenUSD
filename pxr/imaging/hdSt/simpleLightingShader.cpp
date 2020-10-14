@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/domeLightComputations.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/binding.h"
@@ -67,8 +68,6 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
 {
-    _lightingContext->InitUniformBlockBindings(_bindingMap);
-    _lightingContext->InitSamplerUnitBindings(_bindingMap);
 }
 
 HdStSimpleLightingShader::~HdStSimpleLightingShader() = default;
@@ -91,6 +90,7 @@ HdStSimpleLightingShader::ComputeHash() const
     boost::hash_combine(hash, numLights);
     boost::hash_combine(hash, useShadows);
     boost::hash_combine(hash, numShadows);
+    boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
 
     return (ID)hash;
 }
@@ -123,7 +123,14 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
                      << int(useBindlessShadowMaps) << "\n";
     }
 
-    return defineStream.str() + source;
+    const std::string postSurfaceShader =
+        _lightingContext->ComputeShaderSource(shaderStageKey);
+
+    if (!postSurfaceShader.empty()) {
+        defineStream << "#define HD_HAS_postSurfaceShader\n";
+    }
+
+    return defineStream.str() + postSurfaceShader + source;
 }
 
 /* virtual */
@@ -153,10 +160,15 @@ HdStSimpleLightingShader::BindResources(const int program,
                                         HdRenderPassState const &state)
 {
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    //
+    _bindingMap->ResetUniformBindings(
+                binder.GetNumReservedUniformBlockLocations());
+    _lightingContext->InitUniformBlockBindings(_bindingMap);
     _bindingMap->AssignUniformBindingsToProgram(program);
     _lightingContext->BindUniformBlocks(_bindingMap);
 
+    _bindingMap->ResetSamplerBindings(
+                binder.GetNumReservedTextureUnits());
+    _lightingContext->InitSamplerUnitBindings(_bindingMap);
     _bindingMap->AssignSamplerUnitsToProgram(program);
     _lightingContext->BindSamplers(_bindingMap);
 
@@ -309,7 +321,7 @@ _MakeNamedTextureHandle(
     return { name,
              HdTextureType::Uv,
              textureHandle,
-             SdfPath::AbsoluteRootPath().AppendChild(name) };
+             name.Hash() };
 }
 
 void
@@ -344,12 +356,14 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
 
     const HdStTextureIdentifier textureId(
         TfToken(resolvedPath),
-        std::make_unique<HdStUvOrientationSubtextureIdentifier>(
-            /* flipVertically = */ true));
+        std::make_unique<HdStAssetUvSubtextureIdentifier>(
+            /* flipVertically = */ true,
+            /* premultiplyAlpha = */ false,
+	        /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
 
     static const HdSamplerParameters envSamplerParameters{
-        HdWrapRepeat, HdWrapRepeat, HdWrapRepeat,
-        HdMinFilterLinear, HdMagFilterLinear};
+        HdWrapClamp, HdWrapClamp, HdWrapClamp,
+        HdMinFilterLinearMipmapLinear, HdMagFilterLinear};
 
     _domeLightEnvironmentTextureHandle =
         resourceRegistry->AllocateTextureHandle(
@@ -406,7 +420,8 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         nullptr,
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightIrradiance,
-            thisShader));
+            thisShader),
+        HdStComputeQueueZero);
     
     static const GLuint numPrefilterLevels = 5;
 
@@ -422,7 +437,8 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
                 thisShader,
                 numPrefilterLevels,
                 mipLevel,
-                roughness));
+                roughness),
+            HdStComputeQueueZero);
     }
 
     // Brdf map computation
@@ -430,7 +446,8 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         nullptr,
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightBRDF,
-            thisShader));
+            thisShader),
+        HdStComputeQueueZero);
 }
 
 HdStShaderCode::NamedTextureHandleVector const &

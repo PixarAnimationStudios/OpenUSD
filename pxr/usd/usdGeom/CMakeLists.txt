@@ -117,6 +117,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
+    testenv/testUsdGeomExtentFromPlugins.py
     testenv/testUsdGeomExtentTransform.py
     testenv/testUsdGeomHermiteCurves.py
     testenv/testUsdGeomImageable.py
@@ -196,6 +197,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdGeomExtentFromPlugins
+    DEST testUsdGeomExtentFromPlugins
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdGeomExtentTransform
     DEST testUsdGeomExtentTransform
 )
@@ -209,6 +215,10 @@ pxr_install_test_dir(
     SRC testenv/testUsdGeomImageable
     DEST testUsdGeomImageable)
 
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomMesh
+    DEST testUsdGeomMesh)
+
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves"
@@ -221,7 +231,7 @@ pxr_register_test(testUsdGeomBBoxCache
     EXPECTED_RETURN_CODE 0
     ENV 
         TF_DEBUG=USDGEOM_BBOX
-        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 pxr_register_test(testUsdGeomCamera
@@ -323,6 +333,12 @@ pxr_register_test(testUsdGeomXformCache
 pxr_register_test(testUsdGeomXformCommonAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomExtentFromPlugins
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentFromPlugins"
     EXPECTED_RETURN_CODE 0
 )
 

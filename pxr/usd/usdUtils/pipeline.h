@@ -40,16 +40,12 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/common.h"
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-
 USDUTILS_API
 extern TfEnvSetting<bool> USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME;
-
 
 /// Define the shading pipeline's convention for naming a companion
 /// alpha/opacity attribute and primvarnames given the full name of a
@@ -94,9 +90,9 @@ const std::set<UsdUtilsRegisteredVariantSet>& UsdUtilsGetRegisteredVariantSets()
 
 /// If a valid UsdPrim already exists at \p path on the USD stage \p stage, 
 /// returns it. It not, it checks to see if the path belongs to a prim 
-/// underneath an instance and returns the corresponding master prim. 
+/// underneath an instance and returns the corresponding prototype prim. 
 /// 
-/// This returns an invalid UsdPrim if no corresponding master prim can be 
+/// This returns an invalid UsdPrim if no corresponding prototype prim can be 
 /// found and if no prim exists at the path.
 ///
 /// This method is similar to UsdStage::GetPrimAtPath(), in that it will never 
@@ -106,10 +102,10 @@ USDUTILS_API
 UsdPrim UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage, 
                                             const SdfPath &path);
 
-/// Given a path, uninstances all the instanced prims in the namespace chain and 
-/// returns the resulting prim at the requested path. Returns a NULL prim if the 
-/// given path doesn't exist and does not correspond to a valid prim inside a 
-/// master.
+/// Given a path, uninstances all the instanced prims in the namespace chain and
+/// returns the resulting prim at the requested path. Returns a NULL prim if the
+/// given path doesn't exist and does not correspond to a valid prim inside a
+/// prototype.
 USDUTILS_API
 UsdPrim UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage, 
                                      const SdfPath &path);
@@ -117,12 +113,12 @@ UsdPrim UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 /// Returns the name of the primary UV set used on meshes and nurbs.
 /// By default the name is "st".
 USDUTILS_API
-TfToken UsdUtilsGetPrimaryUVSetName();
+const TfToken& UsdUtilsGetPrimaryUVSetName();
 
 /// Returns the name of the reference position used on meshes and nurbs.
 /// By default the name is "pref".
 USDUTILS_API
-TfToken UsdUtilsGetPrefName();
+const TfToken& UsdUtilsGetPrefName();
 
 /// Get the name of the USD prim under which materials are expected to be
 /// authored.
@@ -158,8 +154,6 @@ TfToken UsdUtilsGetMaterialsScopeName(const bool forceDefault = false);
 USDUTILS_API
 TfToken UsdUtilsGetPrimaryCameraName(const bool forceDefault = false);
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

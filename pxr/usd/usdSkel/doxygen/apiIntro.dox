@@ -237,10 +237,11 @@ for (const UsdPrim& prim : it) {
         it.PruneChilren();
 
         UsdSkelRoot skelRoot(prim);
-        skelCache.Populate(skelRoot);
+        skelCache.Populate(skelRoot, UsdTraverseInstanceProxies()));
 
         std::vector<UsdSkelBinding> bindings;
-        skelCache.ComputeSkelBindings(skelRoot, &bindings);
+        skelCache.ComputeSkelBindings(skelRoot, &bindings,
+                                      UsdTraverseInstanceProxies());
 
         // Iterate over the bindings related to this SkelRoot
         for (const UsdSkelBinding& binding : bindings) {
@@ -276,9 +277,10 @@ for prim in it:
         it.PruneChildren()
         
         skelRoot = UsdSkel.Root(prim)
-        skelCache.Populate(skelRoot)
+        skelCache.Populate(skelRoot, Usd.TraverseInstanceProxies()))
         
-        bindings = skelCache.ComputeSkelBindings(skelRoot)
+        bindings = skelCache.ComputeSkelBindings(
+            skelRoot, Usd.TraverseInstanceProxies())
 
         # Iterate over the bindings related to this SkelRoot
         for binding in bindings:
@@ -342,22 +344,28 @@ characters is part of the motivation behind the existence of SkelRoot
 primitives. It is common in IO contexts to use the SkelRoot as a point
 for dispatching common computations needed when translating Skeletons.
 
+Both when calling Populate() as well as when computing bindings, a
+predicate is passed that enables traversal of instances. This code is
+assuming that it is reasonably to process instanced, skinned primitives.
+If that is not the case, we could instead pass UsdPrimDefaultPredicate.
 
 - C++:
 \code{.cpp}
         UsdSkelRoot skelRoot(prim);
-        skelCache.Populate(skelRoot);
+        skelCache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
         std::vector<UsdSkelBinding> bindings;
-        skelCache.ComputeSkelBindings(skelRoot, &bindings);
+        skelCache.ComputeSkelBindings(skelRoot, &bindings,
+                                      UsdTraverseInstanceProxies());
 \endcode
 
 - Python:
 \code{.py}
         skelRoot = UsdSkel.Root(prim)
-        skelCache.Populate(skelRoot)
+        skelCache.Populate(skelRoot, Usd.TraverseInstanceProxies())
 
-        bindings = skelCache.ComputeSkelBindings(skelRoot)
+        bindings = skelCache.ComputeSkelBindings(
+            skelRoot, Usd.TraverseInstanceProxies())
 \endcode
 
 
@@ -471,7 +479,7 @@ before breaking down the individual parts.
 UsdSkelCache skelCache;
 
 if (UsdSkelRoot skelRoot = UsdSkelRoot::Find(prim)) {
-   skelCache.Populate(skelRoot);
+   skelCache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
     if (UsdSkelSkinningQuery skinningQuery = skelCache.GetSkinningQuery(prim)) {
 
@@ -490,7 +498,7 @@ skelCache = UsdSkel.Cache()
 
 skelRoot = UsdSkel.Root.Find(prim)
 if skelRoot:
-   skelCache.Populate(skelRoot)
+   skelCache.Populate(skelRoot, Usd.TraverseInstanceProxies())
 
     skinningQuery = skelCache.GetSkinningQuery(prim)
     if skinningQuery:
@@ -520,7 +528,7 @@ that such caches should persist, and be shared across multiple prims.
 - C++:
 \code{.cpp}
 if (UsdSkelRoot skelRoot = UsdSkelRoot::Find(prim)) {
-   skelCache.Populate(skelRoot);
+   skelCache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
     if (UsdSkelSkinningQuery skinningQuery = skelCache.GetSkinningQuery(prim)) {
        ...
@@ -532,7 +540,7 @@ if (UsdSkelRoot skelRoot = UsdSkelRoot::Find(prim)) {
 \code{.py}
 skelRoot = UsdSkel.Root.Find(prim)
 if skelRoot:
-   skelCache.Populate(skelRoot)
+   skelCache.Populate(skelRoot, Usd.TraverseInstanceProxies())
 
     skinningQuery = skelCache.GetSkinningQuery(prim)
     if skinningQuery:
@@ -546,6 +554,11 @@ they are accessed, we need to `Populate()` the UsdSkelCache with the section
 of the scene graph that contains the skinnable primitive. Cache population
 causes the cache to be pre-populated with information about inherited bindings,
 which is necessary when accessing skinning queries.
+
+Passing the predicate produced by UsdTraverseInstanceProxies() ensures that
+instanced, skinnable prims are populated on the cache. If there is no need
+to consider instanced primitives, then a predicate that does not traverse
+instance proxies -- such as UsdPrimDefaultPredicae -- may be used instead.
 
 The SkelRoot that enapsulates a primitive can be found using UsdSkelRoot::Find.
 If no SkelRoot is found, that means that the primitive is not encapsulated

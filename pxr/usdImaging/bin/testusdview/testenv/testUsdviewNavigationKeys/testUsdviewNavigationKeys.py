@@ -29,39 +29,29 @@ import sys
 
 from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets
 
-def _processEvents():
-    # Qt does not guarantee that a single call to processEvents() will
-    # process all events in the event queue, and in some builds, on
-    # some platforms, we sporadically or even repeatably see test failures
-    # in which the selection does not change, presumably because the
-    # events were not all getting processed, when we simply called
-    # processEvents once.  So we do it a handful of times whenever we
-    # generate an event, to increase our odds of success.
-    for x in range(10):
-        QtWidgets.QApplication.processEvents()
-
 def _emitCollapseAllAction(appController):
     appController._ui.actionCollapse_All.triggered.emit() 
-    _processEvents()
+    appController._processEvents()
 
 def _popupViewMenu(appController):
     appController._ui.menuView.exec_()
-    _processEvents()
+    appController._processEvents()
 
-def _postAndProcessKeyEvent(key, widget):
+def _postAndProcessKeyEvent(key, widget, appController):
     event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
                             key,
                             QtCore.Qt.NoModifier)
     QtWidgets.QApplication.postEvent(widget, event)
-    _processEvents()
+    appController._processEvents()
 
 class EscapeSender(QtCore.QObject):
     def __init__(self, receiver):
         QtCore.QObject.__init__(self)
         self._receiver = receiver
 
-    def doIt(self):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Escape, self._receiver)
+    def doIt(self, appController):
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Escape, self._receiver, 
+                appController)
 
 def _testBasic(appController):
     from pxr import Sdf
@@ -89,7 +79,7 @@ def _testBasic(appController):
     # path hierarchy
     path = Sdf.Path("/World/sets/setModel")
     for i in range(2 * path.pathElementCount):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().GetPrimPath() == path, \
@@ -99,7 +89,7 @@ def _testBasic(appController):
     for i in range(1, 2 * path.pathElementCount):
         # Send the event to mainWindow to ensure our app filter reroutes it
         # to the focusWidget.
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().IsPseudoRoot()
@@ -110,10 +100,10 @@ def _testBasic(appController):
     appController._mainWindow.setFocus()
     assert appController._dataModel.currentFrame == startFrame
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
+    _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame + 1
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
+    _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame
 
     # Regression tests for bugs #154716, 154665: Make sure we don't try
@@ -123,7 +113,7 @@ def _testBasic(appController):
     # If the filter is still active (FAILURE), then the test will not
     # terminate, and eventually be killed.
     escSender = EscapeSender(appController._ui.menuView)
-    QtCore.QTimer.singleShot(500, escSender, QtCore.SLOT("doIt()"))
+    QtCore.QTimer.singleShot(500, lambda: escSender.doIt(appController))
     _popupViewMenu(appController)
     
     # Modal dialogs won't receive events sent to the application object,
@@ -132,7 +122,7 @@ def _testBasic(appController):
     # return you a widget.
     fileDlg = QtWidgets.QFileDialog(appController._mainWindow)
     escSender = EscapeSender(fileDlg)
-    QtCore.QTimer.singleShot(500, escSender, QtCore.SLOT("doIt()"))
+    QtCore.QTimer.singleShot(500, lambda: escSender.doIt(appController))
     # Causes a modal dialog to pop up
     fileDlg.exec_()
 

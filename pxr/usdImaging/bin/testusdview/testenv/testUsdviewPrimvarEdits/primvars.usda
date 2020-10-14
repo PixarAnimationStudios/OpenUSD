@@ -47,7 +47,7 @@ def Scope "Scene" (
                 uniform token info:id = "UsdPrimvarReader_float3"
                 # Fallback to blue
                 float3 inputs:fallback = (0, 0, 1)
-                token inputs:varname = "myColor"
+                string inputs:varname = "myColor"
                 float3 outputs:result
             }
         }

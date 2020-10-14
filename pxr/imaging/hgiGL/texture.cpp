@@ -211,12 +211,10 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     }
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_TEXTURE, _textureId,-1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_TEXTURE, _textureId, _descriptor.debugName);
     }
 
     if (desc.sampleCount == HgiSampleCount1) {
-        // XXX sampler state etc should all be set via tex descriptor.
-        //     (probably pass in HgiSamplerHandle in tex descriptor)
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -239,27 +237,43 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             glInternalFormat,
             desc.dimensions);
 
+        // Upload texel data
         if (desc.initialData && desc.pixelsByteSize > 0) {
-            if (isCompressed) {
-                _GlCompressedTextureSubImageND(
-                    desc.type,
-                    _textureId,
-                    /*mip*/0,
-                    /*offsets*/GfVec3i(0),
+            // Upload each (available) mip
+            const std::vector<HgiMipInfo> mipInfos =
+                HgiGetMipInfos(
+                    desc.format,
                     desc.dimensions,
-                    glInternalFormat,
-                    desc.pixelsByteSize,
-                    desc.initialData);
-            } else {
-                _GlTextureSubImageND(
-                    desc.type,
-                    _textureId,
-                    /*mip*/0,
-                    /*offsets*/GfVec3i(0),
-                    desc.dimensions,
-                    glFormat,
-                    glPixelType,
-                    desc.initialData);
+                    desc.pixelsByteSize);
+            const size_t mipLevels = std::min(
+                mipInfos.size(), size_t(desc.mipLevels));
+            const char * const initialData = reinterpret_cast<const char *>(
+                desc.initialData);
+
+            for (size_t mip = 0; mip < mipLevels; mip++) {
+                const HgiMipInfo &mipInfo = mipInfos[mip];
+
+                if (isCompressed) {
+                    _GlCompressedTextureSubImageND(
+                        desc.type,
+                        _textureId,
+                        mip,
+                        /*offsets*/GfVec3i(0),
+                        mipInfo.dimensions,
+                        glInternalFormat,
+                        mipInfo.byteSize,
+                        initialData + mipInfo.byteOffset);
+                } else {
+                    _GlTextureSubImageND(
+                        desc.type,
+                        _textureId,
+                        mip,
+                        /*offsets*/GfVec3i(0),
+                        mipInfo.dimensions,
+                        glFormat,
+                        glPixelType,
+                        initialData + mipInfo.byteOffset);
+                }
             }
         }
     } else {
@@ -272,6 +286,89 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             desc.dimensions[1],
             GL_TRUE);
     }
+
+    const GLint swizzleMask[] = {
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.r)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.g)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.b)),
+        GLint(HgiGLConversions::GetComponentSwizzle(desc.componentMapping.a)) };
+
+    glTextureParameteriv(
+        _textureId,
+        GL_TEXTURE_SWIZZLE_RGBA,
+        swizzleMask);
+
+    HGIGL_POST_PENDING_GL_ERRORS();
+}
+
+HgiGLTexture::HgiGLTexture(HgiTextureViewDesc const & desc)
+    : HgiTexture(desc.sourceTexture->GetDescriptor())
+    , _textureId(0)
+{
+    // Update the texture descriptor to reflect the view desc
+    _descriptor.debugName = desc.debugName;
+    _descriptor.format = desc.format;
+    _descriptor.layerCount = desc.layerCount;
+    _descriptor.mipLevels = desc.mipLevels;
+
+    HgiGLTexture* srcTexture =
+        static_cast<HgiGLTexture*>(desc.sourceTexture.Get());
+    GLenum glInternalFormat = 0;
+
+    if (srcTexture->GetDescriptor().usage & HgiTextureUsageBitsDepthTarget) {
+        TF_VERIFY(desc.format == HgiFormatFloat32 ||
+                  desc.format == HgiFormatFloat32UInt8);
+        
+        if (desc.format == HgiFormatFloat32UInt8) {
+            glInternalFormat = GL_DEPTH32F_STENCIL8;
+        } else {
+            glInternalFormat = GL_DEPTH_COMPONENT32F;
+        }
+    } else {
+        GLenum glFormat = 0;
+        GLenum glPixelType = 0;
+        HgiGLConversions::GetFormat(
+            desc.format,
+            &glFormat,
+            &glPixelType,
+            &glInternalFormat);
+    }
+
+    // Note we must use glGenTextures, not glCreateTextures.
+    // glTextureView requires the textureId to be unbound and not given a type.
+    glGenTextures(1, &_textureId);
+
+    GLenum textureType =
+        HgiGLConversions::GetTextureType(srcTexture->GetDescriptor().type);
+
+    glTextureView(
+        _textureId,
+        textureType,
+        srcTexture->GetTextureId(),
+        glInternalFormat, 
+        desc.sourceFirstMip, 
+        desc.mipLevels,
+        desc.sourceFirstLayer,
+        desc.layerCount);
+
+    if (!desc.debugName.empty()) {
+        HgiGLObjectLabel(GL_TEXTURE, _textureId, desc.debugName);
+    }
+
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    const uint16_t mips = desc.mipLevels;
+    GLint minFilter = mips > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+    glTextureParameteri(_textureId, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTextureParameteri(_textureId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    float aniso = 2.0f;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+    glTextureParameterf(_textureId, GL_TEXTURE_MAX_ANISOTROPY_EXT,aniso);
+    glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
+    glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 
     HGIGL_POST_PENDING_GL_ERRORS();
 }
@@ -290,8 +387,13 @@ size_t
 HgiGLTexture::GetByteSizeOfResource() const
 {
     GfVec3i const& s = _descriptor.dimensions;
-    return HgiDataSizeOfFormat(_descriptor.format) * 
-        s[0] * s[1] * std::max(s[2], 1);
+    size_t blockWidth, blockHeight;
+    const size_t bytesPerBlock =
+        HgiGetDataSizeOfFormat(_descriptor.format, &blockWidth, &blockHeight);
+    return
+        ((s[0] + blockWidth  - 1) / blockWidth) *
+        ((s[1] + blockHeight - 1) / blockHeight) *
+        std::max(s[2], 1) * bytesPerBlock;
 }
 
 uint64_t

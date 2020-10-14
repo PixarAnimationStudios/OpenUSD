@@ -35,6 +35,7 @@
                 "source": [ "Preview.LightStructures",
                             "Preview.Lighting",
                             "Preview.LightIntegration",
+                            "Preview.NormalMapping",
                             "Preview.Surface" ]
             }
         }
@@ -66,6 +67,7 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     float metallic           = HdGet_metallic().x;
     float occlusion          = HdGet_occlusion().x;
     float opacity            = HdGet_opacity().x;
+    float opacityThreshold   = HdGet_opacityThreshold().x;
     float roughness          = HdGet_roughness().x;
     vec3 specularColor       = HdGet_specularColor().xyz;
     bool useSpecularWorkflow = (HdGet_useSpecularWorkflow().x == 1);
@@ -73,9 +75,21 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     vec3 clearcoatColor      = vec3(1.0);
     float specularAmount     = 1.0;
 
+#ifdef HD_MATERIAL_TAG_MASKED   
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+    opacity = 1.0;
+#endif            
+
     // Selection highlighting.
     vec4 colorAndOpacity = vec4(diffuseColor, opacity);
     diffuseColor = ApplyColorOverrides(colorAndOpacity).rgb;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+#ifndef diffuseColor_IS_PREMULTIPLIED
+    diffuseColor *= opacity;
+#endif    
 
     // Evaluate all lights.
     vec3 c = evaluateLights(
@@ -92,7 +106,7 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         clearcoatRoughness,
         occlusion,
         Peye,
-        Neye);
+        perturbFragmentNormal(Peye.xyz, Neye));
 
     return vec4(c, colorAndOpacity.a);
 }
@@ -202,14 +216,14 @@ evaluateLight(
 
     // Evaluate specular first lobe
     vec3 s1 = vec3(0.0);
+    const float R = (1.0 - ior) / (1.0 + ior);
     if (specularAmount > 0.0) {
         vec3 F0 = specularColor;
         vec3 F90 = vec3(1.0);
 
         if (!useSpecularWorkflow) {
-            float R = (1.0 - ior) / (1.0 + ior);
             vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = mix(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse
@@ -231,7 +245,7 @@ evaluateLight(
     vec3 s2 = vec3(0.0);
     if (clearcoatAmount > 0.0) {
         s2 = clearcoatAmount * evaluateDirectSpecular(
-             clearcoatColor,              // Clearcoat color 0
+             R * R * clearcoatColor,      // Clearcoat color 0
              clearcoatColor,              // Clearcoat color 90
              clearcoatRoughness,          // Roughness
              fresnel,                     // Fresnel
@@ -281,6 +295,9 @@ evaluateIndirectLighting(
         float occlusion,
         float roughness,
         bool useSpecularWorkflow,
+        float clearcoatAmount, 
+        vec3 clearcoatColor, 
+        float clearcoatRoughness,
         mat4 worldToLightTransform)
 {
     vec3 indirect = vec3(0.0);
@@ -289,10 +306,10 @@ evaluateIndirectLighting(
     vec3 F0 = specularColor;
     vec3 F90 = vec3(1.0);
     vec3 d = diffuseColor;
+    const float R = (1.0 - ior) / (1.0 + ior);
     if (!useSpecularWorkflow) {
-        float R = (1.0 - ior) / (1.0 + ior);
         vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
-        F0  = R * R * specColor;
+        F0 = mix(R * R * specColor, specColor, metallic);
         F90 = specColor;
 
         // For metallic workflows, pure metals have no diffuse
@@ -322,8 +339,21 @@ evaluateIndirectLighting(
 
     vec3 specular = prefilter * (F * brdf.x + brdf.y);
 
+    // Clearcoat Component
+    vec3 clearcoat = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        const vec3 clearcoatF = clearcoatAmount * mix(
+            R * R * clearcoatColor, // Clearcoat F0
+            clearcoatColor,         // Clearcoat F90
+            fresnel);
+        lod = clearcoatRoughness * MAX_REFLECTION_LOD;
+        prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
+                                Rcoord, lod).rgb;
+        clearcoat = prefilter * (clearcoatF * brdf.x + brdf.y);
+    }
+
     // Indirect Lighting
-    indirect = (d * diffuse + specular) * occlusion;
+    indirect = (d * diffuse + specular + clearcoat) * occlusion;
 #endif
 
     return indirect;
@@ -370,7 +400,7 @@ evaluateLights(
         float NdotH = max(0.0, dot(n, h));
         float EdotH = max(0.0, dot(e, h));
 
-        // Calculate light intesity
+        // Calculate light intensity
         float atten = lightDistanceAttenuation(Peye, i);
         float spot = lightSpotAttenuation(l, i);
 
@@ -412,6 +442,8 @@ evaluateLights(
                                     specularColor, Neye, Reye, NdotE,
                                     EdotH, ior, metallic, occlusion,
                                     specularRoughness, useSpecularWorkflow,
+                                    clearcoatAmount, clearcoatColor, 
+                                    clearcoatRoughness, 
                                     lightSource[i].worldToLightTransform);
         }
         // all other light sources contribute to the direct lighting
@@ -423,3 +455,53 @@ evaluateLights(
 
     return (emissiveColor + directLight + indirectLight);
 }
+
+
+-- glsl Preview.NormalMapping
+
+vec3
+perturbFragmentNormal(vec3 P, vec3 N)
+{
+#ifdef HD_HAS_COORD_normal
+    // Calculation of TBN matrix based on "Surface Gradient Based Bump Mapping"
+    // (2019)
+    vec3 Nt = normalize(HdGet_normal().xyz);
+    vec2 st = HdGetCoord_normal().st;
+
+    // Get screen space derivatives of position
+    vec3 dPdx = dFdx(P);
+    vec3 dPdy = dFdy(P);
+
+    // Ensure position derivatives are perpendicular to N
+    vec3 sigmaX = dPdx - dot(dPdx, N) * N;
+    vec3 sigmaY = dPdy - dot(dPdy, N) * N;
+
+    float flipSign = dot(dPdy, cross(N, dPdx)) < 0 ? -1 : 1;
+
+    // Get screen space derivatives of st
+    vec2 dSTdx = dFdx(st);
+    vec2 dSTdy = dFdy(st);
+
+    // Get determinant and determinant sign of st matrix
+    float det = dot(dSTdx, vec2(dSTdy.y, -dSTdy.x));
+    float signDet = det < 0 ? -1 : 1;
+
+    // Get first column of inv st matrix
+    // Don't divide by det, but scale by its sign
+    vec2 invCO = signDet * vec2(dSTdy.y, -dSTdx.y);
+
+    vec3 T = sigmaX * invCO.x + sigmaY * invCO.y;
+
+    if (abs(det) > 0) {
+        T = normalize(T);
+    }
+
+    vec3 B = (signDet * flipSign) * cross(N, T);
+
+    mat3 TBN = mat3(T, B, N);
+    return normalize(TBN * Nt);
+#endif
+    return N;
+}
+
+

@@ -65,4 +65,8 @@ namespace PXR_NS {
 #define PXR_PYTHON_SUPPORT_ENABLED
 #endif
 
+#if @PXR_PREFER_SAFETY_OVER_SPEED@
+#define PXR_PREFER_SAFETY_OVER_SPEED
+#endif
+
 #endif //PXR_H

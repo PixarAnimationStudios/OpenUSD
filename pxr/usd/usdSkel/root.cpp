@@ -166,10 +166,11 @@ _ComputeExtent(const UsdGeomBoundable& boundable,
     }
 
     UsdSkelCache skelCache;
-    skelCache.Populate(skelRoot);
+    skelCache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
     std::vector<UsdSkelBinding> bindings;
-    if (!skelCache.ComputeSkelBindings(skelRoot, &bindings) ||
+    if (!skelCache.ComputeSkelBindings(
+            skelRoot, &bindings, UsdTraverseInstanceProxies()) ||
         bindings.size() == 0) {
 
         // XXX: The extent of a SkelRoot is intended to bound the set of

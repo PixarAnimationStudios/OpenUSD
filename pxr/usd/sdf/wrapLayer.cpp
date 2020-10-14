@@ -258,6 +258,9 @@ _ExtractFileFormatArguments(
 static std::string
 _Repr(const SdfLayerHandle &self)
 {
+    if (!self) {
+        return "<expired " + TF_PY_REPR_PREFIX + "Layer instance>";
+    }
     return TF_PY_REPR_PREFIX + "Find(" + TfPyRepr(self->GetIdentifier()) + ")";
 }
 
@@ -375,7 +378,6 @@ _CanApplyNamespaceEdit(
 static SdfLayerRefPtr
 _CreateNew(
     const std::string& identifier,
-    const std::string& realPath = std::string(),
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
@@ -383,14 +385,13 @@ _CreateNew(
         return SdfLayerRefPtr();
     }
 
-    return SdfLayer::CreateNew(identifier, realPath, args);
+    return SdfLayer::CreateNew(identifier, args);
 }
 
 static SdfLayerRefPtr
 _New(
     const SdfFileFormatConstPtr& fileFormat,
     const std::string& identifier,
-    const std::string& realPath = std::string(),
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
@@ -398,7 +399,7 @@ _New(
         return SdfLayerRefPtr();
     }
 
-    return SdfLayer::New(fileFormat, identifier, realPath, args);
+    return SdfLayer::New(fileFormat, identifier, args);
 }
 
 static SdfLayerRefPtr
@@ -485,6 +486,12 @@ _FindOrOpenRelativeToLayer(
 
 using Py_SdfLayerTraversalFunctionSig = void(const SdfPath&);
 
+// Just for testing purposes.
+static void _TestTakeOwnership(SdfLayerRefPtr layerRef)
+{
+    // do nothing
+}
+
 } // anonymous namespace 
 
 void wrapLayer()
@@ -504,6 +511,8 @@ void wrapLayer()
         ( arg("anchor"),
           arg("assetPath")));
 
+    def("_TestTakeOwnership", &_TestTakeOwnership);
+
     scope s = class_<This,
                      ThisHandle,
                      boost::noncopyable>("Layer", no_init)
@@ -519,7 +528,6 @@ void wrapLayer()
 
         .def("CreateNew", &_CreateNew,
              ( arg("identifier"),
-               arg("realPath") = std::string(),
                arg("args") = boost::python::dict()),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("CreateNew")
@@ -545,7 +553,6 @@ void wrapLayer()
         .def("New", &_New,
              ( arg("fileFormat"),
                arg("identifier"),
-               arg("realPath") = std::string(),
                arg("args") = boost::python::dict()),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("New")
@@ -869,6 +876,10 @@ void wrapLayer()
                           return_value_policy<TfPySequenceToList>()),
             "Return unique list of asset paths of external references for\n"
             "given layer.")
+
+        .def("GetExternalAssetDependencies",
+             make_function(&This::GetExternalAssetDependencies,
+                           return_value_policy<TfPySequenceToList>()))
 
         .add_property("permissionToSave", &This::PermissionToSave, 
               "Return true if permitted to be saved, false otherwise.\n")

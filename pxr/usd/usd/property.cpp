@@ -222,7 +222,8 @@ _MapPath(_PathMap const &map, SdfPath const &path)
 }
 
 bool
-UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
+UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
+                         bool *foundErrors) const
 {
     if (!TF_VERIFY(specType == SdfSpecTypeAttribute ||
                    specType == SdfSpecTypeRelationship)) {
@@ -233,7 +234,6 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
 
     UsdStage *stage = _GetStage();
     PcpErrorVector pcpErrors;
-    std::vector<std::string> otherErrors;
     PcpTargetIndex targetIndex;
     {
         // Our intention is that the following code requires read-only
@@ -254,31 +254,31 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
                             &targetIndex, &pcpErrors);
     }
 
-    if (!targetIndex.paths.empty() && _Prim()->IsInMaster()) {
+    if (!targetIndex.paths.empty() && _Prim()->IsInPrototype()) {
 
         // Walk up to the root while we're in (nested) instance-land.  When we
-        // hit an instance or a master, add a mapping for the master source prim
-        // index path to this particular instance (proxy) path.
+        // hit an instance or a prototype, add a mapping for the prototype
+        // source prim index path to this particular instance (proxy) path.
         _PathMap pathMap;
 
-        // This prim might be an instance proxy inside a master, if so use its
-        // master, but be sure to skip up to the parent if *this* prim is an
-        // instance.  Target paths on *this* prim are in the "space" of its next
-        // ancestral master, just as how attribute & metadata values come from
-        // the instance itself, not its master.
+        // This prim might be an instance proxy inside a prototype, if so use
+        // its prototype, but be sure to skip up to the parent if *this* prim is
+        // an instance.  Target paths on *this* prim are in the "space" of its
+        // next ancestral prototype, just as how attribute & metadata values
+        // come from the instance itself, not its prototype.
         UsdPrim prim = GetPrim();
         if (prim.IsInstance()) {
             prim = prim.GetParent();
         }
         for (; prim; prim = prim.GetParent()) {
-            UsdPrim master;
+            UsdPrim prototype;
             if (prim.IsInstance()) {
-                master = prim.GetMaster();
-            } else if (prim.IsMaster()) {
-                master = prim;
+                prototype = prim.GetPrototype();
+            } else if (prim.IsPrototype()) {
+                prototype = prim;
             }
-            if (master) {
-                pathMap.emplace_back(master._GetSourcePrimIndex().GetPath(),
+            if (prototype) {
+                pathMap.emplace_back(prototype._GetSourcePrimIndex().GetPath(),
                                      prim.GetPath());
             }
         };
@@ -297,17 +297,19 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out) const
     }
 
     // TODO: handle errors
-    const bool isClean = pcpErrors.empty() && otherErrors.empty();
+    const bool isClean = pcpErrors.empty();
     if (!isClean) {
-        stage->_ReportErrors(
-            pcpErrors, otherErrors,
+        stage->_ReportPcpErrors(pcpErrors,
             TfStringPrintf(specType == SdfSpecTypeAttribute ?
                            "getting connections for attribute <%s>" :
                            "getting targets for relationship <%s>",
                            GetPath().GetText()));
+        if (foundErrors) {
+            *foundErrors = true;
+        }
     }
 
-    return isClean;
+    return isClean && targetIndex.hasTargetOpinions;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

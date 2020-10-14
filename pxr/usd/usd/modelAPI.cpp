@@ -144,7 +144,7 @@ UsdModelAPI::GetKind(TfToken* retValue) const
     return GetPrim().GetMetadata(SdfFieldKeys->Kind, retValue);
 }
 bool
-UsdModelAPI::SetKind(const TfToken& value)
+UsdModelAPI::SetKind(const TfToken& value) const
 {
     if (GetPath() == SdfPath::AbsoluteRootPath()) {
         // Special-case to pre-empt coding errors.

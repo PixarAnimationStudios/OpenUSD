@@ -1317,6 +1317,16 @@ _ComputeExtentForPointInstancer(
     }
 }
 
+size_t
+UsdGeomPointInstancer::GetInstanceCount(UsdTimeCode timeCode) const
+{
+    UsdAttribute indicesAttr = GetProtoIndicesAttr();
+    VtIntArray indices;
+    indicesAttr.Get(&indices, timeCode);
+    return indices.size();
+}
+
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
     UsdGeomRegisterComputeExtentFunction<UsdGeomPointInstancer>(

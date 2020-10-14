@@ -256,10 +256,132 @@ static void Run()
     TF_AXIOM(_map2.size() == 2);
 }
 
+static void
+TestMoveOperations()
+{
+    using Map = TfDenseHashMap<int, std::string, TfHash>;
+
+    printf("\nTesting TfDenseHashMap move constructor & assignment...\n");
+
+    // Move some small (without hash index) maps
+
+    // Move construction of empty map from empty map
+    Map emptyMap1(Map{});
+    TF_AXIOM(emptyMap1.empty());
+
+    // Move assignment of empty map into empty map
+    Map emptyMap2;
+    emptyMap2 = Map();
+    TF_AXIOM(emptyMap2.empty());
+
+    Map smallMap1;
+    smallMap1.insert({1, "one"});
+    smallMap1.insert({2, "two"});
+
+    // Move construction of small map
+    Map smallMap2(std::move(smallMap1));
+    TF_AXIOM(smallMap2.size() == 2);
+    TF_AXIOM(smallMap2.find(1) != smallMap2.end());
+    TF_AXIOM(smallMap2.find(1)->second == "one");
+    TF_AXIOM(smallMap2.find(2) != smallMap2.end());
+    TF_AXIOM(smallMap2.find(2)->second == "two");
+
+    // Move assignment of small map into small map
+    Map smallMap3;
+    smallMap3.insert({0, "zero"});
+    TF_AXIOM(smallMap3.size() == 1);
+    smallMap3 = std::move(smallMap2);
+    TF_AXIOM(smallMap3.size() == 2);
+    TF_AXIOM(smallMap3.find(1) != smallMap3.end());
+    TF_AXIOM(smallMap3.find(1)->second == "one");
+    TF_AXIOM(smallMap3.find(2) != smallMap3.end());
+    TF_AXIOM(smallMap3.find(2)->second == "two");
+
+    // Move assignment of small map into empty map
+    Map smallMap4;
+    smallMap4 = std::move(smallMap3);
+    TF_AXIOM(smallMap4.size() == 2);
+    TF_AXIOM(smallMap4.find(1) != smallMap4.end());
+    TF_AXIOM(smallMap4.find(1)->second == "one");
+    TF_AXIOM(smallMap4.find(2) != smallMap4.end());
+    TF_AXIOM(smallMap4.find(2)->second == "two");
+
+    // Move assignment of an empty map into a small map
+    Map emptyMap3;
+    smallMap4 = std::move(emptyMap3);
+    TF_AXIOM(smallMap4.empty());
+
+    // Move some large (with hash index) maps
+
+    Map largeMap1;
+    for (int i=0; i<10000; ++i) {
+        largeMap1.insert({i, TfStringify(i)});
+    }
+    TF_AXIOM(largeMap1.size() == 10000);
+
+    // Move construction of large map
+    Map largeMap2(std::move(largeMap1));
+    TF_AXIOM(largeMap2.size() == 10000);
+    TF_AXIOM(largeMap2.find(2319) != largeMap2.end());
+    TF_AXIOM(largeMap2.find(2319)->second == "2319");
+
+    // Move assignment of large map into large map
+    Map largeMap3;
+    for (int i=10000; i<20000; ++i) {
+        largeMap3.insert({i, TfStringify(i)});
+    }
+    TF_AXIOM(largeMap3.size() == 10000);
+    largeMap3 = std::move(largeMap2);
+    TF_AXIOM(largeMap3.size() == 10000);
+    TF_AXIOM(largeMap3.find(2319) != largeMap3.end());
+    TF_AXIOM(largeMap3.find(2319)->second == "2319");
+
+    // Move assignment of large map into empty map
+    Map largeMap4;
+    largeMap4 = std::move(largeMap3);
+    TF_AXIOM(largeMap4.size() == 10000);
+    TF_AXIOM(largeMap4.find(2319) != largeMap4.end());
+    TF_AXIOM(largeMap4.find(2319)->second == "2319");
+
+    // Move assignment of an empty map into a large map
+    Map emptyMap4;
+    largeMap4 = std::move(emptyMap4);
+    TF_AXIOM(largeMap4.empty());
+
+    // Move assignment of a small map into a large map
+    Map smallMap5;
+    smallMap5.insert({3, "three"});
+    smallMap5.insert({4, "four"});
+    Map largeMap5;
+    for (int i=20000; i<30000; ++i) {
+        largeMap5.insert({i, TfStringify(i)});
+    }
+    largeMap5 = std::move(smallMap5);
+    TF_AXIOM(largeMap5.size() == 2);
+    TF_AXIOM(largeMap5.find(3) != largeMap5.end());
+    TF_AXIOM(largeMap5.find(3)->second == "three");
+    TF_AXIOM(largeMap5.find(4) != largeMap5.end());
+    TF_AXIOM(largeMap5.find(4)->second == "four");
+
+    // Move assignment of a large map into a small map
+    Map smallMap6;
+    smallMap6.insert({5, "five"});
+    smallMap6.insert({6, "six"});
+    Map largeMap6;
+    for (int i=30000; i<40000; ++i) {
+        largeMap6.insert({i, TfStringify(i)});
+    }
+    smallMap6 = std::move(largeMap6);
+    TF_AXIOM(smallMap6.size() == 10000);
+    TF_AXIOM(smallMap6.find(35000) != smallMap6.end());
+    TF_AXIOM(smallMap6.find(35000)->second == "35000");
+}
+
 static bool
 Test_TfDenseHashMap()
 {
     Run();
+    TestMoveOperations();
     return true;
 }
 

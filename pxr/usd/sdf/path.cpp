@@ -49,12 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool _IsValidIdentifier(TfToken const &name);
 
-static VtValue
-_CastFromSdfPathToTfToken(const VtValue &val)
-{
-    return VtValue(val.Get<SdfPath>().GetToken());
-}
-
 // XXX: Enable this define to make bad path strings
 // cause runtime errors.  This can be useful when trying to track down cases
 // of bad path strings originating from python code.
@@ -65,16 +59,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfPath>();
     TfType::Define< vector<SdfPath> >()
         .Alias(TfType::GetRoot(), "vector<SdfPath>");    
-}
-
-// Register with VtValue that SdfPaths can be cast to TfTokens.  The only
-// reason we need this is because we need to cast AnimSplines that contain
-// SdfPaths to ones that contain TfTokens, and we need that to succeed.  The
-// only reason we need that, is in execution we can't use SdfPaths directly
-// due to performance and threadsafety reasons.
-TF_REGISTRY_FUNCTION(VtValue)
-{
-    VtValue::RegisterCast<SdfPath, TfToken>(&_CastFromSdfPathToTfToken);
 }
 
 SdfPath::SdfPath(const std::string &path) {
@@ -291,6 +275,21 @@ SdfPath::IsExpressionPath() const {
         return propNode->GetNodeType() == Sdf_PathNode::ExpressionNode;
     }
     return false;
+}
+
+TfToken
+SdfPath::GetAsToken() const
+{
+    if (_primPart) {
+        return Sdf_PathNode::GetPathAsToken(_primPart.get(), _propPart.get());
+    }
+    return TfToken();
+}
+
+std::string
+SdfPath::GetAsString() const
+{
+    return GetAsToken().GetString();
 }
 
 TfToken const &
@@ -620,12 +619,12 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
     }
     if (newSuffix == EmptyPath()) {
         TF_CODING_ERROR("Cannot append invalid path to <%s>",
-                        GetString().c_str());
+                        GetAsString().c_str());
         return EmptyPath();
     }
     if (newSuffix.IsAbsolutePath()) {
         TF_WARN("Cannot append absolute path <%s> to another path <%s>.",
-                newSuffix.GetString().c_str(), GetString().c_str());
+                newSuffix.GetAsString().c_str(), GetAsString().c_str());
         return EmptyPath();
     }
     if (newSuffix == ReflexiveRelativePath()) {
@@ -916,12 +915,12 @@ SdfPath
 SdfPath::AppendMapper(const SdfPath &targetPath) const {
     if (!IsPropertyPath()) {
         TF_WARN("Cannnot append mapper '%s' to non-property path <%s>.",
-                targetPath.GetString().c_str(), GetString().c_str());
+                targetPath.GetAsString().c_str(), GetAsString().c_str());
         return EmptyPath();
     }
     if (targetPath == EmptyPath()) {
         TF_WARN("Cannot append an empty mapper target path to <%s>",
-                GetString().c_str());
+                GetAsString().c_str());
         return EmptyPath();
     }
     return SdfPath { _primPart, 
@@ -1574,7 +1573,7 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
         !anchor.IsPrimVariantSelectionPath()) {
         TF_WARN("MakeRelativePath() requires a prim, prim variant selection, "
                 "or absolute root path as an anchor (got '%s').",
-                 anchor.GetString().c_str());
+                 anchor.GetAsString().c_str());
         return SdfPath();
     }
 
@@ -1897,17 +1896,27 @@ SdfPath::IsValidPathString(const std::string &pathString,
 static inline bool
 _LessThanCompareNodes(Sdf_PathNode const *l, Sdf_PathNode const *r)
 {
-    size_t lCount = l->GetElementCount();
-    size_t rCount = r->GetElementCount();
+    // Internally element counts are 'short', so this cast is safe.
+    int lCount = static_cast<int>(l->GetElementCount());
+    int rCount = static_cast<int>(r->GetElementCount());
     
-    // walk up to the same depth
-    size_t upSteps = lCount > rCount ? lCount - rCount : 0;
-    while (upSteps--) {
-        l = l->GetParentNode();
+    // Since caller ensures both absolute or both relative, then if either has
+    // no elements, it's the root node.  l is less than r if l is the root and r
+    // is not.
+    if (!lCount || !rCount) {
+        return !lCount && rCount;
     }
-    upSteps = rCount > lCount ? rCount - lCount : 0;
-    while (upSteps--) {
+
+    int diff = rCount - lCount;
+
+    // walk up to the same depth
+    while (diff < 0) {
+        l = l->GetParentNode();
+        ++diff;
+    }
+    while (diff > 0) {
         r = r->GetParentNode();
+        --diff;
     }
     
     // Now the cur nodes are at the same depth in the node tree
@@ -1931,17 +1940,15 @@ _LessThanCompareNodes(Sdf_PathNode const *l, Sdf_PathNode const *r)
 bool
 SdfPath::_LessThanInternal(SdfPath const &lhs, SdfPath const &rhs)
 {
-    SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
-
     Sdf_PathNode const *lNode = lhs._primPart.get();
     Sdf_PathNode const *rNode = rhs._primPart.get();
 
-    if (lNode->IsAbsolutePath() != rNode->IsAbsolutePath()) {
-        return lNode->IsAbsolutePath();
-    } else if (lhs == absRoot) {
-        return true;
-    } else if (rhs == absRoot) {
-        return false;
+    bool lIsAbs = lNode->IsAbsolutePath();
+    bool rIsAbs = rNode->IsAbsolutePath();
+
+    // Absolute paths are less than all relative paths.
+    if (lIsAbs != rIsAbs) {
+        return lIsAbs;
     }
 
     // If there is a difference in prim part, it's more significant than the

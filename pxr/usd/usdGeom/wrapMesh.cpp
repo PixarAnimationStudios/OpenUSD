@@ -308,6 +308,8 @@ WRAP_CUSTOM {
              (arg("faceVertexIndices"),
               arg("faceVertexCounts"),
               arg("numPoints")))
+        .def("GetFaceCount", &UsdGeomMesh::GetFaceCount,
+            arg("timeCode")=UsdTimeCode::Default()) 
         .staticmethod("ValidateTopology");
 
     _class.attr("SHARPNESS_INFINITE") = UsdGeomMesh::SHARPNESS_INFINITE;

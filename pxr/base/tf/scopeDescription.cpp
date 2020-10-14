@@ -170,7 +170,10 @@ private:
 
 // Obtain the registry singleton instance.
 static _StackRegistry &GetRegistry() {
-    static _StackRegistry *theRegistry = new _StackRegistry;
+    // Avoid heap allocation (since this might be initialized in a signal
+    // handler) and we don't want to run static destructors here at exit.
+    alignas(_StackRegistry) static char registryBuf[sizeof(_StackRegistry)];
+    static _StackRegistry *theRegistry = new (registryBuf) _StackRegistry;
     return *theRegistry;
 }
 

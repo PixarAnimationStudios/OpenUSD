@@ -70,13 +70,6 @@ UsdGeomPrimvar::IsValidPrimvarName(const TfToken& name)
 }
 
 /* static */
-bool
-UsdGeomPrimvar::IsPrimvarRelatedPropertyName(const TfToken& name)
-{
-    return TfStringStartsWith(name, _tokens->primvarsPrefix);
-}
-
-/* static */
 TfToken
 UsdGeomPrimvar::StripPrimvarsName(const TfToken& name)
 {

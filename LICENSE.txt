@@ -508,3 +508,17 @@ Draco
 ============================================================
 USD bundles Draco, which is available under the Apache 2.0 license. For details,
 see https://github.com/google/draco/blob/master/README.md.
+
+
+============================================================
+Roboto Fonts
+============================================================
+USD bundles Roboto fonts, which is available under the Apache 2.0 license. 
+For details, see https://fonts.google.com/specimen/Roboto#license
+
+
+============================================================
+Roboto Mono Fonts
+============================================================
+USD bundles Roboto Mono fonts, which is available under the Apache 2.0 license. 
+For details, see https://fonts.google.com/specimen/Roboto+Mono#license

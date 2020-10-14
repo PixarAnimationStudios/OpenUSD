@@ -143,6 +143,7 @@ SdfLayer::SdfLayer(
     , _permissionToSave(true)
     , _validateAuthoring(
         validateAuthoring || TfGetEnvSetting<bool>(SDF_LAYER_VALIDATE_AUTHORING))
+    , _hints{/*.mightHaveRelocates =*/ false}
 {
     const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
 
@@ -345,36 +346,33 @@ SdfLayer::GetDisplayNameFromIdentifier(const string& identifier)
 SdfLayerRefPtr
 SdfLayer::CreateNew(
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::CreateNew('%s', '%s', '%s')\n",
-        identifier.c_str(), realPath.c_str(), TfStringify(args).c_str());
+        "SdfLayer::CreateNew('%s', '%s')\n",
+        identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(TfNullPtr, identifier, realPath, ArAssetInfo(), args);
+    return _CreateNew(TfNullPtr, identifier, ArAssetInfo(), args);
 }
 
 SdfLayerRefPtr
 SdfLayer::CreateNew(
     const SdfFileFormatConstPtr& fileFormat,
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::CreateNew('%s', '%s', '%s', '%s')\n",
+        "SdfLayer::CreateNew('%s', '%s', '%s')\n",
         fileFormat->GetFormatId().GetText(), 
-        identifier.c_str(), realPath.c_str(), TfStringify(args).c_str());
+        identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
+    return _CreateNew(fileFormat, identifier, ArAssetInfo(), args);
 }
 
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
     const string& identifier,
-    const string& realPath,
     const ArAssetInfo& assetInfo,
     const FileFormatArguments &args)
 {
@@ -401,8 +399,7 @@ SdfLayer::_CreateNew(
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
     // Direct newly created layers to a local path.
-    const string localPath = realPath.empty() ? 
-        resolver.ComputeLocalPath(absIdentifier) : realPath;
+    const string localPath = resolver.ComputeLocalPath(absIdentifier);
     if (localPath.empty()) {
         TF_CODING_ERROR(
             "Failed to compute local path for new layer with "
@@ -446,17 +443,26 @@ SdfLayer::_CreateNew(
         layer = _CreateNewWithFormat(
             fileFormat, absIdentifier, localPath, assetInfo, args);
 
+        if (!TF_VERIFY(layer)) {
+            return TfNullPtr;
+        }
+
+        // Stash away the existing layer hints.  The call to _Save below will
+        // invalidate them but they should still be good.
+        SdfLayerHints hints = layer->_hints;
+
         // XXX 2011-08-19 Newly created layers should not be
         // saved to disk automatically.
         //
         // Force the save here to ensure this new layer overwrites any
         // existing layer on disk.
-        if (!TF_VERIFY(layer) || !layer->_Save(/* force = */ true)) {
+        if (!layer->_Save(/* force = */ true)) {
             // Dropping the layer reference will destroy it, and
             // the destructor will remove it from the registry.
             return TfNullPtr;
         }
 
+        layer->_hints = hints;
         // Once we have saved the layer, initialization is complete.
         layer->_FinishInitialization(/* success = */ true);
     }
@@ -464,23 +470,12 @@ SdfLayer::_CreateNew(
     return layer;
 }
 
-// Creates a new empty layer with the given identifier for a given file
-// format class. This is so that Python File Format classes can create
-// layers (CreateNew(); doesn't work, because it already saves during
-// construction of the layer. That is something specific (python generated)
-// layer types may choose to not do.)
-
 SdfLayerRefPtr
 SdfLayer::New(
     const SdfFileFormatConstPtr& fileFormat,
     const string& identifier,
-    const string& realPath,
     const FileFormatArguments& args)
 {
-    // No layer identifier or realPath policies can be applied at this point.
-    // This method is called by the file format implementation to create new
-    // layer objects. Policy is applied in CreateNew.
-
     if (!fileFormat) {
         TF_CODING_ERROR("Invalid file format");
         return TfNullPtr;
@@ -506,7 +501,7 @@ SdfLayer::New(
         TfAbsPath(identifier) : identifier;
 
     SdfLayerRefPtr layer = _CreateNewWithFormat(
-        fileFormat, absIdentifier, realPath, ArAssetInfo(), args);
+        fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
 
     // No further initialization required.
     layer->_FinishInitialization(/* success = */ true);
@@ -831,6 +826,24 @@ SdfLayer::GetSchema() const
     return GetFileFormat()->GetSchema();
 }
 
+// For the given layer, gets a dictionary of resolved external asset dependency 
+// paths to the timestamp for each asset.
+static VtDictionary
+_GetExternalAssetModificationTimes(const SdfLayer& layer)
+{
+    VtDictionary result;
+    std::set<std::string> externalAssetDependencies = 
+        layer.GetExternalAssetDependencies();
+    for (const std::string& resolvedPath : externalAssetDependencies) {
+        // Get the modification timestamp for the path. Note that external
+        // asset dependencies only returns resolved paths so pass the same
+        // path for both params.
+        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
+            resolvedPath, resolvedPath);
+    }
+    return result;
+}
+
 SdfLayer::_ReloadResult
 SdfLayer::_Reload(bool force)
 {
@@ -902,10 +915,15 @@ SdfLayer::_Reload(bool force)
             return _ReloadFailed;
         }
 
+        // Ask the current external asset dependency state.
+        VtDictionary externalAssetTimestamps = 
+            _GetExternalAssetModificationTimes(*this);
+
         // See if we can skip reloading.
         if (!force && !IsDirty()
             && (realPath == oldRealPath)
-            && (timestamp == _assetModificationTime)) {
+            && (timestamp == _assetModificationTime)
+            && (externalAssetTimestamps == _externalAssetModificationTimes)) {
             return _ReloadSkipped;
         }
 
@@ -914,6 +932,7 @@ SdfLayer::_Reload(bool force)
         }
 
         _assetModificationTime.Swap(timestamp);
+        _externalAssetModificationTimes = std::move(externalAssetTimestamps);
 
         if (realPath != oldRealPath) {
             Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
@@ -2783,6 +2802,9 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
         _data = newData;
     }
 
+    // Copy hints from other layer
+    _hints = layer->_hints;
+
     // If this is a "streaming" layer, we must mark it dirty.
     if (isStreamingLayer) {
         _stateDelegate->_MarkCurrentStateAsDirty();
@@ -2826,7 +2848,7 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
 }
 
 set<string>
-SdfLayer::GetExternalReferences()
+SdfLayer::GetExternalReferences() const
 {
     SdfSubLayerProxy subLayers = GetSubLayerPaths();
 
@@ -2862,6 +2884,12 @@ SdfLayer::UpdateExternalReference(
     _UpdateReferencePaths(GetPseudoRoot(), oldLayerPath, newLayerPath);
 
     return true;
+}
+
+std::set<std::string> 
+SdfLayer::GetExternalAssetDependencies() const
+{
+    return _fileFormat->GetExternalAssetDependencies(*this);
 }
 
 // ModifyItemEdits() callback that updates a reference's or payload's
@@ -3054,6 +3082,11 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         layer->_assetModificationTime.Swap(timestamp);
     }
 
+    // Store any external asset dependencies so we have an initial state to
+    // compare during reload.
+    layer->_externalAssetModificationTimes =
+        _GetExternalAssetModificationTimes(*layer);
+
     layer->_MarkCurrentStateAsClean();
 
     // Layer initialization is complete.
@@ -3146,6 +3179,15 @@ SdfLayer::HasField(const SdfPath& path, const TfToken& fieldName,
         return true;
     }
     return false;
+}
+
+SdfLayerHints
+SdfLayer::GetHints() const
+{
+    // Hints are invalidated by any authoring operation but we don't want to
+    // incur the cost of resetting the _hints object at authoring time.
+    // Instead, we return a default SdfLayerHints here if the layer is dirty.
+    return IsDirty() ? SdfLayerHints{} : _hints;
 }
 
 bool
@@ -4260,6 +4302,10 @@ SdfLayer::_Save(bool force) const
     if (!_WriteToFile(path, std::string(), 
                       GetFileFormat(), GetFileFormatArguments()))
         return false;
+
+    // Layer hints are invalidated by authoring so _hints must be reset now
+    // that the layer has been marked as clean.  See GetHints().
+    _hints = SdfLayerHints{};
 
     // Record modification timestamp.
     VtValue timestamp = ArGetResolver().GetModificationTimestamp(

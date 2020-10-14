@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLComputeCmds::HgiGLComputeCmds(HgiGLDevice* device)
     : HgiComputeCmds()
+    , _pushStack(0)
 {
 }
 
@@ -79,21 +80,29 @@ HgiGLComputeCmds::Dispatch(int dimX, int dimY)
 void
 HgiGLComputeCmds::PushDebugGroup(const char* label)
 {
-    _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    if (HgiGLDebugEnabled()) {
+        _pushStack++;
+        _ops.push_back( HgiGLOps::PushDebugGroup(label) );
+    }
 }
 
 void
 HgiGLComputeCmds::PopDebugGroup()
 {
-    _ops.push_back( HgiGLOps::PopDebugGroup() );
+    if (HgiGLDebugEnabled()) {
+        _pushStack--;
+        _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
 }
 
 bool
-HgiGLComputeCmds::_Submit(Hgi* hgi)
+HgiGLComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
     if (_ops.empty()) {
         return false;
     }
+
+    TF_VERIFY(_pushStack==0, "Push and PopDebugGroup do not even out");
 
     HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
     HgiGLDevice* device = hgiGL->GetPrimaryDevice();

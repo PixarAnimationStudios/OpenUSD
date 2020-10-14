@@ -341,6 +341,8 @@ HdPrimGather::_DoPredicateTestOnRange(const SdfPathVector &paths,
                                       FilterPredicateFn    predicateFn,
                                       void                *predicateParam)
 {
+    TRACE_FUNCTION();
+
     // Range _end is inclusive, but blocked_range is exclusive.
     _ConcurrentRange concurrentRange(range._start,
                                      range._end + 1,
@@ -371,6 +373,8 @@ HdPrimGather::_DoPredicateTestOnPrims(const SdfPathVector &paths,
                                FilterPredicateFn    predicateFn,
                                void                *predicateParam)
 {
+    TRACE_FUNCTION();
+
     size_t begin = range.begin();
     size_t end   = range.end() - 1;  // convert to inclusive.
 

@@ -115,7 +115,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     // Unlike ordinary OIT geometry, volumes have only one render pass,
     // so insert into OIT buffers even if alpha is 1.
-    if (color.a > 0.0001) {
+    if (any(greaterThan(color, vec4(0.0001)))) {
         RenderOutputImpl(Peye, Neye, color, patchCoord);
     }
 }

@@ -88,7 +88,7 @@ void wrapUsdPrimCompositionQuery()
 {
     using This = UsdPrimCompositionQuery;
         
-    scope s = class_<This, This*>
+    scope s = class_<This>
         ("PrimCompositionQuery", no_init)
         .def(init<const UsdPrim &>(arg("prim")))
         .def(init<const UsdPrim &, const This::Filter &>((arg("prim"), arg("filter"))))

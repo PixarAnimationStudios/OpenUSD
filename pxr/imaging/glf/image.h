@@ -30,6 +30,8 @@
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
 
+#include "pxr/imaging/hio/types.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/dictionary.h"
@@ -41,7 +43,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
+using GlfImageSharedPtr = std::shared_ptr<class GlfImage>;
 
 /// \class GlfImage
 ///
@@ -60,6 +62,17 @@ public:
         OriginUpperLeft, 
         OriginLowerLeft
     }; 
+
+    /// Specifies the source color space in which the texture is encoded, with 
+    /// "Auto" indicating the texture reader should determine color space based 
+    /// on hints from the image (e.g. file type, number of channels, image 
+    /// metadata)
+    enum SourceColorSpace
+    {
+        Raw, 
+        SRGB,
+        Auto
+    }; 
    
     /// \class StorageSpec
     ///
@@ -69,13 +82,12 @@ public:
     public:
         StorageSpec()
             : width(0), height(0)
-            , format(GL_NONE)
-            , type(GL_NONE)
+            , hioFormat(HioFormatInvalid)
             , flipped(false)
             , data(0) { }
 
         int width, height, depth;
-        GLenum format, type;
+        HioFormat hioFormat;
         bool flipped;
         void * data;
     };
@@ -97,11 +109,15 @@ public:
     /// \name Reading
     /// {@
 
-    /// Opens \a filename for reading from the given \a subimage.
+    /// Opens \a filename for reading from the given \a subimage at mip level
+    /// \a mip, using \a sourceColorSpace to help determine the color space
+    /// with which to interpret the texture
     GLF_API
     static GlfImageSharedPtr OpenForReading(std::string const & filename,
                                             int subimage = 0,
                                             int mip = 0,
+                                            SourceColorSpace sourceColorSpace = 
+                                                SourceColorSpace::Auto,
                                             bool suppressErrors = false);
 
     /// Reads the image file into \a storage.
@@ -138,11 +154,8 @@ public:
     /// Returns the image height.
     virtual int GetHeight() const = 0;
 
-    /// Returns the image format.
-    virtual GLenum GetFormat() const = 0;
-
-    /// Returns the image type.
-    virtual GLenum GetType() const = 0;
+    /// Returns the HioFormat.
+    virtual HioFormat GetHioFormat() const = 0;
 
     /// Returns the number of bytes per pixel.
     virtual int GetBytesPerPixel() const = 0;
@@ -150,7 +163,7 @@ public:
     /// Returns the number of mips available.
     virtual int GetNumMipLevels() const = 0;
 
-    /// Returns whether the iamge is in the sRGB color space.
+    /// Returns whether the image is in the sRGB color space.
     virtual bool IsColorSpaceSRGB() const = 0;
 
     /// \name Metadata
@@ -171,6 +184,7 @@ protected:
     virtual bool _OpenForReading(std::string const & filename,
                                  int subimage,
                                  int mip,
+                                 SourceColorSpace sourceColorSpace,
                                  bool suppressErrors) = 0;
 
     virtual bool _OpenForWriting(std::string const & filename) = 0;

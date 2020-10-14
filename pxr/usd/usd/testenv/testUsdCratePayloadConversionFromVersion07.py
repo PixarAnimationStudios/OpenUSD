@@ -104,9 +104,9 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         self._VerifyLayerPrims(usdaLayer)
 
         # Export the this layer to a usdc file and verify that it is exported
-        # using the prior 0.7.0 crate file version.
+        # using the 0.8.0 crate file version as new files start at 0.8.0.
         self.assertTrue(usdaLayer.Export(singlePayloadCrateFilename))
-        self._VerifyCrateVersion07(singlePayloadCrateFilename)
+        self._VerifyCrateVersion08(singlePayloadCrateFilename)
 
         # Open the crate layer and verify that it has the same prims and
         # payloads.
@@ -121,7 +121,8 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
             Sdf.Payload('PayloadNew2.usda', Sdf.Path('/Parent'))]
 
         # Export layer to a new crate file and verify that it uses the 0.8.0
-        # crate version as this can not be represented in prior versions.
+        # crate version as this can not be represented in prior versions (and 
+        # also it's now the default version for new crate files).
         self.assertTrue(usdaLayer.Export(listPayloadCrateFilename))
         self._VerifyCrateVersion08(listPayloadCrateFilename)
 

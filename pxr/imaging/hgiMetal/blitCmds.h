@@ -51,12 +51,18 @@ public:
 
     HGIMETAL_API
     void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
-    
+
+    HGIMETAL_API
+    void CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp) override;
+
     HGIMETAL_API
     void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) override;
 
     HGIMETAL_API
     void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
+
+    HGIMETAL_API
+    void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) override;
 
     HGIMETAL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
@@ -68,7 +74,7 @@ protected:
     HgiMetalBlitCmds(HgiMetal* hgi);
 
     HGIMETAL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiMetalBlitCmds() = delete;
@@ -78,8 +84,10 @@ private:
     void _CreateEncoder();
 
     HgiMetal* _hgi;
+    id<MTLCommandBuffer> _commandBuffer;
     id<MTLBlitCommandEncoder> _blitEncoder;
     NSString* _label;
+    bool _secondaryCommandBuffer;
 
     // BlitCmds is used only one frame so storing multi-frame state on BlitCmds
     // will not survive.

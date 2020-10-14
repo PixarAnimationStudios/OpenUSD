@@ -60,25 +60,6 @@ public:
     HDST_API
     void SetAovBindings(const HdRenderPassAovBindingVector &aovBindings);
 
-    /// Set the number of color buffer's to use.
-    HDST_API
-    void SetNumColorAttachments(size_t numAttachments);
-
-    /// Set the clear value for a color buffer that is applied at the beginning
-    /// of rendering.  The expected type of clearValue is dependent on the
-    /// format of the buffer specified in current draw target at execute time.
-    /// (i.e. there is no order dependency between setting the draw target and
-    /// color values.
-    /// An unexpected formats results in an error and the buffer not being
-    /// cleared.
-    HDST_API
-    void SetColorClearValue(size_t attachmentIdx, const VtValue &clearValue);
-
-    /// Set the clear value for the depth buffer.  It is expected the
-    /// clear value is a normalize float.
-    HDST_API
-    void SetDepthClearValue(float clearValue);
-
     /// Sets the priority of values in the depth buffer.
     /// i.e. should pixels closer or further from the camera win.
     HDST_API
@@ -90,22 +71,6 @@ public:
 
     HDST_API
     void SetRprimCollection(HdRprimCollection const& col);
-
-    /// Returns the number of color buffers attached to the draw target.
-    size_t GetNumColorAttachments() const { return _colorClearValues.size(); }
-
-    /// Returns the clear color for the specified buffer.  The type
-    /// is dependant on the format of the buffer.
-    const VtValue &GetColorClearValue(size_t attachmentIdx) const
-    {
-        TF_DEV_AXIOM(attachmentIdx < _colorClearValues.size());
-
-        return _colorClearValues[attachmentIdx];
-    }
-
-    /// Returns the clear value for the z-buffer.
-    float GetDepthClearValue() const { return _depthClearValue; }
-
 
     HdDepthPriority GetDepthPriority() const { return _depthPriority; }
 
@@ -130,8 +95,6 @@ public:
 
 private:
     HdRenderPassAovBindingVector _aovBindings;
-    std::vector<VtValue> _colorClearValues;
-    float                _depthClearValue;
     HdDepthPriority      _depthPriority;
 
     SdfPath              _cameraId;

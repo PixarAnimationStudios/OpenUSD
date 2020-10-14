@@ -139,12 +139,12 @@ void wrap{{ cls.cppClassName }}()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 {% endif %}
-{% if cls.isAppliedAPISchema and not cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
 {% endif %}
-{% if cls.isAppliedAPISchema and cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and cls.isMultipleApply %}
 
         .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")

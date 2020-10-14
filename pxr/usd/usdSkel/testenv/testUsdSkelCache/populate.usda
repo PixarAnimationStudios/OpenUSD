@@ -1,6 +1,9 @@
 #usda 1.0
 
-def SkelAnimation "Anim1" {}
+def SkelAnimation "Anim1" 
+{
+    uniform token[] blendShapes = ["override", "shape"]
+}
 
 def SkelAnimation "Anim2" {}
 
@@ -95,6 +98,8 @@ def Scope "InstancedModelSkelBindings" (
 
 def SkelRoot "SkelBinding"
 {
+    rel skel:animationSource = </Anim1>
+
     def Scope "Scope" (
         prepend apiSchemas = ["SkelBindingAPI"]
     )
@@ -104,7 +109,7 @@ def SkelRoot "SkelBinding"
         uniform int[] primvars:skel:jointIndices = []
         uniform float[] primvars:skel:jointWeights = []
         uniform token[] skel:joints = ["scope"]
-        uniform token[] skel:blendShapes = ["scope"]
+        uniform token[] skel:blendShapes = ["ignored"]
         rel skel:blendShapeTargets = []
 
         def Mesh "Inherit" {}
@@ -118,7 +123,7 @@ def SkelRoot "SkelBinding"
             uniform int[] primvars:skel:jointIndices = []
             uniform float[] primvars:skel:jointWeights = []
             uniform token[] skel:joints = ["override"]
-            uniform token[] skel:blendShapes = ["override"]
+            uniform token[] skel:blendShapes = ["shape"]
             rel skel:blendShapeTargets = []
         }
 
@@ -155,7 +160,7 @@ def SkelRoot "SkelBinding"
         uniform int[] primvars:skel:jointIndices = []
         uniform float[] primvars:skel:jointWeights = []
         uniform token[] skel:joints = ["instance"]
-        uniform token[] skel:blendShapes = ["instance"]
+        uniform token[] skel:blendShapes = ["ignored"]
         rel skel:blendShapeTargets = []
     }
 }

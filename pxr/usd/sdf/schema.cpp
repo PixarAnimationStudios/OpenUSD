@@ -1594,7 +1594,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             continue;
         
         // Register new fields
-        for (const std::pair<std::string, JsValue>& field : fields) {
+        for (const std::pair<const std::string, JsValue>& field : fields) {
             const TfToken fieldName(field.first);
 
             // Validate field

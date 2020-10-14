@@ -33,7 +33,9 @@
 // commented for testing purposes, for now (6/2020).
 //#include <boost/functional/hash.hpp>
 
+#include <set>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -45,8 +47,8 @@ struct Two
 template <class HashState>
 void TfHashAppend(HashState &h, Two two)
 {
-    h.Append(two.x);
-    h.Append(two.y);
+    h.Append(two.x,
+             two.y);
 }
 
 template <class Hasher>
@@ -221,6 +223,26 @@ static_assert(!_IsHashable<_NoHashButConvertsToInt>(0), "");
 static_assert(_IsHashable<bool>(0), "");
 static_assert(_IsHashable<int>(0), "");
 
+struct MultipleThings
+{
+    int ival = 123;
+    float fval = 1.23f;
+    std::string sval = "123";
+    std::vector<int> vints = { 1, 2, 3 };
+    std::set<float> sfloats = { 1.2f, 2.3f, 3.4f };
+};
+
+template <class HashState>
+void
+TfHashAppend(HashState &h, MultipleThings const &mt)
+{
+    h.Append(mt.ival,
+             mt.fval,
+             mt.sval,
+             mt.vints);
+    h.AppendRange(mt.sfloats.begin(), mt.sfloats.end());
+}
+
 static bool
 Test_TfHash()
 {
@@ -268,6 +290,21 @@ Test_TfHash()
             printf("hash %d: %zu\n", i, h(i));
         }
     }
+
+    std::vector<int> vint = {1, 2, 3, 4, 5};
+    printf("hash(vector<int>): %zu\n", h(vint));
+
+    std::pair<int, float> intfloat = {1, 2.34};
+    printf("hash(pair<int, float>): %zu\n", h(intfloat));
+
+    std::vector<std::pair<int, float>> vp { intfloat, intfloat, intfloat };
+    printf("hash(vector<pair<int, float>>): %zu\n", h(vp));
+
+    MultipleThings mt;
+    printf("hash(MultipleThings): %zu\n", h(mt));
+
+    printf("combine hash of the 3: %zu\n",
+           TfHash::Combine(vint, intfloat, vp));
 
     TfHasher tfh;
     //BoostHasher bh;

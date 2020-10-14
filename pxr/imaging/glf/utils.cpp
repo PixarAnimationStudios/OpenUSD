@@ -29,8 +29,92 @@
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+struct _FormatDesc {
+    GLenum format;
+    GLenum type;
+    GLenum internalFormat;
+};
+
+static const _FormatDesc FORMAT_DESC[] =
+{
+    // glFormat, glType,        glInternatFormat  // HioFormat
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8          }, // UNorm8
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8         }, // UNorm8Vec2
+    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8        }, // UNorm8Vec3
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8       }, // UNorm8Vec4
+
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM    }, // SNorm8
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM   }, // SNorm8Vec2
+    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM  }, // SNorm8Vec3
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM }, // SNorm8Vec4
+
+    {GL_RED,  GL_HALF_FLOAT,    GL_R16F        }, // Float16
+    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F       }, // Float16Vec2
+    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F      }, // Float16Vec3
+    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F     }, // Float16Vec4
+
+    {GL_RED,  GL_FLOAT,         GL_R32F        }, // Float32
+    {GL_RG,   GL_FLOAT,         GL_RG32F       }, // Float32Vec2
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F      }, // Float32Vec3
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F     }, // Float32Vec4
+
+    {GL_RED,  GL_DOUBLE,        GL_RED         }, // Double64
+    {GL_RG,   GL_DOUBLE,        GL_RG          }, // Double64Vec2
+    {GL_RGB,  GL_DOUBLE,        GL_RGB         }, // Double64Vec3
+    {GL_RGBA, GL_DOUBLE,        GL_RGBA        }, // Double64Vec4
+
+    {GL_RED,  GL_UNSIGNED_SHORT,GL_R16UI       }, // UInt16
+    {GL_RG,   GL_UNSIGNED_SHORT,GL_RG16UI      }, // UInt16Vec2
+    {GL_RGB,  GL_UNSIGNED_SHORT,GL_RGB16UI     }, // UInt16Vec3
+    {GL_RGBA, GL_UNSIGNED_SHORT,GL_RGBA16UI    }, // UInt16Vec4
+
+    {GL_RED,  GL_SHORT,         GL_R16I        }, // Int16
+    {GL_RG,   GL_SHORT,         GL_RG16I       }, // Int16Vec2
+    {GL_RGB,  GL_SHORT,         GL_RGB16I      }, // Int16Vec3
+    {GL_RGBA, GL_SHORT,         GL_RGBA16I     }, // Int16Vec4
+
+    {GL_RED,  GL_UNSIGNED_INT,  GL_R32UI       }, // UInt32
+    {GL_RG,   GL_UNSIGNED_INT,  GL_RG32UI      }, // UInt32Vec2
+    {GL_RGB,  GL_UNSIGNED_INT,  GL_RGB32UI     }, // UInt32Vec3
+    {GL_RGBA, GL_UNSIGNED_INT,  GL_RGBA32UI    }, // UInt32Vec4
+
+    {GL_RED,  GL_INT,           GL_R32I        }, // Int32
+    {GL_RG,   GL_INT,           GL_RG32I       }, // Int32Vec2
+    {GL_RGB,  GL_INT,           GL_RGB32I      }, // Int32Vec3
+    {GL_RGBA, GL_INT,           GL_RGBA32I     }, // Int32Vec4
+
+    {GL_NONE, GL_NONE, GL_NONE }, // UNorm8srgb - not supported by OpenGL
+    {GL_NONE, GL_NONE, GL_NONE }, // UNorm8Vec2srgb - not supported by OpenGL
+    {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8,       },  // UNorm8Vec3srgb
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8 }, // UNorm8Vec4sRGB
+
+    {GL_RGB,  GL_FLOAT,
+              GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT   }, // BC6FloatVec3
+    {GL_RGB,  GL_FLOAT,
+              GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT }, // BC6UFloatVec3
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_RGBA_BPTC_UNORM         }, // BC7UNorm8Vec4
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM   }, // BC7UNorm8Vec4srgb
+
+};
+
+// A few random format validations to make sure the GL table stays
+// aligned with the HioFormat table.
+constexpr bool _CompileTimeValidateHioFormatTable() {
+    return (TfArraySize(FORMAT_DESC) == HioFormatCount &&
+            HioFormatUNorm8 == 0 &&
+            HioFormatFloat32 == 12 &&
+            HioFormatUInt32 == 28 &&
+            HioFormatBC6FloatVec3 == 40) ? true : false;
+}
+
+static_assert(_CompileTimeValidateHioFormatTable(), 
+              "_FormatDesc array in glfUtils out of sync with HioFormat enum");
 
 
 GLenum
@@ -56,14 +140,14 @@ GlfGetNumElements(GLenum format)
 {
     switch (format) {
         case GL_DEPTH_COMPONENT:
-	case GL_COLOR_INDEX:
-	case GL_ALPHA:
-	case GL_LUMINANCE:
-	case GL_RED:
+        case GL_COLOR_INDEX:
+        case GL_ALPHA:
+        case GL_LUMINANCE:
+        case GL_RED:
             return 1;
-	case GL_LUMINANCE_ALPHA :
-	case GL_RG:
-	    return 2;
+        case GL_LUMINANCE_ALPHA :
+        case GL_RG:
+            return 2;
         case GL_RGB:
             return 3;
         case GL_RGBA:
@@ -72,6 +156,12 @@ GlfGetNumElements(GLenum format)
             TF_CODING_ERROR("Unsupported format");
             return 1;
     }
+}
+
+int
+GlfGetNumElements(HioFormat hioFormat)
+{
+    return GlfGetNumElements(GlfGetGLFormat(hioFormat));
 }
 
 int
@@ -93,6 +183,152 @@ GlfGetElementSize(GLenum type)
         default:
             TF_CODING_ERROR("Unsupported type");
             return sizeof(GLfloat);
+    }
+}
+
+int
+GlfGetElementSize(HioFormat hioFormat)
+{
+    return GlfGetElementSize(GlfGetGLType(hioFormat));
+}
+
+GLenum
+GlfGetGLType(HioFormat hioFormat)
+{
+    const _FormatDesc &desc = FORMAT_DESC[hioFormat];
+    return desc.type;
+}
+
+GLenum
+GlfGetGLFormat(HioFormat hioFormat)
+{
+    const _FormatDesc &desc = FORMAT_DESC[hioFormat];
+    return desc.format;
+}
+
+GLenum
+GlfGetGLInternalFormat(HioFormat hioFormat)
+{
+    const _FormatDesc &desc = FORMAT_DESC[hioFormat];
+    return desc.internalFormat;
+}
+
+HioFormat
+GlfGetHioFormat(GLenum glFormat, GLenum glType, bool isSRGB)
+{
+    switch (glFormat){
+        case GL_DEPTH_COMPONENT:
+        case GL_COLOR_INDEX:
+        case GL_ALPHA:
+        case GL_LUMINANCE:
+        case GL_RED:
+            switch (glType) {
+                case GL_UNSIGNED_BYTE:
+                    if (isSRGB) {
+                        return HioFormatUNorm8srgb;
+                    }
+                    return HioFormatUNorm8;
+                case GL_BYTE:
+                    return HioFormatSNorm8;
+                case GL_UNSIGNED_SHORT:
+                    return HioFormatUInt16;
+                case GL_SHORT:
+                    return HioFormatInt16;
+                case GL_UNSIGNED_INT:
+                    return HioFormatUInt32;
+                case GL_INT:
+                    return HioFormatInt32;
+                case GL_HALF_FLOAT:
+                    return HioFormatFloat16;
+                case GL_FLOAT:
+                    return HioFormatFloat32;
+                case GL_DOUBLE:
+                    return HioFormatDouble64;
+            }
+        case GL_LUMINANCE_ALPHA :
+        case GL_RG:
+            switch (glType) {
+                case GL_UNSIGNED_BYTE:
+                    if (isSRGB) {
+                        return HioFormatUNorm8Vec2srgb;
+                    }
+                    return HioFormatUNorm8Vec2;
+                case GL_BYTE:
+                    return HioFormatSNorm8Vec2;
+                case GL_UNSIGNED_SHORT:
+                    return HioFormatUInt16Vec2;
+                case GL_SHORT:
+                    return HioFormatInt16Vec2;
+                case GL_UNSIGNED_INT:
+                    return HioFormatUInt32Vec2;
+                case GL_INT:
+                    return HioFormatInt32Vec2;
+                case GL_HALF_FLOAT:
+                    return HioFormatFloat16Vec2;
+                case GL_FLOAT:
+                    return HioFormatFloat32Vec2;
+                case GL_DOUBLE:
+                    return HioFormatDouble64Vec2;      
+            }
+        case GL_RGB:
+            switch (glType) {
+                case GL_UNSIGNED_BYTE:
+                    if (isSRGB) {
+                        return HioFormatUNorm8Vec3srgb;
+                    }
+                    return HioFormatUNorm8Vec3;
+                case GL_BYTE:
+                    return HioFormatSNorm8Vec3;
+                case GL_UNSIGNED_SHORT:
+                    return HioFormatUInt16Vec3;
+                case GL_SHORT:
+                    return HioFormatInt16Vec3;
+                case GL_UNSIGNED_INT:
+                    return HioFormatUInt32Vec3;
+                case GL_INT:
+                    return HioFormatInt32Vec3;
+                case GL_HALF_FLOAT:
+                    return HioFormatFloat16Vec3;
+                case GL_FLOAT:
+                    return HioFormatFloat32Vec3;
+                case GL_DOUBLE:
+                    return HioFormatDouble64Vec3;             
+            }
+        case GL_RGBA:
+            switch (glType) {
+                case GL_UNSIGNED_BYTE:
+                    if (isSRGB) {
+                        return HioFormatUNorm8Vec4srgb;
+                    }
+                    return HioFormatUNorm8Vec4;
+                case GL_BYTE:
+                    return HioFormatSNorm8Vec4;
+                case GL_UNSIGNED_SHORT:
+                    return HioFormatUInt16Vec4;
+                case GL_SHORT:
+                    return HioFormatInt16Vec4;
+                case GL_UNSIGNED_INT:
+                    return HioFormatUInt32Vec4;
+                case GL_INT:
+                    return HioFormatInt32Vec4;
+                case GL_HALF_FLOAT:
+                    return HioFormatFloat16Vec4;
+                case GL_FLOAT:
+                    return HioFormatFloat32Vec4;
+                case GL_DOUBLE:
+                    return HioFormatDouble64Vec4;             
+            }
+        case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT:
+            return HioFormatBC6UFloatVec3;
+        case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT:
+            return HioFormatBC6FloatVec3;
+        case GL_COMPRESSED_RGBA_BPTC_UNORM:
+            return HioFormatBC7UNorm8Vec4;
+        case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
+            return HioFormatBC7UNorm8Vec4srgb;
+        default:
+            TF_CODING_ERROR("Unsupported type");
+            return HioFormatUNorm8Vec3;
     }
 }
 
@@ -150,34 +386,6 @@ GlfCheckGLFrameBufferStatus(GLuint target, std::string * reason)
         }
         return false;
     }
-}
-
-bool GlfIsCompressedFormat(GLenum format)
-{
-    if (format == GL_COMPRESSED_RGBA_BPTC_UNORM || 
-        format == GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT) {
-        return true;
-    }
-    return false;
-}
-
-size_t GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type)
-{
-    int blockSize = 0;
-    int tileSize = 0;
-    int alignSize = 0;
-    
-    // XXX Only BPTC is supported right now
-    if (format == GL_COMPRESSED_RGBA_BPTC_UNORM || 
-        format == GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT) {
-        blockSize = 16;
-        tileSize = 4;
-        alignSize = 3;
-    }
-
-    size_t numPixels = ((width + alignSize)/tileSize) * 
-                       ((height + alignSize)/tileSize);
-    return numPixels * blockSize;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

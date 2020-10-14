@@ -58,6 +58,7 @@ def Sphere "SphereUsingClip" (
     clips = {
         dictionary default = {
             asset[] assetPaths = [@./clip_moving_sphere.usda@]
+            asset manifestAssetPath = @./clip_static_sphere.usda@
             string primPath = "/Sphere"
             double2[] active = [(1, 0)]
             double2[] times = [(1, 1), (10,10)]

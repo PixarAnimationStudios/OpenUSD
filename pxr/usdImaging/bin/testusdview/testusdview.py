@@ -31,6 +31,8 @@
 # free to do whatever they want with mainwindow for testing.
 
 import pxr.Usdviewq as Usdviewq
+from pxr.Usdviewq import AppController
+from pxr.Usdviewq.qt import QtWidgets
 
 import sys, os, inspect, argparse
 
@@ -130,6 +132,37 @@ class TestUsdView(Usdviewq.Launcher):
         assert len(args) == 1, errorMsg % 'Incorrect number of args (1 expected)'
 
         return callBack
+
+
+# Monkey patch AppController to add helper test interface methods
+
+def _processEvents(self, iterations=10, waitForConvergence=False):
+    # Qt does not guarantee that a single call to processEvents() will
+    # process all events in the event queue, and in some builds, on
+    # some platforms, we sporadically or even repeatably see test failures
+    # in which the selection does not change, presumably because the
+    # events were not all getting processed, when we simply called
+    # processEvents once.  So we do it a handful of times whenever we
+    # generate an event, to increase our odds of success.
+    for x in range(iterations):
+        QtWidgets.QApplication.processEvents()
+
+    # Need to wait extra for progressive rendering images to converge
+    if (waitForConvergence):
+        # Wait until the image is converged
+        while not self._stageView._renderer.IsConverged():
+            QtWidgets.QApplication.processEvents()
+
+AppController._processEvents = _processEvents
+
+# Take a shot of the viewport and save it to a file.
+def _takeShot(self, fileName, iterations=10, waitForConvergence=False):
+    self._processEvents(iterations, waitForConvergence)
+    viewportShot = self.GrabViewportShot()
+    viewportShot.save(fileName, "PNG")
+
+AppController._takeShot = _takeShot
+
 
 if __name__ == '__main__':
     TestUsdView().Run()

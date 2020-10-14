@@ -128,7 +128,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
           self.imageable,
           self.defined,
           self.abstract,
-          self.isInMaster,
+          self.isInPrototype,
           self.isInstance,
           self.supportsDrawMode,
           isVisibilityInherited,
@@ -206,8 +206,8 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             color = UIPrimTypeColors.INSTANCE
         elif self.hasArcs:
             color = UIPrimTypeColors.HAS_ARCS
-        elif self.isInMaster:
-            color = UIPrimTypeColors.MASTER
+        elif self.isInPrototype:
+            color = UIPrimTypeColors.PROTOTYPE
         else:
             color = UIPrimTypeColors.NORMAL
         return color.color() if self.active else color.color().darker(HALF_DARKER)
@@ -231,8 +231,8 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             toolTip = 'Prim'
             if len(self.typeName) > 0:
                 toolTip = self.typeName + ' ' + toolTip
-            if self.isInMaster:
-                toolTip = 'Master ' + toolTip
+            if self.isInPrototype:
+                toolTip = 'Prototype ' + toolTip
             if not self.defined:
                 toolTip = 'Undefined ' + toolTip
             elif self.abstract:
@@ -297,9 +297,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             print("WARNING: The prim <" + str(self.prim.GetPath()) + \
                     "> is not imageable. Cannot change visibility.")
             return False
-        elif self.isInMaster:
+        elif self.isInPrototype:
             print("WARNING: The prim <" + str(self.prim.GetPath()) + \
-                   "> is in a master. Cannot change visibility.")
+                   "> is in a prototype. Cannot change visibility.")
             return False
         return True
 
@@ -387,9 +387,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             child._pushVisRecursive(myComputedVis, authoredVisHasChanged)
 
     def setLoaded(self, loaded):
-        if self.prim.IsMaster():
+        if self.prim.IsPrototype():
             print("WARNING: The prim <" + str(self.prim.GetPath()) + \
-                   "> is a master prim. Cannot change load state.")
+                   "> is a prototype prim. Cannot change load state.")
             return
 
         if self.prim.IsActive():

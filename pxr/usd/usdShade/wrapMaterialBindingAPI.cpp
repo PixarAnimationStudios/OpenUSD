@@ -262,6 +262,10 @@ WRAP_CUSTOM {
              (arg("familyType")))
         .def("GetMaterialBindSubsetsFamilyType",
              &This::GetMaterialBindSubsetsFamilyType)
+        .def("CanContainPropertyName", 
+            &UsdShadeMaterialBindingAPI::CanContainPropertyName, 
+            arg("name"))
+        .staticmethod("CanContainPropertyName")
     ;
 }
 

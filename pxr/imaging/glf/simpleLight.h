@@ -34,6 +34,12 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
+
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -125,10 +131,15 @@ public:
     void SetHasShadow(bool hasShadow);
 
     GLF_API
+    bool HasIntensity() const;
+    GLF_API
+    void SetHasIntensity(bool hasIntensity);
+
+    GLF_API
     bool IsCameraSpaceLight() const;
     GLF_API
-    void SetIsCameraSpaceLight(bool isCameraSpaceLight);
 
+    void SetIsCameraSpaceLight(bool isCameraSpaceLight);
     GLF_API
     SdfPath const & GetID() const;
     GLF_API
@@ -148,10 +159,33 @@ public:
     GLF_API
     void SetDomeLightTextureFile(const SdfAssetPath &);
 
+
+    /// \name Post Surface Lighting
+    ///
+    /// Post surface lighting is evaluated after other surface illumination
+    /// and can be used to implement lighting effects beyond those that
+    /// correspond to basic positional lighting, e.g. range base fog, etc.
+    ///
+    /// @{
+
     GLF_API
-    bool operator ==(GlfSimpleLight const & other) const;
+    TfToken const & GetPostSurfaceIdentifier() const;
     GLF_API
-    bool operator !=(GlfSimpleLight const & other) const;
+    std::string const & GetPostSurfaceShaderSource() const;
+    GLF_API
+    VtUCharArray const & GetPostSurfaceShaderParams() const;
+
+    GLF_API
+    void SetPostSurfaceParams(TfToken const & identifier,
+                              std::string const & shaderSource,
+                              VtUCharArray const & shaderParams);
+
+    /// @}
+                       
+    GLF_API
+    bool operator ==(GlfSimpleLight const &other) const;
+    GLF_API
+    bool operator !=(GlfSimpleLight const &other) const;
 
 private:
     GLF_API
@@ -166,6 +200,7 @@ private:
     float _spotFalloff;
     GfVec3f _attenuation;
     bool _isCameraSpaceLight;
+    bool _hasIntensity;
 
     bool _hasShadow;
     int _shadowResolution;
@@ -181,6 +216,10 @@ private:
     bool _isDomeLight;
     // path to texture for dome light.
     SdfAssetPath _domeLightTextureFile;
+
+    TfToken _postSurfaceIdentifier;
+    std::string _postSurfaceShaderSource;
+    VtUCharArray _postSurfaceShaderParams;
 
     SdfPath _id;
 };

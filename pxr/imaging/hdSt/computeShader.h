@@ -30,84 +30,63 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
-#include "pxr/imaging/garch/gl.h"
-
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdStComputeShaderSharedPtr = std::shared_ptr<class HdStComputeShader>;
+using HdSt_ComputeShaderSharedPtr = std::shared_ptr<class HdSt_ComputeShader>;
 
-/// \class HdStComputeShader
+/// \class HdSt_ComputeShader
 ///
-/// A scene-based ComputeShader object.
+/// An internal representation of a compute shader in Storm that allows the
+/// use of the code generation and resource binding system to generate a
+/// shader program.
 ///
-/// When compute shaders are expressed in the scene graph, the HdSceneDelegate
-/// can use this object to express these compute shaders in Storm.
-/// In addition to the shader itself, a binding from the Computation Sprim
-/// to the ComputeShader must be expressed as well.
-class HdStComputeShader : public HdStShaderCode {
+class HdSt_ComputeShader : public HdStShaderCode {
 public:
     HDST_API
-    HdStComputeShader();
+    HdSt_ComputeShader();
     HDST_API
-    virtual ~HdStComputeShader();
+    virtual ~HdSt_ComputeShader();
 
 
     // ---------------------------------------------------------------------- //
-    /// \name HdShader Virtual Interface                                      //
+    /// \name HdStShaderCode (pure) virtual interface                         //
     // ---------------------------------------------------------------------- //
+
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual HdSt_MaterialParamVector const& GetParams() const;
+    void BindResources(int program,
+                       HdSt_ResourceBinder const &binder,
+                       HdRenderPassState const &state) override;
     HDST_API
-    virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
+    void UnbindResources(int program,
+                         HdSt_ResourceBinder const &binder,
+                         HdRenderPassState const &state) override;
     HDST_API
-    virtual TextureDescriptorVector GetTextures() const;
+    void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) override;
-    HDST_API
-    virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) override;
-    HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
-    HDST_API
-    virtual ID ComputeHash() const;
+    ID ComputeHash() const override;
+
+    // ---------------------------------------------------------------------- //
 
     /// Setter method for prim
     HDST_API
     void SetComputeSource(const std::string &source);
 
-    /// If the prim is based on asset, reload that asset.
-    HDST_API
-    virtual void Reload();
-
-protected:
-    HDST_API
-    void _SetSource(TfToken const &shaderStageKey, std::string const &source);
-
 private:
     std::string _computeSource;
 
-    // Shader Parameters
-    HdSt_MaterialParamVector _params;
-    HdBufferSpecVector _paramSpec;
-    HdBufferArrayRangeSharedPtr _paramArray;
-
-    TextureDescriptorVector _textureDescriptors;
-    
     // No copying
-    HdStComputeShader(const HdStComputeShader &) = delete;
-    HdStComputeShader &operator =(const HdStComputeShader &) = delete;
+    HdSt_ComputeShader(const HdSt_ComputeShader &) = delete;
+    HdSt_ComputeShader &operator =(const HdSt_ComputeShader &) = delete;
 };
 
 

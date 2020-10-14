@@ -30,6 +30,9 @@ from pxr.Usdviewq.qt import QtCore
 INSTANCER_PATH = "/Foo/Cube/Instancer"
 PROTO_PATH = "/Foo/Cube/Instancer/Protos/Proto1/cube"
 FOO_PATH = "/Foo"
+NI_PATH = "/Foo/Cube2"
+INSTANCER2_PATH = "/Foo/Cube2/Instancer"
+PROTO2_PATH = "/Foo/Cube2/Instancer/Protos/Proto1/cube"
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):
@@ -79,16 +82,24 @@ def _testPickModels(appController):
     appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, FOO_PATH)
-    _checkNoInstancesSelected(appController, INSTANCER_PATH)
+    _checkNoInstancesSelected(appController, FOO_PATH)
 
 # Test picking an instance.
 def _testPickInstances(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Instances)
+
+    # Pick an instance of a point instancer
     pt = (0, 0, 0)
     appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkInstanceSelection(appController, INSTANCER_PATH, 0)
+
+    # Pick an instance of a native instance
+    appController.onPrimSelected(PROTO2_PATH, 0, INSTANCER2_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+
+    _checkPrimSelection(appController, NI_PATH)
+    _checkNoInstancesSelected(appController, NI_PATH)
 
 # Test picking a prototype.
 def _testPickPrototypes(appController):

@@ -44,7 +44,7 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     MTLTextureUsage usage = MTLTextureUsageUnknown;
 
     if (desc.initialData && desc.pixelsByteSize > 0) {
-        resourceOptions = hgi->GetCapabilities().defaultStorageMode;
+        resourceOptions = MTLResourceStorageModeManaged;
     }
 
     MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(desc.format);
@@ -96,11 +96,20 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
             size_t numChannels = HgiGetComponentCount(desc.format);
 
             if (usage == MTLTextureUsageShaderRead && numChannels == 1) {
+                MTLTextureSwizzle s = HgiMetalConversions::GetComponentSwizzle(
+                    desc.componentMapping.r);
+                texDesc.swizzle = MTLTextureSwizzleChannelsMake(s, s, s, s);
+            }
+            else {
                 texDesc.swizzle = MTLTextureSwizzleChannelsMake(
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleRed,
-                    MTLTextureSwizzleOne);
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.r),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.g),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.b),
+                    HgiMetalConversions::GetComponentSwizzle(
+                        desc.componentMapping.a));
             }
         }
 #endif
@@ -118,22 +127,72 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     _textureId = [hgi->GetPrimaryDevice() newTextureWithDescriptor:texDesc];
 
     if (desc.initialData && desc.pixelsByteSize > 0) {
-        TF_VERIFY(desc.mipLevels == 1, "Mipmap upload not implemented");
-        if(depth <= 1) {
-            [_textureId replaceRegion:MTLRegionMake2D(0, 0, width, height)
-                            mipmapLevel:0
-                              withBytes:desc.initialData
-                            bytesPerRow:desc.pixelsByteSize / height];
-        }
-        else {
-            [_textureId replaceRegion:MTLRegionMake3D(0, 0, 0, width, height, depth)
-                            mipmapLevel:0 slice:0 withBytes:desc.initialData
-                          bytesPerRow:desc.pixelsByteSize / height / width
-                        bytesPerImage:desc.pixelsByteSize / depth];
+        // Upload each (available) mip
+        const std::vector<HgiMipInfo> mipInfos =
+            HgiGetMipInfos(
+                desc.format,
+                desc.dimensions,
+                desc.pixelsByteSize);
+        const size_t mipLevels = std::min(
+            mipInfos.size(), size_t(desc.mipLevels));
+        const char * const initialData = reinterpret_cast<const char *>(
+            desc.initialData);
+
+        for (size_t mip = 0; mip < mipLevels; mip++) {
+            const HgiMipInfo &mipInfo = mipInfos[mip];
+
+            const uint32_t width = mipInfo.dimensions[0];
+            const uint32_t height = mipInfo.dimensions[1];
+
+            if (desc.type == HgiTextureType2D) {
+                [_textureId replaceRegion:MTLRegionMake2D(0, 0, width, height)
+                              mipmapLevel:mip
+                                withBytes:initialData + mipInfo.byteOffset
+                              bytesPerRow:desc.pixelsByteSize / height];
+            }
+            else {
+                const uint32_t depth = mipInfo.dimensions[2];
+                const size_t imageBytes = mipInfo.byteSize / depth;
+                for (size_t d = 0; d < depth; d++) {
+                    const size_t offset = d * imageBytes;
+                    [_textureId
+                        replaceRegion:MTLRegionMake3D(0, 0, d, width, height, 1)
+                          mipmapLevel:mip
+                                slice:0
+                            withBytes:initialData + mipInfo.byteOffset + offset
+                          bytesPerRow:imageBytes / height
+                        bytesPerImage:0];
+                }
+            }
         }
     }
 
     HGIMETAL_DEBUG_LABEL(_textureId, _descriptor.debugName.c_str());
+}
+
+HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureViewDesc const & desc)
+    : HgiTexture(desc.sourceTexture->GetDescriptor())
+    , _textureId(nil)
+{
+    HgiMetalTexture* srcTexture =
+        static_cast<HgiMetalTexture*>(desc.sourceTexture.Get());
+    NSRange levels = NSMakeRange(
+        desc.sourceFirstMip, desc.mipLevels);
+    NSRange slices = NSMakeRange(
+        desc.sourceFirstLayer, desc.layerCount);
+    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(desc.format);
+
+    _textureId = [srcTexture->GetTextureId()
+                  newTextureViewWithPixelFormat:mtlFormat
+                  textureType:[srcTexture->GetTextureId() textureType]
+                  levels:levels
+                  slices:slices];
+    
+    // Update the texture descriptor to reflect the above
+    _descriptor.debugName = desc.debugName;
+    _descriptor.format = desc.format;
+    _descriptor.layerCount = desc.layerCount;
+    _descriptor.mipLevels = desc.mipLevels;
 }
 
 HgiMetalTexture::~HgiMetalTexture()
@@ -148,8 +207,13 @@ size_t
 HgiMetalTexture::GetByteSizeOfResource() const
 {
     GfVec3i const& s = _descriptor.dimensions;
-    return HgiDataSizeOfFormat(_descriptor.format) * 
-        s[0] * s[1] * std::max(s[2], 1);
+    size_t blockWidth, blockHeight;
+    const size_t bytesPerBlock =
+        HgiGetDataSizeOfFormat(_descriptor.format, &blockWidth, &blockHeight);
+    return
+        ((s[0] + blockWidth  - 1) / blockWidth) *
+        ((s[1] + blockHeight - 1) / blockHeight) *
+        std::max(s[2], 1) * bytesPerBlock;
 }
 
 uint64_t

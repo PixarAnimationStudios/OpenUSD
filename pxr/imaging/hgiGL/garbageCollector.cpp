@@ -30,6 +30,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+std::vector<HgiBufferHandleVector*>
+    HgiGLGarbageCollector::_bufferList;
+std::vector<HgiTextureHandleVector*>
+    HgiGLGarbageCollector::_textureList;
+std::vector<HgiSamplerHandleVector*>
+    HgiGLGarbageCollector::_samplerList;
+std::vector<HgiShaderFunctionHandleVector*>
+    HgiGLGarbageCollector::_shaderFunctionList;
+std::vector<HgiShaderProgramHandleVector*>
+    HgiGLGarbageCollector::_shaderProgramList;
+std::vector<HgiResourceBindingsHandleVector*>
+    HgiGLGarbageCollector::_resourceBindingsList;
+std::vector<HgiGraphicsPipelineHandleVector*>
+    HgiGLGarbageCollector::_graphicsPipelineList;
+std::vector<HgiComputePipelineHandleVector*>
+    HgiGLGarbageCollector::_computePipelineList;
+
+
 template<class T>
 static void _EmptyTrash(std::vector<std::vector<HgiHandle<T>>*>* list) {
     for (auto vec : *list) {
@@ -140,9 +158,11 @@ T* HgiGLGarbageCollector::_GetThreadLocalStorageList(std::vector<T*>* collector)
     // all Hgi's. This should be ok since we only call the destructor of the
     // garbage object.
     thread_local T* _tls = nullptr;
+    static std::mutex garbageMutex;
+
     if (!_tls) {
         _tls = new T();
-        std::lock_guard<std::mutex> guard(_garbageMutex);
+        std::lock_guard<std::mutex> guard(garbageMutex);
         collector->push_back(_tls);
     }
     return _tls;

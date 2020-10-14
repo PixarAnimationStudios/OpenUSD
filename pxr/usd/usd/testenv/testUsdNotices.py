@@ -36,6 +36,7 @@ class NoticeTester(unittest.TestCase):
         self._contentsCount = 0
         self._objectsCount = 0
         self._editTargetsCount = 0
+        self._layerMutingCount = 0
 
     def OnStageContentsChanged(self, *args):
         self._changeCount += 1
@@ -49,6 +50,10 @@ class NoticeTester(unittest.TestCase):
         self._changeCount += 1
         self._editTargetsCount += 1
 
+    def OnLayerMutingChanged(self, *args):
+        self._changeCount += 1
+        self._layerMutingCount += 1
+
     def Basics(self):
         contentsChanged = Tf.Notice.RegisterGlobally(
             Usd.Notice.StageContentsChanged, 
@@ -59,6 +64,9 @@ class NoticeTester(unittest.TestCase):
         stageEditTargetChanged = Tf.Notice.RegisterGlobally(
             Usd.Notice.StageEditTargetChanged, 
             self.OnStageEditTargetChanged)
+        layerMutingChanged = Tf.Notice.RegisterGlobally(
+            Usd.Notice.LayerMutingChanged,
+            self.OnLayerMutingChanged)
 
         for fmt in allFormats:
             self._ResetCounters()
@@ -96,6 +104,23 @@ class NoticeTester(unittest.TestCase):
             self.assertEqual(self._objectsCount, 1)
             self.assertEqual(self._editTargetsCount, 0)
 
+            self._ResetCounters()
+            s.MuteAndUnmuteLayers([s.GetSessionLayer().identifier],
+                                    [s.GetRootLayer().identifier])
+            self.assertEqual(self._changeCount, 3)
+            self.assertEqual(self._objectsCount, 1)
+            self.assertEqual(self._contentsCount, 1)
+            self.assertEqual(self._layerMutingCount, 1)
+
+            # no notice should be called
+            self._ResetCounters()
+            with self.assertRaises(Tf.ErrorException):
+                s.MuteAndUnmuteLayers([s.GetRootLayer().identifier],
+                                        [s.GetRootLayer().identifier])
+            self.assertEqual(self._changeCount, 0)
+            self.assertEqual(self._objectsCount, 0)
+            self.assertEqual(self._contentsCount, 0)
+            self.assertEqual(self._layerMutingCount, 0)
         # testing for payload specific updates previously, load/unload calls
         # didn't trigger notices
         self._ResetCounters()
@@ -113,6 +138,7 @@ class NoticeTester(unittest.TestCase):
         del contentsChanged
         del objectsChanged
         del stageEditTargetChanged 
+        del layerMutingChanged
 
 
     def ObjectsChangedNotice(self):
@@ -221,11 +247,56 @@ class NoticeTester(unittest.TestCase):
 
             del objectsChanged
 
+    def LayerMutingChangeTest(self):
+        expectedResult = {}
+        def OnLayerMutingChange(notice, stage):
+            self.assertEqual(notice.GetStage(), stage)
+            self.assertEqual(notice.GetMutedLayers(), expectedResult["muted"])
+            self.assertEqual(notice.GetUnmutedLayers(), 
+                    expectedResult["unmuted"])
+            
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('LayerMutingChange.'+fmt)
+
+            # mute session layer and try unmute root layer
+            # note that root layer cannot be muted or unmuted
+            expectedResult = {
+                    "muted": [s.GetSessionLayer().identifier],
+                    "unmuted": [] 
+                    }
+            layerMutingChanged = Tf.Notice.Register(
+                Usd.Notice.LayerMutingChanged,
+                OnLayerMutingChange, s)
+            s.MuteAndUnmuteLayers([s.GetSessionLayer().identifier],
+                                    [s.GetRootLayer().identifier])
+
+            # undo session layer muting and try to mute root layer
+            expectedResult = {
+                    "muted": [],
+                    "unmuted": [s.GetSessionLayer().identifier]
+                    }
+            with self.assertRaises(Tf.ErrorException):
+                s.MuteAndUnmuteLayers([s.GetRootLayer().identifier],
+                        [s.GetSessionLayer().identifier])
+
+            # test to make sure callback is still called for muting of layers
+            # not part of the stage
+            layer1 = Sdf.Layer.CreateNew('nonStageLayer.'+fmt)
+            expectedResult = {
+                    "muted": [layer1.identifier],
+                    "unmuted": []
+                    }
+            s.MuteAndUnmuteLayers([layer1.identifier],[])
+
+            del layerMutingChanged
+
+
     def test_Basic(self):
         self.Basics()
         self.ObjectsChangedNotice()
         self.ObjectsChangedNoticeForAttributes()
         self.ObjectsChangedNoticeForRelationships()
+        self.LayerMutingChangeTest()
 
 if __name__ == "__main__":
     unittest.main()

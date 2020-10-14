@@ -23,10 +23,9 @@
 //
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/usd/ar/resolver.h"
-
 #include "pxr/usd/usd/attribute.h"
-
 #include "pxr/usd/sdf/layerUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,6 +48,42 @@ _FindLayerHandle(const UsdAttribute& attr, const UsdTimeCode& time) {
         }
     }
     return TfNullPtr;
+}
+
+// Resolve symlinks for string path.
+// Resolving symlinks can reduce the number of unique textures added into the
+// texture registry since it may use the asset path as hash.
+static bool
+_ResolveSymlinks(
+    const std::string& srcPath,
+    std::string* outPath)
+{
+    std::string error;
+    *outPath = TfRealPath(srcPath, false, &error);
+
+    if (outPath->empty() || !error.empty()) {
+        return false;
+    }
+
+    return true;
+}
+
+// Resolve symlinks for asset path.
+// Resolving symlinks can reduce the number of unique textures added into the
+// texture registry since it may use the asset path as hash.
+static SdfAssetPath
+_ResolveAssetSymlinks(const SdfAssetPath& assetPath)
+{
+    std::string p = assetPath.GetResolvedPath();
+    if (p.empty()) {
+        p = assetPath.GetAssetPath();
+    }
+
+    if (_ResolveSymlinks(p, &p)) {
+        return SdfAssetPath(assetPath.GetAssetPath(), p);
+    } else {
+        return assetPath;
+    }
 }
 
 // Given the prefix (e.g., //SHOW/myImage.) and suffix (e.g., .exr),
@@ -75,7 +110,13 @@ _ResolvedPathForFirstTile(
         // Resolve
         path = resolver.Resolve(path);
         if (!path.empty()) {
-            return path;
+            // Attempt to resolve symlinks
+            std::string realPath;
+            if (_ResolveSymlinks(path, &realPath)) {
+                return realPath;
+            } else {
+                return path;
+            }
         }
     }
     return std::string();
@@ -118,8 +159,8 @@ _ResolveAssetAttribute(
         splitPath = _SplitUdimPattern(assetPath.GetAssetPath());
 
     if (splitPath.first.empty() && splitPath.second.empty()) {
-        // Leave untouched.
-        return assetPath;
+        // Not a UDIM, resolve symlinks and exit.
+        return _ResolveAssetSymlinks(assetPath);
     }
 
     // Find first tile.
@@ -129,7 +170,7 @@ _ResolveAssetAttribute(
     if (firstTilePath.empty()) {
         return assetPath;
     }
-    
+
     // Construct the file path /filePath/myImage.<UDIM>.exr by using
     // the first part from the first resolved tile, "<UDIM>" and the
     // suffix.

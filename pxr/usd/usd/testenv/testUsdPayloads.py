@@ -137,51 +137,51 @@ class InstancedAndPayloadedScene(PayloadedScene):
         # make them instanceable. This yields:
         #
         # stage.fmt                  payload1.fmt
-        #   /__Master_<#A> ---(P)---> /Sad
-        #   |                         /Sad/Panda
+        #   /__Prototype_<#A> --(P)--> /Sad
+        #   |                          /Sad/Panda
         #   |
         #   |                         payload2.fmt
-        #   /__Master_<#B> ---(P)---> /Baz
-        #   |                         /Baz/Garply ---(inst)---> /__Master_<#C>
+        #   /__Prototype_<#B> --(P)--> /Baz
+        #   |                          /Baz/Garply --(inst)--> /__Prototype_<#C>
         #   |
         #   |                         payload3.fmt
-        #   /__Master_<#C> ---(P)---> /Garply
-        #   |                         /Garply/Qux
+        #   /__Prototype_<#C> --(P)--> /Garply
+        #   |                          /Garply/Qux
         #   |
         #   |                         payload4.fmt
-        #   |                         /Corge
-        #   /__Master_<#D> ---(P)---> /Corge/Waldo
-        #   |                         /Corge/Waldo/Fred
+        #   |                          /Corge
+        #   /__Prototype_<#D> --(P)--> /Corge/Waldo
+        #   |                          /Corge/Waldo/Fred
         #   |
-        #   |                         payload5.fmt
-        #   /__Master_<#E> ---(P)---> /Bear
-        #   |                  |      /Bear/Market
-        #   |                  |
-        #   |                  |      payload6.fmt
-        #   |                 (P)---> /Adams
-        #   |                         /Adams/Onis
+        #   |                          payload5.fmt
+        #   /__Prototype_<#E> --(P)--> /Bear
+        #   |                    |     /Bear/Market
+        #   |                    |
+        #   |                    |     payload6.fmt
+        #   |                   (P)--> /Adams
+        #   |                          /Adams/Onis
         #   |
         #   /IntBase
         #   /IntBase/IntContents
         #   |
-        #   /__Master_<#F> ---(P) ---> /IntBase
-        #                              /IntBase/IntContents
+        #   /__Prototype_<#F> --(P) --> /IntBase
+        #                               /IntBase/IntContents
         #
-        #   /Sad   ---(instance)---> /__Master_<#A>
-        #   /Sad_1 ---(instance)---> /__Master_<#A>
+        #   /Sad   --(instance)--> /__Prototype_<#A>
+        #   /Sad_1 --(instance)--> /__Prototype_<#A>
         #   |  
         #   /Foo
-        #   /Foo/Baz   ---(instance)---> /__Master_<#B>
-        #   /Foo/Baz_1 ---(instance)---> /__Master_<#B>
+        #   /Foo/Baz   --(instance)--> /__Prototype_<#B>
+        #   /Foo/Baz_1 --(instance)--> /__Prototype_<#B>
         #   |
-        #   /Bar   ---(instance)---> /__Master<#D>
-        #   /Bar_1 ---(instance)---> /__Master<#D>
+        #   /Bar   --(instance)--> /__Prototype<#D>
+        #   /Bar_1 --(instance)--> /__Prototype<#D>
         #   |
-        #   /Grizzly   ---(instance)---> /__Master<#E>
-        #   /Grizzly_1 ---(instance)---> /__Master<#E>
+        #   /Grizzly   --(instance)--> /__Prototype<#E>
+        #   /Grizzly_1 --(instance)--> /__Prototype<#E>
         #   |
-        #   /IntPayload   ---(instance)---> /__Master<#F>
-        #   /IntPayload_1 ---(instance)---> /__Master<#F>
+        #   /IntPayload   --(instance)--> /__Prototype<#F>
+        #   /IntPayload_1 --(instance)--> /__Prototype<#F>
 
 
         super(InstancedAndPayloadedScene, self).__init__(fmt)
@@ -283,144 +283,151 @@ class TestUsdPayloads(unittest.TestCase):
 
             # Since there is no composition arc to instanceable data
             # (due to the payloads not being loaded), these prims have no
-            # master.
-            self.assertTrue(not sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
+            # prototype.
+            self.assertTrue(not sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
 
-            self.assertTrue(not bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
+            self.assertTrue(not bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
 
-            self.assertTrue(not grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
+            self.assertTrue(not grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
 
-            self.assertTrue(not intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
+            self.assertTrue(not intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
 
             # Instances should be independently loadable. This should
-            # cause a master to be created for the loaded prim.
+            # cause a prototype to be created for the loaded prim.
             sad.Load()
             self.assertTrue(sad.IsLoaded())
             self.assertTrue(not sad_1.IsLoaded())
-            self.assertTrue(sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
+            self.assertTrue(sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
 
             bar.Load()
             self.assertTrue(bar.IsLoaded())
             self.assertTrue(not bar_1.IsLoaded())
-            self.assertTrue(bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
+            self.assertTrue(bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
 
             grizzly.Load()
             self.assertTrue(grizzly.IsLoaded())
             self.assertTrue(not grizzly_1.IsLoaded())
-            self.assertTrue(grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
+            self.assertTrue(grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
 
             intPayload.Load()
             self.assertTrue(intPayload.IsLoaded())
             self.assertTrue(not intPayload_1.IsLoaded())
-            self.assertTrue(intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
+            self.assertTrue(intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
 
-            # The master prim should not report that it has a loadable
+            # The prototype prim should not report that it has a loadable
             # payload. Its load state cannot be independently controlled.
-            master = sad.GetMaster()
-            self.assertTrue(not master.HasAuthoredPayloads())
-            self.assertTrue(master not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
-                             ["Panda"])
+            prototype = sad.GetPrototype()
+            self.assertTrue(not prototype.HasAuthoredPayloads())
+            self.assertTrue(prototype not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Panda"])
 
-            master2 = bar.GetMaster()
-            self.assertTrue(not master2.HasAuthoredPayloads())
-            self.assertTrue(master2 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master2.GetChildren()],
-                             ["Fred"])
+            prototype2 = bar.GetPrototype()
+            self.assertTrue(not prototype2.HasAuthoredPayloads())
+            self.assertTrue(prototype2 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype2.GetChildren()],
+                ["Fred"])
 
-            master3 = grizzly.GetMaster()
-            self.assertTrue(not master3.HasAuthoredPayloads())
-            self.assertTrue(master3 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master3.GetChildren()],
-                             ["Onis", "Market"])
+            prototype3 = grizzly.GetPrototype()
+            self.assertTrue(not prototype3.HasAuthoredPayloads())
+            self.assertTrue(prototype3 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype3.GetChildren()],
+                ["Onis", "Market"])
 
-            master4 = intPayload.GetMaster()
-            self.assertTrue(not master4.HasAuthoredPayloads())
-            self.assertTrue(master4 not in p.stage.FindLoadable())
-            self.assertEqual([prim.GetName() for prim in master4.GetChildren()],
-                             ["IntContents"])
+            prototype4 = intPayload.GetPrototype()
+            self.assertTrue(not prototype4.HasAuthoredPayloads())
+            self.assertTrue(prototype4 not in p.stage.FindLoadable())
+            self.assertEqual(
+                [prim.GetName() for prim in prototype4.GetChildren()],
+                ["IntContents"])
 
             # Loading the second instance will cause Usd to assign it to the
-            # first instance's master.
+            # first instance's prototype.
             sad_1.Load()
-            self.assertEqual(sad.GetMaster(), sad_1.GetMaster())
+            self.assertEqual(sad.GetPrototype(), sad_1.GetPrototype())
 
             sad.Unload()
             sad_1.Unload()
             self.assertTrue(not sad.IsLoaded())
             self.assertTrue(not sad_1.IsLoaded())
-            self.assertTrue(not sad.GetMaster())
-            self.assertTrue(not sad_1.GetMaster())
-            self.assertTrue(not master)
+            self.assertTrue(not sad.GetPrototype())
+            self.assertTrue(not sad_1.GetPrototype())
+            self.assertTrue(not prototype)
 
             bar_1.Load()
-            self.assertEqual(bar.GetMaster(), bar_1.GetMaster())
+            self.assertEqual(bar.GetPrototype(), bar_1.GetPrototype())
 
             bar.Unload()
             bar_1.Unload()
             self.assertTrue(not bar.IsLoaded())
             self.assertTrue(not bar_1.IsLoaded())
-            self.assertTrue(not bar.GetMaster())
-            self.assertTrue(not bar_1.GetMaster())
-            self.assertTrue(not master2)
+            self.assertTrue(not bar.GetPrototype())
+            self.assertTrue(not bar_1.GetPrototype())
+            self.assertTrue(not prototype2)
 
             grizzly_1.Load()
-            self.assertEqual(grizzly.GetMaster(), grizzly_1.GetMaster())
+            self.assertEqual(grizzly.GetPrototype(), grizzly_1.GetPrototype())
 
             grizzly.Unload()
             grizzly_1.Unload()
             self.assertTrue(not grizzly.IsLoaded())
             self.assertTrue(not grizzly_1.IsLoaded())
-            self.assertTrue(not grizzly.GetMaster())
-            self.assertTrue(not grizzly_1.GetMaster())
-            self.assertTrue(not master3)
+            self.assertTrue(not grizzly.GetPrototype())
+            self.assertTrue(not grizzly_1.GetPrototype())
+            self.assertTrue(not prototype3)
 
             intPayload_1.Load()
-            self.assertEqual(intPayload.GetMaster(), intPayload_1.GetMaster())
+            self.assertEqual(intPayload.GetPrototype(),
+                             intPayload_1.GetPrototype())
 
             intPayload.Unload()
             intPayload_1.Unload()
             self.assertTrue(not intPayload.IsLoaded())
             self.assertTrue(not intPayload_1.IsLoaded())
-            self.assertTrue(not intPayload.GetMaster())
-            self.assertTrue(not intPayload_1.GetMaster())
-            self.assertTrue(not master4)
+            self.assertTrue(not intPayload.GetPrototype())
+            self.assertTrue(not intPayload_1.GetPrototype())
+            self.assertTrue(not prototype4)
 
             # Loading the payload for an instanceable prim will cause
-            # payloads nested in descendants of that prim's master to be 
+            # payloads nested in descendants of that prim's prototype to be 
             # loaded as well.
             baz = p.stage.GetPrimAtPath("/Foo/Baz")
             baz_1 = p.stage.GetPrimAtPath("/Foo/Baz_1")
 
             baz.Load()
             self.assertTrue(baz.IsLoaded())
-            self.assertTrue(baz.GetMaster())
+            self.assertTrue(baz.GetPrototype())
 
-            master = baz.GetMaster()
+            prototype = baz.GetPrototype()
             self.assertEqual(
-                [prim.GetName() for prim in master.GetChildren()], ["Garply"])
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Garply"])
 
-            garply = master.GetChild("Garply")
+            garply = prototype.GetChild("Garply")
             self.assertTrue(garply.HasAuthoredPayloads())
             self.assertTrue(garply.IsLoaded())
-            self.assertTrue(garply.GetMaster())
+            self.assertTrue(garply.GetPrototype())
 
-            master = garply.GetMaster()
-            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
-                             ["Qux"])
+            prototype = garply.GetPrototype()
+            self.assertEqual(
+                [prim.GetName() for prim in prototype.GetChildren()],
+                ["Qux"])
 
             baz_1.Load()
-            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
+            self.assertEqual(baz.GetPrototype(), baz_1.GetPrototype())
 
-            # Prims in masters cannot be individually (un)loaded.
+            # Prims in prototypes cannot be individually (un)loaded.
             with self.assertRaises(Tf.ErrorException):
                 garply.Unload()
 
@@ -590,6 +597,122 @@ class TestUsdPayloads(unittest.TestCase):
                              set([Sdf.Path("/Ref/Child"), Sdf.Path("/Root")]))
             self.assertTrue(stage.GetPrimAtPath("/Root").IsLoaded())
             self.assertTrue(stage.GetPrimAtPath("/Ref/Child").IsLoaded())
+
+    def test_SubrootReferencePayloads(self):
+        """Tests the behavior of subroot references to prims with both direct
+           and ancestral payloads."""
+
+        for fmt in allFormats:
+            # Layer1 prim /A
+            layer1 = Sdf.Layer.CreateAnonymous("layer1." + fmt)
+            primA = Sdf.PrimSpec(layer1, "A", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primA, "AChild", Sdf.SpecifierDef)
+
+            # Layer2, prims /B/C
+            layer2 = Sdf.Layer.CreateAnonymous("layer2." + fmt)
+            primB = Sdf.PrimSpec(layer2, "B", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primB, "BChild", Sdf.SpecifierDef)
+            primC = Sdf.PrimSpec(primB, "C", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primC, "CChild", Sdf.SpecifierDef)
+
+            # Layer3, prim /D
+            layer3 = Sdf.Layer.CreateAnonymous("layer3." + fmt)
+            primD = Sdf.PrimSpec(layer3, "D", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primD, "DChild", Sdf.SpecifierDef)
+
+            # Root layer, prim /E
+            root = Sdf.Layer.CreateAnonymous("root." + fmt)
+            primE = Sdf.PrimSpec(root, "E", Sdf.SpecifierDef)
+            Sdf.PrimSpec(primE, "EChild", Sdf.SpecifierDef)
+
+            # Prim /A has a payload to prim /B
+            primA.payloadList.Prepend(Sdf.Payload(layer2.identifier, "/B"))
+
+            # Root prim /E has a subroot reference to /A/C which comes from /A's
+            # reference to /B
+            primE.referenceList.Prepend(Sdf.Reference(layer1.identifier, "/A/C"))
+
+            # Open the stage and get the root prim /E
+            stage = Usd.Stage.Open(root)
+            rootPrim = stage.GetPrimAtPath("/E")
+
+            # Prim /E has no payloads for load/unload. An ancestral payload arc
+            # from /A to /B is brought into the prim index with the reference
+            # arc from /E to /A/C giving the prim stack:
+            #
+            # /E (root)
+            # /A/C (ref)
+            # /B/C (ancestral payload)
+            #   
+            # But this does not mark the prim index for /E as having a payload 
+            # which is consistent with all ancestral payloads.
+            # This ancestral payload arc, that is necessary to build the subroot
+            # reference, is always included and can't be unloaded as it is not 
+            # from a loadable ancestor of /E, but rather is internal to the 
+            # subroot reference itself.
+            self.assertTrue(rootPrim)
+            self.assertFalse(rootPrim.HasPayload())
+            self.assertTrue(rootPrim.IsLoaded())
+
+            # Verify the children come from root E and referenced C.
+            self.assertEqual(rootPrim.GetChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Unload rootPrim /E and note that it can't be unloaded. Children
+            # and load state stay the same.
+            rootPrim.Unload()
+            self.assertTrue(rootPrim.IsLoaded())
+            self.assertEqual(rootPrim.GetChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Now add a payload from the prim /B/C in layer1 to the prim /D.
+            # The composed prim stack for /E will now be:
+            #
+            # /E (root)
+            # /A/C (ref)
+            # /B/C (ancestral payload)
+            # /D (payload)
+            primC.payloadList.Prepend(Sdf.Payload(layer3.identifier, "/D"))
+
+            # Root prim now DOES have a payload as the payload to /D from /B/C
+            # is a direct payload of /B/C. /E now a payload and should not be
+            # loaded 
+            rootPrim = stage.GetPrimAtPath("/E")
+            self.assertTrue(rootPrim)
+            self.assertTrue(rootPrim.HasPayload())
+            self.assertFalse(rootPrim.IsLoaded())
+
+            # Because /E is unloaded, GetChildren() returns empty, now 
+            # GetAllChildren still returns the CChild and EChild as this does 
+            # not unload the ancestral payload from the reference.
+            self.assertTrue(stage.GetPrimAtPath("/E"))
+            self.assertEqual(stage.GetPrimAtPath("/E").GetChildren(), [])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
+            # Now load /E. GetChildren() and GetAllChildren() return the same
+            # and both lists now include the DChild from the extra payload.
+            rootPrim.Load()
+            self.assertTrue(rootPrim.IsLoaded())
+            self.assertTrue(stage.GetPrimAtPath("/E"))
+            self.assertEqual(stage.GetPrimAtPath("/E").GetChildren(),
+                             [stage.GetPrimAtPath("/E/DChild"),
+                              stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+            self.assertEqual(stage.GetPrimAtPath("/E").GetAllChildren(),
+                             [stage.GetPrimAtPath("/E/DChild"),
+                              stage.GetPrimAtPath("/E/CChild"),
+                              stage.GetPrimAtPath("/E/EChild")])
+
 
 if __name__ == "__main__":
     unittest.main()

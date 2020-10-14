@@ -57,9 +57,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
                        float lineWidth,
-                       bool enableScalarOverride,
-                       bool discardIfNotActiveSelected = false,
-                       bool discardIfNotRolloverSelected = false);
+                       bool enableScalarOverride);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
@@ -91,8 +89,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken VS[7];
     TfToken TCS[3];
     TfToken TES[3];
-    TfToken GS[8];
-    TfToken FS[17];
+    TfToken GS[11];
+    TfToken FS[14];
 };
 
 

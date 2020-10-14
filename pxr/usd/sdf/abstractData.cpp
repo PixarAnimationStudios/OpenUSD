@@ -25,7 +25,7 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/trace/trace.h"
 
-#include <iostream>
+#include <ostream>
 #include <vector>
 #include <utility>
 

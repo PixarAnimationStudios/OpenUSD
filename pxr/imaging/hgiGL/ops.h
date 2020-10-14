@@ -78,7 +78,10 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp);
-    
+
+    HGIGL_API
+    static HgiGLOpsFn CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp);
+
     HGIGL_API
     static HgiGLOpsFn CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp);
 
@@ -86,11 +89,12 @@ public:
     static HgiGLOpsFn CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp);
 
     HGIGL_API
-    static HgiGLOpsFn ResolveImage(
-        HgiTextureHandle const& src,
-        HgiTextureHandle const& dst,
-        GfVec4i const& region,
-        bool isDepthResolve);
+    static HgiGLOpsFn CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp);
+
+    HGIGL_API
+    static HgiGLOpsFn ResolveFramebuffer(
+        HgiGLDevice* device,
+        HgiGraphicsCmdsDesc const &graphicsCmds);
     
     HGIGL_API
     static HgiGLOpsFn SetViewport(GfVec4i const& vp);
@@ -129,13 +133,37 @@ public:
         std::vector<uint32_t> const& byteOffsets);
 
     HGIGL_API
+    static HgiGLOpsFn Draw(
+        HgiPrimitiveType primitiveType,
+        uint32_t vertexCount,
+        uint32_t firstVertex,
+        uint32_t instanceCount);
+
+    HGIGL_API
+    static HgiGLOpsFn DrawIndirect(
+        HgiPrimitiveType primitiveType,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t drawBufferOffset,
+        uint32_t drawCount,
+        uint32_t stride);
+
+    HGIGL_API
     static HgiGLOpsFn DrawIndexed(
+        HgiPrimitiveType primitiveType,
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t firstIndex,
         uint32_t vertexOffset,
         uint32_t instanceCount);
+
+    HGIGL_API
+    static HgiGLOpsFn DrawIndexedIndirect(
+        HgiPrimitiveType primitiveType,
+        HgiBufferHandle const& indexBuffer,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t drawBufferOffset,
+        uint32_t drawCount,
+        uint32_t stride);
 
     HGIGL_API
     static HgiGLOpsFn BindFramebufferOp(

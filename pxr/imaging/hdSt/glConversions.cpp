@@ -32,41 +32,35 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct _FormatDesc {
-    GLenum format;
-    GLenum type;
-    GLenum internalFormat;
-};
-
-static const _FormatDesc FORMAT_DESC[] =
+static const HioFormat FORMAT_DESC[] =
 {
-    // format,  type,          internal format
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8},      // HdFormatUNorm8,
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8},     // HdFormatUNorm8Vec2,
-    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8},    // HdFormatUNorm8Vec3,
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8},   // HdFormatUNorm8Vec4,
+    // HioFormat            // HdFormat
+    HioFormatUNorm8,        // HdFormatUNorm8,
+    HioFormatUNorm8Vec2,    // HdFormatUNorm8Vec2,
+    HioFormatUNorm8Vec3,    // HdFormatUNorm8Vec3,
+    HioFormatUNorm8Vec4,    // HdFormatUNorm8Vec4,
 
-    {GL_RED,  GL_BYTE,          GL_R8_SNORM},      // HdFormatSNorm8,
-    {GL_RG,   GL_BYTE,          GL_RG8_SNORM},     // HdFormatSNorm8Vec2,
-    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM},    // HdFormatSNorm8Vec3,
-    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM},   // HdFormatSNorm8Vec4,
+    HioFormatSNorm8,        // HdFormatSNorm8,
+    HioFormatSNorm8Vec2,    // HdFormatSNorm8Vec2,
+    HioFormatSNorm8Vec3,    // HdFormatSNorm8Vec3,
+    HioFormatSNorm8Vec4,    // HdFormatSNorm8Vec4,
 
-    {GL_RED,  GL_HALF_FLOAT,    GL_R16F},    // HdFormatFloat16,
-    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F},   // HdFormatFloat16Vec2,
-    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F},  // HdFormatFloat16Vec3,
-    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F}, // HdFormatFloat16Vec4,
+    HioFormatFloat16,       // HdFormatFloat16,
+    HioFormatFloat16Vec2,   // HdFormatFloat16Vec2,
+    HioFormatFloat16Vec3,   // HdFormatFloat16Vec3,
+    HioFormatFloat16Vec4,   // HdFormatFloat16Vec4,
 
-    {GL_RED,  GL_FLOAT,         GL_R32F},    // HdFormatFloat32,
-    {GL_RG,   GL_FLOAT,         GL_RG32F},   // HdFormatFloat32Vec2,
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F},  // HdFormatFloat32Vec3,
-    {GL_RGBA, GL_FLOAT,         GL_RGBA32F}, // HdFormatFloat32Vec4,
+    HioFormatFloat32,       // HdFormatFloat32,
+    HioFormatFloat32Vec2,   // HdFormatFloat32Vec2,
+    HioFormatFloat32Vec3,   // HdFormatFloat32Vec3,
+    HioFormatFloat32Vec4,   // HdFormatFloat32Vec4,
 
-    {GL_RED,  GL_INT,           GL_R32I},    // HdFormatInt32,
-    {GL_RG,   GL_INT,           GL_RG32I},   // HdFormatInt32Vec2,
-    {GL_RGB,  GL_INT,           GL_RGB32I},  // HdFormatInt32Vec3,
-    {GL_RGBA, GL_INT,           GL_RGBA32I}, // HdFormatInt32Vec4,
+    HioFormatInt32,         // HdFormatInt32,
+    HioFormatInt32Vec2,     // HdFormatInt32Vec2,
+    HioFormatInt32Vec3,     // HdFormatInt32Vec3,
+    HioFormatInt32Vec4,     // HdFormatInt32Vec4,
 
-    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // HdFormatFloat32UInt8
+    HioFormatFloat32,       // HdFormatFloat32UInt8
 };
 static_assert(TfArraySize(FORMAT_DESC) ==
         HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
@@ -283,25 +277,14 @@ HdStGLConversions::GetWrap(HdWrap wrap)
     return GL_CLAMP_TO_BORDER;
 }
 
-void
-HdStGLConversions::GetGlFormat(
-        HdFormat inFormat,
-        GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat)
+HioFormat
+HdStGLConversions::GetHioFormat(HdFormat inFormat)
 {
-    if ((inFormat < 0) || (inFormat >= HdFormatCount))
-    {
+    if ((inFormat < 0) || (inFormat >= HdFormatCount)) {
         TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
-        *outFormat         = GL_RGBA;
-        *outType           = GL_BYTE;
-        *outInternalFormat = GL_RGBA8;
-        return;
+        return HioFormatUNorm8Vec4;
     }
-
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
-
-    *outFormat         = desc.format;
-    *outType           = desc.type;
-    *outInternalFormat = desc.internalFormat;
+    return FORMAT_DESC[inFormat];
 }
 
 int

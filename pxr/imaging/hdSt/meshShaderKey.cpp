@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
@@ -61,15 +60,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,       "MeshPatchWire.Fragment.EdgeOnSurface"))
-    
-    ((edgeNoFilterFS,          "MeshWire.Fragment.NoFilter"))
-    ((edgeSelActiveFilterFS,   "MeshWire.Fragment.FilterElementSelActive"))
-    ((edgeSelRolloverFilterFS, "MeshWire.Fragment.FilterElementSelRollover"))
 
+    ((selWireOffsetGS,         "Selection.Geometry.WireSelOffset"))
+    ((selWireNoOffsetGS,       "Selection.Geometry.WireSelNoOffset"))
+    
     // selection decoding
     ((selDecodeUtils,          "Selection.DecodeUtils"))
     ((selPointSelVS,           "Selection.Vertex.PointSel"))
-    ((selElementSelFS,         "Selection.Fragment.ElementSel"))
+    ((selElementSelGS,         "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
@@ -131,9 +129,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
     float lineWidth,
-    bool enableScalarOverride,
-    bool discardIfNotActiveSelected /*=false*/,
-    bool discardIfNotRolloverSelected /*=false*/)
+    bool enableScalarOverride)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
@@ -213,36 +209,51 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     TES[2] = TfToken();
 
     // geometry shader
-    GS[0] = _tokens->instancing;
+    uint8_t gsIndex = 0;
+    GS[gsIndex++] = _tokens->instancing;
 
-    GS[1] = (normalsSource == NormalSourceFlat) ?
+    GS[gsIndex++] = (normalsSource == NormalSourceFlat) ?
         _tokens->normalsFlat :
         (gsSceneNormals ? _tokens->normalsScene : _tokens->normalsPass);
 
-    GS[2] = (normalsSource == NormalSourceGeometryShader) ?
+    GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
 
-    GS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
-              geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->edgeOnlyGS
-           : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-              geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
-                                                          : _tokens->edgeNoneGS);
+    GS[gsIndex++] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
+                      geomStyle == HdMeshGeomStyleHullEdgeOnly)
+                        ? _tokens->edgeOnlyGS
+                        : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
+                           geomStyle == HdMeshGeomStyleHullEdgeOnSurf)
+                            ? _tokens->edgeOnSurfGS
+                            : _tokens->edgeNoneGS);
 
     // emit edge param per vertex to help compute the edgeId
     TfToken gsEdgeIdMixin = isPrimTypePoints ? _tokens->edgeIdNoneGS
                                              : _tokens->edgeIdEdgeParamGS;
-    GS[4] = gsEdgeIdMixin;
+    GS[gsIndex++] = gsEdgeIdMixin;
+
+    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
+                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
+    // emit "ComputeSelectionOffset" GS function.
+    if (renderWireframe) {
+        // emit necessary selection decoding and helper mixins
+        GS[gsIndex++] = _tokens->selDecodeUtils;
+        GS[gsIndex++] = _tokens->selElementSelGS;
+        GS[gsIndex++] = _tokens->selWireOffsetGS;
+    } else {
+        GS[gsIndex++] = _tokens->selWireNoOffsetGS;
+    }
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
-    GS[5] = (!useCustomDisplacement) ?
+    GS[gsIndex++] = (!useCustomDisplacement) ?
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
-    GS[6] = isPrimTypeQuads ? _tokens->mainQuadGS :
-                (isPrimTypePatches ? _tokens->mainTriangleTessGS
-                                   : _tokens->mainTriangleGS);
-    GS[7] = TfToken();
+    GS[gsIndex++] = isPrimTypeQuads ? _tokens->mainQuadGS :
+                    (isPrimTypePatches ? _tokens->mainTriangleTessGS
+                                       : _tokens->mainTriangleGS);
+    GS[gsIndex] = TfToken();
 
     // Optimization : If the mesh is skipping displacement shading, we have an
     // opportunity to fully disable the geometry stage.
@@ -280,22 +291,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
          geomStyle == HdMeshGeomStyleHullEdgeOnly)) {
 
         FS[fsIndex++] = _tokens->edgeCommonFS;
-        // Selection filter mixin(s)
-        if (discardIfNotActiveSelected) {
-            // We don't add 'selDecodeUtils' because it is part of the
-            // render pass' FS mixin.
-            FS[fsIndex++] = _tokens->selElementSelFS;
-            FS[fsIndex++] = _tokens->edgeSelActiveFilterFS;
-        } else if (discardIfNotRolloverSelected) {
-            // We don't add 'selDecodeUtils' because it is part of the
-            // render pass' FS mixin.
-            FS[fsIndex++] = _tokens->selElementSelFS;
-            FS[fsIndex++] = _tokens->edgeSelRolloverFilterFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeNoFilterFS;
-        }
-
-        // Edge mixin
         if (isPrimTypePatches) {
             FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
         } else {
@@ -316,7 +311,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else {
         FS[fsIndex++] = _tokens->edgeNoneFS;
     }
-
 
     // Shading terminal mixin
     TfToken terminalFS;

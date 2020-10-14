@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/computeShader.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -39,35 +37,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-HdStComputeShader::HdStComputeShader()
+HdSt_ComputeShader::HdSt_ComputeShader()
  : HdStShaderCode()
- , _computeSource()
- , _params()
- , _paramSpec()
- , _paramArray()
- , _textureDescriptors()
 {
 }
 
-HdStComputeShader::~HdStComputeShader()
+HdSt_ComputeShader::~HdSt_ComputeShader()
 {
-}
-
-void
-HdStComputeShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
-{
-    if (shaderStageKey == HdShaderTokens->computeShader) {
-        _computeSource = source;
-    }
 }
 
 // -------------------------------------------------------------------------- //
-// HdShader Virtual Interface                                                 //
+// HdStShaderCode Virtual Interface                                           //
 // -------------------------------------------------------------------------- //
 
 /*virtual*/
 std::string
-HdStComputeShader::GetSource(TfToken const &shaderStageKey) const
+HdSt_ComputeShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->computeShader) {
         return _computeSource;
@@ -75,72 +60,54 @@ HdStComputeShader::GetSource(TfToken const &shaderStageKey) const
 
     return std::string();
 }
-/*virtual*/
-HdSt_MaterialParamVector const&
-HdStComputeShader::GetParams() const
-{
-    return _params;
-}
-/*virtual*/
-HdBufferArrayRangeSharedPtr const&
-HdStComputeShader::GetShaderData() const
-{
-    return _paramArray;
-}
-/*virtual*/
-HdStShaderCode::TextureDescriptorVector
-HdStComputeShader::GetTextures() const
-{
-    return _textureDescriptors;
-}
+
 /*virtual*/
 void
-HdStComputeShader::BindResources(const int program,
+HdSt_ComputeShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state)
 {
-    binder.BindShaderResources(this);
+    // Compute shaders currently serve GPU ExtComputations, wherein
+    // resource binding is managed explicitly.
+    // See HdStExtCompGpuComputationResource::Resolve() and
+    // HdStExtCompGpuComputation::Execute(..)
 }
+
 /*virtual*/
 void
-HdStComputeShader::UnbindResources(const int program,
+HdSt_ComputeShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder,
                                    HdRenderPassState const &state)
 {
-    binder.UnbindShaderResources(this);
+    // Compute shaders currently serve GPU ExtComputations, wherein
+    // resource binding is managed explicitly.
+    // See HdStExtCompGpuComputationResource::Resolve() and
+    // HdStExtCompGpuComputation::Execute(..)
 }
+
 /*virtual*/
 void
-HdStComputeShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_ComputeShader::AddBindings(HdBindingRequestVector *customBindings)
 {
+    // Resource binding is managed explicitly. See above comment.
 }
 
 /*virtual*/
 HdStShaderCode::ID
-HdStComputeShader::ComputeHash() const
+HdSt_ComputeShader::ComputeHash() const
 {
     size_t hash = 0;
-    
-    for (HdSt_MaterialParam const& param : _params) {
-        if (param.IsFallback())
-            boost::hash_combine(hash, param.name.Hash());
-    }
     boost::hash_combine(hash, 
         ArchHash(_computeSource.c_str(), _computeSource.size()));
     return hash;
 }
 
-void
-HdStComputeShader::SetComputeSource(const std::string &source)
-{
-    _SetSource(HdShaderTokens->computeShader, source);
-}
+// -------------------------------------------------------------------------- //
 
-/// If the prim is based on asset, reload that asset.
 void
-HdStComputeShader::Reload()
+HdSt_ComputeShader::SetComputeSource(const std::string &source)
 {
-    // Nothing to do, this shader's sources are externally managed.
+    _computeSource = source;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

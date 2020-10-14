@@ -305,10 +305,10 @@ class TestUsdStagePopulationMask(unittest.TestCase):
             stage.DefinePrim(p) for p in ('/foo', '/bar', '/i1', '/i2')]
         foo.SetInstanceable(True)
         [p.GetReferences().AddInternalReference(foo.GetPath()) for p in (i1, i2)]
-        assert len(stage.GetMasters())
+        assert len(stage.GetPrototypes())
         stage2 = Usd.Stage.OpenMasked(
             stage.GetRootLayer(), Usd.StagePopulationMask(['/i1']))
-        assert len(stage2.GetMasters())
+        assert len(stage2.GetPrototypes())
 
     def test_Bug145873(self):
         # The payload inclusion predicate wasn't being invoked on ancestors of
@@ -334,7 +334,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         assert not testStage.GetPrimAtPath('/Cubes/Geom/CubeThree')
 
     def test_Bug152904(self):
-        # Master prims weren't being generated on stages where the population
+        # Prototype prims weren't being generated on stages where the population
         # mask included paths of prims beneath instances.
         stage = Usd.Stage.CreateInMemory()
         stage.DefinePrim('/Ref/geom')
@@ -351,22 +351,52 @@ class TestUsdStagePopulationMask(unittest.TestCase):
             stage.GetRootLayer(), 
             Usd.StagePopulationMask(['/Instance_1/geom', '/Instance_2/geom']))
 
-        # Both instances should share the same master prim.
+        # Both instances should share the same prototype prim.
         instance_1 = maskedStage.GetPrimAtPath('/Instance_1')
         assert instance_1.IsInstance()
-        assert instance_1.GetMaster()
+        assert instance_1.GetPrototype()
 
         instance_2 = maskedStage.GetPrimAtPath('/Instance_2')
         assert instance_2.IsInstance()
-        assert instance_2.GetMaster()
+        assert instance_2.GetPrototype()
 
-        # For now, all prims in masters will be composed, even if they are
-        # not included in the population mask.
-        assert instance_1.GetMaster() == instance_2.GetMaster()
-        master = instance_1.GetMaster()
+        # Only the 'geom' prim in the prototype will be composed, since
+        # it's the only one in the population mask.
+        assert instance_1.GetPrototype() == instance_2.GetPrototype()
+        prototype = instance_1.GetPrototype()
 
-        assert master.GetChild('geom')
-        assert master.GetChild('shading')
+        assert prototype.GetChild('geom')
+        assert not prototype.GetChild('shading')
+
+        # Open the stage with a mask that includes the 'geom' prim beneath
+        # /Instance_1 and all children beneath /Instance_2.
+        maskedStage = Usd.Stage.OpenMasked(
+            stage.GetRootLayer(), 
+            Usd.StagePopulationMask(['/Instance_1/geom', '/Instance_2']))
+
+        # Both instances should *not* share the same prototype, since they
+        # are affected by different population masks.
+        instance_1 = maskedStage.GetPrimAtPath('/Instance_1')
+        assert instance_1.IsInstance()
+        assert instance_1.GetPrototype()
+
+        instance_2 = maskedStage.GetPrimAtPath('/Instance_2')
+        assert instance_2.IsInstance()
+        assert instance_2.GetPrototype()
+
+        # Only the 'geom' prim will be composed in the prototype for the
+        # /Instance_1, but both 'geom' and 'shading' will be composed for
+        # /Instance_2.
+        assert instance_1.GetPrototype() != instance_2.GetPrototype()
+        prototype = instance_1.GetPrototype()
+
+        assert prototype.GetChild('geom')
+        assert not prototype.GetChild('shading')
+
+        prototype = instance_2.GetPrototype()
+        
+        assert prototype.GetChild('geom')
+        assert prototype.GetChild('shading')
 
 if __name__ == '__main__':
     unittest.main()

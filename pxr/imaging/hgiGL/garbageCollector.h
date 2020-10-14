@@ -84,16 +84,18 @@ private:
     HgiGL* _hgi;
 
     // List of all the per-thread-vectors of objects that need to be destroyed.
-    std::vector<HgiBufferHandleVector*> _bufferList;
-    std::vector<HgiTextureHandleVector*> _textureList;
-    std::vector<HgiSamplerHandleVector*> _samplerList;
-    std::vector<HgiShaderFunctionHandleVector*> _shaderFunctionList;
-    std::vector<HgiShaderProgramHandleVector*> _shaderProgramList;
-    std::vector<HgiResourceBindingsHandleVector*> _resourceBindingsList;
-    std::vector<HgiGraphicsPipelineHandleVector*> _graphicsPipelineList;
-    std::vector<HgiComputePipelineHandleVector*> _computePipelineList;
+    // The vectors are static (shared across HGIs), because we use thread_local
+    // in _GetThreadLocalStorageList which makes us share the garbage collector
+    // vectors across Hgi instances.
+    static std::vector<HgiBufferHandleVector*> _bufferList;
+    static std::vector<HgiTextureHandleVector*> _textureList;
+    static std::vector<HgiSamplerHandleVector*> _samplerList;
+    static std::vector<HgiShaderFunctionHandleVector*> _shaderFunctionList;
+    static std::vector<HgiShaderProgramHandleVector*> _shaderProgramList;
+    static std::vector<HgiResourceBindingsHandleVector*> _resourceBindingsList;
+    static std::vector<HgiGraphicsPipelineHandleVector*> _graphicsPipelineList;
+    static std::vector<HgiComputePipelineHandleVector*> _computePipelineList;
 
-    std::mutex _garbageMutex;
     bool _isDestroying;
 };
 

@@ -76,14 +76,7 @@ namespace ShaderMetadataHelpers
     // -------------------------------------------------------------------------
 
 
-    const std::string&
-    StringVal(const TfToken& propName, const NdrTokenMap& metadata)
-    {
-        return StringVal(propName, metadata, std::string());
-    }
-
-
-    const std::string&
+    std::string
     StringVal(const TfToken& propName, const NdrTokenMap& metadata,
               const std::string& defaultValue)
     {

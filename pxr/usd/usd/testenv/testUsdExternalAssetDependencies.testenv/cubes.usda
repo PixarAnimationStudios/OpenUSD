@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "Cube1"
+)
+
+def "Cube1"
+{
+    def Cube "First"
+    {
+    }
+}
+
+def "Cube2"
+{
+    def Cube "Second"
+    {
+    }
+}
+
+

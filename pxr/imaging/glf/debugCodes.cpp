@@ -41,6 +41,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Glf logging for shadow map management");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_DUMP_SHADOW_TEXTURES,
         "Glf outputs shadows textures to image files");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_POST_SURFACE_LIGHTING,
+        "Glf post surface lighting setup");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
         "Glf texture image plugin registration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_PLUGINS,

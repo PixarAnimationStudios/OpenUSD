@@ -964,7 +964,6 @@ operator==(HdxPickTaskContextParams const& lhs,
         rhsDepthMaskPtr ? *rhsDepthMaskPtr : nullptr;
 
     return lhs.resolution == rhs.resolution
-        && lhs.hitMode == rhs.hitMode
         && lhs.pickTarget == rhs.pickTarget
         && lhs.resolveMode == rhs.resolveMode
         && lhs.doUnpickablesOcclude == rhs.doUnpickablesOcclude
@@ -994,7 +993,6 @@ operator<<(std::ostream& out, HdxPickTaskContextParams const& p)
 
     out << "PickTask Context Params: (...) "
         << p.resolution << " "
-        << p.hitMode << " "
         << p.pickTarget << " "
         << p.resolveMode << " "
         << p.doUnpickablesOcclude << " "

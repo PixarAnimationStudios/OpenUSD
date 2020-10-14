@@ -1,0 +1,343 @@
+Loading @ImpliedAndAncestralInherits_ComplexEvaluation/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    root.sdf             /_X
+
+Child names:
+     ['_Y', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Root/_Y>
+
+Prim Stack:
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </Root/_Y/C>
+
+Prim Stack:
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </Root/_Y/C/_Z>
+
+Prim Stack:
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/Root/_Y/C/_Z.prop:
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </Root/_Y/C/D>
+
+Prim Stack:
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/Root/_Y/C/D.prop:
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </Root/B>
+
+Prim Stack:
+    root.sdf             /Root/B
+    root.sdf             /_X/B
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C>
+
+Prim Stack:
+    root.sdf             /Root/B/C
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C/_Z>
+
+Prim Stack:
+    root.sdf             /Root/B/C/_Z
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/Root/B/C/_Z.prop:
+    root.sdf             /Root/B/C/_Z.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C/D>
+
+Prim Stack:
+    root.sdf             /Root/B/C/D
+    root.sdf             /Root/B/C/_Z
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/Root/B/C/D.prop:
+    root.sdf             /Root/B/C/D.prop
+    root.sdf             /Root/B/C/_Z.prop
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </_X>
+
+Prim Stack:
+    root.sdf             /_X
+
+Child names:
+     ['_Y', 'B']
+
+------------------------------------------------------------------------
+Results for composing </_X/_Y>
+
+Prim Stack:
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </_X/_Y/C>
+
+Prim Stack:
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </_X/_Y/C/_Z>
+
+Prim Stack:
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/_X/_Y/C/_Z.prop:
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </_X/_Y/C/D>
+
+Prim Stack:
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/_X/_Y/C/D.prop:
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </_X/B>
+
+Prim Stack:
+    root.sdf             /_X/B
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </_X/B/C>
+
+Prim Stack:
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </_X/B/C/_Z>
+
+Prim Stack:
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/_X/B/C/_Z.prop:
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </_X/B/C/D>
+
+Prim Stack:
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/_X/B/C/D.prop:
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot>
+
+Prim Stack:
+    root.sdf             /RefToRoot
+    root.sdf             /Root
+    root.sdf             /_X
+
+Child names:
+     ['_Y', 'B']
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/_Y>
+
+Prim Stack:
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/_Y/C>
+
+Prim Stack:
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/_Y/C/_Z>
+
+Prim Stack:
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/RefToRoot/_Y/C/_Z.prop:
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/_Y/C/D>
+
+Prim Stack:
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/RefToRoot/_Y/C/D.prop:
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/B>
+
+Prim Stack:
+    root.sdf             /Root/B
+    root.sdf             /_X/B
+    root.sdf             /_X/_Y
+    ref.sdf              /Ref
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/B/C>
+
+Prim Stack:
+    root.sdf             /Root/B/C
+    ref.sdf              /Ref/C
+    ref.sdf              /_G
+
+Child names:
+     ['_Z', 'D']
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/B/C/_Z>
+
+Prim Stack:
+    root.sdf             /Root/B/C/_Z
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/RefToRoot/B/C/_Z.prop:
+    root.sdf             /Root/B/C/_Z.prop
+    ref.sdf              /Ref/C/_Z.prop
+
+------------------------------------------------------------------------
+Results for composing </RefToRoot/B/C/D>
+
+Prim Stack:
+    root.sdf             /Root/B/C/D
+    root.sdf             /Root/B/C/_Z
+    ref.sdf              /Ref/C/D
+    ref.sdf              /Ref/C/_Z
+
+Property names:
+     ['prop']
+
+Property stacks:
+/RefToRoot/B/C/D.prop:
+    root.sdf             /Root/B/C/D.prop
+    root.sdf             /Root/B/C/_Z.prop
+    ref.sdf              /Ref/C/D.prop
+    ref.sdf              /Ref/C/_Z.prop
+

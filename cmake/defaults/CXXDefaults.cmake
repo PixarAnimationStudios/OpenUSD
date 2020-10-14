@@ -32,7 +32,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     include(clangdefaults)
 elseif(MSVC)
     include(msvcdefaults)
@@ -49,8 +49,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Set plugin path environment variable name
+set(PXR_PLUGINPATH_NAME PXR_PLUGINPATH_NAME)
 if (PXR_OVERRIDE_PLUGINPATH_NAME)
-    _add_define("PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}")
+    set(PXR_PLUGINPATH_NAME ${PXR_OVERRIDE_PLUGINPATH_NAME})
+    _add_define("PXR_PLUGINPATH_NAME=${PXR_PLUGINPATH_NAME}")
 endif()
 
 set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
@@ -85,4 +87,11 @@ if (PXR_ENABLE_PYTHON_SUPPORT)
     set(PXR_PYTHON_SUPPORT_ENABLED "1")
 else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
+endif()
+
+# Set safety/performance configuration
+if (PXR_PREFER_SAFETY_OVER_SPEED)
+   set(PXR_PREFER_SAFETY_OVER_SPEED "1")
+else()
+   set(PXR_PREFER_SAFETY_OVER_SPEED "0")
 endif()

@@ -77,7 +77,11 @@ ArchAlignMemory(void *base)
 /// The size of a CPU cache line on the current processor architecture in bytes.
 ///
 /// \hideinitializer
+#if defined(ARCH_OS_DARWIN) && defined(ARCH_CPU_ARM)
+#define ARCH_CACHE_LINE_SIZE 128
+#else
 #define ARCH_CACHE_LINE_SIZE 64
+#endif
 
 ///@}
 

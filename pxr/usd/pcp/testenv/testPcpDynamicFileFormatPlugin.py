@@ -46,7 +46,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # We expect there to be no layers left loaded when we start each test
         # case so we can start fresh. By the tearDown completes this needs to 
         # be true.
-        assert not Sdf.Layer.GetLoadedLayers()
+        self.assertFalse(Sdf.Layer.GetLoadedLayers())
 
     def _CreatePcpCache(self, rootLayer):
         return Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
@@ -59,63 +59,75 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # read the contents in as a normal sdf file
         dynamicConeFile = 'cone.testpcpdynamic'
         noArgConeLayer = Sdf.Layer.FindOrOpen(dynamicConeFile)
-        assert noArgConeLayer
-        assert noArgConeLayer.GetFileFormat().formatId == "Test_PcpDynamicFileFormat"
+        self.assertTrue(noArgConeLayer)
+        self.assertEqual(noArgConeLayer.GetFileFormat().formatId,
+                         "Test_PcpDynamicFileFormat")
         # Compare the contents against the no argument baseline.
         baselineConeLayer = Sdf.Layer.FindOrOpen('baseline/cone_0.sdf')
-        assert baselineConeLayer
-        assert noArgConeLayer.ExportToString() == baselineConeLayer.ExportToString()
+        self.assertTrue(baselineConeLayer)
+        self.assertEqual(noArgConeLayer.ExportToString(),
+                         baselineConeLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly
         Sdf.Layer.Reload(noArgConeLayer, True)
-        assert noArgConeLayer.ExportToString() == baselineConeLayer.ExportToString()
+        self.assertEqual(noArgConeLayer.ExportToString(), 
+                         baselineConeLayer.ExportToString())
 
         # Open the sphere.testpcpdynamic file with no arguments. This will
         # read the contents in as a normal sdf file
         dynamicSphereFile = 'sphere.testpcpdynamic'
         noArgSphereLayer = Sdf.Layer.FindOrOpen(dynamicSphereFile)
-        assert noArgSphereLayer
-        assert noArgSphereLayer.GetFileFormat().formatId == "Test_PcpDynamicFileFormat"
+        self.assertTrue(noArgSphereLayer)
+        self.assertEqual(noArgSphereLayer.GetFileFormat().formatId,
+                        "Test_PcpDynamicFileFormat")
         # Compare the contents against the no argument baseline.
         baselineSphereLayer = Sdf.Layer.FindOrOpen('baseline/sphere_0.sdf')
-        assert baselineSphereLayer
-        assert noArgSphereLayer.ExportToString() == baselineSphereLayer.ExportToString()
+        self.assertTrue(baselineSphereLayer)
+        self.assertEqual(noArgSphereLayer.ExportToString(),
+                         baselineSphereLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly
         Sdf.Layer.Reload(noArgSphereLayer, True)
-        assert noArgSphereLayer.ExportToString() == baselineSphereLayer.ExportToString()
+        self.assertEqual(noArgSphereLayer.ExportToString(),
+                         baselineSphereLayer.ExportToString())
 
         # Now open the dynamic cone file with file format arguments for 
         # depth and num. The contents will be dynamicly generated.
         procConeLayer = Sdf.Layer.FindOrOpen(dynamicConeFile, 
                                              {"TestPcp_depth":"3", "TestPcp_num":"2"})
-        assert procConeLayer
-        assert procConeLayer.GetFileFormat().formatId == "Test_PcpDynamicFileFormat"
+        self.assertTrue(procConeLayer)
+        self.assertEqual(procConeLayer.GetFileFormat().formatId,
+                         "Test_PcpDynamicFileFormat")
         baselineProcLayer = Sdf.Layer.FindOrOpen('baseline/proc_3_2.sdf')
-        assert baselineProcLayer
+        self.assertTrue(baselineProcLayer)
         # The baseline comparison file uses a placeholder asset path so update
         # it with the cone file's real path (converted to '/' on windows) and 
         # then compare against the dynamic baseline
         refConeLayerPath = procConeLayer.realPath.replace('\\', '/')
         baselineProcLayer.UpdateExternalReference('placeholder.sdf', 
                                                   refConeLayerPath)
-        assert procConeLayer.ExportToString() == baselineProcLayer.ExportToString()
+        self.assertEqual(procConeLayer.ExportToString(),
+                         baselineProcLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly
         Sdf.Layer.Reload(procConeLayer, True)
-        assert procConeLayer.ExportToString() == baselineProcLayer.ExportToString()
+        self.assertEqual(procConeLayer.ExportToString(),
+                         baselineProcLayer.ExportToString())
 
         # Open the dynamic sphere file with the same file format arguments.
         # The dynamic contents should be exactly the same as the cone, but
         # the asset paths replaced with the sphere asset.
         procSphereLayer = Sdf.Layer.FindOrOpen(dynamicSphereFile, 
                                                {"TestPcp_depth":"3", "TestPcp_num":"2"})
-        assert procSphereLayer
-        assert procSphereLayer.GetFileFormat().formatId == "Test_PcpDynamicFileFormat"
+        self.assertTrue(procSphereLayer)
+        self.assertEqual(procSphereLayer.GetFileFormat().formatId,
+                         "Test_PcpDynamicFileFormat")
         refSphereLayerPath = procSphereLayer.realPath.replace('\\', '/')
         baselineProcLayer.UpdateExternalReference(refConeLayerPath, 
                                                   refSphereLayerPath)
-        assert procSphereLayer.ExportToString() == baselineProcLayer.ExportToString()
+        self.assertEqual(procSphereLayer.ExportToString(),
+                         baselineProcLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly
         Sdf.Layer.Reload(procSphereLayer, True)
-        assert procSphereLayer.ExportToString() == baselineProcLayer.ExportToString()
+        self.assertEqual(procSphereLayer.ExportToString(),
+                         baselineProcLayer.ExportToString())
 
         print("test_FileFormat Success!\n")
             
@@ -145,7 +157,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # Verify that we generated the number of paths we expected. This is an
         # invariant however it's helpful to force us to provide the number of
         # expected paths so that we understand what expect from the test.
-        assert len(paths) == expectedNumPaths
+        self.assertEqual(len(paths), expectedNumPaths)
         return paths
 
     def _VerifyFoundDynamicPayloads(self, cache, payloads):
@@ -154,18 +166,20 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
             # Verify each dynamic payload's prim index is computed 
             # without errors and has dynamic file arguments
             primIndex = cache.FindPrimIndex(payload)
-            assert primIndex.IsValid()
+            self.assertTrue(primIndex.IsValid())
             # The prim index for the payload will have dynamic file format
             # dependency data.
-            assert cache.GetDynamicFileFormatArgumentDependencyData(payload)
+            self.assertTrue(
+                cache.GetDynamicFileFormatArgumentDependencyData(payload))
 
             # Verify that there is a geom spec under each payload and that
             # these do not have dynamic file arguments.
             geomIndex = cache.FindPrimIndex(payload + "/geom")
-            assert geomIndex.IsValid()
+            self.assertTrue(geomIndex.IsValid())
             # The geom reference prim index will not have dynamic file format
             # dependency data.
-            assert cache.GetDynamicFileFormatArgumentDependencyData(payload + "/geom").IsEmpty()
+            self.assertTrue(
+                cache.GetDynamicFileFormatArgumentDependencyData(payload + "/geom").IsEmpty())
 
     def _VerifyNotFoundDynamicPayloads(self, cache, payloads):
         for payload in payloads:
@@ -173,13 +187,14 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
             # Verify each dynamic payload's prim index is computed 
             # without errors and has dynamic file arguments
             primIndex = cache.FindPrimIndex(payload)
-            assert primIndex is None
-            assert cache.GetDynamicFileFormatArgumentDependencyData(payload).IsEmpty()
+            self.assertIsNone(primIndex)
+            self.assertTrue(
+                cache.GetDynamicFileFormatArgumentDependencyData(payload).IsEmpty())
 
             # Verify that there is a geom spec under each payload and that
             # these do not have dynamic file arguments.
             geomIndex = cache.FindPrimIndex(payload + "/geom")
-            assert geomIndex is None
+            self.assertIsNone(geomIndex)
 
     def _VerifyComputeDynamicPayloads(self, cache, payloads, hasPayloadId=False):
 
@@ -188,29 +203,30 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
             # Verify each dynamic payload's prim index is computed 
             # without errors and has dynamic file arguments
             (primIndex, err) = cache.ComputePrimIndex(payload)
-            assert primIndex.IsValid()
-            assert not err
+            self.assertTrue(primIndex.IsValid())
+            self.assertFalse(err)
             # The prim index for the payload will have dynamic file format
             # dependency data.
             depData = cache.GetDynamicFileFormatArgumentDependencyData(payload)
             assert depData
             if hasPayloadId:
-                assert (sorted(depData.GetRelevantFieldNames()) == 
+                self.assertEqual(sorted(depData.GetRelevantFieldNames()),
                         ["TestPcp_argDict", "TestPcp_depth", "TestPcp_height",
                          "TestPcp_num", "TestPcp_radius"])
             else:
-                assert (sorted(depData.GetRelevantFieldNames()) == 
+                self.assertEqual(sorted(depData.GetRelevantFieldNames()),
                         ["TestPcp_depth", "TestPcp_height", "TestPcp_num", 
                          "TestPcp_radius"])
 
             # Verify that there is a geom spec under each payload and that
             # these do not have dynamic file arguments.
             (geomIndex, err) = cache.ComputePrimIndex(payload + "/geom")
-            assert geomIndex.IsValid()
-            assert not err
+            self.assertTrue(geomIndex.IsValid())
+            self.assertFalse(err)
             # The geom reference prim index will not have dynamic file format
             # dependency data.
-            assert cache.GetDynamicFileFormatArgumentDependencyData(payload + "/geom").IsEmpty()
+            self.assertTrue(
+                cache.GetDynamicFileFormatArgumentDependencyData(payload + "/geom").IsEmpty())
 
     def _TestChangeInfo(self, cache, prim, field, newValue, expectedSignificantChanges):
         # Test that authoring a new value for an relevant field like 
@@ -218,17 +234,15 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         for expected in expectedSignificantChanges:
             dep = cache.GetDynamicFileFormatArgumentDependencyData(expected)
             oldValue = prim.GetInfo(field) if prim.HasInfo(field) else None
-            assert dep.CanFieldChangeAffectFileFormatArguments(
-                field, oldValue, newValue)
+            self.assertTrue(dep.CanFieldChangeAffectFileFormatArguments(
+                field, oldValue, newValue), msg=("Field %s: %s -> %s" % (field, oldValue, newValue)))
 
         with Pcp._TestChangeProcessor(cache) as cp:
             prim.SetInfo(field, newValue)
-            assert cp.GetSignificantChanges() == expectedSignificantChanges, \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
+            self.assertEqual(cp.GetSignificantChanges(), 
+                             expectedSignificantChanges)
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
 
     def test_BasicRead(self):
         print("\ntest_Read Start\n")
@@ -236,7 +250,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # Create a PcpCache for root.sdf. Has a dynamic root prim /RootCone
         rootLayerFile = 'root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
-        assert rootLayer
+        self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
                                         
         # Payloads for /RootCone - depth = 4, num = 3 : produces 40 payloads                                        
@@ -249,21 +263,21 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         # Verify that layers for each dynamic depth were generated and opened.
         dynamicLayerFileName = "cone.testpcpdynamic"
-        assert Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
                 dynamicLayerFileName,
-                {"TestPcp_depth":"4", "TestPcp_num":"3", "TestPcp_radius":"50"}))
-        assert Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                {"TestPcp_depth":"4", "TestPcp_num":"3", "TestPcp_radius":"50"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
                 dynamicLayerFileName,
                 {"TestPcp_depth":"3", "TestPcp_height":"3", "TestPcp_num":"3", 
-                 "TestPcp_radius":"25"}))
-        assert Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                 "TestPcp_radius":"25"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
                 dynamicLayerFileName,
                 {"TestPcp_depth":"2", "TestPcp_height":"3", "TestPcp_num":"3", 
-                 "TestPcp_radius":"12.5"}))
-        assert Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                 "TestPcp_radius":"12.5"})))
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
                 dynamicLayerFileName,
                 {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", 
-                 "TestPcp_radius":"6.25"}))
+                 "TestPcp_radius":"6.25"})))
 
         print("test_BasicRead Success!\n")
 
@@ -274,7 +288,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # and /RootMulti as well.
         rootLayerFile = 'root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
-        assert rootLayer
+        self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
 
         # Payloads prims for /RootSphere - depth = 4, num = 3 : produces 40 
@@ -284,23 +298,23 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         # Verify that relevant fields are not in the possible arguments list
         # for the cache yet before the prim indices that use them are computed.
-        assert not cache.HasAnyDynamicFileFormatArgumentDependencies()
+        self.assertFalse(cache.HasAnyDynamicFileFormatArgumentDependencies())
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius"]:
-            assert not cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField(field))
         # Verify the same for irrelevant fields
-        assert not cache.IsPossibleDynamicFileFormatArgumentField("documentation")
-        assert not cache.IsPossibleDynamicFileFormatArgumentField("TestPcp_argDict")
+        self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField("documentation"))
+        self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField("TestPcp_argDict"))
 
         # Compute and verify the prim indices for the dynamic payloads.
         self._VerifyComputeDynamicPayloads(cache, payloads)
 
         # Verify that the relevant fields are now possible dynamic arguments.
-        assert cache.HasAnyDynamicFileFormatArgumentDependencies()
+        self.assertTrue(cache.HasAnyDynamicFileFormatArgumentDependencies())
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius"]:
-            assert cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertTrue(cache.IsPossibleDynamicFileFormatArgumentField(field))
         # Verify that irrelevant fields are never possible dynamic arguments
-        assert not cache.IsPossibleDynamicFileFormatArgumentField("documentation")
-        assert not cache.IsPossibleDynamicFileFormatArgumentField("TestPcp_argDict")
+        self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField("documentation"))
+        self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField("TestPcp_argDict"))
 
         # Test that authoring a new value for an irrelevant field like 
         # documentation does not cause any significant changes.
@@ -319,21 +333,21 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         self._VerifyNotFoundDynamicPayloads(cache, payloads)
         # Verify that the invalidation of ALL dynamic prim indices
         # removed the relevant fields from possible dynamic arguments.
-        assert not cache.HasAnyDynamicFileFormatArgumentDependencies()
+        self.assertFalse(cache.HasAnyDynamicFileFormatArgumentDependencies())
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius"]:
-            assert not cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField(field))
 
         # Recompute the dynamic payload prim indices.
         self._VerifyComputeDynamicPayloads(cache, payloads)
 
         # Verify that relevant fields are possible dynamic arguments again.
-        assert cache.HasAnyDynamicFileFormatArgumentDependencies()
+        self.assertTrue(cache.HasAnyDynamicFileFormatArgumentDependencies())
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius"]:
-            assert cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertTrue(cache.IsPossibleDynamicFileFormatArgumentField(field))
 
         # Assert that we can find the params layer that was referenced by in by 
         # /RootSphere.
-        assert Sdf.Layer.Find("params.sdf")
+        self.assertTrue(Sdf.Layer.Find("params.sdf"))
         # FindOrOpen the params layer so that we still have an open reference
         # to it when we change it. Otherwise the layer might get deleted when
         # the prim indexes referencing it are invalidated and we could lose the
@@ -361,7 +375,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         subprimSpec = rootLayer.GetPrimAtPath('/RootSphere/Xform__3_0')
         # Note that we defined an over in root.sdf so that this spec would 
         # exist for convenience.
-        assert subprimSpec
+        self.assertTrue(subprimSpec)
         # Add depth metadata info to the subprim. This causes a significant 
         # change to the subprim only.
         self._TestChangeInfo(cache, subprimSpec,
@@ -403,12 +417,12 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         geomSpec = rootLayer.GetPrimAtPath('/RootSphere/geom')
         # Note that we defined an over in root.sdf so that this spec would 
         # exist for convenience.
-        assert geomSpec
-        assert cache.FindPrimIndex('/RootSphere/geom')
+        self.assertTrue(geomSpec)
+        self.assertTrue(cache.FindPrimIndex('/RootSphere/geom'))
         # Set depth on the existing geom spec. Verify that it doesn't cause any
         # significant changes to any prim indices even though it's a possible
         # dynamic argument field.
-        assert cache.IsPossibleDynamicFileFormatArgumentField('TestPcp_depth')
+        self.assertTrue(cache.IsPossibleDynamicFileFormatArgumentField('TestPcp_depth'))
         self._TestChangeInfo(cache, geomSpec,
                              'TestPcp_depth', 4, 
                              [])
@@ -448,22 +462,18 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # root.sdf
         rootLayerFile = 'subrootref.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
-        assert rootLayer
+        self.assertTrue(rootLayer)
         cache = self._CreatePcpCache(rootLayer)
 
         # Payloads prims for /Root - depth = 2, num = 4 : produces 5 
         # payloads. Note that the depth is one less than actually defined on 
         # /RootMulti as the reference is to a child of RootMulti.
         payloads = self._GeneratePrimIndexPaths("/Root", 2, 4, 5, payloadId=1)
-
-        # XXX: Because an outstanding bug with subroot referercing prim inside
-        # of ancestor payloads, we need to request payloads for /RootMulti as
-        # well.
-        cache.RequestPayloads(payloads + ["/RootMulti"],[])
+        cache.RequestPayloads(payloads, [])
 
         assert not cache.HasAnyDynamicFileFormatArgumentDependencies()
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius", "TestPcp_argDict"]:
-            assert not cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertFalse(cache.IsPossibleDynamicFileFormatArgumentField(field))
 
         # Compute and verify the prim indices for the dynamic payloads.
         self._VerifyComputeDynamicPayloads(cache, payloads, hasPayloadId=True)
@@ -471,9 +481,9 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # Because our primIndices include RootMulti which has payloads with
         # a "payloadId" format argument, "argDict" becomes another possible
         # dynamic argument field.
-        assert cache.HasAnyDynamicFileFormatArgumentDependencies()
+        self.assertTrue(cache.HasAnyDynamicFileFormatArgumentDependencies())
         for field in ["TestPcp_num", "TestPcp_depth", "TestPcp_height", "TestPcp_radius", "TestPcp_argDict"]:
-            assert cache.IsPossibleDynamicFileFormatArgumentField(field)
+            self.assertTrue(cache.IsPossibleDynamicFileFormatArgumentField(field))
 
         # Change height on the root prim. Verify this is a significant change
         # on the Root prim as it references in a subprim that is itself still
@@ -489,7 +499,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         # Assert that we can find root.sdf which was referenced in to /Root. It
         # will already be open.
-        assert Sdf.Layer.Find("root.sdf")
+        self.assertTrue(Sdf.Layer.Find("root.sdf"))
         # FindOrOpen the layer so that we still have an open reference
         # to it when we change it. Otherwise the layer might get deleted when
         # the prim indexes referencing it are invalidated and we could lose the
@@ -509,7 +519,7 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # There will now be an extra dynamic payload available under root.
         # Verify that we can compute all the new prim indices.
         newPayloads = self._GeneratePrimIndexPaths("/Root", 2, 5, 6, payloadId=1)
-        cache.RequestPayloads(newPayloads + ["/RootMulti"],[])
+        cache.RequestPayloads(newPayloads, [])
         self._VerifyComputeDynamicPayloads(cache, newPayloads, hasPayloadId=True)
 
         # XXX: Todo: Add another case here for making a metadata change in 
@@ -519,11 +529,16 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # provided by params.sdf to be culled from the subroot ref tree.
 
         print ("Computing prim index for " + "/SubrootGeomRef")
+        # /SubrootGeomRef directly references a child prim of the dynamic 
+        # /RootMulti. Note that we do not have to request payloads on 
+        # /SubrootGeomRef nor /RootMulti as ancestral payloads of the target of 
+        # a subroot reference are always included.
+
         # Verify each dynamic payload's prim index is computed 
         # without errors and has dynamic file arguments
         (primIndex, err) = cache.ComputePrimIndex("/SubrootGeomRef")
-        assert primIndex.IsValid()
-        assert not err
+        self.assertTrue(primIndex.IsValid())
+        self.assertFalse(err)
         self._TestChangeInfo(cache, refLayer.GetPrimAtPath('/RootMulti'),
                              'TestPcp_argDict', {"1": {"TestPcp_num":3}}, 
                              ['/Root', '/SubrootGeomRef'])

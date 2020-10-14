@@ -121,7 +121,9 @@ public:
     /// the main thread so we can continue to support the OpenGL platform. 
     /// See notes above.
     HGI_API
-    void SubmitCmds(HgiCmds* cmds);
+    void SubmitCmds(
+        HgiCmds* cmds, 
+        HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
     /// *** DEPRECATED *** Please use: CreatePlatformDefaultHgi
     HGI_API
@@ -172,6 +174,22 @@ public:
     /// Thread safety: Destruction must happen on main thread. See notes above.
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
+
+    /// Create a texture view in rendering backend.
+    /// A texture view aliases another texture's data.
+    /// It is the responsibility of the client to ensure that the sourceTexture
+    /// is not destroyed while the texture view is in use.
+    /// Thread safety: Creation must happen on main thread. See notes above.
+    HGI_API
+    virtual HgiTextureViewHandle CreateTextureView(
+        HgiTextureViewDesc const & desc) = 0;
+
+    /// Destroy a texture view in rendering backend.
+    /// This will destroy the view's texture, but not the sourceTexture that
+    /// was aliased by the view. The sourceTexture data remains unchanged.
+    /// Thread safety: Destruction must happen on main thread. See notes above.
+    HGI_API
+    virtual void DestroyTextureView(HgiTextureViewHandle* viewHandle) = 0;
 
     /// Create a sampler in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.
@@ -284,7 +302,8 @@ protected:
     // Derived classes can override this function if they need customize the
     // command submission. The default implementation calls cmds->_Submit().
     HGI_API
-    virtual bool _SubmitCmds(HgiCmds* cmds);
+    virtual bool _SubmitCmds(
+        HgiCmds* cmds, HgiSubmitWaitType wait);
 
 private:
     Hgi & operator=(const Hgi&) = delete;

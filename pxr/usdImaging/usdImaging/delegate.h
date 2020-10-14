@@ -259,6 +259,10 @@ public:
     USDIMAGING_API
     void SetSceneMaterialsEnabled(bool enable);
 
+    /// Enables lights found in the usdscene.
+    USDIMAGING_API
+    void SetSceneLightsEnabled(bool enable);
+
     /// Set the window policy on all scene cameras. This comes from
     /// the application.
     USDIMAGING_API
@@ -366,12 +370,6 @@ public:
 
     USDIMAGING_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
-
-    // Texture Support
-    USDIMAGING_API
-    HdTextureResource::ID GetTextureResourceID(SdfPath const &id) override;
-    USDIMAGING_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id) override;
 
     // Light Support
     USDIMAGING_API
@@ -740,6 +738,9 @@ private:
 
     /// Enable custom shading of prims
     bool _sceneMaterialsEnabled;
+
+    /// Enable lights found in the usdscene
+    bool _sceneLightsEnabled;
 
     CameraUtilConformWindowPolicy _appWindowPolicy;
 

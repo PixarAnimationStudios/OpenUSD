@@ -78,6 +78,9 @@ public:
     void SetRileyCameraParams(RtParamList& camParams,
                               RtParamList& projParams) const;
 
+    HDPRMAN_API
+    VtDictionary GetParams() const { return _params; }
+
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
     

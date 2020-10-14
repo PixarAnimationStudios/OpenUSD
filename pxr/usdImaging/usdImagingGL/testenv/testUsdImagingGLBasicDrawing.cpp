@@ -294,6 +294,10 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         }
     }
 
+    if (PresentDisabled()) {
+        _engine->SetEnablePresentation(false);
+    }
+
     if (!GetClipPlanes().empty()) {
         params.clipPlanes = GetClipPlanes();
         for (size_t i=0; i<GetClipPlanes().size(); ++i) {
@@ -376,7 +380,6 @@ void
 My_TestGLDrawing::ShutdownTest()
 {
     std::cout << "My_TestGLDrawing::ShutdownTest()\n";
-    _engine->InvalidateBuffers();
 }
 
 void

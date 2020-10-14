@@ -209,6 +209,20 @@ UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
 bool
 UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
+    // Validate the prim to protect against crashes in the schema generated 
+    // SchemaClass::Apply(const UsdPrim &prim) functions when called with a null
+    // prim as these generated functions call prim.ApplyAPI<SchemaClass>
+    //
+    // While we don't typically validate "this" prim for public UsdPrim C++ API,
+    // for performance reasons, we opt to do so here since ApplyAPI isn't 
+    // performance critical. If ApplyAPI becomes performance critical in the
+    // future, we may have to move this validation elsewhere if this validation
+    // is problematic.
+    if (!IsValid()) {
+        TF_CODING_ERROR("Invalid prim '%s'", GetDescription().c_str());
+        return false;
+    }
+
     const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
     if (instanceName.IsEmpty()) {
         return AddAppliedSchema(typeName);
@@ -467,13 +481,6 @@ UsdPrim::GetPropertyOrder() const
     GetMetadata(SdfFieldKeys->PropertyOrder, &order);
     return order;
 }
-
-void
-UsdPrim::SetPropertyOrder(const TfTokenVector &order) const
-{
-    SetMetadata(SdfFieldKeys->PropertyOrder, order);
-}
-
 
 static void
 _ComposePrimPropertyNames( 
@@ -1068,8 +1075,8 @@ UsdPrim::HasAuthoredPayloads() const
 void
 UsdPrim::Load(UsdLoadPolicy policy) const
 {
-    if (IsInMaster()) {
-        TF_CODING_ERROR("Attempted to load a prim in a master <%s>",
+    if (IsInPrototype()) {
+        TF_CODING_ERROR("Attempted to load a prim in a prototype <%s>",
                         GetPath().GetText());
         return;
     }
@@ -1079,12 +1086,50 @@ UsdPrim::Load(UsdLoadPolicy policy) const
 void
 UsdPrim::Unload() const
 {
-    if (IsInMaster()) {
-        TF_CODING_ERROR("Attempted to unload a prim in a master <%s>",
+    if (IsInPrototype()) {
+        TF_CODING_ERROR("Attempted to unload a prim in a prototype <%s>",
                         GetPath().GetText());
         return;
     }
     _GetStage()->Unload(GetPath());
+}
+
+TfTokenVector 
+UsdPrim::GetChildrenNames() const
+{
+    TfTokenVector names;
+    for (const auto &child : GetChildren()) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector 
+UsdPrim::GetAllChildrenNames() const
+{
+    TfTokenVector names;
+    for (const auto &child : GetAllChildren()) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector 
+UsdPrim::GetFilteredChildrenNames(const Usd_PrimFlagsPredicate &predicate) const
+{
+    TfTokenVector names;
+    for (const auto &child : GetFilteredChildren(predicate)) {
+        names.push_back(child.GetName());
+    }
+    return names;
+}
+
+TfTokenVector
+UsdPrim::GetChildrenReorder() const
+{
+    TfTokenVector reorder;
+    GetMetadata(SdfFieldKeys->PrimOrder, &reorder);
+    return reorder;
 }
 
 UsdPrim
@@ -1113,24 +1158,48 @@ UsdPrim::IsPseudoRoot() const
     return GetPath() == SdfPath::AbsoluteRootPath();
 }
 
+bool
+UsdPrim::IsPrototypePath(const SdfPath& path)
+{
+    return Usd_InstanceCache::IsPrototypePath(path);
+}
+
+bool
+UsdPrim::IsPathInPrototype(const SdfPath& path)
+{
+    return Usd_InstanceCache::IsPathInPrototype(path);
+}
+
+bool
+UsdPrim::IsMasterPath(const SdfPath& path)
+{
+    return IsPrototypePath(path);
+}
+
+bool
+UsdPrim::IsPathInMaster(const SdfPath& path)
+{
+    return IsPathInPrototype(path);
+}
+
 UsdPrim
 UsdPrim::GetMaster() const
 {
-    Usd_PrimDataConstPtr masterPrimData = 
-        _GetStage()->_GetMasterForInstance(get_pointer(_Prim()));
-    return UsdPrim(masterPrimData, SdfPath());
+    return GetPrototype();
+}
+
+UsdPrim
+UsdPrim::GetPrototype() const
+{
+    Usd_PrimDataConstPtr protoPrimData = 
+        _GetStage()->_GetPrototypeForInstance(get_pointer(_Prim()));
+    return UsdPrim(protoPrimData, SdfPath());
 }
 
 std::vector<UsdPrim>
 UsdPrim::GetInstances() const
 {
-    return _GetStage()->_GetInstancesForMaster(*this);
-}
-
-bool 
-UsdPrim::_PrimPathIsInMaster() const
-{
-    return Usd_InstanceCache::IsPathInMaster(GetPrimPath());
+    return _GetStage()->_GetInstancesForPrototype(*this);
 }
 
 SdfPrimSpecHandleVector 

@@ -40,6 +40,9 @@ TF_DECLARE_WEAK_PTRS(UsdStage);
 /// have all of the look variants.  It will have references into
 /// \p internalPath.  Clients are expected to reference the prim at
 /// \p externalPath to apply looks.
+///
+/// Note that this method will traverse the materialx network following material
+/// nodes, and does an early exit if no looks are defined in the mtlx document.
 USDMTLX_LOCAL
 void UsdMtlxRead(const MaterialX::ConstDocumentPtr& mtlx,
                  const UsdStagePtr& stage,
@@ -49,6 +52,8 @@ void UsdMtlxRead(const MaterialX::ConstDocumentPtr& mtlx,
 /// Translate node graphs in the MaterialX document in \p mtlx into the
 /// stage \p stage.  \p internalPath is a namespace path where converted
 /// MaterialX objects will live.
+///
+/// Note that this method will traverse all the nodegraphs in the mtlx document.
 USDMTLX_LOCAL
 void UsdMtlxReadNodeGraphs(const MaterialX::ConstDocumentPtr& mtlx,
                            const UsdStagePtr& stage,

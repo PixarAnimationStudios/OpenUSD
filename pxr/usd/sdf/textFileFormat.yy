@@ -557,6 +557,7 @@ _RelocatesAdd(const Value& arg1, const Value& arg2,
 
     context->relocatesParsingMap.insert(std::make_pair(srcAbsPath, 
                                                         targetAbsPath));
+    context->layerHints.mightHaveRelocates = true;
 }
 
 static void
@@ -3200,7 +3201,8 @@ bool Sdf_ParseMenva(
      const std::string& magicId,
      const std::string& versionString,
      bool metadataOnly,
-     SdfDataRefPtr data)
+     SdfDataRefPtr data,
+     SdfLayerHints *hints)
 {
     TfAutoMallocTag2 tag("Menva", "Menva_Parse");
 
@@ -3235,6 +3237,7 @@ bool Sdf_ParseMenva(
             try {
                 TRACE_SCOPE("textFileFormatYyParse");
                 status = textFileFormatYyparse(&context);
+                *hints = context.layerHints;
             } catch (boost::bad_get) {
                 TF_CODING_ERROR("Bad boost:get<T>() in menva parser.");
                 Err(&context, "Internal menva parser error.");
@@ -3253,9 +3256,10 @@ bool Sdf_ParseMenva(
 
 /// Parse a .menva string into an SdfData
 bool Sdf_ParseMenvaFromString(const std::string & menvaString, 
-                             const std::string & magicId,
-                             const std::string & versionString,
-                             SdfDataRefPtr data)
+                              const std::string & magicId,
+                              const std::string & versionString,
+                              SdfDataRefPtr data,
+                              SdfLayerHints *hints)
 {
     TfAutoMallocTag2 tag("Menva", "Menva_Parse");
 
@@ -3281,6 +3285,7 @@ bool Sdf_ParseMenvaFromString(const std::string & menvaString,
     try {
         TRACE_SCOPE("textFileFormatYyParse");
         status = textFileFormatYyparse(&context);
+        *hints = context.layerHints;
     } catch (boost::bad_get) {
         TF_CODING_ERROR("Bad boost:get<T>() in menva parser.");
         Err(&context, "Internal menva parser error.");

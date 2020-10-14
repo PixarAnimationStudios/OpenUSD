@@ -70,6 +70,14 @@ HdxPackageRenderPassShader()
 }
 
 TfToken
+HdxPackageDiscardUnselectedRenderPassShader()
+{
+    static TfToken shader =
+        _GetShaderPath("renderPassDiscardUnselectedShader.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageRenderPassIdShader()
 {
     static TfToken shader = _GetShaderPath("renderPassIdShader.glslfx");

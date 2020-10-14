@@ -280,6 +280,7 @@ Results for composing </PayloadPrimWithSubrootInPayload>
 Prim Stack:
     root.sdf             /PayloadPrimWithSubrootInPayload
     ref.sdf              /PayloadPrimA/PrimA_Child
+    ref2.sdf             /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </RefPrimWithSubrootInPayload>
@@ -287,6 +288,7 @@ Results for composing </RefPrimWithSubrootInPayload>
 Prim Stack:
     root.sdf             /RefPrimWithSubrootInPayload
     ref.sdf              /PayloadPrimA/PrimA_Child
+    ref2.sdf             /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </InternalPayload2>

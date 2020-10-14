@@ -35,10 +35,9 @@ pxr_library(hdSt
 
     PUBLIC_CLASSES
         basisCurves
-        bufferArrayRangeGL
-        bufferResourceGL
+        bufferArrayRange
+        bufferResource
         commandBuffer
-        computeShader
         copyComputation
         debugCodes
         dispatchBuffer
@@ -46,8 +45,6 @@ pxr_library(hdSt
         drawItem
         drawItemInstance
         drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
         drawTargetRenderPassState
         dynamicUvTextureObject
         extComputation
@@ -57,9 +54,11 @@ pxr_library(hdSt
         extCompGpuPrimvarBufferSource
         fallbackLightingShader
         field
+        fieldSubtextureIdentifier
         flatNormals
         geometricShader
         glConversions
+        glfTextureCpuData
         glslfxShader
         glslProgram
         glUtils
@@ -74,7 +73,6 @@ pxr_library(hdSt
         mesh
         mixinShader
         package
-        persistentBuffer
         points
         renderBuffer
         renderDelegate
@@ -92,6 +90,7 @@ pxr_library(hdSt
         surfaceShader
         texture
         textureBinder
+        textureCpuData
         textureHandle
         textureHandleRegistry
         textureIdentifier
@@ -107,15 +106,16 @@ pxr_library(hdSt
 
     PUBLIC_HEADERS
         api.h
+        dynamicUvTextureImplementation.h
 
     PRIVATE_CLASSES
         basisCurvesComputations
         basisCurvesShaderKey
         basisCurvesTopology
         codeGen
+        computeShader
         cullingShaderKey
         drawBatch
-        drawTargetTextureResource
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch

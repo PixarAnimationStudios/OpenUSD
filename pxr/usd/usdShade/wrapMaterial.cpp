@@ -238,6 +238,7 @@ WRAP_CUSTOM {
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutput", &UsdShadeMaterial::GetSurfaceOutput, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetSurfaceOutputs", &UsdShadeMaterial::GetSurfaceOutputs)
         .def("ComputeSurfaceSource", &_WrapComputeSurfaceSource, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
@@ -247,6 +248,8 @@ WRAP_CUSTOM {
         .def("GetDisplacementOutput", 
             &UsdShadeMaterial::GetDisplacementOutput, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetDisplacementOutputs",
+            &UsdShadeMaterial::GetDisplacementOutputs)
         .def("ComputeDisplacementSource", &_WrapComputeDisplacementSource, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
@@ -254,6 +257,7 @@ WRAP_CUSTOM {
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetVolumeOutput", &UsdShadeMaterial::GetVolumeOutput, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetVolumeOutputs", &UsdShadeMaterial::GetVolumeOutputs)
         .def("ComputeVolumeSource", &_WrapComputeVolumeSource, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
 

@@ -37,15 +37,15 @@ from .freeCamera import FreeCamera
 from .common import ClearColors, HighlightColors
 
 
-# Map of clear color names to rgba color tuples.
+# Map of clear color names to rgba color tuples in linear space.
 _CLEAR_COLORS_DICT = {
     ClearColors.BLACK:       (0.0, 0.0, 0.0, 1.0),
-    ClearColors.DARK_GREY:   (0.3, 0.3, 0.3, 1.0),
-    ClearColors.LIGHT_GREY:  (0.7, 0.7, 0.7, 1.0),
+    ClearColors.DARK_GREY:   (0.07074, 0.07074, 0.07074, 1.0),
+    ClearColors.LIGHT_GREY:  (0.45626, 0.45626, 0.45626, 1.0),
     ClearColors.WHITE:       (1.0, 1.0, 1.0, 1.0)}
 
 
-# Map of highlight color names to rgba color tuples.
+# Map of highlight color names to rgba color tuples in linear space.
 _HIGHLIGHT_COLORS_DICT = {
     HighlightColors.WHITE:   (1.0, 1.0, 1.0, 0.5),
     HighlightColors.YELLOW:  (1.0, 1.0, 0.0, 0.5),
@@ -84,6 +84,11 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
     # emitted when any view setting which may affect the rendered image changes
     signalVisibleSettingChanged = QtCore.Signal()
+
+    # emitted when autoClipping changes value, so that clients can initialize
+    # it efficiently.  This signal will be emitted *before* 
+    # signalVisibleSettingChanged when autoClipping changes.
+    signalAutoComputeClippingPlanesChanged = QtCore.Signal()
 
     # emitted when any aspect of the defaultMaterial changes
     signalDefaultMaterialChanged = QtCore.Signal()
@@ -128,9 +133,17 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._displayRender = self.stateProperty("displayRender", default=False)
         self._displayPrimId = self.stateProperty("displayPrimId", default=False)
         self._enableSceneMaterials = self.stateProperty("enableSceneMaterials", default=True)
+        self._enableSceneLights = self.stateProperty("enableSceneLights", default=True)
         self._cullBackfaces = self.stateProperty("cullBackfaces", default=False)
         self._showInactivePrims = self.stateProperty("showInactivePrims", default=True)
-        self._showAllMasterPrims = self.stateProperty("showAllMasterPrims", default=False)
+
+        showAllMasterPrims = self.stateProperty("showAllMasterPrims", default=False)
+        self._showAllPrototypePrims = self.stateProperty("showAllPrototypePrims", default=False)
+        # XXX: For backwards compatibility, we use the "showAllMasterPrims"
+        # saved state to drive the new "showAllPrototypePrims" state. We
+        # can remove "showAllMasterPrims" in a later release.
+        self._showAllPrototypePrims = showAllMasterPrims
+
         self._showUndefinedPrims = self.stateProperty("showUndefinedPrims", default=False)
         self._showAbstractPrims = self.stateProperty("showAbstractPrims", default=False)
         self._rolloverPrimInfo = self.stateProperty("rolloverPrimInfo", default=False)
@@ -180,9 +193,11 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["displayRender"] = self._displayRender
         state["displayPrimId"] = self._displayPrimId
         state["enableSceneMaterials"] = self._enableSceneMaterials
+        state["enableSceneLights"] = self._enableSceneLights
         state["cullBackfaces"] = self._cullBackfaces
         state["showInactivePrims"] = self._showInactivePrims
-        state["showAllMasterPrims"] = self._showAllMasterPrims
+        state["showAllPrototypePrims"] = self._showAllPrototypePrims
+        state["showAllMasterPrims"] = self._showAllPrototypePrims
         state["showUndefinedPrims"] = self._showUndefinedPrims
         state["showAbstractPrims"] = self._showAbstractPrims
         state["rolloverPrimInfo"] = self._rolloverPrimInfo
@@ -340,6 +355,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def autoComputeClippingPlanes(self, value):
         self._autoComputeClippingPlanes = value
+        self.signalAutoComputeClippingPlanesChanged.emit()
 
     @property
     def showBBoxPlayback(self):
@@ -405,6 +421,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._enableSceneMaterials = value
 
     @property
+    def enableSceneLights(self):
+        return self._enableSceneLights
+
+    @enableSceneLights.setter
+    @visibleViewSetting
+    def enableSceneLights(self, value):
+        self._enableSceneLights = value
+
+    @property
     def cullBackfaces(self):
         return self._cullBackfaces
 
@@ -423,13 +448,13 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._showInactivePrims = value
 
     @property
-    def showAllMasterPrims(self):
-        return self._showAllMasterPrims
+    def showAllPrototypePrims(self):
+        return self._showAllPrototypePrims
 
-    @showAllMasterPrims.setter
+    @showAllPrototypePrims.setter
     @invisibleViewSetting
-    def showAllMasterPrims(self, value):
-        self._showAllMasterPrims = value
+    def showAllPrototypePrims(self, value):
+        self._showAllPrototypePrims = value
 
     @property
     def showUndefinedPrims(self):

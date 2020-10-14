@@ -74,13 +74,33 @@ public:
         std::vector<uint32_t> const& byteOffsets) override;
 
     HGIMETAL_API
+    void Draw(
+        uint32_t vertexCount,
+        uint32_t firstVertex,
+        uint32_t instanceCount) override;
+
+    HGIMETAL_API
+    void DrawIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t bufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
+
+    HGIMETAL_API
     void DrawIndexed(
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t firstIndex,
         uint32_t vertexOffset,
         uint32_t instanceCount) override;
+
+    HGIMETAL_API
+    void DrawIndexedIndirect(
+        HgiBufferHandle const& indexBuffer,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t drawBufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
 
     HGIMETAL_API
     void PushDebugGroup(const char* label) override;
@@ -97,17 +117,24 @@ protected:
         HgiGraphicsCmdsDesc const& desc);
 
     HGIMETAL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiMetalGraphicsCmds() = delete;
     HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
+    void _CreateEncoder();
+    
     HgiMetal* _hgi;
+    MTLRenderPassDescriptor* _renderPassDescriptor;
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
+    HgiPrimitiveType _primitiveType;
     bool _hasWork;
+    MTLViewport _viewport;
+    NSString* _debugLabel;
+    bool _viewportSet;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

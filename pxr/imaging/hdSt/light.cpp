@@ -71,8 +71,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Create the Glf Simple Light object that will be used by the rest
     // of the pipeline. No support for shadows for this translated light.
     GlfSimpleLight l;
+    l.SetHasIntensity(intensity != 0.0f);
     l.SetPosition(p);
     l.SetDiffuse(c);
+    l.SetSpecular(l.GetSpecular() * intensity);
     l.SetHasShadow(false);
     return l;
 }
@@ -88,17 +90,8 @@ HdStLight::_PrepareDomeLight(
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
 
-    {
-        const VtValue v = sceneDelegate->GetLightParamValue(
-            id, HdTokens->transform);
-        if (!v.IsEmpty()) {
-            if (v.IsHolding<GfMatrix4d>()) {
-                l.SetTransform(v.UncheckedGet<GfMatrix4d>());
-            } else {
-                TF_CODING_ERROR("Dome light transform not a matrix.");
-            }
-        }
-    }
+    GfMatrix4d m = sceneDelegate->GetTransform(id);
+    l.SetTransform(m);
 
     {
         const VtValue v = sceneDelegate->GetLightParamValue(
@@ -120,16 +113,16 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
                 HdRenderParam   *renderParam,
                 HdDirtyBits     *dirtyBits)
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     TF_UNUSED(renderParam);
 
-    SdfPath const &id = GetId();
-
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
+
+    SdfPath const &id = GetId();
 
     // HdStLight communicates to the scene graph and caches all interesting
     // values within this class. Later on Get() is called from 
@@ -141,12 +134,7 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // Transform
     if (bits & DirtyTransform) {
-        VtValue transform = sceneDelegate->Get(id, HdLightTokens->transform);
-        if (transform.IsHolding<GfMatrix4d>()) {
-            _params[HdLightTokens->transform] = transform;
-        } else {
-            _params[HdLightTokens->transform] = GfMatrix4d(1);
-        }
+        _params[HdTokens->transform] = sceneDelegate->GetTransform(id);
     }
 
     // Lighting Params

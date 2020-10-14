@@ -49,17 +49,11 @@
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
 
-#include <boost/aligned_storage.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <boost/mpl/and.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits/decay.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/type_traits/has_trivial_copy.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <iosfwd>
 #include <typeinfo>
@@ -132,7 +126,7 @@ VT_VALUE_SET_STORED_TYPE(boost::python::object, TfPyObjWrapper);
 // A metafunction that gives the type VtValue should store for a given type T.
 template <class T>
 struct Vt_ValueGetStored 
-    : Vt_ValueStoredType<typename boost::decay<T>::type> {};
+    : Vt_ValueStoredType<std::decay_t<T>> {};
 
 /// Provides a container which may hold any type, and provides introspection
 /// and iteration over array types.  See \a VtIsArray for more info.
@@ -209,20 +203,20 @@ class VtValue
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
     template <class T>
-    struct _IsTriviallyCopyable : boost::mpl::and_<
-        boost::has_trivial_constructor<T>,
-        boost::has_trivial_copy<T>,
-        boost::has_trivial_assign<T>,
-        boost::has_trivial_destructor<T> > {};
+    using _IsTriviallyCopyable = std::integral_constant<bool,
+        boost::has_trivial_constructor<T>::value &&
+        boost::has_trivial_copy<T>::value &&
+        boost::has_trivial_assign<T>::value &&
+        boost::has_trivial_destructor<T>::value>;
 
     // Metafunction that returns true if T should be stored locally, false if it
     // should be stored remotely.
     template <class T>
-    struct _UsesLocalStore : boost::mpl::bool_<
+    using _UsesLocalStore = std::integral_constant<bool,
         (sizeof(T) <= sizeof(_Storage)) &&
         VtValueTypeHasCheapCopy<T>::value &&
         std::is_nothrow_move_constructible<T>::value &&
-        std::is_nothrow_move_assignable<T>::value> {};
+        std::is_nothrow_move_assignable<T>::value>;
 
     // Type information base class.
     struct _TypeInfo {
@@ -812,19 +806,14 @@ class VtValue
     template <class T>
     struct _TypeInfoFor {
         // return _UsesLocalStore(T) ? _LocalTypeInfo<T> : _RemoteTypeInfo<T>;
-        typedef typename boost::mpl::if_<_UsesLocalStore<T>,
-                                         _LocalTypeInfo<T>,
-                                         _RemoteTypeInfo<T> >::type Type;
+        typedef std::conditional_t<_UsesLocalStore<T>::value,
+                                   _LocalTypeInfo<T>,
+                                   _RemoteTypeInfo<T>> Type;
     };
 
     // Make sure char[N] is treated as a string.
     template <size_t N>
-    struct _TypeInfoFor<char[N]> {
-        // return _UsesLocalStore(T) ? _LocalTypeInfo<T> : _RemoteTypeInfo<T>;
-        typedef typename boost::mpl::if_<_UsesLocalStore<std::string>,
-                                         _LocalTypeInfo<std::string>,
-                                         _RemoteTypeInfo<std::string> >::type Type;
-    };
+    struct _TypeInfoFor<char[N]> : _TypeInfoFor<std::string> {};
 
     // Runtime function to return a _TypeInfo base pointer to a specific
     // _TypeInfo subclass for type T.
@@ -862,8 +851,8 @@ class VtValue
     };
 
     template <class T>
-    typename boost::enable_if<
-        boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     _Init(T const &obj) {
         _info = GetTypeInfo<T>();
         typedef typename _TypeInfoFor<T>::Type TypeInfo;
@@ -871,8 +860,8 @@ class VtValue
     }
 
     template <class T>
-    typename boost::disable_if<
-        boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
+    std::enable_if_t<
+        !std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     _Init(T const &obj) {
         _Init(typename Vt_ValueGetStored<T>::Type(obj));
     }
@@ -948,10 +937,10 @@ public:
 #ifndef doxygen
     template <class T>
     inline
-    typename boost::enable_if_c<
+    std::enable_if_t<
         _TypeInfoFor<T>::Type::IsLocal &&
         _TypeInfoFor<T>::Type::HasTrivialCopy,
-    VtValue &>::type
+    VtValue &>
     operator=(T obj) {
         _Clear();
         _Init(obj);
@@ -966,10 +955,10 @@ public:
     operator=(T const &obj);
 #else
     template <class T>
-    typename boost::disable_if_c<
-        _TypeInfoFor<T>::Type::IsLocal &&
-        _TypeInfoFor<T>::Type::HasTrivialCopy,
-    VtValue &>::type
+    std::enable_if_t<
+        !_TypeInfoFor<T>::Type::IsLocal ||
+        !_TypeInfoFor<T>::Type::HasTrivialCopy,
+    VtValue &>
     operator=(T const &obj) {
         _HoldAside tmp(this);
         _Init(obj);
@@ -1015,8 +1004,8 @@ public:
     Swap(T &rhs);
 #else
     template <class T>
-    typename boost::enable_if<
-        boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     Swap(T &rhs) {
         if (!IsHolding<T>())
             *this = T();
@@ -1034,8 +1023,8 @@ public:
     UncheckedSwap(T &rhs);
 #else
     template <class T>
-    typename boost::enable_if<
-        boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     UncheckedSwap(T &rhs) {
         using std::swap;
         swap(_GetMutable<T>(), rhs);
@@ -1353,14 +1342,14 @@ private:
     VT_API bool _EqualityImpl(VtValue const &rhs) const;
 
     template <class Proxy>
-    typename boost::enable_if<VtIsValueProxy<Proxy>, Proxy &>::type
+    std::enable_if_t<VtIsValueProxy<Proxy>::value, Proxy &>
     _GetMutable() {
         typedef typename _TypeInfoFor<Proxy>::Type TypeInfo;
         return TypeInfo::GetMutableObj(_storage);
     }
 
     template <class T>
-    typename boost::disable_if<VtIsValueProxy<T>, T &>::type
+    std::enable_if_t<!VtIsValueProxy<T>::value, T &>
     _GetMutable() {
         // If we are a proxy, collapse it out to the real value first.
         if (ARCH_UNLIKELY(_IsProxy())) {
@@ -1371,14 +1360,14 @@ private:
     }
 
     template <class Proxy>
-    typename boost::enable_if<VtIsValueProxy<Proxy>, Proxy const &>::type
+    std::enable_if_t<VtIsValueProxy<Proxy>::value, Proxy const &>
     _Get() const {
         typedef typename _TypeInfoFor<Proxy>::Type TypeInfo;
         return TypeInfo::GetObj(_storage);
     }
 
     template <class T>
-    typename boost::disable_if<VtIsValueProxy<T>, T const &>::type
+    std::enable_if_t<!VtIsValueProxy<T>::value, T const &>
     _Get() const {
         typedef typename _TypeInfoFor<T>::Type TypeInfo;
         if (ARCH_UNLIKELY(_IsProxy())) {

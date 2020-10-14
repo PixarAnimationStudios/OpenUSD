@@ -103,8 +103,10 @@ public:
 
         /// Method for populating the cache with cache properties, for
         /// the set of properties that depend on inherited state.
+        ///
         /// Returns true if any skinnable prims were populated.
-        bool Populate(const UsdSkelRoot& root);
+        bool Populate(const UsdSkelRoot& root,
+                      Usd_PrimFlagsPredicate predicate);
 
         // Getters for properties added to the cache through Populate().
 

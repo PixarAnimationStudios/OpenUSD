@@ -156,7 +156,7 @@
             <addaction name="menuPrim_View_Depth"/>
             <addaction name="separator"/>
             <addaction name="actionShow_Inactive_Prims"/>
-            <addaction name="actionShow_All_Master_Prims"/>
+            <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
            </widget>
@@ -168,7 +168,7 @@
           <widget class="PrimTreeWidget" name="primView">
            <property name="font">
             <font>
-             <family>Gotham Rounded</family>
+             <family>Roboto</family>
              <pointsize>9</pointsize>
              <weight>50</weight>
              <italic>false</italic>
@@ -263,7 +263,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>75</weight>
                <bold>true</bold>
@@ -302,7 +302,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -330,7 +330,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -467,7 +467,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -507,7 +507,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -535,7 +535,7 @@
              </property>
              <property name="font">
               <font>
-               <family>Gotham Rounded</family>
+               <family>Roboto</family>
                <pointsize>9</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -640,7 +640,7 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout">
                 <item>
-                 <widget class="QFrame" name="attributeBrowserFrame">
+                 <widget class="QFrame" name="attributeBrowserFrame_1">
                   <property name="frameShape">
                    <enum>QFrame::NoFrame</enum>
                   </property>
@@ -650,7 +650,7 @@
                   <property name="lineWidth">
                    <number>0</number>
                   </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_7">
+                  <layout class="QVBoxLayout" name="verticalLayout_71">
                    <property name="leftMargin">
                     <number>2</number>
                    </property>
@@ -1353,7 +1353,7 @@
             </property>
             <property name="font">
              <font>
-              <family>Gotham Rounded</family>
+              <family>Roboto</family>
               <pointsize>9</pointsize>
               <weight>50</weight>
               <italic>false</italic>
@@ -1638,6 +1638,7 @@
     <addaction name="actionRollover_Prim_Info"/>
     <addaction name="separator"/>
     <addaction name="actionEnable_Scene_Materials"/>
+    <addaction name="actionEnable_Scene_Lights"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
    </widget>
@@ -2357,6 +2358,17 @@
     <string>Enable Scene Materials</string>
    </property>
   </action>
+  <action name="actionEnable_Scene_Lights">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Enable Scene Lights</string>
+   </property>
+  </action>
   <action name="actionShow_Inactive_Prims">
    <property name="checkable">
     <bool>true</bool>
@@ -2549,12 +2561,12 @@
     <string>Geom Id</string>
    </property>
   </action>
-  <action name="actionShow_All_Master_Prims">
+  <action name="actionShow_All_Prototype_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Master Prims</string>
+    <string>Prototype Prims</string>
    </property>
   </action>
   <action name="actionShow_Undefined_Prims">

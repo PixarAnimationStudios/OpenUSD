@@ -62,6 +62,15 @@ class SdfAssetPath;
 /// NURBS Patches. HermiteCurves are useful for the
 /// interchange of animation guides and paths.
 /// 
+/// It is safe to use the length of the curve vertex count to derive
+/// the number of curves and the number and layout of curve vertices,
+/// but this schema should NOT be used to derive the number of curve
+/// points. While vertex indices are implicit in all shipped
+/// descendent types of this schema, one should not assume that all
+/// internal or future shipped schemas will follow this pattern. Be
+/// sure to key any indexing behavior off the concrete type, not this
+/// abstract type.
+/// 
 ///
 class UsdGeomCurves : public UsdGeomPointBased
 {
@@ -241,6 +250,14 @@ public:
     static bool ComputeExtent(const VtVec3fArray& points,
         const VtFloatArray& widths, const GfMatrix4d& transform,
         VtVec3fArray* extent);
+
+    /// Returns the number of curves as defined by the size of the
+    /// _curveVertexCounts_ array at _timeCode_.
+    ///
+    /// \snippetdoc snippets.dox GetCount
+    /// \sa GetCurveVertexCountsAttr()
+    USDGEOM_API
+    size_t GetCurveCount(UsdTimeCode timeCode = UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

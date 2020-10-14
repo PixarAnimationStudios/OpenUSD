@@ -71,6 +71,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((DefaultMaterialsScopeName, "Looks"))
     ((DefaultPrimaryCameraName, "main_cam"))
+
+    (pref)
+    (st)
 );
 
 
@@ -200,9 +203,9 @@ UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage,
     // If the given path refers to a prim beneath an instance,
     // UsdStage::GetPrimAtPath will return an instance proxy
     // from which we can retrieve the corresponding prim in
-    // the master.
+    // the prototype.
     UsdPrim p = stage->GetPrimAtPath(path);
-    return (p && p.IsInstanceProxy()) ? p.GetPrimInMaster() : p;
+    return (p && p.IsInstanceProxy()) ? p.GetPrimInPrototype() : p;
 }
 
 UsdPrim 
@@ -243,14 +246,14 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
     return p;
 }
 
-TfToken UsdUtilsGetPrimaryUVSetName()
+const TfToken& UsdUtilsGetPrimaryUVSetName()
 {
-    return TfToken("st");
+    return _tokens->st;
 }
 
-TfToken UsdUtilsGetPrefName()
+const TfToken& UsdUtilsGetPrefName()
 {
-    return TfToken("pref");
+    return _tokens->pref;
 }
 
 using _TokenToTokenMap = TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;

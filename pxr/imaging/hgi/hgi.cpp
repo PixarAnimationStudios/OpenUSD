@@ -42,10 +42,14 @@ Hgi::Hgi()
 Hgi::~Hgi() = default;
 
 void
-Hgi::SubmitCmds(HgiCmds* cmds)
+Hgi::SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
     TRACE_FUNCTION();
-    _SubmitCmds(cmds);
+
+    if (cmds && TF_VERIFY(!cmds->IsSubmitted())) {
+        _SubmitCmds(cmds, wait);
+        cmds->_SetSubmitted();
+    }
 }
 
 static Hgi*
@@ -114,9 +118,9 @@ Hgi::GetUniqueId()
 }
 
 bool
-Hgi::_SubmitCmds(HgiCmds* cmds)
+Hgi::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
-    return cmds->_Submit(this);
+    return cmds->_Submit(this, wait);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

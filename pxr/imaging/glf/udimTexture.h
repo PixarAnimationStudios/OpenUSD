@@ -58,7 +58,9 @@ public:
     static GlfUdimTextureRefPtr New(
         TfToken const& imageFilePath,
         GlfImage::ImageOriginLocation originLocation,
-        std::vector<std::tuple<int, TfToken>>&& tiles);
+        std::vector<std::tuple<int, TfToken>>&& tiles,
+        bool const premultiplyAlpha = false,
+        GlfImage::SourceColorSpace sourceColorSpace = GlfImage::Auto);
 
     GLF_API
     GlfTexture::BindingVector GetBindings(
@@ -80,7 +82,9 @@ protected:
     GlfUdimTexture(
         TfToken const& imageFilePath,
         GlfImage::ImageOriginLocation originLocation,
-        std::vector<std::tuple<int, TfToken>>&& tiles);
+        std::vector<std::tuple<int, TfToken>>&& tiles,
+        bool const premultiplyAlpha,
+        GlfImage::SourceColorSpace sourceColorSpace);
 
     GLF_API
     void _FreeTextureObject();
@@ -99,6 +103,8 @@ private:
     GLuint _imageArray = 0;
     GLuint _layout = 0;
     bool _loaded = false;
+    bool _premultiplyAlpha = false;
+    GlfImage::SourceColorSpace _sourceColorSpace = GlfImage::Auto;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -29,6 +29,16 @@
 
 --- --------------------------------------------------------------------------
 -- glsl Selection.DecodeUtils
+/// Decoding utilities for selection highlighting.
+/// This mixin may be safely included by any shader stage. Its lone dependency 
+/// on code generation is the hdxSelectionBuffer SSBO that holds the encoded
+/// selection state.
+
+// This should match the HdSelection enum.
+int GetMaxNumSelectionHighlightModes()
+{
+    return 2;
+}
 
 #if defined(HD_HAS_hdxSelectionBuffer)
 // helper methods to decode hdxSelectionBuffer
@@ -259,9 +269,44 @@ SelectionResult GetSelectionResult(int mode,
     return res;
 }
 
+// Returns the logical OR of the inputs
+SelectionResult
+_CombineWithOr(SelectionResult a, SelectionResult b)
+{
+    SelectionResult res =
+        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+
+    res.primOrInstanceSel = a.primOrInstanceSel || b.primOrInstanceSel;
+    res.subprimSel.elementSelected = a.subprimSel.elementSelected ||
+                                   b.subprimSel.elementSelected;
+    res.subprimSel.edgeSelected = a.subprimSel.edgeSelected ||
+                                b.subprimSel.edgeSelected;
+    res.subprimSel.pointSelected = a.subprimSel.pointSelected ||
+                                 b.subprimSel.pointSelected;
+    // pointColorIndex is ignored.
+    return res;
+}
+
+// Returns the net selection result aggregating the result of each selection
+// mode.
+SelectionResult GetNetSelectionResult(int elementId, int edgeId, int pointId)
+{
+    SelectionResult netResult =
+        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+
+#if defined(HD_HAS_hdxSelectionBuffer)
+    const int numSelectionModes = GetNumSelectionHighlightModes();
+    for (int mode = 0; mode < numSelectionModes; mode++) {
+        SelectionResult modeResult =
+            GetSelectionResult(mode, elementId, edgeId, pointId);
+        netResult = _CombineWithOr(modeResult, netResult);
+    }
+#endif
+    return netResult;
+}
+
 --- --------------------------------------------------------------------------
 -- glsl Selection.Vertex.PointSel
-
 // Decodes the selection buffer to find out if the current vertex (point) is
 // selected. This is called from hdSt/shaders/pointId.glslfx
 bool IsPointSelected(int pointId)
@@ -285,27 +330,106 @@ bool IsPointSelected(int pointId)
 }
 
 --- --------------------------------------------------------------------------
--- glsl Selection.Fragment.ElementSel
+--  glsl Selection.Geometry.ElementSel
+/// Helper functions to determine if the element (face) is selected for either
+/// a given selection mode, or any of the modes.
 
-int GetActiveSelectionMode() {return 0;}
-int GetRolloverSelectionMode() {return 1;}
+int GetElementID(); // code gen
 
-// Decodes the selection buffer to find out if the current fragment is from a
-// selected face.
-bool IsFaceSelected(int mode, int elementId)
+bool IsElementSelected(int mode)
 {
     bool sel = false;
     #if defined(HD_HAS_hdxSelectionBuffer)
     const int numSelectionModes = GetNumSelectionHighlightModes();
     if (mode < numSelectionModes) {
         SelectionResult res =
-            GetSelectionResult(mode, elementId, /*edgeId*/-1, /*pointId*/-1);
+            GetSelectionResult(mode, GetElementID(),
+                               /*edgeId*/-1, /*pointId*/-1);
         if (res.subprimSel.elementSelected) {
             sel = true;
         }
     }
     #endif
     return sel;
+}
+
+bool IsSelected()
+{
+    // Edge and point selection aren't relevant at the GS stage.
+    SelectionResult res = GetNetSelectionResult(
+        GetElementID(), /*edgeId*/-1, /*pointId*/-1);
+
+   return res.primOrInstanceSel || res.subprimSel.elementSelected;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Selection.Geometry.WireSelOffset
+
+int GetMaxNumSelectionHighlightModes();
+bool IsElementSelected(int mode);
+int GetElementID(); // code gen
+
+vec4 ComputeSelectionOffset()
+{
+    // For wireframe, we only render the edges of faces.  Because we don't have
+    // a way to control which face gets rasterized first, if face A is selected
+    // and face B is unselected, it's possible for face B to draw over face A
+    // and for the highlight to be dropped.
+
+    // To compensate for this, since we're running the geometry shader anyway,
+    // add a small polygon offset for selected faces, to push them in front of
+    // unselected faces.
+
+    // For doubly-selected faces (e.g. rollover & selection), apply a double
+    // offset.  The code below chooses a unique offset for each combination
+    // of selection modes by constructing a bitmask of selection modes for
+    // this face, and reinterpreting it as an integer.
+
+    int offset = 0;
+
+    int numModes = GetMaxNumSelectionHighlightModes();
+    for (int mode = 0; mode < numModes; ++mode) {
+        if (IsElementSelected(mode)) {
+            offset += (1 << mode);
+        }
+    }
+
+    // Note: for our base epsilon, we're choosing this somewhat arbitrarily.
+    // This is an eye space epsilon, so it's not dependent on distance-from-
+    // camera.  Rather, it's dependent on scene scale.  1e-3 works well for
+    // our scenes, but if this causes trouble we could use an epsilon based on
+    // the eye-space distance of a z-buffer bit flip, which would match the
+    // behavior of glPolygonOffset better, at the cost of more math and some
+    // extra shader uniforms.
+    float eps = 1e-3;
+
+    return vec4(0, 0, offset * eps, 0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Selection.Geometry.WireSelNoOffset
+
+vec4 ComputeSelectionOffset()
+{
+    return vec4(0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Selection.RenderUnselected
+
+void DiscardBasedOnSelection(bool isSelected)
+{
+    // Nothing to do. 
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Selection.DiscardUnselected
+
+void DiscardBasedOnSelection(bool isSelected)
+{
+    if (!isSelected) {
+        discard;
+    }
 }
 
 --- --------------------------------------------------------------------------
@@ -361,20 +485,25 @@ vec4 ApplySelectionColor(vec4 color)
 
     const int numSelectionModes = GetNumSelectionHighlightModes();
 
+    bool isSelected = false;
     for (int mode = 0; mode < numSelectionModes; mode++) {
         SelectionResult res =
             GetSelectionResult(mode, elementId, edgeId, pointId);
 
         if (res.primOrInstanceSel) {
+            isSelected = true;
             vec4 s = GetSelectionColor(mode);
             color.rgb = mix(color.rgb, s.rgb, s.a);
         }
         if (IsAnySubprimSelected(res.subprimSel)) {
+            isSelected = true;
             vec4 ss = GetSubprimSelectionColor(mode, res.subprimSel);
             color.rgb = mix(color.rgb, ss.rgb, ss.a);
         }
     } // for each highlight mode
     
+    DiscardBasedOnSelection(isSelected);
+
 #endif
     return color;
 }

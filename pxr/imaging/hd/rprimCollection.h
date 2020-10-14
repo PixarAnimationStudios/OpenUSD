@@ -189,6 +189,17 @@ public:
         }
     };
 
+    // TfHash support.
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, HdRprimCollection const &rc) {
+        h.Append(rc._name,
+                 rc._reprSelector,
+                 rc._forcedRepr,
+                 rc._rootPaths,
+                 rc._excludePaths,
+                 rc._materialTag);
+    }
+
     HD_API
     bool operator==(HdRprimCollection const & lhs) const;
     HD_API

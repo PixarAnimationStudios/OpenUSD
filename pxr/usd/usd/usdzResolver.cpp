@@ -190,6 +190,9 @@ public:
 
     virtual size_t Read(void* buffer, size_t count, size_t offset)
     {
+        if (ARCH_UNLIKELY(offset + count > _sizeInZipFile)) {
+            return 0;
+        }
         memcpy(buffer, _dataInZipFile + offset, count);
         return count;
     }

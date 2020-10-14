@@ -145,125 +145,6 @@ UsdShadeConnectableAPI::IsNodeGraph() const
     return GetPrim().IsA<UsdShadeNodeGraph>();
 }
 
-/* virtual */
-bool 
-UsdShadeConnectableAPI::_IsCompatible() const
-{
-    if (!UsdAPISchemaBase::_IsCompatible() )
-        return false;
-
-    // Shaders and node-graphs are compatible with this API schema. 
-    // XXX: What if the typeName isn't known (eg, pure over)?
-    return IsShader() || IsNodeGraph();
-}
-
-static bool 
-_CanConnectOutputToSource(const UsdShadeOutput &output, 
-                          const UsdAttribute &source,
-                          std::string *reason)
-{
-    if (!output.IsDefined()) {
-        if (reason) {
-            *reason = TfStringPrintf("Invalid output");
-        }
-        return false;
-    }
-
-    // Only outputs on node-graphs are connectable.
-    if (!UsdShadeConnectableAPI(output.GetPrim()).IsNodeGraph()) {
-        if (reason) {
-            *reason = "Output does not belong to a node-graph.";
-        }
-        return false;
-    }
-
-    if (source) {
-        // Ensure that the source prim is a descendent of the node-graph owning 
-        // the output.
-        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
-        const SdfPath outputPrimPath = output.GetPrim().GetPath();
-
-        if (!sourcePrimPath.HasPrefix(outputPrimPath)) {
-            if (reason) {
-                *reason = TfStringPrintf("Source of output '%s' on node-graph "
-                    "at path <%s> is outside the node-graph: <%s>",
-                    source.GetName().GetText(), outputPrimPath.GetText(),
-                    sourcePrimPath.GetText());
-            }
-            return false;
-        }
-        
-    }
-
-    return true;
-}
-
-bool
-UsdShadeConnectableAPI::CanConnect(
-    const UsdShadeOutput &output, 
-    const UsdAttribute &source)
-{
-    std::string reason;
-    // The reason why a connection can't be made isn't exposed currently.
-    // We may want to expose it in the future, especially when we have 
-    // validation in USD.
-    return _CanConnectOutputToSource(output, source, &reason);
-}
-
-bool
-_CanConnectInputToSource(const UsdShadeInput &input, 
-                         const UsdAttribute &source,
-                         std::string *reason)
-{
-    if (!input.IsDefined()) {
-        if (reason) {
-            *reason = TfStringPrintf("Invalid input: %s",  
-                input.GetAttr().GetPath().GetText());
-        }
-        return false;
-    }
-
-    if (!source) {
-        if (reason) {
-            *reason = TfStringPrintf("Invalid source: %s", 
-                source.GetPath().GetText());
-        }
-        return false;
-    }
-
-    TfToken inputConnectability = input.GetConnectability();
-    if (inputConnectability == UsdShadeTokens->full) {
-        return true;
-    } else if (inputConnectability == UsdShadeTokens->interfaceOnly) {
-        if (UsdShadeInput::IsInput(source)) {
-            TfToken sourceConnectability = 
-                UsdShadeInput(source).GetConnectability();
-            if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
-                return true;
-            }
-        }
-    }
-
-    if (reason) {
-        *reason = TfStringPrintf("Input connectability is 'interfaceOnly' and "
-            "source does not have 'interfaceOnly' connectability.");
-    }
-
-    return false;
-}
-
-bool
-UsdShadeConnectableAPI::CanConnect(
-    const UsdShadeInput &input, 
-    const UsdAttribute &source)
-{
-    std::string reason;
-    // The reason why a connection can't be made isn't exposed currently.
-    // We may want to expose it in the future, especially when we have 
-    // validation in USD.
-    return _CanConnectInputToSource(input, source, &reason);
-}
-
 /* static */
 bool  
 UsdShadeConnectableAPI::ConnectToSource(
@@ -418,13 +299,7 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
     UsdAttribute const &shadingAttr, 
     SdfPathVector *sourcePaths)
 {
-    if (!shadingAttr.GetConnections(sourcePaths)) {
-        TF_WARN("Unable to get connections for shading attribute <%s>", 
-                shadingAttr.GetPath().GetText());
-        return false;
-    }
-    
-    return true;
+    return shadingAttr.GetConnections(sourcePaths);
 }
 
 /* static */
@@ -517,7 +392,7 @@ UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
 bool 
 UsdShadeConnectableAPI::DisconnectSource(UsdAttribute const &shadingAttr)
 {
-    return shadingAttr.BlockConnections();
+    return shadingAttr.SetConnections({});
 }
 
 /* static */

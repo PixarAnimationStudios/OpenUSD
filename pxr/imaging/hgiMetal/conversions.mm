@@ -60,10 +60,13 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatRGBA32Sint,   // HgiFormatInt32Vec4,
     
     //MTLPixelFormatRGB8Unorm_sRGB, // Unsupported by HgiFormat
-    MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4sRGB,
+    MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4srgb,
 
     MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
     MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
+
+    MTLPixelFormatBC7_RGBAUnorm,      // HgiFormatBC7UNorm8Vec4
+    MTLPixelFormatBC7_RGBAUnorm_sRGB, // HgiFormatBC7UNorm8Vec4srgb
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
     
@@ -119,6 +122,9 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
 
     MTLVertexFormatInvalid,             // HgiFormatBC6FloatVec3
     MTLVertexFormatInvalid,             // HgiFormatBC6UFloatVec3
+
+    MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4
+    MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4srgb
 
     MTLVertexFormatInvalid,             // HgiFormatFloat32UInt8
 };
@@ -328,6 +334,46 @@ struct {
     {HgiMipFilterLinear,       MTLSamplerMipFilterLinear}
 };
 
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
+    || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+struct {
+    HgiComponentSwizzle hgiComponentSwizzle;
+    MTLTextureSwizzle metalCS;
+} static const _componentSwizzleTable[HgiComponentSwizzleCount] =
+{
+    {HgiComponentSwizzleZero, MTLTextureSwizzleZero},
+    {HgiComponentSwizzleOne,  MTLTextureSwizzleOne},
+    {HgiComponentSwizzleR,    MTLTextureSwizzleRed},
+    {HgiComponentSwizzleG,    MTLTextureSwizzleGreen},
+    {HgiComponentSwizzleB,    MTLTextureSwizzleBlue},
+    {HgiComponentSwizzleA,    MTLTextureSwizzleAlpha}
+};
+#endif
+
+struct {
+    HgiPrimitiveType hgiPrimitiveType;
+    MTLPrimitiveTopologyClass metalTC;
+} static const _primitiveClassTable[HgiPrimitiveTypeCount] =
+{
+    {HgiPrimitiveTypePointList,    MTLPrimitiveTopologyClassPoint},
+    {HgiPrimitiveTypeLineList,     MTLPrimitiveTopologyClassLine},
+    {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTopologyClassLine},
+    {HgiPrimitiveTypeTriangleList, MTLPrimitiveTopologyClassTriangle},
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassUnspecified}
+};
+
+struct {
+    HgiPrimitiveType hgiPrimitiveType;
+    MTLPrimitiveType metalPT;
+} static const _primitiveTypeTable[HgiPrimitiveTypeCount] =
+{
+    {HgiPrimitiveTypePointList,    MTLPrimitiveTypePoint},
+    {HgiPrimitiveTypeLineList,     MTLPrimitiveTypeLine},
+    {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTypeLineStrip},
+    {HgiPrimitiveTypeTriangleList, MTLPrimitiveTypeTriangle},
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTypeTriangle /*Invalid*/}
+};
+
 MTLPixelFormat
 HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
 {
@@ -438,6 +484,30 @@ MTLSamplerMipFilter
 HgiMetalConversions::GetMipFilter(HgiMipFilter mf)
 {
     return _mipFilterTable[mf].metalMF;
+}
+
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
+    || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+MTLTextureSwizzle
+HgiMetalConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
+{
+    return _componentSwizzleTable[componentSwizzle].metalCS;
+}
+#endif
+
+MTLPrimitiveTopologyClass
+HgiMetalConversions::GetPrimitiveClass(HgiPrimitiveType pt)
+{
+    return _primitiveClassTable[pt].metalTC;
+}
+
+MTLPrimitiveType
+HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
+{
+    if (pt == HgiPrimitiveTypePatchList) {
+        TF_CODING_ERROR("Patch primitives invalid for Metal");
+    }
+    return _primitiveTypeTable[pt].metalPT;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

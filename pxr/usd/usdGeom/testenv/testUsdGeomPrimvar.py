@@ -81,21 +81,21 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertEqual(len(datas), 5)
         self.assertTrue( IsPrimvar(datas[0]) )
         self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[0].GetName()))
-        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[0].GetName()))
+        self.assertTrue(UsdGeom.PrimvarsAPI.CanContainPropertyName(datas[0].GetName()))
         self.assertTrue( IsPrimvar(datas[1]) )
         self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[1].GetName()))
-        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[1].GetName()))
+        self.assertTrue(UsdGeom.PrimvarsAPI.CanContainPropertyName(datas[1].GetName()))
         # For variety, test the explicit Attribute extractor
         self.assertTrue( IsPrimvar(datas[2].GetAttr()) )
         self.assertTrue(UsdGeom.Primvar.IsValidPrimvarName(datas[2].GetAttr().GetName()))
-        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[2].GetAttr().GetName()))
+        self.assertTrue(UsdGeom.PrimvarsAPI.CanContainPropertyName(datas[2].GetAttr().GetName()))
         self.assertFalse( IsPrimvar(p.GetAttribute("myColor")) )
         self.assertFalse(UsdGeom.Primvar.IsValidPrimvarName("myColor"))
-        self.assertFalse(UsdGeom.Primvar.IsPrimvarRelatedPropertyName("myColor"))
+        self.assertFalse(UsdGeom.PrimvarsAPI.CanContainPropertyName("myColor"))
         # Here we're testing that the speculative constructor fails properly
         self.assertFalse( IsPrimvar(UsdGeom.Primvar(p.GetAttribute("myColor"))) )
         self.assertFalse(UsdGeom.Primvar.IsValidPrimvarName(datas[0].GetIndicesAttr().GetName()))
-        self.assertTrue(UsdGeom.Primvar.IsPrimvarRelatedPropertyName(datas[0].GetIndicesAttr().GetName()))
+        self.assertTrue(UsdGeom.PrimvarsAPI.CanContainPropertyName(datas[0].GetIndicesAttr().GetName()))
         # And here that the speculative constructor succeeds properly
         self.assertTrue( IsPrimvar(UsdGeom.Primvar(p.GetAttribute(v1.GetName()))) )
 

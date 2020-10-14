@@ -100,6 +100,74 @@ UsdVolFieldAsset::CreateFilePathAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
+UsdAttribute
+UsdVolFieldAsset::GetFieldNameAttr() const
+{
+    return GetPrim().GetAttribute(UsdVolTokens->fieldName);
+}
+
+UsdAttribute
+UsdVolFieldAsset::CreateFieldNameAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVolTokens->fieldName,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdVolFieldAsset::GetFieldIndexAttr() const
+{
+    return GetPrim().GetAttribute(UsdVolTokens->fieldIndex);
+}
+
+UsdAttribute
+UsdVolFieldAsset::CreateFieldIndexAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVolTokens->fieldIndex,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdVolFieldAsset::GetFieldDataTypeAttr() const
+{
+    return GetPrim().GetAttribute(UsdVolTokens->fieldDataType);
+}
+
+UsdAttribute
+UsdVolFieldAsset::CreateFieldDataTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVolTokens->fieldDataType,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdVolFieldAsset::GetVectorDataRoleHintAttr() const
+{
+    return GetPrim().GetAttribute(UsdVolTokens->vectorDataRoleHint);
+}
+
+UsdAttribute
+UsdVolFieldAsset::CreateVectorDataRoleHintAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVolTokens->vectorDataRoleHint,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -118,6 +186,10 @@ UsdVolFieldAsset::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdVolTokens->filePath,
+        UsdVolTokens->fieldName,
+        UsdVolTokens->fieldIndex,
+        UsdVolTokens->fieldDataType,
+        UsdVolTokens->vectorDataRoleHint,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

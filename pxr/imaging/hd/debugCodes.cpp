@@ -59,8 +59,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_MULTITHREADED_RPRIM_SYNC,
         "Run RPrim sync on a single thread");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEM_DRAWN,
-        "Report each draw item as it is drawn");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEMS_CULLED,
         "Report the number of draw items culled in each render pass");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_ENGINE_PHASE_INFO,

@@ -206,18 +206,18 @@ public:
         return true;
     }
 
-    inline bool _GetTargetOrConnectionListOp(
-        SdfPath const &path, SdfPathListOp *listOp) const {
+    inline VtValue
+    _GetTargetOrConnectionListOpValue(SdfPath const &path) const {
+        VtValue targetPaths;
         if (path.IsPrimPropertyPath()) {
-            VtValue targetPaths;
             if ((Has(path, SdfFieldKeys->TargetPaths, &targetPaths) ||
-                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths)) &&
-                targetPaths.IsHolding<SdfPathListOp>()) {
-                targetPaths.UncheckedSwap(*listOp);
-                return true;
+                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths))) {
+                if (!targetPaths.IsHolding<SdfPathListOp>()) {
+                    targetPaths = VtValue();
+                }
             }
         }
-        return false;
+        return targetPaths;
     }
     
     inline bool _HasTargetOrConnectionSpec(SdfPath const &path) const {
@@ -228,8 +228,10 @@ public:
         using std::find;
         SdfPath parentPath = path.GetParentPath();
         SdfPath targetPath = path.GetTargetPath();
-        SdfPathListOp listOp;
-        if (_GetTargetOrConnectionListOp(parentPath, &listOp)) {
+        VtValue listOpVal = _GetTargetOrConnectionListOpValue(parentPath);
+        if (!listOpVal.IsEmpty()) {
+            SdfPathListOp const &listOp =
+                listOpVal.UncheckedGet<SdfPathListOp>();
             if (listOp.IsExplicit()) {
                 auto const &items = listOp.GetExplicitItems();
                 return find(
@@ -385,7 +387,10 @@ public:
                 specType == SdfSpecTypeRelationship) {
                 SdfPathListOp listOp;
                 SdfPathVector specs;
-                if (_GetTargetOrConnectionListOp(path, &listOp)) {
+                VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
+                if (!listOpVal.IsEmpty()) {
+                    SdfPathListOp const &listOp =
+                        listOpVal.UncheckedGet<SdfPathListOp>();
                     if (listOp.IsExplicit()) {
                         specs = listOp.GetExplicitItems();
                     }
@@ -490,6 +495,16 @@ public:
         VtValue result;
         Has(path, field, &result);
         return result;
+    }
+
+    inline std::type_info const &GetTypeid(const SdfPath& path,
+                                           const TfToken& field) const {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
+            return fieldValue->IsHolding<ValueRep>() ?
+                _crateFile->GetTypeid(fieldValue->UncheckedGet<ValueRep>()) :
+                fieldValue->GetTypeid();
+        }
+        return typeid(void);
     }
 
     template <class Data>
@@ -1272,6 +1287,12 @@ VtValue
 Usd_CrateData::Get(const SdfPath& path, const TfToken & field) const
 {
     return _impl->Get(path, field);
+}
+
+std::type_info const &
+Usd_CrateData::GetTypeid(const SdfPath& path, const TfToken& field) const
+{
+    return _impl->GetTypeid(path, field);
 }
 
 std::vector<TfToken>

@@ -156,22 +156,18 @@ UsdImagingBasisCurvesAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) cons
 }
 
 void 
-UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext) const
+UsdImagingBasisCurvesAdapter::UpdateForTime(
+    UsdPrim const& prim,
+    SdfPath const& cachePath, 
+    UsdTimeCode time,
+    HdDirtyBits requestedBits,
+    UsdImagingInstancerContext const* instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
 
+    UsdImagingValueCache* valueCache = _GetValueCache();
     HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        VtValue& topology = valueCache->GetTopology(cachePath);
-        _GetBasisCurvesTopology(prim, &topology, time);
-    }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         // First check for "primvars:widths"
@@ -182,8 +178,9 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             // If it's not found locally, see if it's inherited
             pv = _GetInheritedPrimvar(prim, HdTokens->widths);
         }
+
         if (pv) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             HdInterpolation interpolation;
@@ -192,14 +189,12 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
                 interpolation = _UsdToHdInterpolation(
                     curves.GetWidthsInterpolation());
             } else {
-                widths = VtFloatArray(1);
-                widths[0] = 1.0f;
                 interpolation = HdInterpolationConstant;
             }
             _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
-            valueCache->GetWidths(cachePath) = VtValue(widths);
         }
     }
+
     if (requestedBits & HdChangeTracker::DirtyNormals) {
         // First check for "primvars:normals"
         UsdGeomPrimvarsAPI primvarsApi(prim);
@@ -209,17 +204,17 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             // If it's not found locally, see if it's inherited
             pv = _GetInheritedPrimvar(prim, HdTokens->normals);
         }
+
         if (pv) {
-            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            _ComputeAndMergePrimvar(prim, pv, time, &primvars);
         } else {
             UsdGeomBasisCurves curves(prim);
             VtVec3fArray normals;
             if (curves.GetNormalsAttr().Get(&normals, time)) {
                 _MergePrimvar(&primvars,
-                        UsdGeomTokens->normals,
-                        _UsdToHdInterpolation(curves.GetNormalsInterpolation()),
-                        HdPrimvarRoleTokens->normal);
-                valueCache->GetNormals(cachePath) = VtValue(normals);
+                    UsdGeomTokens->normals,
+                    _UsdToHdInterpolation(curves.GetNormalsInterpolation()),
+                    HdPrimvarRoleTokens->normal);
             } else {
                 _RemovePrimvar(&primvars, UsdGeomTokens->normals);
             }
@@ -234,22 +229,28 @@ UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
 {
     // Even though points is treated as a primvar, it is special and is always
     // treated as a vertex primvar.
-    if (propertyName == UsdGeomTokens->points)
+    if (propertyName == UsdGeomTokens->points) {
         return HdChangeTracker::DirtyPoints;
+    
+    } else if (propertyName == UsdGeomTokens->curveVertexCounts ||
+             propertyName == UsdGeomTokens->basis ||
+             propertyName == UsdGeomTokens->type ||
+             propertyName == UsdGeomTokens->wrap) {
+        return HdChangeTracker::DirtyTopology;
 
     // Handle attributes that are treated as "built-in" primvars.
-    if (propertyName == UsdGeomTokens->widths) {
-        UsdGeomBasisCurves curves(prim);
+    } else if (propertyName == UsdGeomTokens->widths) {
+        UsdGeomCurves curves(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->widths,
             _UsdToHdInterpolation(curves.GetWidthsInterpolation()),
             HdChangeTracker::DirtyWidths);
     
     } else if (propertyName == UsdGeomTokens->normals) {
-        UsdGeomBasisCurves curves(prim);
+        UsdGeomPointBased pb(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(curves.GetNormalsInterpolation()),
+            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     // Handle prefixed primvars that use special dirty bits.
@@ -266,14 +267,13 @@ UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
-// -------------------------------------------------------------------------- //
-
-void
-UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
-                                         VtValue* topo,
-                                         UsdTimeCode time) const
+/*virtual*/
+VtValue
+UsdImagingBasisCurvesAdapter::GetTopology(UsdPrim const& prim, 
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const
 {
-    HD_TRACE_FUNCTION();
+    TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // These are uniform attributes and can't vary over time.
@@ -335,8 +335,70 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveType, topoCurveBasis, topoCurveWrap,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
-    *topo = VtValue(topology);
+    return VtValue(topology);
+}
+
+/*virtual*/
+VtValue
+UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  TfToken const& key,
+                                  UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (key == HdTokens->normals) {
+        // First check for "primvars:normals"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsNormals);
+        if (!pv) {
+            // If it's not found locally, see if it's inherited
+            pv = _GetInheritedPrimvar(prim, HdTokens->normals);
+        }
+
+        VtValue value;
+
+        if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
+
+        // If there's no "primvars:normals",
+        // fall back to UsdGeomBasisCurves' "normals" attribute. 
+        UsdGeomBasisCurves curves(prim);
+        VtVec3fArray normals;
+        if (curves && curves.GetNormalsAttr().Get(&normals, time)) {
+            value = normals;
+            return value;
+        }
+
+    } else if (key == HdTokens->widths) {
+        // First check for "primvars:widths"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsWidths);
+        if (!pv) {
+            // If it's not found locally, see if it's inherited
+            pv = _GetInheritedPrimvar(prim, HdTokens->widths);
+        }
+
+        VtValue value;
+
+        if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        } 
+        
+        // Try to get widths directly from the curves
+        UsdGeomBasisCurves curves(prim);
+        VtFloatArray widths;
+        if (curves && curves.GetWidthsAttr().Get(&widths, time)) {
+            value = widths;
+            return value;
+        }
+    }
+
+    return BaseAdapter::Get(prim, cachePath, key, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -21,9 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
-#include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/materialBufferSourceAndTextureHelper.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -31,7 +28,6 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
-#include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
@@ -70,6 +66,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
  , _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
+ , _textureHash(0)
 {
     TF_DEBUG(HDST_MATERIAL_ADDED).Msg("HdStMaterial Created: %s\n",
                                       id.GetText());
@@ -82,50 +79,60 @@ HdStMaterial::~HdStMaterial()
 }
 
 // Check whether the texture node points to a render buffer and
-// use information from it to get the texture handle.
+// use information from it to get the texture identifier.
+//
+// Return false if the deprecated HdSceneDelegate::GetTextureResource
+// should be used.
 //
 static
-HdStTextureHandleSharedPtr
-_GetTextureHandleFromRenderBuffer(
-    HdStResourceRegistrySharedPtr const& resourceRegistry,
-    HdSceneDelegate * const sceneDelegate,
+bool
+_GetTextureIdentifier(
     HdStMaterialNetwork::TextureDescriptor const &desc,
-    std::weak_ptr<HdStShaderCode> const &shaderCode)
+    HdSceneDelegate * const sceneDelegate,
+    HdStTextureIdentifier * const textureId)
 {
-    // Render buffers as storm textures are only used so far for
-    // the draw targets.
-    // Bail if draw targets are not using the storm texture system.
-    if (!HdStDrawTarget::GetUseStormTextureSystem()) {
-        return nullptr;
-    }
-
-    // Texture nodes with a file attribute not being an SdfPath
-    // pointing to a prim are not pointing to render buffers.
     if (!desc.useTexturePrimToFindTexture) {
-        return nullptr;
+        *textureId = desc.textureId;
+        return true;
     }
 
     // Get render buffer texture node is pointing to.
-    HdStRenderBuffer * const renderBuffer =
-        dynamic_cast<HdStRenderBuffer*>(
-            sceneDelegate->GetRenderIndex().GetBprim(
-                HdPrimTypeTokens->renderBuffer, desc.texturePrim));
-    if (!renderBuffer) {
-        return nullptr;
+    if (HdStRenderBuffer * const renderBuffer =
+            dynamic_cast<HdStRenderBuffer*>(
+                sceneDelegate->GetRenderIndex().GetBprim(
+                    HdPrimTypeTokens->renderBuffer, desc.texturePrim))) {
+
+        if (desc.type != HdTextureType::Uv) {
+            TF_CODING_ERROR(
+                "Non-UV texture type in descriptor using render buffer.");
+            return false;
+        }
+
+        *textureId = renderBuffer->GetTextureIdentifier(
+            /* multiSampled = */ false);
+        return true;
     }
 
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
+    return false;
+}
 
-    return
-        resourceRegistry->AllocateTextureHandle(
-            renderBuffer->GetTextureIdentifier(
-                /* multiSampled = */ false),
-            HdTextureType::Uv,
-            desc.samplerParameters,
-            desc.memoryRequest,
-            bindlessTextureEnabled,
-            shaderCode);
+static size_t
+_GetTextureDescriptorHash(
+    bool useScenePath,
+    HdStMaterialNetwork::TextureDescriptor const& desc,
+    HdStTextureIdentifier const& textureId)
+{
+    if (useScenePath) {
+        return hash_value(desc.texturePrim);
+    } else {
+        return TfHash::Combine(
+            textureId,
+            desc.samplerParameters.wrapS,
+            desc.samplerParameters.wrapT,
+            desc.samplerParameters.wrapR,
+            desc.samplerParameters.minFilter,
+            desc.samplerParameters.magFilter);
+    }
 }
 
 void
@@ -143,44 +150,58 @@ HdStMaterial::_ProcessTextureDescriptors(
         = GlfContextCaps::GetInstance().bindlessTextureEnabled;
 
     for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
-        if (desc.useTexturePrimToFindTexture) {
-            // Extra logic to retrieve texture handle from draw target.
-            if (HdStTextureHandleSharedPtr const textureHandle = 
-                    _GetTextureHandleFromRenderBuffer(
-                        resourceRegistry, sceneDelegate, desc, shaderCode)) {
-                texturesFromStorm->push_back(
-                    { desc.name,
-                      desc.type,
-                      textureHandle,
-                      desc.texturePrim});
-            } else {
-                HdStTextureResourceHandleSharedPtr const textureResource =
-                    _GetTextureResourceHandleFromSceneDelegate(
-                        sceneDelegate,
-                        resourceRegistry,
-                        desc);
-                
-                HdSt_MaterialBufferSourceAndTextureHelper::
-                    ProcessTextureMaterialParam(
-                        desc.name, desc.texturePrim,
-                        textureResource,
-                        specs, sources, texturesFromSceneDelegate);
-            }
-        } else {
-            HdStTextureHandleSharedPtr const textureHandle =
+        HdStTextureIdentifier texId;
+        if (_GetTextureIdentifier(desc, sceneDelegate, &texId)) {
+            HdStTextureHandleSharedPtr const textureHandle = 
                 resourceRegistry->AllocateTextureHandle(
-                    desc.textureId,
+                    texId,
                     desc.type,
                     desc.samplerParameters,
                     desc.memoryRequest,
                     bindlessTextureEnabled,
                     shaderCode);
-            
+
+            // Note about batching hashes:
+            // If this is our first sync, try to hash using the asset path.
+            // If we're on our 2nd+ sync, just use the texture prim path.
+            //
+            // This will aggressively batch textured prims together as long as
+            // they are 100% static; if they are dynamic, we assume that the
+            // textures are dynamic, and we split the batches of textured prims.
+            //
+            // This tries to balance two competing concerns:
+            // 1.) Static textured simple geometry (like billboard placeholders)
+            //     really need to be batched together; otherwise, the render
+            //     cost is dominated by the switching cost between batches.
+            // 2.) Objects with animated textures will change their texture hash
+            //     every frame.  If the hash is based on asset path, we need to
+            //     rebuild batches every frame, which is untenable. If it's
+            //     based on scene graph path (meaning split into its own batch),
+            //     we don't need to update batching.
+            //
+            // Better batch invalidation (i.e., not global) would really help
+            // us here, as would hints from the scene about how likely the
+            // textures are to change.  Maybe in the future...
+
             texturesFromStorm->push_back(
                 { desc.name,
                   desc.type,
                   textureHandle,
-                  desc.texturePrim});
+                  _GetTextureDescriptorHash(_isInitialized, desc, texId)});
+        } else {
+            // If above fails, fallback to the old-style
+            // HdSceneDelegat::GetTextureResource which is deprecated.
+            HdStTextureResourceHandleSharedPtr const textureResource =
+                _GetTextureResourceHandleFromSceneDelegate(
+                    sceneDelegate,
+                    resourceRegistry,
+                    desc);
+            
+            HdSt_MaterialBufferSourceAndTextureHelper::
+                ProcessTextureMaterialParam(
+                    desc.name, desc.texturePrim,
+                    textureResource,
+                    specs, sources, texturesFromSceneDelegate);
         }
     }
 
@@ -211,6 +232,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     bool needsRprimMaterialStateUpdate = false;
+    bool markBatchesDirty = false;
 
     std::string fragmentSource;
     std::string geometrySource;
@@ -224,7 +246,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         HdMaterialNetworkMap const& hdNetworkMap =
             vtMat.UncheckedGet<HdMaterialNetworkMap>();
         if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
-            _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
+            _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap,
+                                                    resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
             geometrySource = _networkProcessor.GetGeometryCode();
             materialMetadata = _networkProcessor.GetMetadata();
@@ -242,6 +265,16 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         geometrySource = std::string();
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
+
+    // If we're updating the fragment or geometry source, we need to rebatch
+    // anything that uses this material.
+    std::string const& oldFragmentSource = 
+        _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
+    std::string const& oldGeometrySource = 
+        _surfaceShader->GetSource(HdShaderTokens->geometryShader);
+
+    markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
+                        (oldGeometrySource!=geometrySource);
 
     _surfaceShader->SetFragmentSource(fragmentSource);
     _surfaceShader->SetGeometrySource(geometrySource);
@@ -265,38 +298,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _materialTag = materialTag;
         _surfaceShader->SetMaterialTag(_materialTag);
         needsRprimMaterialStateUpdate = true;
+
+        // If the material tag changes, we'll need to rebatch.
+        markBatchesDirty = true;
     }
 
     _surfaceShader->SetEnabledPrimvarFiltering(true);
-
-    //
-    // Mark batches dirty to force batch validation/rebuild.
-    //
-
-    if (_isInitialized) {
-
-        // We need to re-batch when the shader or materialTag changes. I.e. when
-        // network topology changes or the prim goes from opaque to translucent.
-        // We skip this the first time since batches will already be rebuild.
-
-        bool markBatchesDirty = (_materialTag != materialTag);
-
-        if (!markBatchesDirty) {
-            // XXX cheaper to compare network topology instead fo strings?
-            std::string const& oldFragmentSource = 
-                _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
-            std::string const& oldGeometrySource = 
-                _surfaceShader->GetSource(HdShaderTokens->geometryShader);
-
-            markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                                (oldGeometrySource!=geometrySource);
-        }
-
-        if (markBatchesDirty) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker().
-                MarkBatchesDirty();
-        }
-    }
 
     //
     // Update material parameters
@@ -344,7 +351,21 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         &specs,
         &sources);
 
-        _surfaceShader->SetNamedTextureHandles(textures);
+    // Check if the texture hash has changed; if so, we need to ask for a
+    // re-batch.  We only look at NamedTextureHandles because the legacy system
+    // hashes based on scene graph path, meaning each textured gprim gets its
+    // own batch.
+    size_t textureHash = 0;
+    for (HdStShaderCode::NamedTextureHandle const& tex : textures) {
+        textureHash = TfHash::Combine(textureHash, tex.hash);
+    }
+
+    if (_textureHash != textureHash) {
+        _textureHash = textureHash;
+        markBatchesDirty = true;
+    }
+
+    _surfaceShader->SetNamedTextureHandles(textures);
     _surfaceShader->SetTextureDescriptors(textureResourceDescriptors);    
     _surfaceShader->SetBufferSources(
         specs, std::move(sources), resourceRegistry);
@@ -354,6 +375,11 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         needsRprimMaterialStateUpdate = true;
     }
 
+    if (markBatchesDirty && _isInitialized) {
+        // Only invalidate batches if this isn't our first round through sync.
+        // If this is the initial sync, we haven't formed batches yet.
+        sceneDelegate->GetRenderIndex().GetChangeTracker().MarkBatchesDirty();
+    }
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {
         // XXX Forcing rprims to have a dirty material id to re-evaluate
@@ -501,15 +527,6 @@ HdDirtyBits
 HdStMaterial::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
-}
-
-
-//virtual
-void
-HdStMaterial::Reload()
-{
-    _networkProcessor.ClearGlslfx();
-    _surfaceShader->Reload();
 }
 
 HdStShaderCodeSharedPtr

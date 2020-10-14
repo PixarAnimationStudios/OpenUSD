@@ -36,7 +36,7 @@ creating USD assets. The high-level grouping of classes and functions is as foll
 
 \li \ref usdUtils/introspection.h "Introspection" 
     provides functionality for understanding various charactersitics
-    of a \ref UsdStage including memory usage, prim counts, master counts
+    of a \ref UsdStage including memory usage, prim counts, prototype counts
     and more.
 
 \li \ref usdUtils/pipeline.h "Pipeline" provides utilities for

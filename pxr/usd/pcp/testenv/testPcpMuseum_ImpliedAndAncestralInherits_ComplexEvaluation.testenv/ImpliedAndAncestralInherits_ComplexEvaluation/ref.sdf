@@ -1,0 +1,32 @@
+#sdf 1.4.32
+
+# Prim to be referenced by structure in root.sdf. 
+# Has children with global and local inherits.
+def "Ref"
+{
+    # Child prim with a global inherit
+    def "C" (
+        add inherits = </_G>
+    )
+    {
+        # Local class
+        class "_Z"
+        {
+            string prop = "ref:weak"
+        }
+
+        # Grandchild prim with local inherit
+        def "D" (
+            add inherits = <../_Z>
+        )
+        {
+            string prop = "ref:strong"
+        }
+    }
+}
+
+# Global class
+class "_G"
+{
+}
+

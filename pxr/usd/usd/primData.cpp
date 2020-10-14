@@ -93,7 +93,7 @@ const PcpPrimIndex &
 Usd_PrimData::GetPrimIndex() const
 {
     static const PcpPrimIndex dummyPrimIndex;
-    return ARCH_UNLIKELY(IsMaster()) ? dummyPrimIndex : *_primIndex;
+    return ARCH_UNLIKELY(IsPrototype()) ? dummyPrimIndex : *_primIndex;
 }
 
 const PcpPrimIndex &
@@ -111,22 +111,23 @@ Usd_PrimData::GetSpecifier() const
 
 void
 Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent, 
-                                    bool isMasterPrim)
+                                    bool isPrototypePrim)
 {
     // We do not have to clear _flags here since in the pseudo root or instance
-    // master case the values never change, and in the ordinary prim case we set
-    // every flag (with the exception of the pseudo root flag which is only set
-    // true for the pseudo root and always remains false for every other prim)
+    // prototype case the values never change, and in the ordinary prim case we
+    // set every flag (with the exception of the pseudo root flag which is only
+    // set true for the pseudo root and always remains false for every other
+    // prim)
 
     // Special-case the root (the only prim which has no parent) and
-    // instancing masters.
-    if (ARCH_UNLIKELY(!parent || isMasterPrim)) {
+    // instancing prototypes.
+    if (ARCH_UNLIKELY(!parent || isPrototypePrim)) {
         _flags[Usd_PrimActiveFlag] = true;
         _flags[Usd_PrimLoadedFlag] = true;
         _flags[Usd_PrimModelFlag] = true;
         _flags[Usd_PrimGroupFlag] = true;
         _flags[Usd_PrimDefinedFlag] = true;
-        _flags[Usd_PrimMasterFlag] = isMasterPrim;
+        _flags[Usd_PrimPrototypeFlag] = isPrototypePrim;
         _flags[Usd_PrimPseudoRootFlag] = !parent;
     } 
     else {
@@ -180,22 +181,22 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimClipsFlag] = false;
 
         // These flags indicate whether this prim is an instance or an
-        // instance master.
+        // instance prototype.
         _flags[Usd_PrimInstanceFlag] = active && _primIndex->IsInstanceable();
-        _flags[Usd_PrimMasterFlag] = parent->IsInMaster();
+        _flags[Usd_PrimPrototypeFlag] = parent->IsInPrototype();
     }
 }
 
 Usd_PrimDataConstPtr 
-Usd_PrimData::GetPrimDataAtPathOrInMaster(const SdfPath &path) const
+Usd_PrimData::GetPrimDataAtPathOrInPrototype(const SdfPath &path) const
 {
-    return _stage->_GetPrimDataAtPathOrInMaster(path);
+    return _stage->_GetPrimDataAtPathOrInPrototype(path);
 }
 
 Usd_PrimDataConstPtr 
-Usd_PrimData::GetMaster() const
+Usd_PrimData::GetPrototype() const
 {
-    return _stage->_GetMasterForInstance(this);
+    return _stage->_GetPrototypeForInstance(this);
 }
 
 bool
@@ -216,11 +217,12 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
 
     bool isInstance = p->IsInstance();
     bool isInstanceProxy = Usd_IsInstanceProxy(p, proxyPrimPath);
-    bool isInMaster = isInstanceProxy ?
-        Usd_InstanceCache::IsPathInMaster(proxyPrimPath) : p->IsInMaster();
-    bool isMaster = p->IsMaster();
-    Usd_PrimDataConstPtr masterForInstance =
-        isInstance && p->_stage ? p->GetMaster() : nullptr;
+    bool isInPrototype = isInstanceProxy ?
+        Usd_InstanceCache::IsPathInPrototype(proxyPrimPath) : 
+        p->IsInPrototype();
+    bool isPrototype = p->IsPrototype();
+    Usd_PrimDataConstPtr prototypeForInstance =
+        isInstance && p->_stage ? p->GetPrototype() : nullptr;
 
     return TfStringPrintf(
         "%s%s%sprim %s<%s> %s%s%s",
@@ -230,13 +232,13 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
             TfStringPrintf("'%s' ", p->GetTypeName().GetText()).c_str(),
         // XXX: Add applied schemas to this descriptor
         isInstance ? "instance " : isInstanceProxy ? "instance proxy " : "",
-        isInMaster ? "in master " : "",
+        isInPrototype ? "in prototype " : "",
         isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText(),
         (isInstanceProxy || isInstance) ? TfStringPrintf(
-            "with master <%s> ", isInstance ?
-            masterForInstance->GetPath().GetText() :
+            "with prototype <%s> ", isInstance ?
+            prototypeForInstance->GetPath().GetText() :
             p->_path.GetText()).c_str() : "",
-        (isInstanceProxy || isMaster || isInMaster) ? TfStringPrintf(
+        (isInstanceProxy || isPrototype || isInPrototype) ? TfStringPrintf(
             "using prim index <%s> ",
             p->GetSourcePrimIndex().GetPath().GetText()).c_str() : "",
         p->_stage ? TfStringPrintf(

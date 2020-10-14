@@ -52,10 +52,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Task context */               \
     (pickParams)                     \
                                      \
-    /* Hit mode */                   \
-    (hitFirst)                       \
-    (hitAll)                         \
-                                     \
     /* Pick target */                \
     (pickPrimsAndInstances)          \
     (pickFaces)                      \
@@ -122,7 +118,6 @@ struct HdxPickTaskContextParams
 
     HdxPickTaskContextParams()
         : resolution(128, 128)
-        , hitMode(HdxPickTokens->hitFirst)
         , pickTarget(HdxPickTokens->pickPrimsAndInstances)
         , resolveMode(HdxPickTokens->resolveNearestToCamera)
         , doUnpickablesOcclude(false)
@@ -135,7 +130,6 @@ struct HdxPickTaskContextParams
     {}
 
     GfVec2i resolution;
-    TfToken hitMode;
     TfToken pickTarget;
     TfToken resolveMode;
     bool doUnpickablesOcclude;

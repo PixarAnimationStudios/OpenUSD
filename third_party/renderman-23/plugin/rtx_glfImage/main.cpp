@@ -138,9 +138,14 @@ RtxGlfImagePlugin::Open(TextureCtx& tCtx)
 
     // Parse args.
     std::string filename;
+    std::string wrapS, wrapT;
     for (unsigned int i = 0; i < tCtx.argc; i += 2) {
         if (strcmp(tCtx.argv[i], "filename") == 0) {
             filename = tCtx.argv[i + 1];
+        } else if (strcmp(tCtx.argv[i], "wrapS") == 0) {
+            wrapS = tCtx.argv[i + 1];
+        } else if (strcmp(tCtx.argv[i], "wrapT") == 0) {
+            wrapT = tCtx.argv[i + 1];
         }
     }
 
@@ -163,7 +168,8 @@ RtxGlfImagePlugin::Open(TextureCtx& tCtx)
     tCtx.maxRes.X = image->GetWidth();
     tCtx.maxRes.Y = image->GetHeight();
     // Component data type.
-    switch (image->GetType()) {
+    GLenum glType = GlfGetGLType(image->GetHioFormat());
+    switch (glType) {
     case GL_FLOAT:
         tCtx.dataType = TextureCtx::k_Float;
         tCtx.numChannels = image->GetBytesPerPixel() / sizeof(float);
@@ -179,14 +185,33 @@ RtxGlfImagePlugin::Open(TextureCtx& tCtx)
         return 1;
     }
     // Wrapping mode.
+    // The wrap mode can be specified in the plugin arguments.
+    // If "useMetadata" is given, or nothing is specified, then
+    // fall back to check metadata in the texture asset.
     tCtx.sWrap = TextureCtx::k_Black;
     tCtx.tWrap = TextureCtx::k_Black;
     GLenum wrapModeS, wrapModeT;
-    if (image->GetSamplerMetadata(GL_TEXTURE_WRAP_S, &wrapModeS)) {
-        _ConvertWrapMode(wrapModeS, m_msgHandler, filename, &tCtx.sWrap);
+    if (wrapS.empty() || wrapS == "useMetadata") {
+        if (image->GetSamplerMetadata(GL_TEXTURE_WRAP_S, &wrapModeS)) {
+            _ConvertWrapMode(wrapModeS, m_msgHandler, filename, &tCtx.sWrap);
+        }
+    } else if (wrapS == "black") {
+        tCtx.sWrap = RtxPlugin::TextureCtx::k_Black;
+    } else if (wrapS == "clamp") {
+        tCtx.sWrap = RtxPlugin::TextureCtx::k_Clamp;
+    } else if (wrapS == "repeat") {
+        tCtx.sWrap = RtxPlugin::TextureCtx::k_Periodic;
     }
-    if (image->GetSamplerMetadata(GL_TEXTURE_WRAP_T, &wrapModeT)) {
-        _ConvertWrapMode(wrapModeT, m_msgHandler, filename, &tCtx.tWrap);
+    if (wrapT.empty() || wrapT == "useMetadata") {
+        if (image->GetSamplerMetadata(GL_TEXTURE_WRAP_T, &wrapModeT)) {
+            _ConvertWrapMode(wrapModeT, m_msgHandler, filename, &tCtx.tWrap);
+        }
+    } else if (wrapT == "black") {
+        tCtx.tWrap = RtxPlugin::TextureCtx::k_Black;
+    } else if (wrapT == "clamp") {
+        tCtx.tWrap = RtxPlugin::TextureCtx::k_Clamp;
+    } else if (wrapT == "repeat") {
+        tCtx.tWrap = RtxPlugin::TextureCtx::k_Periodic;
     }
 
     // Allocate storage for this context.  Renderman will
@@ -222,13 +247,10 @@ RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
             level.width = fillReq.imgRes.X;
             level.height = fillReq.imgRes.Y;
             level.depth = data->image->GetBytesPerPixel();
-            level.format = data->image->GetFormat();
+            level.hioFormat = data->image->GetHioFormat();
 
-            if (tCtx.dataType == TextureCtx::k_Byte) {
-                level.type = GL_UNSIGNED_BYTE;
-            } else if (tCtx.dataType == TextureCtx::k_Float) {
-                level.type = GL_FLOAT;
-            } else {
+            if (tCtx.dataType != TextureCtx::k_Byte &&
+                tCtx.dataType != TextureCtx::k_Float) {
                 m_msgHandler->ErrorAlways(
                     "RtxGlfImagePlugin %p: unsupported data type\n", this);
                 return 1;
@@ -242,9 +264,9 @@ RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
     }
 
     const bool isSRGB = data->image->IsColorSpaceSRGB();
-    const GLenum type = data->image->GetType();
+    const GLenum type = GlfGetGLType(data->image->GetHioFormat());
 
-    const int numImageChannels = GlfGetNumElements(level.format);
+    const int numImageChannels = GlfGetNumElements(level.hioFormat);
     const int bytesPerChannel = GlfGetElementSize(type);
 
     // Copy out tile data, one row at a time.

@@ -201,7 +201,8 @@ public:
     /// source attribute, which can be an input or an output.
     /// 
     /// The result depends on the "connectability" of the input and the source 
-    /// attributes. 
+    /// attributes.  Depending on the prim type, this may require the plugin
+    /// that defines connectability behavior for that prim type be loaded.
     /// 
     /// \sa UsdShadeInput::SetConnectability
     /// \sa UsdShadeInput::GetConnectability
@@ -506,8 +507,7 @@ public:
     /// the behavior of disconnect to be that, even if a shading attribute 
     /// becomes connected in a weaker layer than the current UsdEditTarget, the
     /// attribute will \em still be disconnected in the composition, therefore
-    /// we must "block" it (see for e.g. UsdRelationship::BlockTargets()) in
-    /// the current UsdEditTarget. 
+    /// we must "block" it in the current UsdEditTarget. 
     ///
     /// \sa ConnectToSource().
     USDSHADE_API

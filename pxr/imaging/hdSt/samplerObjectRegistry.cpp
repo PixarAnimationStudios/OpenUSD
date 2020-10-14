@@ -30,8 +30,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(Hgi * const hgi)
-  : _hgi(hgi)
+HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(
+    HdStResourceRegistry * registry)
+  : _garbageCollectionNeeded(false)
+  , _resourceRegistry(registry)
 {
 }
 
@@ -123,11 +125,27 @@ HdSt_SamplerObjectRegistry::AllocateSampler(
     return result;
 }
 
+void
+HdSt_SamplerObjectRegistry::MarkGarbageCollectionNeeded()
+{
+    _garbageCollectionNeeded = true;
+}
+
+HdStResourceRegistry *
+HdSt_SamplerObjectRegistry::GetResourceRegistry() const
+{
+    return _resourceRegistry;
+}
+
 // Remove all shared pointers to objects not referenced by any client.
 void
 HdSt_SamplerObjectRegistry::GarbageCollect()
 {
     TRACE_FUNCTION();
+
+    if (!_garbageCollectionNeeded) {
+        return;
+    }
 
     // Go from left to right, filling slots that became empty
     // with "shared" shared pointers from the right.
@@ -149,6 +167,8 @@ HdSt_SamplerObjectRegistry::GarbageCollect()
     }
     
     _samplerObjects.resize(last);
+
+    _garbageCollectionNeeded = false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

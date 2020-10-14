@@ -75,6 +75,9 @@ wrapUsdCollectionMembershipQuery()
         .def("GetAsPathExpansionRuleMap",
              &UsdCollectionMembershipQuery::GetAsPathExpansionRuleMap,
              return_value_policy<TfPyMapToDictionary>())
+        .def("GetIncludedCollections",
+             &UsdCollectionMembershipQuery::GetIncludedCollections,
+             return_value_policy<TfPySequenceToList>())
         .def("__hash__", &UsdCollectionMembershipQuery::GetHash)
         .def(self == self)
         .def(self != self)

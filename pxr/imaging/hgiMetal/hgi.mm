@@ -67,6 +67,7 @@ static int _GetAPIVersion()
 
 HgiMetal::HgiMetal(id<MTLDevice> device)
 : _device(device)
+, _currentCmds(nullptr)
 , _frameDepth(0)
 , _apiVersion(_GetAPIVersion())
 , _workToFlush(false)
@@ -88,7 +89,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     [_commandBuffer retain];
 
     _capabilities.reset(
-        new HgiMetalCapabilities(device));
+        new HgiMetalCapabilities(_device));
 
     HgiMetalSetupMetalDebug();
     
@@ -136,13 +137,21 @@ HgiMetal::CreateGraphicsCmds(
 HgiComputeCmdsUniquePtr
 HgiMetal::CreateComputeCmds()
 {
-    return HgiComputeCmdsUniquePtr(new HgiMetalComputeCmds(this));
+    HgiComputeCmds* computeCmds = new HgiMetalComputeCmds(this);
+    if (!_currentCmds) {
+        _currentCmds = computeCmds;
+    }
+    return HgiComputeCmdsUniquePtr(computeCmds);
 }
 
 HgiBlitCmdsUniquePtr
 HgiMetal::CreateBlitCmds()
 {
-    return HgiBlitCmdsUniquePtr(new HgiMetalBlitCmds(this));
+    HgiMetalBlitCmds* blitCmds = new HgiMetalBlitCmds(this);
+    if (!_currentCmds) {
+        _currentCmds = blitCmds;
+    }
+    return HgiBlitCmdsUniquePtr(blitCmds);
 }
 
 HgiTextureHandle
@@ -155,6 +164,31 @@ void
 HgiMetal::DestroyTexture(HgiTextureHandle* texHandle)
 {
     _TrashObject(texHandle);
+}
+
+HgiTextureViewHandle
+HgiMetal::CreateTextureView(HgiTextureViewDesc const & desc)
+{
+    if (!desc.sourceTexture) {
+        TF_CODING_ERROR("Source texture is null");
+    }
+
+    HgiTextureHandle src =
+        HgiTextureHandle(new HgiMetalTexture(this, desc), GetUniqueId());
+    HgiTextureView* view = new HgiTextureView(desc);
+    view->SetViewTexture(src);
+    return HgiTextureViewHandle(view, GetUniqueId());
+}
+
+void
+HgiMetal::DestroyTextureView(HgiTextureViewHandle* viewHandle)
+{
+    // Trash the texture inside the view and invalidate the view handle.
+    HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
+    _TrashObject(&texHandle);
+    (*viewHandle)->SetViewTexture(HgiTextureHandle());
+    delete viewHandle->Get();
+    *viewHandle = HgiTextureViewHandle();
 }
 
 HgiSamplerHandle
@@ -262,7 +296,7 @@ HgiMetal::StartFrame()
             // We need to grab a new command buffer otherwise the previous one
             // (if it was allocated at the end of the last frame) won't appear in
             // this frame's capture, and it will confuse us!
-            CommitCommandBuffer(CommitCommandBuffer_NoWait, true);
+            CommitPrimaryCommandBuffer(CommitCommandBuffer_NoWait, true);
         }
     }
 }
@@ -275,39 +309,93 @@ HgiMetal::EndFrame()
     }
 }
 
+id<MTLCommandQueue>
+HgiMetal::GetQueue() const
+{
+    return _commandQueue;
+}
+
+id<MTLCommandBuffer>
+HgiMetal::GetPrimaryCommandBuffer(bool flush)
+{
+    if (_workToFlush) {
+        if (_currentCmds) {
+            return nil;
+        }
+    }
+    if (flush) {
+        _workToFlush = true;
+    }
+    return _commandBuffer;
+}
+
+id<MTLCommandBuffer>
+HgiMetal::GetSecondaryCommandBuffer()
+{
+    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
+    [commandBuffer retain];
+    return commandBuffer;
+}
+
+int
+HgiMetal::GetAPIVersion() const
+{
+    return _apiVersion;
+}
+
+HgiMetalCapabilities const &
+HgiMetal::GetCapabilities() const
+{
+    return *_capabilities;
+}
+
 void
-HgiMetal::CommitCommandBuffer(CommitCommandBufferWaitType waitType,
+HgiMetal::CommitPrimaryCommandBuffer(CommitCommandBufferWaitType waitType,
                               bool forceNewBuffer)
 {
     if (!_workToFlush && !forceNewBuffer) {
         return;
     }
 
-    [_commandBuffer commit];
-    if (waitType == CommitCommandBuffer_WaitUntilScheduled) {
-        [_commandBuffer waitUntilScheduled];
-    }
-    else if (waitType == CommitCommandBuffer_WaitUntilCompleted) {
-        [_commandBuffer waitUntilCompleted];
-    }
+    CommitSecondaryCommandBuffer(_commandBuffer, waitType);
     [_commandBuffer release];
-
     _commandBuffer = [_commandQueue commandBuffer];
     [_commandBuffer retain];
-    
+
     _workToFlush = false;
 }
 
+void
+HgiMetal::CommitSecondaryCommandBuffer(
+    id<MTLCommandBuffer> commandBuffer,
+    CommitCommandBufferWaitType waitType)
+{
+    [commandBuffer commit];
+    if (waitType == CommitCommandBuffer_WaitUntilScheduled) {
+        [commandBuffer waitUntilScheduled];
+    }
+    else if (waitType == CommitCommandBuffer_WaitUntilCompleted) {
+        [commandBuffer waitUntilCompleted];
+    }
+}
+
+void
+HgiMetal::ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer)
+{
+    [commandBuffer release];
+}
+
 bool
-HgiMetal::_SubmitCmds(HgiCmds* cmds)
+HgiMetal::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
     TRACE_FUNCTION();
 
     if (cmds) {
-        _workToFlush = Hgi::_SubmitCmds(cmds);
+        _workToFlush = Hgi::_SubmitCmds(cmds, wait);
+        if (cmds == _currentCmds) {
+            _currentCmds = nullptr;
+        }
     }
-
-    CommitCommandBuffer();
 
     return _workToFlush;
 }

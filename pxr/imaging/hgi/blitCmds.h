@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/cmds.h"
 #include "pxr/imaging/hgi/texture.h"
 #include <memory>
@@ -33,8 +34,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiTextureGpuToCpuOp;
+struct HgiTextureCpuToGpuOp;
 struct HgiBufferGpuToGpuOp;
 struct HgiBufferCpuToGpuOp;
+struct HgiBufferGpuToCpuOp;
 struct HgiResolveImageOp;
 
 using HgiBlitCmdsUniquePtr = std::unique_ptr<class HgiBlitCmds>;
@@ -61,18 +64,29 @@ public:
     virtual void PopDebugGroup() = 0;
 
     /// Copy a texture resource from GPU to CPU.
-    /// This call is blocking until the data is ready to be read on CPU.
+    /// Synchronization between GPU writes and CPU reads must be managed by
+    /// the client by supplying the correct 'wait' flags in SubmitCmds.
     HGI_API
     virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
+
+    /// Copy new data from the CPU into a GPU texture.
+    HGI_API
+    virtual void CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp) = 0;
 
     /// Copy a buffer resource from GPU to GPU.
     HGI_API
     virtual void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) = 0;
 
-    /// Copy new data from cpu into gpu buffer.
+    /// Copy new data from CPU into GPU buffer.
     /// For example copy new data into a uniform block or storage buffer.
     HGI_API
     virtual void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) = 0;
+
+    /// Copy new data from GPU into CPU buffer.
+    /// Synchronization between GPU writes and CPU reads must be managed by
+    /// the client by supplying the correct 'wait' flags in SubmitCmds.
+    HGI_API
+    virtual void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) = 0;
 
     /// Generate mip maps for a texture
     HGI_API

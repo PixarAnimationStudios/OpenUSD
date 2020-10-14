@@ -23,8 +23,11 @@
 //
 
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
+
+#include "pxr/imaging/hdSt/dynamicUvTextureImplementation.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureHandleRegistry.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 
@@ -39,44 +42,45 @@ HdStDynamicUvTextureObject::HdStDynamicUvTextureObject(
 
 HdStDynamicUvTextureObject::~HdStDynamicUvTextureObject()
 {
-    if (Hgi * hgi = _GetHgi()) {
-        hgi->DestroyTexture(&_gpuTexture);
+    _DestroyTexture();
+}
+
+HdStDynamicUvTextureImplementation *
+HdStDynamicUvTextureObject::_GetImpl() const
+{
+    const HdStDynamicUvSubtextureIdentifier * const subId =
+        dynamic_cast<const HdStDynamicUvSubtextureIdentifier *>(
+            GetTextureIdentifier().GetSubtextureIdentifier());
+    if (!TF_VERIFY(subId)) {
+        return nullptr;
     }
-}
 
-void
-HdStDynamicUvTextureObject::CreateTexture(const HgiTextureDesc &desc)
-{
-    if (Hgi * hgi = _GetHgi()) {
-        hgi->DestroyTexture(&_gpuTexture);
-        _gpuTexture = hgi->CreateTexture(desc);
-    }    
-}
-
-const std::pair<HdWrap, HdWrap> &
-HdStDynamicUvTextureObject::GetWrapParameters() const
-{
-    static const std::pair<HdWrap, HdWrap> result = {
-        HdWrapNoOpinion, HdWrapNoOpinion };
-    return result;
+    return subId->GetTextureImplementation();
 }
 
 bool
 HdStDynamicUvTextureObject::IsValid() const
 {
+    if (HdStDynamicUvTextureImplementation * const impl = _GetImpl()) {
+        return impl->IsValid(this);
+    }
     return true;
 }
 
 void
 HdStDynamicUvTextureObject::_Load()
 {
-    // Do nothing here - texture is populated by client.
+    if (HdStDynamicUvTextureImplementation * const impl = _GetImpl()) {
+        impl->Load(this);
+    }
 }
 
 void
 HdStDynamicUvTextureObject::_Commit()
 {
-    // Do nothing here - texture is populated by client.
+    if (HdStDynamicUvTextureImplementation * const impl = _GetImpl()) {
+        impl->Commit(this);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

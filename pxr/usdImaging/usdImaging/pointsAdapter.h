@@ -38,15 +38,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for UsdGeomPoints.
 ///
-class UsdImagingPointsAdapter : public UsdImagingGprimAdapter {
+class UsdImagingPointsAdapter : public UsdImagingGprimAdapter 
+{
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingPointsAdapter()
         : UsdImagingGprimAdapter()
     {}
+
     USDIMAGING_API
-    virtual ~UsdImagingPointsAdapter();
+    ~UsdImagingPointsAdapter() override;
 
     USDIMAGING_API
     SdfPath Populate(
@@ -88,6 +90,16 @@ public:
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API

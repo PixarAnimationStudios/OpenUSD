@@ -116,12 +116,11 @@ public:
     /// Must rebuild the connections/targets at each path.
     std::map<SdfPath, int, SdfPath::FastLessThan> didChangeTargets;
 
-    typedef std::map<SdfPath, SdfPath> PathEditMap;
-
     /// Must update the path on every namespace object at and below each
-    /// given path.  The first path is the old path to the object and the
-    /// second path is the new path.
-    PathEditMap didChangePath;
+    /// given path. The first path is the old path to the object and the
+    /// second path is the new path. The order of the vector matters and 
+    /// indicates the order in which the namespace edits occur.
+    std::vector<std::pair<SdfPath, SdfPath>> didChangePath;
 
 private:
     friend class PcpCache;
@@ -298,8 +297,9 @@ public:
     void Apply() const;
 
 private:
-    // Internal data type for namespace edits from Sd.
-    typedef std::map<PcpCache*, PcpCacheChanges::PathEditMap> _RenameChanges;
+    // Internal data types for namespace edits from Sd.
+    typedef std::map<SdfPath, SdfPath> _PathEditMap;
+    typedef std::map<PcpCache*, _PathEditMap> _RenameChanges;
 
     // Returns the PcpLayerStackChanges for the given cache's layer stack.
     PcpLayerStackChanges& _GetLayerStackChanges(const PcpCache* cache);
@@ -310,8 +310,8 @@ private:
     // Returns the PcpCacheChanges for the given cache.
     PcpCacheChanges& _GetCacheChanges(const PcpCache* cache);
 
-    // Returns the PcpCacheChanges::PathEditMap for the given cache.
-    PcpCacheChanges::PathEditMap& _GetRenameChanges(const PcpCache* cache);
+    // Returns the _PathEditMap for the given cache.
+    _PathEditMap& _GetRenameChanges(const PcpCache* cache);
 
 
     // Optimize the changes.
@@ -325,7 +325,7 @@ private:
 
     // Optimize path changes.
     void _OptimizePathChanges(const PcpCache* cache, PcpCacheChanges* changes,
-                              PcpCacheChanges::PathEditMap* pathChanges);
+                              const _PathEditMap* pathChanges);
 
     // Sublayer change type for _DidChangeSublayer.
     enum _SublayerChangeType {

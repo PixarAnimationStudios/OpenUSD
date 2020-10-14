@@ -12,6 +12,7 @@ Advanced Build Configuration
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
 - [Linker Options](#linker-options)
+- [Build Issues FAQ](#build-issues-faq)
 
 ## Building With Build Script
 
@@ -550,3 +551,13 @@ to get the path to the library. We also link 'usd_m' separately so cmake
 will add usd_m's interface link libraries, etc. This second instance
 doesn't increase the resulting file size because all symbols will be
 found in the first (-WHOLEARCHIVE) instance.
+
+## Build Issues FAQ
+
+1. Boost_NO_BOOST_CMAKE: 
+We currently set Boost_NO_BOOST_CMAKE=ON explicitly in USD builds for all 
+platforms to avoid issues with Boost config files (introduced in Boost version 
+1.70) and python, program options component requirements. If the user wants 
+to use Boost specified config files for their USD build, specify 
+-DBoost_NO_BOOST_CMAKE=OFF when running cmake.
+

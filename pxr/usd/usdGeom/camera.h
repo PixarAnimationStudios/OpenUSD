@@ -489,6 +489,31 @@ public:
     UsdAttribute CreateShutterCloseAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // EXPOSURE 
+    // --------------------------------------------------------------------- //
+    /// Exposure adjustment, as a log base-2 value.  The default
+    /// of 0.0 has no effect.  A value of 1.0 will double the
+    /// image-plane intensities in a rendered image; a value of
+    /// -1.0 will halve them.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureAttr() const;
+
+    /// See GetExposureAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

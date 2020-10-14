@@ -72,11 +72,13 @@ public:
         unsigned int cropTop,
         unsigned int cropBottom,
         unsigned int cropLeft,
-        unsigned int cropRight);
+        unsigned int cropRight,
+        GlfImage::SourceColorSpace sourceColorSpace=GlfImage::Auto);
 
     GLF_API
     static GlfUVTextureDataRefPtr
-    New(std::string const &filePath, Params const &params);
+    New(std::string const &filePath, Params const &params, 
+        GlfImage::SourceColorSpace sourceColorSpace=GlfImage::Auto);
 
     int NumDimensions() const override;
 
@@ -92,16 +94,8 @@ public:
     GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
-    GLenum GLInternalFormat() const override {
-        return _glInternalFormat;
-    };
-
-    GLenum GLFormat() const override {
-        return _glFormat;
-    };
-
-    GLenum GLType() const override {
-        return _glType;
+    HioFormat GetHioFormat() const override {
+        return _hioFormat;
     };
 
     size_t TargetMemory() const override {
@@ -190,7 +184,8 @@ private:
     // drop textures with non valid OpenGL pyramids.
     int _GetNumMipLevelsValid(const GlfImageSharedPtr image) const;
 
-    GlfUVTextureData(std::string const &filePath, Params const &params);
+    GlfUVTextureData(std::string const &filePath, Params const &params, 
+                     GlfImage::SourceColorSpace sourceColorSpace);
     virtual ~GlfUVTextureData();
         
     const std::string _filePath;
@@ -202,7 +197,7 @@ private:
     int _resizedWidth, _resizedHeight;
     int _bytesPerPixel;
 
-    GLenum  _glInternalFormat, _glFormat, _glType;
+    HioFormat _hioFormat;
 
     WrapInfo _wrapInfo;
 
@@ -210,6 +205,8 @@ private:
 
     std::unique_ptr<unsigned char[]> _rawBuffer;
     std::vector<Mip> _rawBufferMips;
+
+    GlfImage::SourceColorSpace _sourceColorSpace;
 };
 
 

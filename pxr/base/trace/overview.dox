@@ -81,14 +81,42 @@ int main(int argc, char* argv[])
 {
     // Start recording events.
     TraceCollector::GetInstance().SetEnabled(true);
+
     Foo();
     ...
+
     // Stop recording events.
     TraceCollector::GetInstance().SetEnabled(false);
-    // Print the report.
-    ofstream reportFile("trace.txt");
+
+    // Print the ASCII report
+    ofstream reportFile("report.trace");
     TraceReporter::GetGlobalReporter().Report(reportFile);
+
+    // Print the chrome-compatible report
+    ofstream chromeReportFile("report.json");
+    TraceReporter::GetGlobalReporter().ReportChromeTracing(chromeReportFile);
 }
+\endcode
+
+And in Python:
+\code{.py}
+from pxr import Trace
+
+# Start recording events.
+Trace.Collector().enabled = True
+
+Foo()
+...
+
+# Stop recording events.
+Trace.Collector().enabled = False
+
+# Print the ASCII report
+Trace.Reporter.globalReporter.Report("report.trace")
+
+# Print the chrome-compatible report
+Trace.Reporter.globalReporter.ReportChromeTracingToFile("report.json")
+
 \endcode
 
 The default report is an aggregated call graph showing the include time,

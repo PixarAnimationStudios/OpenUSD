@@ -147,19 +147,30 @@ template <class T, class Source>
 Usd_DefaultValueResult 
 Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
 {
-    // We need to actually examine the default value in all cases to see
-    // if a block was authored. So, if no value to fill in was specified,
-    // we need to create a dummy one.
-    if (!value) {
-        VtValue dummy;
-        return Usd_HasDefault(source, specPath, &dummy);
-    }
 
-    if (source->HasField(specPath, SdfFieldKeys->Default, value)) {
-        if (Usd_ClearValueIfBlocked(value)) {
+    if (!value) {
+        // Caller is not interested in the value, so avoid fetching it.
+        std::type_info const &ti =
+            source->GetFieldTypeid(specPath, SdfFieldKeys->Default);
+        if (ti == typeid(void)) {
+            return Usd_DefaultValueResult::None;
+        }
+        else if (ti == typeid(SdfValueBlock)) {
             return Usd_DefaultValueResult::Blocked;
         }
-        return Usd_DefaultValueResult::Found;
+        else {
+            return Usd_DefaultValueResult::Found;
+        }
+    }
+    else {
+        // Caller requests the value.
+        if (source->HasField(specPath, SdfFieldKeys->Default, value)) {
+            if (Usd_ClearValueIfBlocked(value)) {
+                return Usd_DefaultValueResult::Blocked;
+            }
+            return Usd_DefaultValueResult::Found;
+        }
+        // fall-through
     }
     return Usd_DefaultValueResult::None;
 }

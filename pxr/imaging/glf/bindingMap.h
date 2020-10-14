@@ -43,6 +43,11 @@ class GlfBindingMap : public TfRefBase, public TfWeakBase {
 public:
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> BindingMap;
 
+    GlfBindingMap()
+      : _samplerBindingBaseIndex(0)
+      , _uniformBindingBaseIndex(0)
+      { }
+
     GLF_API
     int GetSamplerUnit(std::string const &name);
     GLF_API
@@ -73,6 +78,28 @@ public:
         _attribBindings.clear();
     }
 
+    /// \name Sampler and UBO Bindings
+    ///
+    /// Sampler units and uniform block bindings are reset and will be
+    /// assigned sequentially starting from the specified baseIndex.
+    /// This allows other subsystems to claim sampler units and uniform
+    /// block bindings before additional indices are assigned by this
+    /// binding map.
+    ///
+    /// @{
+
+    void ResetSamplerBindings(int baseIndex) {
+        _samplerBindings.clear();
+        _samplerBindingBaseIndex = baseIndex;
+    }
+
+    void ResetUniformBindings(int baseIndex) {
+        _uniformBindings.clear();
+        _uniformBindingBaseIndex = baseIndex;
+    }
+
+    /// @}
+
     void AddAttribBinding(TfToken const &name, int location) {
         _attribBindings[name] = location;
     }
@@ -101,6 +128,9 @@ private:
     BindingMap _attribBindings;
     BindingMap _samplerBindings;
     BindingMap _uniformBindings;
+
+    int _samplerBindingBaseIndex;
+    int _uniformBindingBaseIndex;
 };
 
 

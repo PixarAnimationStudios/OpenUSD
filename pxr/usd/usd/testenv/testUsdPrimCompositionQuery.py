@@ -678,5 +678,13 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
                                            d['isIntroRootLayer']]
         _VerifyExpectedArcs(arcs, filteredExpectedValues)
 
+        # test to make sure c++ objects are propertly destroyed when
+        # PrimCollectionQuery instance is garbage collection
+        stage = Usd.Stage.CreateInMemory("testCreationAndGarbageCollect.usda")
+        Usd.PrimCompositionQuery(stage.GetPseudoRoot())
+        sessionLayer = stage.GetSessionLayer()
+        del stage
+        self.assertTrue(sessionLayer.expired)
+
 if __name__ == "__main__":
     unittest.main()

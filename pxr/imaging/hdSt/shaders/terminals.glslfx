@@ -67,6 +67,7 @@ struct ScalarOverride
 ReprStyle GetReprStyle();
 ScalarOverride GetScalarOverride();
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
+vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color);
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -108,6 +109,12 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                      Neye,
                                      reprColor,
                                      patchCoord);
+
+#ifdef HD_HAS_postSurfaceShader
+        shadingColor = postSurfaceShader(Peye,
+                                         Neye,
+                                         shadingColor);
+#endif
     
         reprColor.rgb = reprStyle.useSurfaceShaderColor ? 
                         shadingColor.rgb :

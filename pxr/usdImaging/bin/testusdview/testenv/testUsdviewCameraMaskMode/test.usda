@@ -25,6 +25,8 @@ def Sphere "backSphere" {
 
 def Camera "camera" {
     float focalLength = 35
+    float fStop = 16.0
+    float focusDistance = 10
     double3 xformOp:translate = (4.5, 5, 10)
      uniform token[] xformOpOrder = ["xformOp:translate"]
 }

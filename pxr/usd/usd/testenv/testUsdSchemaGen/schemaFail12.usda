@@ -24,7 +24,6 @@ class "MultipleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "multipleApply"
-        bool isPrivateApply = true
     }
 )
 {

@@ -38,15 +38,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for UsdGeomNurbsCurves.
 ///
-class UsdImagingNurbsCurvesAdapter : public UsdImagingGprimAdapter {
+class UsdImagingNurbsCurvesAdapter : public UsdImagingGprimAdapter 
+{
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingNurbsCurvesAdapter()
         : UsdImagingGprimAdapter()
     {}
+
     USDIMAGING_API
-    virtual ~UsdImagingNurbsCurvesAdapter();
+    ~UsdImagingNurbsCurvesAdapter() override;
 
     USDIMAGING_API
     SdfPath Populate(
@@ -80,16 +82,31 @@ public:
         UsdImagingInstancerContext const* 
             instancerContext = nullptr) const override;
 
+    USDIMAGING_API
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
+
+    USDIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;
+
 protected: 
     USDIMAGING_API
     bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
-private: 
-    void _GetBasisCurvesTopology(UsdPrim const& prim, 
-                                 VtValue* topoHolder, 
-                                 UsdTimeCode time) const;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

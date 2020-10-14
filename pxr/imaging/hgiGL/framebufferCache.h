@@ -54,8 +54,13 @@ public:
     /// If the framebuffer exists in the cache, it will be returned.
     /// If none exist that match the descriptor, it will be created.
     /// Do not hold onto the returned id. Re-acquire it every frame.
+    ///
+    /// When the cmds descriptor has resolved textures, two framebuffers are
+    /// created for the MSAA and for the resolved textures. The bool flag can
+    /// be used to access the respective ones.
     HGIGL_API
-    uint32_t AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc);
+    uint32_t AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc,
+                                bool resolved = false);
 
     /// Clears all framebuffersfrom cache.
     /// This should generally only be called when the device is being destroyed.

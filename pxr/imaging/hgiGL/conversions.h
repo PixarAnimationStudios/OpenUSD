@@ -83,6 +83,12 @@ public:
     static GLenum GetMinFilter(
         HgiSamplerFilter minFilter, 
         HgiMipFilter mipFilter);
+
+    HGIGL_API
+    static GLenum GetComponentSwizzle(HgiComponentSwizzle);
+
+    HGIGL_API
+    static GLenum GetPrimitiveType(HgiPrimitiveType pt);
 };
 
 

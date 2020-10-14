@@ -29,6 +29,7 @@
 #include <AppKit/AppKit.h>
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/api.h"
 
@@ -55,7 +56,8 @@ public:
     HGIINTEROP_API
     void CompositeToInterop(
         HgiTextureHandle const &color,
-        HgiTextureHandle const &depth);
+        HgiTextureHandle const &depth,
+        GfVec4i const &compRegion);
 
 private:
     HgiInteropMetal() = delete;
@@ -88,7 +90,7 @@ private:
         void* pointer;
     };
 
-    void _BlitToOpenGL(bool flipY, int shaderIndex);
+    void _BlitToOpenGL(GfVec4i const& compRegion, bool flipY, int shaderIndex);
     void _FreeTransientTextureCacheRefs();
     void _CaptureOpenGlState();
     void _RestoreOpenGlState();

@@ -35,7 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxTask(id)
-    , _interopDst(HgiTokens->OpenGL)
 {
 }
 
@@ -56,7 +55,7 @@ HdxPresentTask::_Sync(
         HdxPresentTaskParams params;
 
         if (_GetTaskParams(delegate, &params)) {
-            _interopDst = params.interopDst;
+            _params = params;
         }
     }
     *dirtyBits = HdChangeTracker::Clean;
@@ -73,26 +72,35 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // The color and depth aovs have the results we want to blit to the
-    // application. Depth is optional. When we are previewing a custom aov we
-    // may not have a depth buffer.
-    if (!_HasTaskContextData(ctx, HdAovTokens->color)) {
-        return;
+    // The present task can be disabled in case an application does offscreen
+    // rendering or doesn't use Hgi interop (e.g. directly access AOV results).
+    // But we still need to call Hgi::EndFrame.
+
+    if (_params.enabled && _HasTaskContextData(ctx, HdAovTokens->color)) {
+        // The color and depth aovs have the results we want to blit to the
+        // application. Depth is optional. When we are previewing a custom aov
+        // we may not have a depth buffer.
+
+        HgiTextureHandle aovTexture;
+        _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
+
+        HgiTextureHandle depthTexture;
+        if (_HasTaskContextData(ctx, HdAovTokens->depth)) {
+            _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
+        }
+
+        // Use HgiInterop to composite the Hgi textures over the application's
+        // framebuffer contents.
+        // Eg. This allows us to render with HgiMetal and present the images
+        // into a opengl based application (such as usdview).
+        _interop.TransferToApp(_hgi, _params.interopDst, _params.compRegion,
+                                aovTexture, depthTexture);
     }
 
-    HgiTextureHandle aovTexture;
-    _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
-
-    HgiTextureHandle depthTexture;
-    if (_HasTaskContextData(ctx, HdAovTokens->depth)) {
-        _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
-    }
-
-    // Use HgiInterop to composite the Hgi textures over the application's
-    // framebuffer contents.
-    // Eg. This allows us to render with HgiMetal and present the images
-    // into a opengl based application (such as usdview).
-    _interop.TransferToApp(_hgi, _interopDst, aovTexture, depthTexture);
+    // Wrap one HdEngine::Execute frame with Hgi StartFrame and EndFrame.
+    // StartFrame is currently called in the AovInputTask.
+    // This is important for Hgi garbage collection to run.
+    _GetHgi()->EndFrame();
 }
 
 
@@ -110,7 +118,9 @@ std::ostream& operator<<(std::ostream& out, const HdxPresentTaskParams& pv)
 bool operator==(const HdxPresentTaskParams& lhs,
                 const HdxPresentTaskParams& rhs)
 {
-    return lhs.interopDst == rhs.interopDst;
+    return lhs.interopDst == rhs.interopDst &&
+           lhs.compRegion == rhs.compRegion &&
+           lhs.enabled == rhs.enabled;
 }
 
 bool operator!=(const HdxPresentTaskParams& lhs,

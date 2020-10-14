@@ -32,6 +32,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \class HdxPresentTaskParams
+///
+/// PresentTask parameters.
+///
+struct HdxPresentTaskParams
+{
+    HdxPresentTaskParams() 
+        : interopDst(HgiTokens->OpenGL)
+        , compRegion(0)
+        , enabled(true)
+    {}
+
+    // The graphics lib that is used by the application / viewer.
+    // (The 'interopSrc' is determined by checking Hgi->GetAPIName)
+    TfToken interopDst;
+    // Subrectangular region of the framebuffer over which to composite aov
+    // contents. Coordinates are (left, BOTTOM, width, height).
+    GfVec4i compRegion;
+
+    // When not enabled, present task does not execute, but still calls
+    // Hgi::EndFrame.
+    bool enabled;
+};
 
 /// \class HdxPresentTask
 ///
@@ -63,7 +86,7 @@ protected:
                        HdDirtyBits* dirtyBits) override;
 
 private:
-    TfToken _interopDst;
+    HdxPresentTaskParams _params;
     HgiInterop _interop;
 
     HdxPresentTask() = delete;
@@ -72,20 +95,6 @@ private:
 };
 
 
-/// \class HdxPresentTaskParams
-///
-/// PresentTask parameters.
-///
-struct HdxPresentTaskParams
-{
-    HdxPresentTaskParams() 
-        : interopDst(HgiTokens->OpenGL)
-    {}
-
-    // The graphics lib that is used by the application / viewer.
-    // (The 'interopSrc' is determined by checking Hgi->GetAPIName)
-    TfToken interopDst;
-};
 
 // VtValue requirements
 HDX_API

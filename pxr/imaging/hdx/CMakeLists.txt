@@ -43,9 +43,7 @@ pxr_library(hdx
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
-        drawTargetRenderPass
         drawTargetTask
-        drawTargetResolveTask
         fullscreenShader
         hgiConversions
         oitBufferAccessor
@@ -86,6 +84,7 @@ pxr_library(hdx
         shaders/fullscreen.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/renderPassDiscardUnselectedShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassPickingShader.glslfx
         shaders/renderPassShadowShader.glslfx

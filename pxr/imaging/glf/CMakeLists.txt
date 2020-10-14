@@ -33,6 +33,7 @@ pxr_library(glf
         garch
         gf
         hf
+        hio
         js
         plug
         tf
@@ -58,6 +59,7 @@ pxr_library(glf
         contextCaps
         diagnostic
         drawTarget
+        field3DTextureDataBase
         glew
         glContext
         glRawContext
@@ -87,6 +89,7 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
+        fieldTextureData.h
         
     PRIVATE_HEADERS
         rankedTypeMap.h

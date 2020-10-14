@@ -56,10 +56,7 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
@@ -503,10 +500,7 @@ HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
 HdResourceRegistry::TextureKey
 HdRenderIndex::GetTextureKey(HdTextureResource::ID id) const
 {
-    HdResourceRegistry::TextureKey key = boost::hash_value(this);
-    boost::hash_combine(key, id);
-
-    return key;
+    return TfHash::Combine(this, id);
 }
 
 // ---------------------------------------------------------------------- //
@@ -1248,8 +1242,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         if (taskMapIt != _taskMap.end()) {
             _TaskInfo &taskInfo = taskMapIt->second;
 
-            // If in the task is in the render index, then we have to
-            // possibility that the task pass in points to a
+            // If the task is in the render index, then we have the
+            // possibility that the task passed in points to a
             // different instance than the one stored in the render index
             // even though they have the same id.
             //

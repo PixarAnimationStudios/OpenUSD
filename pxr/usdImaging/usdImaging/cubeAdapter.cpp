@@ -91,32 +91,25 @@ UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
     }
 }
 
-void 
-UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
-                                     SdfPath const& cachePath, 
-                                     UsdTimeCode time,
-                                     HdDirtyBits requestedBits,
-                                     UsdImagingInstancerContext const* 
-                                         instancerContext) const
+HdDirtyBits
+UsdImagingCubeAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             TfToken const& propertyName)
 {
-    BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, instancerContext);
-
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath) = GetMeshTopology();
+    if (propertyName == UsdGeomTokens->size) {
+        return HdChangeTracker::DirtyPoints;
     }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
 /*virtual*/
 VtValue
 UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,
-                                 SdfPath const& cachePath,
                                  UsdTimeCode time) const
 {
-    TF_UNUSED(cachePath);
-    return GetMeshPoints(prim, time);   
+    return GetMeshPoints(prim, time);
 }
 
 static GfMatrix4d
@@ -156,6 +149,17 @@ UsdImagingCubeAdapter::GetMeshTopology()
     return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
 }
 
+/*virtual*/ 
+VtValue
+UsdImagingCubeAdapter::GetTopology(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    return GetMeshTopology();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -57,6 +57,7 @@ HdxFullscreenShader::HdxFullscreenShader(
     , _shaderProgram()
     , _resourceBindings()
     , _pipeline()
+    , _sampler()
     , _blendingEnabled(false)
     , _srcColorBlendFactor(HgiBlendFactorZero)
     , _dstColorBlendFactor(HgiBlendFactorZero)
@@ -106,6 +107,10 @@ HdxFullscreenShader::~HdxFullscreenShader()
 
     if (_pipeline) {
         _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    if (_sampler) {
+        _hgi->DestroySampler(&_sampler);
     }
 }
 
@@ -306,7 +311,6 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
     // Begin the resource set
     HgiResourceBindingsDesc resourceDesc;
     resourceDesc.debugName = "HdxFullscreenShader";
-    resourceDesc.pipelineType = HgiPipelineTypeGraphics;
 
     // XXX OpenGL / Metal both re-use slot indices between buffers and textures.
     // Vulkan uses unique slot indices in descriptor set.
@@ -319,9 +323,9 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         if (!texHandle) continue;
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
-        texBind.resourceType = HgiBindResourceTypeCombinedImageSampler;
         texBind.stageUsage = HgiShaderStageFragment;
         texBind.textures.push_back(texHandle);
+        texBind.samplers.push_back(_sampler);
         resourceDesc.textures.emplace_back(std::move(texBind));
     }
 
@@ -413,7 +417,6 @@ HdxFullscreenShader::_CreatePipeline(
 
     HgiGraphicsPipelineDesc desc;
     desc.debugName = _debugName + " Pipeline";
-    desc.resourceBindings = _resourceBindings;
     desc.shaderProgram = _shaderProgram;
     desc.colorAttachmentDescs.push_back(_attachment0);
     desc.depthAttachmentDesc = _depthAttachment;
@@ -435,8 +438,7 @@ HdxFullscreenShader::_CreatePipeline(
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
-    // Set resource bindings (texture, buffers) and shader
-    desc.resourceBindings = _resourceBindings;
+    // Set the shaders
     desc.shaderProgram = _shaderProgram;
 
     // Ignore user provided vertex buffers. The VBO must always match the
@@ -448,6 +450,27 @@ HdxFullscreenShader::_CreatePipeline(
 
     return true;
 }
+
+bool
+HdxFullscreenShader::_CreateSampler()
+{
+    if (_sampler) {
+        return true;
+    }
+
+    HgiSamplerDesc sampDesc;
+
+    sampDesc.magFilter = HgiSamplerFilterLinear;
+    sampDesc.minFilter = HgiSamplerFilterLinear;
+
+    sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
+    sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
+
+    _sampler = _hgi->CreateSampler(sampDesc);
+
+    return true;
+}
+
 
 void
 HdxFullscreenShader::Draw(
@@ -489,6 +512,9 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
+
+    // create a default texture sampler (first time)
+    _CreateSampler();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);
@@ -540,7 +566,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
     GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
     gfxCmds->SetViewport(vp);
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.

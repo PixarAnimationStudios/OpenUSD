@@ -481,9 +481,10 @@ _GetAuthoredDrawMode(const UsdPrim &prim, TfToken *drawMode)
 TfToken
 UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
 {
-    TfToken drawMode;
+    TfToken drawMode = UsdGeomTokens->inherited;
 
-    if (_GetAuthoredDrawMode(GetPrim(), &drawMode)) {
+    if (_GetAuthoredDrawMode(GetPrim(), &drawMode) &&
+        drawMode != UsdGeomTokens->inherited) {
         return drawMode;
     }
 
@@ -496,7 +497,8 @@ UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
          curPrim; 
          curPrim = curPrim.GetParent()) {
 
-        if (_GetAuthoredDrawMode(curPrim, &drawMode)) {
+        if (_GetAuthoredDrawMode(curPrim, &drawMode) &&
+            drawMode != UsdGeomTokens->inherited) {
             return drawMode;
         }
     }

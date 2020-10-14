@@ -73,7 +73,7 @@ _FindAllAttributeConnectionPaths(
 {
     using Predicate = std::function<bool (UsdAttribute const &)>;
     Predicate pred;
-    if (pypred != boost::python::object())
+    if (!pypred.is_none())
         pred = boost::python::extract<Predicate>(pypred);
     return self.FindAllAttributeConnectionPaths(pred, recurseOnSources);
 }
@@ -86,7 +86,7 @@ _FindAllRelationshipTargetPaths(
 {
     using Predicate = std::function<bool (UsdRelationship const &)>;
     Predicate pred;
-    if (pypred != boost::python::object())
+    if (!pypred.is_none())
         pred = boost::python::extract<Predicate>(pypred);
     return self.FindAllRelationshipTargetPaths(pred, recurseOnTargets);
 }
@@ -229,8 +229,8 @@ void wrapUsdPrim()
 
         .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder,
              return_value_policy<TfPySequenceToList>())
-
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
+        .def("ClearPropertyOrder", &UsdPrim::ClearPropertyOrder)
 
         .def("IsA",
             (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
@@ -260,6 +260,18 @@ void wrapUsdPrim()
         .def("GetFilteredChildren", &UsdPrim::GetFilteredChildren,
              arg("predicate"),
              return_value_policy<TfPySequenceToList>())
+
+        .def("GetChildrenNames", &UsdPrim::GetChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetAllChildrenNames", &UsdPrim::GetAllChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetFilteredChildrenNames", &UsdPrim::GetFilteredChildrenNames,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("GetChildrenReorder", &UsdPrim::GetChildrenReorder,
+             return_value_policy<TfPySequenceToList>())
+        .def("SetChildrenReorder", &UsdPrim::SetChildrenReorder, arg("order"))
+        .def("ClearChildrenReorder", &UsdPrim::ClearChildrenReorder)
 
         .def("GetParent", &UsdPrim::GetParent)
         .def("GetNextSibling", (UsdPrim (UsdPrim::*)() const)
@@ -363,13 +375,27 @@ void wrapUsdPrim()
         .def("ClearInstanceable", &UsdPrim::ClearInstanceable)
         .def("HasAuthoredInstanceable", &UsdPrim::HasAuthoredInstanceable)
 
+        .def("IsPrototypePath", &UsdPrim::IsPrototypePath, arg("path"))
+        .staticmethod("IsPrototypePath")
+        .def("IsPathInPrototype", &UsdPrim::IsPathInPrototype, arg("path"))
+        .staticmethod("IsPathInPrototype")
+
+        .def("IsMasterPath", &UsdPrim::IsMasterPath, arg("path"))
+        .staticmethod("IsMasterPath")
+        .def("IsPathInMaster", &UsdPrim::IsPathInMaster, arg("path"))
+        .staticmethod("IsPathInMaster")
+
         .def("IsInstance", &UsdPrim::IsInstance)
         .def("IsMaster", &UsdPrim::IsMaster)
         .def("IsInMaster", &UsdPrim::IsInMaster)
         .def("GetMaster", &UsdPrim::GetMaster)
+        .def("IsPrototype", &UsdPrim::IsPrototype)
+        .def("IsInPrototype", &UsdPrim::IsInPrototype)
+        .def("GetPrototype", &UsdPrim::GetPrototype)
 
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
         .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
+        .def("GetPrimInPrototype", &UsdPrim::GetPrimInPrototype)
 
         .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
         .def("GetObjectAtPath", &UsdPrim::GetObjectAtPath, arg("path"))

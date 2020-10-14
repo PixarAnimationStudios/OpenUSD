@@ -304,10 +304,6 @@ Here's a short description of each datum in the per-class customData dictionary:
     will be inserted as a prefix to all properties created by this 
     multiple-apply API schema.
 
-  - \b isPrivateApply - boolean value indicating whether the Apply method that
-    is auto-generated for an applied API schema must be private or public. 
-    This defaults to False and must only be specified for API schemas.
-
   - \b fallbackTypes - must only be specified for a concrete typed schema. 
     This is a token array value used to specify the preferred fallback schema 
     types that can be used instead when this schema isn't present.

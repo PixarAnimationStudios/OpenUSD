@@ -85,6 +85,12 @@ HdEngine::RemoveTaskContextData(const TfToken &id)
 }
 
 void
+HdEngine::ClearTaskContextData()
+{
+    _taskContext.clear();
+}
+
+void
 HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
 {
     if ((index == nullptr) || (tasks == nullptr)) {
@@ -179,42 +185,4 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
     }
 }
 
-void
-HdEngine::ReloadAllShaders(HdRenderIndex& index)
-{
-    HdChangeTracker &tracker = index.GetChangeTracker();
-
-    // 1st dirty all rprims, so they will trigger shader reload
-    tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
-
-    // Dirty all materials
-    SdfPathVector materials = index.GetSprimSubtree(HdPrimTypeTokens->material,
-                                                    SdfPath::AbsoluteRootPath());
-
-    for (SdfPathVector::iterator materialIt  = materials.begin();
-                                 materialIt != materials.end();
-                               ++materialIt) {
-
-        HdMaterial* material = static_cast<HdMaterial*>(
-            index.GetSprim(HdPrimTypeTokens->material, *materialIt));
-        material->Reload();
-
-        tracker.MarkSprimDirty(*materialIt, HdChangeTracker::AllDirty);
-    }
-
-    // Invalidate shader cache in Resource Registry.
-    index.GetResourceRegistry()->InvalidateShaderRegistry();
-
-    // Fallback material
-    HdMaterial *material = static_cast<HdMaterial *>(
-                        index.GetFallbackSprim(HdPrimTypeTokens->material));
-    material->Reload();
-
-    // Note: Several Shaders are not currently captured in this
-    // - Lighting Shaders
-    // - Render Pass Shaders
-    // - Culling Shader
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -24,9 +24,10 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -176,8 +177,8 @@ HdStRenderPassState::Prepare(
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
                 HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
-        HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+        HdStBufferArrayRangeSharedPtr _renderPassStateBar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
@@ -284,8 +285,8 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
     _renderPassShader = renderPassShader;
     if (_renderPassStateBar) {
 
-        HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+        HdStBufferArrayRangeSharedPtr _renderPassStateBar_ =
+            std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
@@ -324,10 +325,6 @@ HdStRenderPassState::Bind()
     // SetCamera will no-op if the transforms are the same as before.
     _lightingShader->SetCamera(GetWorldToViewMatrix(),
                                GetProjectionMatrix());
-
-    // XXX: viewport should be set.
-    // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
-    //            (GLsizei)_viewport[2], (GLsizei)_viewport[3]);
 
     // when adding another GL state change here, please document
     // which states to be altered at the comment in the header file
@@ -384,6 +381,7 @@ HdStRenderPassState::Bind()
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+            glEnable(GL_SAMPLE_ALPHA_TO_ONE);
         } else {
             glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
         }
@@ -425,6 +423,7 @@ HdStRenderPassState::Unbind()
 
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     glDisable(GL_PROGRAM_POINT_SIZE);
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
@@ -566,6 +565,9 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         desc.height = renderBuffer->GetHeight();
 
         HgiAttachmentDesc attachmentDesc;
+
+        attachmentDesc.format =
+            HdStHgiConversions::GetHgiFormat(renderBuffer->GetFormat());
 
         // We need to use LoadOpLoad instead of DontCare because we can have
         // multiple render passes that use the same attachments.

@@ -76,6 +76,13 @@ public:
     void DestroyTexture(HgiTextureHandle* texHandle) override;
 
     HGIGL_API
+    HgiTextureViewHandle CreateTextureView(
+        HgiTextureViewDesc const& desc) override;
+
+    HGIGL_API
+    void DestroyTextureView(HgiTextureViewHandle* viewHandle) override;
+
+    HGIGL_API
     HgiSamplerHandle CreateSampler(HgiSamplerDesc const & desc) override;
 
     HGIGL_API
@@ -144,7 +151,7 @@ public:
 
 protected:
     HGIGL_API
-    bool _SubmitCmds(HgiCmds* cmds) override;
+    bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;
 
 private:
     HgiGL & operator=(const HgiGL&) = delete;

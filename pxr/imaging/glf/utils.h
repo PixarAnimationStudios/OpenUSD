@@ -28,7 +28,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hio/types.h"
 
 #include <string>
 
@@ -51,6 +53,12 @@ GLenum GlfGetBaseFormat(int numComponents);
 GLF_API 
 int GlfGetNumElements(GLenum format);
 
+/// Number of elements.
+///
+/// Returns the number of elements (channels) in a given HioFormat.
+GLF_API 
+int GlfGetNumElements(HioFormat format);
+
 /// Byte size of a GL type.
 ///
 /// Returns the size in bytes of a given GL type.
@@ -60,27 +68,50 @@ int GlfGetNumElements(GLenum format);
 GLF_API
 int GlfGetElementSize(GLenum type);
 
+/// Byte size of the element type of a given HioFormat.
+///
+/// Returns the size in bytes for an element in the given hioFormat. 
+GLF_API
+int GlfGetElementSize(HioFormat hioFormat);
+
+
+/// GL type.
+///
+/// Returns the GL type for a given HioFormat.
+GLF_API
+GLenum GlfGetGLType(HioFormat format);
+
+/// GL format.
+///
+/// Returns the GL format for a given HioFormat.
+GLF_API
+GLenum GlfGetGLFormat(HioFormat format);
+
+/// GL Internal Format.
+///
+/// Returns the GL Internal Format for a given HioFormat.
+GLF_API
+GLenum GlfGetGLInternalFormat(HioFormat format);
+
+/// HioFormat
+///
+/// Returns the HioFormat for the given GL format and GL type
+///
+/// Supported formats are : GL_DEPTH_COMPONENT, GL_COLOR_INDEX, GL_ALPHA, 
+/// GL_RED, GL_LUMINANCE, GL_RG, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
+///
+/// Supported types are : GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, 
+/// GL_SHORT, GL_FLOAT, GL_DOUBLE
+GLF_API
+HioFormat GlfGetHioFormat(GLenum glFormat, GLenum glType, bool isSRGB);
+
+
 /// Checks the valitidy of a GL framebuffer
 ///
 /// True if the currently bound GL framebuffer is valid and can be bound
 /// or returns the cause of the problem
 GLF_API
 bool GlfCheckGLFrameBufferStatus(GLuint target, std::string * reason);
-
-/// Check if the format is compressed.
-///
-/// Supported GL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
-/// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
-GLF_API
-bool GlfIsCompressedFormat(GLenum format);
-
-/// Calculate the byte size of compressed textures.
-///
-/// Supported GL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
-/// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
-GLF_API
-size_t GlfGetCompressedTextureSize(int width, int height, 
-                                   GLenum format, GLenum type);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

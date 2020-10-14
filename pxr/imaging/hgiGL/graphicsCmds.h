@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGraphicsCmdsDesc;
-
+class HgiGLDevice;
 
 /// \class HgiGLGraphicsCmds
 ///
@@ -87,13 +87,33 @@ public:
         std::vector<uint32_t> const& byteOffsets) override;
 
     HGIGL_API
+    void Draw(
+        uint32_t vertexCount,
+        uint32_t firstVertex,
+        uint32_t instanceCount) override;
+
+    HGIGL_API
+    void DrawIndirect(
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t drawBufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
+
+    HGIGL_API
     void DrawIndexed(
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t firstIndex,
         uint32_t vertexOffset,
         uint32_t instanceCount) override;
+
+    HGIGL_API
+    void DrawIndexedIndirect(
+        HgiBufferHandle const& indexBuffer,
+        HgiBufferHandle const& drawParameterBuffer,
+        uint32_t drawBufferOffset,
+        uint32_t drawCount,
+        uint32_t stride) override;
 
 protected:
     friend class HgiGL;
@@ -104,7 +124,7 @@ protected:
         HgiGraphicsCmdsDesc const& desc);
 
     HGIGL_API
-    bool _Submit(Hgi* hgi) override;
+    bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;
 
 private:
     HgiGLGraphicsCmds() = delete;
@@ -112,11 +132,13 @@ private:
     HgiGLGraphicsCmds(const HgiGLGraphicsCmds&) = delete;
 
     /// This performs multisample resolve when needed at the end of recording.
-    void _Resolve();
+    void _AddResolveToOps(HgiGLDevice* device);
 
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
+    HgiPrimitiveType _primitiveType;
     HgiGLOpsVector _ops;
+    int _pushStack;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
+#include "pxr/usd/sdf/layerHints.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -124,18 +125,11 @@ public:
 
     /// Creates a new empty layer with the given identifier.
     ///
-    /// The \p identifier must be either a real filesystem path or an asset
-    /// path without version modifier. Attempting to create a layer using an
-    /// identifier with a version specifier (e.g.  layer.menva@300100,
-    /// layer.menva#5) raises a coding error, and returns a null layer
-    /// pointer.
-    ///
     /// Additional arguments may be supplied via the \p args parameter.
     /// These arguments may control behavior specific to the layer's
     /// file format.
     SDF_API
     static SdfLayerRefPtr CreateNew(const std::string &identifier,
-                                    const std::string &realPath = std::string(),
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
@@ -148,19 +142,13 @@ public:
     SDF_API
     static SdfLayerRefPtr CreateNew(const SdfFileFormatConstPtr& fileFormat,
                                     const std::string &identifier,
-                                    const std::string &realPath = std::string(),
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
     /// Creates a new empty layer with the given identifier for a given file
     /// format class.
     ///
-    /// This is so that Python File Format classes can create layers
-    /// (CreateNew() doesn't work, because it already saves during
-    /// construction of the layer. That is something specific (python
-    /// generated) layer types may choose to not do.)
-    ///
-    /// The new layer will not be dirty.
+    /// The new layer will not be dirty and will not be saved.
     ///
     /// Additional arguments may be supplied via the \p args parameter. 
     /// These arguments may control behavior specific to the layer's
@@ -168,7 +156,6 @@ public:
     SDF_API
     static SdfLayerRefPtr New(const SdfFileFormatConstPtr& fileFormat,
                               const std::string &identifier,
-                              const std::string &realPath = std::string(),
                               const FileFormatArguments &args = 
                               FileFormatArguments());
 
@@ -222,6 +209,12 @@ public:
     /// Returns the data from the absolute root path of this layer.
     SDF_API
     SdfDataRefPtr GetMetadata() const;
+
+    /// Return hints about the layer's current contents.  Any operation that
+    /// dirties the layer will invalidate all hints.
+    /// \sa SdfLayerHints
+    SDF_API
+    SdfLayerHints GetHints() const;
 
     /// Returns handles for all layers currently held by the layer registry.
     SDF_API
@@ -343,7 +336,11 @@ public:
     /// avoid reloading layers that have not changed on disk. It does so
     /// by comparing the file's modification time (mtime) to when the
     /// file was loaded. If the layer has unsaved modifications, this
-    /// mechanism is not used, and the layer is reloaded from disk.
+    /// mechanism is not used, and the layer is reloaded from disk. If the 
+    /// layer has any 
+    /// \ref GetExternalAssetDependencies "external asset dependencies"
+    /// their modification state will also be consulted when determining if 
+    /// the layer needs to be reloaded.
     ///
     /// Passing true to the \p force parameter overrides this behavior,
     /// forcing the layer to be reloaded from disk regardless of whether
@@ -375,7 +372,7 @@ public:
 
     /// Return paths of all external references of layer.
     SDF_API
-    std::set<std::string> GetExternalReferences();
+    std::set<std::string> GetExternalReferences() const;
 
     /// Updates the external references of the layer.
     ///
@@ -389,6 +386,17 @@ public:
     bool UpdateExternalReference(
         const std::string &oldAssetPath,
         const std::string &newAssetPath=std::string());
+
+    /// Returns a set of resolved paths to all external asset dependencies
+    /// the layer needs to generate its contents. These are additional asset 
+    /// dependencies that are determined by the layer's 
+    /// \ref SdfFileFormat::GetExternalAssetDependencies "file format" and
+    /// will be consulted during Reload() when determining if the layer needs 
+    /// to be reloaded. This specifically does not include dependencies related 
+    /// to composition, i.e. this will not include assets from references, 
+    /// payloads, and sublayers.
+    SDF_API
+    std::set<std::string> GetExternalAssetDependencies() const;
 
     /// @}
     /// \name Identification
@@ -1376,7 +1384,6 @@ private:
     static SdfLayerRefPtr _CreateNew(
         SdfFileFormatConstPtr fileFormat,
         const std::string& identifier,
-        const std::string& realPath,
         const ArAssetInfo& assetInfo = ArAssetInfo(),
         const FileFormatArguments& args = FileFormatArguments());
 
@@ -1680,6 +1687,10 @@ private:
     // Modification timestamp of the backing file asset when last read.
     mutable VtValue _assetModificationTime;
 
+    // All external asset dependencies, with their modification timestamps, of
+    // the layer when last read.
+    mutable VtDictionary _externalAssetModificationTimes;
+
     // Mutable revision number for cache invalidation.
     mutable size_t _mutedLayersRevisionCache;
 
@@ -1693,6 +1704,9 @@ private:
 
     // Whether layer edits are validated.
     bool _validateAuthoring;
+
+    // Layer hints as of the most recent save operation.
+    mutable SdfLayerHints _hints;
 
     // Allow access to _ValidateAuthoring() and _IsInert().
     friend class SdfSpec;

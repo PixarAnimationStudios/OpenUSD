@@ -353,6 +353,8 @@ void emit(int index, vec4 Peye, vec3 Neye,
     EmitVertex();
 }
 
+vec4 ComputeSelectionOffset(); // selection.glslfx
+
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -378,6 +380,13 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
+
+    // For wireframe, add a polygon offset to selected faces to ensure they
+    // rasterize over unselected faces.
+    vec4 selOffset = ComputeSelectionOffset();
+    Peye0 += selOffset;
+    Peye1 += selOffset;
+    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0, Peye0, Peye1, Peye2);
@@ -461,6 +470,8 @@ void emit(int index, vec4 Peye, vec3 Neye,
     EmitVertex();
 }
 
+vec4 ComputeSelectionOffset();
+
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -483,6 +494,13 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
+
+    // For wireframe, add a polygon offset to selected faces to ensure they
+    // rasterize over unselected faces.
+    vec4 selOffset = ComputeSelectionOffset();
+    Peye0 += selOffset;
+    Peye1 += selOffset;
+    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0, Peye0, Peye1, Peye2);
@@ -546,6 +564,8 @@ void emit(int triCounter, int index, vec4 Peye, vec3 Neye,
     EmitVertex();
 }
 
+vec4 ComputeSelectionOffset();
+
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -590,6 +610,14 @@ void main(void)
     // which matters when we use smooth/limit normals. 
     // In the case of flat normals, we use the vertex positions, so it doesn't
     // matter.
+
+    // For wireframe, add a polygon offset to selected faces to ensure they
+    // rasterize over unselected faces.
+    vec4 selOffset = ComputeSelectionOffset();
+    Peye0 += selOffset;
+    Peye1 += selOffset;
+    Peye2 += selOffset;
+    Peye3 += selOffset;
 
     // triangle 0: vertices (3,0,2)
     emit(0, 3, Peye3, Neye3, Peye3, Peye0, Peye2);

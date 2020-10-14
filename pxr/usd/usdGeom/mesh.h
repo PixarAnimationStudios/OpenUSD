@@ -617,6 +617,15 @@ public:
     /// indicates that the crease or corner is perfectly sharp.
     USDGEOM_API
     static const float SHARPNESS_INFINITE;
+
+    /// Returns the number of faces as defined by the size of the
+    /// _faceVertexCounts_ array at _timeCode_.
+    ///
+    /// \snippetdoc snippets.dox GetCount
+    /// \sa GetFaceVertexCountsAttr()
+    USDGEOM_API
+    size_t GetFaceCount(UsdTimeCode timeCode = UsdTimeCode::Default()) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

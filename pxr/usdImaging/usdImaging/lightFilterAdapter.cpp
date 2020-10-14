@@ -64,22 +64,17 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
     // If any of the light attributes is time varying 
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) {
-        const UsdAttribute& attr = *attrIter;
+    for (UsdAttribute const& attr : attrs) {
+        // Don't double-count transform attrs.
+        if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
+                attr.GetBaseName())) {
+            continue;
+        }
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
             break;
         }
     }
-
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    // XXX: The usage of _GetTimeWithOffset here is super-sketch, but avoids
-    // blowing up the inherited visibility cache. This belongs in
-    // UpdateForTime, except that we don't currently call UpdateForTime on
-    // lights...
-    valueCache->GetVisible(cachePath) = GetVisible(prim,
-        _GetTimeWithOffset(0.0));
 
     UsdLuxLightFilter lightFilter(prim);
     if (TF_VERIFY(lightFilter)) {
@@ -108,7 +103,11 @@ UsdImagingLightFilterAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
 {
-    return HdChangeTracker::AllDirty;
+    if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
+        return HdLight::DirtyBits::DirtyTransform;
+    }
+    // "DirtyParam" is the catch-all bit for light params.
+    return HdLight::DirtyBits::DirtyParams;
 }
 
 void

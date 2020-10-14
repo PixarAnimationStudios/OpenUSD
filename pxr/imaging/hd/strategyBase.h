@@ -76,6 +76,10 @@ public:
     virtual size_t GetResourceAllocation(
         HdBufferArraySharedPtr const &bufferArray, 
         VtDictionary &result) const = 0;
+
+    /// (Optional) called to Flush consolidated / staging buffers.
+    HD_API
+    virtual void Flush() {}
 };
 
 

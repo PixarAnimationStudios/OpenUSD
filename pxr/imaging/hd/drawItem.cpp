@@ -25,8 +25,8 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 
 #include "pxr/base/gf/frustum.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,41 +43,34 @@ HdDrawItem::~HdDrawItem()
     /*NOTHING*/
 }
 
+template <class HashState>
+void
+TfHashAppend(HashState &h, HdDrawItem const &di)
+{
+    auto appendVersionIf = [&h](auto const &thing) {
+        h.Append(thing ? thing->GetVersion() : 0);
+    };
+
+    appendVersionIf(di.GetTopologyRange());
+    appendVersionIf(di.GetConstantPrimvarRange());
+    appendVersionIf(di.GetVertexPrimvarRange());
+    appendVersionIf(di.GetElementPrimvarRange());
+    appendVersionIf(di.GetFaceVaryingPrimvarRange());
+    appendVersionIf(di.GetTopologyVisibilityRange());
+
+    int instancerNumLevels = di.GetInstancePrimvarNumLevels();
+    for (int i = 0; i < instancerNumLevels; ++i) {
+        appendVersionIf(di.GetInstancePrimvarRange(i));
+    }
+    appendVersionIf(di.GetInstanceIndexRange());
+
+    h.Append(di._GetBufferArraysHash());
+}
+
 size_t
 HdDrawItem::GetBufferArraysHash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash,
-                        GetTopologyRange() ?
-                        GetTopologyRange()->GetVersion() : 0);
-    boost::hash_combine(hash,
-                        GetConstantPrimvarRange() ?
-                        GetConstantPrimvarRange()->GetVersion() : 0);
-    boost::hash_combine(hash,
-                        GetVertexPrimvarRange() ?
-                        GetVertexPrimvarRange()->GetVersion() : 0);
-    boost::hash_combine(hash,
-                        GetElementPrimvarRange() ?
-                        GetElementPrimvarRange()->GetVersion() : 0);
-    boost::hash_combine(hash,
-                        GetFaceVaryingPrimvarRange() ?
-                        GetFaceVaryingPrimvarRange()->GetVersion() : 0);
-    boost::hash_combine(hash,
-                        GetTopologyVisibilityRange() ?
-                        GetTopologyVisibilityRange()->GetVersion() : 0);
-    int instancerNumLevels = GetInstancePrimvarNumLevels();
-    for (int i = 0; i < instancerNumLevels; ++i) {
-        boost::hash_combine(hash,
-                            GetInstancePrimvarRange(i) ?
-                            GetInstancePrimvarRange(i)->GetVersion(): 0);
-    }
-    boost::hash_combine(hash,
-                        GetInstanceIndexRange() ?
-                        GetInstanceIndexRange()->GetVersion(): 0);
-
-    boost::hash_combine(hash, _GetBufferArraysHash());
-
-    return hash;
+    return TfHash()(*this);
 }
 
 bool

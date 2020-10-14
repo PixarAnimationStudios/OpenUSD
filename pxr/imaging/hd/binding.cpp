@@ -25,16 +25,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 size_t
 HdBindingRequest::ComputeHash() const
 {
-    size_t hash = _name.Hash();
-    boost::hash_combine(hash, _bindingType);
-    boost::hash_combine(hash, _dataType);
-    boost::hash_combine(hash, _isInterleaved);
-
-    return hash;
+    return TfHash()(*this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

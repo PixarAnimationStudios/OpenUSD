@@ -63,7 +63,7 @@ bool operator!=(
 }
 
 HgiTextureBindDesc::HgiTextureBindDesc()
-    : resourceType(HgiBindResourceTypeCombinedImageSampler)
+    : resourceType(HgiBindResourceTypeSamplerImage)
     , bindingIndex(0)
     , stageUsage(HgiShaderStageFragment)
 {
@@ -87,17 +87,13 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-HgiResourceBindingsDesc::HgiResourceBindingsDesc()
-    : pipelineType(HgiPipelineTypeGraphics)
-{
-}
+HgiResourceBindingsDesc::HgiResourceBindingsDesc() = default;
 
 bool operator==(
     const HgiResourceBindingsDesc& lhs,
     const HgiResourceBindingsDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.pipelineType == rhs.pipelineType &&
            lhs.buffers == rhs.buffers &&
            lhs.textures == rhs.textures;
 }

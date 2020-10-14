@@ -37,7 +37,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include <boost/format.hpp>
-#include <iostream>
+#include <ostream>
 
 using namespace boost::multi_index;
 using std::string;

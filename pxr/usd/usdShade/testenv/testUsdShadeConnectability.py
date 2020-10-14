@@ -66,6 +66,9 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # default connectability of an interface-input is 'full'
         self.assertEqual(floatInterfaceInput.GetConnectability(), 
                     UsdShade.Tokens.full)
+        # inputs on a material are not connectable
+        xAttr = material.GetPrim().CreateAttribute("x", Sdf.ValueTypeNames.Double, True)
+        self._CanConnect(floatInterfaceInput, xAttr)
 
         self.assertTrue(floatInterfaceInput.SetConnectability(
                 UsdShade.Tokens.interfaceOnly))

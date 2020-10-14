@@ -122,6 +122,10 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
 
+        .def("GetTypeAndInstance", &This::GetTypeAndInstance,
+            (arg("typeName")), return_value_policy<TfPyPairToTuple>())
+        .staticmethod("GetTypeAndInstance")
+
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,
              (arg("typeName")),

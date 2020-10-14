@@ -31,7 +31,7 @@
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/glf/baseTextureData.h"
+#include "pxr/imaging/glf/fieldTextureData.h"
 
 #include "pxr/base/gf/bbox3d.h"
 
@@ -48,7 +48,7 @@ class GlfVdbTextureData_DenseGridHolderBase;
 /// Implements GlfBaseTextureData to read grid with given name from
 /// OpenVDB file at given path.
 ///
-class GlfVdbTextureData : public GlfBaseTextureData {
+class GlfVdbTextureData final : public GlfFieldTextureData {
 public:
     GLF_API
     static GlfVdbTextureDataRefPtr
@@ -56,8 +56,8 @@ public:
         std::string const &gridName,
         size_t targetMemory);
 
-    /// See GlfVdbTexture for details
-    const GfBBox3d &GetBoundingBox() const { return _boundingBox; }
+    GLF_API
+    const GfBBox3d &GetBoundingBox() const override;
 
     GLF_API
     int NumDimensions() const override;
@@ -71,11 +71,7 @@ public:
     GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
-    GLenum GLInternalFormat() const override;
-
-    GLenum GLFormat() const override;
-
-    GLenum GLType() const override;
+    HioFormat GetHioFormat() const override;
 
     size_t TargetMemory() const override;
 
@@ -105,13 +101,13 @@ private:
     const std::string _filePath;
     const std::string _gridName;
 
-    size_t _targetMemory;
+    const size_t _targetMemory;
 
     int _nativeWidth, _nativeHeight, _nativeDepth;
     int _resizedWidth, _resizedHeight, _resizedDepth;
     int _bytesPerPixel;
 
-    GLenum  _glInternalFormat, _glFormat, _glType;
+    HioFormat _hioFormat;
 
     WrapInfo _wrapInfo;
 

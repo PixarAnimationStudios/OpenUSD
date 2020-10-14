@@ -82,6 +82,17 @@ int main(int argc, char *argv[])
     SdfPath renderTask1("/renderTask1");
     delegate->AddRenderSetupTask(renderSetupTask1);
     delegate->AddRenderTask(renderTask1);
+
+    // update viewport param (defaults to (0,0,512,512) otherwise)
+    {
+        VtValue vParam = delegate->GetTaskParam(renderSetupTask1,
+                                                HdTokens->params);
+        HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
+        param.viewport = GfVec4d(0, 0, 256, 256);
+        delegate->SetTaskParam(renderSetupTask1, HdTokens->params,
+                               VtValue(param));
+    }
+
     HdTaskSharedPtrVector tasks;
     tasks.push_back(index->GetTask(renderSetupTask1));
     tasks.push_back(index->GetTask(renderTask1));

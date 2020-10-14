@@ -42,6 +42,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         weakerBindingAPI = UsdShade.MaterialBindingAPI(gpw)
         weakerBindingAPI.Bind(mw1)
 
+        self.assertTrue(
+                UsdShade.MaterialBindingAPI.CanContainPropertyName(
+                weakerBindingAPI.GetDirectBindingRel().GetName()))
         self.assertEqual(weakerBindingAPI.GetDirectBindingRel().GetTargets(),
                          [Sdf.Path("/weaker/mat1")])
         self.assertEqual(weakerBindingAPI.GetDirectBinding().GetMaterialPath(),
@@ -495,7 +498,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         yellowMat = UsdShade.Material.Define(s, "/Trees/Materials/yellowMat")
         redMat = UsdShade.Material.Define(s, "/Trees/Materials/RedMat")
 
-        leavesColl = Usd.CollectionAPI.ApplyCollection(geom, 'leaves')
+        leavesColl = Usd.CollectionAPI.Apply(geom, 'leaves')
         leavesColl.IncludePath(leaves.GetPath())
 
         self.assertTrue(UsdShade.MaterialBindingAPI(leaf1).Bind(leaf1Mat))

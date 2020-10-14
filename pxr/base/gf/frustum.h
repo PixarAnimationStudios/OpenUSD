@@ -41,6 +41,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <array>
+#include <atomic>
 #include <iosfwd>
 #include <vector>
 
@@ -103,6 +105,35 @@ class GfFrustum {
     /// \li The projection type is \c GfFrustum::Perspective.
     GF_API GfFrustum();
 
+    /// Copy constructor.
+    GfFrustum(GfFrustum const &o)
+        : _position(o._position)
+        , _rotation(o._rotation)
+        , _window(o._window)
+        , _nearFar(o._nearFar)
+        , _viewDistance(o._viewDistance)
+        , _projectionType(o._projectionType)
+        , _planes(nullptr) {
+        if (auto *planes = o._planes.load()) {
+            _planes = new std::array<GfPlane, 6>(*planes);
+        }
+    }
+
+    /// Move constructor.
+    GfFrustum(GfFrustum &&o) noexcept
+        : _position(o._position)
+        , _rotation(o._rotation)
+        , _window(o._window)
+        , _nearFar(o._nearFar)
+        , _viewDistance(o._viewDistance)
+        , _projectionType(o._projectionType)
+        , _planes(nullptr) {
+        if (auto *planes =
+            o._planes.exchange(nullptr, std::memory_order_relaxed)) {
+            _planes = planes;
+        }
+    }
+
     /// This constructor creates an instance with the given viewing
     /// parameters.
     GF_API GfFrustum(const GfVec3d &position, const GfRotation &rotation,
@@ -117,6 +148,46 @@ class GfFrustum {
               const GfRange2d &window, const GfRange1d &nearFar,
               GfFrustum::ProjectionType projectionType,
               double viewDistance = 5.0);
+
+    /// Copy assignment.
+    GfFrustum &operator=(GfFrustum const &o) noexcept {
+        if (this == &o) {
+            return *this;
+        }
+        _position = o._position;
+        _rotation = o._rotation;
+        _window = o._window;
+        _nearFar = o._nearFar;
+        _viewDistance = o._viewDistance;
+        _projectionType = o._projectionType;
+        delete _planes.load(std::memory_order_relaxed);
+        if (auto *planes = o._planes.load(std::memory_order_relaxed)) {
+            _planes.store(new std::array<GfPlane, 6>(*planes),
+                          std::memory_order_relaxed);
+        }
+        else {
+            _planes.store(nullptr, std::memory_order_relaxed);
+        }
+        return *this;
+    }
+
+    /// Move assignment.
+    GfFrustum &operator=(GfFrustum &&o) noexcept {
+        if (this == &o) {
+            return *this;
+        }
+        _position = o._position;
+        _rotation = o._rotation;
+        _window = o._window;
+        _nearFar = o._nearFar;
+        _viewDistance = o._viewDistance;
+        _projectionType = o._projectionType;
+        delete _planes.load(std::memory_order_relaxed);
+        _planes.store(o._planes.load(std::memory_order_relaxed),
+                      std::memory_order_relaxed);
+        o._planes.store(nullptr, std::memory_order_relaxed);
+        return *this;
+    }        
 
     friend inline size_t hash_value(const GfFrustum &f) {
         size_t h = 0;
@@ -601,8 +672,8 @@ class GfFrustum {
     ProjectionType              _projectionType;
 
     // Cached planes.
-    // If empty, the planes have not been calculated.
-    mutable std::vector<GfPlane> _planes;
+    // If null, the planes have not been calculated.
+    mutable std::atomic<std::array<GfPlane, 6> *> _planes;
 };
 
 /// Output a GfFrustum using the format [(position) (rotation) [window]

@@ -126,5 +126,44 @@ class TestUsdShadeMaterialOutputs(unittest.TestCase):
         self.assertEqual(riDispSource[0].GetPath(), ngDispShader.GetPath())
         self.assertEqual(riVolSource[0].GetPath(), ngVolShader.GetPath())
 
+        # Create a few more outputs to exercise the multi-renderContext
+        # terminal output getters.
+
+        # A deeply namespaced "surface" output.
+        mat.CreateSurfaceOutput(
+            renderContext=Sdf.Path.namespaceDelimiter.join(
+                ['deep', 'context']))
+
+        # A deeply namespaced, float3-typed "displacement" output.
+        mat.CreateOutput(
+            Sdf.Path.namespaceDelimiter.join(
+                ['deep', 'context', 'float', UsdShade.Tokens.displacement]),
+            Sdf.ValueTypeNames.Float3)
+
+        # A color-typed "volume" output.
+        mat.CreateOutput(
+            Sdf.Path.namespaceDelimiter.join(
+                ['colorRenderContext', UsdShade.Tokens.volume]),
+            Sdf.ValueTypeNames.Color3d)
+
+        # Arbitrary outputs that the getters should *not* return.
+        mat.CreateOutput('bogusOutput', Sdf.ValueTypeNames.Token)
+        mat.CreateOutput(
+            Sdf.Path.namespaceDelimiter.join(['bogusContext', 'randomOutput']),
+            Sdf.ValueTypeNames.Token)
+
+        outputBaseNames = [o.GetBaseName() for o in mat.GetSurfaceOutputs()]
+        self.assertEqual(outputBaseNames,
+            ['surface', 'deep:context:surface', 'ri:surface'])
+
+        outputBaseNames = [o.GetBaseName() for o in mat.GetDisplacementOutputs()]
+        self.assertEqual(outputBaseNames,
+            ['displacement', 'deep:context:float:displacement', 'ri:displacement'])
+
+        outputBaseNames = [o.GetBaseName() for o in mat.GetVolumeOutputs()]
+        self.assertEqual(outputBaseNames,
+            ['volume', 'colorRenderContext:volume', 'ri:volume'])
+
+
 if __name__ == "__main__":
     unittest.main()

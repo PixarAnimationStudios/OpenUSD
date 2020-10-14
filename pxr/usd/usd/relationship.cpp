@@ -76,10 +76,10 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
     if (!target.IsEmpty()) {
         SdfPath absTarget =
             target.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
-        if (Usd_InstanceCache::IsPathInMaster(absTarget)) {
+        if (Usd_InstanceCache::IsPathInPrototype(absTarget)) {
             if (whyNot) { 
-                *whyNot = "Cannot target a master or an object within a "
-                    "master.";
+                *whyNot = "Cannot target a prototype or an object within a "
+                    "prototype.";
             }
             return SdfPath();
         }
@@ -242,15 +242,27 @@ UsdRelationship::GetTargets(SdfPathVector* targets) const
 }
 
 bool
-UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
-                                      SdfPathSet* uniqueTargets,
-                                      SdfPathVector* targets,
-                                      bool includeForwardingRels) const
+UsdRelationship::_GetForwardedTargetsImpl(SdfPathSet* visited,
+                                          SdfPathSet* uniqueTargets,
+                                          SdfPathVector* targets,
+                                          bool *foundAnyErrors,
+                                          bool includeForwardingRels) const
 {
-    // Track recursive composition errors, starting with the first batch of
-    // targets.
     SdfPathVector curTargets;
-    bool success = GetTargets(&curTargets);
+    // Get the targets for this relationship first.
+    const bool foundTargets = 
+        _GetTargets(SdfSpecTypeRelationship, &curTargets, foundAnyErrors);
+    // If there are no targets we can just return the return value of 
+    // _GetTargets. Note that this may be true if there are explicit opinions 
+    // that make the targets empty.
+    if (curTargets.empty()) {
+        return foundTargets;
+    }
+
+    // We'll only return success if this relationship provides a target to the
+    // list or one of its forwarded relationships returns success (which could
+    // be because of a explicit empty opinion)
+    bool success = false;
 
     // Process all targets at this relationship.
     for (SdfPath const &target: curTargets) {
@@ -259,21 +271,27 @@ UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
             if (UsdPrim prim = GetStage()->GetPrimAtPath(target.GetPrimPath())) {
                 if (UsdRelationship rel =
                     prim.GetRelationship(target.GetNameToken())) {
+                    // Only do this rel if we've not yet seen it.
                     if (visited->insert(rel.GetPath()).second) {
-                        // Only do this rel if we've not yet seen it.
-                        success &= rel._GetForwardedTargets(
-                            visited, uniqueTargets, targets,
+                        success |= rel._GetForwardedTargetsImpl(
+                            visited, uniqueTargets, targets, foundAnyErrors,
                             includeForwardingRels);
                     }
                     if (!includeForwardingRels)
                         continue;
-                }
+                } 
             }
-        }            
+        }         
+        // If we're adding a target then this relationship is providing a 
+        // forwarded target opinion so we'll return success at the end.
+        success = true;
         if (uniqueTargets->insert(target).second)
             targets->push_back(target);
     }
 
+    // foundAnyErrors is passed through every level of recursion so we don't 
+    // include it here; it will be accounted for before _GetForwardedTargets
+    // returns.
     return success;
 }
 
@@ -283,8 +301,10 @@ UsdRelationship::_GetForwardedTargets(
     bool includeForwardingRels) const
 {
     SdfPathSet visited, uniqueTargets;
-    return _GetForwardedTargets(&visited, &uniqueTargets, targets,
-                                includeForwardingRels);
+    bool foundAnyErrors = false;
+    return _GetForwardedTargetsImpl(&visited, &uniqueTargets, targets, 
+                                    &foundAnyErrors, includeForwardingRels)
+        && !foundAnyErrors;
 }
 
 bool

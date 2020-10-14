@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class ArAssetInfo;
 class SdfSchemaBase;
+class SdfLayerHints;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -209,6 +210,22 @@ public:
         std::string* str,
         const std::string& comment = std::string()) const;
 
+    /// Returns the set of resolved paths to external asset file dependencies 
+    /// for the given \p layer. These are additional dependencies, specific to 
+    /// the file format, that are needed when generating the layer's contents
+    /// and would not otherwise be discoverable through composition dependencies
+    /// (i.e. sublayers, references, and payloads). 
+    ///
+    /// The default implementation returns an empty set. Derived file formats 
+    /// that depend on external assets to read and generate layer content 
+    /// should implement this function to return the external asset paths.
+    ///
+    /// \sa SdfLayer::GetExternalAssetDependencies
+    /// \sa SdfLayer::Reload
+    SDF_API
+    virtual std::set<std::string> GetExternalAssetDependencies(
+        const SdfLayer& layer) const;
+
     /// Returns the file extension for path or file name \p s, without the
     /// leading dot character.
     SDF_API static std::string GetFileExtension(const std::string& s);
@@ -309,9 +326,20 @@ protected:
 
     /// Set the internal data for \p layer to \p data, possibly transferring
     /// ownership of \p data.
+    /// 
+    /// Existing layer hints are reset to the default hints.
     SDF_API
     static void _SetLayerData(
         SdfLayer* layer, SdfAbstractDataRefPtr& data);
+
+    /// Set the internal data for \p layer to \p data, possibly transferring
+    /// ownership of \p data.
+    ///
+    /// Existing layer hints are replaced with \p hints.
+    SDF_API
+    static void _SetLayerData(
+        SdfLayer* layer, SdfAbstractDataRefPtr& data,
+        SdfLayerHints hints);
 
     /// Get the internal data for \p layer.
     SDF_API

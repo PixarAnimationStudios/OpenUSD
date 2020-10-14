@@ -17,7 +17,7 @@
 
 QWidget {
     /* font */
-    font: %(BASE_FONT_SZ)s "Gotham Rounded";
+    font: %(BASE_FONT_SZ)s "Roboto";
     color: rgb(227, 227, 227);
 
     /* brownish background color */
@@ -304,11 +304,6 @@ QTreeView::branch:selected:open:has-children:has-siblings  {
 QTableView, QTableWidget, QTreeWidget, #primFrame, #attributeFrame{
     background: rgb(55, 55, 55);
     alternate-background-color: rgb(59, 59, 59);
-}
-
-/* Font setting for the table widget */
-QTableWidget{
-    font: 25 %(BASE_FONT_SZ)s "Gotham Rounded";
 }
 
 /* bump to the right to hide the extra line */

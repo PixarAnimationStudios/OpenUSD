@@ -39,6 +39,32 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+/// \struct HgiComputeShaderConstantsDesc
+///
+/// A small, but fast buffer of uniform data for shaders.
+///
+/// <ul>
+/// <li>byteSize:
+///    Size of the constants in bytes. (max 256 bytes)</li>
+/// </ul>
+///
+struct HgiComputeShaderConstantsDesc {
+    HGI_API
+    HgiComputeShaderConstantsDesc();
+
+    uint32_t byteSize;
+};
+
+HGI_API
+bool operator==(
+    const HgiComputeShaderConstantsDesc& lhs,
+    const HgiComputeShaderConstantsDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiComputeShaderConstantsDesc& lhs,
+    const HgiComputeShaderConstantsDesc& rhs);
+
 /// \struct HgiComputePipelineDesc
 ///
 /// Describes the properties needed to create a GPU compute pipeline.
@@ -46,6 +72,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <ul>
 /// <li>shaderProgram:
 ///   Shader function used in this pipeline.</li>
+/// <li>shaderConstantsDesc:
+///   Describes the shader uniforms.</li>
 /// </ul>
 ///
 struct HgiComputePipelineDesc
@@ -55,6 +83,7 @@ struct HgiComputePipelineDesc
 
     std::string debugName;
     HgiShaderProgramHandle shaderProgram;
+    HgiComputeShaderConstantsDesc shaderConstantsDesc;
 };
 
 HGI_API
@@ -82,7 +111,7 @@ class HgiComputePipeline
 public:
     HGI_API
     virtual ~HgiComputePipeline();
-    
+
     /// The descriptor describes the object.
     HGI_API
     HgiComputePipelineDesc const& GetDescriptor() const;

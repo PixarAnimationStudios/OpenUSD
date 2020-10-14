@@ -48,7 +48,7 @@ HgiMetalComputePipeline::HgiMetalComputePipeline(
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
     
-    stateDesc.computeFunction = metalProgram->GetVertexFunction();
+    stateDesc.computeFunction = metalProgram->GetComputeFunction();
     
     NSError *error = NULL;
     _computePipelineState = [hgi->GetPrimaryDevice()

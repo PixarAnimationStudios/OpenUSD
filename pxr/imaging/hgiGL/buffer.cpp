@@ -32,6 +32,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     : HgiBuffer(desc)
     , _bufferId(0)
     , _mapped(nullptr)
+    , _cpuStaging(nullptr)
 {
 
     if (desc.byteSize == 0) {
@@ -41,7 +42,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     glCreateBuffers(1, &_bufferId);
 
     if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_BUFFER, _bufferId, -1, _descriptor.debugName.c_str());
+        HgiGLObjectLabel(GL_BUFFER, _bufferId,  _descriptor.debugName);
     }
 
     if ((_descriptor.usage & HgiBufferUsageVertex)  ||
@@ -92,6 +93,11 @@ HgiGLBuffer::~HgiGLBuffer()
         _bufferId = 0;
     }
 
+    if (_cpuStaging) {
+        free(_cpuStaging);
+        _cpuStaging = nullptr;
+    }
+
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
@@ -107,5 +113,17 @@ HgiGLBuffer::GetRawResource() const
     return (uint64_t) _bufferId;
 }
 
+void*
+HgiGLBuffer::GetCPUStagingAddress()
+{
+    if (!_cpuStaging) {
+        _cpuStaging = malloc(_descriptor.byteSize);
+    }
+
+    // This lets the client code memcpy into the cpu staging buffer directly.
+    // The staging data must be explicitely copied to the GPU buffer
+    // via CopyBufferCpuToGpu cmd by the client.
+    return _cpuStaging;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

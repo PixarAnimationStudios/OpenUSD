@@ -371,17 +371,7 @@ namespace {
 
         if (resultLayer->GetPrimAtPath(stitchPath)) {
             const double startTimeCode = _GetStartTimeCode(clipLayer);
-            const double endTimeCode = _GetEndTimeCode(clipLayer);
-            const double timeSpent = endTimeCode - startTimeCode;
-
-            // if it is our first clip
-            if (currentClipActive.empty()) {
-                currentClipActive.push_back(GfVec2d(startTimeCode, 
-                                                    clipIndex));
-            } else {
-                currentClipActive.push_back(GfVec2d(startTimeCode+timeSpent,
-                                                    clipIndex));
-            }
+            currentClipActive.push_back(GfVec2d(startTimeCode, clipIndex));
             _SetValue(resultLayer, stitchPath, UsdClipsAPIInfoKeys->active, 
                       currentClipActive, clipSet);
         }

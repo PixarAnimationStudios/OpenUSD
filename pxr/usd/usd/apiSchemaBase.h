@@ -81,13 +81,12 @@ class SdfAssetPath;
 /// If there is a need to discover (or record) whether a prim contains or 
 /// subscribes to a given API schema, it would be advantageous to make the API 
 /// schema be "applied". In general, API schemas that add one or more properties 
-/// to a prim should be tagged as applied API schemas. A public Apply() (or 
-/// private _Apply()) method is generated for applied API schemas by 
-/// usdGenSchema. An applied API schema must be applied to a prim via a call to 
-/// the generated Apply() method, for the schema object to evaluate to true when
-/// converted to a bool using the explicit bool conversion operator. Examples of
-/// applied API schemas include  UsdCollectionAPI, UsdGeomModelAPI and 
-/// UsdGeomMotionAPI
+/// to a prim should be tagged as applied API schemas. A public Apply() method 
+/// is generated for applied API schemas by usdGenSchema. An applied API schema 
+/// must be applied to a prim via a call to the generated Apply() method, for 
+/// the schema object to evaluate to true when converted to a bool using the 
+/// explicit bool conversion operator. Examples of applied API schemas include
+/// UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI
 /// 
 /// \anchor UsdAPISchemaBase_SingleVsMultipleApply
 /// \name Single vs. Multiple Apply API Schemas
@@ -223,7 +222,7 @@ protected:
     /// 
     /// A coding error is issued and an invalid schema object is returned if 
     /// <li>if \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance master OR</li>
+    /// within an instance prototype OR</li>
     /// <li>\p apiSchemaName cannot be added to the apiSchemas listOp 
     /// metadata.</li></ul>
     /// 
@@ -257,7 +256,7 @@ protected:
     /// 
     /// A coding error is issued and an invalid schema object is returned if 
     /// <li>the \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance master OR</li>
+    /// within an instance prototype OR</li>
     /// <li>\p instanceName is empty OR</li>
     /// <li><i>apiSchemaName:instanceName</i> cannot be added to the apiSchemas 
     /// listOp metadata.</li></ul>

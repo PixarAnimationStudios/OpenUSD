@@ -21,10 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/glf/baseTextureData.h"
-#include "pxr/imaging/glf/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,78 +29,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 GlfBaseTextureData::~GlfBaseTextureData()
 {
     /* nothing */
-}
-
-/* static */
-GLenum
-GlfBaseTextureData::_GLInternalFormatFromImageData(
-    GLenum format, GLenum type, bool isSRGB)
-{
-    int numElements = GlfGetNumElements(format);
-    switch (type) {
-    case GL_UNSIGNED_SHORT:
-    case GL_UNSIGNED_INT:
-        switch (numElements) {
-        case 1:
-            return GL_R16;
-        case 2:
-            return GL_RG16;
-        case 3:
-            return GL_RGB16;
-        case 4:
-            return GL_RGBA16;
-        default:
-            break;
-        }
-    case GL_HALF_FLOAT:
-        switch (numElements) {
-        case 1:
-            return GL_R16F;
-        case 2:
-            return GL_RG16F;
-        case 3:
-            return GL_RGB16F;
-        case 4:
-            return GL_RGBA16F;
-        default:
-            break;
-        }
-    case GL_FLOAT:
-    case GL_DOUBLE:
-        switch (numElements) {
-        case 1:
-            return GL_R32F;
-        case 2:
-            return GL_RG32F;
-        case 3:
-            return GL_RGB32F;
-        case 4:
-            return GL_RGBA32F;
-        default:
-            break;
-        }
-    case GL_UNSIGNED_BYTE:
-        switch (numElements) {
-        case 1:
-            return GL_R8;
-        case 2:
-            return GL_RG8;
-        case 3:
-            return isSRGB ? GL_SRGB8 : GL_RGB8;
-        case 4:
-            return isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-        default:
-            break;
-        }
-    default:
-        break;
-    }
-
-    TF_CODING_ERROR("Unsupported image data "
-                    "format: %d "
-                    "type: %d "
-                    "isSRGB: %d ", format, type, isSRGB);
-    return GL_RGBA;
 }
 
 

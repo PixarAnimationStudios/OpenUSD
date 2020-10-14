@@ -74,10 +74,13 @@ private:
     int32_t _restoreColorDstFnOp;
     int32_t _restoreAlphaDstFnOp;
     bool _restoreAlphaToCoverage;
+    bool _restoreSampleAlphaToOne;
     float _lineWidth;
     bool _cullFace;
     int32_t _cullMode;
+    int32_t _frontFace;
     bool _rasterizerDiscard;
+    bool _restoreFramebufferSRGB;
 };
 
 

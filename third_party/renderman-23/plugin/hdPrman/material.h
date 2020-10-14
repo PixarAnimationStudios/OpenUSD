@@ -54,9 +54,6 @@ public:
     /// Typically this would be all dirty bits.
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Causes the shader to be reloaded.
-    virtual void Reload() override;
-
     riley::MaterialId GetMaterialId() const { return _materialId; }
     riley::DisplacementId GetDisplacementId() const { return _displacementId; }
 

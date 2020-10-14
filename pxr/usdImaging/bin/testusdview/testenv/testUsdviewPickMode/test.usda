@@ -57,6 +57,7 @@ def Xform "Foo" (
 
     def Xform "Cube2" (
         references = </Foo/Cube>
+        instanceable = true
     )
     {
         double3 xformOp:translate = (2.5, 0, 0)

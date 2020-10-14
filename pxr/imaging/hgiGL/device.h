@@ -50,10 +50,16 @@ public:
     ~HgiGLDevice();
 
     /// Get a framebuffer that matches the descriptor.
-    /// Do not hold onto the framebuffer Id. Instead re0acquire it every frame.
+    /// Do not hold onto the framebuffer Id. Instead re-acquire it every frame.
     /// Framebuffer are internally managed in a framebuffer cache.
+    ///
+    /// When the cmds descriptor has resolved textures, two framebuffers are
+    /// created for the MSAA and for the resolved textures. The bool flag can
+    /// be used to access the respective ones.
     HGIGL_API
-    uint32_t AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc);
+    uint32_t AcquireFramebuffer(
+        HgiGraphicsCmdsDesc const& desc,
+        bool resolved = false);
 
     /// Execute the provided functions / ops. This will emit the GL calls.
     HGIGL_API

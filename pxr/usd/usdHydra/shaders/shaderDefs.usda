@@ -180,8 +180,79 @@ def Shader "HwFieldReader" (
             token defaultInput = "1"
         }
     )
+}
 
-    float3 outputs:result
+def Shader "HwFieldReader_1" (
+    sdrMetadata = {
+        token role = "field"
+    }
+    doc = """Samples from a usdVol FieldAsset."""
+)
+{
+    uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
+    uniform token info:implementationSource = "sourceAsset"
+    token inputs:fieldname = "" (
+        connectability = "interfaceOnly"
+        doc = """Name of the field to be fetched from volume
+                 (e.g., FOO if the relationship from the volume to field is called field::FOO)."""
+        sdrMetadata = {
+            token fieldProperty = "1"
+        }
+    )
+}
+
+def Shader "HwFieldReader_float" ( 
+    inherits = </HwFieldReader_1>
+)
+{
+    uniform token info:id = "HwFieldReader_float"
+    float inputs:fallback = 0 (
+        doc = "Fallback value to be returned when fetch failed."
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+    float outputs:result (
+        sdrMetadata = {
+            token swizzle = "x"
+        }
+    )
+}
+
+def Shader "HwFieldReader_float2" (
+    inherits = </HwFieldReader_1>
+)
+{
+    uniform token info:id = "HwFieldReader_float2"
+    float2 inputs:fallback = (0, 0) (
+        doc = "Fallback value to be returned when fetch failed."
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+    float2 outputs:result (
+        sdrMetadata = {
+            token swizzle = "xy"
+        }
+    )
+}
+
+def Shader "HwFieldReader_float3" (
+    inherits = </HwFieldReader_1>
+)
+{
+    uniform token info:id = "HwFieldReader_float3"
+    float3 inputs:fallback = (0, 0, 0) (
+        doc = "Fallback value to be returned when fetch failed."
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+    float3 outputs:result (
+        sdrMetadata = {
+            token swizzle = "xyz"
+        }
+    )
 }
 
 def Shader "HwPrimvar_1" (

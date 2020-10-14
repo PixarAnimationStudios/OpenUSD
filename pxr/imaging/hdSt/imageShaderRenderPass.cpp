@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/imageShaderRenderPass.h"
@@ -41,7 +40,6 @@
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
-#include "pxr/imaging/glf/diagnostic.h"
 
 
 // XXX We do not want to include specific HgiXX backends, but we need to do
@@ -56,7 +54,6 @@ _ExecuteDraw(
     HdStRenderPassStateSharedPtr const& stRenderPassState,
     HdStResourceRegistrySharedPtr const& resourceRegistry)
 {
-    drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
     drawBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
@@ -116,7 +113,6 @@ HdSt_ImageShaderRenderPass::_Prepare(TfTokenVector const &renderTags)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::dynamic_pointer_cast<HdStResourceRegistry>(
@@ -156,6 +152,8 @@ HdSt_ImageShaderRenderPass::_Execute(
         std::dynamic_pointer_cast<HdStResourceRegistry>(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
+
+    _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =

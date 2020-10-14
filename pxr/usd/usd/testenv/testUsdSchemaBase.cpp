@@ -132,8 +132,7 @@ TestPrimQueries()
 
     printf("--------Applying UsdCollectionAPI -------\n");
 
-    UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
-            TfToken("testColl"));
+    UsdCollectionAPI coll = UsdCollectionAPI::Apply(prim, TfToken("testColl"));
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>());
 
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));

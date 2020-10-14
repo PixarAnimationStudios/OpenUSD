@@ -183,11 +183,13 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // Take a copy of the simple light into our temporary array and
             // update it with viewer-dependant values.
             VtValue vtLightParams = light->Get(HdLightTokens->params);
-                _glfSimpleLights.push_back(
-                    vtLightParams.GetWithDefault<GlfSimpleLight>(GlfSimpleLight()));
+            GlfSimpleLight glfl = 
+                vtLightParams.GetWithDefault<GlfSimpleLight>(GlfSimpleLight());
 
-            // Get a reference to the light, so we can patch it.
-            GlfSimpleLight &glfl = _glfSimpleLights.back();
+            // Skip lights with zero intensity
+            if (!glfl.HasIntensity()) {
+                continue;
+            }
 
             // XXX: Pass id of light to Glf simple light, so that
             // glim can get access back to the light prim.
@@ -253,6 +255,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                         GfVec2i(lightShadowParams.resolution));
                 }
             }
+            _glfSimpleLights.push_back(std::move(glfl));
         }
     }
 

@@ -34,19 +34,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 using std::make_pair;
 using std::pair;
 using std::vector;
 
 TF_DEFINE_ENV_SETTING(
-    USD_ASSIGN_MASTERS_DETERMINISTICALLY, false,
-    "Set to true to cause instances to be assigned to masters in a "
+    USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY, false,
+    "Set to true to cause instances to be assigned to prototypes in a "
     "deterministic way, ensuring consistency across runs.  This incurs "
     "some additional overhead.");
 
 Usd_InstanceCache::Usd_InstanceCache()
-    : _lastMasterIndex(0)
+    : _lastPrototypeIndex(0)
 {
 }
 
@@ -66,13 +65,13 @@ Usd_InstanceCache::RegisterInstancePrimIndex(
     // the mutex to minimize the time we hold the lock.
     const Usd_InstanceKey key(index, mask, loadRules);
 
-    // Check whether a master for this prim index already exists
+    // Check whether a prototype for this prim index already exists
     // or if this prim index is already being used as the source for
-    // a master.
-    _InstanceKeyToMasterMap::const_iterator keyToMasterIt = 
-        _instanceKeyToMasterMap.find(key);
-    const bool masterAlreadyExists = 
-        (keyToMasterIt != _instanceKeyToMasterMap.end());
+    // a prototype.
+    _InstanceKeyToPrototypeMap::const_iterator keyToPrototypeIt = 
+        _instanceKeyToPrototypeMap.find(key);
+    const bool prototypeAlreadyExists = 
+        (keyToPrototypeIt != _instanceKeyToPrototypeMap.end());
 
     {
         tbb::spin_mutex::scoped_lock lock(_mutex);
@@ -80,23 +79,23 @@ Usd_InstanceCache::RegisterInstancePrimIndex(
         _PrimIndexPaths& pendingIndexes = _pendingAddedPrimIndexes[key];
         pendingIndexes.push_back(index.GetPath());
 
-        // A new master must be created for this instance if one doesn't
+        // A new prototype must be created for this instance if one doesn't
         // already exist and this instance is the first one registered for
         // this key.
-        const bool needsNewMaster = 
-            (!masterAlreadyExists && pendingIndexes.size() == 1);
-        if (needsNewMaster) {
+        const bool needsNewPrototype = 
+            (!prototypeAlreadyExists && pendingIndexes.size() == 1);
+        if (needsNewPrototype) {
             return true;
         }
     }
 
-    if (masterAlreadyExists) {
-        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIndexIt = 
-            _masterToSourcePrimIndexMap.find(keyToMasterIt->second);
-        const bool existingMasterUsesIndexAsSource = 
-            (masterToSourceIndexIt != _masterToSourcePrimIndexMap.end() &&
-             masterToSourceIndexIt->second == index.GetPath());
-        return existingMasterUsesIndexAsSource;
+    if (prototypeAlreadyExists) {
+        _PrototypeToSourcePrimIndexMap::const_iterator prototypeToSourceIndexIt=
+            _prototypeToSourcePrimIndexMap.find(keyToPrototypeIt->second);
+        const bool existingPrototypeUsesIndexAsSource = 
+            (prototypeToSourceIndexIt != _prototypeToSourcePrimIndexMap.end() &&
+             prototypeToSourceIndexIt->second == index.GetPath());
+        return existingPrototypeUsesIndexAsSource;
     }
 
     return false;
@@ -108,19 +107,19 @@ Usd_InstanceCache::UnregisterInstancePrimIndexesUnder(
 {
     TfAutoMallocTag tag("InstanceCache::UnregisterIndex");
 
-    for (_PrimIndexToMasterMap::const_iterator 
-             it = _primIndexToMasterMap.lower_bound(primIndexPath),
-             end = _primIndexToMasterMap.end();
+    for (_PrimIndexToPrototypeMap::const_iterator 
+             it = _primIndexToPrototypeMap.lower_bound(primIndexPath),
+             end = _primIndexToPrototypeMap.end();
          it != end && it->first.HasPrefix(primIndexPath); ++it) {
 
-        const SdfPath& masterPath = it->second;
-        _MasterToInstanceKeyMap::const_iterator masterToKeyIt = 
-            _masterToInstanceKeyMap.find(masterPath);
-        if (!TF_VERIFY(masterToKeyIt != _masterToInstanceKeyMap.end())) {
+        const SdfPath& prototypePath = it->second;
+        _PrototypeToInstanceKeyMap::const_iterator prototypeToKeyIt = 
+            _prototypeToInstanceKeyMap.find(prototypePath);
+        if (!TF_VERIFY(prototypeToKeyIt != _prototypeToInstanceKeyMap.end())) {
             continue;
         }
 
-        const Usd_InstanceKey& key = masterToKeyIt->second;
+        const Usd_InstanceKey& key = prototypeToKeyIt->second;
         _PrimIndexPaths& pendingIndexes = _pendingRemovedPrimIndexes[key];
         pendingIndexes.push_back(it->first);
     }
@@ -135,7 +134,7 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
 
     // Remove unregistered prim indexes from the cache.
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
-        masterToOldSourceIndexPath;
+        prototypeToOldSourceIndexPath;
     for (_InstanceKeyToPrimIndexesMap::value_type &v:
              _pendingRemovedPrimIndexes) {
         const Usd_InstanceKey& key = v.first;
@@ -158,15 +157,15 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         }
 
         _RemoveInstances(key, primIndexes, changes,
-                         &masterToOldSourceIndexPath);
+                         &prototypeToOldSourceIndexPath);
     }
 
     // Add newly-registered prim indexes to the cache.
-    if (TfGetEnvSetting(USD_ASSIGN_MASTERS_DETERMINISTICALLY)) {
+    if (TfGetEnvSetting(USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY)) {
         // The order in which we process newly-registered prim indexes
-        // determines the name of the master prims assigned to instances.
+        // determines the name of the prototype prims assigned to instances.
         // We need to iterate over the hash map in a fixed ordering to
-        // ensure we have a consistent assignment of instances to masters.
+        // ensure we have a consistent assignment of instances to prototypes.
         typedef std::map<SdfPath, Usd_InstanceKey> _PrimIndexPathToKey;
         std::map<SdfPath, Usd_InstanceKey> keysToProcess;
         for (_InstanceKeyToPrimIndexesMap::value_type& v:
@@ -182,22 +181,22 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         for (const _PrimIndexPathToKey::value_type& v: keysToProcess) {
             const Usd_InstanceKey& key = v.second;
             _PrimIndexPaths& primIndexes = _pendingAddedPrimIndexes[key];
-            _CreateOrUpdateMasterForInstances(key, &primIndexes, changes,
-                                              masterToOldSourceIndexPath);
+            _CreateOrUpdatePrototypeForInstances(
+                key, &primIndexes, changes, prototypeToOldSourceIndexPath);
         }
     }
     else {
         for(_InstanceKeyToPrimIndexesMap::value_type& v:
                 _pendingAddedPrimIndexes) {
-            _CreateOrUpdateMasterForInstances(v.first, &v.second, changes,
-                                              masterToOldSourceIndexPath);
+            _CreateOrUpdatePrototypeForInstances(
+                v.first, &v.second, changes, prototypeToOldSourceIndexPath);
         }
     }
 
     // Now that we've processed all additions and removals, we can find and
-    // drop any masters that have no instances associated with them.
+    // drop any prototypes that have no instances associated with them.
     for (const auto& v : _pendingRemovedPrimIndexes) {
-        _RemoveMasterIfNoInstances(v.first, changes);
+        _RemovePrototypeIfNoInstances(v.first, changes);
     }
 
     _pendingAddedPrimIndexes.clear();
@@ -205,103 +204,104 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
 }
 
 void
-Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
+Usd_InstanceCache::_CreateOrUpdatePrototypeForInstances(
     const Usd_InstanceKey& key,
     _PrimIndexPaths* primIndexPaths,
     Usd_InstanceChanges* changes,
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> const &
-    masterToOldSourceIndexPath)
+    prototypeToOldSourceIndexPath)
 {
-    pair<_InstanceKeyToMasterMap::iterator, bool> result = 
-        _instanceKeyToMasterMap.insert(make_pair(key, SdfPath()));
+    pair<_InstanceKeyToPrototypeMap::iterator, bool> result = 
+        _instanceKeyToPrototypeMap.insert(make_pair(key, SdfPath()));
     
-    const bool createdNewMaster = result.second;
-    if (createdNewMaster) {
-        // If this is a new master prim, the first instanceable prim
+    const bool createdNewPrototype = result.second;
+    if (createdNewPrototype) {
+        // If this is a new prototype prim, the first instanceable prim
         // index that was registered must be selected as the source
         // index because the consumer was told that index required
-        // a new master via RegisterInstancePrimIndex.
+        // a new prototype via RegisterInstancePrimIndex.
         //
-        // Note that this means the source prim index for a master may
+        // Note that this means the source prim index for a prototype may
         // change from run to run. This should be fine, because all
         // prim indexes with the same instancing key should have the 
         // same composed values.
-        const SdfPath newMasterPath = _GetNextMasterPath(key);
-        result.first->second = newMasterPath;
-        _masterToInstanceKeyMap[newMasterPath] = key;
+        const SdfPath newPrototypePath = _GetNextPrototypePath(key);
+        result.first->second = newPrototypePath;
+        _prototypeToInstanceKeyMap[newPrototypePath] = key;
 
         const SdfPath sourcePrimIndexPath = primIndexPaths->front();
-        _sourcePrimIndexToMasterMap[sourcePrimIndexPath] = newMasterPath;
-        _masterToSourcePrimIndexMap[newMasterPath] = sourcePrimIndexPath;
+        _sourcePrimIndexToPrototypeMap[sourcePrimIndexPath] = newPrototypePath;
+        _prototypeToSourcePrimIndexMap[newPrototypePath] = sourcePrimIndexPath;
 
-        changes->newMasterPrims.push_back(newMasterPath);
-        changes->newMasterPrimIndexes.push_back(sourcePrimIndexPath);
+        changes->newPrototypePrims.push_back(newPrototypePath);
+        changes->newPrototypePrimIndexes.push_back(sourcePrimIndexPath);
 
         TF_DEBUG(USD_INSTANCING).Msg(
-            "Instancing: Creating master <%s> with source prim index <%s> "
+            "Instancing: Creating prototype <%s> with source prim index <%s> "
             "for instancing key: %s\n", 
-            newMasterPath.GetString().c_str(),
+            newPrototypePath.GetString().c_str(),
             sourcePrimIndexPath.GetString().c_str(),
             TfStringify(key).c_str());
     }
     else {
-        // Otherwise, if a master prim for this instance already exists
+        // Otherwise, if a prototype prim for this instance already exists
         // but no source prim index has been assigned, do so here. This
         // is exactly what happens in _RemoveInstances when a new source
-        // is assigned to a master; however, this handles the case where
-        // the last instance of a master has been removed and a new 
-        // instance of the master has been added in the same round of changes.
-        const SdfPath& masterPath = result.first->second;
-        const bool assignNewPrimIndexForMaster = 
-            (_masterToSourcePrimIndexMap.count(masterPath) == 0);
-        if (assignNewPrimIndexForMaster) {
+        // is assigned to a prototype; however, this handles the case where
+        // the last instance of a prototype has been removed and a new instance
+        // of the prototype has been added in the same round of changes.
+        const SdfPath& prototypePath = result.first->second;
+        const bool assignNewPrimIndexForPrototype = 
+            (_prototypeToSourcePrimIndexMap.count(prototypePath) == 0);
+        if (assignNewPrimIndexForPrototype) {
             const SdfPath sourcePrimIndexPath = primIndexPaths->front();
-            _sourcePrimIndexToMasterMap[sourcePrimIndexPath] = masterPath;
-            _masterToSourcePrimIndexMap[masterPath] = sourcePrimIndexPath;
+            _sourcePrimIndexToPrototypeMap[sourcePrimIndexPath] = prototypePath;
+            _prototypeToSourcePrimIndexMap[prototypePath] = sourcePrimIndexPath;
 
-            changes->changedMasterPrims.push_back(masterPath);
-            changes->changedMasterPrimIndexes.push_back(sourcePrimIndexPath);
+            changes->changedPrototypePrims.push_back(prototypePath);
+            changes->changedPrototypePrimIndexes.push_back(sourcePrimIndexPath);
             SdfPath const &oldSourcePath =
-                masterToOldSourceIndexPath.find(masterPath)->second;
+                prototypeToOldSourceIndexPath.find(prototypePath)->second;
 
             TF_DEBUG(USD_INSTANCING).Msg(
                 "Instancing: Changing source <%s> -> <%s> for <%s>\n",
                 oldSourcePath.GetText(), sourcePrimIndexPath.GetText(),
-                masterPath.GetText());
+                prototypePath.GetText());
         }
     }
 
-    // Assign the newly-registered prim indexes to their master.
-    const SdfPath& masterPath = result.first->second;
+    // Assign the newly-registered prim indexes to their prototype.
+    const SdfPath& prototypePath = result.first->second;
     for (const SdfPath& primIndexPath: *primIndexPaths) {
         TF_DEBUG(USD_INSTANCING).Msg(
-            "Instancing: Added instance prim index <%s> for master "
-            "<%s>\n", primIndexPath.GetText(), masterPath.GetText());
+            "Instancing: Added instance prim index <%s> for prototype "
+            "<%s>\n", primIndexPath.GetText(), prototypePath.GetText());
 
-        _primIndexToMasterMap[primIndexPath] = masterPath;
+        _primIndexToPrototypeMap[primIndexPath] = prototypePath;
     }
 
-    _PrimIndexPaths& primIndexesForMaster = _masterToPrimIndexesMap[masterPath];
+    _PrimIndexPaths& primIndexesForPrototype =
+        _prototypeToPrimIndexesMap[prototypePath];
     std::sort(primIndexPaths->begin(), primIndexPaths->end());
 
-    if (primIndexesForMaster.empty()) {
-        primIndexesForMaster.swap(*primIndexPaths);
+    if (primIndexesForPrototype.empty()) {
+        primIndexesForPrototype.swap(*primIndexPaths);
     }
     else {
-        const size_t oldNumPrimIndexes = primIndexesForMaster.size();
-        primIndexesForMaster.insert(
-            primIndexesForMaster.end(),
+        const size_t oldNumPrimIndexes = primIndexesForPrototype.size();
+        primIndexesForPrototype.insert(
+            primIndexesForPrototype.end(),
             primIndexPaths->begin(), primIndexPaths->end());
 
         _PrimIndexPaths::iterator newlyAddedIt = 
-            primIndexesForMaster.begin() + oldNumPrimIndexes;
-        std::inplace_merge(primIndexesForMaster.begin(), newlyAddedIt,
-                           primIndexesForMaster.end());
+            primIndexesForPrototype.begin() + oldNumPrimIndexes;
+        std::inplace_merge(primIndexesForPrototype.begin(), newlyAddedIt,
+                           primIndexesForPrototype.end());
 
-        primIndexesForMaster.erase(
-            std::unique(primIndexesForMaster.begin(), 
-                        primIndexesForMaster.end()),
-            primIndexesForMaster.end());
+        primIndexesForPrototype.erase(
+            std::unique(primIndexesForPrototype.begin(), 
+                        primIndexesForPrototype.end()),
+            primIndexesForPrototype.end());
     }
 }
 
@@ -311,125 +311,131 @@ Usd_InstanceCache::_RemoveInstances(
     const _PrimIndexPaths& primIndexPaths,
     Usd_InstanceChanges* changes,
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> *
-    masterToOldSourceIndexPath)
+    prototypeToOldSourceIndexPath)
 {
     if (primIndexPaths.empty()) {
         // if all unregistered primIndexes are also in the registered set, then
         // vector of primIndexPaths to remove can be empty.
         return;
     }
-    _InstanceKeyToMasterMap::iterator keyToMasterIt = 
-        _instanceKeyToMasterMap.find(instanceKey);
-    if (keyToMasterIt == _instanceKeyToMasterMap.end()) {
+    _InstanceKeyToPrototypeMap::iterator keyToPrototypeIt = 
+        _instanceKeyToPrototypeMap.find(instanceKey);
+    if (keyToPrototypeIt == _instanceKeyToPrototypeMap.end()) {
         return;
     }
 
-    const SdfPath& masterPath = keyToMasterIt->second;
-    // This will be set to the prim index path that the master was formerly
+    const SdfPath& prototypePath = keyToPrototypeIt->second;
+    // This will be set to the prim index path that the prototype was formerly
     // using if we wind up removing it.  In this case, we'll need to select a
-    // new prim index path for the master.
-    SdfPath removedMasterPrimIndexPath;
+    // new prim index path for the prototype.
+    SdfPath removedPrototypePrimIndexPath;
 
-    // Remove the prim indexes from the prim index <-> master bidirectional
+    // Remove the prim indexes from the prim index <-> prototype bidirectional
     // mapping.
-    _PrimIndexPaths& primIndexesForMaster = _masterToPrimIndexesMap[masterPath];
+    _PrimIndexPaths& primIndexesForPrototype =
+        _prototypeToPrimIndexesMap[prototypePath];
     for (const SdfPath& path: primIndexPaths) {
         _PrimIndexPaths::iterator it = std::find(
-            primIndexesForMaster.begin(), primIndexesForMaster.end(), path);
-        if (it != primIndexesForMaster.end()) {
+            primIndexesForPrototype.begin(), primIndexesForPrototype.end(), 
+            path);
+        if (it != primIndexesForPrototype.end()) {
             TF_DEBUG(USD_INSTANCING).Msg(
-                "Instancing: Removed instance prim index <%s> for master "
-                "<%s>\n", path.GetText(), masterPath.GetText());
+                "Instancing: Removed instance prim index <%s> for prototype "
+                "<%s>\n", path.GetText(), prototypePath.GetText());
 
-            primIndexesForMaster.erase(it);
-            _primIndexToMasterMap.erase(path);
+            primIndexesForPrototype.erase(it);
+            _primIndexToPrototypeMap.erase(path);
         }
 
-        // This path is no longer instanced under this master, so record the old
-        // source index path and the prim's index path. Note that we may have 
-        // removed the entry from _masterToSourcePrimIndexMap in an earlier
-        // iteration of this loop; if we have, then we will have saved the
-        // old path away in removedMasterPrimIndexPath.
+        // This path is no longer instanced under this prototype, so record the
+        // old source index path and the prim's index path. Note that we may
+        // have removed the entry from _prototypeToSourcePrimIndexMap in an
+        // earlier iteration of this loop; if we have, then we will have saved
+        // the old path away in removedPrototypePrimIndexPath.
         const SdfPath* oldSourcePrimIndexPath = 
-            TfMapLookupPtr(_masterToSourcePrimIndexMap, masterPath);
+            TfMapLookupPtr(_prototypeToSourcePrimIndexMap, prototypePath);
         if (!oldSourcePrimIndexPath) {
-            oldSourcePrimIndexPath = &removedMasterPrimIndexPath;
+            oldSourcePrimIndexPath = &removedPrototypePrimIndexPath;
         }
 
-        if (_sourcePrimIndexToMasterMap.erase(path)) {
-            TF_VERIFY(_masterToSourcePrimIndexMap.erase(masterPath));
-            removedMasterPrimIndexPath = path;
+        if (_sourcePrimIndexToPrototypeMap.erase(path)) {
+            TF_VERIFY(_prototypeToSourcePrimIndexMap.erase(prototypePath));
+            removedPrototypePrimIndexPath = path;
         }
     }
 
-    // If the source prim index for this master is no longer available
+    // If the source prim index for this prototype is no longer available
     // but we have other instance prim indexes we can use instead, select
     // one of those to serve as the new source. 
     //
-    // Otherwise, do nothing; we defer removal of this master until
-    // the end of instance change processing (see _RemoveMasterIfNoInstances)
-    // in case a new instance for this master was registered.
-    if (!removedMasterPrimIndexPath.IsEmpty()) {
-        if (!primIndexesForMaster.empty()) {
-            const SdfPath& newSourceIndexPath = primIndexesForMaster.front();
+    // Otherwise, do nothing; we defer removal of this prototype until the end
+    // of instance change processing (see _RemovePrototypeIfNoInstances)
+    // in case a new instance for this prototype was registered.
+    if (!removedPrototypePrimIndexPath.IsEmpty()) {
+        if (!primIndexesForPrototype.empty()) {
+            const SdfPath& newSourceIndexPath = primIndexesForPrototype.front();
             
             TF_DEBUG(USD_INSTANCING).Msg(
                 "Instancing: Changing source <%s> -> <%s> for <%s>\n",
-                removedMasterPrimIndexPath.GetText(),
-                newSourceIndexPath.GetText(), masterPath.GetText());
+                removedPrototypePrimIndexPath.GetText(),
+                newSourceIndexPath.GetText(), prototypePath.GetText());
             
-            _sourcePrimIndexToMasterMap[newSourceIndexPath] = masterPath;
-            _masterToSourcePrimIndexMap[masterPath] = newSourceIndexPath;
+            _sourcePrimIndexToPrototypeMap[newSourceIndexPath] = prototypePath;
+            _prototypeToSourcePrimIndexMap[prototypePath] = newSourceIndexPath;
             
-            changes->changedMasterPrims.push_back(masterPath);
-            changes->changedMasterPrimIndexes.push_back(newSourceIndexPath);
+            changes->changedPrototypePrims.push_back(prototypePath);
+            changes->changedPrototypePrimIndexes.push_back(newSourceIndexPath);
             
         } else {
-            // Fill a data structure with the removedMasterPrimIndexPath for the
-            // master so that we can fill in the right "before" path in
-            // changedMasterPrimIndexes in _CreateOrUpdateMasterForInstances().
-            (*masterToOldSourceIndexPath)[masterPath] =
-                removedMasterPrimIndexPath;
+            // Fill a data structure with the removedPrototypePrimIndexPath
+            // for the prototype so that we can fill in the right "before" path
+            // in changedPrototypePrimIndexes in
+            // _CreateOrUpdatePrototypeForInstances().
+            (*prototypeToOldSourceIndexPath)[prototypePath] =
+                removedPrototypePrimIndexPath;
         }
     }
 }
 
 void 
-Usd_InstanceCache::_RemoveMasterIfNoInstances(
+Usd_InstanceCache::_RemovePrototypeIfNoInstances(
     const Usd_InstanceKey& instanceKey,
     Usd_InstanceChanges* changes)
 {
-    auto keyToMasterIt = _instanceKeyToMasterMap.find(instanceKey);
-    if (keyToMasterIt == _instanceKeyToMasterMap.end()) {
+    auto keyToPrototypeIt = _instanceKeyToPrototypeMap.find(instanceKey);
+    if (keyToPrototypeIt == _instanceKeyToPrototypeMap.end()) {
         return;
     }
 
-    const SdfPath& masterPath = keyToMasterIt->second;
-    auto masterToPrimIndexesIt = _masterToPrimIndexesMap.find(masterPath);
-    if (!TF_VERIFY(masterToPrimIndexesIt != _masterToPrimIndexesMap.end())) {
+    const SdfPath& prototypePath = keyToPrototypeIt->second;
+    auto prototypeToPrimIndexesIt =
+        _prototypeToPrimIndexesMap.find(prototypePath);
+    if (!TF_VERIFY(
+            prototypeToPrimIndexesIt != _prototypeToPrimIndexesMap.end())) {
         return;
     }
 
-    const _PrimIndexPaths& primIndexesForMaster = masterToPrimIndexesIt->second;
-    if (primIndexesForMaster.empty()) {
-        // This master has no more instances associated with it, so it can
+    const _PrimIndexPaths& primIndexesForPrototype =
+        prototypeToPrimIndexesIt->second;
+    if (primIndexesForPrototype.empty()) {
+        // This prototype has no more instances associated with it, so it can
         // be released.
         TF_DEBUG(USD_INSTANCING).Msg(
-            "Instancing: Removing master <%s>\n", masterPath.GetText());
+            "Instancing: Removing prototype <%s>\n", prototypePath.GetText());
 
-        // Do this first, since masterPath will be a stale reference after
+        // Do this first, since prototypePath will be a stale reference after
         // removing the map entries.
-        changes->deadMasterPrims.push_back(masterPath);
+        changes->deadPrototypePrims.push_back(prototypePath);
 
-        _masterToInstanceKeyMap.erase(keyToMasterIt->second);
-        _instanceKeyToMasterMap.erase(keyToMasterIt);
+        _prototypeToInstanceKeyMap.erase(keyToPrototypeIt->second);
+        _instanceKeyToPrototypeMap.erase(keyToPrototypeIt);
 
-        _masterToPrimIndexesMap.erase(masterToPrimIndexesIt);
+        _prototypeToPrimIndexesMap.erase(prototypeToPrimIndexesIt);
     }
 }
 
 bool 
-Usd_InstanceCache::IsPathInMaster(const SdfPath& path)
+Usd_InstanceCache::IsPathInPrototype(const SdfPath& path)
 {
     if (path.IsEmpty() || path == SdfPath::AbsoluteRootPath()) {
         return false;
@@ -437,7 +443,7 @@ Usd_InstanceCache::IsPathInMaster(const SdfPath& path)
     if (!path.IsAbsolutePath()) {
         // We require an absolute path because there is no way for us
         // to walk to the root prim level from a relative path.
-        TF_CODING_ERROR("IsPathInMaster() requires an absolute path "
+        TF_CODING_ERROR("IsPathInPrototype() requires an absolute path "
                         "but was given <%s>", path.GetText());
         return false;
     }
@@ -447,59 +453,59 @@ Usd_InstanceCache::IsPathInMaster(const SdfPath& path)
         rootPath = rootPath.GetParentPath();
     }
 
-    return TfStringStartsWith(rootPath.GetName(), "__Master_");
+    return TfStringStartsWith(rootPath.GetName(), "__Prototype_");
 }
 
 bool 
-Usd_InstanceCache::IsMasterPath(const SdfPath& path) 
+Usd_InstanceCache::IsPrototypePath(const SdfPath& path) 
 {
     return path.IsRootPrimPath() && 
-        TfStringStartsWith(path.GetName(), "__Master_");
+        TfStringStartsWith(path.GetName(), "__Prototype_");
 }
 
 vector<SdfPath>
-Usd_InstanceCache::GetInstancePrimIndexesForMaster(
-    const SdfPath& masterPath) const
+Usd_InstanceCache::GetInstancePrimIndexesForPrototype(
+    const SdfPath& prototypePath) const
 {
-    _MasterToPrimIndexesMap::const_iterator it = 
-        _masterToPrimIndexesMap.find(masterPath);
+    _PrototypeToPrimIndexesMap::const_iterator it = 
+        _prototypeToPrimIndexesMap.find(prototypePath);
 
-    return (it == _masterToPrimIndexesMap.end()) ? 
+    return (it == _prototypeToPrimIndexesMap.end()) ? 
         vector<SdfPath>() : it->second;
 }
 
 SdfPath 
-Usd_InstanceCache::_GetNextMasterPath(const Usd_InstanceKey& key)
+Usd_InstanceCache::_GetNextPrototypePath(const Usd_InstanceKey& key)
 {
     return SdfPath::AbsoluteRootPath().AppendChild(
-        TfToken(TfStringPrintf("__Master_%zu", ++_lastMasterIndex)));
+        TfToken(TfStringPrintf("__Prototype_%zu", ++_lastPrototypeIndex)));
 }
 
 vector<SdfPath> 
-Usd_InstanceCache::GetAllMasters() const
+Usd_InstanceCache::GetAllPrototypes() const
 {
     vector<SdfPath> paths;
-    paths.reserve(_instanceKeyToMasterMap.size());
-    for (const _InstanceKeyToMasterMap::value_type& v:
-             _instanceKeyToMasterMap) {
+    paths.reserve(_instanceKeyToPrototypeMap.size());
+    for (const _InstanceKeyToPrototypeMap::value_type& v:
+             _instanceKeyToPrototypeMap) {
         paths.push_back(v.second);
     }
     return paths;
 }
 
 size_t 
-Usd_InstanceCache::GetNumMasters() const
+Usd_InstanceCache::GetNumPrototypes() const
 {
-    return _masterToInstanceKeyMap.size();
+    return _prototypeToInstanceKeyMap.size();
 }
 
 SdfPath 
-Usd_InstanceCache::GetMasterUsingPrimIndexPath(
+Usd_InstanceCache::GetPrototypeUsingPrimIndexPath(
     const SdfPath& primIndexPath) const
 {
-    _SourcePrimIndexToMasterMap::const_iterator it = 
-        _sourcePrimIndexToMasterMap.find(primIndexPath);
-    return (it == _sourcePrimIndexToMasterMap.end() ? SdfPath() : it->second);
+    _SourcePrimIndexToPrototypeMap::const_iterator it = 
+        _sourcePrimIndexToPrototypeMap.find(primIndexPath);
+    return it == _sourcePrimIndexToPrototypeMap.end() ? SdfPath() : it->second;
 }
 
 template <class PathMap>
@@ -522,104 +528,106 @@ _FindEntryForAncestor(const PathMap& map, const SdfPath& path)
 }
 
 bool 
-Usd_InstanceCache::MasterUsesPrimIndexPath(const SdfPath& primIndexPath) const
+Usd_InstanceCache::PrototypeUsesPrimIndexPath(
+    const SdfPath& primIndexPath) const
 {
-    return _MasterUsesPrimIndexPath(primIndexPath);
+    return _PrototypeUsesPrimIndexPath(primIndexPath);
 }
 
 vector<SdfPath> 
-Usd_InstanceCache::GetPrimsInMastersUsingPrimIndexPath(
+Usd_InstanceCache::GetPrimsInPrototypesUsingPrimIndexPath(
     const SdfPath& primIndexPath) const
 {
-    vector<SdfPath> masterPaths;
-    _MasterUsesPrimIndexPath(primIndexPath, &masterPaths);
-    return masterPaths;
+    vector<SdfPath> prototypePaths;
+    _PrototypeUsesPrimIndexPath(primIndexPath, &prototypePaths);
+    return prototypePaths;
 }
 
 vector<std::pair<SdfPath, SdfPath>> 
-Usd_InstanceCache::GetMastersUsingPrimIndexPathOrDescendents(
+Usd_InstanceCache::GetPrototypesUsingPrimIndexPathOrDescendents(
         const SdfPath& primIndexPath) const
 {
-    vector<std::pair<SdfPath, SdfPath>> masterSourceIndexPairs;
-    for (_SourcePrimIndexToMasterMap::const_iterator 
-             it = _sourcePrimIndexToMasterMap.lower_bound(primIndexPath),
-             end = _sourcePrimIndexToMasterMap.end();
+    vector<std::pair<SdfPath, SdfPath>> prototypeSourceIndexPairs;
+    for (_SourcePrimIndexToPrototypeMap::const_iterator 
+             it = _sourcePrimIndexToPrototypeMap.lower_bound(primIndexPath),
+             end = _sourcePrimIndexToPrototypeMap.end();
          it != end && it->first.HasPrefix(primIndexPath); ++it) {
 
-        const SdfPath& masterPath = it->second;
-        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt = 
-            _masterToSourcePrimIndexMap.find(masterPath);
+        const SdfPath& prototypePath = it->second;
+        _PrototypeToSourcePrimIndexMap::const_iterator prototypeToSourceIt = 
+            _prototypeToSourcePrimIndexMap.find(prototypePath);
 
         if (!TF_VERIFY(
-                    masterToSourceIt != _masterToSourcePrimIndexMap.end(),
-                    "masterPath <%s> missing in mastersToSourceIndexPath map",
-                    masterPath.GetText())) {
-            masterSourceIndexPairs.emplace_back(masterPath, SdfPath());
+                prototypeToSourceIt != _prototypeToSourcePrimIndexMap.end(),
+                "prototypePath <%s> missing in prototypesToSourceIndexPath map",
+                prototypePath.GetText())) {
+            prototypeSourceIndexPairs.emplace_back(prototypePath, SdfPath());
             continue;
         }
         
-        const SdfPath& sourceIndexPath = masterToSourceIt->second;
-        masterSourceIndexPairs.emplace_back(masterPath, sourceIndexPath);
+        const SdfPath& sourceIndexPath = prototypeToSourceIt->second;
+        prototypeSourceIndexPairs.emplace_back(prototypePath, sourceIndexPath);
     }
     
-    return masterSourceIndexPairs;
+    return prototypeSourceIndexPairs;
 }
 
 bool
-Usd_InstanceCache::_MasterUsesPrimIndexPath(
+Usd_InstanceCache::_PrototypeUsesPrimIndexPath(
     const SdfPath& primIndexPath,
-    vector<SdfPath>* masterPaths) const
+    vector<SdfPath>* prototypePaths) const
 {
     // This function is trickier than you might expect because it has
     // to deal with nested instances. Consider this case:
     //
     // /World
-    //   Set_1     [master: </__Master_1>]
-    // /__Master_1 [index: </World/Set_1>]
-    //   Prop_1    [master: </__Master_2>, index: </World/Set_1/Prop_1> ]
-    //   Prop_2    [master: </__Master_2>, index: </World/Set_1/Prop_2> ]
-    // /__Master_2 [index: </World/Set_1/Prop_1>]
+    //   Set_1     [prototype: </__Prototype_1>]
+    // /__Prototype_1 [index: </World/Set_1>]
+    //   Prop_1    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_1> ]
+    //   Prop_2    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_2> ]
+    // /__Prototype_2 [index: </World/Set_1/Prop_1>]
     //   Scope     [index: </World/Set_1/Prop_1/Scope>]
     // 
-    // Asking if the prim index /World/Set_1/Prop_1/Scope is used by
-    // a master should return true, because it is used by /__Master_2/Scope.
+    // Asking if the prim index /World/Set_1/Prop_1/Scope is used by a
+    // prototype should return true, because it is used by /__Prototype_2/Scope.
     // But this function should return false for /World/Set_1/Prop_2/Scope.
-    // The naive implementation that looks through _sourcePrimIndexToMasterMap
-    // would wind up returning true for both of these.
+    // The naive implementation that looks through 
+    // _sourcePrimIndexToPrototypeMap would wind up returning true for both
+    // of these.
 
-    bool masterUsesPrimIndex = false;
+    bool prototypeUsesPrimIndex = false;
 
     SdfPath curIndexPath = primIndexPath;
     while (curIndexPath != SdfPath::AbsoluteRootPath()) {
         // Find the instance prim index that is closest to the current prim
         // index path. If there isn't one, this prim index isn't a descendent
-        // of an instance, which means it can't possibly be used by a master.
-        _PrimIndexToMasterMap::const_iterator it = _FindEntryForPathOrAncestor(
-            _primIndexToMasterMap, curIndexPath);
-        if (it == _primIndexToMasterMap.end()) {
+        // of an instance, which means it can't possibly be used by a prototype.
+        _PrimIndexToPrototypeMap::const_iterator it = 
+            _FindEntryForPathOrAncestor(_primIndexToPrototypeMap, curIndexPath);
+        if (it == _primIndexToPrototypeMap.end()) {
             break;
         }
 
-        // Figure out what master is associated with the prim index
+        // Figure out what prototype is associated with the prim index
         // we found, and see if the given prim index is a descendent of its
         // source prim index. If it is, then this prim index must be used
-        // by a descendent of that master.
-        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt =
-            _masterToSourcePrimIndexMap.find(it->second);
+        // by a descendent of that prototype.
+        _PrototypeToSourcePrimIndexMap::const_iterator prototypeToSourceIt =
+            _prototypeToSourcePrimIndexMap.find(it->second);
         if (!TF_VERIFY(
-                masterToSourceIt != _masterToSourcePrimIndexMap.end())) {
+                prototypeToSourceIt != _prototypeToSourcePrimIndexMap.end())) {
             break;
         }
 
-        const SdfPath& masterPath = masterToSourceIt->first;
-        const SdfPath& sourcePrimIndexPath = masterToSourceIt->second;
+        const SdfPath& prototypePath = prototypeToSourceIt->first;
+        const SdfPath& sourcePrimIndexPath = prototypeToSourceIt->second;
         if (curIndexPath.HasPrefix(sourcePrimIndexPath)) {
-            // If we don't need to collect all the master paths using this
+            // If we don't need to collect all the prototype paths using this
             // prim index, we can bail out immediately.
-            masterUsesPrimIndex = true;
-            if (masterPaths) {
-                masterPaths->push_back(primIndexPath.ReplacePrefix(
-                    sourcePrimIndexPath, masterPath));
+            prototypeUsesPrimIndex = true;
+            if (prototypePaths) {
+                prototypePaths->push_back(primIndexPath.ReplacePrefix(
+                    sourcePrimIndexPath, prototypePath));
             }
             else {
                 break;
@@ -627,12 +635,13 @@ Usd_InstanceCache::_MasterUsesPrimIndexPath(
         }
 
         // If we found an entry for an ancestor of curIndexPath in 
-        // _primIndexToMasterMap, the index must be a descendant of an
+        // _primIndexToPrototypeMap, the index must be a descendant of an
         // instanceable prim index. These indexes can only ever be used by
-        // a single master prim, so we can stop here. 
+        // a single prototype prim, so we can stop here. 
         // 
         // Otherwise, this index is an instanceable prim index. In the case of 
-        // nested instancing, there may be another master prim using this index,
+        // nested instancing, there may be another prototype prim using this
+        // index,
         // so we have to keep looking.
         const bool indexIsDescendentOfInstance = (it->first != curIndexPath);
         if (indexIsDescendentOfInstance) {
@@ -642,17 +651,17 @@ Usd_InstanceCache::_MasterUsesPrimIndexPath(
         curIndexPath = it->first.GetParentPath();
     }
 
-    return masterUsesPrimIndex;
+    return prototypeUsesPrimIndex;
 }
 
 bool 
 Usd_InstanceCache::IsPathDescendantToAnInstance(
     const SdfPath& usdPrimPath) const
 {
-    // If any ancestor of usdPrimPath is in _primIndexToMasterMap, it's
+    // If any ancestor of usdPrimPath is in _primIndexToPrototypeMap, it's
     // a descendent of an instance.
-    return _FindEntryForAncestor(
-        _primIndexToMasterMap, usdPrimPath) != _primIndexToMasterMap.end();
+    return _FindEntryForAncestor(_primIndexToPrototypeMap, usdPrimPath) != 
+        _primIndexToPrototypeMap.end();
 }
 
 SdfPath
@@ -663,8 +672,8 @@ Usd_InstanceCache::GetMostAncestralInstancePath(
     SdfPath result;
     SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
     while (path != absRoot) {
-        auto it = _FindEntryForAncestor(_primIndexToMasterMap, path);
-        if (it == _primIndexToMasterMap.end())
+        auto it = _FindEntryForAncestor(_primIndexToPrototypeMap, path);
+        if (it == _primIndexToPrototypeMap.end())
             break;
         result = it->first;
         path = it->first.GetParentPath();
@@ -673,41 +682,42 @@ Usd_InstanceCache::GetMostAncestralInstancePath(
 }
 
 SdfPath 
-Usd_InstanceCache::GetMasterForInstanceablePrimIndexPath(
+Usd_InstanceCache::GetPrototypeForInstanceablePrimIndexPath(
     const SdfPath& primIndexPath) const
 {
-    // Search the mapping from instance prim index to master prim
-    // to find the associated master.
-    _PrimIndexToMasterMap::const_iterator it = 
-        _primIndexToMasterMap.find(primIndexPath);
-    return (it == _primIndexToMasterMap.end() ? SdfPath() : it->second);
+    // Search the mapping from instance prim index to prototype prim
+    // to find the associated prototype.
+    _PrimIndexToPrototypeMap::const_iterator it = 
+        _primIndexToPrototypeMap.find(primIndexPath);
+    return (it == _primIndexToPrototypeMap.end() ? SdfPath() : it->second);
 }
 
 SdfPath
-Usd_InstanceCache::GetPathInMasterForInstancePath(const SdfPath& primPath) const
+Usd_InstanceCache::GetPathInPrototypeForInstancePath(
+    const SdfPath& primPath) const
 {
     SdfPath primIndexPath;
 
     // Without instancing, the path of a prim on a stage will be the same
     // as the path for its prim index. However, this is not the case for
-    // prims in masters (e.g., /__Master_1/Instance/Child). In this case,
+    // prims in prototypes (e.g., /__Prototype_1/Instance/Child). In this case,
     // we need to figure out what the source prim index path would be.
-    if (IsPathInMaster(primPath)) {
-        // If primPath is prefixed by a master prim path, replace it
-        // with that master's source index path to produce a prim index
+    if (IsPathInPrototype(primPath)) {
+        // If primPath is prefixed by a prototype prim path, replace it
+        // with that prototype's source index path to produce a prim index
         // path.
-        _MasterToSourcePrimIndexMap::const_iterator it = 
-            _masterToSourcePrimIndexMap.upper_bound(primPath);
-        if (it != _masterToSourcePrimIndexMap.begin()) {
+        _PrototypeToSourcePrimIndexMap::const_iterator it = 
+            _prototypeToSourcePrimIndexMap.upper_bound(primPath);
+        if (it != _prototypeToSourcePrimIndexMap.begin()) {
             --it;
-            const SdfPath& masterPath = it->first;
+            const SdfPath& prototypePath = it->first;
             const SdfPath& sourcePrimIndexPath = it->second;
 
             // Just try the prefix replacement instead of doing a separate
             // HasPrefix check. If it does nothing, we know primPath wasn't
-            // a prim in a master that this cache knows about.
+            // a prim in a prototype that this cache knows about.
             const SdfPath p = 
-                primPath.ReplacePrefix(masterPath, sourcePrimIndexPath);
+                primPath.ReplacePrefix(prototypePath, sourcePrimIndexPath);
             if (p != primPath) {
                 primIndexPath = p;
             }
@@ -724,59 +734,59 @@ Usd_InstanceCache::GetPathInMasterForInstancePath(const SdfPath& primPath) const
     // to deal with nested instances. Consider this case:
     //
     // /World
-    //   Set_1     [master: </__Master_1>, index: </World/Set_1>]
-    //   Set_2     [master: </__Master_1>, index: </World/Set_2>]
-    // /__Master_1 [index: </World/Set_1>]
-    //   Prop_1    [master: </__Master_2>, index: </World/Set_1/Prop_1> ]
-    //   Prop_2    [master: </__Master_2>, index: </World/Set_1/Prop_2> ]
-    // /__Master_2 [index: </World/Set_1/Prop_1>]
+    //   Set_1     [prototype: </__Prototype_1>, index: </World/Set_1>]
+    //   Set_2     [prototype: </__Prototype_1>, index: </World/Set_2>]
+    // /__Prototype_1 [index: </World/Set_1>]
+    //   Prop_1    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_1> ]
+    //   Prop_2    [prototype: </__Prototype_2>, index: </World/Set_1/Prop_2> ]
+    // /__Prototype_2 [index: </World/Set_1/Prop_1>]
     //   Scope     [index: </World/Set_1/Prop_1/Scope>]
     // 
-    // Asking for the prim in master for the prim index 
-    // /World/Set_2/Prop_1/Scope should return /__Master_2/Scope, since
-    // /World/Set_2 is an instance of /__Master_1, and /__Master_1/Prop_1
-    // is an instance of /__Master_2.
+    // Asking for the prim in prototype for the prim index 
+    // /World/Set_2/Prop_1/Scope should return /__Prototype_2/Scope, since
+    // /World/Set_2 is an instance of /__Prototype_1, and /__Prototype_1/Prop_1
+    // is an instance of /__Prototype_2.
     //
-    // The naive implementation would look through _primIndexToMasterMap
-    // and do a prefix replacement, but that gives /__Master_1/Prop_1/Scope. 
+    // The naive implementation would look through _primIndexToPrototypeMap
+    // and do a prefix replacement, but that gives /__Prototype_1/Prop_1/Scope. 
     // This is because the prim index /World/Set_2/Prop_1/Scope has never been 
     // computed in this example!
 
-    SdfPath primInMasterPath;
+    SdfPath primInPrototypePath;
     SdfPath curPrimIndexPath = primIndexPath;
     while (!curPrimIndexPath.IsEmpty()) {
         // Find the instance prim index that is closest to the current
         // prim index path. If there isn't one, this prim index isn't a 
         // descendent of an instance.
-        _PrimIndexToMasterMap::const_iterator it = 
-            _FindEntryForAncestor(_primIndexToMasterMap, curPrimIndexPath);
-        if (it == _primIndexToMasterMap.end()) {
+        _PrimIndexToPrototypeMap::const_iterator it = 
+            _FindEntryForAncestor(_primIndexToPrototypeMap, curPrimIndexPath);
+        if (it == _primIndexToPrototypeMap.end()) {
             break;
         }
 
-        // Find the source prim index corresponding to this master.
+        // Find the source prim index corresponding to this prototype.
         // If curPrimIndexPath is already relative to this prim index,
-        // we can do a prefix replacement to determine the final master
+        // we can do a prefix replacement to determine the final prototype
         // prim path.
         //
         // If curPrimIndexPath is *not* relative to this prim index,
         // do a prefix replacement to make it so, then loop and try again.
-        // This helps us compute the correct prim in master in the case
+        // This helps us compute the correct prim in prototype in the case
         // above because we know the source prim index *must* have been
-        // computed -- otherwise, it wouldn't be a master's source index.
+        // computed -- otherwise, it wouldn't be a prototype's source index.
         // The next time around we'll find a match for curPrimIndexPath 
-        // in _primIndexToMasterMap that gets us closer to the nested
-        // instance's master (if one exists).
-        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt =
-            _masterToSourcePrimIndexMap.find(it->second);
+        // in _primIndexToPrototypeMap that gets us closer to the nested
+        // instance's prototype (if one exists).
+        _PrototypeToSourcePrimIndexMap::const_iterator prototypeToSourceIt =
+            _prototypeToSourcePrimIndexMap.find(it->second);
         if (!TF_VERIFY(
-                masterToSourceIt != _masterToSourcePrimIndexMap.end())) {
+                prototypeToSourceIt != _prototypeToSourcePrimIndexMap.end())) {
             break;
         }
         
-        const SdfPath& sourcePrimIndexPath = masterToSourceIt->second;
+        const SdfPath& sourcePrimIndexPath = prototypeToSourceIt->second;
         if (it->first == sourcePrimIndexPath) {
-            primInMasterPath = 
+            primInPrototypePath = 
                 curPrimIndexPath.ReplacePrefix(it->first, it->second);
             break;
         }
@@ -785,7 +795,7 @@ Usd_InstanceCache::GetPathInMasterForInstancePath(const SdfPath& primPath) const
             curPrimIndexPath.ReplacePrefix(it->first, sourcePrimIndexPath);
     }
 
-    return primInMasterPath;
+    return primInPrototypePath;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -752,12 +752,7 @@ function(pxr_register_test TEST_NAME)
     # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
     # directory where these files are installed.
     if (NOT TARGET shared_libs)
-        set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
-        if (PXR_OVERRIDE_PLUGINPATH_NAME)
-            set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
-        endif()
-
-        set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+        set(testWrapperCmd ${testWrapperCmd} --env-var=${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/lib/usd)
     endif()
 
     # Ensure that Python imports the Python files built by this build.

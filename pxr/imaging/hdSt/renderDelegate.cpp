@@ -291,9 +291,7 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
     const bool colorDepthMSAA = true; // GL requires color/depth to be matching.
 
     if (name == HdAovTokens->color) {
-        HdFormat colorFormat = 
-            GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
-            HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
+        HdFormat colorFormat = HdFormatFloat16Vec4;
         return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
     } else if (HdAovHasDepthSemantic(name)) {
         return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));

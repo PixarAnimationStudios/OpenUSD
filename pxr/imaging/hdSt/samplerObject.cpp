@@ -24,7 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/samplerObject.h"
-
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/samplerObjectRegistry.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
@@ -54,7 +54,13 @@ HdStSamplerObject::_GetHgi() const
         return nullptr;
     }
 
-    Hgi * const hgi = _samplerObjectRegistry->GetHgi();
+    HdStResourceRegistry * const registry = 
+        _samplerObjectRegistry->GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return nullptr;
+    }
+
+    Hgi * const hgi = registry->GetHgi();
     TF_VERIFY(hgi);
 
     return hgi;
@@ -63,17 +69,11 @@ HdStSamplerObject::_GetHgi() const
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-// Generate GL sampler
+// Translate to Hgi
 static
-HgiSamplerHandle
-_GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
-            HdSamplerParameters const &samplerParameters,
-            const bool createSampler)
+HgiSamplerDesc
+_ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
 {
-    if (!createSampler) {
-        return HgiSamplerHandle();
-    }
-
     HgiSamplerDesc desc;
     desc.debugName = "HdStSamplerObject";
     desc.magFilter = HdStHgiConversions::GetHgiMagFilter(
@@ -87,8 +87,33 @@ _GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapT);
     desc.addressModeW =
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapR);
-    
-    return samplerObjectRegistry->GetHgi()->CreateSampler(desc);
+
+    return desc;
+}
+
+// Generate GL sampler
+static
+HgiSamplerHandle
+_GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
+            HdSamplerParameters const &samplerParameters,
+            const bool createSampler)
+{
+    if (!createSampler) {
+        return HgiSamplerHandle();
+    }
+
+    HdStResourceRegistry * const registry = 
+        samplerObjectRegistry->GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return HgiSamplerHandle();
+    }
+
+    Hgi * const hgi = registry->GetHgi();
+    if (!TF_VERIFY(hgi)) {
+        return HgiSamplerHandle();
+    }
+
+    return hgi->CreateSampler(_ToHgiSamplerDesc(samplerParameters));
 }
 
 // Get texture sampler handle for bindless textures.

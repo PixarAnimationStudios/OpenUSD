@@ -758,10 +758,16 @@ HgiInteropMetal::_RestoreOpenGlState()
     }
     glBindBuffer(GL_ARRAY_BUFFER, _restoreVbo);
     
-    if (!_restoreVao) {
+    if (!_restoreVao && _restoreVbo) {
         for (int i = 0; i < 2; i++) {
             VertexAttribState &state(_restoreVertexAttribState[i]);
-            
+            if (state.enabled) {
+                glVertexAttribPointer(state.bufferBinding, state.size,
+                    state.type, state.normalized, state.stride, state.pointer);
+                glEnableVertexAttribArray(state.bufferBinding);
+            } else {
+                glDisableVertexAttribArray(state.bufferBinding);
+            }
         }
     }
     
@@ -776,7 +782,8 @@ HgiInteropMetal::_RestoreOpenGlState()
 }
 
 void
-HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
+HgiInteropMetal::_BlitToOpenGL(GfVec4i const &compRegion,
+                               bool flipY, int shaderIndex)
 {
     // Clear GL error state
     _ProcessGLErrors(true);
@@ -836,6 +843,9 @@ HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
                 _mtlAliasedColorTexture.width,
                 _mtlAliasedColorTexture.height);
     
+    // Region of the framebuffer over which to composite.
+    glViewport(compRegion[0], compRegion[1], compRegion[2], compRegion[3]);
+
     if (flipY) {
         glDrawArrays(GL_TRIANGLES, 6, 12);
     }
@@ -850,7 +860,8 @@ HgiInteropMetal::_BlitToOpenGL(bool flipY, int shaderIndex)
 void
 HgiInteropMetal::CompositeToInterop(
     HgiTextureHandle const &color,
-    HgiTextureHandle const &depth)
+    HgiTextureHandle const &depth,
+    GfVec4i const &compRegion)
 {
     if (!ARCH_UNLIKELY(color)) {
         TF_CODING_ERROR("No valid color texture provided");
@@ -888,7 +899,7 @@ HgiInteropMetal::CompositeToInterop(
         depthTexture = metalDepth->GetTextureId();
     }
 
-    id<MTLCommandBuffer> commandBuffer = _hgiMetal->GetCommandBuffer();
+    id<MTLCommandBuffer> commandBuffer = _hgiMetal->GetPrimaryCommandBuffer();
     
     id<MTLComputeCommandEncoder> computeEncoder;
     
@@ -963,11 +974,11 @@ HgiInteropMetal::CompositeToInterop(
 
     // We wait until the work is scheduled for execution so that future OpenGL
     // calls are guaranteed to happen after the Metal work encoded above
-    _hgiMetal->CommitCommandBuffer(
+    _hgiMetal->CommitPrimaryCommandBuffer(
         HgiMetal::CommitCommandBuffer_WaitUntilScheduled);
 
     if (glShaderIndex != -1) {
-        _BlitToOpenGL(flipImage, glShaderIndex);
+        _BlitToOpenGL(compRegion, flipImage, glShaderIndex);
 
         _ProcessGLErrors();
     }

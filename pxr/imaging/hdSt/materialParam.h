@@ -79,7 +79,8 @@ public:
                     VtValue const& fallbackValue,
                     TfTokenVector const& samplerCoords=TfTokenVector(),
                     HdTextureType textureType=HdTextureType::Uv,
-                    std::string const& swizzle=std::string());
+                    std::string const& swizzle=std::string(),
+                    bool const isPremultiplied=false);
 
     // No d'tor so that we pick up the implicitly declared default
     // move c'tor.
@@ -117,6 +118,7 @@ public:
     TfTokenVector samplerCoords;
     HdTextureType textureType;
     std::string swizzle;
+    bool isPremultiplied;
 };
 
 

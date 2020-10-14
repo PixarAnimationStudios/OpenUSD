@@ -53,29 +53,27 @@ bool ApplyCollections(UsdPrim const &prim)
 
     // Create a collection that includes only the cars, by adding all 
     // of "FourWheelers" and excluding the trucks.
-    UsdCollectionAPI cars = UsdCollectionAPI::ApplyCollection(
-        prim, "cars", /* expansionRule */ UsdTokens->expandPrims);
+    UsdCollectionAPI cars = UsdCollectionAPI::Apply(prim, "cars");
     cars.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/FourWheelers"));
     cars.CreateExcludesRel().AddTarget(SdfPath("/Vehicles/FourWheelers/TruckA"));
     cars.CreateExcludesRel().AddTarget(SdfPath("/Vehicles/FourWheelers/TruckB"));
 
     // Create a collection that includes only the bikes by explicitly inluding 
     // just the two bikes in the collection.
-    UsdCollectionAPI bikes = UsdCollectionAPI::ApplyCollection(
-        prim, "bikes", /* expansionRule */ UsdTokens->explicitOnly);
+    UsdCollectionAPI bikes = UsdCollectionAPI::Apply(prim, "bikes");
+    bikes.CreateExpansionRuleAttr(VtValue(UsdTokens->explicitOnly));
     bikes.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BikeA"));
     bikes.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BikeB"));
 
     // Create an explicit collection of slow-moving vehicles. 
     // An explicit collection implies that descendants (i.e. the front and back 
     // wheels) are not considered to be included in the collection.
-    UsdCollectionAPI slowVehicles = UsdCollectionAPI::ApplyCollection(prim, 
-        "slowVehicles", /* expansionRule */ UsdTokens->explicitOnly);
+    UsdCollectionAPI slowVehicles = UsdCollectionAPI::Apply(prim, "slowVehicles");
+    slowVehicles.CreateExpansionRuleAttr(VtValue(UsdTokens->explicitOnly));
     slowVehicles.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BicycleA"));
     slowVehicles.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/Other/TricycleA"));
 
-    UsdCollectionAPI vehicles = UsdCollectionAPI::ApplyCollection(prim, 
-        "vehicles", /* expansionRule */ UsdTokens->expandPrims);
+    UsdCollectionAPI vehicles = UsdCollectionAPI::Apply(prim, "vehicles");
     vehicles.CreateIncludesRel().AddTarget(cars.GetCollectionPath());
     vehicles.CreateIncludesRel().AddTarget(bikes.GetCollectionPath());
     vehicles.CreateIncludesRel().AddTarget(slowVehicles.GetCollectionPath());

@@ -7,7 +7,7 @@
 
 def "CollectionTest" (
     kind = "prop"
-    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules"]
+    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules"]
 )
 {
     # simple explicit collection
@@ -42,7 +42,6 @@ def "CollectionTest" (
         </CollectionTest/Geom/Box/Geom>,
     ]
 
-
     # we can include properties explicitly in a collection with expansionRule=
     # "expandPrims"
     token collection:coneProperties:expansionRule = "expandPrims"
@@ -59,6 +58,11 @@ def "CollectionTest" (
         # Override Sphere's expansionRule to "expandPrims" by adding it here.
         # This causes Hemisphere2 to be included in the collection.
         </CollectionTest/Geom/Shapes/Sphere>
+    ]
+
+    # Collection that includes a collection that includes a collection.
+    rel collection:includesNestedCollection:includes = [
+        </CollectionTest/Geom.collection:allGeom>
     ]
 
     # Collection that includes an instance but excludes geometry under it
@@ -99,8 +103,15 @@ def "CollectionTest" (
     ]
 
 
-    def "Geom"
+    def "Geom" (
+        prepend apiSchemas = ["CollectionAPI:allGeom"]
+    )
     {
+        rel collection:allGeom:includes = [
+            </CollectionTest/Geom/Box>,
+            </CollectionTest/Geom/Shapes.collection:allShapes>
+        ]
+
         def "Box" (
             instanceable = true
             add references = @./Cube.usda@</Cube>

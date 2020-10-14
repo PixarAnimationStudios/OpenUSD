@@ -99,6 +99,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "edgeOnly", UsdGeomTokens->edgeOnly);
     _AddToken(cls, "elementSize", UsdGeomTokens->elementSize);
     _AddToken(cls, "elementType", UsdGeomTokens->elementType);
+    _AddToken(cls, "exposure", UsdGeomTokens->exposure);
     _AddToken(cls, "extent", UsdGeomTokens->extent);
     _AddToken(cls, "extentsHint", UsdGeomTokens->extentsHint);
     _AddToken(cls, "face", UsdGeomTokens->face);

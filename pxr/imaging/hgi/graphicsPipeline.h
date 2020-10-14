@@ -115,7 +115,10 @@ inline bool operator!=(
 ///
 /// <ul>
 /// <li>alphaToCoverageEnable:
-///   Fragment’s color.a determines coverage (screen door transparency).</li>
+///   Fragment's color.a determines coverage (screen door transparency).</li>
+/// <li>sampleCount:
+///   The number of samples for each fragment. Must match attachments</li>
+/// </ul>
 ///
 struct HgiMultiSampleState
 {
@@ -123,6 +126,7 @@ struct HgiMultiSampleState
     HgiMultiSampleState();
 
     bool alphaToCoverageEnable;
+    HgiSampleCount sampleCount;
 };
 
 HGI_API
@@ -181,11 +185,11 @@ bool operator!=(
 ///
 /// <ul>
 /// <li>depthTestEnabled:
-///   When enabled uses `depthCompareFn` to test if a fragment passes the 
+///   When enabled uses `depthCompareFn` to test if a fragment passes the
 ///   depth test. Note that depth writes are automatically disabled when
 ///   depthTestEnabled is false.</li>
 /// <li>depthWriteEnabled:
-///   When enabled uses `depthCompareFn` to test if a fragment passes the 
+///   When enabled uses `depthCompareFn` to test if a fragment passes the
 ///   depth test. Note that depth writes are automatically disabled when
 ///   depthTestEnabled is false.</li>
 /// <li>stencilTestEnabled:
@@ -200,7 +204,6 @@ struct HgiDepthStencilState
     bool depthTestEnabled;
     bool depthWriteEnabled;
     HgiCompareFunction depthCompareFn;
-
     bool stencilTestEnabled;
 };
 
@@ -214,24 +217,49 @@ bool operator!=(
     const HgiDepthStencilState& lhs,
     const HgiDepthStencilState& rhs);
 
-/// \struct HgiPipelineDesc
+/// \struct HgiGraphicsShaderConstantsDesc
+///
+/// A small, but fast buffer of uniform data for shaders.
+///
+/// <ul>
+/// <li>byteSize:
+///    Size of the constants in bytes. (max 256 bytes)</li>
+/// <li>stageUsage:
+///    What shader stage(s) the constants will be used in.</li>
+/// </ul>
+///
+struct HgiGraphicsShaderConstantsDesc {
+    HGI_API
+    HgiGraphicsShaderConstantsDesc();
+
+    uint32_t byteSize;
+    HgiShaderStage stageUsage;
+};
+
+HGI_API
+bool operator==(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs);
+
+/// \struct HgiGraphicsPipelineDesc
 ///
 /// Describes the properties needed to create a GPU pipeline.
 ///
 /// <ul>
-/// <li>resourceBindings:
-///   The resource bindings that will be bound when the pipeline is used.
-///   Primarily used to query the vertex attributes.</li>
+/// <li>primitiveType:
+///   Describes the stream of vertices (primitive topology).</li>
 /// <li>shaderProgram:
 ///   Shader functions/stages used in this pipeline.</li>
 /// <li>depthState:
-///   (Graphics pipeline only)
 ///   Describes depth state for a pipeline.</li>
 /// <li>multiSampleState:
-///   (Graphics pipeline only)
 ///   Various settings to control multi-sampling.</li>
 /// <li>rasterizationState:
-///   (Graphics pipeline only)
 ///   Various settings to control rasterization.</li>
 /// <li>vertexBuffers:
 ///   Description of the vertex buffers (per-vertex attributes).
@@ -240,6 +268,8 @@ bool operator!=(
 ///   Describes each of the color attachments.</li>
 /// <li>depthAttachmentDesc:
 ///   Describes the depth attachment (optional)</li>
+/// <li>shaderConstantsDesc:
+///   Describes the shader uniforms.</li>
 /// </ul>
 ///
 struct HgiGraphicsPipelineDesc
@@ -248,7 +278,7 @@ struct HgiGraphicsPipelineDesc
     HgiGraphicsPipelineDesc();
 
     std::string debugName;
-    HgiResourceBindingsHandle resourceBindings;
+    HgiPrimitiveType primitiveType;
     HgiShaderProgramHandle shaderProgram;
     HgiDepthStencilState depthState;
     HgiMultiSampleState multiSampleState;
@@ -256,6 +286,7 @@ struct HgiGraphicsPipelineDesc
     HgiVertexBufferDescVector vertexBuffers;
     HgiAttachmentDescVector colorAttachmentDescs;
     HgiAttachmentDesc depthAttachmentDesc;
+    HgiGraphicsShaderConstantsDesc shaderConstantsDesc;
 };
 
 HGI_API

@@ -1199,6 +1199,15 @@ class "Curves" (
              retaining their consistency with the RenderMan specification for
              NURBS Patches. HermiteCurves are useful for the
              interchange of animation guides and paths.
+
+             It is safe to use the length of the curve vertex count to derive
+             the number of curves and the number and layout of curve vertices,
+             but this schema should NOT be used to derive the number of curve
+             points. While vertex indices are implicit in all shipped
+             descendent types of this schema, one should not assume that all
+             internal or future shipped schemas will follow this pattern. Be
+             sure to key any indexing behavior off the concrete type, not this
+             abstract type.
              """
 ) {
     # topology attributes
@@ -1949,6 +1958,14 @@ class Camera "Camera" (
                  should be authored, otherwise there is no exposure and a
                  renderer should produce a black image."""
     )
+    
+    # exposure adjustment
+    float exposure = 0.0 (
+        doc = """Exposure adjustment, as a log base-2 value.  The default
+                 of 0.0 has no effect.  A value of 1.0 will double the
+                 image-plane intensities in a rendered image; a value of
+                 -1.0 will halve them."""
+    )
 }
 
 class "GeomModelAPI"
@@ -1994,23 +2011,25 @@ class "GeomModelAPI"
     - \\em bounds - Draw the model-space bounding box of the replaced prim.
     - \\em cards - Draw textured quads as a placeholder for the replaced prim.
     - \\em default - An explicit opinion to draw the USD subtree as normal.
+    - \\em inherited - Defer to the parent opinion.
 
-    \\em model:drawMode is inheritable so that a whole scene, a large group, or
-    all prototypes of a model hierarchy PointInstancer can be assigned a draw
-    mode with a single attribute edit.  \\em model:applyDrawMode is meant to be
-    written when an asset is authored, and provides flexibility for different
-    asset types. For example, a character assembly (composed of character,
-    clothes, etc) might have \\em model:applyDrawMode set at the top of the
-    subtree so the whole group can be drawn as a single card object. An effects
-    subtree might have \\em model:applyDrawMode set at a lower level so each
-    particle group draws individually.
+    \\em model:drawMode falls back to _inherited_ so that a whole scene,
+    a large group, or all prototypes of a model hierarchy PointInstancer can
+    be assigned a draw mode with a single attribute edit.  If no draw mode is
+    explicitly set in a hierarchy, the resolved value is _default_.
+
+    \\em model:applyDrawMode is meant to be written when an asset is authored,
+    and provides flexibility for different asset types. For example,
+    a character assembly (composed of character, clothes, etc) might have
+    \\em model:applyDrawMode set at the top of the subtree so the whole group
+    can be drawn as a single card object. An effects subtree might have
+    \\em model:applyDrawMode set at a lower level so each particle
+    group draws individually.
 
     Models of kind component are treated as if \\em model:applyDrawMode
     were true.  This means a prim is drawn with proxy geometry when: the
     prim has kind component, and/or \\em model:applyDrawMode is set; and
-    the prim or an ancestor has a non-default value for \\em model:drawMode.
-    A value for \\em model:drawMode on a child prim takes precedence over a
-    value on a parent prim.
+    the prim's resolved value for \\em model:drawMode is not _default_.
 
     \\section UsdGeomModelAPI_cardGeometry Cards Geometry
 
@@ -2053,31 +2072,29 @@ class "GeomModelAPI"
     \\todo CreatePayload() """
 )
 {
-    uniform token model:drawMode (
-        allowedTokens = ["origin", "bounds", "cards", "default"]
+    uniform token model:drawMode = "inherited" (
+        allowedTokens = ["origin", "bounds", "cards", "default", "inherited"]
         doc = """Alternate imaging mode; applied to this prim or child prims
                  where \\em model:applyDrawMode is true, or where the prim
                  has kind \\em component. See \\ref UsdGeomModelAPI_drawMode
                  for mode descriptions."""
     )
-    uniform bool model:applyDrawMode (
-        doc = """If true, and this prim or parent prims have \\em model:drawMode
-                 set, apply an alternate imaging mode to this prim. See
+    uniform bool model:applyDrawMode = false (
+        doc = """If true, and the resolved value of \\em model:drawMode is
+                 non-default, apply an alternate imaging mode to this prim. See
                  \\ref UsdGeomModelAPI_drawMode."""
     )
-    uniform float3 model:drawModeColor (
+    uniform float3 model:drawModeColor = (0.18, 0.18, 0.18) (
         doc = """The base color of imaging prims inserted for alternate
                  imaging modes. For \\em origin and \\em bounds modes, this
                  controls line color; for \\em cards mode, this controls the
-                 fallback quad color. If unspecified, it should be interpreted
-                 as (0.18, 0.18, 0.18)."""
+                 fallback quad color."""
     )
-    uniform token model:cardGeometry (
+    uniform token model:cardGeometry = "cross" (
         allowedTokens = ["cross", "box", "fromTexture"]
         doc = """The geometry to generate for imaging prims inserted for \\em
                  cards imaging mode. See \\ref UsdGeomModelAPI_cardGeometry for
-                 geometry descriptions. If unspecified, it should be interpreted
-                 as \\em cross."""
+                 geometry descriptions."""
     )
     asset model:cardTextureXPos (
         doc = """In \\em cards imaging mode, the texture applied to the X+ quad.
@@ -2189,21 +2206,21 @@ class "XformCommonAPI"
 
 class HermiteCurves "HermiteCurves" (
     inherits = </Curves>
-    doc = """This schema specifies a cubically hermite interpolated curve as
+    doc = """This schema specifies a cubic hermite interpolated curve batch as
     sometimes used for defining guides for animation. While hermite curves can
-    be useful because they interpolate their points, they are not well supported
-    by high-end renderers for imaging. Therefore, while we include this schema
-    for interchange, we strongly recommend the use of UsdGeomBasisCurves as
-    the representation of curves intended to be rendered (ie. hair or grass).
-    Hermite curves can be converted to a Bezier representation (though not
-    from Bezier back to Hermite in general).
+    be useful because they interpolate through their control points, they are
+    not well supported by high-end renderers for imaging. Therefore, while we
+    include this schema for interchange, we strongly recommend the use of
+    UsdGeomBasisCurves as the representation of curves intended to be rendered
+    (ie. hair or grass). Hermite curves can be converted to a Bezier
+    representation (though not from Bezier back to Hermite in general).
 
     \\section UsdGeomHermiteCurves_Interpolation Point Interpolation
     
     The initial cubic curve segment is defined by the first two points and
     first two tangents. Additional segments are defined by additional 
-    point / tangent pairs.  The number of segments for non-batched hermite
-    curve would be len(hermite.points) - 1.  The total number of segments
+    point / tangent pairs.  The number of segments for each non-batched hermite
+    curve would be len(curve.points) - 1.  The total number of segments
     for the batched UsdGeomHermiteCurves representation is
     len(points) - len(curveVertexCounts).
 
@@ -2211,7 +2228,7 @@ class HermiteCurves "HermiteCurves" (
 
     Primvar interpolation is not well specified for this type as it is not
     intended as a rendering representation. We suggest that per point
-    primvars would be linearly interpolated across the point and should 
+    primvars would be linearly interpolated across each segment and should 
     be tagged as 'varying'.
 
     It is not immediately clear how to specify cubic or 'vertex' interpolation

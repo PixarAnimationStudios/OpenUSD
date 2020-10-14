@@ -1,6 +1,6 @@
-project(usd)
-
 cmake_minimum_required(VERSION 3.12)
+
+project(usd)
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     if (WIN32)

@@ -291,17 +291,17 @@ _ComputeExtentForCapsule(
     }
 
     double height;
-    if (!capsuleSchema.GetHeightAttr().Get(&height)) {
+    if (!capsuleSchema.GetHeightAttr().Get(&height, time)) {
         return false;
     }
 
     double radius;
-    if (!capsuleSchema.GetRadiusAttr().Get(&radius)) {
+    if (!capsuleSchema.GetRadiusAttr().Get(&radius, time)) {
         return false;
     }
 
     TfToken axis;
-    if (!capsuleSchema.GetAxisAttr().Get(&axis)) {
+    if (!capsuleSchema.GetAxisAttr().Get(&axis, time)) {
         return false;
     }
 

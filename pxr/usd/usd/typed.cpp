@@ -29,11 +29,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_MAKE_STATIC_DATA(TfType, _schemaBaseTfType) {
-    *_schemaBaseTfType = TfType::Find<UsdSchemaBase>();
-    TF_VERIFY(!_schemaBaseTfType->IsUnknown());
-}
-
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {

@@ -34,6 +34,8 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,6 +77,23 @@ TfHashAppend(HashState &h, T fp)
     h.Append(intbuf);
 }
 
+// Support std::pair.
+template <class HashState, class T, class U>
+inline void
+TfHashAppend(HashState &h, std::pair<T, U> const &p)
+{
+    h.Append(p.first);
+    h.Append(p.second);
+}
+
+// Support std::vector.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, std::vector<T> const &vec)
+{
+    h.AppendContiguous(vec.data(), vec.size());
+}
+
 // Support for hashing std::string.
 template <class HashState>
 inline void
@@ -88,7 +107,7 @@ TfHashAppend(HashState &h, const std::string& s)
 template <class HashState, class T>
 inline void
 TfHashAppend(HashState &h, const T* ptr) {
-    return h.Append(reinterpret_cast<size_t>(ptr));
+    return h.Append(reinterpret_cast<uintptr_t>(ptr));
 }
 
 // We refuse to hash [const] char *.  You're almost certainly trying to hash the
@@ -166,20 +185,71 @@ inline auto Tf_HashImpl(HashState &h, T &&obj, int)
     TfHashAppend(h, std::forward<T>(obj));
 }
 
-// Implementation detail, accumulates hashes.
-struct Tf_HashState
+// Implementation detail, CRTP base that provides the public interface for hash
+// state implementations.
+template <class Derived>
+class Tf_HashStateAPI
 {
+public:
+    // Append several objects to the hash state.
+    template <class... Args>
+    void Append(Args &&... args) {
+        _AppendImpl(args...);
+    }
+
+    // Append contiguous objects to the hash state.
+    template <class T>
+    void AppendContiguous(T const *elems, size_t numElems) {
+        this->_AsDerived()._AppendContiguous(elems, numElems);
+    }
+
+    // Append a range of objects to the hash state.
+    template <class Iter>
+    void AppendRange(Iter f, Iter l) {
+        this->_AsDerived()._AppendRange(f, l);
+    }
+
+    // Return the hash code for the current state.
+    size_t GetCode() const {
+        return this->_AsDerived()._GetCode();
+    }
+
+private:
+    template <class T, class... Args>
+    void _AppendImpl(T &&obj, Args &&... rest) {
+        this->_AsDerived()._Append(std::forward<T>(obj));
+        _AppendImpl(rest...);
+    }
+    void _AppendImpl() const {
+        // base case intentionally empty.
+    }
+
+    Derived &_AsDerived() {
+        return *static_cast<Derived *>(this);
+    }
+
+    Derived const &_AsDerived() const {
+        return *static_cast<Derived const *>(this);
+    }
+};
+
+// Implementation detail, accumulates hashes.
+class Tf_HashState : public Tf_HashStateAPI<Tf_HashState>
+{
+private:
+    friend class Tf_HashStateAPI<Tf_HashState>;
+
     // Go thru Tf_HashImpl for non-integers.
     template <class T>
     std::enable_if_t<!std::is_integral<std::decay_t<T>>::value>
-    Append(T &&obj) {
+    _Append(T &&obj) {
         Tf_HashImpl(*this, std::forward<T>(obj), 0);
     }
 
     // Integers bottom out here.
     template <class T>
     std::enable_if_t<std::is_integral<T>::value>
-    Append(T i) {
+    _Append(T i) {
         if (!_didOne) {
             _state = i;
             _didOne = true;
@@ -192,7 +262,7 @@ struct Tf_HashState
     // Append contiguous objects.
     template <class T>
     std::enable_if_t<std::is_integral<T>::value>
-    AppendContiguous(T const *elems, size_t numElems) {
+    _AppendContiguous(T const *elems, size_t numElems) {
         _AppendBytes(reinterpret_cast<char const *>(elems),
                      numElems * sizeof(T));
     }
@@ -200,14 +270,19 @@ struct Tf_HashState
     // Append contiguous objects.
     template <class T>
     std::enable_if_t<!std::is_integral<T>::value>
-    AppendContiguous(T const *elems, size_t numElems) {
+    _AppendContiguous(T const *elems, size_t numElems) {
         while (numElems--) {
             Append(*elems++);
         }
     }
 
-private:
-    friend class TfHash;
+    // Append a range.
+    template <class Iter>
+    void _AppendRange(Iter f, Iter l) {
+        while (f != l) {
+            _Append(*f++);
+        }
+    }
 
     /// Append a number of bytes to the hash state.
     TF_API void _AppendBytes(char const *bytes, size_t numBytes);
@@ -315,9 +390,9 @@ private:
 /// \code
 /// template <class HashState>
 /// void TfHashAppend(HashState &h, MyType const &myObj)
-///     h.Append(myObject._member1);
-///     h.Append(myObject._member2);
-///     h.Append(myObject._member3);
+///     h.Append(myObject._member1,
+///              myObject._member2,
+///              myObject._member3);
 ///     h.AppendContiguous(myObject._memberArray, myObject._numArrayElems);
 /// }
 /// \endcode
@@ -328,16 +403,22 @@ private:
 /// available for use in TfHashAppend overloads are:
 ///
 /// \code
-/// // Append one object to the hash state.  This invokes the TfHash mechanism
-/// // so it works for any type that is supported by TfHash.
-/// template <class T>
-/// void HashState::Append(T &&obj);
+/// // Append several objects to the hash state.  This invokes the TfHash
+/// // mechanism so it works for any types supported by TfHash.
+/// template <class... Args>
+/// void HashState::Append(Args &&... args);
 ///
 /// // Append contiguous objects to the hash state.  Note that this is
 /// // explicitly *not* guaranteed to produce the same result as calling
 /// // Append() with each object in order.
 /// template <class T>
 /// void HashState::AppendContiguous(T const *objects, size_t numObjects);
+///
+/// // Append a general range of objects to the hash state.  Note that this is
+/// // explicitly *not* guaranteed to produce the same result as calling
+/// // Append() with each object in order.
+/// template <class Iter>
+/// void AppendRange(Iter f, Iter l);
 /// \endcode
 ///
 /// The \c TfHash class function object supports:
@@ -373,8 +454,28 @@ public:
                              std::forward<T>(obj), 0), size_t()) {
         Tf_HashState h;
         Tf_HashImpl(h, std::forward<T>(obj), 0);
-        return h._GetCode();
+        return h.GetCode();
     }
+
+    /// Produce a hash code by combining the hash codes of several objects.
+    template <class... Args>
+    static size_t Combine(Args &&... args) {
+        Tf_HashState h;
+        _CombineImpl(h, args...);
+        return h.GetCode();
+    }
+
+private:
+    template <class HashState, class T, class... Args>
+    static void _CombineImpl(HashState &h, T &&obj, Args &&... rest) {
+        Tf_HashImpl(h, std::forward<T>(obj), 0);
+        _CombineImpl(h, rest...);
+    }
+    
+    template <class HashState>
+    static void _CombineImpl(HashState &h) {
+        // base case does nothing
+    }        
 };
 
 /// A hash function object that hashes the address of a char pointer.

@@ -25,21 +25,55 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGraphicsPipeline::HgiGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
-    : _descriptor(desc)
+
+HgiVertexAttributeDesc::HgiVertexAttributeDesc()
+    : format(HgiFormatFloat32Vec4)
+    , offset(0)
+    , shaderBindLocation(0)
 {
 }
 
-HgiGraphicsPipeline::~HgiGraphicsPipeline() = default;
-
-HgiGraphicsPipelineDesc const&
-HgiGraphicsPipeline::GetDescriptor() const
+bool operator==(
+    const HgiVertexAttributeDesc& lhs,
+    const HgiVertexAttributeDesc& rhs)
 {
-    return _descriptor;
+    return lhs.format == rhs.format &&
+           lhs.offset == rhs.offset &&
+           lhs.shaderBindLocation == rhs.shaderBindLocation;
+}
+
+bool operator!=(
+    const HgiVertexAttributeDesc& lhs,
+    const HgiVertexAttributeDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiVertexBufferDesc::HgiVertexBufferDesc()
+    : bindingIndex(0)
+    , vertexStride(0)
+{
+}
+
+bool operator==(
+    const HgiVertexBufferDesc& lhs,
+    const HgiVertexBufferDesc& rhs)
+{
+    return lhs.bindingIndex == rhs.bindingIndex &&
+           lhs.vertexAttributes == rhs.vertexAttributes &&
+           lhs.vertexStride == rhs.vertexStride;
+}
+
+bool operator!=(
+    const HgiVertexBufferDesc& lhs,
+    const HgiVertexBufferDesc& rhs)
+{
+    return !(lhs == rhs);
 }
 
 HgiMultiSampleState::HgiMultiSampleState()
     : alphaToCoverageEnable(false)
+    , sampleCount(HgiSampleCount1)
 {
 }
 
@@ -47,7 +81,8 @@ bool operator==(
     const HgiMultiSampleState& lhs,
     const HgiMultiSampleState& rhs)
 {
-    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable;
+    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
+           lhs.sampleCount == rhs.sampleCount;
 }
 
 bool operator!=(
@@ -109,10 +144,36 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
-    : shaderProgram()
-    , depthState()
+HgiGraphicsShaderConstantsDesc::HgiGraphicsShaderConstantsDesc()
+    : byteSize(0)
+    , stageUsage(HgiShaderStageFragment)
 {
+}
+
+bool operator==(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs)
+{
+    return lhs.byteSize == rhs.byteSize &&
+           lhs.stageUsage == rhs.stageUsage;
+}
+
+bool operator!=(
+    const HgiGraphicsShaderConstantsDesc& lhs,
+    const HgiGraphicsShaderConstantsDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
+    : primitiveType(HgiPrimitiveTypeTriangleList)
+{
+}
+
+HgiGraphicsPipelineDesc const&
+HgiGraphicsPipeline::GetDescriptor() const
+{
+    return _descriptor;
 }
 
 bool operator==(
@@ -120,14 +181,15 @@ bool operator==(
     const HgiGraphicsPipelineDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.resourceBindings == rhs.resourceBindings &&
+           lhs.primitiveType == rhs.primitiveType &&
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&
            lhs.multiSampleState == rhs.multiSampleState &&
            lhs.rasterizationState == rhs.rasterizationState &&
            lhs.vertexBuffers == rhs.vertexBuffers &&
            lhs.colorAttachmentDescs == rhs.colorAttachmentDescs &&
-           lhs.depthAttachmentDesc == rhs.depthAttachmentDesc;
+           lhs.depthAttachmentDesc == rhs.depthAttachmentDesc &&
+           lhs.shaderConstantsDesc == rhs.shaderConstantsDesc;
 }
 
 bool operator!=(
@@ -137,49 +199,11 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-HgiVertexAttributeDesc::HgiVertexAttributeDesc()
-    : format(HgiFormatFloat32Vec4)
-    , offset(0)
-    , shaderBindLocation(0)
+HgiGraphicsPipeline::HgiGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
+    : _descriptor(desc)
 {
 }
 
-bool operator==(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs)
-{
-    return lhs.format == rhs.format &&
-           lhs.offset == rhs.offset &&
-           lhs.shaderBindLocation == rhs.shaderBindLocation;
-}
-
-bool operator!=(
-    const HgiVertexAttributeDesc& lhs,
-    const HgiVertexAttributeDesc& rhs)
-{
-    return !(lhs == rhs);
-}
-
-HgiVertexBufferDesc::HgiVertexBufferDesc()
-    : bindingIndex(0)
-    , vertexStride(0)
-{
-}
-
-bool operator==(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs)
-{
-    return lhs.bindingIndex == rhs.bindingIndex &&
-           lhs.vertexAttributes == rhs.vertexAttributes &&
-           lhs.vertexStride == rhs.vertexStride;
-}
-
-bool operator!=(
-    const HgiVertexBufferDesc& lhs,
-    const HgiVertexBufferDesc& rhs)
-{
-    return !(lhs == rhs);
-}
+HgiGraphicsPipeline::~HgiGraphicsPipeline() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -197,9 +197,13 @@ public:
     // Append this element's text (same as GetElement()) to \p str.
     void AppendText(std::string *str) const;
 
-    // Return the stringified path to this node as a TfToken.
+    // Return the stringified path to this node as a TfToken lvalue.
     SDF_API static const TfToken &
     GetPathToken(Sdf_PathNode const *primPart, Sdf_PathNode const *propPart);
+
+    // Return the stringified path to this node as a TfToken rvalue.
+    SDF_API static TfToken
+    GetPathAsToken(Sdf_PathNode const *primPart, Sdf_PathNode const *propPart);
 
     // Lexicographic ordering for Compare().
     struct LessThan {

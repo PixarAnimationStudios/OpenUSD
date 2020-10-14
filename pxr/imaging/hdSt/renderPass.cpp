@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/renderPass.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
@@ -49,8 +47,6 @@
 
 #include "pxr/base/gf/frustum.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 
 // XXX We do not want to include specific HgiXX backends, but we need to do
 // this temporarily until Storm has transitioned fully to Hgi.
@@ -64,7 +60,6 @@ _ExecuteDraw(
     HdStRenderPassStateSharedPtr const& stRenderPassState,
     HdStResourceRegistrySharedPtr const& resourceRegistry)
 {
-    cmdBuffer->PrepareDraw(stRenderPassState, resourceRegistry);
     cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
@@ -109,7 +104,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // Downcast render pass state
     HdStRenderPassStateSharedPtr stRenderPassState =
@@ -128,29 +122,30 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
+    _cmdBuffer.PrepareDraw(stRenderPassState, resourceRegistry);
+
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
         stRenderPassState->MakeGraphicsCmdsDesc(GetRenderIndex());
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
-
-    // XXX When there are no aovBindings we get a null work object.
-    // This would ideally never happen, but currently happens for some
-    // custom prims that spawn an imagingGLengine  with a task controller that
-    // has no aovBindings.
- 
-    if (gfxCmds) {
-        HdRprimCollection const &collection = GetRprimCollection();
-        std::string passName = "HdSt_RenderPass: " +
-            collection.GetMaterialTag().GetString();
-        gfxCmds->PushDebugGroup(passName.c_str());
+    if (!TF_VERIFY(gfxCmds)) {
+        return;
     }
+    HdRprimCollection const &collection = GetRprimCollection();
+    std::string passName = "HdSt_RenderPass: " +
+        collection.GetMaterialTag().GetString();
+    gfxCmds->PushDebugGroup(passName.c_str());
 
     // Draw
+    GfVec4f const& viewport = renderPassState->GetViewport();
+    gfxCmds->SetViewport(GfVec4i(int(viewport[0]), int(viewport[1]), 
+                                 int(viewport[2]), int(viewport[3])));
+
     HdStCommandBuffer* cmdBuffer = &_cmdBuffer;
     HgiGLGraphicsCmds* glGfxCmds = 
         dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
 
-    if (gfxCmds && glGfxCmds) {
+    if (glGfxCmds) {
         // XXX Tmp code path to allow non-hgi code to insert functions into
         // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
         auto executeDrawOp = [cmdBuffer, stRenderPassState, resourceRegistry] {
@@ -179,7 +174,6 @@ void
 HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
     HdRprimCollection const &collection = GetRprimCollection();
@@ -220,7 +214,6 @@ void
 HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // -------------------------------------------------------------------
     // SCHEDULE PREPARATION

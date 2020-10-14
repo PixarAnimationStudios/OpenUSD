@@ -136,6 +136,9 @@ private:
         HgiTextureHandle const& depthDst,
         bool depthWrite);
 
+    // Utility to create a texture sampler
+    bool _CreateSampler();
+
     // Internal draw method
     void _Draw(TextureMap const& textures, 
               HgiTextureHandle const& colorDst,
@@ -160,6 +163,7 @@ private:
     HgiShaderProgramHandle _shaderProgram;
     HgiResourceBindingsHandle _resourceBindings;
     HgiGraphicsPipelineHandle _pipeline;
+    HgiSamplerHandle _sampler;
     HgiVertexBufferDesc _vboDesc;
 
     HgiDepthStencilState _depthState;

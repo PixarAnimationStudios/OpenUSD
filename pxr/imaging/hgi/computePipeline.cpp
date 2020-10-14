@@ -25,19 +25,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiComputePipeline::HgiComputePipeline(HgiComputePipelineDesc const& desc)
-    : _descriptor(desc)
+HgiComputeShaderConstantsDesc::HgiComputeShaderConstantsDesc()
+    : byteSize(0)
 {
 }
 
-HgiComputePipeline::~HgiComputePipeline() = default;
-
-HgiComputePipelineDesc const&
-HgiComputePipeline::GetDescriptor() const
+bool operator==(
+    const HgiComputeShaderConstantsDesc& lhs,
+    const HgiComputeShaderConstantsDesc& rhs)
 {
-    return _descriptor;
+    return lhs.byteSize == rhs.byteSize;
 }
 
+bool operator!=(
+    const HgiComputeShaderConstantsDesc& lhs,
+    const HgiComputeShaderConstantsDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 HgiComputePipelineDesc::HgiComputePipelineDesc()
     : shaderProgram()
@@ -49,7 +54,8 @@ bool operator==(
     const HgiComputePipelineDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.shaderProgram == rhs.shaderProgram;
+           lhs.shaderProgram == rhs.shaderProgram &&
+           lhs.shaderConstantsDesc == rhs.shaderConstantsDesc;
 }
 
 bool operator!=(
@@ -57,6 +63,19 @@ bool operator!=(
     const HgiComputePipelineDesc& rhs)
 {
     return !(lhs == rhs);
+}
+
+HgiComputePipeline::HgiComputePipeline(HgiComputePipelineDesc const& desc)
+    : _descriptor(desc)
+{
+}
+
+HgiComputePipeline::~HgiComputePipeline() = default;
+
+HgiComputePipelineDesc const&
+HgiComputePipeline::GetDescriptor() const
+{
+    return _descriptor;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

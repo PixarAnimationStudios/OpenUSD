@@ -122,6 +122,31 @@ HgiGL::DestroyTexture(HgiTextureHandle* texHandle)
     _TrashObject(texHandle, _garbageCollector.GetTextureList());
 }
 
+HgiTextureViewHandle
+HgiGL::CreateTextureView(HgiTextureViewDesc const & desc)
+{
+    if (!desc.sourceTexture) {
+        TF_CODING_ERROR("Source texture is null");
+    }
+
+    HgiTextureHandle src =
+        HgiTextureHandle(new HgiGLTexture(desc), GetUniqueId());
+    HgiTextureView* view = new HgiTextureView(desc);
+    view->SetViewTexture(src);
+    return HgiTextureViewHandle(view, GetUniqueId());
+}
+
+void
+HgiGL::DestroyTextureView(HgiTextureViewHandle* viewHandle)
+{
+    // Trash the texture inside the view and invalidate the view handle.
+    HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
+    _TrashObject(&texHandle, _garbageCollector.GetTextureList());
+    (*viewHandle)->SetViewTexture(HgiTextureHandle());
+    delete viewHandle->Get();
+    *viewHandle = HgiTextureViewHandle();
+}
+
 HgiSamplerHandle
 HgiGL::CreateSampler(HgiSamplerDesc const & desc)
 {
@@ -247,9 +272,42 @@ HgiGL::EndFrame()
 }
 
 bool
-HgiGL::_SubmitCmds(HgiCmds* cmds)
+HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
-    bool result = Hgi::_SubmitCmds(cmds);
+    bool result = Hgi::_SubmitCmds(cmds, wait);
+
+    if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+        //
+        // CPU - GPU synchronization
+        //
+        // This only happens by request of the client since it stalls the CPU.
+        // This is only used when the CPU needs wait to read by the GPU results.
+        //
+        static const uint64_t timeOut = 100000000000;
+
+        GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        GLenum status = glClientWaitSync(
+            fence, GL_SYNC_FLUSH_COMMANDS_BIT, timeOut);
+
+        if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED) {
+            // We could loop, but we don't expect to timeout.
+            TF_RUNTIME_ERROR("Unexpected ClientWaitSync timeout");
+        }
+
+        glDeleteSync(fence);
+    } else {
+        //
+        // GPU - GPU synchronization
+        //
+        // We assume the client has grouped together all async work into
+        // one Hgi*Cmds and that we must set barriers between Hgi*Cmds to
+        // ensure that memory writes are fully visible to SubmitCmds coming
+        // after this submission.
+        //
+        if (glMemoryBarrier) {
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        }
+    }
 
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
     if (_frameDepth == 0) {

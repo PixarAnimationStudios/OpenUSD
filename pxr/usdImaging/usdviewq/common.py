@@ -38,6 +38,12 @@ class ClearColors(ConstantGroup):
     LIGHT_GREY = "Grey (Light)"
     WHITE = "White"
 
+class DefaultFontFamily(ConstantGroup):
+    """Names of the default font family and monospace font family to be used
+    with usdview"""
+    FONT_FAMILY = "Roboto"
+    MONOSPACE_FONT_FAMILY = "Roboto Mono"
+
 class HighlightColors(ConstantGroup):
     """Names of available highlight colors for selected objects."""
     WHITE = "White"
@@ -53,7 +59,7 @@ class UIPrimTypeColors(ConstantGroup):
     HAS_ARCS = UIBaseColors.DARK_YELLOW
     NORMAL = QtGui.QBrush(QtGui.QColor(227, 227, 227))
     INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
-    MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
+    PROTOTYPE = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
 class UIPrimTreeColors(ConstantGroup):
     SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84))

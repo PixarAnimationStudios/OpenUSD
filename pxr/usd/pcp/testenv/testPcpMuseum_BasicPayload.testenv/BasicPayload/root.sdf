@@ -145,13 +145,6 @@ def Scope "PrimWithPayloadsInVariants" (
     }
 }
 
-# These two don't work due to a composition bug, but I would expect that
-# they should. PrimC_Child is a subroot prim that is itself hidden in a 
-# payload which doesn't doesn't get loaded unless the exact path in the
-# reference is in the requested payloads. It works correctly if it is, but
-# it is semantically incorrect to do so. I'm leaving these cases in to 
-# track the composition errors in the test. The test results will need to 
-# be updated when the bug is fixed.
 def Scope "PayloadPrimWithSubrootInPayload" (
     payload = [
         @./ref.sdf@</PayloadPrimA/PrimA_Child>,

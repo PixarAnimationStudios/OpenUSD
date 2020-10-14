@@ -37,7 +37,6 @@ class "SingleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "singleApply"
-        bool isPrivateApply = false
     }
 )
 {
@@ -57,7 +56,6 @@ class "MultipleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "multipleApply"
-        bool isPrivateApply = true
         token propertyNamespacePrefix  = "test"
     }
 )

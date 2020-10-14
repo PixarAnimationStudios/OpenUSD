@@ -37,22 +37,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HgiGLDescriptorCacheItem {
     HgiGraphicsCmdsDesc descriptor;
     uint32_t framebuffer = 0;
+    uint32_t resolvedFramebuffer = 0;
 };
 
-static HgiGLDescriptorCacheItem*
-_CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
+static void
+_CreateFramebuffer(
+    const HgiAttachmentDescVector &colorAttachmentDescs,
+    const HgiAttachmentDesc &depthAttachmentDesc,
+    const HgiTextureHandleVector &colorTextures,
+    const HgiTextureHandle &depthTexture,
+    uint32_t * const framebuffer)
 {
-    HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
-    dci->descriptor = desc;
-
     // Create framebuffer
-    glCreateFramebuffers(1, &dci->framebuffer);
-
+    glCreateFramebuffers(1, framebuffer);
+  
     // Bind color attachments
-    size_t numColorAttachments = desc.colorAttachmentDescs.size();
+    const size_t numColorAttachments = colorAttachmentDescs.size();
     std::vector<GLenum> drawBuffers(numColorAttachments);
 
-    TF_VERIFY(desc.colorTextures.size() == numColorAttachments,
+    TF_VERIFY(colorTextures.size() == numColorAttachments,
         "Number of attachment descriptors and textures don't match");
 
     //
@@ -60,7 +63,7 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
     //
     for (size_t i=0; i<numColorAttachments; i++) {
         HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(
-            desc.colorTextures[i].Get());
+            colorTextures[i].Get());
 
         if (!TF_VERIFY(glTexture, "Invalid attachment texture")) {
             continue;
@@ -72,7 +75,7 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
         }
 
         glNamedFramebufferTexture(
-            dci->framebuffer,
+            *framebuffer,
             GL_COLOR_ATTACHMENT0 + i,
             textureName,
             /*level*/ 0);
@@ -81,26 +84,26 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
     }
 
     glNamedFramebufferDrawBuffers(
-        dci->framebuffer,
+        *framebuffer,
         numColorAttachments,
         drawBuffers.data());
 
     //
     // Depth attachment
     //
-    HgiTextureHandle depthTex = desc.depthTexture;
-    if (depthTex) {
-        HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(depthTex.Get());
+    if (depthTexture) {
+        HgiGLTexture* glTexture =
+            static_cast<HgiGLTexture*>(depthTexture.Get());
 
         uint32_t textureName = glTexture->GetTextureId();
 
         if (TF_VERIFY(glIsTexture(textureName), "Attachment not a texture")) {
             GLenum attachment =
-                (desc.depthAttachmentDesc.format == HgiFormatFloat32UInt8)?
+                (depthAttachmentDesc.format == HgiFormatFloat32UInt8)?
                     GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
 
             glNamedFramebufferTexture(
-                dci->framebuffer,
+                *framebuffer,
                 attachment,
                 textureName,
                 0); // level
@@ -109,29 +112,67 @@ _CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
 
     // Note that if color or depth is multi-sample, they both have to be for GL.
     GLenum status = glCheckNamedFramebufferStatus(
-        dci->framebuffer,
+        *framebuffer,
         GL_FRAMEBUFFER);
     TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
 
     HGIGL_POST_PENDING_GL_ERRORS();
+}
+    
+
+static HgiGLDescriptorCacheItem*
+_CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
+{
+    TRACE_FUNCTION();
+
+    HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
+    dci->descriptor = desc;
+
+    // Create framebuffer
+    _CreateFramebuffer(
+        desc.colorAttachmentDescs,
+        desc.depthAttachmentDesc,
+        desc.colorTextures,
+        desc.depthTexture,
+        &dci->framebuffer);
+
+    // Create framebuffer for resolved textures
+    if ( (!desc.colorResolveTextures.empty()) || desc.depthResolveTexture) {
+        _CreateFramebuffer(
+            desc.colorAttachmentDescs,
+            desc.depthAttachmentDesc,
+            desc.colorResolveTextures,
+            desc.depthResolveTexture,
+            &dci->resolvedFramebuffer);
+    }        
+
+    // Bind color attachments
     return dci;
 }
 
 static void
 _DestroyDescriptorCacheItem(HgiGLDescriptorCacheItem* dci)
 {
-    if (dci->framebuffer && glIsFramebuffer(dci->framebuffer)) {
-        glDeleteFramebuffers(1, &dci->framebuffer);
-        dci->framebuffer = 0;
+    TRACE_FUNCTION();
+
+    if (dci->framebuffer) {
+        if (glIsFramebuffer(dci->framebuffer)) {
+            glDeleteFramebuffers(1, &dci->framebuffer);
+            dci->framebuffer = 0;
+        }
+    }
+    if (dci->resolvedFramebuffer) {
+        if (glIsFramebuffer(dci->resolvedFramebuffer)) {
+            glDeleteFramebuffers(1, &dci->resolvedFramebuffer);
+            dci->resolvedFramebuffer = 0;
+        }
     }
 
     delete dci;
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
-HgiGLFramebufferCache::HgiGLFramebufferCache()
-{
-}
+HgiGLFramebufferCache::HgiGLFramebufferCache() = default;
 
 HgiGLFramebufferCache::~HgiGLFramebufferCache()
 {
@@ -139,7 +180,9 @@ HgiGLFramebufferCache::~HgiGLFramebufferCache()
 }
 
 uint32_t
-HgiGLFramebufferCache::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
+HgiGLFramebufferCache::AcquireFramebuffer(
+    HgiGraphicsCmdsDesc const& desc,
+    bool resolved)
 {
     // We keep a small cache of descriptor / framebuffer combos since it is
     // potentially an expensive state change to attach textures to GL FBs.
@@ -152,7 +195,8 @@ HgiGLFramebufferCache::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
         if (desc == item->descriptor) {
             // If the GL context is changed we cannot re-use the framebuffer as
             // framebuffers cannot be shared between contexts.
-            if (glIsFramebuffer(item->framebuffer)) {
+            if (glIsFramebuffer(
+                    resolved ? item->resolvedFramebuffer : item->framebuffer)) {
                 dci = item;
 
                 // Move descriptor to end of 'LRU cache' as it is still used.
@@ -180,7 +224,7 @@ HgiGLFramebufferCache::AcquireFramebuffer(HgiGraphicsCmdsDesc const& desc)
         }
     }
 
-    return dci->framebuffer;
+    return resolved ? dci->resolvedFramebuffer : dci->framebuffer;
 }
 
 void

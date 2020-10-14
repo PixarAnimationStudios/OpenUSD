@@ -70,13 +70,17 @@ class NodeGraph "NodeGraph" (
     output on a shader inside the node-graph.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"'''
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"'''
     }
 ) {
 
@@ -132,6 +136,9 @@ class Material "Material" (
     
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
@@ -203,6 +210,7 @@ class Material "Material" (
 
 class Shader "Shader" (
     inherits = </Typed>
+    prepend apiSchemas = ["NodeDefAPI"]
     doc = """Base class for all USD shaders. Shaders are the building blocks
     of shading networks. While UsdShadeShader objects are not target specific,
     each renderer or application target may derive its own renderer-specific 
@@ -212,14 +220,15 @@ class Shader "Shader" (
     it exists in the target renderer or not. For example, a texture, a fractal,
     or a mix node.
 
-    The main property of this class is the info:id token, which uniquely 
-    identifies the type of this node. The id resolution into a renderable 
-    shader target is deferred to the consuming application.
+    The UsdShadeNodeDefAPI provides attributes to uniquely identify the
+    type of this node.  The id resolution into a renderable shader target
+    type of this node.  The id resolution into a renderable shader target
+    is deferred to the consuming application.
 
     The purpose of representing them in Usd is two-fold:
     \\li To represent, via "connections" the topology of the shading network
     that must be reconstructed in the renderer. Facilities for authoring and 
-    manipulating connections are encapsulated in the Has-A schema 
+    manipulating connections are encapsulated in the API schema 
     UsdShadeConnectableAPI.
     \\li To present a (partial or full) interface of typed input parameters 
     whose values can be set and overridden in Usd, to be provided later at 
@@ -227,16 +236,52 @@ class Shader "Shader" (
     input parameters are encapsulated in the property schema UsdShadeInput.
     """ 
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = '''
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"'''
+    }
+) {
+}
+
+class "NodeDefAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """UsdShadeNodeDefAPI is an API schema that provides attributes
+    for a prim to select a corresponding Shader Node Definition ("Sdr Node"),
+    as well as to look up a runtime entry for that shader node in the
+    form of an SdrShaderNode.
+
+    UsdShadeNodeDefAPI is intended to be a pre-applied API schema for any
+    prim type that wants to refer to the SdrRegistry for further implementation
+    details about the behavior of that prim.  The primary use in UsdShade
+    itself is as UsdShadeShader, which is a basis for material shading networks
+    (UsdShadeMaterial), but this is intended to be used in other domains
+    that also use the Sdr node mechanism.
+
+    This schema provides properties that allow a prim to identify an external
+    node definition, either by a direct identifier key into the SdrRegistry
+    (info:id), an asset to be parsed by a suitable NdrParserPlugin
+    (info:sourceAsset), or an inline source code that must also be parsed
+    (info:sourceCode); as well as a selector attribute to determine which
+    specifier is active (info:implementationSource).
+    """ 
+    customData = {
+        token apiSchemaType = "singleApply"
+        string extraIncludes = """
+#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/shaderNode.h"
+    """
         dictionary schemaTokens = {
             dictionary universalSourceType = {
                 string value = ""
                 string doc = """Possible value for the "sourceType" parameter 
-                in \\ref UsdShadeShader_ImplementationSource API. Represents 
+                in \\ref UsdShadeNodeDefAPI_ImplementationSource API. Represents 
                 the universal or fallback source type.
                 """
             }
@@ -257,7 +302,8 @@ class Shader "Shader" (
             }
         }
     }
-) {
+)
+{
     uniform token info:implementationSource = "id" (
         allowedTokens = ["id", "sourceAsset", "sourceCode"]
         doc = """Specifies the attribute that should be consulted to get the 

@@ -23,9 +23,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 
@@ -320,8 +319,8 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
     // filling coarse vertices has been done at resource registry.
 
-    HdStBufferArrayRangeGLSharedPtr range_ =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+    HdStBufferArrayRangeSharedPtr range_ =
+        std::static_pointer_cast<HdStBufferArrayRange> (range);
 
     // vertex buffer wrapper for OpenSubdiv API
     HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(

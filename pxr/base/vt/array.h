@@ -393,9 +393,13 @@ class VtArray : public Vt_ArrayBase {
     /// Return a const pointer to the data held by this array.
     const_pointer cdata() const { return _data; }
 
-    /// Append an element to array.  The underlying data is first copied if it
-    /// is not uniquely owned.
-    void push_back(ElementType const &elem) {
+    /// Initializes a new element at the end of the array. The underlying data
+    /// is first copied if it is not uniquely owned.
+    ///
+    /// \sa push_back(ElementType const&)
+    /// \sa push_back(ElementType&&)
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
         // If this is a non-pxr array with rank > 1, disallow push_back.
         if (ARCH_UNLIKELY(_shapeData.otherDims[0])) {
             TF_CODING_ERROR("Array rank %u != 1", _shapeData.GetRank());
@@ -411,9 +415,28 @@ class VtArray : public Vt_ArrayBase {
             _data = newData;
         }
         // Copy the value.
-        ::new (static_cast<void*>(_data + curSize)) value_type(elem);
+        ::new (static_cast<void*>(_data + curSize)) value_type(
+            std::forward<Args>(args)...);
         // Adjust size.
         ++_shapeData.totalSize;
+    }
+
+    /// Appends an element at the end of the array. The underlying data
+    /// is first copied if it is not uniquely owned.
+    ///
+    /// \sa emplace_back
+    /// \sa push_back(ElementType&&)
+    void push_back(ElementType const& element) {
+        emplace_back(element);
+    }
+
+    /// Appends an element at the end of the array. The underlying data
+    /// is first copied if it is not uniquely owned.
+    ///
+    /// \sa emplace_back
+    /// \sa push_back(ElementType const&)
+    void push_back(ElementType&& element) {
+        emplace_back(std::move(element));
     }
 
     /// Remove the last element of an array.  The underlying data is first

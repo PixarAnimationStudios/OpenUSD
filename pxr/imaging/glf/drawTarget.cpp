@@ -605,11 +605,15 @@ GlfDrawTarget::WriteToFile(std::string const & name,
         metadata["NP"] = worldToScreenTransform;
     }
 
+    GLenum glInternalFormat = a->GetInternalFormat();
+    bool isSRGB = (glInternalFormat == GL_SRGB8 ||
+                   glInternalFormat == GL_SRGB8_ALPHA8);
     GlfImage::StorageSpec storage;
     storage.width = _size[0];
     storage.height = _size[1];
-    storage.format = a->GetFormat();
-    storage.type = a->GetType();
+    storage.hioFormat = GlfGetHioFormat(a->GetFormat(), 
+                                        a->GetType(), 
+                                        /* isSRGB */ isSRGB);
     storage.flipped = true;
     storage.data = buf.get();
 

@@ -1,0 +1,71 @@
+#sdf 1.4.32
+
+over "Group" (
+    variants = {
+        string v = "z"
+    }
+    variantSets = "v"
+)
+{
+    variantSet "v" = {
+        "x" {
+            over "Model"
+            {
+                string a = "v_x"
+            }
+        }
+        "y" {
+            over "Model"
+            {
+                string a = "v_y"
+            }
+        }
+        "z" {
+            over "Model"
+            {
+                string a = "v_z"
+            }
+
+        }
+    }
+}
+
+# Reference to a prim in group.sdf that has a subroot inherit to /Group/Model.
+# group.sdf</Group> has a variant selection of v=y. This case verifies that the
+# variant selection used for the inherit arc in group.sdf is /Group{v=y}/Model.
+#
+# The variant selection for the implied inherit for root.sdf is 
+# /Group{v=z}/Model. Ancestral variant selections encountered when composing
+# subroot inherits do not apply when propagating implied inherits. This is 
+# consistent with how we treat other ancestral arcs when propagating implied
+# inherits.
+# 
+# This also is testing a bug that was previously causing a TF_VERIFY to be
+# tripped in this exact scenario of a reference to a prim with a subroot inherit
+# to another prim with an ancestral variant selection.
+def "SubrootInheritRef" (
+    references = @./group.sdf@</SubrootInherit>
+)
+{
+}
+
+# Tests a bug previously encountered with ancestral variant selections. This
+# is the inherits equivalent of the same case brought up in
+# SubrootReferenceAndVariants museum test.
+# /RootRef's reference to /Model brings in a variant set 'v' with variant
+# selection 'x'.
+# /RootRef/Child's inherit of /Group/Model has an ancestral variant in that
+# /Group also has a variant set 'v' but with a variant selection 'z'.
+# This case is verifying that /Group/Model is composed with the variant
+# selection of v=z, not v=x.
+def "Root" (
+    references = @./model.sdf@</Model>
+)
+{
+    def "Child" (
+        inherits = </Group/Model>
+    )
+    {
+    }
+}
+

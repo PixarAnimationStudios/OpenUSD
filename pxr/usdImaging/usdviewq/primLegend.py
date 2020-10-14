@@ -44,12 +44,12 @@ class PrimLegend(QtWidgets.QWidget):
         self._ui.primLegendColorHasArcs.setScene(graphicsScene)
         self._ui.primLegendColorNormal.setScene(graphicsScene)
         self._ui.primLegendColorInstance.setScene(graphicsScene)
-        self._ui.primLegendColorMaster.setScene(graphicsScene)
+        self._ui.primLegendColorPrototype.setScene(graphicsScene)
 
         self._ui.primLegendColorHasArcs.setForegroundBrush(UIPrimTypeColors.HAS_ARCS)
         self._ui.primLegendColorNormal.setForegroundBrush(UIPrimTypeColors.NORMAL)
         self._ui.primLegendColorInstance.setForegroundBrush(UIPrimTypeColors.INSTANCE)
-        self._ui.primLegendColorMaster.setForegroundBrush(UIPrimTypeColors.MASTER)
+        self._ui.primLegendColorPrototype.setForegroundBrush(UIPrimTypeColors.PROTOTYPE)
 
         legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
                                              + t.text() + '</font>')
@@ -57,8 +57,8 @@ class PrimLegend(QtWidgets.QWidget):
         normalLegend = self._ui.primLegendLabelNormal
         normalLegend.setText(legendTextUpdate(normalLegend, UIPrimTypeColors.NORMAL))
 
-        masterLegend = self._ui.primLegendLabelMaster
-        masterLegend.setText(legendTextUpdate(masterLegend, UIPrimTypeColors.MASTER))
+        prototypeLegend = self._ui.primLegendLabelPrototype
+        prototypeLegend.setText(legendTextUpdate(prototypeLegend, UIPrimTypeColors.PROTOTYPE))
 
         instanceLegend = self._ui.primLegendLabelInstance
         instanceLegend.setText(legendTextUpdate(instanceLegend, UIPrimTypeColors.INSTANCE))

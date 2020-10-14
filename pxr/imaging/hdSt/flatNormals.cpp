@@ -21,11 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
-
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/flatNormals.h"
@@ -35,9 +32,12 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/hgiGL/shaderProgram.h"
-
 #include "pxr/imaging/hf/perfLog.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 
 #include "pxr/base/vt/array.h"
 
@@ -47,6 +47,75 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HgiResourceBindingsSharedPtr
+_CreateResourceBindings(
+    Hgi* hgi,
+    HgiBufferHandle const& points,
+    HgiBufferHandle const& normals,
+    HgiBufferHandle const& indices,
+    HgiBufferHandle const& primitiveParam)
+{
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "FlatNormals";
+
+    if (points) {
+        HgiBufferBindDesc bufBind0;
+        bufBind0.bindingIndex = 0;
+        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.offsets.push_back(0);
+        bufBind0.buffers.push_back(points);
+        resourceDesc.buffers.push_back(std::move(bufBind0));
+    }
+
+    if (normals) {
+        HgiBufferBindDesc bufBind1;
+        bufBind1.bindingIndex = 1;
+        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.offsets.push_back(0);
+        bufBind1.buffers.push_back(normals);
+        resourceDesc.buffers.push_back(std::move(bufBind1));
+    }
+
+    if (indices) {
+        HgiBufferBindDesc bufBind2;
+        bufBind2.bindingIndex = 2;
+        bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.offsets.push_back(0);
+        bufBind2.buffers.push_back(indices);
+        resourceDesc.buffers.push_back(std::move(bufBind2));
+    }
+
+    if (primitiveParam) {
+        HgiBufferBindDesc bufBind3;
+        bufBind3.bindingIndex = 3;
+        bufBind3.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind3.stageUsage = HgiShaderStageCompute;
+        bufBind3.offsets.push_back(0);
+        bufBind3.buffers.push_back(primitiveParam);
+        resourceDesc.buffers.push_back(std::move(bufBind3));
+    }
+
+    return std::make_shared<HgiResourceBindingsHandle>(
+        hgi->CreateResourceBindings(resourceDesc));
+}
+
+static HgiComputePipelineSharedPtr
+_CreatePipeline(
+    Hgi* hgi,
+    uint32_t constantValuesSize,
+    HgiShaderProgramHandle const& program)
+{
+    HgiComputePipelineDesc desc;
+    desc.debugName = "FlatNormals";
+    desc.shaderProgram = program;
+    desc.shaderConstantsDesc.byteSize = constantValuesSize;
+    return std::make_shared<HgiComputePipelineHandle>(
+        hgi->CreateComputePipeline(desc));
+}
 
 HdSt_FlatNormalsComputationGPU::HdSt_FlatNormalsComputationGPU(
     HdBufferArrayRangeSharedPtr const &topologyRange,
@@ -80,24 +149,22 @@ HdSt_FlatNormalsComputationGPU::Execute(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!glDispatchCompute)
-        return;
     if (_srcDataType == HdTypeInvalid)
         return;
 
-    HdStBufferArrayRangeGLSharedPtr range =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
-    HdStBufferArrayRangeGLSharedPtr vertexRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_vertexRange);
-    HdStBufferArrayRangeGLSharedPtr topologyRange =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (_topologyRange);
+    HdStBufferArrayRangeSharedPtr range =
+        std::static_pointer_cast<HdStBufferArrayRange> (range_);
+    HdStBufferArrayRangeSharedPtr vertexRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_vertexRange);
+    HdStBufferArrayRangeSharedPtr topologyRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (_topologyRange);
 
     // buffer resources for GPU computation
-    HdStBufferResourceGLSharedPtr points = vertexRange->GetResource(_srcName);
-    HdStBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
-    HdStBufferResourceGLSharedPtr indices = topologyRange->GetResource(
+    HdStBufferResourceSharedPtr points = vertexRange->GetResource(_srcName);
+    HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
+    HdStBufferResourceSharedPtr indices = topologyRange->GetResource(
         HdTokens->indices);
-    HdStBufferResourceGLSharedPtr primitiveParam = topologyRange->GetResource(
+    HdStBufferResourceSharedPtr primitiveParam = topologyRange->GetResource(
         HdTokens->primitiveParam);
 
     // select shader by datatype
@@ -133,14 +200,12 @@ HdSt_FlatNormalsComputationGPU::Execute(
         }
     }
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
-
+    
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
     HdStGLSLProgramSharedPtr computeProgram
-        = HdStGLSLProgram::GetComputeProgram(shaderToken,
-            static_cast<HdStResourceRegistry*>(resourceRegistry));
+        = HdStGLSLProgram::GetComputeProgram(shaderToken, hdStResourceRegistry);
     if (!computeProgram) return;
-
-    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
-    GLuint program = hgiProgram->GetRawResource();
 
     // prepare uniform buffer for GPU computation
     struct Uniform {
@@ -193,55 +258,60 @@ HdSt_FlatNormalsComputationGPU::Execute(
     uniform.pParamOffset = primitiveParam->GetOffset() / pParamComponentSize;
     uniform.pParamStride = primitiveParam->GetStride() / pParamComponentSize;
 
-    // transfer uniform buffer
-    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
-    // GfxCmds.
-    const size_t uboSize = sizeof(uniform);
-    HgiGLShaderProgram * const hgiGLProgram =
-        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
-    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (caps.directStateAccessEnabled) {
-        glNamedBufferData(ubo, uboSize, &uniform, GL_STATIC_DRAW);
-    } else {
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, uboSize, &uniform, GL_STATIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    Hgi* hgi = hdStResourceRegistry->GetHgi();
+    
+    // Generate hash for resource bindings and pipeline.
+    // XXX Needs fingerprint hash to avoid collisions
+    uint64_t rbHash = (uint64_t) TfHash::Combine(
+        points->GetId().Get(),
+        normals->GetId().Get(),
+        indices->GetId().Get(),
+        primitiveParam->GetId().Get());
+
+    uint64_t pHash = (uint64_t) TfHash::Combine(
+        computeProgram->GetProgram().Get(),
+        sizeof(uniform));
+
+    // Get or add resource bindings in registry.
+    HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
+        hdStResourceRegistry->RegisterResourceBindings(rbHash);
+    if (resourceBindingsInstance.IsFirstInstance()) {
+        HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
+            hgi, points->GetId(), normals->GetId(), indices->GetId(),
+            primitiveParam->GetId());
+        resourceBindingsInstance.SetValue(rb);
     }
 
-    GLuint pointsId =
-        points->GetId() ? points->GetId()->GetRawResource() : 0;
-    GLuint normalsId =
-        normals->GetId() ? normals->GetId()->GetRawResource() : 0;
-    GLuint indicesId =
-        indices->GetId() ? indices->GetId()->GetRawResource() : 0;
-    GLuint primitiveParamId =
-        primitiveParam->GetId() ? primitiveParam->GetId()->GetRawResource() : 0;
+    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+        resourceBindingsInstance.GetValue();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 0, pointsId);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 1, normalsId);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 2, indicesId);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 3, primitiveParamId);
+    // Get or add pipeline in registry.
+    HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
+        hdStResourceRegistry->RegisterComputePipeline(pHash);
+    if (computePipelineInstance.IsFirstInstance()) {
+        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+            hgi, sizeof(uniform), computeProgram->GetProgram());
+        computePipelineInstance.SetValue(pipe);
+    }
 
-    // dispatch compute kernel
-    glUseProgram(program);
+    HgiComputePipelineSharedPtr const& pipelinePtr =
+        computePipelineInstance.GetValue();
+    HgiComputePipelineHandle pipeline = *pipelinePtr.get();
 
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
+    computeCmds->PushDebugGroup("Flat Normals Cmds");
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(pipeline);
+
+    // Queue transfer uniform buffer
+    computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
+
+    // Queue compute work
     int numPrims = topologyRange->GetNumElements();
-    glDispatchCompute(numPrims, 1, 1);
+    computeCmds->Dispatch(numPrims, 1);
 
-    glUseProgram(0);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, 0);
+    computeCmds->PopDebugGroup();
 }
 
 void

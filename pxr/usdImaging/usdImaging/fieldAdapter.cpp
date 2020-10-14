@@ -26,11 +26,14 @@
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/tokens.h"
-
 #include "pxr/imaging/hd/field.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (textureMemory)
+);
 
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -40,9 +43,7 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, UsdImagingFieldAdapter is abstract.
 }
 
-UsdImagingFieldAdapter::~UsdImagingFieldAdapter() 
-{
-}
+UsdImagingFieldAdapter::~UsdImagingFieldAdapter() = default;
 
 bool
 UsdImagingFieldAdapter::IsSupported(UsdImagingIndexProxy const* index) const
@@ -136,6 +137,29 @@ UsdImagingFieldAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                             UsdImagingIndexProxy* index)
 {
     // TBD
+}
+
+VtValue
+UsdImagingFieldAdapter::Get(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            TfToken const& key,
+                            UsdTimeCode time) const
+{
+    if (key == _tokens->textureMemory) {
+        UsdAttribute const &attr = prim.GetAttribute(key);
+        VtValue value;
+        if (attr && attr.Get(&value, time)) {
+            return value;
+        }
+        
+        // Fallback to 0.0;
+        return VtValue(0.0f);
+    }
+        
+    TF_CODING_ERROR(
+        "Property %s not supported for fields by UsdImaging, path: %s",
+        key.GetText(), cachePath.GetText());
+    return VtValue();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

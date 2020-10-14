@@ -64,9 +64,41 @@ void wrapUsdVolTokens()
 {
     boost::python::class_<UsdVolTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "bool_", UsdVolTokens->bool_);
+    _AddToken(cls, "color", UsdVolTokens->color);
+    _AddToken(cls, "double2", UsdVolTokens->double2);
+    _AddToken(cls, "double3", UsdVolTokens->double3);
+    _AddToken(cls, "double_", UsdVolTokens->double_);
     _AddToken(cls, "field", UsdVolTokens->field);
+    _AddToken(cls, "fieldClass", UsdVolTokens->fieldClass);
+    _AddToken(cls, "fieldDataType", UsdVolTokens->fieldDataType);
     _AddToken(cls, "fieldIndex", UsdVolTokens->fieldIndex);
     _AddToken(cls, "fieldName", UsdVolTokens->fieldName);
     _AddToken(cls, "fieldPurpose", UsdVolTokens->fieldPurpose);
     _AddToken(cls, "filePath", UsdVolTokens->filePath);
+    _AddToken(cls, "float2", UsdVolTokens->float2);
+    _AddToken(cls, "float3", UsdVolTokens->float3);
+    _AddToken(cls, "float_", UsdVolTokens->float_);
+    _AddToken(cls, "fogVolume", UsdVolTokens->fogVolume);
+    _AddToken(cls, "half", UsdVolTokens->half);
+    _AddToken(cls, "half2", UsdVolTokens->half2);
+    _AddToken(cls, "half3", UsdVolTokens->half3);
+    _AddToken(cls, "int2", UsdVolTokens->int2);
+    _AddToken(cls, "int3", UsdVolTokens->int3);
+    _AddToken(cls, "int64", UsdVolTokens->int64);
+    _AddToken(cls, "int_", UsdVolTokens->int_);
+    _AddToken(cls, "levelSet", UsdVolTokens->levelSet);
+    _AddToken(cls, "mask", UsdVolTokens->mask);
+    _AddToken(cls, "matrix3d", UsdVolTokens->matrix3d);
+    _AddToken(cls, "matrix4d", UsdVolTokens->matrix4d);
+    _AddToken(cls, "none", UsdVolTokens->none);
+    _AddToken(cls, "normal", UsdVolTokens->normal);
+    _AddToken(cls, "point", UsdVolTokens->point);
+    _AddToken(cls, "quatd", UsdVolTokens->quatd);
+    _AddToken(cls, "staggered", UsdVolTokens->staggered);
+    _AddToken(cls, "string", UsdVolTokens->string);
+    _AddToken(cls, "uint", UsdVolTokens->uint);
+    _AddToken(cls, "unknown", UsdVolTokens->unknown);
+    _AddToken(cls, "vector", UsdVolTokens->vector);
+    _AddToken(cls, "vectorDataRoleHint", UsdVolTokens->vectorDataRoleHint);
 }

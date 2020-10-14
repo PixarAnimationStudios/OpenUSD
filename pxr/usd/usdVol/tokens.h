@@ -58,21 +58,49 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdVolTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdVolTokens->field);
+///     gprim.GetMyTokenValuedAttr().Set(UsdVolTokens->bool_);
 /// \endcode
 struct UsdVolTokensType {
     USDVOL_API UsdVolTokensType();
+    /// \brief "bool"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken bool_;
+    /// \brief "Color"
+    /// 
+    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken color;
+    /// \brief "double2"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken double2;
+    /// \brief "double3"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken double3;
+    /// \brief "double"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken double_;
     /// \brief "field"
     /// 
     /// This is the namespace prefix used to  specify the fields that make up a volume primitive.
     const TfToken field;
+    /// \brief "fieldClass"
+    /// 
+    /// UsdVolOpenVDBAsset
+    const TfToken fieldClass;
+    /// \brief "fieldDataType"
+    /// 
+    /// UsdVolOpenVDBAsset, UsdVolField3DAsset, UsdVolFieldAsset
+    const TfToken fieldDataType;
     /// \brief "fieldIndex"
     /// 
-    /// UsdVolField3DAsset
+    /// UsdVolFieldAsset
     const TfToken fieldIndex;
     /// \brief "fieldName"
     /// 
-    /// UsdVolOpenVDBAsset, UsdVolField3DAsset
+    /// UsdVolFieldAsset
     const TfToken fieldName;
     /// \brief "fieldPurpose"
     /// 
@@ -82,6 +110,106 @@ struct UsdVolTokensType {
     /// 
     /// UsdVolFieldAsset
     const TfToken filePath;
+    /// \brief "float2"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken float2;
+    /// \brief "float3"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken float3;
+    /// \brief "float"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken float_;
+    /// \brief "fogVolume"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldClassAttr()
+    const TfToken fogVolume;
+    /// \brief "half"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken half;
+    /// \brief "half2"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken half2;
+    /// \brief "half3"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    const TfToken half3;
+    /// \brief "int2"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken int2;
+    /// \brief "int3"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken int3;
+    /// \brief "int64"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken int64;
+    /// \brief "int"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken int_;
+    /// \brief "levelSet"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldClassAttr()
+    const TfToken levelSet;
+    /// \brief "mask"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken mask;
+    /// \brief "matrix3d"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken matrix3d;
+    /// \brief "matrix4d"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken matrix4d;
+    /// \brief "None"
+    /// 
+    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr(), Default value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken none;
+    /// \brief "Normal"
+    /// 
+    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken normal;
+    /// \brief "Point"
+    /// 
+    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken point;
+    /// \brief "quatd"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken quatd;
+    /// \brief "staggered"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldClassAttr()
+    const TfToken staggered;
+    /// \brief "string"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken string;
+    /// \brief "uint"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
+    const TfToken uint;
+    /// \brief "unknown"
+    /// 
+    /// Possible value for UsdVolOpenVDBAsset::GetFieldClassAttr()
+    const TfToken unknown;
+    /// \brief "Vector"
+    /// 
+    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken vector;
+    /// \brief "vectorDataRoleHint"
+    /// 
+    /// UsdVolFieldAsset
+    const TfToken vectorDataRoleHint;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/blitCmds.h"
@@ -49,50 +50,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// To enable GPU compute features, OpenSubdiv must be configured to support
-// GLSL compute kernel.
-//
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-// default to GPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#else
-// default to CPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#endif
-
-
-static void
-_InitializeGPUComputeEnabled(bool *gpuComputeEnabled)
-{
-    // GPU Compute
-    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-        const GlfContextCaps &caps = GlfContextCaps::GetInstance();
-        if (caps.glslVersion >= 430 && caps.shaderStorageBufferEnabled) {
-            *gpuComputeEnabled = true;
-        } else {
-            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                    "(OpenGL 4.3 required).\n");
-        }
-#else
-        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
-#endif
-    }
-}
-
-bool 
-HdStGLUtils::IsGpuComputeEnabled()
-{
-    static bool gpuComputeEnabled = false;
-    static std::once_flag gpuComputeEnabledFlag;
-    std::call_once(gpuComputeEnabledFlag, [](){
-        _InitializeGPUComputeEnabled(&gpuComputeEnabled); 
-    });
-    return gpuComputeEnabled;
-}
 
 template <typename T>
 VtValue
@@ -122,7 +79,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 }
 
 VtValue
-HdStGLUtils::ReadBuffer(GLint vbo,
+HdStGLUtils::ReadBuffer(uint64_t vbo,
                         HdTupleType tupleType,
                         int vboOffset,
                         int stride,
@@ -212,54 +169,12 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     return VtValue();
 }
 
-bool
-HdStGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
-{
-    // glew has to be initialized
-    if (!glGetShaderiv) return true;
-
-    GLint status = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (reason) {
-        GLint infoLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLength);
-        if (infoLength > 0) {
-            char *infoLog = new char[infoLength];;
-            glGetShaderInfoLog(shader, infoLength, NULL, infoLog);
-            reason->assign(infoLog, infoLength);
-            delete[] infoLog;
-        }
-    }
-    return (status == GL_TRUE);
-}
-
-bool
-HdStGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
-{
-    // glew has to be initialized
-    if (!glGetProgramiv) return true;
-
-    GLint status = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (reason) {
-        GLint infoLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLength);
-        if (infoLength > 0) {
-            char *infoLog = new char[infoLength];;
-            glGetProgramInfoLog(program, infoLength, NULL, infoLog);
-            reason->assign(infoLog, infoLength);
-            delete[] infoLog;
-        }
-    }
-    return (status == GL_TRUE);
-}
-
 // ---------------------------------------------------------------------------
 
 void
-HdStGLBufferRelocator::AddRange(GLintptr readOffset,
-                              GLintptr writeOffset,
-                              GLsizeiptr copySize)
+HdStBufferRelocator::AddRange(ptrdiff_t readOffset,
+                              ptrdiff_t writeOffset,
+                              ptrdiff_t copySize)
 {
     _CopyUnit unit(readOffset, writeOffset, copySize);
     if (_queue.empty() || (!_queue.back().Concat(unit))) {
@@ -268,14 +183,11 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 }
 
 void
-HdStGLBufferRelocator::Commit(Hgi* hgi)
+HdStBufferRelocator::Commit(HgiBlitCmds* blitCmds)
 {
     HgiBufferGpuToGpuOp blitOp;
     blitOp.gpuSourceBuffer = _srcBuffer;
     blitOp.gpuDestinationBuffer = _dstBuffer;
-
-    // Use blit work to record resource copy commands.
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
     
     TF_FOR_ALL (it, _queue) {
         blitOp.sourceByteOffset = it->readOffset;
@@ -284,9 +196,8 @@ HdStGLBufferRelocator::Commit(Hgi* hgi)
 
         blitCmds->CopyBufferGpuToGpu(blitOp);
     }
-    hgi->SubmitCmds(blitCmds.get());
 
-    HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
+    HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferGpuToGpu,
                         (double)_queue.size());
 
     _queue.clear();

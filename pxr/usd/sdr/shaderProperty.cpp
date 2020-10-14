@@ -427,13 +427,13 @@ SdrShaderProperty::SdrShaderProperty(
         SdrPropertyMetadata->ValidConnectionTypes, _metadata);
 }
 
-const std::string&
+std::string
 SdrShaderProperty::GetHelp() const
 {
     return StringVal(SdrPropertyMetadata->Help, _metadata);
 }
 
-const std::string&
+std::string
 SdrShaderProperty::GetImplementationName() const
 {
     return StringVal(SdrPropertyMetadata->ImplementationName, _metadata,

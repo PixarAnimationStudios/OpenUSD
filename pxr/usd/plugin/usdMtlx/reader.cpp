@@ -139,7 +139,6 @@ static const _AttributeNames names;
 TF_DEFINE_PRIVATE_TOKENS(
     tokens,
 
-    ((defaultOutputName, "out"))
     ((light, "light"))
 );
 
@@ -385,6 +384,25 @@ _FindMatchingNodeDef(
                                 mtlxInterface->getTarget());
 }
 
+// Get the nodeDef either from the mtlxNode itself or get it from the stdlib.
+// For custom nodedefs defined in the loaded mtlx document one should be able to
+// get the nodeDef from the node, for all other instances corresponding nodeDefs
+// need to be accessed from the stdlib.
+static
+mx::ConstNodeDefPtr
+_GetNodeDef(const mx::ConstNodePtr& mtlxNode)
+{
+    mx::ConstNodeDefPtr mtlxNodeDef = mtlxNode->getNodeDef();
+
+    if (mtlxNodeDef) {
+        return mtlxNodeDef;
+    }
+
+    return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
+                                UsdMtlxGetVersion(mtlxNode),
+                                mtlxNode->getTarget());
+}
+
 // Get the shader id for a MaterialX nodedef.
 static
 NdrIdentifier
@@ -399,10 +417,7 @@ static
 NdrIdentifier
 _GetShaderId(const mx::ConstNodePtr& mtlxNode)
 {
-    return _GetShaderId(_FindMatchingNodeDef(mtlxNode,
-                                             mtlxNode->getCategory(),
-                                             UsdMtlxGetVersion(mtlxNode),
-                                             mtlxNode->getTarget()));
+    return _GetShaderId(_GetNodeDef(mtlxNode));
 }
 
 // Copy the value from a Material value element to a UsdShadeInput with a
@@ -771,7 +786,7 @@ _NodeGraphBuilder::_AddNode(
     // Add the outputs.
     if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
         if (_Type(mtlxNode) == mx::MULTI_OUTPUT_TYPE_STRING) {
-            if (auto mtlxNodeDef = mtlxNode->getNodeDef()) {
+            if (auto mtlxNodeDef = _GetNodeDef(mtlxNode)) {
                 for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
                     for (auto mtlxOutput: i->getOutputs()) {
                         _AddOutput(mtlxOutput, mtlxNode, connectable);
@@ -785,7 +800,7 @@ _NodeGraphBuilder::_AddNode(
         }
     }
     else {
-        if (auto mtlxNodeDef = mtlxNode->getNodeDef()) {
+        if (auto mtlxNodeDef = _GetNodeDef(mtlxNode)) {
             for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
                 for (auto mtlxOutput: i->getOutputs()) {
                     _AddOutput(mtlxOutput, mtlxNode, connectable);
@@ -793,11 +808,8 @@ _NodeGraphBuilder::_AddNode(
             }
         }
         else {
-            // Make sure to still add a default output to the usd node if the
-            // mtlxNodeDef is invalid, so that we can at least preserve the
-            // shader network topology according to the UsdShade OM, which
-            // requires an output if any input is connected to the node.
-            _AddOutput(mtlxNode, mtlxNode, connectable);
+            // Do not add any (default) output to the usd node if the mtlxNode
+            // is missing a corresponding mtlxNodeDef.
         }
     }
 }
@@ -909,16 +921,16 @@ _NodeGraphBuilder::_AddOutput(
     const auto outputName =
         isAnOutput
             ? _MakeName(mtlxTyped)
-            : tokens->defaultOutputName;
+            : UsdMtlxTokens->DefaultOutputName;
 
     // Get the node name.
     auto& nodeName = _Name(mtlxOwner);
 
     // Compute a key for finding this output.  Since we'll access this
     // table with the node name and optionally the output name for a
-    // multioutput node, it's easiest to always have an output name
-    // but make it empty for default outputs.
-    auto key = nodeName + "." + (isAnOutput ? outputName.GetText() : "");
+    // multioutput node (in 1.36 materialx version and below), it's 
+    // easiest to always have an output name.
+    auto key = nodeName + "." + outputName.GetText();
 
     auto result =
         _outputs[key] = connectable.CreateOutput(outputName, usdType);
@@ -936,8 +948,11 @@ _NodeGraphBuilder::_ConnectPorts(
     const D& usdDownstream)
 {
     if (auto nodeName = _Attr(mtlxDownstream, names.nodename)) {
-        auto i = _outputs.find(nodeName.str() + "." +
-                               _Attr(mtlxDownstream, names.output).str());
+        const auto outputAttr = _Attr(mtlxDownstream, names.output);
+        const auto outputName = outputAttr ? 
+            _MakeName(outputAttr.str()) : 
+            UsdMtlxTokens->DefaultOutputName;
+        auto i = _outputs.find(nodeName.str() + "." + outputName.GetText());
         if (i == _outputs.end()) {
             TF_WARN("Output for <%s> missing",
                     usdDownstream.GetAttr().GetPath().GetText());
@@ -1066,7 +1081,7 @@ _NodeGraph::GetOutputByName(const std::string& name) const
                 : UsdShadeShader::Get(_usdOwnerPrim.GetStage(),
                                       _referencer.AppendChild(i->second));
         if (child) {
-            return child.GetOutput(tokens->defaultOutputName);
+            return child.GetOutput(UsdMtlxTokens->DefaultOutputName);
         }
     }
 
@@ -1652,8 +1667,7 @@ _Context::_AddCollection(
     // Create the collection.
     auto& usdCollection =
         _collections[_Name(mtlxCollection)] =
-            UsdCollectionAPI::ApplyCollection(usdPrim,
-                                    _MakeName(mtlxCollection));
+            UsdCollectionAPI::Apply(usdPrim, _MakeName(mtlxCollection));
     _SetCoreUIAttributes(usdCollection.CreateIncludesRel(), mtlxCollection);
 
     // Add the included collections (recursively creating them if necessary)
@@ -1723,8 +1737,7 @@ _Context::_AddGeomExpr(const mx::ConstGeomElementPtr& mtlxGeomElement)
     // Create the collection.
     auto& usdCollection =
         i.first->second =
-            UsdCollectionAPI::ApplyCollection(usdPrim,
-                                    TfToken(name + std::to_string(k)));
+            UsdCollectionAPI::Apply(usdPrim, TfToken(name + std::to_string(k)));
 
     // Add the geometry expressions.
     auto& geomprefix = mtlxGeomElement->getActiveGeomPrefix();

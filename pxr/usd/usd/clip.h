@@ -130,6 +130,12 @@ public:
             _TranslatePathToClip(path), field, value);
     }
 
+    std::type_info const &
+    GetFieldTypeid(const SdfPath& path, const TfToken& field) const {
+        return _GetLayerForClip()->GetFieldTypeid(
+            _TranslatePathToClip(path), field);
+    }    
+
     size_t GetNumTimeSamplesForPath(const SdfPath& path) const;
 
     std::set<ExternalTime>

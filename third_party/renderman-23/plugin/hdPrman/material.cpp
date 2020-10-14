@@ -127,6 +127,8 @@ _ConvertToVec3fArray(const VtArray<GfVec3d>& v)
     return out;
 }
 
+using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+
 // Recursively convert a Matfilt node and its upstream dependencies
 // to Riley equivalents.  Avoids adding redundant nodes in the case
 // of multi-path dependencies.
@@ -134,8 +136,17 @@ static bool
 _ConvertNodes(
     MatfiltNetwork const& network,
     SdfPath const& nodePath,
-    std::vector<riley::ShadingNode> *result)
+    std::vector<riley::ShadingNode> *result,
+    _PathSet* visitedNodes)
 {
+    // Check if we've processed this node before. If we have, we'll just return.
+    // This is not an error, since we often have multiple connection paths
+    // leading to the same upstream node.
+    if (visitedNodes->count(nodePath) > 0) {
+        return false;
+    }
+    visitedNodes->insert(nodePath);
+
     // Find matfilt node.
     auto iter = network.nodes.find(nodePath);
     if (iter == network.nodes.end()) {
@@ -148,21 +159,9 @@ _ConvertNodes(
     // Pre-traverse upstream nodes.
     for (auto const& connEntry: node.inputConnections) {
         for (auto const& e: connEntry.second) {
-            // Check if this node was already reached via another
-            // connection path.
-            bool upstreamNodeWasVisited = false;
-            // O(nm) for n nodes and m connections.  We expect n and m
-            // to remain small, but may need to revisit if we see much
-            // larger networks in the future.
-            for (riley::ShadingNode const &sn: *result) {
-                if (e.upstreamNode.GetString() == sn.handle.CStr()) {
-                    upstreamNodeWasVisited = true;
-                    break;
-                }
-            }
-            if (!upstreamNodeWasVisited) {
-                _ConvertNodes(network, e.upstreamNode, result);
-            }
+            // This method will just return if we've visited this upstream node
+            // before
+            _ConvertNodes(network, e.upstreamNode, result, visitedNodes);
         }
     }
     // Find shader registry entry.
@@ -442,7 +441,9 @@ _ConvertNodes(
             }
         }
     }
+
     result->emplace_back(std::move(sn));
+
     return true;
 }
     
@@ -495,7 +496,9 @@ _ConvertMatfiltNetworkToRman(
     nodes.reserve(network.nodes.size());
     bool materialFound = false, displacementFound = false;
     for (auto const& terminal: network.terminals) {
-        if (_ConvertNodes(network, terminal.second.upstreamNode, &nodes)) {
+        _PathSet visitedNodes;
+        if (_ConvertNodes(network, terminal.second.upstreamNode, &nodes,
+                          &visitedNodes)) {
             if (terminal.first == HdMaterialTerminalTokens->surface ||
                 terminal.first == HdMaterialTerminalTokens->volume) {
                 // Create or modify Riley material.
@@ -594,13 +597,6 @@ HdDirtyBits
 HdPrmanMaterial::GetInitialDirtyBitsMask() const
 {
     return HdChangeTracker::AllDirty;
-}
-
-//virtual
-void
-HdPrmanMaterial::Reload()
-{
-    // TODO Is it possible to reload shaders during an rman session?
 }
 
 bool

@@ -22,11 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
@@ -39,15 +37,65 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 
-#include "pxr/imaging/hgiGL/shaderProgram.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4i.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HgiResourceBindingsSharedPtr
+_CreateResourceBindings(
+    Hgi* hgi,
+    HgiBufferHandle const& primvar,
+    HgiBufferHandle const& quadrangulateTable)
+{
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "Quadrangulate";
+
+    if (primvar) {
+        HgiBufferBindDesc bufBind0;
+        bufBind0.bindingIndex = 0;
+        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.offsets.push_back(0);
+        bufBind0.buffers.push_back(primvar);
+        resourceDesc.buffers.push_back(std::move(bufBind0));
+    }
+
+    if (quadrangulateTable) {
+        HgiBufferBindDesc bufBind1;
+        bufBind1.bindingIndex = 1;
+        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.offsets.push_back(0);
+        bufBind1.buffers.push_back(quadrangulateTable);
+        resourceDesc.buffers.push_back(std::move(bufBind1));
+    }
+
+    return std::make_shared<HgiResourceBindingsHandle>(
+        hgi->CreateResourceBindings(resourceDesc));
+}
+
+static HgiComputePipelineSharedPtr
+_CreatePipeline(
+    Hgi* hgi,
+    uint32_t constantValuesSize,
+    HgiShaderProgramHandle const& program)
+{
+    HgiComputePipelineDesc desc;
+    desc.debugName = "Quadrangulate";
+    desc.shaderProgram = program;
+    desc.shaderConstantsDesc.byteSize = constantValuesSize;
+    return std::make_shared<HgiComputePipelineHandle>(
+        hgi->CreateComputePipeline(desc));
+}
 
 HdSt_QuadInfoBuilderComputation::HdSt_QuadInfoBuilderComputation(
     HdSt_MeshTopology *topology, SdfPath const &id)
@@ -431,8 +479,6 @@ HdSt_QuadrangulateComputationGPU::Execute(
         return;
     }
 
-    if (!glDispatchCompute)
-        return;
 
     // select shader by datatype
     TfToken shaderToken =
@@ -440,30 +486,27 @@ HdSt_QuadrangulateComputationGPU::Execute(
         HdStGLSLProgramTokens->quadrangulateFloat :
         HdStGLSLProgramTokens->quadrangulateDouble;
 
-    HdStGLSLProgramSharedPtr computeProgram =
-        HdStGLSLProgram::GetComputeProgram(shaderToken,
-            static_cast<HdStResourceRegistry*>(resourceRegistry));
-        
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
+    HdStGLSLProgramSharedPtr computeProgram
+        = HdStGLSLProgram::GetComputeProgram(shaderToken, hdStResourceRegistry);
     if (!computeProgram) return;
 
-    HgiShaderProgramHandle const& hgiProgram = computeProgram->GetProgram();
-    GLuint program = hgiProgram->GetRawResource();
-
-    HdStBufferArrayRangeGLSharedPtr range_ =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+    HdStBufferArrayRangeSharedPtr range_ =
+        std::static_pointer_cast<HdStBufferArrayRange> (range);
 
     // buffer resources for GPU computation
     HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
-    HdStBufferResourceGLSharedPtr primvar =
-        std::static_pointer_cast<HdStBufferResourceGL> (primvar_);
+    HdStBufferResourceSharedPtr primvar =
+        std::static_pointer_cast<HdStBufferResource> (primvar_);
 
-    HdStBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
-        std::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
+    HdStBufferArrayRangeSharedPtr quadrangulateTableRange_ =
+        std::static_pointer_cast<HdStBufferArrayRange> (quadrangulateTableRange);
 
     HdBufferResourceSharedPtr quadrangulateTable_ =
         quadrangulateTableRange_->GetResource();
-    HdStBufferResourceGLSharedPtr quadrangulateTable =
-        std::static_pointer_cast<HdStBufferResourceGL> (quadrangulateTable_);
+    HdStBufferResourceSharedPtr quadrangulateTable =
+        std::static_pointer_cast<HdStBufferResource> (quadrangulateTable_);
 
     // prepare uniform buffer for GPU computation
     struct Uniform {
@@ -496,41 +539,58 @@ HdSt_QuadrangulateComputationGPU::Execute(
     uniform.numComponents =
         HdGetComponentCount(primvar->GetTupleType().type);
 
-    // transfer uniform buffer
-    // XXX Accessing shader program until we can use Hgi::SetConstantValues via
-    // GfxCmds.
-    const size_t uboSize = sizeof(uniform);
-    HgiGLShaderProgram * const hgiGLProgram =
-        dynamic_cast<HgiGLShaderProgram*>(hgiProgram.Get());
-    GLuint ubo = hgiGLProgram->GetUniformBuffer(uboSize);
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (caps.directStateAccessEnabled) {
-        glNamedBufferData(ubo, uboSize, &uniform, GL_STATIC_DRAW);
-    } else {
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, uboSize, &uniform, GL_STATIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(
-        GL_SHADER_STORAGE_BUFFER, 0, primvar->GetId()->GetRawResource());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1,
-                     quadrangulateTable->GetId()->GetRawResource());
-
-    // dispatch compute kernel
-    glUseProgram(program);
-
     int numNonQuads = (int)quadInfo->numVerts.size();
 
-    glDispatchCompute(numNonQuads, 1, 1);
+    Hgi* hgi = hdStResourceRegistry->GetHgi();
 
-    glUseProgram(0);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    // Generate hash for resource bindings and pipeline.
+    // XXX Needs fingerprint hash to avoid collisions
+    uint64_t rbHash = (uint64_t) TfHash::Combine(
+        primvar->GetId().Get(),
+        quadrangulateTable->GetId().Get());
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
+    uint64_t pHash = (uint64_t) TfHash::Combine(
+        computeProgram->GetProgram().Get(),
+        sizeof(uniform));
+
+    // Get or add resource bindings in registry.
+    HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
+        hdStResourceRegistry->RegisterResourceBindings(rbHash);
+    if (resourceBindingsInstance.IsFirstInstance()) {
+        HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
+            hgi, primvar->GetId(), quadrangulateTable->GetId());
+        resourceBindingsInstance.SetValue(rb);
+    }
+
+    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+        resourceBindingsInstance.GetValue();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+
+    // Get or add pipeline in registry.
+    HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
+        hdStResourceRegistry->RegisterComputePipeline(pHash);
+    if (computePipelineInstance.IsFirstInstance()) {
+        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+            hgi, sizeof(uniform), computeProgram->GetProgram());
+        computePipelineInstance.SetValue(pipe);
+    }
+
+    HgiComputePipelineSharedPtr const& pipelinePtr =
+        computePipelineInstance.GetValue();
+    HgiComputePipelineHandle pipeline = *pipelinePtr.get();
+
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
+    computeCmds->PushDebugGroup("Quadrangulate Cmds");
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(pipeline);
+
+    // Queue transfer uniform buffer
+    computeCmds->SetConstantValues(pipeline, 0, sizeof(uniform), &uniform);
+
+    // Queue compute work
+    computeCmds->Dispatch(numNonQuads, 1);
+
+    computeCmds->PopDebugGroup();
 
     HD_PERF_COUNTER_ADD(HdPerfTokens->quadrangulatedVerts,
                         quadInfo->numAdditionalPoints);

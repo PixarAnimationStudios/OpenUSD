@@ -545,22 +545,20 @@ UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
         schemaBaseType, typeName.GetString());
 }
 
-// The type name for an applied API schema will consist of a schema type name
-// and an instance name if the API schema is multiple apply. This function 
-// parses that for us.
-static std::pair<TfToken, TfToken> _GetTypeAndInstance(const TfToken &typeName)
+std::pair<TfToken, TfToken>
+UsdSchemaRegistry::GetTypeAndInstance(const TfToken &apiSchemaName)
 {
     // Try to split the string at the first namespace delimiter. We always use
     // the first as type names can not have embedded namespaces but instances 
     // names can.
     const char namespaceDelimiter =
         SdfPathTokens->namespaceDelimiter.GetText()[0];
-    const std::string &typeString = typeName.GetString();
+    const std::string &typeString = apiSchemaName.GetString();
     size_t delim = typeString.find(namespaceDelimiter);
     // If the delimiter is not found, we have a single apply API schema and 
     // no instance name.
     if (delim == std::string::npos) {
-        return std::make_pair(typeName, TfToken());
+        return std::make_pair(apiSchemaName, TfToken());
     } else {
         return std::make_pair(TfToken(typeString.substr(0, delim)),
                               TfToken(typeString.c_str() + delim + 1));
@@ -613,7 +611,7 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
 
         // Applied schemas may be single or multiple apply so we have to parse
         // the schema name into a type and possibly an instance name.
-        auto typeAndInstance = _GetTypeAndInstance(schema);
+        auto typeAndInstance = GetTypeAndInstance(schema);
 
         // From the type we should able to find an existing prim definition for
         // the API schema type if it is valid.
@@ -641,8 +639,8 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
             if (TF_VERIFY(!prefix.IsEmpty())) {
                 // The prim definition for a multiple apply schema will have its
                 // properties stored with no prefix. We generate the prefix for 
-                // the this instance and apply it to each property name and map
-                // the prefix name to the definition's property.
+                // this instance and apply it to each property name and map the
+                // prefix name to the definition's property.
                 const std::string propPrefix = 
                     SdfPath::JoinIdentifier(prefix, typeAndInstance.second);
                 primDef->_ApplyPropertiesFromPrimDef(

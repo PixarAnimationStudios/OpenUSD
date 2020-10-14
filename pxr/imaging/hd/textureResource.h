@@ -38,6 +38,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdTextureResourceSharedPtr = std::shared_ptr<class HdTextureResource>;
 
+///
+/// \class HdTextureResource
+///
+/// \deprecated It is now the responsibility of the render delegate to load
+/// the texture (using the file path authored on the texture node in a
+/// material network).
+///
 class HdTextureResource {
 public:
     typedef size_t ID;

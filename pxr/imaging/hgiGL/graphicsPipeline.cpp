@@ -35,33 +35,36 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
     HgiGraphicsPipelineDesc const& desc)
     : HgiGraphicsPipeline(desc)
-    , _vao()
+    , _vao(0)
 {
-    glCreateVertexArrays(1, &_vao);
+    if (!_descriptor.vertexBuffers.empty()) {
+        glCreateVertexArrays(1, &_vao);
 
-    if (!_descriptor.debugName.empty()) {
-        glObjectLabel(GL_VERTEX_ARRAY, _vao, -1, _descriptor.debugName.c_str());
-    }
+        if (!_descriptor.debugName.empty()) {
+            HgiGLObjectLabel(
+                GL_VERTEX_ARRAY, _vao, _descriptor.debugName);
+        }
 
-    // Configure the vertex buffers in the vertex array object.
-    for (HgiVertexBufferDesc const& vbo : _descriptor.vertexBuffers) {
+        // Configure the vertex buffers in the vertex array object.
+        for (HgiVertexBufferDesc const& vbo : _descriptor.vertexBuffers) {
 
-        HgiVertexAttributeDescVector const& vas = vbo.vertexAttributes;
+            HgiVertexAttributeDescVector const& vas = vbo.vertexAttributes;
 
-        // Describe each vertex attribute in the vertex buffer
-        for (size_t loc=0; loc<vas.size(); loc++) {
-            HgiVertexAttributeDesc const& va = vas[loc];
+            // Describe each vertex attribute in the vertex buffer
+            for (size_t loc=0; loc<vas.size(); loc++) {
+                HgiVertexAttributeDesc const& va = vas[loc];
 
-            uint32_t idx = va.shaderBindLocation;
-            glEnableVertexArrayAttrib(_vao, idx);
-            glVertexArrayAttribBinding(_vao, idx, vbo.bindingIndex);
-            glVertexArrayAttribFormat(
-                _vao,
-                idx,
-                HgiGetComponentCount(va.format),
-                HgiGLConversions::GetFormatType(va.format),
-                GL_FALSE,
-                va.offset);
+                uint32_t idx = va.shaderBindLocation;
+                glEnableVertexArrayAttrib(_vao, idx);
+                glVertexArrayAttribBinding(_vao, idx, vbo.bindingIndex);
+                glVertexArrayAttribFormat(
+                    _vao,
+                    idx,
+                    HgiGetComponentCount(va.format),
+                    HgiGLConversions::GetFormatType(va.format),
+                    GL_FALSE,
+                    va.offset);
+            }
         }
     }
 
@@ -70,15 +73,19 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
 
 HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline()
 {
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &_vao);
+    if (_vao) {
+        glBindVertexArray(0);
+        glDeleteVertexArrays(1, &_vao);
+    }
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
 void
 HgiGLGraphicsPipeline::BindPipeline()
 {
-    glBindVertexArray(_vao);
+    if (_vao) {
+        glBindVertexArray(_vao);
+    }
 
     //
     // Depth Stencil State
@@ -106,8 +113,10 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
     } else {
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     }
 
     //
