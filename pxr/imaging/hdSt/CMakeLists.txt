@@ -16,6 +16,11 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
+set(optionalPrivateClasses "")
+if (${PXR_BUILD_MATERIALX_PLUGIN})
+    list(APPEND optionalPrivateClasses materialXFilter)
+endif()
+
 pxr_library(hdSt
     LIBRARIES
         hio
@@ -134,6 +139,7 @@ pxr_library(hdSt
         unitTestHelper
         volumeShader
         volumeShaderKey
+        ${optionalPrivateClasses}
 
     RESOURCE_FILES
         plugInfo.json

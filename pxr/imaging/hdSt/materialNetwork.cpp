@@ -28,6 +28,10 @@
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include "pxr/imaging/hdSt/materialXFilter.h"
+#endif
+
 #include "pxr/imaging/hd/material.h"
 
 #include "pxr/imaging/glf/udimTexture.h"
@@ -1233,8 +1237,13 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     const TfToken &terminalName = (isVolume) ? HdMaterialTerminalTokens->volume 
                                             : HdMaterialTerminalTokens->surface;
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    HdSt_ApplyMaterialXFilter(&surfaceNetwork);
+#endif
+
     if (HdMaterialNode2 const* surfTerminal = 
             _GetTerminalNode(materialId, surfaceNetwork, terminalName)) {
+
         // Extract the glslfx and metadata for surface/volume.
         _GetGlslfxForTerminal(_surfaceGfx, &_surfaceGfxHash,
                               surfTerminal->nodeTypeId, resourceRegistry);
@@ -1243,8 +1252,8 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
             // If the glslfx file is not valid we skip parsing the network.
             // This produces no fragmentSource which means Storm's material
             // will use the fallback shader.
-
             if (_surfaceGfx->IsValid()) {
+                
                 _fragmentSource = isVolume ? _surfaceGfx->GetVolumeSource() 
                                            : _surfaceGfx->GetSurfaceSource();
                 _materialMetadata = _surfaceGfx->GetMetadata();
