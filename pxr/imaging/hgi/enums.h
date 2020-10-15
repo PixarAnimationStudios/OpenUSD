@@ -291,7 +291,7 @@ using HgiShaderStage = HgiBits;
 /// <li>HgiBindResourceTypeSampler:
 ///   Sampler.
 ///   Glsl example: uniform sampler samplerOnly</li>
-/// <li>HgiBindResourceTypeSamplerImage:
+/// <li>HgiBindResourceTypeSampledImage:
 ///   Image for use with sampling ops.
 ///   Glsl example: uniform texture2D textureOnly
 ///   texture(sampler2D(textureOnly, samplerOnly), ...)</li>
@@ -310,7 +310,7 @@ using HgiShaderStage = HgiBits;
 enum HgiBindResourceType
 {
     HgiBindResourceTypeSampler = 0,
-    HgiBindResourceTypeSamplerImage,
+    HgiBindResourceTypeSampledImage,
     HgiBindResourceTypeCombinedSamplerImage,
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,

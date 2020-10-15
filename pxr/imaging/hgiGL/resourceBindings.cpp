@@ -64,7 +64,7 @@ HgiGLResourceBindings::BindResources()
             images.resize(unit+1, 0);
         }
 
-        if (texDesc.resourceType == HgiBindResourceTypeSamplerImage ||
+        if (texDesc.resourceType == HgiBindResourceTypeSampledImage ||
             texDesc.resourceType == HgiBindResourceTypeCombinedSamplerImage) {
             // Texture sampling (for graphics pipeline)
             hasTex = true;
@@ -89,7 +89,7 @@ HgiGLResourceBindings::BindResources()
             samplers[texDesc.bindingIndex] = glSmp->GetSamplerId();
         } else {
             // A sampler MUST be provided for sampler image textures (Hgi rule).
-            TF_VERIFY(texDesc.resourceType != HgiBindResourceTypeSamplerImage);
+            TF_VERIFY(texDesc.resourceType != HgiBindResourceTypeSampledImage);
         }
     }
 
