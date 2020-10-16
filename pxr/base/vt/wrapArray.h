@@ -188,8 +188,12 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
     // Get the number of items to be set.
     const size_t setSize = 1 + (range.stop - range.start) / range.step;
 
-    // Copy from VtArray.
-    if (extract< VtArray<T> >(value).check()) {
+    // Copy from VtArray.  We only want to take this path if the passed value is
+    // *exactly* a VtArray.  That is, we don't want to take this path if it can
+    // merely *convert* to a VtArray, so we check that we can extract a mutable
+    // lvalue reference from the python object, which requires that there be a
+    // real VtArray there.
+    if (extract< VtArray<T> &>(value).check()) {
         const VtArray<T> val = extract< VtArray<T> >(value);
         const size_t length = val.size();
         if (length == 0)
