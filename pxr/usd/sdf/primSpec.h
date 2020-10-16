@@ -690,7 +690,9 @@ public:
 
     /// Sets the variant selected for the given variant set.
     /// If \p variantName is empty, then this removes the variant
-    /// selected for the variant set \p variantSetName.
+    /// selection opinion for the variant set \p variantSetName. To 
+    /// explicitly set the variant selection to be empty, use
+    /// BlockVariantSelection instead.
     SDF_API
     void SetVariantSelection(const std::string& variantSetName,
                              const std::string& variantName);

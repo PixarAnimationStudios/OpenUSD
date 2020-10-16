@@ -100,8 +100,13 @@ public:
     bool HasAuthoredVariantSelection(std::string *value = nullptr) const;
 
     /// Author a variant selection for this VariantSet, setting it to
-    /// \a variantName in the stage's current EditTarget.  Return true if the
-    /// selection was successfully authored, false otherwise.
+    /// \a variantName in the stage's current EditTarget. If \p variantName 
+    /// is empty, clear the variant selection (see ClearVariantSelection). 
+    /// Call BlockVariantSelection to explicitly set an empty variant 
+    /// selection.
+    ///
+    /// Return true if the selection was successfully authored or cleared, 
+    /// false otherwise.
     USD_API
     bool SetVariantSelection(const std::string &variantName);
 
@@ -110,8 +115,9 @@ public:
     USD_API
     bool ClearVariantSelection();
 
-    /// Blocks any weaker selection for this VariantSet, setting it to empty in
-    /// the stage's current EditTarget. Return true on success, false otherwise.
+    /// Block any weaker selections for this VariantSet by authoring an 
+    /// empty string at the stage's current EditTarget. 
+    /// Return true on success, false otherwise.
     USD_API
     bool BlockVariantSelection();
 
