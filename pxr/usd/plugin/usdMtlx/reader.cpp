@@ -196,17 +196,9 @@ _Children(const std::shared_ptr<T>& mtlx, const std::string& category)
 // that becomes important later.
 class _Attr {
 public:
-    _Attr() = default;
-    explicit _Attr(const std::string& value)
-        : _value(value.empty() ? mx::EMPTY_STRING : value) { }
     template <typename T>
     _Attr(const std::shared_ptr<T>& element, const std::string& name)
         : _Attr(element->getAttribute(name)) { }
-    _Attr(const _Attr&) = default;
-    _Attr(_Attr&&) = default;
-    _Attr& operator=(const _Attr&) = default;
-    _Attr& operator=(_Attr&&) = default;
-    ~_Attr() = default;
 
     explicit operator bool() const      { return !_value.empty(); }
     bool operator!() const              { return _value.empty(); }
@@ -216,6 +208,10 @@ public:
 
     std::string::const_iterator begin() const { return _value.begin(); }
     std::string::const_iterator end()   const { return _value.end(); }
+
+private:
+    explicit _Attr(const std::string& value)
+        : _value(value.empty() ? mx::EMPTY_STRING : value) { }
 
 private:
     const std::string& _value = mx::EMPTY_STRING;
