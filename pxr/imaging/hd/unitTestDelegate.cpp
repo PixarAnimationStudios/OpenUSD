@@ -784,20 +784,6 @@ HdUnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
 }
 
 /*virtual*/
-HdTextureResource::ID
-HdUnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
-{
-    return SdfPath::Hash()(textureId);
-}
-
-/*virtual*/
-HdTextureResourceSharedPtr
-HdUnitTestDelegate::GetTextureResource(SdfPath const& textureId)
-{
-    return nullptr;
-}
-
-/*virtual*/
 HdRenderBufferDescriptor
 HdUnitTestDelegate::GetRenderBufferDescriptor(SdfPath const& id)
 {

@@ -360,12 +360,6 @@ public:
     HD_API
     virtual VtValue GetCameraParamValue(SdfPath const &cameraId, 
                                         TfToken const &paramName) override;
-    HD_API
-    virtual HdTextureResource::ID GetTextureResourceID(
-        SdfPath const& textureId) override;
-    HD_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(
-        SdfPath const& textureId) override;
 
     HD_API
     virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(

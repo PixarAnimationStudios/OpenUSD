@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hdSt/unitTestDelegate.h"
 
+#include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -85,7 +85,7 @@ public:
     }
 
     /// Returns the UnitTest delegate
-    HdSt_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
+    HdUnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
     void SetRepr(HdReprSelector const &reprToken);
@@ -102,7 +102,7 @@ private:
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
-    HdSt_UnitTestDelegate *_sceneDelegate;
+    HdUnitTestDelegate *_sceneDelegate;
 
     SdfPath _cameraId;
     HdReprSelector _reprToken;

@@ -187,8 +187,8 @@ HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
     _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_hgiDriver});
     TF_VERIFY(_renderIndex != nullptr);
 
-    _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
-                                             SdfPath::AbsoluteRootPath());
+    _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
+                                            SdfPath::AbsoluteRootPath());
 
     _cameraId = SdfPath("/testCam");
     _sceneDelegate->AddCamera(_cameraId);

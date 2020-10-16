@@ -913,18 +913,6 @@ Hdx_UnitTestDelegate::GetRenderBufferDescriptor(SdfPath const &id)
     return ret.UncheckedGet<HdRenderBufferDescriptor>();
 }
 
-HdTextureResourceSharedPtr
-Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
-{
-    return HdTextureResourceSharedPtr();
-}
-
-HdTextureResource::ID
-Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
-{
-    return SdfPath::Hash()(textureId);
-}
-
 TfTokenVector
 Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
 {

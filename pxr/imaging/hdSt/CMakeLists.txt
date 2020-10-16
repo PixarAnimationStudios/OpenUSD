@@ -135,7 +135,6 @@ pxr_library(hdSt
         subdivision
         subdivision3
         triangulate
-        unitTestDelegate
         unitTestHelper
         volumeShader
         volumeShaderKey
