@@ -1557,25 +1557,47 @@ if MacOS():
     # ALEMBIC 1.8.3 adds fixes for Apple Silicon cross compilation.
     ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
 else:
-    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+    # Autodesk - use the same version on all platforms.
+    #ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
 
 def InstallAlembic(context, force, buildArgs):
+    staticHDF5 = 'USE_STATIC_HDF5' in " ".join(buildArgs)
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
-        if MacOS():
+        if MacOS() or Linux():
             PatchFile("CMakeLists.txt",
-              [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
-                "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
+              [("add_definitions(-Wall -Werror -Wextra -Wno-unused-parameter -Wno-deprecated)",
+                "add_definitions(-Wall -Wextra -Wno-unused-parameter -Wno-deprecated)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
             # it was built with CMake as a dynamic library.
             cmakeOptions += [
                 '-DUSE_HDF5=ON',
-                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir),
-                '-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
+                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir)]
+            if not staticHDF5:
+                cmakeOptions += ['-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
         else:
            cmakeOptions += ['-DUSE_HDF5=OFF']
-                 
+
+        cmakeOptions += ['-DILMBASE_ROOT="{instDir}"'.format(instDir=context.instDir)]
+
+        # When OpenExr is built statically (starting with v2.3.0) the lib names
+        # have _s in them and in debug _d.
+        if context.buildDebug:
+            PatchFile(os.path.join('cmake', 'Modules', 'FindIlmBase.cmake'),
+                [('      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n',
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_d ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s_d ${COMPONENT}\n')],
+                  multiLineMatches=True)
+        else:
+            PatchFile(os.path.join('cmake', 'Modules', 'FindIlmBase.cmake'),
+                [('      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n',
+                  '      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s ${COMPONENT}\n')],
+                  multiLineMatches=True)
+
         cmakeOptions += buildArgs
 
         RunCMake(context, force, cmakeOptions)
