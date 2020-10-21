@@ -1308,9 +1308,11 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+# To fix a bug on Mac when building statically, bump version.
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.14.zip"
 
 def InstallAlembic(context, force, buildArgs):
+    staticHDF5 = 'USE_STATIC_HDF5' in " ".join(buildArgs)
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
@@ -1318,11 +1320,30 @@ def InstallAlembic(context, force, buildArgs):
             # it was built with CMake as a dynamic library.
             cmakeOptions += [
                 '-DUSE_HDF5=ON',
-                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir),
-                '-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
+                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir)]
+            if not staticHDF5:
+                cmakeOptions += ['-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
         else:
            cmakeOptions += ['-DUSE_HDF5=OFF']
-                 
+
+        cmakeOptions += ['-DILMBASE_ROOT="{instDir}"'.format(instDir=context.instDir)]
+
+        # When OpenExr is built statically (starting with v2.3.0) the lib names
+        # have _s in them and in debug _d.
+        if context.buildDebug:
+            PatchFile(os.path.join('cmake', 'Modules', 'FindIlmBase.cmake'),
+                [('      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n',
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_d ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s_d ${COMPONENT}\n')],
+                  multiLineMatches=True)
+        else:
+            PatchFile(os.path.join('cmake', 'Modules', 'FindIlmBase.cmake'),
+                [('      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n',
+                  '      ${COMPONENT}-${_ilmbase_libs_ver} ${COMPONENT}\n'
+                  '      ${COMPONENT}-${_ilmbase_libs_ver}_s ${COMPONENT}\n')],
+                  multiLineMatches=True)
+
         cmakeOptions += buildArgs
 
         RunCMake(context, force, cmakeOptions)
