@@ -112,6 +112,29 @@ typedef std::vector<HdxPickHit> HdxPickHitVector;
 /// the scene delegate (like resolution mode and pick location, that might
 /// be resolved late), as well as the picking collection and the output
 /// hit vector.
+/// 'pickTarget': The target of the pick operation, which may influence the
+///     data filled in the HdxPickHit(s).
+///     The available options are:
+///         HdxPickTokens->pickPrimsAndInstances
+///         HdxPickTokens->pickFaces
+///         HdxPickTokens->pickEdges
+///         HdxPickTokens->pickPoints
+///
+/// 'resolveMode': Dictates the resolution of which hit(s) are returned in
+///     'outHits'.
+///     The available options are:
+///     1. HdxPickTokens->resolveNearestToCamera : Returns the hit whose
+///         position is nearest to the camera 
+///     2. HdxPickTokens->resolveNearestToCenter : Returns the hit whose
+///         position is nearest to center of the pick location/region. 
+///     3. HdxPickTokens->resolveUnique : Returns the unique hits, by hashing
+///         the relevant member fields of HdxPickHit. The 'pickTarget'
+///         influences this operation. For e.g., the subprim indices are ignored
+///         when the pickTarget is pickPrimsAndInstances.
+///     4. HdxPickTokens->resolveAll: Returns all the hits for the pick location
+///         or region. The number of hits returned depends on the resolution
+///         used and may have duplicates.
+///
 struct HdxPickTaskContextParams
 {
     typedef std::function<void(void)> DepthMaskCallback;

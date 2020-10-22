@@ -215,4 +215,18 @@ pxr_build_test(testHdxPickTarget
         unitTestUtils.cpp
         testenv/testHdxPickTarget.cpp
 )
+pxr_build_test(testHdxPickResolveMode
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestUtils.cpp
+        testenv/testHdxPickResolveMode.cpp
+)
 endif()
