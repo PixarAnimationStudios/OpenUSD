@@ -25,13 +25,24 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HGI_ENABLE_VULKAN, 0,
+                      "Enable Vulkan as platform default Hgi backend (WIP)");
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<Hgi>();
+}
+
+static bool
+_IsVulkanEnabled()
+{
+    static bool _v = TfGetEnvSetting(HGI_ENABLE_VULKAN) == 1;
+    return _v;
 }
 
 Hgi::Hgi()
@@ -60,16 +71,21 @@ _MakeNewPlatformDefaultHgi()
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
-    #if defined(ARCH_OS_LINUX)
-        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
-    #elif defined(ARCH_OS_DARWIN)
-        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiMetal");
-    #elif defined(ARCH_OS_WINDOWS)
-        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
-    #else
-        #error Unknown Platform
-        return nullptr;
-    #endif
+    TfType plugType;
+    if (_IsVulkanEnabled()) {
+        plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiVulkan");
+    } else {
+        #if defined(ARCH_OS_LINUX)
+            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+        #elif defined(ARCH_OS_DARWIN)
+            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiMetal");
+        #elif defined(ARCH_OS_WINDOWS)
+            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+        #else
+            #error Unknown Platform
+            return nullptr;
+        #endif
+    }
 
     PlugPluginPtr plugin = plugReg.GetPluginForType(plugType);
     if (!plugin || !plugin->Load()) {
