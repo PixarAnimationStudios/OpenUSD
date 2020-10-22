@@ -141,6 +141,10 @@ void HdStResourceRegistry::ReloadResource(TfToken const& resourceType,
         HioGlslfxSharedPtr glslfxSharedPtr = glslfxInstance.GetValue();
         glslfxSharedPtr.reset(new HioGlslfx(path));
         glslfxInstance.SetValue(glslfxSharedPtr);
+    } else if (resourceType == HdResourceTypeTokens->texture) {
+        HdSt_TextureObjectRegistry *const reg = 
+            _textureHandleRegistry->GetTextureObjectRegistry();
+        reg->MarkTextureFilePathDirty(TfToken(path));
     }
 }
 
