@@ -127,7 +127,7 @@ HdStInstancer::UpdateInstancePrimvarRange(HdRprim *prim,
     }
 
     HdPrimvarDescriptorVector primvars =
-        HdStGetInstancerPrimvarDescriptors(this, prim, drawItem, delegate);
+        HdStGetInstancerPrimvarDescriptors(this, delegate);
 
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());

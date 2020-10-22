@@ -121,20 +121,13 @@ HdStGetPrimvarDescriptors(
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
-    HdRprim const * prim,
-    HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate)
 {
     HdPrimvarDescriptorVector primvars =
         delegate->GetPrimvarDescriptors(instancer->GetId(),
                                         HdInterpolationInstance);
 
-    if (_IsEnabledPrimvarFiltering(drawItem)) {
-        TfTokenVector filterNames = _GetFilterNames(prim, drawItem, instancer);
-
-        return _FilterPrimvarDescriptors(primvars, filterNames);
-    }
-
+    // XXX: Can we do filtering?
     return primvars;
 }
 

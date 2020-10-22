@@ -71,8 +71,6 @@ HDST_API
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
-    HdRprim const * prim,
-    HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate);
 
 // -----------------------------------------------------------------------------
