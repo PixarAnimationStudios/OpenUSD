@@ -112,7 +112,13 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
 {
 }
 
-HdStResourceRegistry::~HdStResourceRegistry() = default;
+HdStResourceRegistry::~HdStResourceRegistry()
+{
+    // XXX Ideally all the HdInstanceRegistry would get destroy here and
+    // they cleanup all GPU resources. Since that mechanism isn't in place
+    // yet, we call GarbageCollect to emulate this behavior.
+    GarbageCollect();
+}
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {

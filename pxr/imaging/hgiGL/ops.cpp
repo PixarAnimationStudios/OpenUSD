@@ -663,7 +663,7 @@ HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
         TRACE_SCOPE("HgiGLOps::GenerateMipMaps");
 
         HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texture.Get());
-        if (glTex) {
+        if (glTex && glTex->GetTextureId()) {
             glGenerateTextureMipmap(glTex->GetTextureId());
             HGIGL_POST_PENDING_GL_ERRORS();
         }
