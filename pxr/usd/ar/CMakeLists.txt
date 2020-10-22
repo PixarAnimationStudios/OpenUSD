@@ -15,6 +15,26 @@ install(
     DESTINATION include/pxr/usd/ar
 )
 
+set(versionedHeaders "")
+set(versionedCPPFiles "")
+set(versionedPymoduleCPPFiles "")
+
+if (AR_VERSION EQUAL 1)
+    list(APPEND versionedHeaders 
+         resolver_v1.h)
+    list(APPEND versionedCPPFiles
+         resolver_v1.cpp)
+    list(APPEND versionedPymoduleCPPFiles
+         wrapResolver_v1.cpp)
+elseif (AR_VERSION EQUAL 2)
+    list(APPEND versionedHeaders 
+         resolver_v2.h)
+    list(APPEND versionedCPPFiles
+         resolver_v2.cpp)
+    list(APPEND versionedPymoduleCPPFiles
+         wrapResolver_v2.cpp)
+endif()
+
 pxr_library(ar
     LIBRARIES
         arch
@@ -43,6 +63,7 @@ pxr_library(ar
         resolverContextBinder.h
         resolverScopedCache.h
         threadLocalScopedCache.h
+        ${versionedHeaders}
 
     PYTHON_PUBLIC_HEADERS
         pyResolverContext.h
@@ -56,13 +77,13 @@ pxr_library(ar
         filesystemAsset.cpp
         packageResolver.cpp
         packageUtils.cpp
-        resolver.cpp
         resolverContext.cpp
         resolverContextBinder.cpp
         resolverScopedCache.cpp
         debugCodes.cpp
         defaultResolver.cpp
         defaultResolverContext.cpp
+        ${versionedCPPFiles}
 
     PYTHON_CPPFILES
         pyResolverContext.cpp
@@ -73,10 +94,10 @@ pxr_library(ar
         wrapDefaultResolver.cpp
         wrapDefaultResolverContext.cpp
         wrapPackageUtils.cpp
-        wrapResolver.cpp
         wrapResolverContext.cpp
         wrapResolverContextBinder.cpp
         wrapResolverScopedCache.cpp
+        ${versionedPymoduleCPPFiles}
 
     PYMODULE_FILES
         __init__.py
