@@ -25,8 +25,8 @@
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
-
 #include "pxr/base/tf/diagnostic.h"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

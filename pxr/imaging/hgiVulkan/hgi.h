@@ -159,7 +159,6 @@ public:
     /// Invalidates the resource handle and places the object in the garbage
     /// collector vector for future destruction.
     /// This is helpful to avoid destroying GPU resources still in-flight.
-    HGIVULKAN_API
     template<class T, class H>
     void TrashObject(H* handle, std::vector<T*>* collector)
     {

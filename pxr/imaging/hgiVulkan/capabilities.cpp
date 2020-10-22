@@ -57,15 +57,6 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkGetPhysicalDeviceFeatures(physicalDevice, &vkDeviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkMemoryProperties);
 
-    #if defined(VK_USE_PLATFORM_MACOS_MVK)
-        #error Unsupported device extensions used below
-    #endif
-
-    // Imageless framebuffers for pipeline / renderpass
-    vkImagelessFbFeatures.pNext = nullptr;
-    vkImagelessFbFeatures.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
-
     // Indexing features ext for resource bindings
     vkIndexingFeatures.pNext = nullptr;
     vkIndexingFeatures.sType =
@@ -74,15 +65,15 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Query device features
     vkDeviceFeatures2.pNext = nullptr;
     vkDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    vkDeviceFeatures2.pNext = &vkImagelessFbFeatures;
-    vkImagelessFbFeatures.pNext = &vkIndexingFeatures;
+    vkDeviceFeatures2.pNext = &vkIndexingFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &vkDeviceFeatures2);
 
     // Verify we meet extension requirements
-    TF_VERIFY(
-        vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
-        vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing &&
-        vkImagelessFbFeatures.imagelessFramebuffer);
+    #if !defined(VK_USE_PLATFORM_MACOS_MVK)
+        TF_VERIFY(
+            vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
+            vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
+    #endif
 
     if (HgiVulkanIsDebugEnabled()) {
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);

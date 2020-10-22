@@ -68,13 +68,15 @@ HgiVulkanInstance::HgiVulkanInstance()
     };
 
     // Enable validation layers extension.
+    // Requires VK_LAYER_PATH to be set.
     if (HgiVulkanIsDebugEnabled()) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         const char* debugLayers[] = {
+            // XXX Use "VK_LAYER_KHRONOS_validation" when upgrading SDK
             "VK_LAYER_LUNARG_standard_validation"
         };
         createInfo.ppEnabledLayerNames = debugLayers;
-        createInfo.enabledLayerCount = TfArraySize(debugLayers);
+        createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);
     }
 
     createInfo.ppEnabledExtensionNames = extensions.data();

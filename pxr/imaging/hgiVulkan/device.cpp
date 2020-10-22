@@ -30,7 +30,6 @@
 #include "pxr/imaging/hgiVulkan/pipelineCache.h"
 
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 
 #define VMA_IMPLEMENTATION
     #include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
@@ -209,12 +208,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
         extensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
         extensions.push_back(VK_KHR_MAINTENANCE2_EXTENSION_NAME);
-    } else {
-        // This feature is not supported by MoltenVk.
-        #if !defined(VK_USE_PLATFORM_MACOS_MVK)
-            TF_CODING_ERROR("Unsupported VK_KHR_depth_stencil_resolve. "
-                            "Update gfx driver?");
-        #endif
     }
 
     // Allows the same layout in structs between c++ and glsl (share structs).

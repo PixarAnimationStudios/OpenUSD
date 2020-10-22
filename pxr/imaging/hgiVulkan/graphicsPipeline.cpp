@@ -239,7 +239,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
 
     VkPipelineColorBlendStateCreateInfo colorBlendState =
         {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
-    colorBlendState.attachmentCount = colorAttachState.size();
+    colorBlendState.attachmentCount = (uint32_t) colorAttachState.size();
     colorBlendState.pAttachments = colorAttachState.data();
     colorBlendState.logicOpEnable = VK_FALSE;
     colorBlendState.logicOp = VK_LOGIC_OP_NO_OP;
@@ -258,7 +258,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
 
     VkPipelineDynamicStateCreateInfo dynamicState =
         {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
-    dynamicState.dynamicStateCount = TfArraySize(dynamicStates);
+    dynamicState.dynamicStateCount = (uint32_t)  TfArraySize(dynamicStates);
     dynamicState.pDynamicStates = dynamicStates;
     pipeCreateInfo.pDynamicState = &dynamicState;
 
@@ -283,7 +283,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
 
     _vkDescriptorSetLayouts = HgiVulkanMakeDescriptorSetLayouts(
         device, descriptorSetInfos, desc.debugName);
-    pipeLayCreateInfo.setLayoutCount = _vkDescriptorSetLayouts.size();
+    pipeLayCreateInfo.setLayoutCount= (uint32_t) _vkDescriptorSetLayouts.size();
     pipeLayCreateInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 
     TF_VERIFY(

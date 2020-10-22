@@ -86,7 +86,7 @@ HgiVulkanComputePipeline::HgiVulkanComputePipeline(
 
     _vkDescriptorSetLayouts = HgiVulkanMakeDescriptorSetLayouts(
         device, {setInfo}, desc.debugName);
-    pipeLayCreateInfo.setLayoutCount = _vkDescriptorSetLayouts.size();
+    pipeLayCreateInfo.setLayoutCount = (uint32_t)_vkDescriptorSetLayouts.size();
     pipeLayCreateInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 
     TF_VERIFY(

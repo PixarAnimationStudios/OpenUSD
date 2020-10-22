@@ -296,10 +296,13 @@ HgiVulkanCommandQueue::_SetInflightBit(uint8_t id, bool enabled)
         // Spin if bit was already enabled. This means we have reached our max
         // of 64 command buffers and must wait until it becomes available.
         expect &= ~(1<<id);
-        while (!_inflightBits.compare_exchange_weak(expect, expect | (1<<id))) {
+        while (!_inflightBits.compare_exchange_weak(
+            expect, expect | (1ULL<<id))) 
+        {
             expect &= ~(1<<id);
         }
     } else {
-        while (!_inflightBits.compare_exchange_weak(expect, expect & ~(1<<id)));
+        while (!_inflightBits.compare_exchange_weak(
+            expect, expect & ~(1ULL<<id)));
     }
 }

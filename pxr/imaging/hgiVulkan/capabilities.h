@@ -51,7 +51,6 @@ public:
     VkPhysicalDeviceFeatures vkDeviceFeatures;
     VkPhysicalDeviceFeatures2 vkDeviceFeatures2;
     VkPhysicalDeviceDescriptorIndexingFeaturesEXT vkIndexingFeatures;
-    VkPhysicalDeviceImagelessFramebufferFeaturesKHR vkImagelessFbFeatures;
     VkPhysicalDeviceMemoryProperties vkMemoryProperties;
 };
 
