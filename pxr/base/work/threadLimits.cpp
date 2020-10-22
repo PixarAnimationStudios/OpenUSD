@@ -31,6 +31,7 @@
 
 #include <tbb/atomic.h>
 #include <tbb/task_scheduler_init.h>
+#include <tbb/task_arena.h>
 
 #include <algorithm>
 
@@ -185,7 +186,7 @@ WorkSetConcurrencyLimitArgument(int n)
 unsigned
 WorkGetConcurrencyLimit()
 {
-    return _threadLimit;
+    return tbb::this_task_arena::max_concurrency();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
