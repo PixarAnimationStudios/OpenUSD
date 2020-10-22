@@ -1543,19 +1543,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
-        HdStInstancer *instancer = static_cast<HdStInstancer*>(
-            sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
-        if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(this, drawItem,
-                                        &_sharedData, *dirtyBits);
-
-            HdPrimvarDescriptorVector primvars =
-                sceneDelegate->GetPrimvarDescriptors(instancer->GetId(),
-                                        HdInterpolationInstance);
-
-            _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
-                primvars, HdTokens->displayOpacity);
-        }
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                this, drawItem, &_sharedData, *dirtyBits);
+        _displayOpacity = _displayOpacity ||
+            HdStIsInstancePrimvarExistentAndValid(
+            sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
     }
 
     /* VERTEX PRIMVARS */

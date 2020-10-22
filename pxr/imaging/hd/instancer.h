@@ -31,6 +31,8 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
@@ -155,10 +157,19 @@ public:
     HD_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const;
 
+    HD_API
+    static void _SyncInstancerAndParents(
+        HdRenderIndex &renderIndex,
+        SdfPath const& instancerId);
+
 private:
     HdSceneDelegate* _delegate;
     SdfPath _id;
     SdfPath _parentId;
+
+    // XXX: This mutex exists for _SyncInstancerAndParents, which will go
+    // away when the render index calls sync on instancers.
+    std::mutex _instanceLock;
 };
 
 

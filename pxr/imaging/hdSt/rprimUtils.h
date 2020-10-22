@@ -169,6 +169,27 @@ void HdStPopulateConstantPrimvars(
     HdPrimvarDescriptorVector const& constantPrimvars);
 
 // -----------------------------------------------------------------------------
+// Instancer processing utilities
+// -----------------------------------------------------------------------------
+
+// Updates drawItem bindings for changes to instance topology/primvars.
+HDST_API
+void HdStUpdateInstancerData(
+    HdRenderIndex &renderIndex,
+    HdRprim *prim,
+    HdStDrawItem *drawItem,
+    HdRprimSharedData *sharedData,
+    HdDirtyBits rprimDirtyBits);
+
+// Returns true if primvar with primvarName exists among instance primvar
+// descriptors.
+HDST_API
+bool HdStIsInstancePrimvarExistentAndValid(
+    HdRenderIndex &renderIndex,
+    HdRprim *prim,
+    TfToken const& primvarName);
+
+// -----------------------------------------------------------------------------
 // Topological visibility processing utility
 // -----------------------------------------------------------------------------
 // Creates/Updates/Migrates the topology visiblity BAR with element and point

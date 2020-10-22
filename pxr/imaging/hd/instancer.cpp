@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -82,6 +83,34 @@ HdInstancer::Sync(HdSceneDelegate *sceneDelegate,
 void
 HdInstancer::Finalize(HdRenderParam *renderParam)
 {
+}
+
+void
+HdInstancer::_SyncInstancerAndParents(HdRenderIndex &renderIndex,
+                                      SdfPath const& instancerId)
+{
+    HdRenderParam *renderParam =
+        renderIndex.GetRenderDelegate()->GetRenderParam();
+    SdfPath id = instancerId;
+    while (!id.IsEmpty()) {
+        HdInstancer *instancer = renderIndex.GetInstancer(id);
+        if (!TF_VERIFY(instancer)) {
+            return;
+        }
+
+        HdDirtyBits dirtyBits =
+            renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
+
+        if (dirtyBits != HdChangeTracker::Clean) {
+            std::lock_guard<std::mutex> lock(instancer->_instanceLock);
+            dirtyBits =
+                renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
+            instancer->Sync(instancer->GetDelegate(), renderParam, &dirtyBits);
+            renderIndex.GetChangeTracker().MarkInstancerClean(id);
+        }
+
+        id = instancer->GetParentId();
+    }
 }
 
 HdDirtyBits
