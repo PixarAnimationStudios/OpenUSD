@@ -178,9 +178,10 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
 static uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
-    {HgiTextureType1D, GL_TEXTURE_1D},
-    {HgiTextureType2D, GL_TEXTURE_2D},
-    {HgiTextureType3D, GL_TEXTURE_3D}
+    {HgiTextureType1D,      GL_TEXTURE_1D},
+    {HgiTextureType2D,      GL_TEXTURE_2D},
+    {HgiTextureType3D,      GL_TEXTURE_3D},
+    {HgiTextureType2DArray, GL_TEXTURE_2D_ARRAY}
 };
 
 static uint32_t

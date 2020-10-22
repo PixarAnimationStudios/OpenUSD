@@ -173,6 +173,7 @@ std::vector<HgiMipInfo>
 HgiGetMipInfos(
     HgiFormat format,
     const GfVec3i& dimensions,
+    size_t layerCount,
     size_t dataByteSize = std::numeric_limits<size_t>::max());
 
 PXR_NAMESPACE_CLOSE_SCOPE

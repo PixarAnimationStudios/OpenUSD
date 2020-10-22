@@ -187,7 +187,8 @@ HgiVulkanBlitCmds::CopyTextureCpuToGpu(
         const std::vector<HgiMipInfo> mipInfos =
             HgiGetMipInfos(
                 texDesc.format,
-                texDesc.dimensions);
+                texDesc.dimensions,
+                1 /*HgiTextureCpuToGpuOp does one layer at a time*/);
 
         if (mipInfos.size() > copyOp.mipLevel) {
             HgiMipInfo const& mipInfo = mipInfos[copyOp.mipLevel];

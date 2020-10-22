@@ -447,6 +447,7 @@ HgiVulkanTexture::CopyBufferToTexture(
         HgiGetMipInfos(
             _descriptor.format,
             _descriptor.dimensions,
+            _descriptor.layerCount,
             srcBuffer->GetDescriptor().byteSize);
 
     const size_t mipLevels = std::min(

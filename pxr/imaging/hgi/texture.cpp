@@ -42,8 +42,8 @@ size_t
 HgiTexture::_GetByteSizeOfResource(const HgiTextureDesc &descriptor)
 {
     // Compute all mip levels down to 1x1(x1)
-    const std::vector<HgiMipInfo> mipInfos =
-        HgiGetMipInfos(descriptor.format, descriptor.dimensions);
+    const std::vector<HgiMipInfo> mipInfos = HgiGetMipInfos(
+        descriptor.format, descriptor.dimensions, descriptor.layerCount);
 
     // Number of mip levels actually used.
     const size_t mipLevels = std::min(

@@ -199,16 +199,20 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
 
     GfVec3i const& offsets = copyOp.destinationTexelOffset;
     int depthOffset = isTexArray ? 0 : offsets[2];
-
-    if (texDesc.type == HgiTextureType2D) {
+    if (texDesc.type == HgiTextureType1D) {
+        [dstTexture->GetTextureId()
+            replaceRegion:MTLRegionMake1D(offsets[0], width)
+              mipmapLevel:copyOp.mipLevel
+                withBytes:copyOp.cpuSourceBuffer
+              bytesPerRow:copyOp.bufferByteSize];
+    } else if (texDesc.type == HgiTextureType2D) {
         [dstTexture->GetTextureId()
             replaceRegion:MTLRegionMake2D(
                 offsets[0], offsets[1], width, height)
               mipmapLevel:copyOp.mipLevel
                 withBytes:copyOp.cpuSourceBuffer
               bytesPerRow:copyOp.bufferByteSize / height];
-    }
-    else {
+    } else {
         [dstTexture->GetTextureId()
             replaceRegion:MTLRegionMake3D(
                 offsets[0], offsets[1], depthOffset, width, height, depth)

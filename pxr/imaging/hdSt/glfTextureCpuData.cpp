@@ -388,7 +388,8 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
 
     const std::vector<HgiMipInfo> mipInfos = HgiGetMipInfos(
         _textureDesc.format,
-        _textureDesc.dimensions);
+        _textureDesc.dimensions,
+        _textureDesc.layerCount);
 
     // How many mipmaps to use from the file.
     unsigned int numGivenMipmaps = 1;

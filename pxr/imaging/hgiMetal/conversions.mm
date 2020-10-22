@@ -309,7 +309,8 @@ struct {
 {
     {HgiTextureType1D,           MTLTextureType1D},
     {HgiTextureType2D,           MTLTextureType2D},
-    {HgiTextureType3D,           MTLTextureType3D}
+    {HgiTextureType3D,           MTLTextureType3D},
+    {HgiTextureType2DArray,      MTLTextureType2DArray},
 };
 
 static_assert(TfArraySize(_compareFnTable) == HgiCompareFunctionCount,

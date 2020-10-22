@@ -245,20 +245,22 @@ static_assert(HgiCompareFunctionCount==8, "");
 static const uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
-    {HgiTextureType1D, VK_IMAGE_TYPE_1D},
-    {HgiTextureType2D, VK_IMAGE_TYPE_2D},
-    {HgiTextureType3D, VK_IMAGE_TYPE_3D}
+    {HgiTextureType1D,      VK_IMAGE_TYPE_1D},
+    {HgiTextureType2D,      VK_IMAGE_TYPE_2D},
+    {HgiTextureType3D,      VK_IMAGE_TYPE_3D},
+    {HgiTextureType2DArray, VK_IMAGE_TYPE_2D}
 };
-static_assert(HgiTextureTypeCount==3, "");
+static_assert(HgiTextureTypeCount==4, "");
 
 static const uint32_t
 _textureViewTypeTable[HgiTextureTypeCount][2] =
 {
-    {HgiTextureType1D, VK_IMAGE_VIEW_TYPE_1D},
-    {HgiTextureType2D, VK_IMAGE_VIEW_TYPE_2D},
-    {HgiTextureType3D, VK_IMAGE_VIEW_TYPE_3D}
+    {HgiTextureType1D,      VK_IMAGE_VIEW_TYPE_1D},
+    {HgiTextureType2D,      VK_IMAGE_VIEW_TYPE_2D},
+    {HgiTextureType3D,      VK_IMAGE_VIEW_TYPE_3D},
+    {HgiTextureType2DArray, VK_IMAGE_VIEW_TYPE_2D_ARRAY}
 };
-static_assert(HgiTextureTypeCount==3, "");
+static_assert(HgiTextureTypeCount==4, "");
 
 static const uint32_t
 _samplerAddressModeTable[HgiSamplerAddressModeCount][2] =

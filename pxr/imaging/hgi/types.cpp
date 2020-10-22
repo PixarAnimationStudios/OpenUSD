@@ -195,13 +195,19 @@ std::vector<HgiMipInfo>
 HgiGetMipInfos(
     const HgiFormat format,
     const GfVec3i& dimensions,
+    const size_t layerCount,
     const size_t dataByteSize)
 {
+    const bool is2DArray = layerCount > 1;
+    if (is2DArray && dimensions[2] != 1) {
+        TF_CODING_ERROR("An array of 3D textures is invalid");
+    }
+
     const uint16_t numMips = _ComputeNumMipLevels(dimensions);
 
     std::vector<HgiMipInfo> result;
     result.reserve(numMips);
-    
+
     size_t byteOffset = 0;
     GfVec3i size = dimensions;
 
@@ -210,7 +216,7 @@ HgiGetMipInfos(
 
         result.push_back({ byteOffset, size, byteSize });
 
-        byteOffset += byteSize;
+        byteOffset += byteSize * layerCount;
         if (byteOffset >= dataByteSize) {
             break;
         }
