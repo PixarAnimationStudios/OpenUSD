@@ -33,6 +33,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_ArcCycle);
     TF_ADD_ENUM_NAME(PcpErrorType_ArcPermissionDenied);
+    TF_ADD_ENUM_NAME(PcpErrorType_IndexCapacityExceeded);
+    TF_ADD_ENUM_NAME(PcpErrorType_ArcCapacityExceeded);
+    TF_ADD_ENUM_NAME(PcpErrorType_ArcNamespaceDepthCapacityExceeded);
     TF_ADD_ENUM_NAME(PcpErrorType_InconsistentPropertyType);
     TF_ADD_ENUM_NAME(PcpErrorType_InconsistentAttributeType);
     TF_ADD_ENUM_NAME(PcpErrorType_InconsistentAttributeVariability);
@@ -193,6 +196,31 @@ PcpErrorArcPermissionDenied::ToString() const
     msg += TfStringPrintf("%s\nwhich is private.", 
                           TfStringify(privateSite).c_str());
     return msg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorCapacityExceededPtr
+PcpErrorCapacityExceeded::New(PcpErrorType errorType)
+{
+    return PcpErrorCapacityExceededPtr(new PcpErrorCapacityExceeded(errorType));
+}
+
+PcpErrorCapacityExceeded::PcpErrorCapacityExceeded(PcpErrorType errorType) :
+    PcpErrorBase(errorType)
+{
+}
+
+PcpErrorCapacityExceeded::~PcpErrorCapacityExceeded()
+{
+}
+
+// virtual
+std::string
+PcpErrorCapacityExceeded::ToString() const
+{
+    return std::string("Composition graph capacity exceeded: ") +
+        TfEnum::GetDisplayName(errorType);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

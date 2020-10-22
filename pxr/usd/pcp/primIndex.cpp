@@ -363,11 +363,15 @@ PcpPrimIndexInputs::IsEquivalentTo(const PcpPrimIndexInputs& inputs) const
 
 PcpNodeRef 
 PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs, 
-                            const PcpArc& arcToParent)
+                            const PcpArc& arcToParent,
+                            PcpErrorBasePtr *error)
 {
     PcpNodeRef parent = arcToParent.parent;
     PcpNodeRef newNode = parent.InsertChildSubgraph(
-        childOutputs.primIndex.GetGraph(), arcToParent);
+        childOutputs.primIndex.GetGraph(), arcToParent, error);
+    if (!newNode) {
+        return newNode;
+    }
 
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
@@ -1053,10 +1057,9 @@ struct Pcp_PrimIndexer
             // In this case, we only need to add tasks that come after 
             // implied specializes.
             if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
-                    AddTask(Task(Task::Type::EvalNodeVariantSets, n));
-                }
+                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
-        else {
+        } else {
             // Payloads and variants have expensive
             // sorting semantics, so do a preflight check
             // to see if there is any work to do.
@@ -1223,6 +1226,15 @@ struct Pcp_PrimIndexer
     static void RecordError(const PcpErrorBasePtr &err,
                             PcpPrimIndex *primIndex,
                             PcpErrorVector *allErrors) {
+        // Capacity errors are reported at most once.
+        if (err->ShouldReportAtMostOnce()) {
+            for (PcpErrorBasePtr const& e: *allErrors) {
+                if (e->errorType == err->errorType) {
+                    // Already reported.
+                    return;
+                }
+            }
+        }
         allErrors->push_back(err);
         if (!primIndex->_localErrors) {
             primIndex->_localErrors.reset(new PcpErrorVector);
@@ -1567,32 +1579,35 @@ _AddArc(
 
     // Create the new node.
     PcpNodeRef newNode;
+    PcpErrorBasePtr newNodeError;
     if (!includeAncestralOpinions) {
         // No ancestral opinions.  Just add the single new site.
-        newNode = parent.InsertChild(site, newArc);
-        newNode.SetInert(!directNodeShouldContributeSpecs);
+        newNode = parent.InsertChild(site, newArc, &newNodeError);
+        if (newNode) {
+            newNode.SetInert(!directNodeShouldContributeSpecs);
 
-        // Compose the existence of primSpecs and update the HasSpecs field 
-        // accordingly.
-        newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
+            // Compose the existence of primSpecs and update the HasSpecs field 
+            // accordingly.
+            newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
 
-        if (!newNode.IsInert() && newNode.HasSpecs()) {
-            if (!indexer->inputs.usd) {
-                // Determine whether opinions from this site can be accessed
-                // from other sites in the graph.
-                newNode.SetPermission(PcpComposeSitePermission(
-                                          site.layerStack, site.path));
+            if (!newNode.IsInert() && newNode.HasSpecs()) {
+                if (!indexer->inputs.usd) {
+                    // Determine whether opinions from this site can be accessed
+                    // from other sites in the graph.
+                    newNode.SetPermission(
+                        PcpComposeSitePermission(site.layerStack, site.path));
 
-                // Determine whether this node has any symmetry information.
-                newNode.SetHasSymmetry(PcpComposeSiteHasSymmetry(
-                                           site.layerStack, site.path));
+                    // Determine whether this node has any symmetry information.
+                    newNode.SetHasSymmetry(
+                        PcpComposeSiteHasSymmetry(site.layerStack, site.path));
+                }
             }
-        }
 
-        PCP_INDEXING_UPDATE(
-            indexer, newNode, 
-            "Added new node for site %s to graph",
-            TfStringify(site).c_str());
+            PCP_INDEXING_UPDATE(
+                indexer, newNode, 
+                "Added new node for site %s to graph",
+                TfStringify(site).c_str());
+        }
 
     } else {
         // Ancestral opinions are those above the source site in namespace.
@@ -1647,11 +1662,26 @@ _AddArc(
                             &childOutputs );
 
         // Combine the child output with our current output.
-        newNode = indexer->outputs->Append(std::move(childOutputs), newArc);
-        PCP_INDEXING_UPDATE(
-            indexer, newNode, 
-            "Added subtree for site %s to graph",
-            TfStringify(site).c_str());
+        newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
+                                           &newNodeError);
+        if (newNode) {
+            PCP_INDEXING_UPDATE(
+                indexer, newNode, 
+                "Added subtree for site %s to graph",
+                TfStringify(site).c_str());
+        }
+    }
+
+    // Handle errors.
+    if (newNodeError) {
+        // Provide rootSite as context.
+        newNodeError->rootSite = indexer->rootSite;
+        indexer->RecordError(newNodeError);
+    }
+    if (!newNode) {
+        TF_VERIFY(newNodeError, "Failed to create a node, but did not "
+                  "specify the error.");
+        return PcpNodeRef();
     }
 
     // If culling is enabled, check whether the entire subtree rooted

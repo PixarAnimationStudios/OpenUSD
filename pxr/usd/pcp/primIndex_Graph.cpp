@@ -26,6 +26,7 @@
 #include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/diagnostic.h"
+#include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/strengthOrdering.h"
 #include "pxr/usd/pcp/types.h"
@@ -494,12 +495,38 @@ PcpPrimIndex_Graph::AppendChildNameToAllSites(const SdfPath& childPath)
 PcpNodeRef
 PcpPrimIndex_Graph::InsertChildNode(
     const PcpNodeRef& parent, 
-    const PcpLayerStackSite& site, const PcpArc& arc)
+    const PcpLayerStackSite& site, const PcpArc& arc,
+    PcpErrorBasePtr *error)
 {
     TfAutoMallocTag2 tag("Pcp", "PcpPrimIndex_Graph");
 
     TF_VERIFY(arc.type != PcpArcTypeRoot);
     TF_VERIFY(arc.parent == parent);
+
+    // Node capacity is limited by both NodeIndexBits and reservation
+    // of the _invalidNodeIndex value.  Other fields are limited by
+    // the number of bits allocated to represent them.
+    if (_GetNumNodes() >= _Node::_invalidNodeIndex) {
+        if (error) {
+            *error = PcpErrorCapacityExceeded::New(
+                PcpErrorType_IndexCapacityExceeded);
+        }
+        return PcpNodeRef();
+    }
+    if (arc.siblingNumAtOrigin >= 1<<_Node::_childrenSize) {
+        if (error) {
+            *error = PcpErrorCapacityExceeded::New(
+                PcpErrorType_ArcCapacityExceeded);
+        }
+        return PcpNodeRef();
+    }
+    if (arc.namespaceDepth >= (1<<_Node::_depthSize)) {
+        if (error) {
+            *error = PcpErrorCapacityExceeded::New(
+                PcpErrorType_ArcNamespaceDepthCapacityExceeded);
+        }
+        return PcpNodeRef();
+    }
 
     _DetachSharedNodePool();
 
@@ -512,12 +539,25 @@ PcpPrimIndex_Graph::InsertChildNode(
 PcpNodeRef
 PcpPrimIndex_Graph::InsertChildSubgraph(
     const PcpNodeRef& parent,
-    const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc)
+    const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+    PcpErrorBasePtr *error)
 {
     TfAutoMallocTag2 tag("Pcp", "PcpPrimIndex_Graph");
 
     TF_VERIFY(arc.type != PcpArcTypeRoot);
     TF_VERIFY(arc.parent == parent);
+
+    // Node capacity is limited by NodeIndexBits and reservation
+    // of _invalidNodeIndex.
+    // Other capacity-limited fields were validated when
+    // the nodes were added to the subgraph.
+    if (_GetNumNodes() + subgraph->_GetNumNodes() >= _Node::_invalidNodeIndex) {
+        if (error) {
+            *error = PcpErrorCapacityExceeded::New(
+                PcpErrorType_IndexCapacityExceeded);
+        }
+        return PcpNodeRef();
+    }
 
     _DetachSharedNodePool();
 

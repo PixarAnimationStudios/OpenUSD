@@ -89,6 +89,7 @@ pxr_library(pcp
 
 pxr_test_scripts(
     testenv/testPcpCache.py
+    testenv/testPcpCapacity.py
     testenv/testPcpChanges.py
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
@@ -1587,6 +1588,12 @@ pxr_register_test(testPcpPathTranslation_HardToReach
 pxr_register_test(testPcpCache
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCache"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpCapacity
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCapacity"
     EXPECTED_RETURN_CODE 0
 )
 
