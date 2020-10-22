@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiVulkan/shaderCompiler.h"
 #include "pxr/imaging/hgiVulkan/shaderFunction.h"
+#include "pxr/imaging/hgiVulkan/shaderGenerator.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -51,7 +52,11 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
     const char* debugLbl = _descriptor.debugName.empty() ?
         "unknown" : _descriptor.debugName.c_str();
 
-    const char* shaderCode = desc.shaderCode;
+    HgiVulkanShaderGenerator shaderGenerator {desc};
+    std::stringstream ss;
+    shaderGenerator.Execute(ss);
+    std::string shaderStr = ss.str();
+    const char* shaderCode = shaderStr.c_str();
 
     // Compile shader and capture errors
     bool result = HgiVulkanCompileGLSL(

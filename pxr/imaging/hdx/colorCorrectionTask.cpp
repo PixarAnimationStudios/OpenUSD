@@ -72,6 +72,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
     , _resourceBindings()
     , _pipeline()
     , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+    , _screenSize{}
 {
 }
 
@@ -219,7 +220,8 @@ HdxColorCorrectionTask::_CreateShaderResources()
     vertDesc.shaderStage = HgiShaderStageVertex;
     vertDesc.AddStageInput("position", "vec4");
     vertDesc.AddStageInput("uvIn", "vec2");
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
+    if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
+       _hgi->GetAPIName() == HgiTokens->Vulkan) {
         vsCode = "#version 450 \n";
     }
     const std::string position = "position";
@@ -236,7 +238,9 @@ HdxColorCorrectionTask::_CreateShaderResources()
             "hd_Position", "vec4", &position);
     fragDesc.AddStageInput("uvOut", "vec2");
     fragDesc.textures.emplace_back("colorIn");
-    fragDesc.textures.emplace_back("Lut3DIn", 3);
+    if (useOCIO) {
+        fragDesc.textures.emplace_back("Lut3DIn", 3);
+    }
     const std::string color = "color";
     fragDesc.AddStageOutput(
             "hd_FragColor",
@@ -245,7 +249,8 @@ HdxColorCorrectionTask::_CreateShaderResources()
     fragDesc.AddConstantParam("screenSize", "vec2");
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
+    if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
+       _hgi->GetAPIName() == HgiTokens->Vulkan) {
         fsCode = "#version 450 \n";
     }
     if (useOCIO) {
@@ -426,6 +431,9 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     _attachment0.usage = aovTexture->GetDescriptor().usage;
     desc.colorAttachmentDescs.emplace_back(_attachment0);
 
+    desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
+    desc.shaderConstantsDesc.byteSize = sizeof(_screenSize[0]) * 2;
+
     _pipeline = _GetHgi()->CreateGraphicsPipeline(desc);
 
     return true;
@@ -469,15 +477,14 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
     GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
-    float screenSize[2] = {
-        static_cast<float>(dimensions[0]),
-        static_cast<float>(dimensions[1])};
+    _screenSize[0] = static_cast<float>(dimensions[0]);
+    _screenSize[1] = static_cast<float>(dimensions[1]);
     gfxCmds->SetConstantValues(
         _pipeline,
         HgiShaderStageFragment,
         0,
-        sizeof(float) * 2,
-        &screenSize);
+        sizeof(_screenSize[0]) * 2,
+        &_screenSize);
     gfxCmds->SetViewport(vp);
     gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
     gfxCmds->PopDebugGroup();

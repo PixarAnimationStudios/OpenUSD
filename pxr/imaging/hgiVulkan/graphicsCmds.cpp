@@ -189,7 +189,7 @@ HgiVulkanGraphicsCmds::SetConstantValues(
 
     // Delay until the pipeline is set and the render pass has begun.
     _pendingUpdates.push_back(
-        [this, byteSize, dataCopy] {
+        [this, byteSize, dataCopy, stages] {
             HgiVulkanGraphicsPipeline* pso = 
                 static_cast<HgiVulkanGraphicsPipeline*>(_pipeline.Get());
 
@@ -197,7 +197,7 @@ HgiVulkanGraphicsCmds::SetConstantValues(
                 vkCmdPushConstants(
                     _commandBuffer->GetVulkanCommandBuffer(),
                     pso->GetVulkanPipelineLayout(),
-                    VK_SHADER_STAGE_COMPUTE_BIT,
+                    HgiVulkanConversions::GetShaderStages(stages),
                     0, // offset
                     byteSize,
                     dataCopy);
