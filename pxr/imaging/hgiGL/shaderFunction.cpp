@@ -27,9 +27,9 @@
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
+#include "pxr/imaging/hgiGL/shaderGenerator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 HgiGLShaderFunction::HgiGLShaderFunction(
     HgiShaderFunctionDesc const& desc)
@@ -44,10 +44,14 @@ HgiGLShaderFunction::HgiGLShaderFunction(
     _shaderId = glCreateShader(stages[0]);
 
     if (!_descriptor.debugName.empty()) {
-        HgiGLObjectLabel(GL_SHADER, _shaderId, _descriptor.debugName);
+        glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
     }
 
-    const char* src = desc.shaderCode;
+    HgiGLShaderGenerator shaderGenerator {desc};
+    std::stringstream ss;
+    shaderGenerator.Execute(ss);
+    std::string shaderStr = ss.str();
+    const char* src = shaderStr.c_str();
     glShaderSource(_shaderId, 1, &src, nullptr);
     glCompileShader(_shaderId);
 

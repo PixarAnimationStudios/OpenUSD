@@ -209,53 +209,65 @@ HdxColorCorrectionTask::_CreateShaderResources()
     }
 
     bool useOCIO =_GetUseOcio();
-    
-    // For Metal shaders we grab a different technique from the glslfx.
-    TfToken const& technique = _hgi->GetAPIName() == HgiTokens->Metal ?
-        HgiTokens->Metal : HioGlslfxTokens->defVal;
-
-    HioGlslfx glslfx(HdxPackageColorCorrectionShader(), technique);
+    HioGlslfx glslfx(
+            HdxPackageColorCorrectionShader(), HioGlslfxTokens->defVal);
 
     // Setup the vertex shader
     std::string vsCode;
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
-    if (technique != HgiTokens->Metal) {
+    vertDesc.AddStageInput("position", "vec4");
+    vertDesc.AddStageInput("uvIn", "vec2");
+    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
         vsCode = "#version 450 \n";
     }
+    const std::string position = "position";
+    vertDesc.AddStageOutput("gl_Position", "vec4", &position);
+    vertDesc.AddStageOutput("uvOut", "vec2");
     vsCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
-    vertDesc.shaderCode = vsCode.c_str();;
+    vertDesc.shaderCode = vsCode.c_str();
     HgiShaderFunctionHandle vertFn = _GetHgi()->CreateShaderFunction(vertDesc);
 
     // Setup the fragment shader
     std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
+    fragDesc.AddStageInput(
+            "hd_Position", "vec4", &position);
+    fragDesc.AddStageInput("uvOut", "vec2");
+    fragDesc.textures.emplace_back("colorIn");
+    fragDesc.textures.emplace_back("Lut3DIn", 3);
+    const std::string color = "color";
+    fragDesc.AddStageOutput(
+            "hd_FragColor",
+            "vec4",
+            &color);
+    fragDesc.AddConstantParam("screenSize", "vec2");
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    if (technique != HgiTokens->Metal) {
+    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
         fsCode = "#version 450 \n";
     }
-
     if (useOCIO) {
         fsCode += "#define GLSLFX_USE_OCIO\n";
         // Our current version of OCIO outputs 130 glsl and texture3D is
         // removed from glsl in 140.
         fsCode += "#define texture3D texture\n";
     }
-    fsCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
     if (useOCIO) {
         std::string ocioGpuShaderText = _CreateOpenColorIOResources();
-        fsCode += ocioGpuShaderText;
+        fsCode = fsCode + ocioGpuShaderText;
     }
+    fsCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
+    
     fragDesc.shaderCode = fsCode.c_str();
     HgiShaderFunctionHandle fragFn = _GetHgi()->CreateShaderFunction(fragDesc);
 
     // Setup the shader program
     HgiShaderProgramDesc programDesc;
     programDesc.debugName =_tokens->colorCorrectionShader.GetString();
-    programDesc.shaderFunctions.push_back(std::move(vertFn));
-    programDesc.shaderFunctions.push_back(std::move(fragFn));
+    programDesc.shaderFunctions.emplace_back(std::move(vertFn));
+    programDesc.shaderFunctions.emplace_back(std::move(fragFn));
     _shaderProgram = _GetHgi()->CreateShaderProgram(programDesc);
 
     if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
@@ -276,18 +288,25 @@ HdxColorCorrectionTask::_CreateBufferResources()
     }
 
     // A larger-than screen triangle made to fit the screen.
-    const size_t elementsPerVertex = 4;
-    static const float vertices[elementsPerVertex * 3] =
-        { -1,  3, 0, 1,
-          -1, -1, 0, 1,
-           3, -1, 0, 1 };
+    constexpr size_t elementsPerVertex = 6;
+    constexpr size_t vertDataCount = elementsPerVertex * 3;
+    constexpr float vertDataGL[vertDataCount] = 
+            { -1,  3, 0, 1,     0, 2,
+              -1, -1, 0, 1,     0, 0,
+               3, -1, 0, 1,     2, 0};
+
+    constexpr float vertDataOther[vertDataCount] =
+            { -1,  3, 0, 1,     0, -1,
+              -1, -1, 0, 1,     0, 1,
+               3, -1, 0, 1,     2, 1};
 
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = vertices;
-    vboDesc.byteSize = sizeof(vertices) * sizeof(vertices[0]);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertices[0]);
+    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
+        ? vertDataOther : vertDataGL;
+    vboDesc.byteSize = sizeof(vertDataOther) * sizeof(vertDataOther[0]);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataOther[0]);
     _vertexBuffer = _GetHgi()->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = {0,1,2};
@@ -298,7 +317,6 @@ HdxColorCorrectionTask::_CreateBufferResources()
     iboDesc.initialData = indices;
     iboDesc.byteSize = sizeof(indices) * sizeof(indices[0]);
     _indexBuffer = _GetHgi()->CreateBuffer(iboDesc);
-
     return true;
 }
 
@@ -366,10 +384,20 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     posAttr.offset = 0;
     posAttr.shaderBindLocation = 0;
 
+    HgiVertexAttributeDesc uvAttr;
+    uvAttr.format = HgiFormatFloat32Vec2;
+    uvAttr.offset = sizeof(float) * 4; // after posAttr
+    uvAttr.shaderBindLocation = 1;
+    
+    size_t bindSlots = 0;
+
     HgiVertexBufferDesc vboDesc;
-    vboDesc.bindingIndex = 0;
-    vboDesc.vertexStride = sizeof(float) * 4;
+    
+    vboDesc.bindingIndex = bindSlots++;
+    vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
+    vboDesc.vertexAttributes.clear();
     vboDesc.vertexAttributes.push_back(posAttr);
+    vboDesc.vertexAttributes.push_back(uvAttr);
 
     desc.vertexBuffers.push_back(std::move(vboDesc));
 
@@ -441,6 +469,15 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
     GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
+    float screenSize[2] = {
+        static_cast<float>(dimensions[0]),
+        static_cast<float>(dimensions[1])};
+    gfxCmds->SetConstantValues(
+        _pipeline,
+        HgiShaderStageFragment,
+        0,
+        sizeof(float) * 2,
+        &screenSize);
     gfxCmds->SetViewport(vp);
     gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
     gfxCmds->PopDebugGroup();

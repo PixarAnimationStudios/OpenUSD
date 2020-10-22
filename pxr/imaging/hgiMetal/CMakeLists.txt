@@ -38,6 +38,8 @@ pxr_library(hgiMetal
 
     PRIVATE_HEADERS
         conversions.h
+        shaderGenerator.h
+        shaderSection.h
 
     CPPFILES
         blitCmds.mm
@@ -53,7 +55,9 @@ pxr_library(hgiMetal
         resourceBindings.mm
         sampler.mm
         shaderFunction.mm
+        shaderGenerator.mm
         shaderProgram.mm
+        shaderSection.mm
         texture.mm
 
     RESOURCE_FILES

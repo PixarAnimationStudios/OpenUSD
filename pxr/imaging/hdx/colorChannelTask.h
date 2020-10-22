@@ -30,7 +30,7 @@
 #include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/tokens.h"
-
+#include "pxr/imaging/hgi/graphicsCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,7 +69,7 @@ private:
     HdxColorChannelTask &operator =(const HdxColorChannelTask &) = delete;
 
     // Utility function to create a storage buffer for the shader parameters.
-    void _CreateParameterBuffer();
+    void _CreateParameterBuffer(float screenSizeX, float screenSizeY);
 
     /// Apply the color channel filtering.
     void _ApplyColorChannel();
@@ -79,7 +79,7 @@ private:
     struct _ParameterBuffer
     {
         int channel;
-        
+        float screenSize[2];
         bool operator==(const _ParameterBuffer& other) const {
             return channel == other.channel;
         }

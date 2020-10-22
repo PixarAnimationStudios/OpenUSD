@@ -66,8 +66,15 @@ public:
     ///   \param glslfx The name of the glslfx file where the fragment shader
     ///                 is located.
     ///   \param technique The technique name of the fragment shader.
+    ///   \param vertDesc Describes inputs, outputs and stage of vertex shader.
+    ///   \param fragDesc Describes inputs, outputs and stage of fragment shader.
     HDX_API
-    void SetProgram(TfToken const& glslfx, TfToken const& technique);
+    void SetProgram(
+        TfToken const& glslfx,
+        TfToken const& technique,
+        HgiShaderFunctionDesc &fragDesc,
+        HgiShaderFunctionDesc vertDesc = GetFullScreenVertexDesc()
+        );
 
     /// Bind a (externally managed) buffer to the shader program.
     /// This function can be used to bind buffers to a custom shader program.
@@ -144,6 +151,8 @@ private:
               HgiTextureHandle const& colorDst,
               HgiTextureHandle const& depthDst,
               bool depthWrite);
+    
+    static HgiShaderFunctionDesc GetFullScreenVertexDesc();
 
     // Print shader compile errors.
     void _PrintCompileErrors();

@@ -21,59 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIGL_SHADERFUNCTION_H
-#define PXR_IMAGING_HGIGL_SHADERFUNCTION_H
-
-#include "pxr/imaging/hgi/shaderFunction.h"
-#include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/hgi/shaderFunctionDesc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-///
-/// \class HgiGLShaderFunction
-///
-/// OpenGL implementation of HgiShaderFunction
-///
-class HgiGLShaderFunction final : public HgiShaderFunction
+HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
+    : shaderStage(0)
+    , shaderCode(nullptr)
+    , textures()
+    , constantParams()
+    , stageInputs()
+    , stageOutputs()
 {
-public:
-    HGIGL_API
-    ~HgiGLShaderFunction() override;
+}
 
-    HGIGL_API
-    bool IsValid() const override;
+bool operator==(
+    const HgiShaderFunctionDesc& lhs,
+    const HgiShaderFunctionDesc& rhs)
+{
+    return lhs.debugName == rhs.debugName &&
+           lhs.shaderStage == rhs.shaderStage;
+           // Omitted. Only used tmp during shader compile
+           // lhs.shaderCode == rhs.shaderCode
+}
 
-    HGIGL_API
-    std::string const& GetCompileErrors() override;
-
-    HGIGL_API
-    size_t GetByteSizeOfResource() const override;
-
-    HGIGL_API
-    uint64_t GetRawResource() const override;
-
-    /// Returns the gl resource id of the shader.
-    HGIGL_API
-    uint32_t GetShaderId() const;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc);
-
-private:
-    HgiGLShaderFunction() = delete;
-    HgiGLShaderFunction & operator=(const HgiGLShaderFunction&) = delete;
-    HgiGLShaderFunction(const HgiGLShaderFunction&) = delete;
-
-private:
-    std::string _errors;
-    uint32_t _shaderId;
-};
-
+bool operator!=(
+    const HgiShaderFunctionDesc& lhs,
+    const HgiShaderFunctionDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

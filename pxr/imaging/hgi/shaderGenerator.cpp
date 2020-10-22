@@ -21,59 +21,59 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIGL_SHADERFUNCTION_H
-#define PXR_IMAGING_HGIGL_SHADERFUNCTION_H
 
-#include "pxr/imaging/hgi/shaderFunction.h"
-#include "pxr/imaging/hgiGL/api.h"
+#include "shaderGenerator.h"
+
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-///
-/// \class HgiGLShaderFunction
-///
-/// OpenGL implementation of HgiShaderFunction
-///
-class HgiGLShaderFunction final : public HgiShaderFunction
+static void
+_ExtractVersionString(
+    const std::string &originalShader, std::string *version)
 {
-public:
-    HGIGL_API
-    ~HgiGLShaderFunction() override;
+    if (originalShader.rfind("#version", 0) == 0) {
+        std::stringstream ss;
+        int ind = 0;
 
-    HGIGL_API
-    bool IsValid() const override;
+        char curr = '\0';
+        while(curr != '\n') {
+            curr = originalShader[ind];
+            ss << curr;
+            ind++;
+        }
+        *version = ss.str();
+    }
+}
 
-    HGIGL_API
-    std::string const& GetCompileErrors() override;
+HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
+    : _version()
+    , _originalShader(descriptor.shaderCode)
+    , _stage(descriptor.shaderStage)
+{
+    //As we append to the top of complete GLSLFX files, the version
+    //string has to be hoisted for OpenGL and removed for Metal
+    _ExtractVersionString(_originalShader, &_version);
+}
 
-    HGIGL_API
-    size_t GetByteSizeOfResource() const override;
+void
+HgiShaderGenerator::Execute(std::ostream &ss)
+{
+    //Use the protected version which can be overridden
+    _Execute(ss, _originalShader);
+}
 
-    HGIGL_API
-    uint64_t GetRawResource() const override;
+const std::string&
+HgiShaderGenerator::GetOriginalShader() const
+{
+    return _originalShader;
+}
 
-    /// Returns the gl resource id of the shader.
-    HGIGL_API
-    uint32_t GetShaderId() const;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc);
-
-private:
-    HgiGLShaderFunction() = delete;
-    HgiGLShaderFunction & operator=(const HgiGLShaderFunction&) = delete;
-    HgiGLShaderFunction(const HgiGLShaderFunction&) = delete;
-
-private:
-    std::string _errors;
-    uint32_t _shaderId;
-};
-
+HgiShaderStage
+HgiShaderGenerator::GetShaderStage() const
+{
+    return _stage;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

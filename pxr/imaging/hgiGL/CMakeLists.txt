@@ -25,6 +25,8 @@ pxr_library(hgiGL
         conversions
         diagnostic
         scopedStateHolder
+        shaderGenerator
+        shaderSection
 
     PUBLIC_CLASSES
         blitCmds
