@@ -37,6 +37,8 @@ HdInstancer::HdInstancer(HdSceneDelegate* delegate,
 {
 }
 
+HdInstancer::~HdInstancer() = default;
+
 /* static */
 int
 HdInstancer::GetInstancerNumLevels(HdRenderIndex& index,
@@ -68,6 +70,26 @@ HdInstancer::GetBuiltinPrimvarNames() const
         HdInstancerTokens->translate
     };
     return primvarNames;
+}
+
+void
+HdInstancer::Sync(HdSceneDelegate *sceneDelegate,
+                  HdRenderParam   *renderParam,
+                  HdDirtyBits     *dirtyBits)
+{
+}
+
+void
+HdInstancer::Finalize(HdRenderParam *renderParam)
+{
+}
+
+HdDirtyBits
+HdInstancer::GetInitialDirtyBitsMask() const
+{
+    return HdChangeTracker::DirtyTransform |
+           HdChangeTracker::DirtyPrimvar |
+           HdChangeTracker::DirtyInstanceIndex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

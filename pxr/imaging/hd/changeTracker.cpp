@@ -215,10 +215,10 @@ HdChangeTracker::MarkRprimClean(SdfPath const& id, HdDirtyBits newBits)
 }
 
 void
-HdChangeTracker::InstancerInserted(SdfPath const& id)
+HdChangeTracker::InstancerInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_INSTANCER_ADDED).Msg("Instancer Added: %s\n", id.GetText());
-    _instancerState[id] = AllDirty;
+    _instancerState[id] = initialDirtyState;
     ++_sceneStateVersion;
     ++_instancerIndexVersion;
 }

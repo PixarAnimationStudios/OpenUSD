@@ -160,7 +160,6 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
 
     _rprimIds.Insert(rprimId);
 
-
     _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
     _AllocatePrimId(rprim);
 
@@ -331,8 +330,10 @@ HdRenderIndex::Clear()
             _tracker.RemoveInstancerInstancerDependency(instancerId, id);
         }
 
-        _renderDelegate->DestroyInstancer(instancer);
         _tracker.InstancerRemoved(id);
+
+        instancer->Finalize(_renderDelegate->GetRenderParam());
+        _renderDelegate->DestroyInstancer(instancer);
     }
     _instancerMap.clear();
 
@@ -1626,15 +1627,6 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-#if 0
-    // TODO: enable this after patching.
-    if (!id.IsAbsolutePath()) {
-        TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
-                id.GetText());
-        return;
-    }
-#endif
-
     HdInstancer *instancer =
         _renderDelegate->CreateInstancer(delegate, id, parentId);
 
@@ -1643,7 +1635,7 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     }
 
     _instancerMap[id] = instancer;
-    _tracker.InstancerInserted(id);
+    _tracker.InstancerInserted(id, instancer->GetInitialDirtyBitsMask());
 
     SdfPath instanceId = instancer->GetParentId();
 
@@ -1669,8 +1661,11 @@ HdRenderIndex::RemoveInstancer(SdfPath const& id)
         _tracker.RemoveInstancerInstancerDependency(instancerId, id);
     }
 
-    _renderDelegate->DestroyInstancer(instancer);
     _tracker.InstancerRemoved(id);
+
+    instancer->Finalize(_renderDelegate->GetRenderParam());
+    _renderDelegate->DestroyInstancer(instancer);
+
     _instancerMap.erase(it);
 }
 
@@ -1695,9 +1690,10 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
                 _tracker.RemoveInstancerInstancerDependency(instancerId, id);
             }
 
-            _renderDelegate->DestroyInstancer(instancer);
-
             _tracker.InstancerRemoved(id);
+
+            instancer->Finalize(_renderDelegate->GetRenderParam());
+            _renderDelegate->DestroyInstancer(instancer);
 
             // Need to capture the iterator and increment it because
             // TfHashMap::erase() doesn't return the next iterator, like

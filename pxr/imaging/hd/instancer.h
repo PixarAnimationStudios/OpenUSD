@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/types.h"
+
 #include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 class HdRenderIndex;
 class HdRprim;
+class HdRenderParam;
 
 /// \class HdInstancer
 ///
@@ -113,7 +116,7 @@ class HdRprim;
 /// proto used by an instancer, and any provided primvar arrays. The
 /// implementation is in the renderer-specific instancers, like HdStInstancer.
 ///
-/// All data access (aside from local caches) is delegated to the HdSceneDelegate.
+/// All data access (aside from local caches) is routed to the HdSceneDelegate.
 ///
 
 class HdInstancer {
@@ -122,7 +125,9 @@ public:
     HD_API
     HdInstancer(HdSceneDelegate* delegate, SdfPath const& id,
                 SdfPath const &parentInstancerId);
-    virtual ~HdInstancer() {}
+
+    HD_API
+    virtual ~HdInstancer();
 
     /// Returns the identifier.
     SdfPath const& GetId() const { return _id; }
@@ -138,6 +143,17 @@ public:
 
     HD_API
     TfTokenVector const & GetBuiltinPrimvarNames() const;
+
+    HD_API
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits);
+
+    HD_API
+    virtual void Finalize(HdRenderParam *renderParam);
+
+    HD_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const;
 
 private:
     HdSceneDelegate* _delegate;

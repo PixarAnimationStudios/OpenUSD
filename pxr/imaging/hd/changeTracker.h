@@ -297,46 +297,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Instancer Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Instancer with the given \p id.
-    HD_API
-    void InstancerInserted(SdfPath const& id);
-
-    /// Stop tracking Instancer with the given \p id.
-    HD_API
-    void InstancerRemoved(SdfPath const& id);
-
-    /// Insert a dependency between \p rprimId and parent instancer
-    /// \p instancerId.  Changes to the latter mark the former with
-    /// DirtyInstancer.
-    HD_API
-    void AddInstancerRprimDependency(SdfPath const& instancerId,
-                                     SdfPath const& rprimId);
-
-    /// Remove a dependency between \p rprimId and parent instancer
-    /// \p instancerId.
-    HD_API
-    void RemoveInstancerRprimDependency(SdfPath const& instancerId,
-                                        SdfPath const& rprimId);
-
-    /// Insert a dependency between \p instancerId and parent instancer
-    /// \p parentInstancerId.  Changes to the latter mark the former with
-    /// DirtyInstancer.
-    HD_API
-    void AddInstancerInstancerDependency(SdfPath const& parentInstancerId,
-                                         SdfPath const& instancerId);
-
-    /// Remove a dependency between \p instancerId and parent instancer
-    /// \p parentInstancerId.
-    HD_API
-    void RemoveInstancerInstancerDependency(SdfPath const& parentInstancerId,
-                                            SdfPath const& instancerId);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name Task Object Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -380,6 +340,14 @@ public:
     /// @{
     // ---------------------------------------------------------------------- //
 
+    /// Start tracking Instancer with the given \p id.
+    HD_API
+    void InstancerInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
+
+    /// Stop tracking Instancer with the given \p id.
+    HD_API
+    void InstancerRemoved(SdfPath const& id);
+
     /// Returns the dirty bits for the instancer with \p id.
     HD_API
     HdDirtyBits GetInstancerDirtyBits(SdfPath const& id);
@@ -392,6 +360,32 @@ public:
     /// Clean the specified dirty bits for the instancer with \p id.
     HD_API
     void MarkInstancerClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
+    /// Insert a dependency between \p rprimId and parent instancer
+    /// \p instancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerRprimDependency(SdfPath const& instancerId,
+                                     SdfPath const& rprimId);
+
+    /// Remove a dependency between \p rprimId and parent instancer
+    /// \p instancerId.
+    HD_API
+    void RemoveInstancerRprimDependency(SdfPath const& instancerId,
+                                        SdfPath const& rprimId);
+
+    /// Insert a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                         SdfPath const& instancerId);
+
+    /// Remove a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.
+    HD_API
+    void RemoveInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                            SdfPath const& instancerId);
 
     // ---------------------------------------------------------------------- //
     /// @}
