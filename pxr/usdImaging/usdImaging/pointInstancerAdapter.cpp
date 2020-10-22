@@ -1311,6 +1311,10 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     if (parentInstancerUsdPrim) {
         UsdImagingPrimAdapterSharedPtr parentAdapter =
             _GetPrimAdapter(parentInstancerUsdPrim);
+        if (!TF_VERIFY(parentAdapter, "%s",
+                       parentPath.GetAbsoluteRootOrPrimPath().GetText())) {
+            return SdfPath();
+        }
         fqInstancerPath =
             parentAdapter->GetScenePrimPath(instancerPath, parentIndex,
                                             instancerContext);
