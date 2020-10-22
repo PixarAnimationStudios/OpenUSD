@@ -686,6 +686,47 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     return arcExpr;
 }
 
+// Bitfield of composition arc types
+enum _ArcFlags {
+    _ArcFlagInherits    = 1<<0,
+    _ArcFlagVariants    = 1<<1,
+    _ArcFlagReferences  = 1<<2,
+    _ArcFlagPayloads    = 1<<3,
+    _ArcFlagSpecializes = 1<<4
+};
+
+// Scan a node's specs for presence of fields describing composition arcs.
+// This is used as a preflight check to confirm presence of these arcs
+// before performing additional work to evaluate them.
+// Return a bitmask of the arc types found.
+inline static size_t
+_ScanArcs(PcpNodeRef const& node)
+{
+    size_t arcs = 0;
+    SdfPath const& path = node.GetPath();
+    for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
+        if (!layer->HasSpec(path)) {
+            continue;
+        }
+        if (layer->HasField(path, SdfFieldKeys->InheritPaths)) {
+            arcs |= _ArcFlagInherits;
+        }
+        if (layer->HasField(path, SdfFieldKeys->VariantSetNames)) {
+            arcs |= _ArcFlagVariants;
+        }
+        if (layer->HasField(path, SdfFieldKeys->References)) {
+            arcs |= _ArcFlagReferences;
+        }
+        if (layer->HasField(path, SdfFieldKeys->Payload)) {
+            arcs |= _ArcFlagPayloads;
+        }
+        if (layer->HasField(path, SdfFieldKeys->Specializes)) {
+            arcs |= _ArcFlagSpecializes;
+        }
+    }
+    return arcs;
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -997,7 +1038,13 @@ struct Pcp_PrimIndexer
         // If the node does not have specs or cannot contribute specs,
         // we can avoid even enqueueing certain kinds of tasks that will
         // end up being no-ops.
-        bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
+        const bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
+
+        // Preflight scan for arc types that are present in specs.
+        // This reduces pressure on the task queue, and enables more
+        // data access locality, since we avoid interleaving tasks that
+        // re-visit sites later only to determine there is no work to do.
+        const size_t arcMask = contributesSpecs ? _ScanArcs(n) : 0;
 
         // If the caller tells us the new node and its children were already
         // indexed, we do not need to re-scan them for certain arcs based on
@@ -1005,24 +1052,31 @@ struct Pcp_PrimIndexer
         if (skipCompletedNodesForImpliedSpecializes) {
             // In this case, we only need to add tasks that come after 
             // implied specializes.
-            if (contributesSpecs) {
-                if (evaluateVariants) {
+            if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
                     AddTask(Task(Task::Type::EvalNodeVariantSets, n));
                 }
             }
-        }
         else {
-            if (contributesSpecs && evaluateVariants) {
+            // Payloads and variants have expensive
+            // sorting semantics, so do a preflight check
+            // to see if there is any work to do.
+            if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
                 AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
             if (!skipCompletedNodesForAncestralOpinions) {
                 // In this case, we only need to add tasks that weren't
                 // evaluated during the recursive prim indexing for
                 // ancestral opinions.
-                if (contributesSpecs) {
+                if (arcMask & _ArcFlagSpecializes) {
                     AddTask(Task(Task::Type::EvalNodeSpecializes, n));
+                }
+                if (arcMask & _ArcFlagInherits) {
                     AddTask(Task(Task::Type::EvalNodeInherits, n));
+                }
+                if (arcMask & _ArcFlagPayloads) {
                     AddTask(Task(Task::Type::EvalNodePayload, n));
+                }
+                if (arcMask & _ArcFlagReferences) {
                     AddTask(Task(Task::Type::EvalNodeReferences, n));
                 }
                 if (!isUsd) {
