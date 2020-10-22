@@ -48,6 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (radius)                                                \
     (length)                                                \
     ((textureFile, "texture:file"))                         \
+    ((textureFormat, "texture:format"))                     \
     (textureResource)                                       \
     (width)                                                 \
     (diffuse)                                               \
