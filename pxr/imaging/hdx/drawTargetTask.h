@@ -143,6 +143,9 @@ struct HdxDrawTargetTaskParams
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
+        // XXX: When rendering draw targets we need alpha to coverage
+        // at least until we support a transparency pass
+        , enableAlphaToCoverage(true)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         {}
 
@@ -164,6 +167,8 @@ struct HdxDrawTargetTaskParams
     float depthBiasSlopeFactor;
 
     HdCompareFunction depthFunc;
+
+    bool enableAlphaToCoverage;
 
     // Viewer's Render Style
     HdCullStyle cullStyle;

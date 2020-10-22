@@ -391,14 +391,13 @@ HdStRenderPassState::Bind()
         glDisable(GL_BLEND);
     }
 
-    if (!_alphaToCoverageUseDefault) {
-        if (_alphaToCoverageEnabled) {
-            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-            glEnable(GL_SAMPLE_ALPHA_TO_ONE);
-        } else {
-            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        }
+    if (_alphaToCoverageEnabled) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
+    } else {
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
+    
     glEnable(GL_PROGRAM_POINT_SIZE);
     GLint glMaxClipPlanes;
     glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);

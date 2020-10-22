@@ -179,8 +179,6 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     }
 
     // alpha to coverage
-    renderPassState->SetAlphaToCoverageUseDefault(
-        delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     renderPassState->SetAlphaToCoverageEnabled(
         params.enableAlphaToCoverage &&
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));

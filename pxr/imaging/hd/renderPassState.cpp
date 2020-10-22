@@ -75,8 +75,7 @@ HdRenderPassState::HdRenderPassState()
     , _blendAlphaDstFactor(HdBlendFactorZero)
     , _blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _blendEnabled(false)
-    , _alphaToCoverageUseDefault(true)
-    , _alphaToCoverageEnabled(true)
+    , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
     , _colorMask(HdRenderPassState::ColorMaskRGBA)
     , _useMultiSampleAov(true)
@@ -359,12 +358,6 @@ void
 HdRenderPassState::SetBlendEnabled(bool enabled)
 {
     _blendEnabled = enabled;
-}
-
-void
-HdRenderPassState::SetAlphaToCoverageUseDefault(bool useDefault)
-{
-    _alphaToCoverageUseDefault = useDefault;
 }
 
 void
