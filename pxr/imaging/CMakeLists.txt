@@ -8,6 +8,7 @@ set(DIRS
     hgi
     hgiGL
     hgiMetal
+    hgiVulkan
     hgiInterop
     hd
     hdSt

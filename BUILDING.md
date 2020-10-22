@@ -114,11 +114,21 @@ that depend on GL, including:
 
 ##### Metal
 
-To build USD with Metal enabled requires macOS Mojave (10.14) or newer.
+Building USD with Metal enabled requires macOS Mojave (10.14) or newer.
 Support for Metal can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_METAL_SUPPORT=FALSE```.  This will skip components and libraries
 that depend on Metal, including:
 - Hydra imaging
+
+##### Vulkan
+
+Building USD with Vulkan enabled requires the Vulkan SDK and glslang to
+be installed. The VULKAN_SDK environment variable must point to the
+location of the SDK. The glslang compiler headers must be locatable during
+the build process.
+
+Support for Vulkan can optionally be enabled by specifying the cmake flag
+```PXR_ENABLE_VULKAN_SUPPORT=TRUE```.
 
 ##### OSL (OpenShadingLanguage)
 
