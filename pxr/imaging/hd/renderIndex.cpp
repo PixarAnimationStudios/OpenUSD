@@ -1627,6 +1627,17 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    if (ARCH_UNLIKELY(_instancerMap.find(id) != _instancerMap.end())) {
+        return;
+    }
+
+    SdfPath const &sceneDelegateId = delegate->GetDelegateID();
+    if (!id.HasPrefix(sceneDelegateId)) {
+        TF_CODING_ERROR("Scene Delegate Id (%s) must prefix prim Id (%s)",
+                        sceneDelegateId.GetText(), id.GetText());
+        return;
+    }
+
     HdInstancer *instancer =
         _renderDelegate->CreateInstancer(delegate, id, parentId);
 
