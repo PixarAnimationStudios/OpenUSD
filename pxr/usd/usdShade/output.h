@@ -368,6 +368,12 @@ public:
         return lhs.GetAttr() == rhs.GetAttr();
     }
 
+    /// Inequality comparison. Return false if \a lhs and \a rhs represent the
+    /// same UsdShadeOutput, true otherwise.
+    friend bool operator!=(const UsdShadeOutput &lhs, const UsdShadeOutput &rhs) {
+        return !(lhs == rhs);
+    }
+
 private:
     friend class UsdShadeConnectableAPI;
 

@@ -112,6 +112,8 @@ void wrapUsdShadeInput()
 
     class_<Input>("Input")
         .def(init<UsdAttribute>(arg("attr")))
+        .def(self==self)
+        .def(self!=self)
         .def(!self)
 
         .def("GetFullName", &Input::GetFullName,

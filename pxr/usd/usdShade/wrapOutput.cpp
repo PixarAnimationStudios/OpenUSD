@@ -98,6 +98,8 @@ void wrapUsdShadeOutput()
 
     class_<Output>("Output")
         .def(init<UsdAttribute>(arg("attr")))
+        .def(self==self)
+        .def(self!=self)
         .def(!self)
 
         .def("GetFullName", &Output::GetFullName,
