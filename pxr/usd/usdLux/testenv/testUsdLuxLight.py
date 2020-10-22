@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Gf, Usd, UsdLux
+from pxr import Gf, Sdf, Usd, UsdLux, UsdShade
 import unittest, math
 
 class TestUsdLuxLight(unittest.TestCase):
@@ -73,6 +73,61 @@ class TestUsdLuxLight(unittest.TestCase):
         light.CreateEnableColorTemperatureAttr().Clear()
         e3 = light.ComputeBaseEmission()
         self.assertTrue( Gf.IsClose(e0, e3, 0.1))
+
+    def test_BasicConnectableLights(self):
+        stage = Usd.Stage.CreateInMemory()
+        light = UsdLux.RectLight.Define(stage, '/RectLight')
+        self.assertTrue(light)
+
+        # Rect light has no built-in inputs.
+        self.assertEqual(light.GetInputs(), [])
+
+        # Create a new input, and verify that the input interface conforming
+        # attribute is created.
+        lightInput = light.CreateInput('newInput', Sdf.ValueTypeNames.Float)
+        self.assertEqual(light.GetInputs(), [lightInput])
+        self.assertEqual(light.GetInput('newInput'), lightInput)
+        self.assertEqual(lightInput.GetAttr(), 
+                         light.GetPrim().GetAttribute("inputs:newInput"))
+
+        # Rect light has no built-in outputs.
+        self.assertEqual(light.GetOutputs(), [])
+
+        # Create a new output, and verify that the output interface conforming
+        # attribute is created.
+        lightOutput = light.CreateOutput('newOutput', Sdf.ValueTypeNames.Float)
+        self.assertEqual(light.GetOutputs(), [lightOutput])
+        self.assertEqual(light.GetOutput('newOutput'), lightOutput)
+        self.assertEqual(lightOutput.GetAttr(), 
+                         light.GetPrim().GetAttribute("outputs:newOutput"))
+
+        # Do the same with a light filter
+        lightFilter = UsdLux.LightFilter.Define(stage, '/LightFilter')
+        self.assertTrue(lightFilter)
+
+        # Light filter has no built-in inputs.
+        self.assertEqual(lightFilter.GetInputs(), [])
+
+        # Create a new input, and verify that the input interface conforming
+        # attribute is created.
+        filterInput = lightFilter.CreateInput('newInput', 
+                                              Sdf.ValueTypeNames.Float)
+        self.assertEqual(lightFilter.GetInputs(), [filterInput])
+        self.assertEqual(lightFilter.GetInput('newInput'), filterInput)
+        self.assertEqual(filterInput.GetAttr(), 
+                         lightFilter.GetPrim().GetAttribute("inputs:newInput"))
+
+        # Light filter has no built-in outputs.
+        self.assertEqual(lightFilter.GetOutputs(), [])
+
+        # Create a new output, and verify that the output interface conforming
+        # attribute is created.
+        filterOutput = lightFilter.CreateOutput('newOutput', 
+                                                Sdf.ValueTypeNames.Float)
+        self.assertEqual(lightFilter.GetOutputs(), [filterOutput])
+        self.assertEqual(lightFilter.GetOutput('newOutput'), filterOutput)
+        self.assertEqual(filterOutput.GetAttr(), 
+                         lightFilter.GetPrim().GetAttribute("outputs:newOutput"))
 
     def test_DomeLight_OrientToStageUpAxis(self):
         from pxr import UsdGeom

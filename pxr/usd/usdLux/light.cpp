@@ -284,7 +284,65 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdLux/blackbody.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
+{
+    // UsdLuxLight prims are connectable, with default behavior rules.
+    UsdShadeRegisterConnectableAPIBehavior<UsdLuxLight>();
+}
+
+UsdLuxLight::UsdLuxLight(const UsdShadeConnectableAPI &connectable)
+    : UsdLuxLight(connectable.GetPrim())
+{
+}
+
+UsdShadeConnectableAPI 
+UsdLuxLight::ConnectableAPI() const
+{
+    return UsdShadeConnectableAPI(GetPrim());
+}
+
+UsdShadeOutput
+UsdLuxLight::CreateOutput(const TfToken& name,
+                          const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdShadeOutput
+UsdLuxLight::GetOutput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdShadeOutput>
+UsdLuxLight::GetOutputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}
+
+UsdShadeInput
+UsdLuxLight::CreateInput(const TfToken& name,
+                         const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
+}
+
+UsdShadeInput
+UsdLuxLight::GetInput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdShadeInput>
+UsdLuxLight::GetInputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+}
 
 GfVec3f
 UsdLuxLight::ComputeBaseEmission() const
@@ -315,14 +373,12 @@ UsdLuxLight::ComputeBaseEmission() const
     return e;
 }
 
-USDLUX_API
 UsdCollectionAPI
 UsdLuxLight::GetLightLinkCollectionAPI() const
 {
     return UsdCollectionAPI(GetPrim(), UsdLuxTokens->lightLink);
 }
 
-USDLUX_API
 UsdCollectionAPI
 UsdLuxLight::GetShadowLinkCollectionAPI() const
 {

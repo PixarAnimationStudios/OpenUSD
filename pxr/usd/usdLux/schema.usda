@@ -66,8 +66,13 @@ class "Light" (
     to best express the intent of the light setup.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = """
-#include "pxr/usd/usd/collectionAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
     }
     prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 ) {
@@ -370,8 +375,13 @@ class LightFilter "LightFilter" (
     of this filter-specific interpretation.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = """
-#include "pxr/usd/usd/collectionAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
     }
     prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {

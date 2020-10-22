@@ -33,7 +33,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
 
-#include "pxr/usd/usd/collectionAPI.h" 
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -357,6 +359,88 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    // -------------------------------------------------------------------------
+    /// \name Conversion to and from UsdShadeConnectableAPI
+    /// 
+    /// @{
+
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit conversion of a UsdShadeConnectableAPI to UsdLuxLight
+    USDLUX_API
+    UsdLuxLight(const UsdShadeConnectableAPI &connectable);
+
+    /// Contructs and returns a UsdShadeConnectableAPI object with this light.
+    ///
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdShadeConnectable API, since connection-related API such as
+    /// UsdShadeConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdLuxLight will auto-convert to a UsdShadeConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdShadeConnectableAPI object.
+    USDLUX_API
+    UsdShadeConnectableAPI ConnectableAPI() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Outputs API
+    ///
+    /// Outputs represent a typed attribute on a light whose value is computed 
+    /// externally. 
+    /// 
+    /// @{
+        
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a light cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    USDLUX_API
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    USDLUX_API
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// 
+    USDLUX_API
+    std::vector<UsdShadeOutput> GetOutputs() const;
+
+    /// @}
+
+    // ------------------------------------------------------------------------- 
+
+    /// \name Inputs API
+    ///
+    /// Inputs are connectable attribute with a typed value. 
+    /// 
+    /// Light parameters are encoded as inputs. 
+    /// 
+    /// @{
+        
+    /// Create an input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace. Inputs on lights are connectable.
+    /// 
+    USDLUX_API
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    USDLUX_API
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// 
+    USDLUX_API
+    std::vector<UsdShadeInput> GetInputs() const;
+
+    /// @}
 
     /// Computes the base emission (aka radiant flux density, aka energy
     /// per unit area), incorporating the parameters for intensity,

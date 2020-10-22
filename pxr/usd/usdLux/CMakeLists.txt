@@ -8,6 +8,7 @@ pxr_library(usdLux
         sdf
         usd
         usdGeom
+        usdShade
 
     PUBLIC_CLASSES
         blackbody

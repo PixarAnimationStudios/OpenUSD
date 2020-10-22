@@ -230,10 +230,27 @@ void wrapUsdLuxLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 namespace {
 
 WRAP_CUSTOM {
     _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def("ConnectableAPI", &UsdLuxLight::ConnectableAPI)
+
+        .def("CreateOutput", &UsdLuxLight::CreateOutput,
+             (arg("name"), arg("type")))
+        .def("GetOutput", &UsdLuxLight::GetOutput, arg("name"))
+        .def("GetOutputs", &UsdLuxLight::GetOutputs,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("CreateInput", &UsdLuxLight::CreateInput,
+             (arg("name"), arg("type")))
+        .def("GetInput", &UsdLuxLight::GetInput, arg("name"))
+        .def("GetInputs", &UsdLuxLight::GetInputs,
+             return_value_policy<TfPySequenceToList>())
+
         .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)
         .def("GetLightLinkCollectionAPI",
              &UsdLuxLight::GetLightLinkCollectionAPI)
