@@ -17,22 +17,48 @@ install(
 
 set(versionedHeaders "")
 set(versionedCPPFiles "")
+set(versionedPythonHeaders "")
+set(versionedPythonCPPFiles "")
 set(versionedPymoduleCPPFiles "")
 
 if (AR_VERSION EQUAL 1)
     list(APPEND versionedHeaders 
-         resolver_v1.h)
+         resolver_v1.h
+         resolverContext_v1.h
+    )
     list(APPEND versionedCPPFiles
-         resolver_v1.cpp)
+         resolver_v1.cpp
+         resolverContext_v1.cpp
+    )
+    list(APPEND versionedPythonHeaders
+         pyResolverContext_v1.h
+    )
+    list(APPEND versionedPythonCPPFiles
+         pyResolverContext_v1.cpp
+    )
     list(APPEND versionedPymoduleCPPFiles
-         wrapResolver_v1.cpp)
+         wrapResolver_v1.cpp
+         wrapResolverContext_v1.cpp
+    )
 elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedHeaders 
-         resolver_v2.h)
+         resolver_v2.h
+         resolverContext_v2.h
+    )
     list(APPEND versionedCPPFiles
-         resolver_v2.cpp)
+         resolver_v2.cpp
+         resolverContext_v2.cpp
+    )
+    list(APPEND versionedPythonHeaders
+         pyResolverContext_v2.h
+    )
+    list(APPEND versionedPythonCPPFiles
+         pyResolverContext_v2.cpp
+    )
     list(APPEND versionedPymoduleCPPFiles
-         wrapResolver_v2.cpp)
+         wrapResolver_v2.cpp
+         wrapResolverContext_v2.cpp
+    )
 endif()
 
 pxr_library(ar
@@ -67,6 +93,7 @@ pxr_library(ar
 
     PYTHON_PUBLIC_HEADERS
         pyResolverContext.h
+        ${versionedPythonHeaders}
 
     PRIVATE_HEADERS
         debugCodes.h
@@ -77,7 +104,6 @@ pxr_library(ar
         filesystemAsset.cpp
         packageResolver.cpp
         packageUtils.cpp
-        resolverContext.cpp
         resolverContextBinder.cpp
         resolverScopedCache.cpp
         debugCodes.cpp
@@ -86,15 +112,14 @@ pxr_library(ar
         ${versionedCPPFiles}
 
     PYTHON_CPPFILES
-        pyResolverContext.cpp
         moduleDeps.cpp
+        ${versionedPythonCPPFiles}
 
     PYMODULE_CPPFILES
         module.cpp
         wrapDefaultResolver.cpp
         wrapDefaultResolverContext.cpp
         wrapPackageUtils.cpp
-        wrapResolverContext.cpp
         wrapResolverContextBinder.cpp
         wrapResolverScopedCache.cpp
         ${versionedPymoduleCPPFiles}
