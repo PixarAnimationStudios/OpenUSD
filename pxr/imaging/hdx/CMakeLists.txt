@@ -201,7 +201,7 @@ pxr_build_test(testHdxUnpickablesAsOccluders
         unitTestUtils.cpp
         testenv/testHdxUnpickablesAsOccluders.cpp
 )
-pxr_build_test(testHdxPickSubprims
+pxr_build_test(testHdxPickTarget
     LIBRARIES
         hdx
         hd
@@ -213,6 +213,6 @@ pxr_build_test(testHdxPickSubprims
         tf
     CPPFILES
         unitTestUtils.cpp
-        testenv/testHdxPickSubprims.cpp
+        testenv/testHdxPickTarget.cpp
 )
 endif()

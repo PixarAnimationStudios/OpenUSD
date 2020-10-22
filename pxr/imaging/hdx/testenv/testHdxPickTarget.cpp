@@ -268,8 +268,24 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     WriteToFile("color", "color1_unselected.png");
 
-    //---------------------------- face picking --------------------------------
     HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+    
+    //-------------------- prim & instance picking -----------------------------
+    // select tet1
+    {
+        HdSelectionSharedPtr selection = _Pick(
+            GfVec2i(436,127), GfVec2i(452,139),
+            HdxPickTokens->pickPrimsAndInstances);
+        _selTracker->SetSelection(selection);
+        DrawScene();
+        WriteToFile("color", "color10_tet1_pick_prims.png");
+        HdSelection::PrimSelectionState const* selState =
+            selection->GetPrimSelectionState(mode, SdfPath("/tet1"));
+        TF_VERIFY(selState);
+        TF_VERIFY(selState->fullySelected);
+    }
+
+    //---------------------------- face picking --------------------------------
     // select face 3 of cube0
     {
         HdSelectionSharedPtr selection = _Pick(
