@@ -1529,6 +1529,25 @@ UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
 }
 
 /*virtual*/
+SdfPath
+UsdImagingInstanceAdapter::GetInstancerId(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const
+{
+    // If this is called on behalf of an instanced Rprim, return the
+    // instancer cache path we've stored for that prim.
+    UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(usdPrim, cachePath, &proto, &instancerContext)) {
+        return instancerContext.instancerCachePath;
+    }
+
+    // If this is called on behalf of an instancer prim representing a native
+    // instancer, return the empty path: native instancers can't have parents.
+    return SdfPath::EmptyPath();
+}
+
+/*virtual*/
 size_t
 UsdImagingInstanceAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,

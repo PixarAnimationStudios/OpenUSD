@@ -2543,6 +2543,22 @@ UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
     return 0;
 }
 
+/*virtual*/
+SdfPath
+UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(primId);
+    SdfPath pathValue;
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        pathValue =
+            primInfo->adapter->GetInstancerId(primInfo->usdPrim, cachePath);
+    }
+
+    return ConvertCachePathToIndexPath(pathValue);
+}
+
 /*virtual*/ 
 SdfPath 
 UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)

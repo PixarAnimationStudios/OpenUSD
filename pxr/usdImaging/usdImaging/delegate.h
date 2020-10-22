@@ -348,6 +348,9 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
         override;
 
+    USDIMAGING_API
+    virtual SdfPath GetInstancerId(SdfPath const &primId) override;
+
     // Motion samples
     USDIMAGING_API
     virtual size_t

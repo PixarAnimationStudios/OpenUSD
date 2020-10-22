@@ -238,6 +238,13 @@ HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId)
 }
 
 /*virtual*/
+SdfPath
+HdSceneDelegate::GetInstancerId(SdfPath const& primId)
+{
+    return SdfPath();
+}
+
+/*virtual*/
 size_t
 HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
                                           size_t maxSampleCount,

@@ -134,6 +134,10 @@ public:
                                     float *sampleTimes,
                                     GfMatrix4d *sampleValues) override;
 
+    SdfPath GetInstancerId(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const override;
+
     GfMatrix4d GetTransform(UsdPrim const& prim, 
                             SdfPath const& cachePath,
                             UsdTimeCode time,

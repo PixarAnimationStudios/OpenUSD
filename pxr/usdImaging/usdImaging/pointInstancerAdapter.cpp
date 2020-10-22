@@ -1234,8 +1234,6 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
         // of one of the instancers.  If it's a UsdGeomPointInstancer, we can
         // look it up directly, and get the parent path that way. Otherwise,
         // we need to loop all instancers.
-        // XXX: A prim adapter "GetInstancerId()" function would be super
-        // useful here.
         _InstancerDataMap::const_iterator it =
             _instancerData.find(cachePath);
         if (it != _instancerData.end()) {
@@ -1422,6 +1420,26 @@ UsdImagingPointInstancerAdapter::GetInstancerTransform(
         return GetRelativeInstancerTransform(parentInstancerCachePath, 
                                              instancerPath, 
                                              time);
+    }
+}
+
+/*virtual*/
+SdfPath
+UsdImagingPointInstancerAdapter::GetInstancerId(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath) const
+{
+    if (IsChildPath(cachePath)) {
+        // If this is called on behalf of an rprim, the rprim's name will be
+        // /path/to/instancer.name_of_proto, so just take the parent path.
+        return cachePath.GetParentPath();
+    } else if (_InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, cachePath)) {
+        // Otherwise, look up the parent in the instancer data.
+        return instrData->parentInstancerCachePath;
+    } else {
+        TF_CODING_ERROR("Unexpected path <%s>", cachePath.GetText());
+        return SdfPath::EmptyPath();
     }
 }
 

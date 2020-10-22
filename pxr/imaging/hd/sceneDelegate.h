@@ -572,6 +572,10 @@ public:
     HD_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
+    /// Returns the parent instancer of the given rprim or instancer.
+    HD_API
+    virtual SdfPath GetInstancerId(SdfPath const& primId);
+
     // -----------------------------------------------------------------------//
     /// \name Path Translation
     // -----------------------------------------------------------------------//

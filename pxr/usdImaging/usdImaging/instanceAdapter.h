@@ -181,6 +181,10 @@ public:
                                      SdfPath const& instancerPath,
                                      UsdTimeCode time) const override;
 
+    SdfPath GetInstancerId(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const override;
+
     size_t SampleInstancerTransform(UsdPrim const& instancerPrim,
                                     SdfPath const& instancerPath,
                                     UsdTimeCode time,

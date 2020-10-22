@@ -288,6 +288,12 @@ public:
         float *sampleTimes,
         GfMatrix4d *sampleValues);
 
+    /// Return the instancerId for this prim.
+    USDIMAGING_API
+    virtual SdfPath GetInstancerId(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const;
+
     /// Sample the primvar for the given prim.
     /// \see HdSceneDelegate::SamplePrimvar()
     USDIMAGING_API
