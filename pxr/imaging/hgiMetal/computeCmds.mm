@@ -40,6 +40,7 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
     , _pipelineState(nullptr)
     , _commandBuffer(nil)
     , _encoder(nil)
+    , _secondaryCommandBuffer(false)
 {
     _CreateEncoder();
 }
@@ -53,12 +54,12 @@ void
 HgiMetalComputeCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        id<MTLCommandBuffer> commandBuffer = _hgi->GetPrimaryCommandBuffer();
-        if (commandBuffer == nil) {
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
-            commandBuffer = _commandBuffer;
+            _secondaryCommandBuffer = true;
         }
-        _encoder = [commandBuffer computeCommandEncoder];
+        _encoder = [_commandBuffer computeCommandEncoder];
     }
 }
 
@@ -158,7 +159,7 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
                 break;
         }
 
-        if (_commandBuffer) {
+        if (_secondaryCommandBuffer) {
             _hgi->CommitSecondaryCommandBuffer(_commandBuffer, waitType);
         }
         else {
@@ -166,10 +167,10 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
         }
     }
     
-    if (_commandBuffer) {
+    if (_secondaryCommandBuffer) {
         _hgi->ReleaseSecondaryCommandBuffer(_commandBuffer);
-        _commandBuffer = nil;
     }
+    _commandBuffer = nil;
 
     return submittedWork;
 }

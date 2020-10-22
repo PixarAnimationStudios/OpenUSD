@@ -82,7 +82,7 @@ HgiMetalBlitCmds::PushDebugGroup(const char* label)
         HGIMETAL_DEBUG_LABEL(_blitEncoder, label)
     }
     else if (HgiMetalDebugEnabled()) {
-        _label = @(label);
+        _label = [@(label) copy];
     }
 }
 
