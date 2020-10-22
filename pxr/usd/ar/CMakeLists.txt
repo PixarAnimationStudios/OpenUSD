@@ -1,6 +1,20 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE ar)
 
+if(PXR_USE_AR_2)
+    set(AR_VERSION 2)
+else()
+    set(AR_VERSION 1)
+endif()
+
+configure_file(
+    ar.h.in 
+    ${CMAKE_BINARY_DIR}/include/pxr/usd/ar/ar.h)
+install(
+    FILES ${CMAKE_BINARY_DIR}/include/pxr/usd/ar/ar.h
+    DESTINATION include/pxr/usd/ar
+)
+
 pxr_library(ar
     LIBRARIES
         arch
