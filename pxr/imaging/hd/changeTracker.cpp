@@ -392,24 +392,39 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     // scale, translate, rotate primvars and there's no dependency between them
     // unlike points and normals on rprim.
 
-#if 0
     // Early out if no new bits are being set.
-    // XXX: First, we need to get rid of the usage of DirtyInstancer
-    // in usdImaging.
     if ((bits & (~it->second)) == 0) {
         return;
     }
-#endif
 
     it->second = it->second | bits;
     ++_sceneStateVersion;
+
+    // We propagate dirty bits as follows:
+    // * -> DirtyInstancer.
+    // DirtyInstanceIndex -> DirtyInstanceIndex.
+    // DirtyTransform -> DirtyTransform.
+    //
+    // Both DirtyInstanceIndex and DirtyTransform are consumed at the rprim
+    // level, so this gives the rprim a signal that upstream instancer data
+    // relevant to transform composition or instance indices has changed.
+    // XXX: The DirtyTransform dependency here is technically an hdSt dependency
+    // and we should find a better way to express it, although it won't harm
+    // other known backends.
+    HdDirtyBits toPropagate = DirtyInstancer;
+    if (bits & DirtyTransform) {
+        toPropagate |= DirtyTransform;
+    }
+    if (bits & DirtyInstanceIndex) {
+        toPropagate |= DirtyInstanceIndex;
+    }
 
     // Now mark any associated rprims or instancers dirty.
     _DependencyMap::iterator instancerDepIt =
         _instancerInstancerDependencies.find(id);
     if (instancerDepIt != _instancerInstancerDependencies.end()) {
         for (SdfPath const& dep : instancerDepIt->second) {
-            MarkInstancerDirty(dep, DirtyInstancer);
+            MarkInstancerDirty(dep, toPropagate);
         }
     }
 
@@ -417,7 +432,7 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
         _instancerRprimDependencies.find(id);
     if (rprimDepIt != _instancerRprimDependencies.end()) {
         for (SdfPath const& dep : rprimDepIt->second) {
-            MarkRprimDirty(dep, DirtyInstancer);
+            MarkRprimDirty(dep, toPropagate);
         }
     }
 }

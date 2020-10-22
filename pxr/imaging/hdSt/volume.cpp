@@ -89,7 +89,8 @@ HdStVolume::GetInitialDirtyBitsMask() const
     int mask = _initialDirtyBitsMask;
 
     if (!GetInstancerId().IsEmpty()) {
-        mask |= HdChangeTracker::DirtyInstancer;
+        mask |= HdChangeTracker::DirtyInstancer
+              | HdChangeTracker::DirtyInstanceIndex;
     }
 
     return (HdDirtyBits)mask;

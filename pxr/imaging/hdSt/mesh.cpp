@@ -1968,7 +1968,8 @@ HdStMesh::GetInitialDirtyBitsMask() const
         ;
 
     if (!GetInstancerId().IsEmpty()) {
-        mask |= HdChangeTracker::DirtyInstancer;
+        mask |= HdChangeTracker::DirtyInstancer
+              | HdChangeTracker::DirtyInstanceIndex;
     }
 
     return mask;

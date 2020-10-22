@@ -621,68 +621,69 @@ HdStUpdateInstancerData(
     // Note, GetInstanceIndices will check index sizes against primvar sizes.
     // The instance indices are a cartesian product of each level, so they need
     // to be recomputed per-rprim.
-    // XXX: We should figure out how to only compute this on an actual index
-    // change, since the buffer upload is expensive (when performed over all
-    // prototypes).
-    parentId = prim->GetInstancerId();
-    if (!parentId.IsEmpty()) {
-        HdInstancer *instancer = renderIndex.GetInstancer(parentId);
-        if (!TF_VERIFY(instancer)) {
-            return;
-        }
+    if (HdChangeTracker::IsInstanceIndexDirty(rprimDirtyBits, prim->GetId())) {
+        parentId = prim->GetInstancerId();
+        if (!parentId.IsEmpty()) {
+            HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+            if (!TF_VERIFY(instancer)) {
+                return;
+            }
 
-        // update instance indices
-        VtIntArray instanceIndices = static_cast<HdStInstancer*>(instancer)->
-            GetInstanceIndices(prim->GetId());
+            // update instance indices
+            VtIntArray instanceIndices =
+                static_cast<HdStInstancer*>(instancer)->
+                GetInstanceIndices(prim->GetId());
 
-        HdStResourceRegistrySharedPtr const& resourceRegistry =
-            std::static_pointer_cast<HdStResourceRegistry>(
-                renderIndex.GetResourceRegistry());
+            HdStResourceRegistrySharedPtr const& resourceRegistry =
+                std::static_pointer_cast<HdStResourceRegistry>(
+                    renderIndex.GetResourceRegistry());
 
-        // Create the bar if needed.
-        if (!drawItem->GetInstanceIndexRange()) {
+            // Create the bar if needed.
+            if (!drawItem->GetInstanceIndexRange()) {
 
-            // Note: we add the instance indices twice, so that frustum culling
-            // can compute culledInstanceIndices as instanceIndices masked by
-            // visibility.
-            HdBufferSpecVector bufferSpecs;
-            bufferSpecs.emplace_back(HdInstancerTokens->instanceIndices,
+                // Note: we add the instance indices twice, so that frustum
+                // culling can compute culledInstanceIndices as instanceIndices
+                // masked by visibility.
+                HdBufferSpecVector bufferSpecs;
+                bufferSpecs.emplace_back(HdInstancerTokens->instanceIndices,
                     HdTupleType {HdTypeInt32, 1});
-            bufferSpecs.emplace_back(HdInstancerTokens->culledInstanceIndices,
+                bufferSpecs.emplace_back(HdInstancerTokens->culledInstanceIndices,
                     HdTupleType {HdTypeInt32, 1});
 
-            HdBufferArrayRangeSharedPtr range =
-                resourceRegistry->AllocateNonUniformBufferArrayRange(
+                HdBufferArrayRangeSharedPtr range =
+                    resourceRegistry->AllocateNonUniformBufferArrayRange(
                     HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
-            HdStUpdateDrawItemBAR(
-                range,
-                drawingCoord->GetInstanceIndexIndex(),
-                sharedData, renderIndex);
+                HdStUpdateDrawItemBAR(
+                    range,
+                    drawingCoord->GetInstanceIndexIndex(),
+                    sharedData, renderIndex);
 
-            TF_VERIFY(drawItem->GetInstanceIndexRange()->IsValid());
-        }
+                TF_VERIFY(drawItem->GetInstanceIndexRange()->IsValid());
+            }
 
-        // If the instance index range is too big to upload, it's very dangerous
-        // since the shader could index into bad memory. If we're not failing on
-        // asserts, we need to zero out the index array so no instances draw.
-        if (!TF_VERIFY(instanceIndices.size() <=
+            // If the instance index range is too big to upload, it's very
+            // dangerous since the shader could index into bad memory. If we're
+            // not failing on asserts, we need to zero out the index array so no
+            // instances draw.
+            if (!TF_VERIFY(instanceIndices.size() <=
                     drawItem->GetInstanceIndexRange()->GetMaxNumElements())) {
-            instanceIndices = VtIntArray();
-        }
+                instanceIndices = VtIntArray();
+            }
 
-        HdBufferSourceSharedPtrVector sources;
-        HdBufferSourceSharedPtr source(
+            HdBufferSourceSharedPtrVector sources;
+            HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(HdInstancerTokens->instanceIndices,
                     VtValue(instanceIndices)));
-        sources.push_back(source);
-        source.reset(
+            sources.push_back(source);
+            source.reset(
                 new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
                     VtValue(instanceIndices)));
-        sources.push_back(source);
+            sources.push_back(source);
 
-        resourceRegistry->AddSources(
-            drawItem->GetInstanceIndexRange(), std::move(sources));
+            resourceRegistry->AddSources(
+                drawItem->GetInstanceIndexRange(), std::move(sources));
+        }
     }
 }
 
