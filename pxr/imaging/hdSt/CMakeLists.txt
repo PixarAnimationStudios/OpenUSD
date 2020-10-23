@@ -167,6 +167,9 @@ pxr_library(hdSt
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 if (X11_FOUND OR APPLE)

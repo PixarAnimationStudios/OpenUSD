@@ -26,4 +26,6 @@ pxr_library(hio
     PUBLIC_HEADERS
         api.h
 
+    DOXYGEN_FILES
+        overview.dox
 )

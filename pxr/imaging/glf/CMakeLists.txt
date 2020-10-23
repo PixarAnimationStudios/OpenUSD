@@ -125,4 +125,7 @@ pxr_library(glf
         shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx
+
+    DOXYGEN_FILES
+        overview.dox
 )

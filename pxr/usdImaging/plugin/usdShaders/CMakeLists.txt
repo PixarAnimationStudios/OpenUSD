@@ -24,4 +24,7 @@ pxr_plugin(usdShaders
         shaders/uvTexture.glslfx
         shaders/primvarReader.glslfx
         shaders/transform2d.glslfx
+
+    DOXYGEN_FILES
+        overview.dox
 )

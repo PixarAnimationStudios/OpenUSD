@@ -52,7 +52,7 @@ PROJECT_BRIEF          =
 # and the maximum width should not exceed 200 pixels. Doxygen will copy the logo
 # to the output directory.
 
-PROJECT_LOGO           = src/modules/usd/images/USDLogoDocs.png
+PROJECT_LOGO           = docs/doxygen/images/USDLogoDocs.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written. If a relative path is
@@ -132,8 +132,8 @@ INLINE_INHERITED_MEMB  = NO
 # before files name in the file list and in the header files. If set to NO the
 # shortest path that makes the file name unique will be used
 # The default value is: YES.
-FULL_PATH_NAMES        = YES
 
+FULL_PATH_NAMES        = YES
 
 # The STRIP_FROM_PATH tag can be used to strip a user-defined part of the path.
 # Stripping is only done if one of the specified strings matches the left-hand
@@ -145,7 +145,7 @@ FULL_PATH_NAMES        = YES
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        =
+STRIP_FROM_PATH        = docs/include
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -754,62 +754,22 @@ WARN_LOGFILE           =
 # Our pages almost identically correspond to modules, and we want them
 # to be ordered by "package" and low-to-high-level module order.
 
-INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
-                                                                      \
+INPUT                  = docs/doxygen/externalOverview.dox \
+                         \
                          ## "base" package \
-                         src/modules/arch \
-                         src/modules/gf \
-                         src/modules/js \
-                         src/modules/plug \
-                         src/modules/tf \
-                         src/modules/trace \
-                         src/modules/vt \
-                         src/modules/work \
-                                                                      \
+                         docs/include/pxr/base \
+                         \
                          ## "usd" package \
-                         src/modules/ar \
-                         src/modules/kind \
-                         src/modules/ndr \
-                         src/modules/pcp \
-                         src/modules/sdf \
-                         src/modules/sdr \
-                         src/modules/usd \
-                         src/modules/usdGeom \
-                         src/modules/usdHydra \
-                         src/modules/usdLux \
-                         src/modules/usdRender \
-                         src/modules/usdRi \
-                         src/modules/usdShade \
-                         src/modules/usdSkel \
-                         src/modules/usdUI \
-                         src/modules/usdUtils \
-                         src/modules/usdVol \
-                         src/modules/usdAbc \
-                                                                      \
+                         docs/include/pxr/usd \
+                         \
                          ## "imaging" package \
-                         src/modules/cameraUtil \
-                         src/modules/gal \
-                         src/modules/garch \
-                         src/modules/glf \
-                         src/modules/glfq \
-                         src/modules/hd \
-                         src/modules/hdSt \
-                         src/modules/hdx \
-                         src/modules/hf \
-                         src/modules/pxOsd \
-                         src/modules/hdEmbree \
-                         src/modules/hdStorm \
-                                                                      \
+                         docs/include/pxr/imaging \
+                         \
                          ## "usdImaging" package \
-                         src/modules/usdAppUtils \
-                         src/modules/usdImaging \
-                         src/modules/usdImagingGL \
-                         src/modules/usdSkelImaging \
-                         src/modules/usdviewq \
-                                                                      \
+                         docs/include/pxr/usdImaging \
+                         \
                          ## Everything else \
-                         src/modules
-
+                         docs/include
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -846,15 +806,7 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = src/modules/gf/matrix.template.h \
-                         src/modules/gf/matrix2.template.h \
-                         src/modules/gf/matrix3.template.h \
-                         src/modules/gf/matrix4.template.h \
-                         src/modules/gf/matrixData.h \
-                         src/modules/gf/quat.template.h \
-                         src/modules/gf/range.template.h \
-                         src/modules/gf/vec.template.h \
-                         src/modules/usd/crateDataTypes.h 
+EXCLUDE                =
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -869,11 +821,8 @@ EXCLUDE_SYMLINKS       = NO
 #
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
-EXCLUDE_PATTERNS       = *~ \
-                         */testenv/* \
-                         */codegenTemplates/* \
-                         */rapidjson/* \
-                         */pxrLZ4/*
+
+EXCLUDE_PATTERNS       =
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -917,7 +866,7 @@ EXCLUDE_SYMBOLS        = Usd_* \
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = src
+EXAMPLE_PATH           = docs/include
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
@@ -937,7 +886,8 @@ EXAMPLE_RECURSIVE      = YES
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-IMAGE_PATH             = src/modules
+IMAGE_PATH             = docs/doxygen/images \
+                         docs/include
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -1114,7 +1064,7 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = doxy_html
+HTML_OUTPUT            = docs/doxy_html
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -1174,7 +1124,7 @@ HTML_STYLESHEET        =
 # see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = src/modules/usd/usd_style.css
+HTML_EXTRA_STYLESHEET  = docs/doxygen/usd_style.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1893,7 +1843,7 @@ GENERATE_XML           = YES
 # The default directory is: xml.
 # This tag requires that the tag GENERATE_XML is set to YES.
 
-XML_OUTPUT             = doxy_xml
+XML_OUTPUT             = docs/doxy_xml
 
 # If the XML_PROGRAMLISTING tag is set to YES doxygen will dump the program
 # listings (including syntax highlighting and cross-referencing information) to

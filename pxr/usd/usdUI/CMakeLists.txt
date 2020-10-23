@@ -34,6 +34,9 @@ pxr_library(usdUI
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdUI/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

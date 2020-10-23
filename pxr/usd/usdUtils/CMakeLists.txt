@@ -55,6 +55,9 @@ pxr_library(usdUtils
     PYMODULE_FILES
         __init__.py
         complianceChecker.py
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

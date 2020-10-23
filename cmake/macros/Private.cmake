@@ -1065,6 +1065,7 @@ function(_pxr_library NAME)
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
+        DOXYGEN_FILES
         LIB_INSTALL_PREFIX_RESULT
     )
     cmake_parse_arguments(args
@@ -1277,6 +1278,28 @@ function(_pxr_library NAME)
         PUBLIC
             ${args_INCLUDE_DIRS}
     )
+
+    # If we're building documentation, we need to copy the files we want
+    # doxygen to process to a parallel structure in the build directory.
+    # Doxygen will be run on these files during the install step ---
+    # see pxr_build_documentation().
+    if(PXR_BUILD_DOCUMENTATION)
+        set(docBuildDir ${CMAKE_BINARY_DIR}/docs/${headerInstallPrefix})
+        set(doxygenFiles "${args_PUBLIC_HEADERS};${args_DOXYGEN_FILES}")
+
+        foreach(doxygenFile ${doxygenFiles})
+            add_custom_command(
+                TARGET ${NAME}
+                PRE_BUILD
+                COMMAND
+                    ${CMAKE_COMMAND} -E make_directory ${docBuildDir}
+                COMMAND
+                    ${CMAKE_COMMAND} -E copy 
+                    ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
+                    ${docBuildDir}/${doxygenFile}
+            )
+        endforeach()
+    endif()
 
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})

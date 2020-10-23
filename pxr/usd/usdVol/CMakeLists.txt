@@ -38,6 +38,9 @@ pxr_library(usdVol
         generatedSchema.usda
         plugInfo.json
         schema.usda:usdVol/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

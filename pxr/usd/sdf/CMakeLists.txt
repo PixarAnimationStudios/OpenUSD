@@ -158,6 +158,9 @@ pxr_library(sdf
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires

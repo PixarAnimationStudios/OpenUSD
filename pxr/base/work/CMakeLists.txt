@@ -32,6 +32,9 @@ pxr_library(work
 
     PYMODULE_FILES
         __init__.py
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_build_test(testWorkDispatcher

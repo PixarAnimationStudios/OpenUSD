@@ -129,6 +129,9 @@ pxr_library(ar
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

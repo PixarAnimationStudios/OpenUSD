@@ -55,6 +55,9 @@ pxr_library(arch
     CPPFILES
         assumptions.cpp
         initConfig.cpp
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_build_test_shared_lib(testArchAbiPlugin

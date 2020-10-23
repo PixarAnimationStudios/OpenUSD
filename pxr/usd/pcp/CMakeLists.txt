@@ -85,6 +85,9 @@ pxr_library(pcp
 
     PYMODULE_FILES
         __init__.py
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

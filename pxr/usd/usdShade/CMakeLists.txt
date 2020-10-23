@@ -56,6 +56,9 @@ pxr_library(usdShade
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdShade/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

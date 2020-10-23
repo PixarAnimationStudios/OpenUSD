@@ -19,4 +19,7 @@ pxr_plugin(sdrGlslfx
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )

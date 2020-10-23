@@ -44,6 +44,9 @@ pxr_library(usdAppUtils
         complexityArgs.py
         framesArgs.py
         rendererArgs.py
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

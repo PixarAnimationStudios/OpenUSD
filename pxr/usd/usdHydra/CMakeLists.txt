@@ -30,5 +30,7 @@ pxr_library(usdHydra
         shaders/shaderDefs.usda
         shaders/empty.glslfx
 
+    DOXYGEN_FILES
+        overview.dox
 )
 

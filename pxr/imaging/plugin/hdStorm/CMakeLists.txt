@@ -38,4 +38,7 @@ pxr_plugin(hdStorm
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )

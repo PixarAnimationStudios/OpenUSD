@@ -58,6 +58,9 @@ pxr_library(vt
 
     PYMODULE_FILES
         __init__.py
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_build_test(testVtCpp

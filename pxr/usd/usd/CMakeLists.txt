@@ -161,6 +161,25 @@ pxr_library(usd
         codegenTemplates/tokens.h
         codegenTemplates/wrapSchemaClass.cpp
         codegenTemplates/wrapTokens.cpp
+
+    DOXYGEN_FILES
+        doxygen/advancedFeatures.dox
+        doxygen/authoringEditing.dox
+        doxygen/bestPractices.dox
+        doxygen/commonIdioms.dox
+        doxygen/datatypes.dox
+        doxygen/dynamicFileFormat.dox
+        doxygen/front.dox
+        doxygen/generatingSchemas.dox
+        doxygen/instancing.dox
+        doxygen/multiThreading.dox
+        doxygen/objectModel.dox
+        doxygen/propertiesOfSceneDescription.dox 
+        doxygen/valueClips.dox
+        doxygen/images/instancing/Instancing_Example.png
+        doxygen/images/instancing/Nested_Instancing_Example.png
+        doxygen/images/instancing/Relationship_Example.png
+        doxygen/images/instancing/Uninstanced_vs_Instanced.png
 )
 
 if (NOT PXR_ENABLE_PYTHON_SUPPORT)

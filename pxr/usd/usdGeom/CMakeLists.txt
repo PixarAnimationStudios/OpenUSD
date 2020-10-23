@@ -107,6 +107,10 @@ pxr_library(usdGeom
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdGeom/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
+        snippets.dox
 )
 
 pxr_test_scripts(

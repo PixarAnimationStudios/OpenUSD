@@ -57,6 +57,9 @@ pxr_library(usdLux
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdLux/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

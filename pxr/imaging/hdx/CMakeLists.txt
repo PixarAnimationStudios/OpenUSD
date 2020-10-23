@@ -95,6 +95,9 @@ pxr_library(hdx
         shaders/oitResolveImageShader.glslfx
         shaders/outline.glslfx
         textures/StinsonBeach.exr
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 if (X11_FOUND)

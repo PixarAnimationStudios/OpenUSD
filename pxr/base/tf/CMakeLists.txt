@@ -228,6 +228,14 @@ pxr_library(tf
         testenv/testTfScriptModuleLoader_Other.py
         testenv/testTfScriptModuleLoader_Test.py
         testenv/testTfScriptModuleLoader_Unknown.py
+
+    DOXYGEN_FILES
+        diagnosticOverview.dox
+        errorOverview.dox
+        mallocTagOverview.dox
+        noteOverview.dox
+        overview.dox
+        registryOverview.dox
 )
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
