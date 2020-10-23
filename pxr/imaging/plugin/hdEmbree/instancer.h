@@ -32,8 +32,6 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/token.h"
 
-#include <mutex>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreeInstancer
@@ -54,10 +52,7 @@ public:
     /// Constructor.
     ///   \param delegate The scene delegate backing this instancer's data.
     ///   \param id The unique id of this instancer.
-    ///   \param parentInstancerId The unique id of the parent instancer,
-    ///                            or an empty id if not applicable.
-    HdEmbreeInstancer(HdSceneDelegate* delegate, SdfPath const& id,
-                      SdfPath const &parentInstancerId);
+    HdEmbreeInstancer(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Destructor.
     ~HdEmbreeInstancer();
@@ -70,19 +65,18 @@ public:
     ///   \return One transform per instance, to apply when drawing.
     VtMatrix4dArray ComputeInstanceTransforms(SdfPath const &prototypeId);
 
-private:
-    // Checks the change tracker to determine whether instance primvars are
-    // dirty, and if so pulls them. Since primvars can only be pulled once,
-    // and are cached, this function is not re-entrant. However, this function
-    // is called by ComputeInstanceTransforms, which is called (potentially)
-    // by HdEmbreeMesh::Sync(), which is dispatched in parallel, so it needs
-    // to be guarded by _instanceLock.
-    //
-    // Pulled primvars are cached in _primvarMap.
-    void _SyncPrimvars();
+    /// Updates cached primvar data from the scene delegate.
+    ///   \param sceneDelegate The scene delegate for this prim.
+    ///   \param renderParam The hdEmbree render param.
+    ///   \param dirtyBits The dirty bits for this instancer.
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
 
-    // Mutex guard for _SyncPrimvars().
-    std::mutex _instanceLock;
+private:
+    // Updates the cached primvars in _primvarMap based on scene delegate
+    // data.  This is a helper function for Sync().
+    void _SyncPrimvars(HdSceneDelegate *delegate, HdDirtyBits dirtyBits);
 
     // Map of the latest primvar data for this instancer, keyed by
     // primvar name. Primvar values are VtValue, an any-type; they are

@@ -206,8 +206,7 @@ public:
     HD_API
     void InsertRprim(TfToken const& typeId,
                      HdSceneDelegate* sceneDelegate,
-                     SdfPath const& rprimId,
-                     SdfPath const& instancerId = SdfPath());
+                     SdfPath const& rprimId);
 
     /// Remove a rprim from index
     HD_API
@@ -259,8 +258,7 @@ public:
     /// Insert an instancer into index
     HD_API
     void InsertInstancer(HdSceneDelegate* delegate,
-                         SdfPath const &id,
-                         SdfPath const &parentId = SdfPath());
+                         SdfPath const &id);
 
     /// Remove an instancer from index
     HD_API

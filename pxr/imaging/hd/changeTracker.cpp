@@ -269,23 +269,22 @@ void
 HdChangeTracker::_AddDependency(HdChangeTracker::_DependencyMap &depMap,
         SdfPath const& parent, SdfPath const& child)
 {
-    depMap[parent].insert(child);
+    _DependencyMap::accessor a;
+    depMap.insert(a, parent);
+    a->second.insert(child);
 }
 
 void
 HdChangeTracker::_RemoveDependency(HdChangeTracker::_DependencyMap &depMap,
         SdfPath const& parent, SdfPath const& child)
 {
-    _DependencyMap::iterator it = depMap.find(parent);
-    if (!TF_VERIFY(it != depMap.end()))
+    _DependencyMap::accessor a;
+    if(!depMap.find(a, parent)) {
         return;
-
-    SdfPathSet &childSet = it->second;
-    TF_VERIFY(childSet.erase(child) != 0);
-
-    if (childSet.empty())
-    {
-        depMap.erase(it);
+    }
+    a->second.erase(child);
+    if (a->second.empty()) {
+        depMap.erase(a);
     }
 }
 
@@ -420,18 +419,16 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     // Now mark any associated rprims or instancers dirty.
-    _DependencyMap::iterator instancerDepIt =
-        _instancerInstancerDependencies.find(id);
-    if (instancerDepIt != _instancerInstancerDependencies.end()) {
-        for (SdfPath const& dep : instancerDepIt->second) {
+    _DependencyMap::const_accessor aII;
+    if (_instancerInstancerDependencies.find(aII, id)) {
+        for (SdfPath const& dep : aII->second) {
             MarkInstancerDirty(dep, toPropagate);
         }
     }
 
-    _DependencyMap::iterator rprimDepIt =
-        _instancerRprimDependencies.find(id);
-    if (rprimDepIt != _instancerRprimDependencies.end()) {
-        for (SdfPath const& dep : rprimDepIt->second) {
+    _DependencyMap::const_accessor aIR;
+    if (_instancerRprimDependencies.find(aIR, id)) {
+        for (SdfPath const& dep : aIR->second) {
             MarkRprimDirty(dep, toPropagate);
         }
     }

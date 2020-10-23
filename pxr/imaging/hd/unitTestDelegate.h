@@ -354,6 +354,9 @@ public:
     HD_API
     virtual SdfPath GetMaterialId(SdfPath const& rprimId) override;
 
+    HD_API
+    virtual SdfPath GetInstancerId(SdfPath const& primId) override;
+
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
 
@@ -496,6 +499,7 @@ private:
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
     SdfPathMap _materialBindings;
+    SdfPathMap _instancerBindings;
 
     bool _hasInstancePrimvars;
     int _refineLevel;

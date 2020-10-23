@@ -171,6 +171,8 @@ public:
     SdfPath GetMaterialId(SdfPath const &rprimId) override;
     VtValue GetMaterialResource(SdfPath const &materialId) override;
 
+    SdfPath GetInstancerId(SdfPath const &primId) override;
+
     VtValue GetCameraParamValue(
         SdfPath const &cameraId,
         TfToken const &paramName) override;
@@ -245,6 +247,7 @@ private:
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
     SdfPathMap _materialBindings;
+    SdfPathMap _instancerBindings;
 
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

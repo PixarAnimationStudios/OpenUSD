@@ -68,8 +68,8 @@ using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 class HdRprim {
 public:
     HD_API
-    HdRprim(SdfPath const& id,
-            SdfPath const& instancerId);
+    HdRprim(SdfPath const& id);
+
     HD_API
     virtual ~HdRprim();
 
@@ -275,6 +275,10 @@ protected:
     HD_API
     void _UpdateVisibility(HdSceneDelegate *sceneDelegate,
                            HdDirtyBits *dirtyBits);
+
+    HD_API
+    void _UpdateInstancer(HdSceneDelegate *sceneDelegate,
+                          HdDirtyBits *dirtyBits);
 
     /// Sets a new material binding to be used by this rprim
     HD_API

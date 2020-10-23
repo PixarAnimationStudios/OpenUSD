@@ -73,8 +73,8 @@ public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
 
     HDST_API
-    HdStBasisCurves(SdfPath const& id,
-                    SdfPath const& instancerId = SdfPath());
+    HdStBasisCurves(SdfPath const& id);
+
     HDST_API
     virtual ~HdStBasisCurves();
 

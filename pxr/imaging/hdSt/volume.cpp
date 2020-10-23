@@ -60,7 +60,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 const float HdStVolume::defaultStepSize         = 1.0f;
 const float HdStVolume::defaultStepSizeLighting = 2.0f;
 
-HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
+HdStVolume::HdStVolume(SdfPath const& id)
     : HdVolume(id)
 {
 }
@@ -81,18 +81,13 @@ static const int _initialDirtyBitsMask =
     | HdChangeTracker::DirtyPrimID
     | HdChangeTracker::DirtyPrimvar
     | HdChangeTracker::DirtyTransform
-    | HdChangeTracker::DirtyVisibility;
+    | HdChangeTracker::DirtyVisibility
+    | HdChangeTracker::DirtyInstancer;
 
 HdDirtyBits 
 HdStVolume::GetInitialDirtyBitsMask() const
 {
     int mask = _initialDirtyBitsMask;
-
-    if (!GetInstancerId().IsEmpty()) {
-        mask |= HdChangeTracker::DirtyInstancer
-              | HdChangeTracker::DirtyInstanceIndex;
-    }
-
     return (HdDirtyBits)mask;
 }
 

@@ -133,8 +133,7 @@ HdRenderIndex::RemoveSubtree(const SdfPath &root,
 void
 HdRenderIndex::InsertRprim(TfToken const& typeId,
                  HdSceneDelegate* sceneDelegate,
-                 SdfPath const& rprimId,
-                 SdfPath const& instancerId /*= SdfPath()*/)
+                 SdfPath const& rprimId)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -150,10 +149,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
         return;
     }
 
-
-    HdRprim *rprim = _renderDelegate->CreateRprim(typeId,
-                                                  rprimId,
-                                                  instancerId);
+    HdRprim *rprim = _renderDelegate->CreateRprim(typeId, rprimId);
     if (rprim == nullptr) {
         return;
     }
@@ -168,12 +164,6 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
       rprim
     };
     _rprimMap[rprimId] = std::move(info);
-
-    SdfPath instanceId = rprim->GetInstancerId();
-
-    if (!instanceId.IsEmpty()) {
-        _tracker.AddInstancerRprimDependency(instanceId, rprimId);
-    }
 }
 
 void
@@ -1621,8 +1611,7 @@ HdRenderIndex::GetRprimPathFromPrimId(int primId) const
 
 void
 HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
-                               SdfPath const &id,
-                               SdfPath const &parentId)
+                               SdfPath const &id)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1639,20 +1628,13 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     }
 
     HdInstancer *instancer =
-        _renderDelegate->CreateInstancer(delegate, id, parentId);
-
+        _renderDelegate->CreateInstancer(delegate, id);
     if (instancer == nullptr) {
         return;
     }
 
     _instancerMap[id] = instancer;
     _tracker.InstancerInserted(id, instancer->GetInitialDirtyBitsMask());
-
-    SdfPath instanceId = instancer->GetParentId();
-
-    if (!instanceId.IsEmpty()) {
-        _tracker.AddInstancerInstancerDependency(instanceId, id);
-    }
 }
 
 void

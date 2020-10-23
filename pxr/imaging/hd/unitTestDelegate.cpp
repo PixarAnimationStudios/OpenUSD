@@ -101,9 +101,6 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id)
     TfToken scheme = PxOsdOpenSubdivTokens->catmullClark;
 
     AddMesh(id, transform, points, numVerts, verts, guide, instancerId, scheme);
-    if (!instancerId.IsEmpty()) {
-        _instancers[instancerId].prototypes.push_back(id);
-    }
 }
 
 void
@@ -121,7 +118,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, /*holes*/VtIntArray(),
@@ -138,6 +135,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                                HdPrimvarRoleTokens->color) };
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -163,7 +161,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, holes, subdivTags,
@@ -179,6 +177,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                                HdPrimvarRoleTokens->color) };
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -201,9 +200,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath materialId;
-    TfMapLookup(_materialBindings, id, &materialId);
-    index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id);
 
     _curves[id] = _Curves(points, curveVertexCounts, 
                           type,
@@ -232,6 +229,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     }
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -250,9 +248,7 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath materialId;
-    TfMapLookup(_materialBindings, id, &materialId);
-    index.InsertRprim(HdPrimTypeTokens->points, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->points, this, id);
 
     _points[id] = _Points(points);
 
@@ -271,6 +267,7 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
                  HdPrimvarRoleTokens->none)};
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -284,11 +281,12 @@ HdUnitTestDelegate::AddInstancer(SdfPath const &id,
 
     HdRenderIndex& index = GetRenderIndex();
     // add instancer
-    index.InsertInstancer(this, id, parentId);
+    index.InsertInstancer(this, id);
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
     if (!parentId.IsEmpty()) {
+        _instancerBindings[id] = parentId;
         _instancers[parentId].prototypes.push_back(id);
     }
 
@@ -760,6 +758,15 @@ HdUnitTestDelegate::GetMaterialId(SdfPath const& rprimId)
     SdfPath materialId;
     TfMapLookup(_materialBindings, rprimId, &materialId);
     return materialId;
+}
+
+/*virtual*/
+SdfPath
+HdUnitTestDelegate::GetInstancerId(SdfPath const& primId)
+{
+    SdfPath instancerId;
+    TfMapLookup(_instancerBindings, primId, &instancerId);
+    return instancerId;
 }
 
 /*virtual*/

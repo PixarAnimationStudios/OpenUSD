@@ -40,9 +40,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id,
-                                         SdfPath const& instancerId)
-    : BASE(id, instancerId)
+HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id)
+    : BASE(id)
 {
 }
 

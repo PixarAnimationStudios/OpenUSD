@@ -88,8 +88,7 @@ public:
     
 protected:
     HD_API
-    HdBasisCurves(SdfPath const& id,
-                  SdfPath const& instancerId = SdfPath());
+    HdBasisCurves(SdfPath const& id);
 
     typedef _ReprDescConfigs<HdBasisCurvesReprDesc> _BasisCurvesReprConfig;
 

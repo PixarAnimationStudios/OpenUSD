@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/hashmap.h"
 
+#include <tbb/concurrent_hash_map.h>
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -604,8 +605,17 @@ private:
 
     typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
-    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _DependencyMap;
     typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
+
+    struct _PathHashCompare {
+        static bool     equal(const SdfPath& a, const SdfPath& b)
+                        { return a == b; }
+
+        static size_t   hash(const SdfPath& path)
+                        { return hash_value(path); }
+    };
+    typedef tbb::concurrent_hash_map<SdfPath, SdfPathSet, _PathHashCompare>
+        _DependencyMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;

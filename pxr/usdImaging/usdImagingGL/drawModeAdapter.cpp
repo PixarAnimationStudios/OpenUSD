@@ -157,8 +157,6 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 {
     SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
         prim.GetPath(), instancerContext);
-    SdfPath instancer = instancerContext ?
-        instancerContext->instancerCachePath : SdfPath();
 
     // The draw mode adapter only supports models or unloaded prims.
     // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
@@ -201,7 +199,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
-            cachePath, instancer, cachePrim, rprimAdapter);
+            cachePath, cachePrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
@@ -211,7 +209,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->mesh,
-            cachePath, instancer, cachePrim, rprimAdapter);
+            cachePath, cachePrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else {
         TF_CODING_ERROR("Model <%s> has unsupported drawMode '%s'",

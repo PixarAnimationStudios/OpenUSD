@@ -315,10 +315,9 @@ HdStRenderDelegate::CreateRenderPassState() const
 
 HdInstancer *
 HdStRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
-                                    SdfPath const& id,
-                                    SdfPath const& instancerId)
+                                    SdfPath const& id)
 {
-    return new HdStInstancer(delegate, id, instancerId);
+    return new HdStInstancer(delegate, id);
 }
 
 void
@@ -329,17 +328,16 @@ HdStRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdRprim *
 HdStRenderDelegate::CreateRprim(TfToken const& typeId,
-                                    SdfPath const& rprimId,
-                                    SdfPath const& instancerId)
+                                SdfPath const& rprimId)
 {
     if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdStMesh(rprimId, instancerId);
+        return new HdStMesh(rprimId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
-        return new HdStBasisCurves(rprimId, instancerId);
+        return new HdStBasisCurves(rprimId);
     } else  if (typeId == HdPrimTypeTokens->points) {
-        return new HdStPoints(rprimId, instancerId);
+        return new HdStPoints(rprimId);
     } else  if (typeId == HdPrimTypeTokens->volume) {
-        return new HdStVolume(rprimId, instancerId);
+        return new HdStVolume(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -355,7 +353,7 @@ HdStRenderDelegate::DestroyRprim(HdRprim *rPrim)
 
 HdSprim *
 HdStRenderDelegate::CreateSprim(TfToken const& typeId,
-                                    SdfPath const& sprimId)
+                                SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);

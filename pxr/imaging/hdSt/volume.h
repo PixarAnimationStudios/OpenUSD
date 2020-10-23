@@ -38,7 +38,7 @@ class HdStDrawItem;
 class HdStVolume final : public HdVolume {
 public:
     HDST_API
-    HdStVolume(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    HdStVolume(SdfPath const& id);
     HDST_API
     ~HdStVolume() override;
 

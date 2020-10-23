@@ -597,6 +597,27 @@ HdStUpdateInstancerData(
 
     HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
+    // If the instance topology changes, we want to force an instance index
+    // rebuild even if the index dirty bit isn't set...
+    bool forceIndexRebuild = false;
+
+    if (rprimDirtyBits & HdChangeTracker::DirtyInstancer) {
+        // If the instancer topology has changed, we might need to change
+        // how many levels we allocate in the drawing coord.
+        int instancerLevels = HdInstancer::GetInstancerNumLevels(
+            renderIndex, *prim); 
+
+        if (instancerLevels != sharedData->instancerLevels) {
+            sharedData->barContainer.Resize(
+                drawingCoord->GetInstancePrimvarIndex(0) + instancerLevels);
+            sharedData->instancerLevels = instancerLevels;
+
+            renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+            renderIndex.GetChangeTracker().MarkBatchesDirty();
+            forceIndexRebuild = true;
+        }
+    }
+
     /* INSTANCE PRIMVARS */
     // Populate all instance primvars by backtracing hierarachy.
     int level = 0;
@@ -606,8 +627,16 @@ HdStUpdateInstancerData(
         if(!TF_VERIFY(instancer)) {
             return;
         }
-
         int drawCoordIndex = drawingCoord->GetInstancePrimvarIndex(level);
+        HdBufferArrayRangeSharedPtr instancerRange =
+            static_cast<HdStInstancer*>(instancer)->GetInstancePrimvarRange();
+
+        // If we need to update the BAR, that indicates an instancing topology
+        // change and we want to force an index rebuild.
+        if (instancerRange != sharedData->barContainer.Get(drawCoordIndex)) {
+            forceIndexRebuild = true;
+        }
+
         // update instance primvar slot in the drawing coordinate.
         HdStUpdateDrawItemBAR(
             static_cast<HdStInstancer*>(instancer)->GetInstancePrimvarRange(),
@@ -621,7 +650,8 @@ HdStUpdateInstancerData(
     // Note, GetInstanceIndices will check index sizes against primvar sizes.
     // The instance indices are a cartesian product of each level, so they need
     // to be recomputed per-rprim.
-    if (HdChangeTracker::IsInstanceIndexDirty(rprimDirtyBits, prim->GetId())) {
+    if (HdChangeTracker::IsInstanceIndexDirty(rprimDirtyBits, prim->GetId()) ||
+        forceIndexRebuild) {
         parentId = prim->GetInstancerId();
         if (!parentId.IsEmpty()) {
             HdInstancer *instancer = renderIndex.GetInstancer(parentId);

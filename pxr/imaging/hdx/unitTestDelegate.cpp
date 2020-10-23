@@ -420,11 +420,12 @@ Hdx_UnitTestDelegate::AddInstancer(SdfPath const &id,
 
     HdRenderIndex& index = GetRenderIndex();
     // add instancer
-    index.InsertInstancer(this, id, parentId);
+    index.InsertInstancer(this, id);
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
     if (!parentId.IsEmpty()) {
+        _instancerBindings[id] = parentId;
         _instancers[parentId].prototypes.push_back(id);
     }
 }
@@ -466,7 +467,7 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                              bool doubleSided)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, PxOsdSubdivTags(),
@@ -476,6 +477,7 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                         HdInterpolationConstant,
                         guide, doubleSided);
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -498,13 +500,14 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                              bool doubleSided)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, subdivTags,
                         color, colorInterpolation, opacity,
                         opacityInterpolation, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -877,6 +880,15 @@ Hdx_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
         return *material;
     }
     return VtValue();
+}
+
+/*virtual*/
+SdfPath
+Hdx_UnitTestDelegate::GetInstancerId(SdfPath const& primId)
+{
+    SdfPath instancerId;
+    TfMapLookup(_instancerBindings, primId, &instancerId);
+    return instancerId;
 }
 
 /*virtual*/

@@ -30,11 +30,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdInstancer::HdInstancer(HdSceneDelegate* delegate,
-                         SdfPath const& id,
-                         SdfPath const &parentId)
+                         SdfPath const& id)
     : _delegate(delegate)
     , _id(id)
-    , _parentId(parentId)
+    , _parentId()
 {
 }
 
@@ -113,12 +112,37 @@ HdInstancer::_SyncInstancerAndParents(HdRenderIndex &renderIndex,
     }
 }
 
+void
+HdInstancer::_UpdateInstancer(HdSceneDelegate *delegate,
+                              HdDirtyBits *dirtyBits)
+{
+    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, GetId())) {
+        SdfPath const& parentId = delegate->GetInstancerId(GetId());
+        if (parentId == _parentId) {
+            return;
+        }
+
+        // If we have a new instancer ID, we need to update the dependency
+        // map and also update the stored instancer ID.
+        HdChangeTracker &tracker =
+            delegate->GetRenderIndex().GetChangeTracker();
+        if (!_parentId.IsEmpty()) {
+            tracker.RemoveInstancerInstancerDependency(_parentId, GetId());
+        }
+        if (!parentId.IsEmpty()) {
+            tracker.AddInstancerInstancerDependency(parentId, GetId());
+        }
+        _parentId = parentId;
+    }
+}
+
 HdDirtyBits
 HdInstancer::GetInitialDirtyBitsMask() const
 {
     return HdChangeTracker::DirtyTransform |
            HdChangeTracker::DirtyPrimvar |
-           HdChangeTracker::DirtyInstanceIndex;
+           HdChangeTracker::DirtyInstanceIndex |
+           HdChangeTracker::DirtyInstancer;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -44,9 +44,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_NullRprim final : public HdRprim {
 public:
     Hd_NullRprim(TfToken const& typeId,
-                 SdfPath const& id,
-                 SdfPath const& instancerId)
-     : HdRprim(id, instancerId)
+                 SdfPath const& id)
+     : HdRprim(id)
      , _typeId(typeId)
     {
 
@@ -331,10 +330,9 @@ Hd_UnitTestNullRenderDelegate::CreateRenderPass(HdRenderIndex *index,
 
 HdInstancer *
 Hd_UnitTestNullRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
-                                               SdfPath const& id,
-                                               SdfPath const& instancerId)
+                                               SdfPath const& id)
 {
-    return new HdInstancer(delegate, id, instancerId);
+    return new HdInstancer(delegate, id);
 }
 
 void
@@ -346,10 +344,9 @@ Hd_UnitTestNullRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdRprim *
 Hd_UnitTestNullRenderDelegate::CreateRprim(TfToken const& typeId,
-                                    SdfPath const& rprimId,
-                                    SdfPath const& instancerId)
+                                    SdfPath const& rprimId)
 {
-    return new Hd_NullRprim(typeId, rprimId, instancerId);
+    return new Hd_NullRprim(typeId, rprimId);
 }
 
 void

@@ -192,7 +192,6 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // {instance=X} from the path, so usd can find the prim.
     index->InsertInstancer(
         instancerCachePath,
-        parentInstancerCachePath,
         _GetPrim(instancerCachePath.GetAbsoluteRootOrPrimPath()),
         instancerContext ? instancerContext->instancerAdapter
                          : UsdImagingPrimAdapterSharedPtr());

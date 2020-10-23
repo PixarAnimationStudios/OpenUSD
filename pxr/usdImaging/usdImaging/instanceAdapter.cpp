@@ -341,7 +341,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         }
         // Add this instancer into the render index
         index->InsertInstancer(instancerPath,
-                               /*parentPath=*/ctx.instancerCachePath,
                                _GetPrim(instancerPath),
                                ctx.instancerAdapter);
 

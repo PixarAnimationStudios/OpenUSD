@@ -69,8 +69,7 @@ class HdStInstancer : public HdInstancer {
 public:
     /// Constructor.
     HDST_API
-    HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id,
-                  SdfPath const &parentInstancerId);
+    HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id);
 
     // Updates the instance primvar buffers.
     // XXX: Note, this is currently called from rprimUtils instead of the

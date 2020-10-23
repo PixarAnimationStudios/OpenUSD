@@ -272,13 +272,10 @@ public:
     ///
     /// Request to create a new instancer.
     /// \param id The unique identifier of this instancer.
-    /// \param instancerId The unique identifier for the parent instancer that
-    ///                    uses this instancer as a prototype (may be empty).
     /// \return A pointer to the new instancer or nullptr on error.
     ///
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
-                                         SdfPath const& id,
-                                         SdfPath const& instancerId) = 0;
+                                         SdfPath const& id) = 0;
 
     virtual void DestroyInstancer(HdInstancer *instancer) = 0;
 
@@ -293,13 +290,10 @@ public:
     /// Request to Allocate and Construct a new Rprim.
     /// \param typeId the type identifier of the prim to allocate
     /// \param rprimId a unique identifier for the prim
-    /// \param instancerId the unique identifier for the instancer that uses
-    ///                    the prim (optional: May be empty).
     /// \return A pointer to the new prim or nullptr on error.
     ///                     
     virtual HdRprim *CreateRprim(TfToken const& typeId,
-                                 SdfPath const& rprimId,
-                                 SdfPath const& instancerId) = 0;
+                                 SdfPath const& rprimId) = 0;
 
     ///
     /// Request to Destruct and deallocate the prim.

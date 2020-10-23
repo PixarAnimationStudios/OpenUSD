@@ -224,10 +224,9 @@ HdPrmanRenderDelegate::CreateRenderPass(HdRenderIndex *index,
 
 HdInstancer *
 HdPrmanRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
-                                        SdfPath const& id,
-                                        SdfPath const& instancerId)
+                                        SdfPath const& id)
 {
-    return new HdPrmanInstancer(delegate, id, instancerId);
+    return new HdPrmanInstancer(delegate, id);
 }
 
 void
@@ -238,17 +237,16 @@ HdPrmanRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 
 HdRprim *
 HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
-                                    SdfPath const& rprimId,
-                                    SdfPath const& instancerId)
+                                    SdfPath const& rprimId)
 {
     if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdPrman_Mesh(rprimId, instancerId);
+        return new HdPrman_Mesh(rprimId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
-        return new HdPrman_BasisCurves(rprimId, instancerId);
+        return new HdPrman_BasisCurves(rprimId);
     } else if (typeId == HdPrimTypeTokens->points) {
-        return new HdPrman_Points(rprimId, instancerId);
+        return new HdPrman_Points(rprimId);
     } else if (typeId == HdPrimTypeTokens->volume) {
-        return new HdPrman_Volume(rprimId, instancerId);
+        return new HdPrman_Volume(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }

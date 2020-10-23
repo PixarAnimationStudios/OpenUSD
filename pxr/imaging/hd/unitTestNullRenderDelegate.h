@@ -58,8 +58,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
-                                         SdfPath const& id,
-                                         SdfPath const& instancerId) override;
+                                         SdfPath const& id) override;
 
     virtual void DestroyInstancer(HdInstancer *instancer) override;
 
@@ -70,8 +69,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     virtual HdRprim *CreateRprim(TfToken const& typeId,
-                                 SdfPath const& rprimId,
-                                 SdfPath const& instancerId) override;
+                                 SdfPath const& rprimId) override;
 
     virtual void DestroyRprim(HdRprim *rPrim) override;
 

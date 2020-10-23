@@ -126,15 +126,13 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                       instancerContext)
 {
     SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
-    SdfPath instancer = instancerContext ?
-        instancerContext->instancerCachePath : SdfPath();
 
     // For an instanced gprim, this is the instancer prim.
     // For a non-instanced gprim, this is just the gprim.
     UsdPrim proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
         cachePath.GetAbsoluteRootOrPrimPath());
 
-    index->InsertRprim(primType, cachePath, instancer, proxyPrim,
+    index->InsertRprim(primType, cachePath, proxyPrim,
         instancerContext ? instancerContext->instancerAdapter
             : UsdImagingPrimAdapterSharedPtr());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);

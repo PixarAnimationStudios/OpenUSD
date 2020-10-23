@@ -27,8 +27,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdTinyMesh::HdTinyMesh(SdfPath const& id, SdfPath const& instancerId)
-    : HdMesh(id, instancerId)
+HdTinyMesh::HdTinyMesh(SdfPath const& id)
+    : HdMesh(id)
 {
 }
 

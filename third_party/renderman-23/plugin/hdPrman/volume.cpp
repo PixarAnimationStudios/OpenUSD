@@ -82,9 +82,8 @@ HdDirtyBits HdPrman_Field::GetInitialDirtyBitsMask() const
     return (HdDirtyBits)mask;
 }
 
-HdPrman_Volume::HdPrman_Volume(SdfPath const& id,
-                           SdfPath const& instancerId)
-    : BASE(id, instancerId)
+HdPrman_Volume::HdPrman_Volume(SdfPath const& id)
+    : BASE(id)
 {
 }
 

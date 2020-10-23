@@ -87,9 +87,8 @@ namespace {
     constexpr HdStComputeQueue _RefineNormalsCompQueue = HdStComputeQueueThree;
 }
 
-HdStMesh::HdStMesh(SdfPath const& id,
-                   SdfPath const& instancerId)
-    : HdMesh(id, instancerId)
+HdStMesh::HdStMesh(SdfPath const& id)
+    : HdMesh(id)
     , _topology()
     , _vertexAdjacency()
     , _topologyId(0)
@@ -1519,6 +1518,14 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _displayOpacity = false;
     }
 
+    /* INSTANCE PRIMVARS */
+    _UpdateInstancer(sceneDelegate, dirtyBits);
+    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+            this, drawItem, &_sharedData, *dirtyBits);
+    _displayOpacity = _displayOpacity ||
+            HdStIsInstancePrimvarExistentAndValid(
+            sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
+
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
         HdPrimvarDescriptorVector constantPrimvars =
@@ -1537,17 +1544,9 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         }
 
         // Also want to check existence of displayOpacity primvar
-        _displayOpacity = HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
-            constantPrimvars, HdTokens->displayOpacity);
-    }
-
-    /* INSTANCE PRIMVARS */
-    if (!GetInstancerId().IsEmpty()) {
-        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-                this, drawItem, &_sharedData, *dirtyBits);
         _displayOpacity = _displayOpacity ||
-            HdStIsInstancePrimvarExistentAndValid(
-            sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
+            HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
+            constantPrimvars, HdTokens->displayOpacity);
     }
 
     /* VERTEX PRIMVARS */
@@ -1965,12 +1964,8 @@ HdStMesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyTopology
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyInstancer;
         ;
-
-    if (!GetInstancerId().IsEmpty()) {
-        mask |= HdChangeTracker::DirtyInstancer
-              | HdChangeTracker::DirtyInstanceIndex;
-    }
 
     return mask;
 }

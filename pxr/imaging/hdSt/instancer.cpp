@@ -35,9 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
-                             SdfPath const &id,
-                             SdfPath const &parentId)
-    : HdInstancer(delegate, id, parentId)
+                             SdfPath const &id)
+    : HdInstancer(delegate, id)
     , _instancePrimvarNumElements(0)
 {
 }
@@ -52,6 +51,7 @@ HdStInstancer::Sync(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& instancerId = GetId();
 
+    _UpdateInstancer(sceneDelegate, dirtyBits);
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, instancerId)) {
         _SyncPrimvars(sceneDelegate, dirtyBits);
     }

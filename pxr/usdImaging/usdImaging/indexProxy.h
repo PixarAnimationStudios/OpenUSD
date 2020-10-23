@@ -89,7 +89,6 @@ public:
     USDIMAGING_API
     void InsertRprim(TfToken const& primType,
                      SdfPath const& cachePath,
-                     SdfPath const& parentPath,
                      UsdPrim const& usdPrim,
                      UsdImagingPrimAdapterSharedPtr adapter =
                         UsdImagingPrimAdapterSharedPtr());
@@ -110,7 +109,6 @@ public:
 
     USDIMAGING_API
     void InsertInstancer(SdfPath const& cachePath,
-                         SdfPath const& parentPath,
                          UsdPrim const& usdPrim,
                          UsdImagingPrimAdapterSharedPtr adapter =
                             UsdImagingPrimAdapterSharedPtr());

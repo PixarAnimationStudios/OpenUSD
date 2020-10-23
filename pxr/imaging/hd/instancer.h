@@ -125,8 +125,7 @@ class HdInstancer {
 public:
     /// Constructor.
     HD_API
-    HdInstancer(HdSceneDelegate* delegate, SdfPath const& id,
-                SdfPath const &parentInstancerId);
+    HdInstancer(HdSceneDelegate* delegate, SdfPath const& id);
 
     HD_API
     virtual ~HdInstancer();
@@ -161,6 +160,11 @@ public:
     static void _SyncInstancerAndParents(
         HdRenderIndex &renderIndex,
         SdfPath const& instancerId);
+
+protected:
+    HD_API
+    void _UpdateInstancer(HdSceneDelegate *delegate,
+                          HdDirtyBits *dirtyBits);
 
 private:
     HdSceneDelegate* _delegate;

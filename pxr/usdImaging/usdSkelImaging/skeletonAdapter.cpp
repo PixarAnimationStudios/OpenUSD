@@ -160,10 +160,8 @@ UsdSkelImagingSkeletonAdapter::Populate(
         // Note: This uses the "rest" pose of the skeleton.
         // Also, since the bone mesh isn't backed by the UsdStage, we register 
         // the skeleton prim on its behalf.
-        SdfPath instancer = instancerContext ?
-            instancerContext->instancerCachePath : SdfPath();
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
-                           instancer, prim, shared_from_this());
+                           prim, shared_from_this());
     }
 
     // Insert a computation for each skinned prim targeted by this
