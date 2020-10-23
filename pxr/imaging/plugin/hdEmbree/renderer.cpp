@@ -682,11 +682,11 @@ HdEmbreeRenderer::_ComputeId(RTCRayHit const& rayHit, TfToken const& idType,
     // Get the instance and prototype context structures for the hit prim.
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
-    HdEmbreeInstanceContext *instanceContext =
+    const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
             rtcGetGeometryUserData(rtcGetGeometry(_scene, rayHit.hit.instID[0])));
 
-    HdEmbreePrototypeContext *prototypeContext =
+    const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
             rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
@@ -744,18 +744,18 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
 
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
-    HdEmbreeInstanceContext *instanceContext =
+    const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
 
-    HdEmbreePrototypeContext *prototypeContext =
+    const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
     GfVec3f n = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
-    if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
-        prototypeContext->primvarMap[HdTokens->normals]->Sample(
-                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &n);
+    auto it = prototypeContext->primvarMap.find(HdTokens->normals);
+    if (it != prototypeContext->primvarMap.end()) {
+        it->second->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &n);
     }
 
     n = instanceContext->objectToWorldMatrix.TransformDir(n);
@@ -779,19 +779,19 @@ HdEmbreeRenderer::_ComputePrimvar(RTCRayHit const& rayHit,
 
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
-    HdEmbreeInstanceContext *instanceContext =
+    const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
 
-    HdEmbreePrototypeContext *prototypeContext =
+    const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
     // XXX: This is a little clunky, although sample will early out if the
     // types don't match.
-    if (prototypeContext->primvarMap.count(primvar) > 0) {
-        HdEmbreePrimvarSampler *sampler = 
-            prototypeContext->primvarMap[primvar];
+    auto it = prototypeContext->primvarMap.find(primvar);
+    if (it != prototypeContext->primvarMap.end()) {
+        const HdEmbreePrimvarSampler *sampler = it->second;
         if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, value)) {
             return true;
         }
@@ -821,11 +821,11 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // Get the instance and prototype context structures for the hit prim.
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
-    HdEmbreeInstanceContext *instanceContext =
+    const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
 
-    HdEmbreePrototypeContext *prototypeContext =
+    const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
@@ -837,18 +837,21 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
     GfVec3f normal = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
-    if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
-        prototypeContext->primvarMap[HdTokens->normals]->Sample(
-                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &normal);
+    auto it = prototypeContext->primvarMap.find(HdTokens->normals);
+    if (it != prototypeContext->primvarMap.end()) {
+        it->second->Sample(
+            rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &normal);
     }
 
     // If a color primvar is present, use that as diffuse color; otherwise,
     // use flat grey.
     GfVec3f color = GfVec3f(0.5f, 0.5f, 0.5f);
-    if (_enableSceneColors &&
-            prototypeContext->primvarMap.count(HdTokens->displayColor) > 0) {
-        prototypeContext->primvarMap[HdTokens->displayColor]->Sample(
+    if (_enableSceneColors) {
+        auto it = prototypeContext->primvarMap.find(HdTokens->displayColor);
+        if (it != prototypeContext->primvarMap.end()) {
+            it->second->Sample(
                 rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &color);
+        }
     }
 
     // Transform the normal from object space to world space.
