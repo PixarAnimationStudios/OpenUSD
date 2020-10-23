@@ -1,5 +1,5 @@
 Creating Tiny RenderDelegate
-Create Tiny Rprim type=mesh id=/MyCube1 instancerId=
+Create Tiny Rprim type=mesh id=/MyCube1
 Create RenderPass with Collection=geometry
 * (multithreaded) Sync Tiny Mesh id=/MyCube1
 => CommitResources RenderDelegate
