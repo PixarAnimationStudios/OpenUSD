@@ -38,13 +38,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<Hgi>();
 }
 
-static bool
-_IsVulkanEnabled()
-{
-    static bool _v = TfGetEnvSetting(HGI_ENABLE_VULKAN) == 1;
-    return _v;
-}
-
 Hgi::Hgi()
     : _uniqueIdCounter(1)
 {
@@ -71,21 +64,29 @@ _MakeNewPlatformDefaultHgi()
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
-    TfType plugType;
-    if (_IsVulkanEnabled()) {
-        plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiVulkan");
-    } else {
+    const char* hgiType = 
         #if defined(ARCH_OS_LINUX)
-            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+            "HgiGL";
         #elif defined(ARCH_OS_DARWIN)
-            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiMetal");
+            "HgiMetal";
         #elif defined(ARCH_OS_WINDOWS)
-            plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+            "HgiGL";
         #else
+            ""; 
             #error Unknown Platform
             return nullptr;
         #endif
+
+    if (TfGetEnvSetting(HGI_ENABLE_VULKAN)) {
+        #if defined(PXR_VULKAN_SUPPORT_ENABLED)
+            hgiType = "HgiVulkan";
+        #else
+            TF_CODING_ERROR(
+                "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
+        #endif
     }
+
+    const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>(hgiType);
 
     PlugPluginPtr plugin = plugReg.GetPluginForType(plugType);
     if (!plugin || !plugin->Load()) {
