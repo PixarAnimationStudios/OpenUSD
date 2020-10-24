@@ -138,6 +138,7 @@ pxr_test_scripts(
     testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
     testenv/testArPackageUtils.py
+    testenv/testArResolverContext.py
 )
 
 pxr_build_test_shared_lib(TestArAdvancedAPI
@@ -159,6 +160,15 @@ pxr_build_test(testArDefaultResolver_CPP
         testenv/testArDefaultResolver.cpp
 ) 
 
+pxr_build_test(testArResolverContext_CPP
+    LIBRARIES
+        arch
+        tf
+        ar
+    CPPFILES
+        testenv/testArResolverContext.cpp
+) 
+
 pxr_register_test(testArAdvancedAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArAdvancedAPI"
@@ -176,4 +186,13 @@ pxr_register_test(testArDefaultResolver_CPP
 pxr_register_test(testArPackageUtils
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPackageUtils"
+)
+
+pxr_register_test(testArResolverContext
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext"
+)
+
+pxr_register_test(testArResolverContext_CPP
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext_CPP"
 )
