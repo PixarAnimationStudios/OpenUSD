@@ -31,6 +31,7 @@
 
 #include <tbb/concurrent_vector.h>
 #include <vector>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,12 +92,28 @@ public:
     /// Get resource registry
     ///
     HDST_API
-    HdStResourceRegistry * GetResourceRegistry() const;
+    HdStResourceRegistry * GetResourceRegistry() const {
+        return _resourceRegistry;
+    }
+
+    /// The total GPU memory consumed by all textures managed by this registry.
+    ///
+    int64_t GetTotalTextureMemory() const {
+        return _totalTextureMemory;
+    }
+
+    /// Add signed number to total texture memory amount. Called from
+    /// texture objects when (de-)allocated GPU resources.
+    ///
+    HDST_API
+    void AdjustTotalTextureMemory(int64_t memDiff);
 
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(
         const HdStTextureIdentifier &textureId,
         HdTextureType textureType);
+
+    std::atomic<int64_t> _totalTextureMemory;
 
     // Registry for texture and sampler objects.
     HdInstanceRegistry<HdStTextureObjectSharedPtr>

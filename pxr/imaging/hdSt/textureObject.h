@@ -116,6 +116,22 @@ protected:
     HDST_API
     virtual void _Commit() = 0;
 
+    /// Add signed number to total texture memory amount maintained by
+    /// registry.
+    ///
+    HDST_API
+    void _AdjustTotalTextureMemory(int64_t memDiff);
+
+    /// Compute memory of texture and add to total texture memory
+    /// amount maintained by registry.
+    HDST_API
+    void _AddToTotalTextureMemory(const HgiTextureHandle &texture);
+
+    /// Compute memory of texture and subtract to total texture memory
+    /// amount maintained by registry.
+    HDST_API
+    void _SubtractFromTotalTextureMemory(const HgiTextureHandle &texture);
+
 private:
     friend class HdSt_TextureObjectRegistry;
 

@@ -36,7 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry(
     HdStResourceRegistry * registry)
-  : _resourceRegistry(registry)
+  : _totalTextureMemory(0)
+  , _resourceRegistry(registry)
 {
 }
 
@@ -116,10 +117,10 @@ HdSt_TextureObjectRegistry::MarkTextureObjectDirty(
     _dirtyTextures.push_back(texture);
 }
 
-HdStResourceRegistry *
-HdSt_TextureObjectRegistry::GetResourceRegistry() const 
+void
+HdSt_TextureObjectRegistry::AdjustTotalTextureMemory(const int64_t memDiff)
 {
-    return _resourceRegistry;
+    _totalTextureMemory.fetch_add(memDiff);
 }
 
 // Turn a vector into a set, dropping expired weak points.

@@ -100,6 +100,33 @@ HdStTextureObject::_GetHgi() const
     return hgi;
 }
 
+void
+HdStTextureObject::_AdjustTotalTextureMemory(
+    const int64_t memDiff)
+{
+    if (TF_VERIFY(_textureObjectRegistry)) {
+        _textureObjectRegistry->AdjustTotalTextureMemory(memDiff);
+    }
+}
+
+void
+HdStTextureObject::_AddToTotalTextureMemory(
+    const HgiTextureHandle &texture)
+{
+    if (texture) {
+        _AdjustTotalTextureMemory(texture->GetByteSizeOfResource());
+    }
+}
+
+void
+HdStTextureObject::_SubtractFromTotalTextureMemory(
+    const HgiTextureHandle &texture)
+{
+    if (texture) {
+        _AdjustTotalTextureMemory(-texture->GetByteSizeOfResource());
+    }
+}
+
 HdStTextureObject::~HdStTextureObject() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -288,6 +315,7 @@ HdStUvTextureObject::_CreateTexture(const HgiTextureDesc &desc)
     _DestroyTexture();
  
     _gpuTexture = hgi->CreateTexture(desc);
+    _AddToTotalTextureMemory(_gpuTexture);
 }
 
 void
@@ -310,6 +338,7 @@ void
 HdStUvTextureObject::_DestroyTexture()
 {
     if (Hgi * hgi = _GetHgi()) {
+        _SubtractFromTotalTextureMemory(_gpuTexture);
         hgi->DestroyTexture(&_gpuTexture);
     }
 }
@@ -540,6 +569,7 @@ HdStFieldTextureObject::HdStFieldTextureObject(
 HdStFieldTextureObject::~HdStFieldTextureObject()
 {
     if (Hgi * hgi = _GetHgi()) {
+        _SubtractFromTotalTextureMemory(_gpuTexture);
         hgi->DestroyTexture(&_gpuTexture);
     }
 }
@@ -590,11 +620,13 @@ HdStFieldTextureObject::_Commit()
     }
         
     // Free previously allocated texture
+    _SubtractFromTotalTextureMemory(_gpuTexture);
     hgi->DestroyTexture(&_gpuTexture);
 
     // Upload to GPU only if we have valid CPU data
     if (_cpuData && _cpuData->IsValid()) {
         _gpuTexture = hgi->CreateTexture(_cpuData->GetTextureDesc());
+        _AddToTotalTextureMemory(_gpuTexture);
     }
 
     // Free CPU memory after transfer to GPU
@@ -625,7 +657,14 @@ HdStPtexTextureObject::HdStPtexTextureObject(
 {
 }
 
-HdStPtexTextureObject::~HdStPtexTextureObject() = default;
+HdStPtexTextureObject::~HdStPtexTextureObject()
+{
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+    if (_gpuTexture) {
+        _AdjustTotalTextureMemory(-_gpuTexture->GetMemoryUsed());
+    }
+#endif
+}
 
 void
 HdStPtexTextureObject::_Load()
@@ -639,6 +678,10 @@ void
 HdStPtexTextureObject::_Commit()
 {
 #ifdef PXR_PTEX_SUPPORT_ENABLED
+    if (_gpuTexture) {
+        _AdjustTotalTextureMemory(-_gpuTexture->GetMemoryUsed());
+    }
+
     _gpuTexture = GlfPtexTexture::New(
         GetTextureIdentifier().GetFilePath(),
         _GetPremultiplyAlpha(
@@ -648,6 +691,8 @@ HdStPtexTextureObject::_Commit()
 
     _texelGLTextureName = _gpuTexture->GetGlTextureName();
     _layoutGLTextureName = _gpuTexture->GetLayoutTextureName();
+
+    _AdjustTotalTextureMemory(_gpuTexture->GetMemoryUsed());
 #endif
 }
 
@@ -747,7 +792,12 @@ HdStUdimTextureObject::HdStUdimTextureObject(
 {
 }
 
-HdStUdimTextureObject::~HdStUdimTextureObject() = default;
+HdStUdimTextureObject::~HdStUdimTextureObject()
+{
+    if (_gpuTexture) {
+        _AdjustTotalTextureMemory(-_gpuTexture->GetMemoryUsed());
+    }
+}
 
 void
 HdStUdimTextureObject::_Load()
@@ -762,6 +812,10 @@ HdStUdimTextureObject::_Load()
 void
 HdStUdimTextureObject::_Commit()
 {
+    if (_gpuTexture) {
+        _AdjustTotalTextureMemory(-_gpuTexture->GetMemoryUsed());
+    }
+
     // Load tiles.
     _gpuTexture = GlfUdimTexture::New(
         GetTextureIdentifier().GetFilePath(),
@@ -777,6 +831,8 @@ HdStUdimTextureObject::_Commit()
 
     _layoutGLTextureName = _gpuTexture->GetGlLayoutName();
     _texelGLTextureName = _gpuTexture->GetGlTextureName();
+
+    _AdjustTotalTextureMemory(_gpuTexture->GetMemoryUsed());
 }
 
 bool

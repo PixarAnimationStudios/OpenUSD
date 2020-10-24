@@ -1183,7 +1183,11 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
     // Texture Resources
     {
-        size_t textureResourceMemory = 0;
+        HdSt_TextureObjectRegistry *const textureObjectRegistry =
+            _textureHandleRegistry->GetTextureObjectRegistry();
+
+        size_t textureResourceMemory =
+            textureObjectRegistry->GetTotalTextureMemory();
 
         for (auto const & it: _textureResourceRegistry) {
             HdStTextureResourceSharedPtr const & texResource = it.second.value;
