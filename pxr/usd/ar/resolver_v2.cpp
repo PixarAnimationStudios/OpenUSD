@@ -146,6 +146,69 @@ _GetAvailableResolvers()
     return sortedResolverTypes;
 }
 
+// Helper class to manage plugin resolvers that are loaded on-demand.
+template <class ResolverType, class ResolverTypeFactory>
+class _PluginResolver
+{
+public:
+    _PluginResolver(
+        const PlugPluginPtr& plugin,
+        const TfType& resolverType)
+        : _plugin(plugin)
+        , _resolverType(resolverType)
+        , _hasResolver(false) 
+    { }
+
+    std::unique_ptr<ResolverType> Create() 
+    {
+        std::unique_ptr<ResolverType> resolver;
+
+        if (!_plugin->Load()) {
+            TF_CODING_ERROR("Failed to load plugin %s for %s",
+                _plugin->GetName().c_str(),
+                _resolverType.GetTypeName().c_str());
+            return nullptr;
+        }
+
+        ResolverTypeFactory* factory =
+            _resolverType.GetFactory<ResolverTypeFactory>();
+        if (factory) {
+            resolver.reset(factory->New());
+        }
+
+        if (!resolver) {
+            TF_CODING_ERROR(
+                "Failed to manufacture asset resolver %s from plugin %s", 
+                _resolverType.GetTypeName().c_str(), 
+                _plugin->GetName().c_str());
+        }
+
+        return resolver;
+    }
+    
+    ResolverType* Get()
+    {
+        if (!_hasResolver) {
+            std::unique_ptr<ResolverType> newResolver = Create();
+            
+            std::lock_guard<std::mutex> g(_mutex);
+            if (!_hasResolver) {
+                _resolver = std::move(newResolver);
+                _hasResolver = true;
+            }
+        }
+        return _resolver.get();
+    };
+
+private:
+    PlugPluginPtr _plugin;
+    TfType _resolverType;
+
+    std::atomic<bool> _hasResolver;
+    std::mutex _mutex;
+    std::unique_ptr<ResolverType> _resolver;
+};
+
 std::unique_ptr<ArResolver>
 _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
 {
@@ -169,30 +232,15 @@ _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
             TF_CODING_ERROR("Failed to find plugin for %s", 
                 resolverType.GetTypeName().c_str());
         }
-        else if (!plugin->Load()) {
-            TF_CODING_ERROR("Failed to load plugin %s for %s",
-                plugin->GetName().c_str(),
-                resolverType.GetTypeName().c_str());
-        }
-        else {
-            Ar_ResolverFactoryBase* factory =
-                resolverType.GetFactory<Ar_ResolverFactoryBase>();
-            if (factory) {
-                tmpResolver.reset(factory->New());
-            }
 
-            if (!tmpResolver) {
-                TF_CODING_ERROR(
-                    "Failed to manufacture asset resolver %s from plugin %s", 
-                    resolverType.GetTypeName().c_str(), 
-                    plugin->GetName().c_str());
-            }
-            else if (debugMsg) {
-                *debugMsg = TfStringPrintf(
-                    "Using asset resolver %s from plugin %s",
-                    resolverType.GetTypeName().c_str(),
-                    plugin->GetPath().c_str());
-            }
+        tmpResolver = _PluginResolver<ArResolver, Ar_ResolverFactoryBase>(
+            plugin, resolverType).Create();
+
+        if (tmpResolver && debugMsg) {
+            *debugMsg = TfStringPrintf(
+                "Using asset resolver %s from plugin %s",
+                resolverType.GetTypeName().c_str(),
+                plugin->GetPath().c_str());
         }
     }
 
@@ -529,14 +577,14 @@ public:
             cacheScopeData->UncheckedSwap(cacheData);
         }
         else {
-            cacheData.resize(1 + _GetNumPackageResolvers());
+            cacheData.resize(1 + _packageResolvers.size());
         }
 
-        TF_VERIFY(cacheData.size() == 1 + _GetNumPackageResolvers());
+        TF_VERIFY(cacheData.size() == 1 + _packageResolvers.size());
 
         _resolver->BeginCacheScope(&cacheData[0]);
-        for (size_t i = 0, e = _GetNumPackageResolvers(); i != e; ++i) {
-            ArPackageResolver* packageResolver = _GetPackageResolver(i);
+        for (size_t i = 0, e = _packageResolvers.size(); i != e; ++i) {
+            ArPackageResolver* packageResolver = _packageResolvers[i]->Get();
             if (packageResolver) {
                 packageResolver->BeginCacheScope(&cacheData[i+1]);
             }
@@ -556,8 +604,8 @@ public:
         cacheScopeData->UncheckedSwap(cacheData);
 
         _resolver->EndCacheScope(&cacheData[0]);
-        for (size_t i = 0, e = _GetNumPackageResolvers(); i != e; ++i) {
-            ArPackageResolver* packageResolver = _GetPackageResolver(i);
+        for (size_t i = 0, e = _packageResolvers.size(); i != e; ++i) {
+            ArPackageResolver* packageResolver = _packageResolvers[i]->Get();
             if (packageResolver) {
                 packageResolver->EndCacheScope(&cacheData[i+1]);
             }
@@ -653,9 +701,8 @@ private:
             const PlugPluginPtr plugin = 
                 plugReg.GetPluginForType(packageResolverType);
             if (!plugin) {
-                TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                    "ArGetResolver(): Skipping package resolver %s because "
-                    "plugin cannot be found\n",
+                TF_CODING_ERROR(
+                    "Could not find plugin for package resolver %s", 
                     packageResolverType.GetTypeName().c_str());
                 continue;
             }
@@ -664,7 +711,7 @@ private:
                 plugin->GetMetadataForType(packageResolverType),
                 _tokens->extensions.GetString());
             if (!extensionsVal) {
-                TF_RUNTIME_ERROR(
+                TF_CODING_ERROR(
                     "No package formats specified in '%s' metadata for '%s'",
                     _tokens->extensions.GetText(), 
                     packageResolverType.GetTypeName().c_str());
@@ -672,16 +719,15 @@ private:
             }
 
             std::vector<std::string> extensions;
-            {
-                TfErrorMark m;
+            if (extensionsVal->IsArrayOf<std::string>()) {
                 extensions = extensionsVal->GetArrayOf<std::string>();
-                if (m.Clear()) {
-                    TF_RUNTIME_ERROR(
-                        "Expected list of formats in '%s' metadata for '%s'",
-                        _tokens->extensions.GetText(), 
-                        packageResolverType.GetTypeName().c_str());
-                    continue;
-                }
+            }
+            else {
+                TF_CODING_ERROR(
+                    "'%s' metadata for %s must be a list of strings.",
+                    _tokens->extensions.GetText(), 
+                    packageResolverType.GetTypeName().c_str());
+                continue;
             }
 
             for (const std::string& extension : extensions) {
@@ -689,11 +735,8 @@ private:
                     continue;
                 }
 
-                _PackageResolverSharedPtr r(new _PackageResolver);
-                r->plugin = plugin;
-                r->resolverType = packageResolverType;
-                r->packageFormat = extension;
-                _packageResolvers.push_back(std::move(r));
+                _packageResolvers.push_back(std::make_shared<_PackageResolver>(
+                    extension, plugin, packageResolverType));
 
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Using package resolver %s for %s "
@@ -704,12 +747,6 @@ private:
         }
     }
 
-    size_t
-    _GetNumPackageResolvers() const
-    {
-        return _packageResolvers.size();
-    }
-
     ArPackageResolver*
     _GetPackageResolver(const std::string& packageRelativePath)
     {
@@ -717,38 +754,13 @@ private:
             ArSplitPackageRelativePathInner(packageRelativePath).first;
         const std::string format = GetExtension(innermostPackage);
 
-        for (size_t i = 0, e = _GetNumPackageResolvers(); i != e; ++i) {
-            if (_packageResolvers[i]->packageFormat == format) {
-                return _GetPackageResolver(i);
+        for (size_t i = 0, e = _packageResolvers.size(); i != e; ++i) {
+            if (_packageResolvers[i]->HandlesFormat(format)) {
+                return _packageResolvers[i]->Get();
             }
         }
 
         return nullptr;
-    }
-
-    ArPackageResolver*
-    _GetPackageResolver(size_t resolverIdx)
-    {
-        const _PackageResolverSharedPtr& r = _packageResolvers[resolverIdx];
-        if (!r->hasResolver) {
-            r->plugin->Load();
-
-            std::shared_ptr<ArPackageResolver> newResolver;
-
-            Ar_PackageResolverFactoryBase* factory = 
-                r->resolverType.GetFactory<Ar_PackageResolverFactoryBase>();
-            if (factory) {
-                newResolver.reset(factory->New());
-            }
-
-            std::lock_guard<std::mutex> g(r->mutex);
-            if (!r->hasResolver) {
-                r->resolver = newResolver;
-                r->hasResolver = true;
-            }
-        }
-        
-        return r->resolver.get();
     }
 
     template <class ResolveFn>
@@ -804,18 +816,31 @@ private:
 
     std::unique_ptr<ArResolver> _resolver;
 
-    struct _PackageResolver
+    // Package Resolvers --------------------
+
+    class _PackageResolver
+        : public _PluginResolver<
+            ArPackageResolver, Ar_PackageResolverFactoryBase>
     {
-        _PackageResolver()
-            : hasResolver(false) { }
+        using Base = _PluginResolver<
+            ArPackageResolver, Ar_PackageResolverFactoryBase>;
 
-        PlugPluginPtr plugin;
-        TfType resolverType;
-        std::string packageFormat;
+    public:
+        _PackageResolver(
+            const std::string& packageFormat,
+            const PlugPluginPtr& plugin,
+            const TfType& resolverType)
+            : Base(plugin, resolverType)
+            , _packageFormat(packageFormat)
+        { }
 
-        std::atomic<bool> hasResolver;
-        std::mutex mutex;
-        std::shared_ptr<ArPackageResolver> resolver;
+        bool HandlesFormat(const std::string& extension) const
+        {
+            return _packageFormat == extension;
+        }
+
+    private:
+        std::string _packageFormat;
     };
 
     using _PackageResolverSharedPtr = std::shared_ptr<_PackageResolver>;
