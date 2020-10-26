@@ -378,12 +378,6 @@ ArDefaultResolver::BindContext(
     const ArDefaultResolverContext* ctx = 
         context.Get<ArDefaultResolverContext>();
 
-    if (!context.IsEmpty() && !ctx) {
-        TF_CODING_ERROR(
-            "Unknown resolver context object: %s", 
-            context.GetDebugString().c_str());
-    }
-
     _ContextStack& contextStack = _threadContextStack.local();
     contextStack.push_back(ctx);
 }
@@ -394,10 +388,9 @@ ArDefaultResolver::UnbindContext(
     VtValue* bindingData)
 {
     _ContextStack& contextStack = _threadContextStack.local();
-    if (contextStack.empty() ||
-        contextStack.back() != context.Get<ArDefaultResolverContext>()) {
+    if (contextStack.empty()) {
         TF_CODING_ERROR(
-            "Unbinding resolver context in unexpected order: %s",
+            "No context was bound, cannot unbind context: %s",
             context.GetDebugString().c_str());
     }
 
