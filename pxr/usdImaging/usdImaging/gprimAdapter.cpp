@@ -424,24 +424,24 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
     if (propertyName == UsdGeomTokens->visibility)
         return HdChangeTracker::DirtyVisibility;
 
-    else if (propertyName == UsdGeomTokens->purpose)
+    if (propertyName == UsdGeomTokens->purpose)
         return HdChangeTracker::DirtyRenderTag;
 
-    else if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName))
+    if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName))
         return HdChangeTracker::DirtyTransform;
 
-    else if (propertyName == UsdGeomTokens->extent) 
+    if (propertyName == UsdGeomTokens->extent) 
         return HdChangeTracker::DirtyExtent;
 
-    else if (propertyName == UsdGeomTokens->doubleSided) 
+    if (propertyName == UsdGeomTokens->doubleSided) 
         return HdChangeTracker::DirtyDoubleSided;
 
-    else if (propertyName == UsdGeomTokens->velocities ||
+    if (propertyName == UsdGeomTokens->velocities ||
              propertyName == UsdGeomTokens->accelerations)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
 
-    else if (UsdShadeMaterialBindingAPI::CanContainPropertyName(propertyName) ||
+    if (UsdShadeMaterialBindingAPI::CanContainPropertyName(propertyName) ||
             UsdCollectionAPI::CanContainPropertyName(propertyName)) {
         return HdChangeTracker::DirtyMaterialId |
                HdChangeTracker::DirtyPrimvar;
