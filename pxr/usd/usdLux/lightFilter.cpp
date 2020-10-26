@@ -148,10 +148,45 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdLuxLightFilter_ConnectableAPIBehavior : 
+    public UsdShadeConnectableAPIBehavior
+{
+    bool
+    CanConnectInputToSource(const UsdShadeInput &input,
+                            const UsdAttribute &source,
+                            std::string *reason) override
+    {     
+        // Check the base class CanConnect first.
+        if (!UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
+            input, source, reason)) {
+            return false;
+        }
+
+        // Only allow inputs to connect to sources whose path
+        // contains the light's path as a prefix (i.e. encapsulation)
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+        const SdfPath inputPrimPath = input.GetPrim().GetPath();
+        if (!sourcePrimPath.HasPrefix(inputPrimPath)) {
+            if (reason) {
+                *reason = TfStringPrintf(
+                    "Proposed source <%s> of input '%s' on light filter at "
+                    "path <%s> must be a descendant of the light filter.",
+                    sourcePrimPath.GetText(), input.GetFullName().GetText(), 
+                    inputPrimPath.GetText());
+            }
+            return false;
+        }
+        return true;
+    }
+};
+
+
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
 {
-    // UsdLuxLightFilter prims are connectable, with default behavior rules.
-    UsdShadeRegisterConnectableAPIBehavior<UsdLuxLightFilter>();
+    // UsdLuxLightFilter prims are connectable, with special behavior requiring 
+    // connection source to be encapsulated under the light.
+    UsdShadeRegisterConnectableAPIBehavior<
+        UsdLuxLightFilter, UsdLuxLightFilter_ConnectableAPIBehavior>();
 }
 
 UsdLuxLightFilter::UsdLuxLightFilter(const UsdShadeConnectableAPI &connectable)

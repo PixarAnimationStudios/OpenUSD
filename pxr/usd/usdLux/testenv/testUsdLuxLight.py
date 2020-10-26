@@ -129,6 +129,41 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(filterOutput.GetAttr(), 
                          lightFilter.GetPrim().GetAttribute("outputs:newOutput"))
 
+        # Test the connection behavior customization.
+        # Create a connectable prim with an output under the light.
+        lightGraph = UsdShade.NodeGraph.Define(stage, '/RectLight/Prim')
+        self.assertTrue(lightGraph)
+        lightGraphOutput = lightGraph.CreateOutput(
+            'graphOut', Sdf.ValueTypeNames.Float)
+        self.assertTrue(lightGraphOutput)
+
+        # Create a connectable prim with an output under the light filter.
+        filterGraph = UsdShade.NodeGraph.Define(stage, '/LightFilter/Prim')
+        self.assertTrue(filterGraph)
+        filterGraphOutput = filterGraph.CreateOutput(
+            'graphOut', Sdf.ValueTypeNames.Float)
+        self.assertTrue(filterGraphOutput)
+
+        # From the default behavior light outputs cannot be connected.
+        self.assertFalse(lightOutput.CanConnect(lightGraphOutput))
+        self.assertFalse(lightOutput.CanConnect(filterGraphOutput))
+
+        # From the custom behavior, light inputs can only be connected to 
+        # sources from the light or its descendant (encapsultated) prims.
+        self.assertTrue(lightInput.CanConnect(lightOutput))
+        self.assertTrue(lightInput.CanConnect(lightGraphOutput))
+        self.assertFalse(lightInput.CanConnect(filterGraphOutput))
+
+        # From the default behavior light filter outputs cannot be connected.
+        self.assertFalse(filterOutput.CanConnect(lightGraphOutput))
+        self.assertFalse(filterOutput.CanConnect(filterGraphOutput))
+
+        # From the custom behavior, light filter inputs can only be connected to 
+        # sources from the light filter or its descendant (encapsultated) prims.
+        self.assertTrue(filterInput.CanConnect(filterOutput))
+        self.assertTrue(filterInput.CanConnect(filterGraphOutput))
+        self.assertFalse(filterInput.CanConnect(lightGraphOutput))
+
     def test_DomeLight_OrientToStageUpAxis(self):
         from pxr import UsdGeom
         stage = Usd.Stage.CreateInMemory()

@@ -690,6 +690,9 @@ class UsdShadeMaterial_ConnectableAPIBehavior : public UsdShadeNodeGraph::Connec
     {
         // TODO: In the future we will only allows connections whose path
         // contains the Material's path as a prefix (i.e. encapsulation)
+        // Note that UsdLuxLight and UsdLuxLightFilter already implement
+        // this behavior so this should be reimplemented as a shared behavior
+        // that can be used by any connectables that need it.
         return true;
     }
 };
