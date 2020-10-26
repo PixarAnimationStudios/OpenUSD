@@ -157,7 +157,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float radius = 0.5` |
+    /// | Declaration | `float inputs:radius = 0.5` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API

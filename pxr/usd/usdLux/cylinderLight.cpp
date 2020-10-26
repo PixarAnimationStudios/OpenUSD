@@ -105,13 +105,13 @@ UsdLuxCylinderLight::_GetTfType() const
 UsdAttribute
 UsdLuxCylinderLight::GetLengthAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->length);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsLength);
 }
 
 UsdAttribute
 UsdLuxCylinderLight::CreateLengthAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->length,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsLength,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -122,13 +122,13 @@ UsdLuxCylinderLight::CreateLengthAttr(VtValue const &defaultValue, bool writeSpa
 UsdAttribute
 UsdLuxCylinderLight::GetRadiusAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->radius);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsRadius);
 }
 
 UsdAttribute
 UsdLuxCylinderLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->radius,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsRadius,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -170,8 +170,8 @@ const TfTokenVector&
 UsdLuxCylinderLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->length,
-        UsdLuxTokens->radius,
+        UsdLuxTokens->inputsLength,
+        UsdLuxTokens->inputsRadius,
         UsdLuxTokens->treatAsLine,
     };
     static TfTokenVector allNames =

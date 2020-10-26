@@ -2658,7 +2658,28 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     // Fallback to USD attributes.
-    return _GetUsdPrimAttribute(cachePath, paramName);
+    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
+        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
+        { HdLightTokens->color, UsdLuxTokens->inputsColor },
+        { HdLightTokens->colorTemperature, 
+            UsdLuxTokens->inputsColorTemperature },
+        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
+        { HdLightTokens->enableColorTemperature, 
+            UsdLuxTokens->inputsEnableColorTemperature },
+        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
+        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
+        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
+        { HdLightTokens->length, UsdLuxTokens->inputsLength },
+        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
+        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
+        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
+        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
+        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth }
+    });
+
+    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
+    return _GetUsdPrimAttribute(cachePath, attrName ? *attrName : paramName);
 }
 
 VtValue 

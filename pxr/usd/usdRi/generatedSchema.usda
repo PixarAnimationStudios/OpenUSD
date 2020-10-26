@@ -307,38 +307,11 @@ class PxrEnvDayLight "PxrEnvDayLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
-        doc = "The color of emitted light, in energy-linear terms."
-    )
-    float colorTemperature = 6500 (
-        displayName = "Color Temperature"
-        doc = """Color temperature, in degrees Kelvin, representing the
-        white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  The valid range
-        is from 1000 to 10000. Only takes effect when
-        enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyTemperatureAsRgb()."""
-    )
     int day = 1 (
         displayGroup = "MsApprox"
         displayName = "Day"
         doc = """day: Day of the month, 1 through 31.
         This is ignored if month is 0."""
-    )
-    float diffuse = 1 (
-        displayName = "Diffuse Multiplier"
-        doc = """A multiplier for the effect of this light on the diffuse
-        response of materials.  This is a non-physical control."""
-    )
-    bool enableColorTemperature = 0 (
-        displayName = "Enable Color Temperature"
-        doc = "Enables using colorTemperature."
-    )
-    float exposure = 0 (
-        doc = """Scales the power of the light exponentially as a power
-        of 2 (similar to an F-stop control over exposure).  The result
-        is multiplied against the intensity."""
     )
     rel filters (
         doc = "Relationship to the light filters that apply to this light."
@@ -358,8 +331,47 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         is in effect, subtract 1 to correct to standard time.  This is
         ignored if month is 0."""
     )
-    float intensity = 1 (
+    color3f inputs:color = (1, 1, 1) (
+        doc = "The color of emitted light, in energy-linear terms."
+    )
+    float inputs:colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
+    )
+    float inputs:diffuse = 1 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    bool inputs:enableColorTemperature = 0 (
+        displayName = "Enable Color Temperature"
+        doc = "Enables using colorTemperature."
+    )
+    float inputs:exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
+    )
+    bool inputs:normalize = 0 (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     float latitude = 47.602 (
         displayGroup = "MsApprox"
@@ -381,13 +393,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         doc = """month: Month of the year, 1 through 12.      The default,
         0, means to use the explicitly given sun direction   instead of
         automatically computing it."""
-    )
-    bool normalize = 0 (
-        displayName = "Normalize Power"
-        doc = """Normalizes power by the surface area of the light.
-        This makes it easier to independently adjust the power and shape
-        of the light, by causing the power to not vary with the area or
-        angular size of the light."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -426,11 +431,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         doc = """skyTint: Tweak the sky's contribution and color.  The
         default, white (1,1,1),  gives results based on measured
         physical values."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     vector3f sunDirection = (0, 0, 1) (
         displayGroup = "MsApprox"
@@ -501,33 +501,6 @@ class PxrAovLight "PxrAovLight" (
     )
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
-        doc = "The color of emitted light, in energy-linear terms."
-    )
-    float colorTemperature = 6500 (
-        displayName = "Color Temperature"
-        doc = """Color temperature, in degrees Kelvin, representing the
-        white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  The valid range
-        is from 1000 to 10000. Only takes effect when
-        enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyTemperatureAsRgb()."""
-    )
-    float diffuse = 1 (
-        displayName = "Diffuse Multiplier"
-        doc = """A multiplier for the effect of this light on the diffuse
-        response of materials.  This is a non-physical control."""
-    )
-    bool enableColorTemperature = 0 (
-        displayName = "Enable Color Temperature"
-        doc = "Enables using colorTemperature."
-    )
-    float exposure = 0 (
-        doc = """Scales the power of the light exponentially as a power
-        of 2 (similar to an F-stop control over exposure).  The result
-        is multiplied against the intensity."""
-    )
     rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
@@ -537,6 +510,48 @@ class PxrAovLight "PxrAovLight" (
         doc = """If this is on, the usual mask of the illuminated objects
         is generated. If this is off, you can get a mask of only in the
         refraction or reflection."""
+    )
+    color3f inputs:color = (1, 1, 1) (
+        doc = "The color of emitted light, in energy-linear terms."
+    )
+    float inputs:colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
+    )
+    float inputs:diffuse = 1 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    bool inputs:enableColorTemperature = 0 (
+        displayName = "Enable Color Temperature"
+        doc = "Enables using colorTemperature."
+    )
+    float inputs:exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    float inputs:intensity = 1 (
+        doc = "Scales the power of the light linearly."
+    )
+    bool inputs:normalize = 0 (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     bool inReflection = 0 (
         displayGroup = "Refine"
@@ -552,20 +567,10 @@ class PxrAovLight "PxrAovLight" (
         refractions  to get the masking signal.  Warning: this will
         require some amount of samples to get a clean mask."""
     )
-    float intensity = 1 (
-        doc = "Scales the power of the light linearly."
-    )
     bool invert = 0 (
         displayGroup = "Refine"
         displayName = "Invert"
         doc = "If this is on, it inverts the signal for the AOV."
-    )
-    bool normalize = 0 (
-        displayName = "Normalize Power"
-        doc = """Normalizes power by the surface area of the light.
-        This makes it easier to independently adjust the power and shape
-        of the light, by causing the power to not vary with the area or
-        angular size of the light."""
     )
     bool onVolumeBoundaries = 1 (
         displayGroup = "Refine"
@@ -604,11 +609,6 @@ class PxrAovLight "PxrAovLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     bool useColor = 0 (
         displayGroup = "Refine"

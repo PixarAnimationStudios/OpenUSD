@@ -46,28 +46,28 @@ def Xform "lights"
 {
     def SphereLight "light1"
     {
-        color3f color = (0, 0.5, 0)
-        float diffuse = 1
-        bool enableColorTemperature = 0
-        float exposure = 4
-        float intensity = 0.35
-        bool normalize = 0
-        float radius = 0.5
-        float specular = 1
+        color3f inputs:color = (0, 0.5, 0)
+        float inputs:diffuse = 1
+        bool inputs:enableColorTemperature = 0
+        float inputs:exposure = 4
+        float inputs:intensity = 0.35
+        bool inputs:normalize = 0
+        float inputs:radius = 0.5
+        float inputs:specular = 1
         bool treatAsPoint = 0
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-3, 0, 2, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
     def SphereLight "light2"
     {
-        color3f color = (0, 0, 0.5)
-        float diffuse = 1
-        bool enableColorTemperature = 0
-        float exposure = 4
-        float intensity = 0.35
-        bool normalize = 0
-        float radius = 0.5
-        float specular = 1
+        color3f inputs:color = (0, 0, 0.5)
+        float inputs:diffuse = 1
+        bool inputs:enableColorTemperature = 0
+        float inputs:exposure = 4
+        float inputs:intensity = 0.35
+        bool inputs:normalize = 0
+        float inputs:radius = 0.5
+        float inputs:specular = 1
         bool treatAsPoint = 0
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, 2, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]

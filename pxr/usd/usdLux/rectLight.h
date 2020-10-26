@@ -160,7 +160,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float width = 1` |
+    /// | Declaration | `float inputs:width = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -182,7 +182,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float height = 1` |
+    /// | Declaration | `float inputs:height = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -204,7 +204,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `asset texture:file` |
+    /// | Declaration | `asset inputs:texture:file` |
     /// | C++ Type | SdfAssetPath |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDLUX_API

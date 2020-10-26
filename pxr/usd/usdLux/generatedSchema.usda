@@ -33,10 +33,13 @@ class "Light" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -46,32 +49,34 @@ class "Light" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -103,11 +108,6 @@ class "Light" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -434,18 +434,21 @@ class DistantLight "DistantLight" (
     Also known as a directional light."""
 )
 {
-    float angle = 0.53 (
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    float inputs:angle = 0.53 (
         doc = """Angular size of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
         """
     )
-    uniform bool collection:lightLink:includeRoot = 1
-    uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -455,33 +458,35 @@ class DistantLight "DistantLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 50000 (
+    float inputs:intensity = 50000 (
         doc = """Scales the emission of the light linearly.
         The DistantLight has a high default intensity to approximate the Sun."""
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -513,11 +518,6 @@ class DistantLight "DistantLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -549,10 +549,13 @@ class DiskLight "DiskLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -562,32 +565,37 @@ class DiskLight "DiskLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:radius = 0.5 (
+        doc = "Radius of the disk."
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -619,14 +627,6 @@ class DiskLight "DiskLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float radius = 0.5 (
-        doc = "Radius of the disk."
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -661,10 +661,13 @@ class RectLight "RectLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -674,35 +677,43 @@ class RectLight "RectLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float height = 1 (
+    float inputs:height = 1 (
         doc = "Height of the rectangle, in the local Y axis."
     )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+    asset inputs:texture:file (
+        doc = "A color texture to use on the rectangle."
+    )
+    float inputs:width = 1 (
+        doc = "Width of the rectangle, in the local X axis."
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -735,14 +746,6 @@ class RectLight "RectLight" (
         See for more detail about how 
         purpose is computed and used."""
     )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
-    )
-    asset texture:file (
-        doc = "A color texture to use on the rectangle."
-    )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         doc = '''Visibility is meant to be the simplest form of "pruning" 
@@ -751,9 +754,6 @@ class RectLight "RectLight" (
         segment of a shot, and absent from others; unlike the action of 
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
-    )
-    float width = 1 (
-        doc = "Width of the rectangle, in the local X axis."
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -775,10 +775,13 @@ class SphereLight "SphereLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -788,32 +791,37 @@ class SphereLight "SphereLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:radius = 0.5 (
+        doc = "Radius of the sphere."
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -845,14 +853,6 @@ class SphereLight "SphereLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float radius = 0.5 (
-        doc = "Radius of the sphere."
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     bool treatAsPoint = 0 (
         doc = """A hint that this light can be treated as a 'point'
@@ -892,10 +892,13 @@ class CylinderLight "CylinderLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -905,35 +908,40 @@ class CylinderLight "CylinderLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    float length = 1 (
+    float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:radius = 0.5 (
+        doc = "Radius of the cylinder."
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -965,14 +973,6 @@ class CylinderLight "CylinderLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float radius = 0.5 (
-        doc = "Radius of the cylinder."
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     bool treatAsLine = 0 (
         doc = """A hint that this light can be treated as a 'line'
@@ -1010,10 +1010,16 @@ class GeometryLight "GeometryLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    rel geometry (
+        doc = "Relationship to the geometry to use as the light source."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -1023,35 +1029,34 @@ class GeometryLight "GeometryLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    rel geometry (
-        doc = "Relationship to the geometry to use as the light source."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -1083,11 +1088,6 @@ class GeometryLight "GeometryLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -1141,10 +1141,13 @@ class DomeLight "DomeLight" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    color3f color = (1, 1, 1) (
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -1154,32 +1157,55 @@ class DomeLight "DomeLight" (
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
-    float diffuse = 1 (
+    float inputs:diffuse = 1 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
-    bool enableColorTemperature = 0 (
+    bool inputs:enableColorTemperature = 0 (
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = "Scales the power of the light linearly."
     )
-    bool normalize = 0 (
+    bool inputs:normalize = 0 (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+    asset inputs:texture:file (
+        doc = """A color texture to use on the dome, such as an HDR (high
+        dynamic range) texture intended for IBL (image based lighting)."""
+    )
+    token inputs:texture:format = "automatic" (
+        allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        doc = """Specifies the parameterization of the color map file.
+        Valid values are:
+        - automatic: Tries to determine the layout from the file itself.
+          For example, Renderman texture files embed an explicit
+          parameterization.
+        - latlong: Latitude as X, longitude as Y.
+        - mirroredBall: An image of the environment reflected in a
+          sphere, using an implicitly orthogonal projection.
+        - angular: Similar to mirroredBall but the radial dimension
+          is mapped linearly to the angle, providing better sampling
+          at the edges.
+        - cubeMapVerticalCross: A cube map with faces laid out as a
+          vertical cross.
+        """
     )
     rel portals (
         doc = "Optional portals to guide light sampling."
@@ -1214,32 +1240,6 @@ class DomeLight "DomeLight" (
 
         See for more detail about how 
         purpose is computed and used."""
-    )
-    float specular = 1 (
-        displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
-    )
-    asset texture:file (
-        doc = """A color texture to use on the dome, such as an HDR (high
-        dynamic range) texture intended for IBL (image based lighting)."""
-    )
-    token texture:format = "automatic" (
-        allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
-        doc = """Specifies the parameterization of the color map file.
-        Valid values are:
-        - automatic: Tries to determine the layout from the file itself.
-          For example, Renderman texture files embed an explicit
-          parameterization.
-        - latlong: Latitude as X, longitude as Y.
-        - mirroredBall: An image of the environment reflected in a
-          sphere, using an implicitly orthogonal projection.
-        - angular: Similar to mirroredBall but the radial dimension
-          is mapped linearly to the angle, providing better sampling
-          at the edges.
-        - cubeMapVerticalCross: A cube map with faces laid out as a
-          vertical cross.
-        """
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]

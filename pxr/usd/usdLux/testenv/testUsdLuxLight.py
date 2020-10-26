@@ -79,13 +79,35 @@ class TestUsdLuxLight(unittest.TestCase):
         light = UsdLux.RectLight.Define(stage, '/RectLight')
         self.assertTrue(light)
 
-        # Rect light has no built-in inputs.
-        self.assertEqual(light.GetInputs(), [])
+        # Rect light has the following built-in inputs attributes.
+        inputNames = ['color', 
+                      'colorTemperature', 
+                      'diffuse', 
+                      'enableColorTemperature', 
+                      'exposure', 
+                      'height', 
+                      'intensity', 
+                      'normalize', 
+                      'specular', 
+                      'texture:file', 
+                      'width']
+        # GetInputs returns the inputs for all the built-ins.
+        self.assertEqual(light.GetInputs(), 
+                         [light.GetInput(name) for name in inputNames])
+        # Verify each input's attribute is prefixed.
+        for name in inputNames:
+            self.assertEqual(light.GetInput(name).GetAttr().GetName(),
+                             "inputs:" + name)
+        # Verify input attributes match the getter API attributes.
+        self.assertEqual(light.GetInput('color').GetAttr(), 
+                         light.GetColorAttr())
+        self.assertEqual(light.GetInput('texture:file').GetAttr(), 
+                         light.GetTextureFileAttr())
 
         # Create a new input, and verify that the input interface conforming
         # attribute is created.
         lightInput = light.CreateInput('newInput', Sdf.ValueTypeNames.Float)
-        self.assertEqual(light.GetInputs(), [lightInput])
+        self.assertIn(lightInput, light.GetInputs())
         self.assertEqual(light.GetInput('newInput'), lightInput)
         self.assertEqual(lightInput.GetAttr(), 
                          light.GetPrim().GetAttribute("inputs:newInput"))

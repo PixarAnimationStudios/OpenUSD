@@ -153,7 +153,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float intensity = 1` |
+    /// | Declaration | `float inputs:intensity = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -177,7 +177,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float exposure = 0` |
+    /// | Declaration | `float inputs:exposure = 0` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -200,7 +200,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float diffuse = 1` |
+    /// | Declaration | `float inputs:diffuse = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -223,7 +223,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float specular = 1` |
+    /// | Declaration | `float inputs:specular = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -248,7 +248,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `bool normalize = 0` |
+    /// | Declaration | `bool inputs:normalize = 0` |
     /// | C++ Type | bool |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
@@ -270,7 +270,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `color3f color = (1, 1, 1)` |
+    /// | Declaration | `color3f inputs:color = (1, 1, 1)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDLUX_API
@@ -292,7 +292,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `bool enableColorTemperature = 0` |
+    /// | Declaration | `bool inputs:enableColorTemperature = 0` |
     /// | C++ Type | bool |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
@@ -320,7 +320,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float colorTemperature = 6500` |
+    /// | Declaration | `float inputs:colorTemperature = 6500` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API

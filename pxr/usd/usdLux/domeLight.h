@@ -185,7 +185,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `asset texture:file` |
+    /// | Declaration | `asset inputs:texture:file` |
     /// | C++ Type | SdfAssetPath |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDLUX_API
@@ -220,7 +220,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `token texture:format = "automatic"` |
+    /// | Declaration | `token inputs:texture:format = "automatic"` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref UsdLuxTokens "Allowed Values" | automatic, latlong, mirroredBall, angular, cubeMapVerticalCross |

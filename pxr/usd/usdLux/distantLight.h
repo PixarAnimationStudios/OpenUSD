@@ -160,7 +160,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float angle = 0.53` |
+    /// | Declaration | `float inputs:angle = 0.53` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -183,7 +183,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float intensity = 50000` |
+    /// | Declaration | `float inputs:intensity = 50000` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
