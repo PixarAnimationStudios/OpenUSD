@@ -602,10 +602,15 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+            // Set up the usage hints to mark topology as varying if
+            // there is a previously set range.
+            HdBufferArrayUsageHint usageHint;
+            usageHint.bits.sizeVarying = drawItem->GetTopologyRange()? 1 : 0;
+
             // allocate new range
             HdBufferArrayRangeSharedPtr range
                 = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                    HdTokens->topology, bufferSpecs, usageHint);
 
             // add sources to update queue
             resourceRegistry->AddSources(range, std::move(sources));
