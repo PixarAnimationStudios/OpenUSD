@@ -53,8 +53,6 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/vt/value.h"
 
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
@@ -220,18 +218,22 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     TF_VERIFY(drawItem->GetConstantPrimvarRange());
 }
 
-static const char* HdSt_PrimTypeToString(HdSt_GeometricShader::PrimitiveType type){
-    if (type == HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES){
+static const char*
+HdSt_PrimTypeToString(HdSt_GeometricShader::PrimitiveType type) {
+    switch (type)
+    {
+    case HdSt_GeometricShader::PrimitiveType::PRIM_POINTS:
+        return "points";
+    case HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES:
         return "lines";
-    }
-    if (type == HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES){
+    case HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         return "patches[linear]";
-    }
-    if (type == HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES){
+    case HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
         return "patches[cubic]";
+    default:
+        TF_WARN("Unknown type");
+        return "unknown";
     }
-    TF_WARN("Unknown type");
-    return "unknown";
 }
 
 void
@@ -431,8 +433,9 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
                    HdChangeTracker::NewRepr);
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
-        std::cout << "HdStBasisCurves::_UpdateRepr " << GetId()
-                  << " Repr = " << reprToken << "\n";
+        TfDebug::Helper().Msg(
+            "HdStBasisCurves::_UpdateRepr for %s : Repr = %s\n",
+            GetId().GetText(), reprToken.GetText());
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 

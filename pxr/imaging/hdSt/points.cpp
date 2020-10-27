@@ -45,8 +45,6 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/vt/value.h"
 
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStPoints::HdStPoints(SdfPath const& id)
@@ -182,8 +180,9 @@ HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     HdReprSharedPtr const &curRepr = _smoothHullRepr;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
-        std::cout << "HdStPoints::_UpdateRepr " << GetId()
-                  << " Repr = " << HdReprTokens->smoothHull << "\n";
+        TfDebug::Helper().Msg(
+            "HdStPoints::_UpdateRepr for %s : Repr = %s\n",
+            GetId().GetText(), reprToken.GetText());
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 

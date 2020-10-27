@@ -856,6 +856,10 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
 {
     if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "Validating indirect draw batch %p (deep validation = %d)...\n",
+        (void*)(this), deepValidation);
+
     // check the hash to see they've been reallocated/migrated or not.
     // note that we just need to compare the hash of the first item,
     // since drawitems are aggregated and ensure that they are sharing
@@ -868,6 +872,10 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
     if (_bufferArraysHash != bufferArraysHash) {
         _bufferArraysHash = bufferArraysHash;
         _dispatchBuffer.reset();
+        
+        TF_DEBUG(HDST_DRAW_BATCH).Msg(
+            "   Buffer arrays hash changed. Need to rebuild batch.\n");
+        
         return false;
     }
 
@@ -886,12 +894,18 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
             }
 
             if (!_IsAggregated(batchItem, drawItem)) {
+                 TF_DEBUG(HDST_DRAW_BATCH).Msg(
+                    "   Deep validation: Found draw item that fails aggregation"
+                    " test. Need to rebuild batch.\n");
+        
                 return false;
             }
         }
 
     }
 
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "   Validation passed. No need to rebuild batch.\n");
     return true;
 }
 

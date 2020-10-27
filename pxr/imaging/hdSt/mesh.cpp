@@ -65,7 +65,6 @@
 
 #include "pxr/base/vt/value.h"
 
-#include <iostream>
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -1864,8 +1863,9 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
-        std::cout << "HdStMesh::GetRepr " << GetId()
-                  << " Repr = " << reprToken << "\n";
+        TfDebug::Helper().Msg(
+            "HdStMesh::_UpdateRepr for %s : Repr = %s\n",
+            GetId().GetText(), reprToken.GetText());
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 

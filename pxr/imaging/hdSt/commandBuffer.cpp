@@ -130,6 +130,12 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion)
 
     bool deepValidation = (currentBatchVersion != _batchVersion);
     _batchVersion = currentBatchVersion;
+
+    if (TfDebug::IsEnabled(HDST_DRAW_BATCH) && !_drawBatches.empty()) {
+        TfDebug::Helper().Msg(
+            "Command buffer %p : RebuildDrawBatchesIfNeeded "
+            "(deepValidation=%d)\n", (void*)(this), deepValidation);
+    }
     
     // Force rebuild of all batches for debugging purposes. This helps quickly
     // triage issues wherein the command buffer wasn't updated correctly.
