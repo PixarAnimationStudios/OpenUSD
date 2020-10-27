@@ -36,7 +36,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <boost/noncopyable.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -61,9 +60,14 @@ TF_DECLARE_PUBLIC_TOKENS(SdfFileFormatTokens, SDF_API, SDF_FILE_FORMAT_TOKENS);
 ///
 /// Base class for file format implementations.
 ///
-class SdfFileFormat : public TfRefBase, public TfWeakBase, boost::noncopyable
+class SdfFileFormat
+    : public TfRefBase
+    , public TfWeakBase
 {
 public:
+    SdfFileFormat(const SdfFileFormat&) = delete;
+    SdfFileFormat& operator=(const SdfFileFormat&) = delete;
+
     /// Returns the schema for this format.
     SDF_API const SdfSchemaBase& GetSchema() const;
 
@@ -124,7 +128,8 @@ public:
     ///
     /// Returns a shared pointer to an SdfAbstractData implementation.
     SDF_API
-    virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments& args) const;
+    virtual SdfAbstractDataRefPtr
+    InitData(const FileFormatArguments& args) const;
 
     /// Instantiate a layer.
     SDF_API 
@@ -374,13 +379,13 @@ private:
     const bool _isPrimaryFormat;
 };
 
-/// Base file format factory.
+// Base file format factory.
 class Sdf_FileFormatFactoryBase : public TfType::FactoryBase {
 public:
     virtual SdfFileFormatRefPtr New() const = 0;
 };
 
-/// Default file format factory.
+// Default file format factory.
 template <typename T>
 class Sdf_FileFormatFactory : public Sdf_FileFormatFactoryBase {
 public:
@@ -390,26 +395,98 @@ public:
     }
 };
 
-/// Defines a file format and factory. This macro is intended for use in a
-/// TfType registry function block. It defines a type for the first argument,
-/// with optional bases as additional arguments, and adds a factory.
-#define SDF_DEFINE_FILE_FORMAT(c, ...) \
-    TfType::Define<c BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__)) \
-        BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__), \
-            TfType::Bases<__VA_ARGS__>, BOOST_PP_EMPTY) >() \
-        .SetFactory<Sdf_FileFormatFactory<c> >()
+/// \def SDF_DEFINE_FILE_FORMAT
+///
+/// Performs registrations needed for the specified file format class to be
+/// discovered by Sdf. This typically would be invoked in a TF_REGISTRY_FUNCTION
+/// in the source file defining the file format. 
+///
+/// The first argument is the name of the file format class being registered. 
+/// Subsequent arguments list the base classes of the file format. Since all 
+/// file formats must ultimately derive from SdfFileFormat, there should be
+/// at least one base class specified.
+///
+/// For example:
+///
+/// \code
+/// // in MyFileFormat.cpp
+/// TF_REGISTRY_FUNCTION(TfType)
+/// {
+///     SDF_DEFINE_FILE_FORMAT(MyFileFormat, SdfFileFormat);
+/// }
+/// \endcode
+///
+#ifdef doxygen
+#define SDF_DEFINE_FILE_FORMAT(FileFormatClass, BaseClass1, ...)
+#else
+#define SDF_DEFINE_FILE_FORMAT(...) SdfDefineFileFormat<__VA_ARGS__>()
 
-/// Defines a file format without a factory. This macro is intended for use in
-/// a TfType registry function block. It defines a type for the first
-/// argument, with optional bases as additional arguments.
-#define SDF_DEFINE_ABSTRACT_FILE_FORMAT(c, ...) \
-    TfType::Define<c BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__)) \
-        BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__), \
-            TfType::Bases<__VA_ARGS__>, BOOST_PP_EMPTY) >();
+template <class FileFormat, class ...BaseFormats>
+void SdfDefineFileFormat()
+{
+    TfType::Define<FileFormat, TfType::Bases<BaseFormats...>>()
+        .template SetFactory<Sdf_FileFormatFactory<FileFormat>>();
+}
+#endif // doxygen
 
+/// \def SDF_DEFINE_ABSTRACT_FILE_FORMAT
+///
+/// Performs registrations needed for the specified abstract file format
+/// class. This is used to register types that serve as base classes
+/// for other concrete file format classes used by Sdf.
+///
+/// The first argument is the name of the file format class being registered.
+/// Subsequent arguments list the base classes of the file format. Since all 
+/// file formats must ultimately derive from SdfFileFormat, there should be
+/// at least one base class specified.
+///
+/// For example:
+///
+/// \code
+/// // in MyFileFormat.cpp
+/// TF_REGISTRY_FUNCTION(TfType)
+/// {
+///     SDF_DEFINE_ABSTRACT_FILE_FORMAT(MyFileFormat, SdfFileFormat);
+/// }
+/// \endcode
+///
+#ifdef doxygen
+#define SDF_DEFINE_ABSTRACT_FILE_FORMAT(FileFormatClass, BaseClass1, ...)
+#else
+#define SDF_DEFINE_ABSTRACT_FILE_FORMAT(...) \
+    SdfDefineAbstractFileFormat<__VA_ARGS__>()
+
+template <class FileFormat, class ...BaseFormats>
+void SdfDefineAbstractFileFormat()
+{
+    TfType::Define<FileFormat, TfType::Bases<BaseFormats...>>();
+}
+#endif //doxygen
+
+/// \def SDF_FILE_FORMAT_FACTORY_ACCESS
+///
+/// Provides access to allow file format classes to be instantiated
+/// from Sdf. This should be specified in the class definition for
+/// concrete file format classes.
+///
+/// For example:
+/// 
+/// \code
+/// // in MyFileFormat.h
+/// class MyFileFormat : public SdfFileFormat
+/// {
+///     SDF_FILE_FORMAT_FACTORY_ACCESS;
+///     // ...
+/// };
+/// \endcode
+///
+#ifdef doxygen
+#define SDF_FILE_FORMAT_FACTORY_ACCESS
+#else
 #define SDF_FILE_FORMAT_FACTORY_ACCESS \
     template<typename T> friend class Sdf_FileFormatFactory
+#endif //doxygen
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_SDF_FILE_FORMAT_H
+#endif
