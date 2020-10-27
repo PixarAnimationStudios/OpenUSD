@@ -48,30 +48,30 @@ class TestGfRect2i(unittest.TestCase):
 
     def test_Properties(self):
         r = Gf.Rect2i()
-        r.higher = Gf.Vec2i()
-        r.lower = Gf.Vec2i(1,1)
+        r.max = Gf.Vec2i()
+        r.min = Gf.Vec2i(1,1)
         r.GetNormalized()
-        r.higher = Gf.Vec2i(1,1)
-        r.lower = Gf.Vec2i()
+        r.max = Gf.Vec2i(1,1)
+        r.min = Gf.Vec2i()
         r.GetNormalized()
 
-        r.lower = Gf.Vec2i(3, 1)
-        self.assertEqual(r.lower, Gf.Vec2i(3, 1))
+        r.min = Gf.Vec2i(3, 1)
+        self.assertEqual(r.min, Gf.Vec2i(3, 1))
 
-        r.higher = Gf.Vec2i(4, 5)
-        self.assertEqual(r.higher, Gf.Vec2i(4, 5))
+        r.max = Gf.Vec2i(4, 5)
+        self.assertEqual(r.max, Gf.Vec2i(4, 5))
 
-        r.left = 10
-        self.assertEqual(r.left, 10)
+        r.minX = 10
+        self.assertEqual(r.minX, 10)
 
-        r.right = 20
-        self.assertEqual(r.right, 20)
+        r.maxX = 20
+        self.assertEqual(r.maxX, 20)
 
-        r.top = 30
-        self.assertEqual(r.top, 30)
+        r.minY = 30
+        self.assertEqual(r.minY, 30)
 
-        r.bottom = 40
-        self.assertEqual(r.bottom, 40)
+        r.maxY = 40
+        self.assertEqual(r.maxY, 40)
 
         r = Gf.Rect2i(Gf.Vec2i(), Gf.Vec2i(10, 10))
         self.assertEqual(r.GetCenter(), Gf.Vec2i(5, 5))

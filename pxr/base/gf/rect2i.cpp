@@ -42,34 +42,34 @@ TF_REGISTRY_FUNCTION(TfType) {
 GfRect2i
 GfRect2i::GetNormalized() const
 {
-    GfVec2i lower, higher;
+    GfVec2i min, max;
 
-    if (_higher[0] < _lower[0]) {
-        lower[0] = _higher[0];
-        higher[0] = _lower[0];
+    if (_max[0] < _min[0]) {
+        min[0] = _max[0];
+        max[0] = _min[0];
     }
     else {
-        lower[0] = _lower[0];
-        higher[0] = _higher[0];
+        min[0] = _min[0];
+        max[0] = _max[0];
     }
 
-    if (_higher[1] < _lower[1]) {
-        lower[1] = _higher[1];
-        higher[1] = _lower[1];
+    if (_max[1] < _min[1]) {
+        min[1] = _max[1];
+        max[1] = _min[1];
     }
     else {
-        lower[1] = _lower[1];
-        higher[1] = _higher[1];
+        min[1] = _min[1];
+        max[1] = _max[1];
     }
 
-    return GfRect2i(lower, higher);
+    return GfRect2i(min, max);
 }
 
 std::ostream &
 operator<<(std::ostream& out, const GfRect2i& r)
 {
-    return out << '[' << Gf_OstreamHelperP(r.GetLower()) << ":" 
-        << Gf_OstreamHelperP(r.GetHigher()) << ']';
+    return out << '[' << Gf_OstreamHelperP(r.GetMin()) << ":" 
+        << Gf_OstreamHelperP(r.GetMax()) << ']';
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
