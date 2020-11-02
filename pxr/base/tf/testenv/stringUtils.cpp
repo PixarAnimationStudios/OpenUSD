@@ -347,8 +347,8 @@ TestStrings()
     TF_AXIOM(TfEscapeString("\\c \\d") == "c d");
     TF_AXIOM(TfEscapeString("\\xB") == "\xB");
     TF_AXIOM(TfEscapeString("\\xab") == "\xab");
-    TF_AXIOM(TfEscapeString("\\x01f") == "\x01f");
-    TF_AXIOM(TfEscapeString("\\x008d") == "\x008d");
+    TF_AXIOM(TfEscapeString("\\x01f") == "\x1" "f");
+    TF_AXIOM(TfEscapeString("\\x008d") == string() + '\0' + "8d");
     TF_AXIOM(TfEscapeString("x\\x0x") == string() + 'x' + '\0' + 'x');
     TF_AXIOM(TfEscapeString("\\5") == "\5");
     TF_AXIOM(TfEscapeString("\\70") == "\70");
@@ -356,9 +356,9 @@ TestStrings()
     TF_AXIOM(TfEscapeString("\\007") == "\007");
     TF_AXIOM(TfEscapeString("\\008") == string() + '\0' + '8');
     TF_AXIOM(TfEscapeString("\\010") == "\010");
-    TF_AXIOM(TfEscapeString("\\0077") == "\0077");
-    TF_AXIOM(TfEscapeString("\\00107") == "\00107");
-    TF_AXIOM(TfEscapeString("\\005107") == "\005107");
+    TF_AXIOM(TfEscapeString("\\0077") == "\07" "7");
+    TF_AXIOM(TfEscapeString("\\00107") == "\01" "07");
+    TF_AXIOM(TfEscapeString("\\005107") == "\05" "107");
 
     TF_AXIOM(TfStringCatPaths("foo", "bar") == "foo/bar");
     TF_AXIOM(TfStringCatPaths("foo/crud", "../bar") == "foo/bar");
