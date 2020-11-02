@@ -86,8 +86,9 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
         return false;
     }
 
-    // immediate batch doesn't need to verify buffer array hash unlike indirect
-    // batch.
+    // Deep validation is flagged explicitly when a drawItem has changes to
+    // its BARs (e.g. buffer spec, aggregation) or when the surface shader or 
+    // geometric shader changes.
     if (deepValidation) {
         // look through all draw items to be still compatible
 

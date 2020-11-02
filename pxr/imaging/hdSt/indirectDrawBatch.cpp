@@ -865,24 +865,21 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
     // note that we just need to compare the hash of the first item,
     // since drawitems are aggregated and ensure that they are sharing
     // same buffer arrays.
-
     HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
+    size_t const bufferArraysHash = batchItem->GetBufferArraysHash();
 
-    size_t bufferArraysHash = batchItem->GetBufferArraysHash();
+    bool validBatch = true;
 
     if (_bufferArraysHash != bufferArraysHash) {
         _bufferArraysHash = bufferArraysHash;
-        _dispatchBuffer.reset();
-        
+        validBatch = false;
         TF_DEBUG(HDST_DRAW_BATCH).Msg(
             "   Buffer arrays hash changed. Need to rebuild batch.\n");
-        
-        return false;
-    }
-
-    // Deep validation is needed when a drawItem changes its buffer spec,
-    // surface shader or geometric shader.
-    if (deepValidation) {
+    } 
+    // Deep validation is flagged explicitly when a drawItem has changes to
+    // its BARs (e.g. buffer spec, aggregation) or when the surface shader or 
+    // geometric shader. changes.
+    else if (deepValidation) {
         // look through all draw items to be still compatible
 
         size_t numDrawItemInstances = _drawItemInstances.size();
@@ -891,23 +888,31 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
                 = _drawItemInstances[item]->GetDrawItem();
 
             if (!TF_VERIFY(drawItem->GetGeometricShader())) {
-                return false;
+                validBatch = false;
+                break;
             }
 
             if (!_IsAggregated(batchItem, drawItem)) {
+                validBatch = false;
                  TF_DEBUG(HDST_DRAW_BATCH).Msg(
                     "   Deep validation: Found draw item that fails aggregation"
-                    " test. Need to rebuild batch.\n");
-        
-                return false;
+                    " test. Need to rebuild batches.\n");
+                break;
             }
         }
 
     }
 
-    TF_DEBUG(HDST_DRAW_BATCH).Msg(
-        "   Validation passed. No need to rebuild batch.\n");
-    return true;
+    if (validBatch) {
+        TF_DEBUG(HDST_DRAW_BATCH).Msg(
+            "   Validation passed. No need to rebuild batch.\n");
+    } else {
+        _dispatchBuffer.reset();
+        TF_DEBUG(HDST_DRAW_BATCH).Msg(
+            "   Resetting dispatch buffer.\n");
+    }
+
+    return validBatch;
 }
 
 void
