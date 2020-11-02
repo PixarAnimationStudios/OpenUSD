@@ -288,7 +288,7 @@ public:
     /// \sa UsdPrim::ApplyAPI()
     /// \sa UsdPrim::RemoveAPI()
     ///
-    {% if useExportAPI and not cls.isPrivateApply -%}
+    {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
