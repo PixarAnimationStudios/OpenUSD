@@ -87,6 +87,14 @@ public:
     CanConnectOutputToSource(const UsdShadeOutput &,
                              const UsdAttribute &,
                              std::string *reason);
+
+    /// The prim owning the output is guaranteed to be of the type this
+    /// behavior was registered with. The function must be thread-safe.
+    ///
+    /// It should return true if the associated prim type is considered
+    /// a "container" for connected nodes.
+    USDSHADE_API
+    virtual bool IsContainer() const;
 };
 
 /// Registers \p behavior to define connectability of attributes for \p PrimType.

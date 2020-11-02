@@ -118,6 +118,12 @@ UsdShadeConnectableAPIBehavior::CanConnectOutputToSource(
     return false;
 }
 
+bool
+UsdShadeConnectableAPIBehavior::IsContainer() const
+{
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////
 //
 // UsdShadeConnectableAPIBehavior registry
@@ -361,6 +367,16 @@ bool
 UsdShadeConnectableAPI::HasConnectableAPI(const TfType& schemaType)
 {
     return _BehaviorRegistry::GetInstance().HasBehaviorForType(schemaType);
+}
+
+bool
+UsdShadeConnectableAPI::IsContainer() const
+{
+    if (UsdShadeConnectableAPIBehavior *behavior =
+        _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
+        return behavior->IsContainer();
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

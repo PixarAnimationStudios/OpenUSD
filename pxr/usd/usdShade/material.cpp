@@ -553,7 +553,7 @@ UsdShadeMaterial::_ComputeNamedOutputShader(
     UsdShadeAttributeType srcType;
     if (_ComputeNamedOutputSource(baseName, renderContext, 
                                   &source, &srcName, &srcType)) {
-        if (source.IsNodeGraph()) {
+        if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
             source = UsdShadeNodeGraph(source.GetPrim()).ComputeOutputSource(
                 srcName, &srcName, &srcType);
         }
@@ -693,6 +693,12 @@ class UsdShadeMaterial_ConnectableAPIBehavior : public UsdShadeNodeGraph::Connec
         // Note that UsdLuxLight and UsdLuxLightFilter already implement
         // this behavior so this should be reimplemented as a shared behavior
         // that can be used by any connectables that need it.
+        return true;
+    }
+
+    bool IsContainer() const
+    {
+        // Material does act as a namespace container for connected nodes
         return true;
     }
 };

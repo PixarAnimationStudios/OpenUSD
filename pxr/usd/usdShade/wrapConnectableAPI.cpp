@@ -192,6 +192,7 @@ WRAP_CUSTOM {
 
         .def("IsShader", &UsdShadeConnectableAPI::IsShader)
         .def("IsNodeGraph", &UsdShadeConnectableAPI::IsNodeGraph)
+        .def("IsContainer", &UsdShadeConnectableAPI::IsContainer)
 
         .def("CanConnect", CanConnect_Input,
             (arg("input"), arg("source")))

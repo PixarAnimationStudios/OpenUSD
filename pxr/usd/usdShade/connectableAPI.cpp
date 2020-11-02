@@ -121,9 +121,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
-
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/usdShade/tokens.h"
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -133,15 +132,41 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outputs)
 );
 
+// Env var to disable warning noises about deprecated API
+TF_DEFINE_ENV_SETTING(
+    USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING, true,
+    "Enable API deprecation warning for UsdShadeConnectableAPI");
+
+// One-shot flag for warning about deprecated API
+static std::atomic_flag _didCheckDeprecatedAPIUsage = ATOMIC_FLAG_INIT;
+
 bool 
 UsdShadeConnectableAPI::IsShader() const
 {
+    if (!_didCheckDeprecatedAPIUsage.test_and_set()) {
+        if (TfGetEnvSetting(USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING)) {
+            TF_WARN("UsdShadeConnectableAPI::IsNodeGraph() and IsShader() "
+                    "are deprecated API's and will be removed in a future "
+                    "release of USD.  To suppress this warning, set the "
+                    "environment variable "
+                    "USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING to 0.");
+        }
+    }
     return GetPrim().IsA<UsdShadeShader>();
 }
 
 bool 
 UsdShadeConnectableAPI::IsNodeGraph() const
 {
+    if (!_didCheckDeprecatedAPIUsage.test_and_set()) {
+        if (TfGetEnvSetting(USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING)) {
+            TF_WARN("UsdShadeConnectableAPI::IsNodeGraph() and IsShader() "
+                    "are deprecated API's and will be removed in a future "
+                    "release of USD.  To suppress this warning, set the "
+                    "environment variable "
+                    "USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING to 0.");
+        }
+    }
     return GetPrim().IsA<UsdShadeNodeGraph>();
 }
 

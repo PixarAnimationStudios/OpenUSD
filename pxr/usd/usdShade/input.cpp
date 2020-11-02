@@ -414,11 +414,11 @@ _GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput,
     if (UsdShadeConnectableAPI::GetConnectedSource(inoutput,
                 &source, &sourceName, &sourceType)) {
 
-        // If it is connected follow it until we reach an attribute on an
-        // actual shader node
+        // If it is connected follow it until we reach an attribute on a
+        // non-container node
         if (sourceType == UsdShadeAttributeType::Output) {
             UsdShadeOutput connectedOutput = source.GetOutput(sourceName);
-            if (source.IsShader()) {
+            if (!UsdShadeConnectableAPI(source.GetPrim()).IsContainer()) {
                 attr = connectedOutput.GetAttr();
                 attrType = UsdShadeAttributeType::Output;
             } else {
@@ -428,10 +428,10 @@ _GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput,
             }
         } else if (sourceType == UsdShadeAttributeType::Input) {
             UsdShadeInput connectedInput = source.GetInput(sourceName);
-            if (source.IsShader()) {
+            if (!UsdShadeConnectableAPI(source.GetPrim()).IsContainer()) {
                 // Note, this is an invalid situation for a connected chain.
-                // Since we started on an input to either a Shader or a
-                // NodeGraph we cannot legally connect to an input on a Shader.
+                // Since we started on an input, we cannot legally connect
+                // to an input on a non-container.
             } else {
                 std::tie(attr, attrType) =
                         _GetValueProducingAttributeRecursive(connectedInput,

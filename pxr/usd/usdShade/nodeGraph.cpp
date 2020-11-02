@@ -176,7 +176,7 @@ UsdShadeNodeGraph::ComputeOutputSource(
     if (output.GetConnectedSource(&source, sourceName, sourceType)) {
         // XXX: we're not doing anything to detect cycles here, which will lead
         // to an infinite loop.
-        if (source.IsNodeGraph()) {
+        if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
             source = UsdShadeNodeGraph(source).ComputeOutputSource(*sourceName,
                 sourceName, sourceType);
         }
@@ -266,7 +266,7 @@ _RecursiveComputeNodeGraphInterfaceInputConsumers(
         const std::vector<UsdShadeInput> &consumers = inputAndConsumers.second;
         for (const UsdShadeInput &consumer: consumers) {
             UsdShadeConnectableAPI connectable(consumer.GetAttr().GetPrim());
-            if (connectable.IsNodeGraph()) {
+            if (connectable.GetPrim().IsA<UsdShadeNodeGraph>()) {
                 if (!nodeGraphInputConsumers->count(connectable)) {
 
                     const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
@@ -390,6 +390,13 @@ UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
         }
         return false;
     }
+    return true;
+}
+
+bool
+UsdShadeNodeGraph::ConnectableAPIBehavior::IsContainer() const
+{
+    // NodeGraph does act as a namespace container for connected nodes
     return true;
 }
 

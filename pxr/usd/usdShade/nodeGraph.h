@@ -382,6 +382,9 @@ public:
         CanConnectOutputToSource(const UsdShadeOutput &output,
                                  const UsdAttribute &source,
                                  std::string *reason) override;
+
+        USDSHADE_API
+        bool IsContainer() const override;
     };
 
 };
