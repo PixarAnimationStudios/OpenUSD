@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/textureHandle.h"

@@ -24,9 +24,9 @@
 #ifndef PXR_IMAGING_HGI_GL_CONVERSIONS_H
 #define PXR_IMAGING_HGI_GL_CONVERSIONS_H
 
-#include <GL/glew.h>
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/types.h"
 

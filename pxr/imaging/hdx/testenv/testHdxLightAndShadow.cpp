@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     // prepare GL context
     GarchGLDebugWindow window("Hdx Test", 512, 512);
     window.Init();
-    GlfGlewInit();
+    GarchGLApiLoad();
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
     GlfContextCaps::InitInstance();

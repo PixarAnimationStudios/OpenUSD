@@ -1429,8 +1429,6 @@ class StageView(QtOpenGL.QGLWidget):
         if not self.isValid():
             return
         from pxr import Glf
-        if not Glf.GlewInit():
-            return
         Glf.RegisterDefaultDebugOutputMessageCallback()
 
     def updateGL(self):

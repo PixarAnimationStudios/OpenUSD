@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
 
@@ -1297,6 +1297,20 @@ UsdImagingGLLegacyEngine::_RenderPrimitive(const UsdPrim &prim,
     }
 }
 
+static GfVec3d
+_UnProject(
+    GfVec3d Pwin,
+    const GfMatrix4d &modelViewMatrix,
+    const GfMatrix4d &projMatrix,
+    const GfVec4i &viewport)
+{
+    GfVec3d Pndc(((Pwin[0] - viewport[0]) / viewport[2]) * 2.0 - 1.0,
+                 ((Pwin[1] - viewport[1]) / viewport[3]) * 2.0 - 1.0,
+                   Pwin[2] * 2.0 - 1.0);
+    GfMatrix4d MVP = modelViewMatrix * projMatrix;
+    return MVP.GetInverse().Transform(Pndc);
+}
+
 bool
 UsdImagingGLLegacyEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
@@ -1454,15 +1468,11 @@ UsdImagingGLLegacyEngine::TestIntersection(
     bool didHit = (zMin < 1.0);
 
     if (didHit) {
-        GLint viewport[4] = { 0, 0, width, height };
+        GfVec4i viewport = { 0, 0, width, height };
 
-        gluUnProject( xMin, yMin, zMin,
-                      viewMatrix.GetArray(),
-                      projectionMatrix.GetArray(),
-                      viewport,
-                      &((*outHitPoint)[0]),
-                      &((*outHitPoint)[1]),
-                      &((*outHitPoint)[2]));
+        *outHitPoint = _UnProject(
+                GfVec3d(xMin, yMin, zMin),
+                viewMatrix, projectionMatrix, viewport);
 
         if (outHitPrimPath) {
             int idIndex = zMinIndex*4;

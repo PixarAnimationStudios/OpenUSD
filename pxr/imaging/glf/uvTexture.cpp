@@ -24,7 +24,7 @@
 /// \file UVTexture.cpp
 // 
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/arrayTexture.h"

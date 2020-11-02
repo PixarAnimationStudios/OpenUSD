@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hgiGL/ops.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/computePipeline.h"
@@ -44,7 +46,7 @@ HgiGLOps::PushDebugGroup(const char* label)
 
     return [lbl] {
         #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, lbl.c_str());
         }
         #endif
@@ -56,7 +58,7 @@ HgiGLOps::PopDebugGroup()
 {
     return [] {
         #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glPopDebugGroup();
         }
         #endif

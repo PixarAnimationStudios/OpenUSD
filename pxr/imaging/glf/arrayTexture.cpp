@@ -24,7 +24,7 @@
 /// \file ArrayTexture.cpp
 // 
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/arrayTexture.h"
 #include "pxr/imaging/glf/diagnostic.h"

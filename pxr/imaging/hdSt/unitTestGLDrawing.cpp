@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -90,7 +91,7 @@ HdSt_UnitTestWindow::~HdSt_UnitTestWindow()
 void
 HdSt_UnitTestWindow::OnInitializeGL()
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
     GlfRegisterDefaultDebugOutputMessageCallback();
     GlfContextCaps::InitInstance();
 

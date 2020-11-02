@@ -34,7 +34,7 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/usd/usdGeom/gprim.h"

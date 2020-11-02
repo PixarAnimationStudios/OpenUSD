@@ -23,7 +23,7 @@
 //
 
 // Must be included before GL headers.
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
@@ -54,7 +54,7 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _colorCorrectionMode("disabled"),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 }
 
 static bool

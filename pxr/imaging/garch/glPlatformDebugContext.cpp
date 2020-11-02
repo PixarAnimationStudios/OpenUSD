@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/garch/glPlatformDebugContext.h"
 
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/arch/defines.h"

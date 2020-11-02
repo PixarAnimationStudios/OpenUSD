@@ -23,7 +23,7 @@
 //
 /// \file simpleShadowArray.cpp
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/simpleShadowArray.h"
 #include "pxr/imaging/glf/debugCodes.h"

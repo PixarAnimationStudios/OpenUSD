@@ -24,7 +24,7 @@
 // uniformBlock.cpp
 //
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/uniformBlock.h"

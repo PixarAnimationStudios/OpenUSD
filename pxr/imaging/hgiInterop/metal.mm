@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hgiInterop/metal.h"
 
 #include "pxr/imaging/hgiMetal/capabilities.h"
@@ -221,8 +223,7 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
 
     NSError *error = NULL;
     
-    glewExperimental = true;
-    glewInit();
+    GarchGLApiLoad();
     
     _currentOpenGLContext = [NSOpenGLContext currentContext];
     

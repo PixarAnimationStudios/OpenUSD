@@ -28,6 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace internal { namespace GLApi { bool  GarchGLApiLoad(); } }
 
 bool GlfGlewInit()
 {
@@ -42,6 +43,10 @@ bool GlfGlewInit()
 #endif
 
         result = glewInit() == GLEW_OK;
+
+        // initialize the garch GL loading library here as well until
+        // this initialization of GLEW is removed.
+        result &= internal::GLApi::GarchGLApiLoad();
     });
 
     return result;

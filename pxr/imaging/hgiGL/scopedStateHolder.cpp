@@ -21,12 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/iterator.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgiGL/scopedStateHolder.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,7 +55,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _restoreFramebufferSRGB(false)
 {
     #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Capture state");
     }
     #endif
@@ -89,7 +91,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPopDebugGroup();
     }
     #endif
@@ -98,7 +100,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
 HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
 {
     #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Restore state");
     }
     #endif
@@ -165,7 +167,7 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPopDebugGroup();
     }
     #endif

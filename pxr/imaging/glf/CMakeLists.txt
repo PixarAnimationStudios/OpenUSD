@@ -41,7 +41,6 @@ pxr_library(glf
         sdf
         ${Boost_PYTHON_LIBRARY}
         ${OPENGL_gl_LIBRARY}
-        ${OPENGL_glu_LIBRARY}
         ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
         ${optionalLibs}

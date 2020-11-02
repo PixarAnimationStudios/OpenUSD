@@ -21,9 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -179,7 +178,7 @@ int main()
 
     // Test uses ContextCaps, so need to create a GL instance.
     GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfGlewInit();
+    GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
     GlfContextCaps::InitInstance();
 

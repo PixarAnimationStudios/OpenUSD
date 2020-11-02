@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include <string>

@@ -23,9 +23,7 @@
 //
 /// \file glf/ptexTexture.cpp
 
-// 
-
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
 

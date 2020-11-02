@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
@@ -85,8 +86,8 @@ void _InitGL()
 
     std::call_once(initFlag, []{
 
-        // Initialize Glew library for GL Extensions if needed
-        GlfGlewInit();
+        // Initialize GL library for GL Extensions if needed
+        GarchGLApiLoad();
 
         // Initialize if needed and switch to shared GL context.
         GlfSharedGLContextScopeHolder sharedContext;
@@ -1163,7 +1164,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
 
     TF_VERIFY(_sceneDelegate);
 
-    // User is responsible for initializing GL context and glew
+    // User is responsible for initializing GL context
     const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 
     GLF_GROUP_FUNCTION();

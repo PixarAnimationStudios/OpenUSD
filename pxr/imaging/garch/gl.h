@@ -26,38 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_DARWIN)
-// Apple installs OpenGL headers in a non-standard location.
-#include <OpenGL/gl.h>
-#elif defined(ARCH_OS_WINDOWS)
-// Windows must include Windows.h prior to gl.h
-#include <Windows.h>
-#include <GL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
 
-#ifdef ARCH_OS_DARWIN
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-typedef GLvoid (*ArchGLCallbackType)(...);
-
-#define GL_RGBA16F 0x881A
-#define GL_RGB16F 0x881B
-#define GL_RGBA32F 0x8814
-#define GL_RGB32F 0x8815
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#else // !ARCH_OS_DARWIN
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-typedef GLvoid (*ArchGLCallbackType)();
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // ARCH_OS_DARWIN
+#include "pxr/imaging/garch/glApi.h"
 
 #endif // PXR_IMAGING_GARCH_GL_H

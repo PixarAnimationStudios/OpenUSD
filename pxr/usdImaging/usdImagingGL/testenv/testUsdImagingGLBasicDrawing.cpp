@@ -24,7 +24,8 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"

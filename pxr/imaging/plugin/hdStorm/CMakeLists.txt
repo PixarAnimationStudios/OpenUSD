@@ -29,7 +29,6 @@ pxr_plugin(hdStorm
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${GLEW_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
         ${OPENSUBDIV_INCLUDE_DIR}
 

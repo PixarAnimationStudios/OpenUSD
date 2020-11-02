@@ -31,7 +31,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include <memory>

@@ -24,7 +24,7 @@
 // glf/drawTarget.cpp
 //
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -71,7 +71,7 @@ GlfDrawTarget::GlfDrawTarget( GfVec2i const & size, bool requestMSAA /* =false *
     _size(size),
     _numSamples(1)
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 
     // If MSAA has been requested and it is enabled then we will create
     // msaa buffers
@@ -102,7 +102,7 @@ GlfDrawTarget::GlfDrawTarget( GlfDrawTargetPtr const & drawtarget ) :
     _numSamples(drawtarget->_numSamples),
     _owningContext()
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 
     _GenFrameBuffer();
 

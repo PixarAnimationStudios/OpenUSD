@@ -34,7 +34,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4d.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include <vector>
 

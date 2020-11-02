@@ -24,8 +24,7 @@
 // Diagnostic.cpp
 //
 
-
-#include <GL/glew.h>
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgiGL/diagnostic.h"
 

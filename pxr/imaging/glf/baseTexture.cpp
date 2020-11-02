@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file baseTexture.cpp
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/baseTextureData.h"

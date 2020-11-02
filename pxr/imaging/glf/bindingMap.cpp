@@ -23,7 +23,7 @@
 //
 /// \file bindingMap.cpp
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/base/tf/diagnostic.h"

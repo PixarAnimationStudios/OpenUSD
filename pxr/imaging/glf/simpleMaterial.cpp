@@ -25,7 +25,7 @@
 
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

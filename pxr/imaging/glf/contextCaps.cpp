@@ -21,11 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/debugCodes.h"
-#include "pxr/imaging/glf/glew.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -238,26 +240,27 @@ GlfContextCaps::_LoadCaps()
     }
 
     // initialize by individual extension.
-    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentARB) {
+    if (GARCH_GLAPI_HAS(ARB_bindless_texture)) {
         bindlessTextureEnabled = true;
     }
-    if (GLEW_NV_shader_buffer_load && glMakeNamedBufferResidentNV) {
+    if (GARCH_GLAPI_HAS(NV_shader_buffer_load)) {
         bindlessBufferEnabled = true;
     }
-    if (GLEW_ARB_explicit_uniform_location) {
+    if (GARCH_GLAPI_HAS(ARB_explicit_uniform_location)) {
         explicitUniformLocation = true;
     }
-    if (GLEW_ARB_shading_language_420pack) {
+    if (GARCH_GLAPI_HAS(ARB_shading_language_420pack)) {
         shadingLanguage420pack = true;
     }
-    if (GLEW_ARB_multi_draw_indirect) {
+    if (GARCH_GLAPI_HAS(ARB_multi_draw_indirect)) {
         multiDrawIndirectEnabled = true;
     }
-#if defined(GLEW_VERSION_4_5)  // glew 1.11 or newer (usd requirement is 1.10)
-    if (GLEW_VERSION_4_5 || GLEW_ARB_direct_state_access) {
+#if defined(GL_VERSION_4_5)
+    if (GARCH_GLAPI_HAS(VERSION_4_5) ||
+        GARCH_GLAPI_HAS(ARB_direct_state_access)) {
         directStateAccessEnabled = true;
     }
-    if (GLEW_ARB_shader_draw_parameters) {
+    if (GARCH_GLAPI_HAS(ARB_shader_draw_parameters)) {
         shaderDrawParametersEnabled = true;
     }
 #endif
