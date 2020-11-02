@@ -114,7 +114,7 @@ public:
 
     /// Get the identifier of the layerStack used for composition.
     PCP_API
-    PcpLayerStackIdentifier GetLayerStackIdentifier() const;
+    const PcpLayerStackIdentifier& GetLayerStackIdentifier() const;
 
     /// Get the layer stack for GetLayerStackIdentifier().  Note that
     /// this will neither compute the layer stack nor report errors.
@@ -681,7 +681,7 @@ private:
     // to enable parallel teardown in the destructor.
     SdfLayerRefPtr _rootLayer;
     SdfLayerRefPtr _sessionLayer;
-    const ArResolverContext _pathResolverContext;
+    const PcpLayerStackIdentifier _layerStackIdentifier;
 
     // Flag that configures PcpCache to use the restricted set of USD features.
     // Currently it governs whether relocates, inherits, permissions,

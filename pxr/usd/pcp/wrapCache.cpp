@@ -241,7 +241,8 @@ wrapCache()
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-
         // parameters representing the resulting cache invalidation.
-        .def("GetLayerStackIdentifier", &PcpCache::GetLayerStackIdentifier)
+        .def("GetLayerStackIdentifier", &PcpCache::GetLayerStackIdentifier,
+             return_value_policy<return_by_value>())
         .def("SetVariantFallbacks", &_SetVariantFallbacks)
         .def("GetVariantFallbacks", &PcpCache::GetVariantFallbacks,
              return_value_policy<TfPyMapToDictionary>())
