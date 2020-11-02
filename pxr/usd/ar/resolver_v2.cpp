@@ -43,6 +43,7 @@
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
@@ -50,6 +51,7 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,13 +62,21 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    // Plugin metadata key for package resolver extensions.
     (extensions)
+    
+    // Plugin metadata key for resolver URI schemes.
+    (uriSchemes)
 );
 
 TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_RESOLVER, false,
     "Disables plugin resolver implementation, falling back to default "
     "supplied by Ar.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS, false,
+    "Disables plugin URI resolver implementations.");
 
 static TfStaticData<std::string> _preferredResolver;
 
@@ -106,34 +116,39 @@ _GetTypeNames(const std::vector<TfType>& types)
 // These functions are documented to be non-thread-safe.
 static TfStaticData<std::vector<TfType>> _resolverStack;
 
-std::vector<TfType> 
+class _ResolverInfo
+{
+public:
+    _ResolverInfo()
+        : canBePrimaryResolver(false)
+    { }
+
+    // Plugin for the resolver implementation.
+    PlugPluginPtr plugin;
+
+    // TfType for the resolver implementation.
+    TfType type;
+
+    // URI schemes associated with the resolver implementation.
+    std::vector<std::string> uriSchemes;
+
+    // Whether this resolver can be used as a primary resolver.
+    bool canBePrimaryResolver;
+};
+
+std::vector<_ResolverInfo> 
 _GetAvailableResolvers()
 {
-    const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
-
     std::vector<TfType> sortedResolverTypes;
-
-    if (!TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER)) {
+    {
         std::set<TfType> resolverTypes;
         PlugRegistry::GetAllDerivedTypes(
             TfType::Find<ArResolver>(), &resolverTypes);
 
-        // Remove the default resolver so that we only process plugin types.
-        // We'll add the default resolver back later.
-        resolverTypes.erase(defaultResolverType);
-
-        // Remove all resolvers that are currently under construction.
-        for (const TfType& usedResolver : *_resolverStack) {
-            resolverTypes.erase(usedResolver);
-        }
-
-        // We typically expect to find only one plugin asset resolver,
-        // but if there's more than one we want to ensure this list is in a 
-        // consistent order to ensure stable behavior. TfType's operator< 
-        // is not stable across runs, so we sort based on typename instead.
-        sortedResolverTypes.insert(
-            sortedResolverTypes.end(), 
-            resolverTypes.begin(), resolverTypes.end());
+        // Ensure this list is in a consistent order to ensure stable behavior.
+        // TfType's operator< is not stable across runs, so we sort based on
+        // typename instead.
+        sortedResolverTypes.assign(resolverTypes.begin(), resolverTypes.end());
         std::sort(
             sortedResolverTypes.begin(), sortedResolverTypes.end(),
             [](const TfType& x, const TfType& y) {
@@ -141,9 +156,88 @@ _GetAvailableResolvers()
             });
     }
 
+    std::vector<_ResolverInfo> resolvers;
+    resolvers.reserve(sortedResolverTypes.size());
+
+    // Fill in the URI schemes associated with each available resolver.
+    const PlugRegistry& plugRegistry = PlugRegistry::GetInstance();
+    for (const TfType& resolverType : sortedResolverTypes) {
+        PlugPluginPtr plugin = plugRegistry.GetPluginForType(resolverType);
+        if (!plugin) {
+            TF_CODING_ERROR(
+                "Failed to find plugin for %s", 
+                resolverType.GetTypeName().c_str());
+            continue;
+        }
+
+        std::vector<std::string> uriSchemes;
+        if (const JsOptionalValue uriSchemesVal = JsFindValue(
+                plugin->GetMetadataForType(resolverType),
+                _tokens->uriSchemes.GetString())) {
+
+            if (uriSchemesVal->IsArrayOf<std::string>()) {
+                uriSchemes = uriSchemesVal->GetArrayOf<std::string>();
+            }
+            else {
+                TF_CODING_ERROR(
+                    "'%s' metadata for %s must be a list of strings.",
+                    _tokens->uriSchemes.GetText(),
+                    resolverType.GetTypeName().c_str());
+                continue;
+            }
+        }
+
+        _ResolverInfo info;
+        info.plugin = plugin;
+        info.type = resolverType;
+        info.uriSchemes = std::move(uriSchemes);
+        info.canBePrimaryResolver = info.uriSchemes.empty();
+
+        resolvers.push_back(std::move(info));
+    }
+
+    return resolvers;
+}
+
+std::vector<TfType>
+_GetAvailablePrimaryResolvers(
+    const std::vector<_ResolverInfo>& availableResolvers)
+{
+    const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
+
+    std::vector<TfType> availablePrimaryResolvers;
+
+    const std::vector<_ResolverInfo> emptyResolverList;
+    const std::vector<_ResolverInfo>* allAvailableResolvers = 
+        TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER) ? 
+        &emptyResolverList : &availableResolvers;
+
+    for (const _ResolverInfo& resolver : *allAvailableResolvers) {
+        // Skip resolvers that are not marked as a potential primary resolver.
+        if (!resolver.canBePrimaryResolver) {
+            continue;
+        }
+
+        // Skip the default resolver so that we only process plugin types.
+        // We'll add the default resolver back later.
+        if (resolver.type == defaultResolverType) {
+            continue;
+        }
+
+        // Skip all resolvers that are currently under construction.
+        if (std::find(
+                _resolverStack->begin(), _resolverStack->end(), resolver.type)
+            != _resolverStack->end()) {
+            continue;
+        }
+
+        availablePrimaryResolvers.push_back(resolver.type);
+    }
+
     // The default resolver is always the last resolver to be considered.
-    sortedResolverTypes.push_back(defaultResolverType);
-    return sortedResolverTypes;
+    availablePrimaryResolvers.push_back(defaultResolverType);
+
+    return availablePrimaryResolvers;
 }
 
 // Helper class to manage plugin resolvers that are loaded on-demand.
@@ -153,11 +247,16 @@ class _PluginResolver
 public:
     _PluginResolver(
         const PlugPluginPtr& plugin,
-        const TfType& resolverType)
+        const TfType& resolverType,
+        const std::shared_ptr<ResolverType>& resolver = nullptr)
         : _plugin(plugin)
         , _resolverType(resolverType)
-        , _hasResolver(false) 
-    { }
+        , _hasResolver(static_cast<bool>(resolver))
+        , _resolver(resolver)
+    {
+    }
+
+    const TfType& GetType() const { return _resolverType; }
 
     std::unique_ptr<ResolverType> Create() 
     {
@@ -193,7 +292,7 @@ public:
             
             std::lock_guard<std::mutex> g(_mutex);
             if (!_hasResolver) {
-                _resolver = std::move(newResolver);
+                _resolver.reset(newResolver.release());
                 _hasResolver = true;
             }
         }
@@ -206,7 +305,7 @@ private:
 
     std::atomic<bool> _hasResolver;
     std::mutex _mutex;
-    std::unique_ptr<ResolverType> _resolver;
+    std::shared_ptr<ResolverType> _resolver;
 };
 
 std::unique_ptr<ArResolver>
@@ -263,118 +362,161 @@ class _Resolver final
 {
 public:
     _Resolver()
+        : _maxURISchemeLength(0)
     {
-        _InitializeUnderlyingResolver();
+        const std::vector<_ResolverInfo> availableResolvers =
+            _GetAvailableResolvers();
+
+        _InitializePrimaryResolver(availableResolvers);
+        _InitializeURIResolvers(availableResolvers);
         _InitializePackageResolvers();
     }
 
-    ArResolver& GetUnderlyingResolver()
+    ArResolver& GetPrimaryResolver()
     {
         return *_resolver;
     }
 
     virtual void ConfigureResolverForAsset(const std::string& path) override
     { 
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            _resolver->ConfigureResolverForAsset(
+            resolver.ConfigureResolverForAsset(
                 ArSplitPackageRelativePathOuter(path).first);
             return;
         }
-        _resolver->ConfigureResolverForAsset(path); 
+        resolver.ConfigureResolverForAsset(path); 
     }
 
     virtual std::string AnchorRelativePath(
         const std::string& anchorPath, 
         const std::string& path) override
     {
+        // If path has a recognized URI scheme, we assume it's an
+        // absolute URI per RFC 3986 sec 4.3 and just return it as-is.
+        // Otherwise, it's unclear whether the resolver for anchorPath
+        // or path should be responsible for handling this query.
+        //
+        // If path does not have a recognized URI scheme, we delegate
+        // to the resolver for anchorPath to do the anchoring. Although
+        // we could implement URI anchoring per RFC 3986 sec 5 here,
+        // we want to give implementations the chance to do additional
+        // manipulations during the anchoring process.
+        ArResolver* resolver = _GetURIResolver(path);
+        if (resolver) {
+            return path;
+        }
+        else {
+            resolver = &_GetResolver(anchorPath);
+        }
+
         if (ArIsPackageRelativePath(path)) {
             std::pair<std::string, std::string> packagePath = 
                 ArSplitPackageRelativePathOuter(path);
 
-            packagePath.first = _resolver->AnchorRelativePath(
+            packagePath.first = resolver->AnchorRelativePath(
                 ArSplitPackageRelativePathOuter(anchorPath).first,
                 packagePath.first);
 
             return ArJoinPackageRelativePath(packagePath);
         }
-        return _resolver->AnchorRelativePath(anchorPath, path);
+        return resolver->AnchorRelativePath(anchorPath, path);
     }
 
     virtual bool IsRelativePath(const std::string& path) override
     {
+        // See AnchorRelativePath.
+        ArResolver* resolver = _GetURIResolver(path);
+        if (resolver) {
+            return false;
+        }
+        else {
+            resolver = &_GetResolver(path);
+        }
+
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->IsRelativePath(
+            return resolver->IsRelativePath(
                 ArSplitPackageRelativePathOuter(path).first);
         }
-        return _resolver->IsRelativePath(path);
+        return resolver->IsRelativePath(path);
     }
 
     virtual bool IsRepositoryPath(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->IsRepositoryPath(
+            return resolver.IsRepositoryPath(
                 ArSplitPackageRelativePathOuter(path).first);
         }
-        return _resolver->IsRepositoryPath(path);
+        return resolver.IsRepositoryPath(path);
     }
 
     virtual bool IsSearchPath(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->IsSearchPath(
+            return resolver.IsSearchPath(
                 ArSplitPackageRelativePathOuter(path).first);
         }
-        return _resolver->IsSearchPath(path);
+        return resolver.IsSearchPath(path);
     }
 
     virtual std::string GetExtension(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
             // We expect clients of this API will primarily care about the
             // *packaged* asset, so we return the extension of the inner-most
             // packaged path. Clients that care about the outer package's
             // extension can split the package-relative path and call this
             // function on the package path.
+            //
+            // XXX: This doesn't seem right. If Ar is defining the packaged
+            // path syntax, then Ar should be responsible for getting the
+            // extension for packaged paths instead of delegating.
             const std::pair<std::string, std::string> packagePath =
                 ArSplitPackageRelativePathInner(path);
-            return _resolver->GetExtension(packagePath.second);
+            return resolver.GetExtension(packagePath.second);
         }
-        return _resolver->GetExtension(path);
+        return resolver.GetExtension(path);
     }
 
     virtual std::string ComputeNormalizedPath(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
             std::pair<std::string, std::string> packagePath =
                 ArSplitPackageRelativePathOuter(path);
             packagePath.first = 
-                _resolver->ComputeNormalizedPath(packagePath.first);
+                resolver.ComputeNormalizedPath(packagePath.first);
             return ArJoinPackageRelativePath(packagePath);
         }
-        return _resolver->ComputeNormalizedPath(path);
+        return resolver.ComputeNormalizedPath(path);
     }
 
     virtual std::string ComputeRepositoryPath(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
             std::pair<std::string, std::string> packagePath =
                 ArSplitPackageRelativePathOuter(path);
             packagePath.first = 
-                _resolver->ComputeRepositoryPath(packagePath.first);
+                resolver.ComputeRepositoryPath(packagePath.first);
             return ArJoinPackageRelativePath(packagePath);
         }
-        return _resolver->ComputeRepositoryPath(path);
+        return resolver.ComputeRepositoryPath(path);
     }
 
     virtual std::string ComputeLocalPath(const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
             std::pair<std::string, std::string> packagePath =
                 ArSplitPackageRelativePathOuter(path);
-            packagePath.first = _resolver->ComputeLocalPath(packagePath.first);
+            packagePath.first = resolver.ComputeLocalPath(packagePath.first);
             return ArJoinPackageRelativePath(packagePath);
         }
-        return _resolver->ComputeLocalPath(path);
+        return resolver.ComputeLocalPath(path);
     }
 
     virtual std::string Resolve(const std::string& path) override
@@ -382,47 +524,117 @@ public:
         return _ResolveHelper(
             path, 
             [this](const std::string& path) {
-                return _resolver->Resolve(path);
+                return _GetResolver(path).Resolve(path);
             });
     }
+
+    // The primary resolver and the URI resolvers all participate
+    // in context binding and may have context-related data to store
+    // away. To accommodate this, _Resolve stores away a vector of
+    // VtValues where each element corresponds to the primary resolver
+    // or a URI resolver.
+    using _ResolverContextData = std::vector<VtValue>;
 
     virtual void BindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override
     {
-        _resolver->BindContext(context, bindingData);
+        _ResolverContextData contextData(1 + _uriResolvers.size());
+
+        size_t dataIndex = 0;
+
+        _resolver->BindContext(context, &contextData[dataIndex]);
+        ++dataIndex;
+
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                uriResolver->BindContext(context, &contextData[dataIndex]);
+            }
+            ++dataIndex;
+        }
+
+        bindingData->Swap(contextData);
     }
 
     virtual void UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override
     {
-        _resolver->UnbindContext(context, bindingData);
+        if (!TF_VERIFY(bindingData->IsHolding<_ResolverContextData>())) {
+            return;
+        }
+
+        _ResolverContextData contextData;
+        bindingData->UncheckedSwap(contextData);
+
+        size_t dataIndex = 0;
+
+        _resolver->UnbindContext(context, &contextData[dataIndex]);
+        ++dataIndex;
+
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                uriResolver->UnbindContext(context, &contextData[dataIndex]);
+            }
+            ++dataIndex;
+        }
+
+        bindingData->Swap(contextData);
     }
 
     virtual ArResolverContext CreateDefaultContext() override
     {
-        return _resolver->CreateDefaultContext();
+        std::vector<ArResolverContext> contexts;
+
+        contexts.push_back(_resolver->CreateDefaultContext());
+
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                contexts.push_back(uriResolver->CreateDefaultContext());
+            }
+        }
+
+        return ArResolverContext(contexts);
     }
 
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) override
     {
+        ArResolver& resolver = _GetResolver(filePath);
         if (ArIsPackageRelativePath(filePath)) {
-            return _resolver->CreateDefaultContextForAsset(
+            return resolver.CreateDefaultContextForAsset(
                 ArSplitPackageRelativePathOuter(filePath).first);
         }
-        return _resolver->CreateDefaultContextForAsset(filePath);
+        return resolver.CreateDefaultContextForAsset(filePath);
     }
 
     virtual void RefreshContext(const ArResolverContext& context) override
     {
         _resolver->RefreshContext(context);
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                uriResolver->RefreshContext(context);
+            }
+        }
     }
 
     virtual ArResolverContext GetCurrentContext() override
     {
-        return _resolver->GetCurrentContext();
+        // XXX:
+        // This assumes that when binding a context, each resolver
+        // will only return an ArResolverContext containing just the
+        // context objects that are relevant. This could be cleaned
+        // up if _Resolver itself were responsible for managing the
+        // "current context" instead of making each resolver subclass
+        // responsible for that.
+        std::vector<ArResolverContext> contexts;
+        contexts.push_back(_resolver->GetCurrentContext());
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                contexts.push_back(uriResolver->GetCurrentContext());
+            }
+        }
+        return ArResolverContext(contexts);
     }
 
     virtual std::string ResolveWithAssetInfo(
@@ -432,7 +644,8 @@ public:
         std::string resolvedPath = _ResolveHelper(
             path, 
             [assetInfo, this](const std::string& path) {
-                return _resolver->ResolveWithAssetInfo(path, assetInfo);
+                return _GetResolver(path).ResolveWithAssetInfo(
+                    path, assetInfo);
             });
 
         // If path was a package-relative path, make sure the repoPath field
@@ -454,6 +667,7 @@ public:
         const std::string& fileVersion,
         ArAssetInfo* assetInfo) override
     {
+        ArResolver& resolver = _GetResolver(identifier);
         if (ArIsPackageRelativePath(identifier)) {
             // The primary resolver is not expecting package-relative paths,
             // so we replace the repoPath field with its outermost package
@@ -468,7 +682,7 @@ public:
             std::pair<std::string, std::string> resolvedPath =
                 ArSplitPackageRelativePathOuter(filePath);
 
-            _resolver->UpdateAssetInfo(
+            resolver.UpdateAssetInfo(
                 ArSplitPackageRelativePathOuter(identifier).first,
                 resolvedPath.first,
                 fileVersion, assetInfo);
@@ -480,7 +694,7 @@ public:
             return;
         }
 
-        _resolver->UpdateAssetInfo(
+        resolver.UpdateAssetInfo(
             identifier, filePath, fileVersion, assetInfo);
     }
 
@@ -488,29 +702,32 @@ public:
         const std::string& path,
         const std::string& resolvedPath) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->GetModificationTimestamp(
+            return resolver.GetModificationTimestamp(
                 ArSplitPackageRelativePathOuter(path).first,
                 ArSplitPackageRelativePathOuter(resolvedPath).first);
         }
-        return _resolver->GetModificationTimestamp(path, resolvedPath);
+        return resolver.GetModificationTimestamp(path, resolvedPath);
     }
 
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
         const std::string& resolvedPath) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->FetchToLocalResolvedPath(
+            return resolver.FetchToLocalResolvedPath(
                 ArSplitPackageRelativePathOuter(path).first,
                 ArSplitPackageRelativePathOuter(resolvedPath).first);
         }
-        return _resolver->FetchToLocalResolvedPath(path, resolvedPath);
+        return resolver.FetchToLocalResolvedPath(path, resolvedPath);
     }
 
     virtual std::shared_ptr<ArAsset> OpenAsset(
         const std::string& resolvedPath) override
     { 
+        ArResolver& resolver = _GetResolver(resolvedPath);
         if (ArIsPackageRelativePath(resolvedPath)) {
             const std::pair<std::string, std::string> resolvedPackagePath =
                 ArSplitPackageRelativePathInner(resolvedPath);
@@ -523,46 +740,49 @@ public:
             }
             return nullptr;
         }
-        return _resolver->OpenAsset(resolvedPath);
+        return resolver.OpenAsset(resolvedPath);
     }
 
     virtual bool CreatePathForLayer(
         const std::string& path) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->CreatePathForLayer(
+            return resolver.CreatePathForLayer(
                 ArSplitPackageRelativePathOuter(path).first);
         }
-        return _resolver->CreatePathForLayer(path);
+        return resolver.CreatePathForLayer(path);
     }
 
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override
     {
+        ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
-            return _resolver->CanWriteLayerToPath(
+            return resolver.CanWriteLayerToPath(
                 ArSplitPackageRelativePathOuter(path).first, whyNot);
         }
-        return _resolver->CanWriteLayerToPath(path, whyNot);
+        return resolver.CanWriteLayerToPath(path, whyNot);
     }
 
     virtual bool CanCreateNewLayerWithIdentifier(
         const std::string& identifier, 
         std::string* whyNot) override
     {
+        ArResolver& resolver = _GetResolver(identifier);
         if (ArIsPackageRelativePath(identifier)) {
-            return _resolver->CanCreateNewLayerWithIdentifier(
+            return resolver.CanCreateNewLayerWithIdentifier(
                 ArSplitPackageRelativePathOuter(identifier).first, whyNot);
         }
-        return _resolver->CanCreateNewLayerWithIdentifier(
+        return resolver.CanCreateNewLayerWithIdentifier(
             identifier, whyNot);
     }
 
-    // The underlying resolver and the package resolvers all participate in
+    // The primary resolver and the package resolvers all participate in
     // scoped caching and may have caching-related data to store away. To
     // accommodate this, _Resolver stores away a vector of VtValues where
-    // each element corresponds to either the underlying resolver or a
+    // each element corresponds to either the primary resolver or a
     // package resolver.
     using _ResolverCacheData = std::vector<VtValue>;
 
@@ -577,16 +797,30 @@ public:
             cacheScopeData->UncheckedSwap(cacheData);
         }
         else {
-            cacheData.resize(1 + _packageResolvers.size());
+            cacheData.resize(
+                1 + _packageResolvers.size() + _uriResolvers.size());
         }
 
-        TF_VERIFY(cacheData.size() == 1 + _packageResolvers.size());
+        TF_VERIFY(cacheData.size() == 
+            1 + _packageResolvers.size() + _uriResolvers.size());
 
-        _resolver->BeginCacheScope(&cacheData[0]);
-        for (size_t i = 0, e = _packageResolvers.size(); i != e; ++i) {
+        size_t cacheDataIndex = 0;
+
+        _resolver->BeginCacheScope(&cacheData[cacheDataIndex]);
+        ++cacheDataIndex;
+
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                uriResolver->BeginCacheScope(&cacheData[cacheDataIndex]);
+            }
+            ++cacheDataIndex;
+        }
+
+        for (size_t i = 0, e = _packageResolvers.size(); i != e;
+             ++i, ++cacheDataIndex) {
             ArPackageResolver* packageResolver = _packageResolvers[i]->Get();
             if (packageResolver) {
-                packageResolver->BeginCacheScope(&cacheData[i+1]);
+                packageResolver->BeginCacheScope(&cacheData[cacheDataIndex]);
             }
         }
 
@@ -603,11 +837,23 @@ public:
         _ResolverCacheData cacheData;
         cacheScopeData->UncheckedSwap(cacheData);
 
-        _resolver->EndCacheScope(&cacheData[0]);
-        for (size_t i = 0, e = _packageResolvers.size(); i != e; ++i) {
+        size_t cacheDataIndex = 0;
+
+        _resolver->EndCacheScope(&cacheData[cacheDataIndex]);
+        ++cacheDataIndex;
+
+        for (const auto& entry : _uriResolvers) {
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                uriResolver->EndCacheScope(&cacheData[cacheDataIndex]);
+            }
+            ++cacheDataIndex;
+        }
+
+        for (size_t i = 0, e = _packageResolvers.size(); i != e;
+             ++i, ++cacheDataIndex) {
             ArPackageResolver* packageResolver = _packageResolvers[i]->Get();
             if (packageResolver) {
-                packageResolver->EndCacheScope(&cacheData[i+1]);
+                packageResolver->EndCacheScope(&cacheData[cacheDataIndex]);
             }
         }
 
@@ -615,7 +861,8 @@ public:
     }
 
 private:
-    void _InitializeUnderlyingResolver()
+    void _InitializePrimaryResolver(
+        const std::vector<_ResolverInfo>& availableResolvers)
     {
         const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
 
@@ -651,16 +898,16 @@ private:
         }
 
         if (resolverTypes.empty()) {
-            resolverTypes = _GetAvailableResolvers();
+            resolverTypes = _GetAvailablePrimaryResolvers(availableResolvers);
 
             TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                "ArGetResolver(): Found asset resolver types: [%s]\n",
+                "ArGetResolver(): Found primary asset resolver types: [%s]\n",
                 _GetTypeNames(resolverTypes).c_str());
         }
 
         std::string debugMsg;
 
-        // resolverTypes should never be empty -- _GetAvailableResolvers
+        // resolverTypes should never be empty -- _GetAvailablePrimaryResolvers
         // should always return at least the default resolver. Because of this,
         // if there's more than 2 elements in resolverTypes, there must have 
         // been more than one resolver from an external plugin.
@@ -668,20 +915,89 @@ private:
             const TfType& resolverType = resolverTypes.front();
             if (resolverTypes.size() > 2) {
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                    "ArGetResolver(): Found multiple plugin asset "
+                    "ArGetResolver(): Found multiple primary asset "
                     "resolvers, using %s\n", 
                     resolverType.GetTypeName().c_str());
             }
 
             _resolver = _CreateResolver(resolverType, &debugMsg);
+            _resolverType = resolverType;
         }
 
         if (!_resolver) {
             _resolver = _CreateResolver(defaultResolverType, &debugMsg);
+            _resolverType = defaultResolverType;
         }
 
         TF_DEBUG(AR_RESOLVER_INIT).Msg(
-            "ArGetResolver(): %s\n", debugMsg.c_str());
+            "ArGetResolver(): %s for primary resolver\n",
+            debugMsg.c_str());
+    }
+
+    void _InitializeURIResolvers(
+        const std::vector<_ResolverInfo>& availableResolvers)
+    {
+        if (TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS)) {
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Plugin URI asset resolvers disabled via "
+                "PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS.\n");
+            return;
+        }
+
+        size_t maxSchemeLength = 0;
+        std::unordered_map<std::string, _URIResolverSharedPtr> uriResolvers;
+
+        for (const _ResolverInfo& resolverInfo : availableResolvers) {
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Found URI resolver %s\n",
+                resolverInfo.type.GetTypeName().c_str());
+
+            std::vector<std::string> uriSchemes;
+            uriSchemes.reserve(resolverInfo.uriSchemes.size());
+
+            for (std::string uriScheme : resolverInfo.uriSchemes) {
+                // Per RFC 3986 sec 3.1 schemes are case-insensitive.
+                // Force all schemes to lower-case to support this.
+                uriScheme = TfStringToLower(uriScheme);
+
+                if (const _URIResolverSharedPtr* existingResolver =
+                    TfMapLookupPtr(uriResolvers, uriScheme)) {
+                    TF_WARN(
+                        "ArGetResolver(): %s registered to handle scheme '%s' "
+                        "which is already handled by %s. Ignoring.\n",
+                        resolverInfo.type.GetTypeName().c_str(),
+                        uriScheme.c_str(), 
+                        (*existingResolver)->GetType().GetTypeName().c_str());
+                }
+                else {
+                    uriSchemes.push_back(uriScheme);
+                }
+            }
+
+            if (uriSchemes.empty()) {
+                continue;
+            }
+
+            // Create resolver. We only want one instance of each resolver
+            // type, so make sure we reuse the primary resolver if it has
+            // also been registered as handling additional URI schemes.
+            _URIResolverSharedPtr uriResolver = std::make_shared<_URIResolver>(
+                resolverInfo.plugin, resolverInfo.type, 
+                resolverInfo.type == _resolverType ? _resolver : nullptr);
+            
+            for (std::string& uriScheme : uriSchemes) {
+                maxSchemeLength = std::max(uriScheme.length(), maxSchemeLength);
+                uriResolvers.emplace(std::move(uriScheme), uriResolver);
+            };
+
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Using %s for URI scheme(s) [\"%s\"]\n",
+                resolverInfo.type.GetTypeName().c_str(),
+                TfStringJoin(uriSchemes, "\", \"").c_str());
+        }
+
+        _uriResolvers = std::move(uriResolvers);
+        _maxURISchemeLength = maxSchemeLength;
     }
 
     void _InitializePackageResolvers()
@@ -745,6 +1061,44 @@ private:
                     extension.c_str(), plugin->GetName().c_str());
             }
         }
+    }
+
+    ArResolver&
+    _GetResolver(const std::string& assetPath)
+    {
+        ArResolver* uriResolver = _GetURIResolver(assetPath);
+        return uriResolver ? *uriResolver : *_resolver;
+    }
+
+    ArResolver*
+    _GetURIResolver(const std::string& assetPath)
+    {
+        if (_uriResolvers.empty()) {
+            return nullptr;
+        }
+
+        // Search for the first ":" character delimiting a URI scheme in
+        // the given asset path. As an optimization, we only search the
+        // first _maxURISchemeLength + 1 (to accommodate the ":") characters.
+        if (assetPath.length() < _maxURISchemeLength + 1) {
+            return nullptr;
+        }
+
+        auto endIt = assetPath.begin() + (_maxURISchemeLength + 1);
+        auto delimIt = std::find(assetPath.begin(), endIt, ':');
+        if (delimIt == endIt) {
+            return nullptr;
+        }
+
+        // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
+        // stored in _uriResolvers are always stored in lower-case, so
+        // convert our candidate scheme to lower case as well.
+        const std::string scheme = 
+            TfStringToLower(std::string(assetPath.begin(), delimIt));
+
+        const _URIResolverSharedPtr* uriResolver = 
+            TfMapLookupPtr(_uriResolvers, scheme);
+        return uriResolver ? (*uriResolver)->Get() : nullptr;
     }
 
     ArPackageResolver*
@@ -814,7 +1168,31 @@ private:
         return resolveFn(path);
     }
 
-    std::unique_ptr<ArResolver> _resolver;
+    // Primary Resolver --------------------
+
+    TfType _resolverType;
+    std::shared_ptr<ArResolver> _resolver;
+
+    // URI Resolvers --------------------
+
+    class _URIResolver
+        : public _PluginResolver<ArResolver, Ar_ResolverFactoryBase>
+    {
+        using Base = _PluginResolver<ArResolver, Ar_ResolverFactoryBase>;
+
+    public:
+        _URIResolver(
+            const PlugPluginPtr& plugin,
+            const TfType& resolverType,
+            const std::shared_ptr<ArResolver>& resolver = nullptr)
+            : Base(plugin, resolverType, resolver)
+        {
+        }
+    };
+
+    using _URIResolverSharedPtr = std::shared_ptr<_URIResolver>;
+    std::unordered_map<std::string, _URIResolverSharedPtr> _uriResolvers;
+    size_t _maxURISchemeLength;
 
     // Package Resolvers --------------------
 
@@ -870,13 +1248,13 @@ ArGetResolver()
 ArResolver&
 ArGetUnderlyingResolver()
 {
-    return _GetResolver().GetUnderlyingResolver();
+    return _GetResolver().GetPrimaryResolver();
 }
 
 std::vector<TfType>
 ArGetAvailableResolvers()
 {
-    return _GetAvailableResolvers();
+    return _GetAvailablePrimaryResolvers(_GetAvailableResolvers());
 }
 
 std::unique_ptr<ArResolver>

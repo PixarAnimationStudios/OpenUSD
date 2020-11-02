@@ -17,6 +17,7 @@ install(
 
 set(versionedHeaders "")
 set(versionedCPPFiles "")
+set(versionedPrivateHeaders "")
 set(versionedPythonHeaders "")
 set(versionedPythonCPPFiles "")
 set(versionedPymoduleCPPFiles "")
@@ -48,6 +49,9 @@ elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedCPPFiles
          resolver_v2.cpp
          resolverContext_v2.cpp
+    )
+    list(APPEND versionedPrivateHeaders
+         testenv/TestArURIResolver_plugin.h
     )
     list(APPEND versionedPythonHeaders
          pyResolverContext_v2.h
@@ -97,6 +101,7 @@ pxr_library(ar
 
     PRIVATE_HEADERS
         debugCodes.h
+        ${versionedPrivateHeaders}
 
     CPPFILES
         asset.cpp
@@ -150,6 +155,41 @@ pxr_build_test_shared_lib(TestArAdvancedAPI
     CPPFILES
         testenv/TestArAdvancedAPI_plugin.cpp
 ) 
+
+pxr_build_test_shared_lib(TestArPackageResolver
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX ArPlugins
+    LIBRARIES
+        tf
+        ar
+    CPPFILES
+        testenv/TestArPackageResolver_plugin.cpp
+) 
+
+if (AR_VERSION EQUAL 2)
+    pxr_build_test_shared_lib(TestArURIResolver
+        CREATE_FRAMEWORK
+        INSTALL_PREFIX ArPlugins
+        LIBRARIES
+            tf
+            ar
+        CPPFILES
+            testenv/TestArURIResolver_plugin.cpp
+    ) 
+
+    pxr_build_test(testArURIResolver_CPP
+        LIBRARIES
+            arch
+            tf
+            ar
+        CPPFILES
+            testenv/testArURIResolver.cpp
+    )
+
+    pxr_register_test(testArURIResolver_CPP
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
+    )
+endif()
 
 pxr_build_test(testArDefaultResolver_CPP
     LIBRARIES
