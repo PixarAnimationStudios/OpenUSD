@@ -183,6 +183,9 @@ WRAP_CUSTOM {
     bool (*ClearSource)(UsdAttribute const &) = 
         &UsdShadeConnectableAPI::ClearSource;
 
+    bool (*HasConnectableAPI)(TfType const &) =
+        &UsdShadeConnectableAPI::HasConnectableAPI;
+
     _class
         .def(init<UsdShadeShader const &>(arg("shader")))
         .def(init<UsdShadeNodeGraph const&>(arg("nodeGraph")))
@@ -233,7 +236,11 @@ WRAP_CUSTOM {
         .def("ClearSource", ClearSource,
             (arg("shadingAttr")))
             .staticmethod("ClearSource")
-        
+
+        .def("HasConnectableAPI", HasConnectableAPI,
+            (arg("schemaType")))
+            .staticmethod("HasConnectableAPI")
+
         .def("CreateOutput", &UsdShadeConnectableAPI::CreateOutput,
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, arg("name"))

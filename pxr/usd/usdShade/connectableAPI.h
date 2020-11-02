@@ -546,6 +546,21 @@ public:
         return ClearSource(output.GetAttr());
     }
 
+    /// Return true if the \p schemaType has a connectableAPIBehavior
+    /// registered, false otherwise.
+    USDSHADE_API
+    static bool HasConnectableAPI(const TfType& schemaType);
+
+    /// Return true if the schema type \p T has a connectableAPIBehavior
+    /// registered, false otherwise.
+    template <typename T>
+    static bool HasConnectableAPI()
+    {
+        static_assert(std::is_base_of<UsdTyped, T>::value, 
+                "Provided type must derive UsdTyped.");
+        return HasConnectableAPI(TfType::Find<T>());
+    };
+
     /// @}
 
 

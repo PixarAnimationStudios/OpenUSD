@@ -211,5 +211,11 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(ops[0].GetOpType(), UsdGeom.XformOp.TypeRotateX)
         self.assertEqual(ops[0].GetAttr().Get(), 90.0)
 
+    def test_UsdLux_HasConnectableAPI(self):
+        from pxr import Tf
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(UsdLux.Light))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.LightFilter))
+
 if __name__ == '__main__':
     unittest.main()

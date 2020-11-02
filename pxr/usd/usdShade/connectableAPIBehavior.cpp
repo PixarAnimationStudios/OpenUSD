@@ -173,6 +173,13 @@ public:
         }
     }
 
+    bool
+    HasBehaviorForType(const TfType& type) {
+        _WaitUntilInitialized();
+        _RWMutex::scoped_lock lock(_mutex, /* write = */ false);
+        return TfMapLookupPtr(_registry, type);
+    }
+
     UsdShadeConnectableAPIBehavior*
     GetBehavior(const UsdPrim& prim)
     {
@@ -347,6 +354,13 @@ UsdShadeConnectableAPI::CanConnect(
         return behavior->CanConnectOutputToSource(output, source, &reason);
     }
     return false;
+}
+
+/* static */
+bool
+UsdShadeConnectableAPI::HasConnectableAPI(const TfType& schemaType)
+{
+    return _BehaviorRegistry::GetInstance().HasBehaviorForType(schemaType);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

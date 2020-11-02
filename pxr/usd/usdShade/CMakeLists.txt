@@ -61,6 +61,15 @@ pxr_library(usdShade
         overview.dox
 )
 
+pxr_build_test(testUsdShadeHasConnectableAPI
+    LIBRARIES
+        tf
+        usdShade
+        usdGeom
+    CPPFILES
+        testenv/testUsdShadeHasConnectableAPI.cpp
+)
+
 pxr_test_scripts(
     testenv/testUsdShadeBinding.py
     testenv/testUsdShadeConnectability.py
@@ -201,6 +210,11 @@ pxr_register_test(testUsdShadeInterfaceInputConsumers
 pxr_register_test(testUsdShadeConnectability
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeConnectability"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeHasConnectableAPI
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeHasConnectableAPI"
     EXPECTED_RETURN_CODE 0
 )
 
