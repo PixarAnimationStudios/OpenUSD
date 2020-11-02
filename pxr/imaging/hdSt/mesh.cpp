@@ -1713,6 +1713,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         // If the gometric shader changes, we need to do a deep validation of
         // batches, so they can be rebuilt if necessary.
         renderIndex.GetChangeTracker().MarkBatchesDirty();
+
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because"
+            " the geometric shader was updated.\n", GetId().GetText());
     }
 }
 
