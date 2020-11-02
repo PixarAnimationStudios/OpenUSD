@@ -28,7 +28,6 @@
 
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/types.h"
-#include "pxr/imaging/garch/glApi.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"

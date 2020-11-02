@@ -29,7 +29,6 @@
 
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 
-#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -51,6 +50,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(UsdImagingGLLegacyEngine);
+
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
 class UsdImagingGLLegacyEngine : public TfWeakBase 
 {

@@ -33,8 +33,6 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
-#include "pxr/imaging/glf/drawTarget.h"
-
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -65,6 +63,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (resolveAll)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
+
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
 class HdStRenderPassState;
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;

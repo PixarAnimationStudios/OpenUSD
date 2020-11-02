@@ -30,6 +30,7 @@
 
 #include "pxr/base/gf/camera.h"
 
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/usd/usd/stage.h"
