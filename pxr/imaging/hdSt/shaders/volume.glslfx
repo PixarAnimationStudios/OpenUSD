@@ -257,7 +257,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
         // In scattering contribution, lighting only computed if scattering
         // is non-trivial.
         const vec3 inScattering =
-            (scatteringValue >= minScattering) ?
+            (stepSize * scatteringValue >= minScattering) ?
                 (scatteringValue *
                  lightingComputation(rayPointEye, rayDirectionEye))
             : vec3(0.0);
