@@ -82,10 +82,7 @@ HdRenderPassState::HdRenderPassState()
 {
 }
 
-HdRenderPassState::~HdRenderPassState()
-{
-    /*NOTHING*/
-}
+HdRenderPassState::~HdRenderPassState() = default;
 
 /* virtual */
 void
@@ -106,24 +103,6 @@ HdRenderPassState::Bind()
 void
 HdRenderPassState::Unbind()
 {
-}
-
-void
-HdRenderPassState::SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
-                                         GfMatrix4d const &projectionMatrix,
-                                         GfVec4d const &viewport,
-                                         ClipPlanesVector const & clipPlanes)
-{
-    if (_camera) {
-        // If a camera handle was set, reset it.
-        _camera = nullptr;
-    }
-
-    _worldToViewMatrix = worldToViewMatrix;
-    _projectionMatrix = projectionMatrix;
-    _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
-                        (float)viewport[2], (float)viewport[3]);
-    _clipPlanes = clipPlanes;
 }
 
 void

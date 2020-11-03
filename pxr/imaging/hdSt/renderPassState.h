@@ -122,6 +122,15 @@ public:
     HDST_API
     size_t GetShaderHash() const;
 
+    /// Camera setter API
+    /// Option 1: Specify matrices, viewport and clipping planes (defined in
+    /// camera space) directly.
+    HD_API
+    void SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
+                               GfMatrix4d const &projectionMatrix,
+                               GfVec4d const &viewport,
+                               ClipPlanesVector const & clipPlanes);
+    
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
     // AOV bindings.

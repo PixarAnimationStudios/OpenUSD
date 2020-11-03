@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 
@@ -63,9 +62,7 @@ HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxShadowTask::~HdxShadowTask()
-{
-}
+HdxShadowTask::~HdxShadowTask() = default;
 
 void
 HdxShadowTask::Sync(HdSceneDelegate* delegate,
@@ -195,10 +192,12 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     if (_renderPassStates.size() < _passes.size()) {
         for (size_t passId = _renderPassStates.size();
              passId < _passes.size(); passId++) {
-            HdStRenderPassShaderSharedPtr renderPassShadowShader
-                (new HdStRenderPassShader(HdxPackageRenderPassShadowShader()));
-            HdRenderPassStateSharedPtr renderPassState
-                (new HdStRenderPassState(renderPassShadowShader));
+            HdStRenderPassShaderSharedPtr renderPassShadowShader = 
+                std::make_shared<HdStRenderPassShader>(
+                    HdxPackageRenderPassShadowShader());
+            HdStRenderPassStateSharedPtr renderPassState =
+                std::make_shared<HdStRenderPassState>(
+                    renderPassShadowShader);
 
             // This state is invariant of parameter changes so set it
             // once.
@@ -213,7 +212,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             // A new state is treated as dirty and needs the params set.
             _UpdateDirtyParams(renderPassState, _params);
 
-            _renderPassStates.push_back(renderPassState);
+            _renderPassStates.push_back(std::move(renderPassState));
         }
     }
 
@@ -352,7 +351,7 @@ HdxShadowTask::_SetHdStRenderPassState(HdxShadowTaskParams const &params,
 }
 
 void
-HdxShadowTask::_UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState,
+HdxShadowTask::_UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState,
     HdxShadowTaskParams const &params)
 {
     renderPassState->SetOverrideColor(params.overrideColor);

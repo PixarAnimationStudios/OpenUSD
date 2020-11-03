@@ -55,7 +55,8 @@ class HdCamera;
 ///
 /// Parameters are expressed as GL states, uniforms or shaders.
 ///
-class HdRenderPassState {
+class HdRenderPassState
+{
 public:
     HD_API
     HdRenderPassState();
@@ -83,15 +84,6 @@ public:
 
     typedef std::vector<GfVec4d> ClipPlanesVector;
     /// Camera setter API
-    /// Option 1: Specify matrices, viewport and clipping planes (defined in
-    /// camera space) directly.
-    HD_API
-    void SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
-                               GfMatrix4d const &projectionMatrix,
-                               GfVec4d const &viewport,
-                               ClipPlanesVector const & clipPlanes);
-    
-    /// Option 2:  Set camera handle and viewport to use.
     /// The view, projection and clipping plane info of the camera will be used.
     HD_API
     void SetCameraAndViewport(HdCamera const *camera,

@@ -93,9 +93,7 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxPickTask::~HdxPickTask()
-{
-}
+HdxPickTask::~HdxPickTask() = default;
 
 void
 HdxPickTask::_Init(GfVec2i const& size)
@@ -323,16 +321,17 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         // Make sure translucent pixels can be picked by not discarding them
         state->SetAlphaThreshold(0.0f);
         state->SetCullStyle(_params.cullStyle);
-        state->SetCameraFramingState(_contextParams.viewMatrix, 
-                                     _contextParams.projectionMatrix,
-                                     viewport,
-                                     _contextParams.clipPlanes);
         state->SetLightingEnabled(false);
 
         // If scene materials are disabled in this environment then 
         // let's setup the override shader
         if (HdStRenderPassState* extState =
                 dynamic_cast<HdStRenderPassState*>(state.get())) {
+            extState->SetCameraFramingState(
+                _contextParams.viewMatrix, 
+                _contextParams.projectionMatrix,
+                viewport,
+                _contextParams.clipPlanes);
             _ConfigureSceneMaterials(_params.enableSceneMaterials, extState);
         }
     }
@@ -597,9 +596,7 @@ HdxPickResult::HdxPickResult(
     _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }
 
-HdxPickResult::~HdxPickResult()
-{
-}
+HdxPickResult::~HdxPickResult() = default;
 
 HdxPickResult::HdxPickResult(HdxPickResult &&) = default;
 
