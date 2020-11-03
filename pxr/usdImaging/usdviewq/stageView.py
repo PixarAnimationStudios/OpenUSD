@@ -84,7 +84,16 @@ def ViewportMakeCenteredIntegral(viewport):
 class GLSLProgram():
     def __init__(self, VS3, FS3, VS2, FS2, uniformDict):
         from OpenGL import GL
-        self._glMajorVersion = int(GL.glGetString(GL.GL_VERSION)[0])
+        # versionString = <version_number><space><vendor_specific_information>
+        versionString = GL.glGetString(GL.GL_VERSION).decode()
+        # <version_number> = <major_number>.<minor_number>[.<release_number>]
+        versionNumberString = versionString.split()[0]
+        self._glMajorVersion = int(versionNumberString.split('.')[0])
+
+        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
+        self.useVAO = (self._glMajorVersion >= 3 and
+                        hasattr(GL, 'glGenVertexArrays'))
+        self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -247,16 +256,15 @@ class OutlineRect(Rect):
         cls = self.__class__
 
         program = cls.compileProgram()
-        if (program.program == 0):
+        if program.program == 0:
             return
 
         GL.glUseProgram(program.program)
 
-        if (program._glMajorVersion >= 4):
+        if program.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if program.useVAO:
             if (cls._vao == 0):
                 cls._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(cls._vao)
@@ -269,6 +277,13 @@ class OutlineRect(Rect):
         program.uniform4f("color", *color)
         program.uniform4f("rect", *self.xywh)
         GL.glDrawArrays(GL.GL_LINE_LOOP, 0, 4)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+        if program.useVAO:
+            GL.glBindVertexArray(0)
+
+        GL.glUseProgram(0)
 
 class FilledRect(Rect):
     _glslProgram = None
@@ -328,16 +343,15 @@ class FilledRect(Rect):
         cls = self.__class__
 
         program = cls.compileProgram()
-        if (program.program == 0):
+        if program.program == 0:
             return
 
         GL.glUseProgram(program.program)
 
-        if (program._glMajorVersion >= 4):
+        if program.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if program.useVAO:
             if (cls._vao == 0):
                 cls._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(cls._vao)
@@ -350,6 +364,13 @@ class FilledRect(Rect):
         program.uniform4f("color", *color)
         program.uniform4f("rect", *self.xywh)
         GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+        if program.useVAO:
+            GL.glBindVertexArray(0)
+
+        GL.glUseProgram(0)
 
 class Prim2DSetupTask():
     def __init__(self, viewport):
@@ -377,15 +398,8 @@ class Prim2DDrawTask():
             prim.__class__.compileProgram()
 
     def Execute(self, ctx):
-        from OpenGL import GL
         for prim, color in zip(self._prims, self._colors):
             prim.glDraw(color)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glDisableVertexAttribArray(0)
-        if (int(GL.glGetString(GL.GL_VERSION)[0]) >= 3 and hasattr(GL, 'glGenVertexArrays')):
-            GL.glBindVertexArray(0)
-        GL.glUseProgram(0)
 
 class Outline(Prim2DDrawTask):
     def __init__(self):
@@ -479,7 +493,6 @@ class HUD():
                 9*self._pixelRatio)
         self._groups = {}
         self._glslProgram = None
-        self._glMajorVersion = 0
         self._vao = 0
 
     def compileProgram(self):
@@ -584,11 +597,10 @@ class HUD():
         width = float(qglwidget.width())
         height = float(qglwidget.height())
 
-        if (self._glslProgram._glMajorVersion >= 4):
+        if self._glslProgram.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (self._glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if self._glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -622,7 +634,7 @@ class HUD():
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glDisableVertexAttribArray(0)
 
-        if (self._vao != 0):
+        if self._glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
         GL.glUseProgram(0)
@@ -1094,11 +1106,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         # grab the simple shader
         glslProgram = self.GetSimpleGLSLProgram()
-        if (glslProgram.program == 0):
+        if glslProgram.program == 0:
             return
 
         # vao
-        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -1136,7 +1148,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        if (self._vao != 0):
+        if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
     def DrawBBox(self, viewProjectionMatrix):
@@ -1572,7 +1584,7 @@ class StageView(QtOpenGL.QGLWidget):
         if (glslProgram.program == 0):
             return
         # vao
-        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -1615,7 +1627,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glUseProgram(0)
 
         GL.glDisable(GL.GL_LINE_STIPPLE)
-        if (self._vao != 0):
+        if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
     def paintGL(self):
