@@ -771,11 +771,12 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                          UsdImagingInstancerContext const*
                                             instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
     UsdGeomModelAPI model(prim);
 
     // Geometry aspect
-    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+    HdPrimvarDescriptorVector& primvars = 
+        primvarDescCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         _MergePrimvar(&primvars, UsdGeomTokens->widths,

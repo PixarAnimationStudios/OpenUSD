@@ -1818,18 +1818,18 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
                                      cachePath.GetText());
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
+        UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
         // Expose points as a primvar.
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->points,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->displayColor,
                       HdInterpolationConstant,
                       HdPrimvarRoleTokens->color);
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->displayOpacity,
                       HdInterpolationConstant);
     }
@@ -2080,9 +2080,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     // XXX: The usage of elementSize for jointWeights/Indices primvars to have
     // multiple values per-vertex is not supported yet in Hydra.
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
+        UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
         HdPrimvarDescriptorVector& primvars =
-            valueCache->GetPrimvars(skinnedPrimPath);
+            primvarDescCache->GetPrimvars(skinnedPrimPath);
         for (auto it = primvars.begin(); it != primvars.end(); ) {
             if (it->name == _tokens->skelJointIndices ||
                 it->name == _tokens->skelJointWeights  ||

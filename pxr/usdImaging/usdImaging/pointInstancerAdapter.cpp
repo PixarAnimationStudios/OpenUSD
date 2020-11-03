@@ -585,7 +585,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdImagingInstancerContext const* 
                                    instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
     if (IsChildPath(cachePath)) {
         // Allow the prototype's adapter to update, if there's anything left
@@ -614,7 +614,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPointInstancer instancer(prim);
 
             HdPrimvarDescriptorVector& vPrimvars = 
-                valueCache->GetPrimvars(cachePath);
+                primvarDescCache->GetPrimvars(cachePath);
 
             // PERFORMANCE: It would be nice to track variability of individual
             // primvars separately, since uniform values will  needlessly be

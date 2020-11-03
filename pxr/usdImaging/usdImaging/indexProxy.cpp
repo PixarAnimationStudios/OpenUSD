@@ -421,7 +421,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
                                              cachePath.GetText());
 
 
-            _delegate->_valueCache.Clear(cachePath);
+            _delegate->_primvarDescCache.Clear(cachePath);
             _delegate->_refineLevelMap.erase(cachePath);
             _delegate->_pickablesMap.erase(cachePath);
 

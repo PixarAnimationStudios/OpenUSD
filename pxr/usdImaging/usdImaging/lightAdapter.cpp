@@ -91,7 +91,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         }
     }
 
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
     UsdLuxLight light(prim);
     if (TF_VERIFY(light)) {
@@ -104,9 +104,9 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
 
     // XXX Cache primvars for lights.
     {
-        // Establish a valueCache entry.
+        // Establish a primvar desc cache entry.
         HdPrimvarDescriptorVector& vPrimvars = 
-            valueCache->GetPrimvars(cachePath);
+            primvarDescCache->GetPrimvars(cachePath);
 
         // Compile a list of primvars to check.
         std::vector<UsdGeomPrimvar> primvars;

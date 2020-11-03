@@ -30,7 +30,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
-#include "pxr/usdImaging/usdImaging/valueCache.h"
+#include "pxr/usdImaging/usdImaging/primvarDescCache.h"
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -566,7 +566,7 @@ public:
     }
 
 protected:
-    using Keys = UsdImagingValueCache::Key;
+    using Keys = UsdImagingPrimvarDescCache::Key;
 
     template <typename T>
     T _Get(UsdPrim const& prim, TfToken const& attrToken, 
@@ -583,7 +583,7 @@ protected:
     }
 
     USDIMAGING_API
-    UsdImagingValueCache* _GetValueCache() const;
+    UsdImagingPrimvarDescCache* _GetPrimvarDescCache() const;
 
     USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;

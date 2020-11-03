@@ -21,23 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_IMAGING_VALUE_CACHE_H
-#define PXR_USD_IMAGING_USD_IMAGING_VALUE_CACHE_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_PRIMVARDESC_CACHE_H
+#define PXR_USD_IMAGING_USD_IMAGING_PRIMVARDESC_CACHE_H
 
-/// \file usdImaging/valueCache.h
+/// \file usdImaging/primvarDescCache.h
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
 
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
 
 #include <tbb/concurrent_unordered_map.h>
@@ -45,22 +39,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImagingValueCache
+/// \class UsdImagingPrimvarDescCache
 ///
-/// A heterogeneous value container without type erasure.
+/// A cache for primvar descriptors.
 ///
-class UsdImagingValueCache 
+class UsdImagingPrimvarDescCache 
 {
 public:
-    UsdImagingValueCache(const UsdImagingValueCache&) = delete;
-    UsdImagingValueCache& operator=(const UsdImagingValueCache&) = delete;
+    UsdImagingPrimvarDescCache(const UsdImagingPrimvarDescCache&) = delete;
+    UsdImagingPrimvarDescCache& operator=(const UsdImagingPrimvarDescCache&) 
+        = delete;
 
-    class Key {
-        friend class UsdImagingValueCache;
-    private:
+    class Key 
+    {
+        friend class UsdImagingPrimvarDescCache;
         SdfPath _path;
         TfToken _attribute;
-    public:
+
+     public:
         Key(SdfPath const& path, TfToken const& attr)
             : _path(path)
             , _attribute(attr)
@@ -88,7 +84,7 @@ public:
         }
     };
 
-    UsdImagingValueCache()
+    UsdImagingPrimvarDescCache()
         : _locked(false)
     { }
 
@@ -152,8 +148,6 @@ private:
         return true;
     }
 
-
-
     /// Erases the given key from the value cache.
     /// Not thread safe
     template <typename T>
@@ -207,16 +201,7 @@ public:
 
     /// Clear all data associated with a specific path.
     void Clear(SdfPath const& path) {
-
-        // PERFORMANCE: We're copying the primvar vector here, but we could
-        // access the map directly, if we need to for performance reasons.
-        HdPrimvarDescriptorVector vars;
-        if (FindPrimvars(path, &vars)) {
-            TF_FOR_ALL(pvIt, vars) {
-                _Erase<VtValue>(Key(path, pvIt->name));
-            }
-            _Erase<HdPrimvarDescriptorVector>(Key::Primvars(path));
-        }
+        _Erase<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
 
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
@@ -234,22 +219,15 @@ public:
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
     {
-        _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
     }
 
 private:
     bool _locked;
 
-    typedef _TypedCache<VtValue> _ValueCache;
-    mutable _ValueCache _valueCache;
-
     typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
 
-    void _GetCache(_ValueCache **cache) const {
-        *cache = &_valueCache;
-    }
     void _GetCache(_PviCache **cache) const {
         *cache = &_pviCache;
     }
@@ -258,4 +236,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_IMAGING_VALUE_CACHE_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_PRIMVARDESC_CACHE_H

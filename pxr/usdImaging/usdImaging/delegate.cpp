@@ -99,7 +99,7 @@ UsdImagingDelegate::UsdImagingDelegate(
         HdRenderIndex *parentIndex,
         SdfPath const& delegateID)
     : HdSceneDelegate(parentIndex, delegateID)
-    , _valueCache()
+    , _primvarDescCache()
     , _rootXf(1.0)
     , _rootIsVisible(true)
     , _time(std::numeric_limits<double>::infinity())
@@ -314,14 +314,14 @@ public:
 
     // Disables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
-    void DisableValueCacheMutations() {
-        _delegate->_valueCache.DisableMutation();
+    void DisablePrimvarDescCacheMutations() {
+        _delegate->_primvarDescCache.DisableMutation();
     }
 
     // Enables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
-    void EnableValueCacheMutations() {
-        _delegate->_valueCache.EnableMutation();
+    void EnablePrimvarDescCacheMutations() {
+        _delegate->_primvarDescCache.EnableMutation();
     }
 
     // Invalidate the time varying prim cache.
@@ -491,7 +491,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 void
 UsdImagingDelegate::PostSyncCleanup()
 {
-    _valueCache.GarbageCollect();
+    _primvarDescCache.GarbageCollect();
 }
 
 void
@@ -793,7 +793,7 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         worker->InvalidateTimeVaryingPrimCache();
     }
 
-    worker->DisableValueCacheMutations();
+    worker->DisablePrimvarDescCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
         // they also need the GIL.
@@ -803,7 +803,7 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
             std::bind(&UsdImagingDelegate::_Worker::UpdateVariability, 
                       worker, std::placeholders::_1, std::placeholders::_2));
     }
-    worker->EnableValueCacheMutations();
+    worker->EnablePrimvarDescCacheMutations();
 }
 
 void
@@ -812,7 +812,7 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    worker->DisableValueCacheMutations();
+    worker->DisablePrimvarDescCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
         // they also need the GIL.
@@ -822,7 +822,7 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
             std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
                       worker, std::placeholders::_1, std::placeholders::_2));
     }
-    worker->EnableValueCacheMutations();
+    worker->EnablePrimvarDescCacheMutations();
 }
 
 void
@@ -2461,7 +2461,7 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
     HdPrimvarDescriptorVector allPrimvars;
     // We expect to populate an entry always (i.e., we don't use a slow path
     // fetch)
-    if (!TF_VERIFY(_valueCache.FindPrimvars(cachePath, &allPrimvars), 
+    if (!TF_VERIFY(_primvarDescCache.FindPrimvars(cachePath, &allPrimvars), 
                    "<%s> interpolation: %s", cachePath.GetText(),
                    TfEnum::GetName(interpolation).c_str())) {
         return primvars;

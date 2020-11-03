@@ -1207,7 +1207,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const*) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
@@ -1229,7 +1229,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             VtMatrix4dArray instanceXforms;
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
                 _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
+                    &primvarDescCache->GetPrimvars(cachePath),
                     HdInstancerTokens->instanceTransform,
                     HdInterpolationInstance);
             }
@@ -1237,7 +1237,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                 VtValue val;
                 if (_ComputeInheritedPrimvar(prim, ipv.name, ipv.type,
                                              &val, time)) {
-                    _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                    _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                                   ipv.name, HdInterpolationInstance,
                                   _UsdToHdRole(ipv.type.GetRole()));
                 }
