@@ -2377,10 +2377,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     }
     value = primInfo->adapter->Get(prim, cachePath, key, _time);
 
-    if (value.IsEmpty()) {
-        TF_WARN("Empty VtValue: <%s> %s\n", id.GetText(), key.GetText());
-    }
-
     // We generally don't want Vec2d arrays, convert to vec2f.
     if (value.IsHolding<VtVec2dArray>()) {
         value = VtValue::Cast<VtVec2fArray>(value);
