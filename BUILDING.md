@@ -318,6 +318,20 @@ of the environment variable using the following CMake option:
 By doing this, USD will check the ```CUSTOM_USD_PLUGINPATHS``` environment variable for paths, instead of the default
 ```PXR_PLUGINPATH_NAME``` one.
 
+The values specified in ```PXR_PLUGINPATH_NAME``` or ```PXR_INSTALL_LOCATION```
+have the following characteristics:
+
+- Values may contain any number of paths.
+
+- Paths ending with slash ('/') have 'plugInfo.json' appended automatically.
+
+- '*' may be used anywhere to match any character except slash.
+
+- '**' may be used anywhere to match any character including slash.
+
+- Paths follow Unix '$PATH'-like conventions; when duplicate definitions exist
+  in the path, the first one found is used.
+
 ##### Shared library prefix
 
 By default shared libraries will have the prefix 'lib'. This means, for a given
