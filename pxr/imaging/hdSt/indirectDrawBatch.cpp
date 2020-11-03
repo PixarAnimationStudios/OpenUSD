@@ -1544,6 +1544,9 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
 
     cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1);
 
+    // Make sure culling memory writes are visible to execute draw.
+    cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+
     cullGfxCmds->PopDebugGroup();
     hgi->SubmitCmds(cullGfxCmds.get());
 
