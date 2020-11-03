@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/ar/defineResolverContext.h"
+#include "pxr/base/tf/hash.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,7 +34,7 @@ class _TestURIResolverContext
 public:
     _TestURIResolverContext() = default;
     _TestURIResolverContext(const _TestURIResolverContext&) = default;
-    _TestURIResolverContext(const std::string& s)
+    explicit _TestURIResolverContext(const std::string& s)
         : data(s)
     { }
 
@@ -49,7 +50,7 @@ public:
 size_t 
 hash_value(const _TestURIResolverContext& rhs)
 {
-    return hash_value(rhs.data);
+    return TfHash()(rhs.data);
 }
 
 AR_DECLARE_RESOLVER_CONTEXT(_TestURIResolverContext);
