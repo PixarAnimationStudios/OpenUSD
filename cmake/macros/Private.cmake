@@ -1289,14 +1289,16 @@ function(_pxr_library NAME)
 
         foreach(doxygenFile ${doxygenFiles})
             add_custom_command(
-                TARGET ${NAME}
-                PRE_BUILD
+                OUTPUT ${docBuildDir}/${doxygenFile}
                 COMMAND
                     ${CMAKE_COMMAND} -E make_directory ${docBuildDir}
                 COMMAND
                     ${CMAKE_COMMAND} -E copy 
                     ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
                     ${docBuildDir}/${doxygenFile}
+                MAIN_DEPENDENCY
+                    ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
+                VERBATIM
             )
         endforeach()
     endif()
