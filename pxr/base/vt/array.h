@@ -145,9 +145,9 @@ protected:
 /// Originally, VtArray was built to mimic the arrays in menv2x's MDL language,
 /// but since VtArray has typed elements, the multidimensionality has found
 /// little use.  For example, if you have only scalar elements, then to
-/// represent a list of vectors you need an two dimensional array.  To represent
+/// represent a list of vectors you need a two dimensional array.  To represent
 /// a list of matrices you need a three dimensional array.  However with
-/// VtArray<GfVec3d> and VtArray<GfMatrix4d>, the VtArray is one dimensional,
+/// VtArray<GfVec3d> and VtArray<GfMatrix4d>, the VtArray is one dimensional and
 /// the extra dimensions are encoded in the element types themselves.
 ///
 /// For this reason, VtArray has been moving toward being more like std::vector,
@@ -157,7 +157,7 @@ protected:
 /// First, VtArray shares data between instances using a copy-on-write scheme.
 /// This means that making copies of VtArray instances is cheap: it only copies
 /// the pointer to the data.  But on the other hand, invoking any non-const
-/// member function will incur a copy of the underlying data if it is not
+/// member function incurs a copy of the underlying data if it is not
 /// uniquely owned.  For example, assume 'a' and 'b' are VtArray<int>:
 ///
 /// \code
@@ -189,6 +189,41 @@ protected:
 ///    sum += *i;
 /// }
 /// \endcode
+///
+/// This can be quite subtle.  In C++, calling a member function that has const
+/// and non-const overloads on a non-const object must invoke the non-const
+/// version, even if the const version would suffice.  So something as simple
+/// this:
+///
+/// \code
+/// float x = array[123];
+/// \endcode
+///
+/// Invokes the non-const operator[] if \p array is non-const.  That means this
+/// kind of benign looking code can cause a copy-on-write detachment of the
+/// entire array, and thus is not safe to invoke concurrently with any other
+/// member function.  If we were building this class today we would make
+/// different choices about this API, but changing this now is a gargantuan
+/// task, so it remains.
+///
+/// So, it is best practice to ensure you use const VtArray, or const VtArray &,
+/// or VtArray::AsConst(), as well as the `c`-prefixed member functions like
+/// cbegin()/cend(), cfront()/cback() to avoid these pitfalls when your intent
+/// is not to mutate the array.
+///
+/// Regarding thread safety, for the same reasons spelled out above, all
+/// mutating member functions must be invoked exclusively to all other member
+/// functions, even if they are invoked in a way that does not mutate (as in the
+/// operator[] example above).  This is the same general rule that the STL
+/// abides by.
+///
+/// Also, and again for the same reasons, all mutating member functions can
+/// invalidate iterators, even if the member functions are invoked in a way that
+/// does not mutate (as in the operator[] example above).
+///
+/// The TfEnvSetting 'VT_LOG_STACK_ON_ARRAY_DETACH_COPY' can be set to help
+/// determine where unintended copy-on-write detaches come from.  When set,
+/// VtArray will log a stack trace for every copy-on-write detach that occurs.
 ///
 template<typename ELEM>
 class VtArray : public Vt_ArrayBase {
@@ -344,6 +379,18 @@ class VtArray : public Vt_ArrayBase {
 
     ~VtArray() { _DecRef(); }
     
+    /// Return *this as a const reference.  This ensures that all operations on
+    /// the result do not mutate and thus are safe to invoke concurrently with
+    /// other non-mutating operations, and will never cause a copy-on-write
+    /// detach.
+    ///
+    /// Note that the return is a const reference to this object, so it is only
+    /// valid within the lifetime of this array object.  Take special care
+    /// invoking AsConst() on VtArray temporaries/rvalues.
+    VtArray const &AsConst() const noexcept {
+        return *this;
+    }
+
     /// \addtogroup STL_API
     /// @{
     
@@ -494,6 +541,9 @@ class VtArray : public Vt_ArrayBase {
     /// Return a const reference to the first element in this array.  Invokes
     /// undefined behavior if the array is empty.
     const_reference front() const { return *begin(); }
+    /// Return a const reference to the first element in this array.  Invokes
+    /// undefined behavior if the array is empty.
+    const_reference cfront() const { return *begin(); }
 
     /// Return a reference to the last element in this array.  The underlying
     /// data is copied if it is not uniquely owned.  Invokes undefined behavior
@@ -502,6 +552,9 @@ class VtArray : public Vt_ArrayBase {
     /// Return a const reference to the last element in this array.  Invokes
     /// undefined behavior if the array is empty.
     const_reference back() const { return *rbegin(); }
+    /// Return a const reference to the last element in this array.  Invokes
+    /// undefined behavior if the array is empty.
+    const_reference cback() const { return *rbegin(); }
 
     /// Resize this array.  Preserve existing elements that remain,
     /// value-initialize any newly added elements.  For example, calling
