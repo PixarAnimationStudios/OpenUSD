@@ -58,7 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 const float HdStVolume::defaultStepSize         = 1.0f;
-const float HdStVolume::defaultStepSizeLighting = 2.0f;
+const float HdStVolume::defaultStepSizeLighting = 10.0f;
 
 HdStVolume::HdStVolume(SdfPath const& id)
     : HdVolume(id)
@@ -407,8 +407,8 @@ _ComputeMaterialShader(
         namedTextureHandles, bindlessTextureEnabled, &bufferSpecs);
 
     // Create params (so that HdGet_... are created) and buffer specs,
-    // to communicate volume bounding box to shader.
-    HdSt_VolumeShader::GetParamsAndBufferSpecsForBBox(
+    // to communicate volume bounding box and sample distance to shader.
+    HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
         &params, &bufferSpecs);
 
     const bool hasField = !namedTextureHandles.empty();
@@ -417,8 +417,9 @@ _ComputeMaterialShader(
     // the volume bounding box until after the textures have been
     // committed.
     if (!hasField) {
-        HdSt_VolumeShader::GetBufferSourcesForBBox(
-            GfBBox3d(authoredExtents), &bufferSources);
+        HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
+            { GfBBox3d(authoredExtents), 1.0f },
+            &bufferSources);
     }
 
     // Make volume shader responsible if we have fields with bounding

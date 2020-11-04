@@ -44,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (stepSize)
     (stepSizeLighting)
 
+    (sampleDistance)
     (volumeBBoxInverseTransform)
     (volumeBBoxLocalMin)
     (volumeBBoxLocalMax)
@@ -132,7 +133,7 @@ _ConcatFallback(const TfToken &token)
 }
 
 void
-HdSt_VolumeShader::GetParamsAndBufferSpecsForBBox(
+HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
     HdSt_MaterialParamVector * const params,
     HdBufferSpecVector * const specs)
 {
@@ -174,13 +175,27 @@ HdSt_VolumeShader::GetParamsAndBufferSpecsForBBox(
             sourceName,
             HdTupleType{HdTypeDoubleVec3, 1});
     }
+
+    {
+        params->emplace_back(
+            HdSt_MaterialParam::ParamTypeFallback,
+            _tokens->sampleDistance,
+            VtValue(100000.0f));
+
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->sampleDistance));
+        specs->emplace_back(
+            sourceName,
+            HdTupleType{HdTypeFloat, 1});
+    }
 }
 
 void
-HdSt_VolumeShader::GetBufferSourcesForBBox(
-    const GfBBox3d &bbox,
+HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
+    const std::pair<GfBBox3d, float> &bboxAndSampleDistance,
     HdBufferSourceSharedPtrVector * const sources)
 {
+    const GfBBox3d &bbox = bboxAndSampleDistance.first;
     const GfRange3d &range = bbox.GetRange();
 
     {
@@ -209,6 +224,17 @@ HdSt_VolumeShader::GetBufferSourcesForBBox(
                 sourceName,
                 VtValue(GetSafeMax(range))));
     }
+
+    {
+        const float sampleDistance = bboxAndSampleDistance.second;
+
+        static const TfToken sourceName(
+            _ConcatFallback(_tokens->sampleDistance));
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                sourceName,
+                VtValue(sampleDistance)));
+    }
 }
 
 GfVec3d
@@ -231,11 +257,47 @@ HdSt_VolumeShader::GetSafeMax(const GfRange3d &range)
 
 namespace {
 
-// Compute the bounding box from all the fields in this volume.
-GfBBox3d
-_ComputeBBox(const HdStShaderCode::NamedTextureHandleVector &textures)
+// Square of length of a 3-vector
+float
+_SqrLengthThreeVector(const double * const v)
 {
-    GfBBox3d result;
+    return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+}
+
+// Assuming the bounding box comes from a grid (range is the
+// bounding box of active voxels and matrix the grid transform),
+// compute the distance between samples.
+//
+// Note that this assumes that the bounding box transform is an
+// affine transformation obtained by composing scales with rotation.
+// (More generally, we would need to take the minimum of the singular
+// values from the SVD of the 3x3-matrix).
+float
+_ComputeSampleDistance(const GfBBox3d &bbox)
+{
+    const GfMatrix4d &m = bbox.GetMatrix();
+
+    // Take minimum of lengths of images of the x-, y-, and z-vector.
+    return sqrt(
+        std::min({ _SqrLengthThreeVector(m[0]),
+                   _SqrLengthThreeVector(m[1]),
+                   _SqrLengthThreeVector(m[2]) }));
+}
+
+// Compute the bounding box and sample distance from all the fields in
+// this volume.
+std::pair<GfBBox3d, float>
+_ComputeBBoxAndSampleDistance(
+    const HdStShaderCode::NamedTextureHandleVector &textures)
+{
+    // Computed by combining all bounding boxes.
+    GfBBox3d bbox;
+    // Computes as minimum of all sampling distances.
+    // (Initialized to large value rather than IEEE754-infinity which might
+    // not be converted to correctly to GLSL: if there is
+    // no texture, the ray marcher simply obtains a point outside the
+    // bounding box after one step and stops).
+    float sampleDistance = 1000000.0;
 
     for (const HdStShaderCode::NamedTextureHandle &texture : textures) {
         HdStTextureObjectSharedPtr const &textureObject =
@@ -244,11 +306,15 @@ _ComputeBBox(const HdStShaderCode::NamedTextureHandleVector &textures)
         if (const HdStFieldTextureObject * const fieldTex =
                 dynamic_cast<HdStFieldTextureObject *>(
                     textureObject.get())) {
-            result = GfBBox3d::Combine(result, fieldTex->GetBoundingBox());
+            const GfBBox3d &fieldBbox = fieldTex->GetBoundingBox();
+            bbox =
+                GfBBox3d::Combine(bbox, fieldBbox);
+            sampleDistance =
+                std::min(sampleDistance, _ComputeSampleDistance(fieldBbox));
         }
     }
 
-    return result;
+    return { bbox, sampleDistance };
 }
 
 // Compute 8 vertices of a bounding box.
@@ -297,7 +363,10 @@ HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
 
     if (_fillsPointsBar) {
         // Compute volume bounding box from field bounding boxes
-        const GfBBox3d bbox = _ComputeBBox(GetNamedTextureHandles());
+        const std::pair<GfBBox3d, float> bboxAndSampleDistance =
+            _ComputeBBoxAndSampleDistance(GetNamedTextureHandles());
+
+        const GfBBox3d &bbox = bboxAndSampleDistance.first;
 
         // Use as points
         ctx.AddSource(
@@ -307,7 +376,8 @@ HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
                 _ComputePoints(bbox)));
 
         // And let the shader know for raymarching bounds.
-        GetBufferSourcesForBBox(bbox, &shaderBarSources);
+        GetBufferSourcesForBBoxAndSampleDistance(
+            bboxAndSampleDistance, &shaderBarSources);
     }
 
     if (!shaderBarSources.empty()) {

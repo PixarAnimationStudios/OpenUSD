@@ -110,16 +110,18 @@ public:
     ///
     void UpdateTextureHandles(HdSceneDelegate *);
 
-    /// Add params and specs to communicate volume bounding box to shader.
+    /// Add params and specs to communicate volume bounding box and sample
+    /// distance to shader.
     ///
-    static void GetParamsAndBufferSpecsForBBox(
+    static void GetParamsAndBufferSpecsForBBoxAndSampleDistance(
         HdSt_MaterialParamVector *params,
         HdBufferSpecVector *specs);
 
-    /// Add buffer sources to communicate volume bounding box to shader.
+    /// Add buffer sources to communicate volume bounding box and sample
+    /// distance to shader.
     ///
-    static void GetBufferSourcesForBBox(
-        const GfBBox3d &bbox,
+    static void GetBufferSourcesForBBoxAndSampleDistance(
+        const std::pair<GfBBox3d, float> &bboxAndSampleDistance,
         HdBufferSourceSharedPtrVector * sources);
 
     /// GfRange3d encodes empty range by (infinity, -infinity).
