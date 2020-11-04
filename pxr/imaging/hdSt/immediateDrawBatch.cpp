@@ -69,10 +69,12 @@ HdSt_ImmediateDrawBatch::~HdSt_ImmediateDrawBatch()
 {
 }
 
-bool
+HdSt_DrawBatch::ValidationResult
 HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
 {
-    if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
+    if (!TF_VERIFY(!_drawItemInstances.empty())) {
+        return ValidationResult::RebuildAllBatches;
+    }
 
     HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
 
@@ -83,13 +85,15 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
     size_t bufferArraysHash = batchItem->GetBufferArraysHash();
     if (_bufferArraysHash != bufferArraysHash) {
         _bufferArraysHash = bufferArraysHash;
-        return false;
+        return ValidationResult::RebuildBatch;
     }
 
     // Deep validation is flagged explicitly when a drawItem has changes to
-    // its BARs (e.g. buffer spec, aggregation) or when the surface shader or 
-    // geometric shader changes.
+    // its BARs (e.g. buffer spec, aggregation) or when its 
+    // surface shader or geometric shader changes.
     if (deepValidation) {
+        HD_TRACE_SCOPE("Immediate draw batch deep validation");
+
         // look through all draw items to be still compatible
 
         size_t numDrawItemInstances = _drawItemInstances.size();
@@ -98,16 +102,16 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
                 = _drawItemInstances[item]->GetDrawItem();
 
             if (!TF_VERIFY(drawItem->GetGeometricShader())) {
-                return false;
+                return ValidationResult::RebuildAllBatches;
             }
 
             if (!_IsAggregated(batchItem, drawItem)) {
-                return false;
+                return ValidationResult::RebuildAllBatches;
             }
         }
     }
 
-    return true;
+    return ValidationResult::ValidBatch;
 }
 
 void

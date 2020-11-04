@@ -54,7 +54,8 @@ public:
 
     // HdSt_DrawBatch overrides
     HDST_API
-    bool Validate(bool deepValidation) override;
+    ValidationResult
+    Validate(bool deepValidation) override;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
@@ -151,6 +152,7 @@ private:
     std::vector<uint32_t> _drawCommandBuffer;
     bool _drawCommandBufferDirty;
     size_t _bufferArraysHash;
+    size_t _barElementOffsetsHash;
 
     HdStBufferResourceSharedPtr _resultBuffer;
 

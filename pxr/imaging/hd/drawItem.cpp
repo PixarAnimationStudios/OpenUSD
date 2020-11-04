@@ -31,6 +31,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static size_t _GetVersion(HdBufferArrayRangeSharedPtr const &bar)
+{
+    if (bar) {
+        return bar->GetVersion();
+    } else {
+        return 0;
+    }
+}
+
+static size_t _GetElementOffset(HdBufferArrayRangeSharedPtr const &bar)
+{
+    if (bar) {
+        return bar->GetElementOffset();
+    } else {
+        return 0;
+    }
+}
 
 HdDrawItem::HdDrawItem(HdRprimSharedData const *sharedData)
     : _sharedData(sharedData)
@@ -47,22 +64,18 @@ template <class HashState>
 void
 TfHashAppend(HashState &h, HdDrawItem const &di)
 {
-    auto appendVersionIf = [&h](auto const &thing) {
-        h.Append(thing ? thing->GetVersion() : 0);
-    };
+    h.Append(_GetVersion(di.GetTopologyRange()));
+    h.Append(_GetVersion(di.GetConstantPrimvarRange()));
+    h.Append(_GetVersion(di.GetVertexPrimvarRange()));
+    h.Append(_GetVersion(di.GetElementPrimvarRange()));
+    h.Append(_GetVersion(di.GetFaceVaryingPrimvarRange()));
+    h.Append(_GetVersion(di.GetTopologyVisibilityRange()));
 
-    appendVersionIf(di.GetTopologyRange());
-    appendVersionIf(di.GetConstantPrimvarRange());
-    appendVersionIf(di.GetVertexPrimvarRange());
-    appendVersionIf(di.GetElementPrimvarRange());
-    appendVersionIf(di.GetFaceVaryingPrimvarRange());
-    appendVersionIf(di.GetTopologyVisibilityRange());
-
-    int instancerNumLevels = di.GetInstancePrimvarNumLevels();
+    int const instancerNumLevels = di.GetInstancePrimvarNumLevels();
     for (int i = 0; i < instancerNumLevels; ++i) {
-        appendVersionIf(di.GetInstancePrimvarRange(i));
+        h.Append(_GetVersion(di.GetInstancePrimvarRange(i)));
     }
-    appendVersionIf(di.GetInstanceIndexRange());
+    h.Append(_GetVersion(di.GetInstanceIndexRange()));
 
     h.Append(di._GetBufferArraysHash());
 }
@@ -71,6 +84,29 @@ size_t
 HdDrawItem::GetBufferArraysHash() const
 {
     return TfHash()(*this);
+}
+
+size_t
+HdDrawItem::GetElementOffsetsHash() const
+{
+    size_t hash = TfHash::Combine(
+        _GetElementOffset(GetTopologyRange()),
+        _GetElementOffset(GetConstantPrimvarRange()),
+        _GetElementOffset(GetVertexPrimvarRange()),
+        _GetElementOffset(GetElementPrimvarRange()),
+        _GetElementOffset(GetFaceVaryingPrimvarRange()),
+        _GetElementOffset(GetTopologyVisibilityRange()));
+    
+    int const instancerNumLevels = GetInstancePrimvarNumLevels();
+    for (int i = 0; i < instancerNumLevels; ++i) {
+        hash = TfHash::Combine(hash,
+                               _GetElementOffset(GetInstancePrimvarRange(i)));
+    }
+    hash = TfHash::Combine(hash,
+                           _GetElementOffset(GetInstanceIndexRange()),
+                           _GetElementOffsetsHash());
+
+    return hash;
 }
 
 bool
@@ -123,6 +159,12 @@ std::ostream &operator <<(std::ostream &out,
 
 size_t
 HdDrawItem::_GetBufferArraysHash() const
+{
+    return 0;
+}
+
+size_t
+HdDrawItem::_GetElementOffsetsHash() const
 {
     return 0;
 }

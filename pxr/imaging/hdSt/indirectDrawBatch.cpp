@@ -87,6 +87,7 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
+    , _barElementOffsetsHash(0)
     , _numVisibleItems(0)
     , _numTotalVertices(0)
     , _numTotalElements(0)
@@ -117,6 +118,7 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     // remember buffer arrays version for dispatch buffer updating
     HdStDrawItem const* drawItem = drawItemInstance->GetDrawItem();
     _bufferArraysHash = drawItem->GetBufferArraysHash();
+    // _barElementOffsetsHash is updated during _CompileBatch
 
     // determine gpu culling program by the first drawitem
     _useDrawArrays  = !drawItem->GetTopologyRange();
@@ -132,6 +134,10 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
         _cullingProgram.Initialize(
             _useDrawArrays, _useGpuInstanceCulling, _bufferArraysHash);
     }
+
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "   Resetting dispatch buffer.\n");
+    _dispatchBuffer.reset();
 }
 
 HdSt_IndirectDrawBatch::_CullingProgram &
@@ -354,6 +360,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
         HdStDrawItemInstance const * instance = _drawItemInstances[item];
         HdStDrawItem const * drawItem = _drawItemInstances[item]->GetDrawItem();
+
+        _barElementOffsetsHash = TfHash::Combine(_barElementOffsetsHash,
+                                            drawItem->GetElementOffsetsHash());
 
         //
         // index buffer data
@@ -852,10 +861,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     }
 }
 
-bool
+HdSt_DrawBatch::ValidationResult
 HdSt_IndirectDrawBatch::Validate(bool deepValidation)
 {
-    if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
+    if (!TF_VERIFY(!_drawItemInstances.empty())) {
+        return ValidationResult::RebuildAllBatches;
+    }
 
     TF_DEBUG(HDST_DRAW_BATCH).Msg(
         "Validating indirect draw batch %p (deep validation = %d)...\n",
@@ -868,51 +879,55 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
     HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
     size_t const bufferArraysHash = batchItem->GetBufferArraysHash();
 
-    bool validBatch = true;
-
     if (_bufferArraysHash != bufferArraysHash) {
         _bufferArraysHash = bufferArraysHash;
-        validBatch = false;
         TF_DEBUG(HDST_DRAW_BATCH).Msg(
             "   Buffer arrays hash changed. Need to rebuild batch.\n");
-    } 
+        return ValidationResult::RebuildBatch;
+    }
+
     // Deep validation is flagged explicitly when a drawItem has changes to
-    // its BARs (e.g. buffer spec, aggregation) or when the surface shader or 
-    // geometric shader. changes.
-    else if (deepValidation) {
+    // its BARs (e.g. buffer spec, aggregation, element offsets) or when its 
+    // surface shader or geometric shader changes.
+    if (deepValidation) {
+        HD_TRACE_SCOPE("Indirect draw batch deep validation");
         // look through all draw items to be still compatible
 
         size_t numDrawItemInstances = _drawItemInstances.size();
+        size_t barElementOffsetsHash = 0;
+
         for (size_t item = 0; item < numDrawItemInstances; ++item) {
             HdStDrawItem const * drawItem
                 = _drawItemInstances[item]->GetDrawItem();
 
             if (!TF_VERIFY(drawItem->GetGeometricShader())) {
-                validBatch = false;
-                break;
+                return ValidationResult::RebuildAllBatches;
             }
 
             if (!_IsAggregated(batchItem, drawItem)) {
-                validBatch = false;
                  TF_DEBUG(HDST_DRAW_BATCH).Msg(
                     "   Deep validation: Found draw item that fails aggregation"
-                    " test. Need to rebuild batches.\n");
-                break;
+                    " test. Need to rebuild all batches.\n");
+                return ValidationResult::RebuildAllBatches;
             }
+
+            barElementOffsetsHash = TfHash::Combine(barElementOffsetsHash,
+                drawItem->GetElementOffsetsHash());
+        }
+
+        if (_barElementOffsetsHash != barElementOffsetsHash) {
+             TF_DEBUG(HDST_DRAW_BATCH).Msg(
+                "   Deep validation: Element offsets hash mismatch."
+                "   Rebuilding batch (even though only the dispatch buffer"
+                "   needs to be updated)\n.");
+            return ValidationResult::RebuildBatch;
         }
 
     }
 
-    if (validBatch) {
-        TF_DEBUG(HDST_DRAW_BATCH).Msg(
-            "   Validation passed. No need to rebuild batch.\n");
-    } else {
-        _dispatchBuffer.reset();
-        TF_DEBUG(HDST_DRAW_BATCH).Msg(
-            "   Resetting dispatch buffer.\n");
-    }
-
-    return validBatch;
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "   Validation passed. No need to rebuild batch.\n");
+    return ValidationResult::ValidBatch;
 }
 
 void
