@@ -21,15 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_IMAGE_H
-#define PXR_IMAGING_GLF_IMAGE_H
+#ifndef PXR_IMAGING_HIO_IMAGE_H
+#define PXR_IMAGING_HIO_IMAGE_H
 
-/// \file glf/image.h
+/// \file hio/image.h
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/garch/glApi.h"
-
+#include "pxr/imaging/hio/api.h"
 #include "pxr/imaging/hio/types.h"
 
 #include "pxr/base/tf/token.h"
@@ -43,15 +41,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using GlfImageSharedPtr = std::shared_ptr<class GlfImage>;
+using HioImageSharedPtr = std::shared_ptr<class HioImage>;
 
-/// \class GlfImage
+/// \class HioImage
 ///
 /// A base class for reading and writing texture image data.
 ///
 /// The class allows basic access to texture image file data.
 ///
-class GlfImage
+class HioImage
 {
 public:
 
@@ -81,29 +79,29 @@ public:
     class StorageSpec {
     public:
         StorageSpec()
-            : width(0), height(0)
-            , hioFormat(HioFormatInvalid)
+            : width(0), height(0), depth(0)
+            , format(HioFormatInvalid)
             , flipped(false)
             , data(0) { }
 
         int width, height, depth;
-        HioFormat hioFormat;
+        HioFormat format;
         bool flipped;
         void * data;
     };
 
 public:
-    GlfImage() = default;
+    HioImage() = default;
 
-    GLF_API
-    virtual ~GlfImage();
+    HIO_API
+    virtual ~HioImage();
 
     // Disallow copies
-    GlfImage(const GlfImage&) = delete;
-    GlfImage& operator=(const GlfImage&) = delete;
+    HioImage(const HioImage&) = delete;
+    HioImage& operator=(const HioImage&) = delete;
 
     /// Returns whether \a filename opened as a texture image.
-    GLF_API
+    HIO_API
     static bool IsSupportedImageFile(std::string const & filename);
 
     /// \name Reading
@@ -112,8 +110,8 @@ public:
     /// Opens \a filename for reading from the given \a subimage at mip level
     /// \a mip, using \a sourceColorSpace to help determine the color space
     /// with which to interpret the texture
-    GLF_API
-    static GlfImageSharedPtr OpenForReading(std::string const & filename,
+    HIO_API
+    static HioImageSharedPtr OpenForReading(std::string const & filename,
                                             int subimage = 0,
                                             int mip = 0,
                                             SourceColorSpace sourceColorSpace = 
@@ -136,8 +134,8 @@ public:
     /// {@
 
     /// Opens \a filename for writing from the given \a storage.
-    GLF_API
-    static GlfImageSharedPtr OpenForWriting(std::string const & filename);
+    HIO_API
+    static HioImageSharedPtr OpenForWriting(std::string const & filename);
 
     /// Writes the image with \a metadata.
     virtual bool Write(StorageSpec const & storage,
@@ -154,8 +152,8 @@ public:
     /// Returns the image height.
     virtual int GetHeight() const = 0;
 
-    /// Returns the HioFormat.
-    virtual HioFormat GetHioFormat() const = 0;
+    /// Returns the destination HioFormat.
+    virtual HioFormat GetFormat() const = 0;
 
     /// Returns the number of bytes per pixel.
     virtual int GetBytesPerPixel() const = 0;
@@ -174,9 +172,10 @@ public:
     virtual bool GetMetadata(TfToken const & key, VtValue * value) const = 0;
 
     template <typename T>
-    bool GetSamplerMetadata(GLenum pname, T * param) const;
+    bool GetSamplerMetadata(HioAddressDimension dim, T * param) const;
 
-    virtual bool GetSamplerMetadata(GLenum pname, VtValue * param) const = 0;
+    virtual bool GetSamplerMetadata(HioAddressDimension dim,
+                                    VtValue * param) const = 0;
 
     /// }@
 
@@ -192,7 +191,7 @@ protected:
 
 template <typename T>
 bool
-GlfImage::GetMetadata(TfToken const & key, T * value) const
+HioImage::GetMetadata(TfToken const & key, T * value) const
 {
     VtValue any;
     if (!GetMetadata(key, &any) || !any.IsHolding<T>()) {
@@ -204,31 +203,31 @@ GlfImage::GetMetadata(TfToken const & key, T * value) const
 
 template <typename T>
 bool
-GlfImage::GetSamplerMetadata(GLenum pname, T * param) const
+HioImage::GetSamplerMetadata(HioAddressDimension dim, T * param) const
 {
     VtValue any;
-    if (!GetSamplerMetadata(pname, &any) || !any.IsHolding<T>()) {
+    if (!GetSamplerMetadata(dim, &any) || !any.IsHolding<T>()) {
         return false;
     }
     *param = any.UncheckedGet<T>();
     return true;
 }
 
-class GlfImageFactoryBase : public TfType::FactoryBase {
+class HIO_API HioImageFactoryBase : public TfType::FactoryBase {
 public:
-    virtual GlfImageSharedPtr New() const = 0;
+    virtual HioImageSharedPtr New() const = 0;
 };
 
 template <class T>
-class GlfImageFactory : public GlfImageFactoryBase {
+class HioImageFactory : public HioImageFactoryBase {
 public:
-    virtual GlfImageSharedPtr New() const
+    virtual HioImageSharedPtr New() const
     {
-        return GlfImageSharedPtr(new T);
+        return HioImageSharedPtr(new T);
     }
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_GLF_IMAGE_H
+#endif  // PXR_IMAGING_HIO_IMAGE_H

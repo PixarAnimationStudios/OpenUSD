@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_RANKED_TYPE_MAP_H
-#define PXR_IMAGING_GLF_RANKED_TYPE_MAP_H
+#ifndef PXR_IMAGING_HIO_RANKED_TYPE_MAP_H
+#define PXR_IMAGING_HIO_RANKED_TYPE_MAP_H
 
-/// \file glf/rankedTypeMap.h
+/// \file hio/rankedTypeMap.h
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/plugin.h"
@@ -38,11 +38,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class GlfRankedTypeMap
+/// \class HioRankedTypeMap
 ///
 /// Holds a token-to-type map with support for precedence per type.
 ///
-class GlfRankedTypeMap {
+class HioRankedTypeMap {
 public:
     typedef TfToken key_type;
     typedef TfType mapped_type;
@@ -93,7 +93,7 @@ private:
 
 template <class DEBUG_TYPE>
 void
-GlfRankedTypeMap::Add(
+HioRankedTypeMap::Add(
     const mapped_type& baseType,
     const std::string& keyMetadataName,
     DEBUG_TYPE debugType,

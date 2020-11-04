@@ -57,6 +57,7 @@ pxr_build_test(testHdEmbree
         hdEmbree
         garch
         arch
+        hio
     CPPFILES
         testenv/testHdEmbree.cpp
 )

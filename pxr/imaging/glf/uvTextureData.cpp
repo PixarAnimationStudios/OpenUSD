@@ -23,10 +23,11 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/uvTextureData.h"
 
+#include "pxr/base/gf/vec3i.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
@@ -42,7 +43,7 @@ GlfUVTextureData::New(
     unsigned int cropBottom,
     unsigned int cropLeft,
     unsigned int cropRight,
-    GlfImage::SourceColorSpace sourceColorSpace)
+    HioImage::SourceColorSpace sourceColorSpace)
 {
     GlfUVTextureData::Params params;
     params.targetMemory = targetMemory;
@@ -55,7 +56,7 @@ GlfUVTextureData::New(
 
 GlfUVTextureDataRefPtr
 GlfUVTextureData::New(std::string const &filePath, Params const &params,
-                      GlfImage::SourceColorSpace sourceColorSpace)
+                      HioImage::SourceColorSpace sourceColorSpace)
 {
     return TfCreateRefPtr(new GlfUVTextureData(filePath, params, 
                                                sourceColorSpace));
@@ -67,14 +68,14 @@ GlfUVTextureData::~GlfUVTextureData()
 
 GlfUVTextureData::GlfUVTextureData(std::string const &filePath,
                                    Params const &params, 
-                                   GlfImage::SourceColorSpace sourceColorSpace)
+                                   HioImage::SourceColorSpace sourceColorSpace)
   : _filePath(filePath),
     _params(params),
     _targetMemory(0),
     _nativeWidth(0), _nativeHeight(0),
     _resizedWidth(0), _resizedHeight(0),
     _bytesPerPixel(0),
-    _hioFormat(HioFormatUNorm8Vec3),
+    _format(HioFormatUNorm8Vec3),
     _size(0),
     _sourceColorSpace(sourceColorSpace)
 {
@@ -89,15 +90,15 @@ GlfUVTextureData::NumDimensions() const
 
 // Compute required GPU memory
 size_t
-GlfUVTextureData_ComputeMemory(GlfImageSharedPtr const &img,
+GlfUVTextureData_ComputeMemory(HioImageSharedPtr const &img,
                                 bool generateMipmap)
 {
     // Mipmapping on GPU means we need an
     // extra 1/4 + 1/16 + 1/64 + 1/256 + ... of memory
     const double scale = generateMipmap ? 4.0 / 3 : 1.0;
 
-    if (HioIsCompressed(img->GetHioFormat())) {
-        return scale * HioGetDataSize(img->GetHioFormat(), 
+    if (HioIsCompressed(img->GetFormat())) {
+        return scale * HioGetDataSize(img->GetFormat(), 
                             GfVec3i(img->GetWidth(), img->GetHeight(), 1));
     }
 
@@ -111,7 +112,7 @@ GlfUVTextureData::_GetDegradedImageInputChain(double scaleX, double scaleY,
 {
     _DegradedImageInput chain(scaleX, scaleY);
     for (int level = startMip; level < lastMip; level++) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, level,
+        HioImageSharedPtr image = HioImage::OpenForReading(_filePath, 0, level,
                                                            _sourceColorSpace);
         chain.images.push_back(image);
     }
@@ -119,7 +120,7 @@ GlfUVTextureData::_GetDegradedImageInputChain(double scaleX, double scaleY,
 }
 
 int
-GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
+GlfUVTextureData::_GetNumMipLevelsValid(const HioImageSharedPtr image) const
 {
     int potentialMipLevels = image->GetNumMipLevels();
 
@@ -132,7 +133,7 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
     // Count mips since certain formats will not fail when quering mips,
     // in that case 
     for (int mipCounter = 1; mipCounter < 32; mipCounter++) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath,
+        HioImageSharedPtr image = HioImage::OpenForReading(_filePath,
             0 /*subimage*/, mipCounter, _sourceColorSpace, 
             /*suppressErrors=*/ true);
         if (!image) {
@@ -175,7 +176,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
 
     // Read the header of the image (no subimageIndex given, so at full
     // resolutin when evaluated).
-    const GlfImageSharedPtr fullImage = GlfImage::OpenForReading(_filePath);
+    const HioImageSharedPtr fullImage = HioImage::OpenForReading(_filePath);
 
     // Bail if image file could not be opened.
     if (!fullImage) {
@@ -203,8 +204,8 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     
     // If no targetMemory set, use degradeLevel to determine mipLevel
     if (targetMemory == 0) {
-        GlfImageSharedPtr image =
-        GlfImage::OpenForReading(_filePath, 0, degradeLevel, _sourceColorSpace);
+        HioImageSharedPtr image =
+        HioImage::OpenForReading(_filePath, 0, degradeLevel, _sourceColorSpace);
         if (!image) {
             return _DegradedImageInput(1.0, 1.0);
         }
@@ -223,17 +224,17 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
 
     // Remember the previous image and size to detect that there are no more
     // down-sampled images
-    GlfImageSharedPtr prevImage = fullImage;
+    HioImageSharedPtr prevImage = fullImage;
     size_t prevSize = fullSize;
 
     for (int i = 1; i < numMipLevels; i++) {
         // Open the image and is requested to use the i-th
         // down-sampled image (mipLevel).
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, 0, i, 
+        HioImageSharedPtr image = HioImage::OpenForReading(_filePath, 0, i, 
                                                            _sourceColorSpace);
 
         // If mipLevel could not be opened, return fullImage. We are
-        // not supposed to hit this. GlfImage will return the last
+        // not supposed to hit this. HioImage will return the last
         // down-sampled image if the subimageIndex is beyond the range.
         if (!image) {
             return _GetDegradedImageInputChain(1.0, 1.0, 0, 1);
@@ -252,7 +253,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
         }
         
         if (!(size < prevSize)) {
-            // GlfImage stopped providing more further-downsampled
+            // HioImage stopped providing more further-downsampled
             // images, no point to continue, return image from last
             // iteration.
             return _GetDegradedImageInputChain(
@@ -274,7 +275,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
 }
 
 static bool
-_IsValidCrop(GlfImageSharedPtr image,
+_IsValidCrop(HioImageSharedPtr image,
              int cropTop, int cropBottom, int cropLeft, int cropRight)
 {
     int cropImageWidth = image->GetWidth() - (cropLeft + cropRight);
@@ -289,7 +290,7 @@ _IsValidCrop(GlfImageSharedPtr image,
 
 bool
 GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
-                       GlfImage::ImageOriginLocation originLocation)
+                       HioImage::ImageOriginLocation originLocation)
 {   
     TRACE_FUNCTION();
 
@@ -303,19 +304,19 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     }
 
     // Load the first mip to extract important data
-    GlfImageSharedPtr image = degradedImage.images[0];
-    _hioFormat = image->GetHioFormat();
+    HioImageSharedPtr image = degradedImage.images[0];
+    _format = image->GetFormat();
 
     _targetMemory = _params.targetMemory;
     _wrapInfo.hasWrapModeS =
-        image->GetSamplerMetadata(GL_TEXTURE_WRAP_S, &_wrapInfo.wrapModeS);
+        image->GetSamplerMetadata(HioAddressDimensionU, &_wrapInfo.wrapModeS);
     _wrapInfo.hasWrapModeT =
-        image->GetSamplerMetadata(GL_TEXTURE_WRAP_T, &_wrapInfo.wrapModeT);
+        image->GetSamplerMetadata(HioAddressDimensionV, &_wrapInfo.wrapModeT);
     _size = 0;
     _nativeWidth = _resizedWidth = image->GetWidth();
     _nativeHeight = _resizedHeight = image->GetHeight();
 
-    bool isCompressed = HioIsCompressed(_hioFormat);
+    bool isCompressed = HioIsCompressed(_format);
     bool needsCropping = _params.cropTop || _params.cropBottom ||
                          _params.cropLeft || _params.cropRight;
     bool needsResizeOnLoad = false;
@@ -328,8 +329,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         // textureData is updated to include hioFormat 
         _bytesPerPixel = image->GetBytesPerPixel();
     } else {
-        _bytesPerPixel = GlfGetNumElements(_hioFormat) *
-                            GlfGetElementSize(_hioFormat);
+        _bytesPerPixel = HioGetDataSizeOfFormat(_format);
 
         if (needsCropping) {
             TRACE_FUNCTION_SCOPE("cropping");
@@ -391,7 +391,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     // Read the metadata for the degraded mips in the structure that keeps
     // track of all the mips
     for(int i = 0 ; i < numMipLevels; i++) {
-        GlfImageSharedPtr image = degradedImage.images[i];
+        HioImageSharedPtr image = degradedImage.images[i];
         if (!image) {
             TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
                 _filePath.c_str());
@@ -404,7 +404,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         mip.height = needsResizeOnLoad ? _resizedHeight : image->GetHeight();
         
         const size_t numPixels = mip.width * mip.height;
-        mip.size   = isCompressed ? HioGetDataSize(_hioFormat, 
+        mip.size   = isCompressed ? HioGetDataSize(_format,
                                         GfVec3i(mip.width, mip.height,1))
                                   : numPixels * _bytesPerPixel;
         mip.offset = _size;
@@ -427,9 +427,9 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
 
     // This is a storage spec "template" common to all other storage specs,
     // and is incomplete.
-    GlfImage::StorageSpec commonStorageSpec;
-    commonStorageSpec.hioFormat = _hioFormat;
-    commonStorageSpec.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
+    HioImage::StorageSpec commonStorageSpec;
+    commonStorageSpec.format = _format;
+    commonStorageSpec.flipped = (originLocation == HioImage::OriginLowerLeft) ?
                       (true) : (false);
 
     std::atomic<bool> returnVal(true);
@@ -439,7 +439,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         &commonStorageSpec, &returnVal] (size_t begin, size_t end) {
 
         for (size_t i = begin; i < end; ++i) {
-            GlfImageSharedPtr image = degradedImage.images[i];
+            HioImageSharedPtr image = degradedImage.images[i];
             if (!image) {
                 TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
                     _filePath.c_str());
@@ -448,10 +448,10 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
             }
 
             Mip & mip  = _rawBufferMips[i];
-            GlfImage::StorageSpec storage;
+            HioImage::StorageSpec storage;
             storage.width = mip.width;
             storage.height = mip.height;
-            storage.hioFormat = commonStorageSpec.hioFormat;
+            storage.format = commonStorageSpec.format;
             storage.flipped = commonStorageSpec.flipped;
             storage.data = _rawBuffer.get() + mip.offset;
             

@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/vdbTextureData.h"
 #include "pxr/imaging/hf/perfLog.h"
+#include "pxr/imaging/hio/image.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
@@ -53,7 +56,8 @@ GlfVdbTextureData::GlfVdbTextureData(
       _targetMemory(targetMemory),
       _nativeWidth(0), _nativeHeight(0), _nativeDepth(1),
       _resizedWidth(0), _resizedHeight(0), _resizedDepth(1),
-      _hioFormat(HioFormatInvalid),
+      _bytesPerPixel(0),
+      _format(HioFormatUNorm8Vec3),
       _size(0)
 {
 }
@@ -73,8 +77,8 @@ GlfVdbTextureData::NumDimensions() const
 }
 
 HioFormat
-GlfVdbTextureData::GetHioFormat() const {
-    return _hioFormat;
+GlfVdbTextureData::GetFormat() const {
+    return _format;
 }
 
 size_t
@@ -247,8 +251,9 @@ public:
     // Get grid transform from OpenVDB grid.
     virtual GfMatrix4d GetGridTransform() const = 0;
 
-    // Gets the format of the OpenVDB grid
-    virtual HioFormat GetHioFormat() const = 0;
+    // Get metadata for corresponding OpenGL texture.
+    virtual void GetMetadata(int *bytesPerPixel,
+                             HioFormat *format) const = 0;
 
     // Create a new OpenVDB grid (of the right type) by resampling
     // the old grid. The new grid will have the given transform.
@@ -316,7 +321,8 @@ public:
         return _ExtractTransformFromGrid(_grid);
     }
 
-    HioFormat GetHioFormat() const override;
+    void GetMetadata(int *bytesPerPixel,
+                     HioFormat *format) const override;
     
     _GridHolderBase *GetResampled(const GfMatrix4d &newTransform) override {
         TRACE_FUNCTION();
@@ -342,31 +348,39 @@ private:
 };
 
 template<>
-HioFormat
-_GridHolder<openvdb::FloatGrid>::GetHioFormat() const
+void
+_GridHolder<openvdb::FloatGrid>::GetMetadata(int *bytesPerPixel,
+                                             HioFormat *format) const
 {
-    return HioFormatFloat32;
+    *bytesPerPixel = sizeof(float);
+    *format = HioFormatFloat32;
 }
 
 template<>
-HioFormat
-_GridHolder<openvdb::DoubleGrid>::GetHioFormat() const
+void
+_GridHolder<openvdb::DoubleGrid>::GetMetadata(int *bytesPerPixel,
+                                             HioFormat *format) const
 {
-    return HioFormatDouble64;
+    *bytesPerPixel = sizeof(double);
+    *format = HioFormatDouble64;
 }
 
 template<>
-HioFormat
-_GridHolder<openvdb::Vec3fGrid>::GetHioFormat() const
+void
+_GridHolder<openvdb::Vec3fGrid>::GetMetadata(int *bytesPerPixel,
+                                             HioFormat *format) const
 {
-    return HioFormatFloat32Vec3;
+    *bytesPerPixel = 3 * sizeof(float);
+    *format = HioFormatFloat32Vec3;
 }
 
 template<>
-HioFormat
-_GridHolder<openvdb::Vec3dGrid>::GetHioFormat() const
+void
+_GridHolder<openvdb::Vec3dGrid>::GetMetadata(int *bytesPerPixel,
+                                             HioFormat *format) const
 {
-    return HioFormatDouble64Vec3;
+    *bytesPerPixel = 3 * sizeof(double);
+    *format = HioFormatDouble64Vec3;
 }
 
 _GridHolderBase *
@@ -504,7 +518,7 @@ _ResamplingAdjustment(const int nativeLength, const double scale)
 
 bool
 GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
-                        GlfImage::ImageOriginLocation originLocation)
+                        HioImage::ImageOriginLocation originLocation)
 {   
     TRACE_FUNCTION();
 
@@ -525,8 +539,9 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
     // Get grid transform 
     GfMatrix4d gridTransform = gridHolder->GetGridTransform();
     
-    // Get format
-    _hioFormat = gridHolder->GetHioFormat();
+    // Get _bytesPerPixel & _format
+    gridHolder->GetMetadata(&_bytesPerPixel,
+                            &_format);
 
     // Get tree bounding box to compute native dimensions and size
     const openvdb::CoordBBox &nativeTreeBoundingBox =
@@ -538,11 +553,7 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
     // depth to 1 for an empty texture.
     _nativeDepth  = std::max(1, nativeDim.z());
     
-    // Ideally, we had a function like
-    // HioGetDataSizeOfFormat...
-    const size_t bytesPerVoxel =
-        GlfGetElementSize(_hioFormat) * GlfGetNumElements(_hioFormat);
-    const size_t nativeSize = nativeTreeBoundingBox.volume() * bytesPerVoxel;
+    const size_t nativeSize = nativeTreeBoundingBox.volume() * _bytesPerPixel;
 
     TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
         "[VdbTextureData] Native dimensions %d x %d x %d\n",
@@ -611,7 +622,7 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
     _resizedHeight = dim.y();
     _resizedDepth = dim.z();
 
-    _size = treeBoundingBox.volume() * bytesPerVoxel;
+    _size = treeBoundingBox.volume() * _bytesPerPixel;
 
     TF_DEBUG(GLF_DEBUG_VDB_TEXTURE).Msg(
         "[VdbTextureData] Resized dimensions %d x %d x %d "

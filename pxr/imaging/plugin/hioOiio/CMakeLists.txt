@@ -1,19 +1,19 @@
 set(PXR_PREFIX pxr/imaging)
-set(PXR_PACKAGE glfOiio)
+set(PXR_PACKAGE hioOiio)
 
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
+if (NOT ${PXR_BUILD_GPU_SUPPORT})
     message(STATUS
-            "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+            "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
     return()
 endif()
 
-pxr_plugin(glfOiio
+pxr_plugin(hioOiio
     LIBRARIES
         ar
         arch
         garch
         gf
-        glf
+        hio
         tf
         ${OIIO_LIBRARIES}
         ${OPENEXR_LIBRARY}

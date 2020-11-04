@@ -28,8 +28,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/garch/glApi.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
 
 #include <string>

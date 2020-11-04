@@ -62,8 +62,6 @@ pxr_library(glf
         glew
         glContext
         glRawContext
-        image
-        imageRegistry
         info
         ptexTexture
         simpleLight
@@ -89,16 +87,9 @@ pxr_library(glf
     PUBLIC_HEADERS
         api.h
         fieldTextureData.h
-        
-    PRIVATE_HEADERS
-        rankedTypeMap.h
-        stb/stb_image.h
-        stb/stb_image_resize.h
-        stb/stb_image_write.h
 
     CPPFILES
         ${optionalCppFiles}
-        stbImage.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp

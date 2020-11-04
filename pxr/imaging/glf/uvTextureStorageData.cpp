@@ -81,32 +81,32 @@ unsigned char * GlfUVTextureStorageData::GetRawBuffer(int mipLevel) const
 
 bool GlfUVTextureStorageData::Read(int degradeLevel,
                                    bool generateMipmap,
-                                   GlfImage::ImageOriginLocation originLocation)
+                                   HioImage::ImageOriginLocation originLocation)
 {
     _targetMemory = _size;
     std::vector<float> storageArray;
     if (_storageData.IsHolding<float>()) {
         storageArray.resize(1); 
         storageArray[0] = _storageData.Get<float>();
-        _hioFormat = HioFormatFloat32;
+        _format = HioFormatFloat32;
     } else if (_storageData.IsHolding<double>()) { 
         storageArray.resize(1); 
         storageArray[0] = _storageData.Get<double>();
-        _hioFormat = HioFormatFloat32;
+        _format = HioFormatFloat32;
     } else if (_storageData.IsHolding<GfVec3f>()) {
         GfVec3f storageVec3f = _storageData.Get<GfVec3f>();
         storageArray.resize(3); 
         storageArray[0] = storageVec3f[0]; 
         storageArray[1] = storageVec3f[1];
         storageArray[2] = storageVec3f[2];
-        _hioFormat = HioFormatFloat32Vec3;
+        _format = HioFormatFloat32Vec3;
     } else if (_storageData.IsHolding<GfVec3d>()) {
         GfVec3d storageVec3d = _storageData.Get<GfVec3d>();
         storageArray.resize(3); 
         storageArray[0] = storageVec3d[0]; 
         storageArray[1] = storageVec3d[1];
         storageArray[2] = storageVec3d[2];
-        _hioFormat = HioFormatFloat32Vec3;
+        _format = HioFormatFloat32Vec3;
     } else if (_storageData.IsHolding<GfVec4f>()) {
         GfVec4f storageVec4f = _storageData.Get<GfVec4f>();
         storageArray.resize(4); 
@@ -114,7 +114,7 @@ bool GlfUVTextureStorageData::Read(int degradeLevel,
         storageArray[1] = storageVec4f[1];
         storageArray[2] = storageVec4f[2]; 
         storageArray[3] = storageVec4f[3];
-        _hioFormat = HioFormatFloat32Vec4;
+        _format = HioFormatFloat32Vec4;
     } else if (_storageData.IsHolding<GfVec4d>()) {
         GfVec4d storageVec4d = _storageData.Get<GfVec4d>();
         storageArray.resize(4); 
@@ -122,13 +122,12 @@ bool GlfUVTextureStorageData::Read(int degradeLevel,
         storageArray[1] = storageVec4d[1];
         storageArray[2] = storageVec4d[2]; 
         storageArray[3] = storageVec4d[3];
-        _hioFormat = HioFormatFloat32Vec4;
+        _format = HioFormatFloat32Vec4;
     } else {
         TF_CODING_ERROR("Unsupported texture storage data type");
         return false; 
     }
-    _bytesPerPixel = GlfGetNumElements(_hioFormat) * 
-                         GlfGetElementSize(_hioFormat);
+    _bytesPerPixel = HioGetDataSizeOfFormat(_format);
 
     _size = _resizedWidth * _resizedHeight * _bytesPerPixel;
 
@@ -168,7 +167,7 @@ GlfUVTextureStorageData::GlfUVTextureStorageData(
     , _resizedWidth(width)
     , _resizedHeight(height)
     , _storageData(storageData)
-    , _hioFormat(HioFormatFloat32Vec3)
+    , _format(HioFormatFloat32Vec3)
     , _size(0)
     , _rawBuffer(nullptr)
 {

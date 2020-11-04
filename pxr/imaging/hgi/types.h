@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// For reference, see:
 ///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
-enum HgiFormat
+enum HgiFormat : int
 {
     HgiFormatInvalid = -1,
 

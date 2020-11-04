@@ -21,57 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/glf/imageRegistry.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hio/imageRegistry.h"
 
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<GlfImage>();
+    TfType::Define<HioImage>();
 }
 
-GlfImage::~GlfImage()
+HioImage::~HioImage()
 {
 }
 
 /* static */
 bool
-GlfImage::IsSupportedImageFile(std::string const & filename)
+HioImage::IsSupportedImageFile(std::string const & filename)
 {
-    GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
+    HioImageRegistry & registry = HioImageRegistry::GetInstance();
     return registry.IsSupportedImageFile(filename);
 }
 
 /* static */
-GlfImageSharedPtr
-GlfImage::OpenForReading(std::string const & filename, int subimage,
+HioImageSharedPtr
+HioImage::OpenForReading(std::string const & filename, int subimage,
                          int mip, SourceColorSpace sourceColorSpace, 
                          bool suppressErrors)
 {
-    GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
+    HioImageRegistry & registry = HioImageRegistry::GetInstance();
 
-    GlfImageSharedPtr image = registry._ConstructImage(filename);
+    HioImageSharedPtr image = registry._ConstructImage(filename);
     if (!image || !image->_OpenForReading(filename, subimage, mip, 
                                           sourceColorSpace, suppressErrors)) {
-        return GlfImageSharedPtr();
+        return HioImageSharedPtr();
     }
 
     return image;
 }
 
 /* static */
-GlfImageSharedPtr
-GlfImage::OpenForWriting(std::string const & filename)
+HioImageSharedPtr
+HioImage::OpenForWriting(std::string const & filename)
 {
-    GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
+    HioImageRegistry & registry = HioImageRegistry::GetInstance();
 
-    GlfImageSharedPtr image = registry._ConstructImage(filename);
+    HioImageSharedPtr image = registry._ConstructImage(filename);
     if (!image || !image->_OpenForWriting(filename)) {
-        return GlfImageSharedPtr();
+        return HioImageSharedPtr();
     }
 
     return image;

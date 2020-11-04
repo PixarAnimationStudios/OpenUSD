@@ -21,10 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
-#include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/glf/utils.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hio/types.h"
 
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
@@ -35,9 +33,10 @@
 
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tf/staticData.h"
 
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_MACRO_REDEFINITION // due to Python copysign
@@ -49,7 +48,6 @@ ARCH_PRAGMA_MACRO_REDEFINITION // due to Python copysign
 ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 OIIO_NAMESPACE_USING
 
@@ -65,20 +63,20 @@ TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
     _ioProxySupportedExtensions->push_back("exr");
 }
 
-class GlfOIIO_Image : public GlfImage 
+class HioOIIO_Image : public HioImage
 {
 public:
-    using Base = GlfImage;
+    using Base = HioImage;
 
-    GlfOIIO_Image();
+    HioOIIO_Image();
 
-    ~GlfOIIO_Image() override;
+    ~HioOIIO_Image() override;
 
-    // GlfImage overrides
+    // HioImage overrides
     std::string const & GetFilename() const override;
     int GetWidth() const override;
     int GetHeight() const override;
-    HioFormat GetHioFormat() const override;
+    HioFormat GetFormat() const override;
     int GetBytesPerPixel() const override;
     int GetNumMipLevels() const override;
 
@@ -86,7 +84,7 @@ public:
 
     bool GetMetadata(TfToken const & key, 
                              VtValue * value) const override;
-    bool GetSamplerMetadata(GLenum pname, 
+    bool GetSamplerMetadata(HioAddressDimension pname,
                                     VtValue * param) const override;
 
     bool Read(StorageSpec const & storage) override;
@@ -102,7 +100,7 @@ public:
 protected:
     bool _OpenForReading(std::string const & filename, int subimage,
                                  int mip, 
-                                 GlfImage::SourceColorSpace sourceColorSpace, 
+                                 HioImage::SourceColorSpace sourceColorSpace,
                                  bool suppressErrors) override;
     bool _OpenForWriting(std::string const & filename) override;
 
@@ -119,14 +117,14 @@ private:
     int _subimage;
     int _miplevel;
     ImageSpec _imagespec;
-    GlfImage::SourceColorSpace _sourceColorSpace;
+    HioImage::SourceColorSpace _sourceColorSpace;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    using Image = GlfOIIO_Image;
+    using Image = HioOIIO_Image;
     TfType t = TfType::Define<Image, TfType::Bases<Image::Base> >();
-    t.SetFactory< GlfImageFactory<Image> >();
+    t.SetFactory< HioImageFactory<Image> >();
 }
 
 /// Converts an OpenImageIO component type to its HioFormat equivalent.
@@ -413,40 +411,40 @@ _SetAttribute(ImageSpec * spec,
     }
 }
 
-GlfOIIO_Image::GlfOIIO_Image()
+HioOIIO_Image::HioOIIO_Image()
     : _subimage(0), _miplevel(0)
 {
 }
 
 /* virtual */
-GlfOIIO_Image::~GlfOIIO_Image()
+HioOIIO_Image::~HioOIIO_Image()
 {
 }
 
 /* virtual */
 std::string const &
-GlfOIIO_Image::GetFilename() const
+HioOIIO_Image::GetFilename() const
 {
     return _filename;
 }
 
 /* virtual */
 int
-GlfOIIO_Image::GetWidth() const
+HioOIIO_Image::GetWidth() const
 {
     return _imagespec.width;
 }
 
 /* virtual */
 int
-GlfOIIO_Image::GetHeight() const
+HioOIIO_Image::GetHeight() const
 {
     return _imagespec.height;
 }
 
 /* virtual */
 HioFormat
-GlfOIIO_Image::GetHioFormat() const
+HioOIIO_Image::GetFormat() const
 {
     return _GetHioFormatFromImageData(_imagespec.nchannels, _imagespec.format,
                                       IsColorSpaceSRGB());
@@ -454,19 +452,19 @@ GlfOIIO_Image::GetHioFormat() const
 
 /* virtual */
 int
-GlfOIIO_Image::GetBytesPerPixel() const
+HioOIIO_Image::GetBytesPerPixel() const
 {
     return _imagespec.pixel_bytes();
 }
 
 /* virtual */
 bool
-GlfOIIO_Image::IsColorSpaceSRGB() const
+HioOIIO_Image::IsColorSpaceSRGB() const
 {
-    if (_sourceColorSpace == GlfImage::SRGB) {
+    if (_sourceColorSpace == HioImage::SRGB) {
         return true;
     } 
-    if (_sourceColorSpace == GlfImage::Raw) {
+    if (_sourceColorSpace == HioImage::Raw) {
         return false;
     }
 
@@ -477,7 +475,7 @@ GlfOIIO_Image::IsColorSpaceSRGB() const
 
 /* virtual */
 bool
-GlfOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
+HioOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
 {
     VtValue result = _FindAttribute(_imagespec, key.GetString());
     if (!result.IsEmpty()) {
@@ -487,34 +485,34 @@ GlfOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
     return false;
 }
 
-static GLenum
+static HioAddressMode
 _TranslateWrap(std::string const & wrapMode)
 {
     if (wrapMode == "black")
-        return GL_CLAMP_TO_BORDER;
+        return HioAddressModeClampToBorderColor;
     if (wrapMode == "clamp")
-        return GL_CLAMP_TO_EDGE;
+        return HioAddressModeClampToEdge;
     if (wrapMode == "periodic")
-        return GL_REPEAT;
+        return HioAddressModeRepeat;
     if (wrapMode == "mirror")
-        return GL_MIRRORED_REPEAT;
+        return HioAddressModeMirrorRepeat;
 
-    return GL_CLAMP_TO_EDGE;
+    return HioAddressModeClampToEdge;
 }
 
 /* virtual */
 bool
-GlfOIIO_Image::GetSamplerMetadata(GLenum pname, VtValue * param) const
+HioOIIO_Image::GetSamplerMetadata(HioAddressDimension pname, VtValue * param) const
 {
     switch (pname) {
-        case GL_TEXTURE_WRAP_S: {
+        case HioAddressDimensionU: {
                 VtValue smode = _FindAttribute(_imagespec, "s mode");
                 if (!smode.IsEmpty() && smode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(smode.Get<std::string>()));
                     return true;
                 }
             } return false;
-        case GL_TEXTURE_WRAP_T: {
+        case HioAddressDimensionV: {
                 VtValue tmode = _FindAttribute(_imagespec, "t mode");
                 if (!tmode.IsEmpty() && tmode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(tmode.Get<std::string>()));
@@ -528,14 +526,14 @@ GlfOIIO_Image::GetSamplerMetadata(GLenum pname, VtValue * param) const
 
 /* virtual */
 int
-GlfOIIO_Image::GetNumMipLevels() const
+HioOIIO_Image::GetNumMipLevels() const
 {
     // XXX Add support for mip counting
     return 1;
 }
 
 std::string 
-GlfOIIO_Image::_GetFilenameExtension() const
+HioOIIO_Image::_GetFilenameExtension() const
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
     return TfStringToLower(fileExtension);
@@ -543,7 +541,7 @@ GlfOIIO_Image::_GetFilenameExtension() const
 
 #if OIIO_VERSION >= 20003
 cspan<unsigned char>
-GlfOIIO_Image::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer, 
+HioOIIO_Image::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer,
                                     int bufferSize) const
 {
     const char* bufferPtr = buffer.get(); 
@@ -554,7 +552,7 @@ GlfOIIO_Image::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer,
 #endif
 
 bool
-GlfOIIO_Image::_CanUseIOProxyForExtension(std::string extension, 
+HioOIIO_Image::_CanUseIOProxyForExtension(std::string extension,
                                           const ImageSpec & config) const
 {
     if (std::find(_ioProxySupportedExtensions->begin(), 
@@ -579,9 +577,9 @@ GlfOIIO_Image::_CanUseIOProxyForExtension(std::string extension,
 
 /* virtual */
 bool
-GlfOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
+HioOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
                                int mip, 
-                               GlfImage::SourceColorSpace sourceColorSpace, 
+                               HioImage::SourceColorSpace sourceColorSpace,
                                bool suppressErrors)
 {
     _filename = filename;
@@ -637,14 +635,14 @@ GlfOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
 
 /* virtual */
 bool
-GlfOIIO_Image::Read(StorageSpec const & storage)
+HioOIIO_Image::Read(StorageSpec const & storage)
 {
     return ReadCropped(0, 0, 0, 0, storage);
 }
 
 /* virtual */
 bool
-GlfOIIO_Image::ReadCropped(int const cropTop,
+HioOIIO_Image::ReadCropped(int const cropTop,
                            int const cropBottom,
                            int const cropLeft,
                            int const cropRight,
@@ -753,7 +751,7 @@ GlfOIIO_Image::ReadCropped(int const cropTop,
     }
 
     // Read pixel data
-    TypeDesc type = _GetOIIOBaseType(storage.hioFormat);
+    TypeDesc type = _GetOIIOBaseType(storage.format);
 
 #if OIIO_VERSION > 10603
     if (!image->get_pixels(ROI(0, storage.width, 0, storage.height, 0, 1),
@@ -773,7 +771,7 @@ GlfOIIO_Image::ReadCropped(int const cropTop,
 
 /* virtual */
 bool
-GlfOIIO_Image::_OpenForWriting(std::string const & filename)
+HioOIIO_Image::_OpenForWriting(std::string const & filename)
 {
     _filename = filename;
     _imagespec = ImageSpec();
@@ -781,11 +779,11 @@ GlfOIIO_Image::_OpenForWriting(std::string const & filename)
 }
 
 bool
-GlfOIIO_Image::Write(StorageSpec const & storage,
+HioOIIO_Image::Write(StorageSpec const & storage,
                      VtDictionary const & metadata)
 {
-    int nchannels = GlfGetNumElements(storage.hioFormat);
-    TypeDesc format = _GetOIIOBaseType(storage.hioFormat);
+    int nchannels = HioGetComponentCount(storage.format);
+    TypeDesc format = _GetOIIOBaseType(storage.format);
     ImageSpec spec(storage.width, storage.height, nchannels, format);
 
     for (const std::pair<std::string, VtValue>& m : metadata) {

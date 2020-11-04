@@ -60,8 +60,8 @@ public:
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
         unsigned int cropRight  = 0,
-        GlfImage::ImageOriginLocation originLocation = 
-                           GlfImage::OriginUpperLeft); 
+        HioImage::ImageOriginLocation originLocation = 
+                           HioImage::OriginUpperLeft); 
 
     GLF_API
     static GlfUVTextureRefPtr New(
@@ -70,8 +70,8 @@ public:
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
         unsigned int cropRight  = 0,
-        GlfImage::ImageOriginLocation originLocation = 
-                           GlfImage::OriginUpperLeft); 
+        HioImage::ImageOriginLocation originLocation = 
+                           HioImage::OriginUpperLeft); 
 
     int GetNumDimensions() const override;
     
@@ -96,8 +96,8 @@ protected:
         unsigned int cropBottom,
         unsigned int cropLeft,
         unsigned int cropRight,
-        GlfImage::ImageOriginLocation originLocation = 
-                           GlfImage::OriginUpperLeft);
+        HioImage::ImageOriginLocation originLocation = 
+                           HioImage::OriginUpperLeft);
 
     GLF_API
     void _ReadTexture() override;

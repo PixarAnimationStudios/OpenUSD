@@ -11,7 +11,7 @@ pxr_library(usdAppUtils
     LIBRARIES
         garch
         gf
-        glf
+        hio
         sdf
         tf
         usd

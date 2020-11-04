@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/garch/glApi.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -74,7 +74,7 @@ public:
 
     virtual int ResizedDepth(int mipLevel = 0) const = 0;
 
-    virtual HioFormat GetHioFormat() const = 0;
+    virtual HioFormat GetFormat() const = 0;
 
     virtual size_t TargetMemory() const = 0;
 
@@ -86,8 +86,8 @@ public:
 
     virtual bool Read(int degradeLevel, 
                       bool generateMipmap, 
-                      GlfImage::ImageOriginLocation originLocation = 
-                                                 GlfImage::OriginUpperLeft) = 0;
+                      HioImage::ImageOriginLocation originLocation = 
+                                                 HioImage::OriginUpperLeft) = 0;
     
     virtual bool HasRawBuffer(int mipLevel = 0) const = 0;
 
@@ -96,7 +96,7 @@ public:
     virtual int GetNumMipLevels() const = 0;
 
     virtual bool IsCompressed() const {
-        return HioIsCompressed(GetHioFormat());
+        return HioIsCompressed(GetFormat());
     }
 
 };

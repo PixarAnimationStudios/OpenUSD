@@ -21,10 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/glf/utils.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hio/types.h"
 
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
@@ -33,64 +32,64 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "pxr/imaging/glf/stb/stb_image.h"
+#include "pxr/imaging/hio/stb/stb_image.h"
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "pxr/imaging/glf/stb/stb_image_resize.h"
+#include "pxr/imaging/hio/stb/stb_image_resize.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "pxr/imaging/glf/stb/stb_image_write.h"
+#include "pxr/imaging/hio/stb/stb_image_write.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class Glf_StbImage : public GlfImage {
+class Hio_StbImage : public HioImage {
 public:
-    typedef GlfImage Base;
+    typedef HioImage Base;
 
-    Glf_StbImage();
+    Hio_StbImage();
 
-    virtual ~Glf_StbImage();
+    virtual ~Hio_StbImage();
 
-    // GlfImage overrides
-    virtual std::string const & GetFilename() const;
-    virtual int GetWidth() const;
-    virtual int GetHeight() const;
-    virtual HioFormat GetHioFormat() const;
-    virtual int GetBytesPerPixel() const;
-    virtual int GetNumMipLevels() const;
+    // HioImage overrides
+    std::string const & GetFilename() const override;
+    virtual int GetWidth() const override;
+    virtual int GetHeight() const override;
+    virtual HioFormat GetFormat() const override;
+    virtual int GetBytesPerPixel() const override;
+    virtual int GetNumMipLevels() const override;
 
-    virtual bool IsColorSpaceSRGB() const;
+    virtual bool IsColorSpaceSRGB() const override;
 
-    virtual bool GetMetadata(TfToken const & key, VtValue * value) const;
-    virtual bool GetSamplerMetadata(GLenum pname, VtValue * param) const;
+    virtual bool GetMetadata(TfToken const & key, VtValue * value) const override;
+    virtual bool GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const override;
 
-    virtual bool Read(StorageSpec const & storage);
+    virtual bool Read(StorageSpec const & storage) override;
     virtual bool ReadCropped(int const cropTop,
                              int const cropBottom,
                              int const cropLeft,
                              int const cropRight,
-                             StorageSpec const & storage);
+                             StorageSpec const & storage) override;
 
     virtual bool Write(StorageSpec const & storage,
-                       VtDictionary const & metadata);
+                       VtDictionary const & metadata) override;
 
 protected:
     virtual bool _OpenForReading(std::string const & filename, int subimage,
                                  int mip, SourceColorSpace sourceColorSpace, 
-                                 bool suppressErrors);
-    virtual bool _OpenForWriting(std::string const & filename);
+                                 bool suppressErrors) override;
+    virtual bool _OpenForWriting(std::string const & filename) override;
 
 private:
     std::string _GetFilenameExtension();
     bool _IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRight);
-    void _GetInfoFromStorageSpec(GlfImage::StorageSpec const & storage);
+    void _GetInfoFromStorageSpec(HioImage::StorageSpec const & storage);
     bool _CropAndResize(void const *sourceData, int const cropTop,
                    int const cropBottom,
                    int const cropLeft,
@@ -103,50 +102,23 @@ private:
     int _height;
     float _gamma;
     
-    GLenum _outputType; // GL_UNSIGNED_BYTE, GL_FLOAT
+    HioType _outputType;
     int _nchannels;
-    
-    HioFormat _hioFormat;
+
+    HioFormat _format;
 
     SourceColorSpace _sourceColorSpace;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef Glf_StbImage Image;
+    typedef Hio_StbImage Image;
     TfType t = TfType::Define<Image, TfType::Bases<Image::Base> >();
-    t.SetFactory< GlfImageFactory<Image> >();
+    t.SetFactory< HioImageFactory<Image> >();
 }
 
-/// Returns the bpc (bits per channel) based on the GLType stored in storage
-static int
-_GetBytesPerChannelFromType(GLenum const & type)
-{
-    switch(type) {
-    case GL_UNSIGNED_BYTE:
-        return 1;
-    case GL_FLOAT:
-        return 4;
-    default:
-        TF_CODING_ERROR("Unsupported type");
-        return 4;
-    }
-}
-
-static int
-_GetNumChannelsFromHioFormat(HioFormat const & hioFormat)
-{
-    return GlfGetNumElements(hioFormat);
-}
-
-static GLenum
-_GetGLoutputTypeFromHioFormat(HioFormat const & hioFormat)
-{
-    return GlfGetGLType(hioFormat);
-}
-
-bool 
-Glf_StbImage::_IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRight)
+bool
+Hio_StbImage::_IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRight)
 {
     int cropImageWidth = _width - (cropLeft + cropRight);
     int cropImageHeight = _height - (cropTop + cropBottom);
@@ -159,7 +131,7 @@ Glf_StbImage::_IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRi
 }
 
 std::string 
-Glf_StbImage::_GetFilenameExtension()
+Hio_StbImage::_GetFilenameExtension()
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
     //convert to lowercase
@@ -170,21 +142,20 @@ Glf_StbImage::_GetFilenameExtension()
 }
 
 void
-Glf_StbImage::_GetInfoFromStorageSpec(GlfImage::StorageSpec const & storage)
+Hio_StbImage::_GetInfoFromStorageSpec(HioImage::StorageSpec const & storage)
 {
     _width = storage.width;
     _height = storage.height;
-    _hioFormat = storage.hioFormat;
-    _outputType = _GetGLoutputTypeFromHioFormat(storage.hioFormat);
-    _nchannels = _GetNumChannelsFromHioFormat(storage.hioFormat); 
+    _format = storage.format;
+    _outputType = HioGetHioType(storage.format);
+    _nchannels = HioGetComponentCount(storage.format);
 }
 
-Glf_StbImage::Glf_StbImage()
+Hio_StbImage::Hio_StbImage()
     : _width(0)
     , _height(0)
     , _gamma(0.0f)
     , _nchannels(0)
-
 {
 }
 
@@ -193,7 +164,7 @@ Glf_StbImage::Glf_StbImage()
 /// the incoming data to fit the dimensions defined in storage.  _width
 /// and _height are updated to match those in storage
 bool 
-Glf_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
+Hio_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
         int const cropBottom,
         int const cropLeft,
         int const cropRight,
@@ -253,7 +224,7 @@ Glf_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
                                     storage.width * bpp,
                                     _nchannels, alphaIndex, 0);
         } else {
-            if (_outputType == GL_FLOAT) {
+            if (_outputType == HioTypeFloat) {
                     stbir_resize_float((float *) croppedData, 
                                        cropWidth, cropHeight, 
                                        croppedStrideLength,
@@ -280,13 +251,13 @@ Glf_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
 }
 
 /* virtual */
-Glf_StbImage::~Glf_StbImage()
+Hio_StbImage::~Hio_StbImage()
 {
 }
 
 /* virtual */
 std::string const &
-Glf_StbImage::GetFilename() const
+Hio_StbImage::GetFilename() const
 {
     return _filename;
 }
@@ -294,40 +265,40 @@ Glf_StbImage::GetFilename() const
 
 /* virtual */
 int
-Glf_StbImage::GetWidth() const
+Hio_StbImage::GetWidth() const
 {
     return _width;
 }
 
 /* virtual */
 int
-Glf_StbImage::GetHeight() const
+Hio_StbImage::GetHeight() const
 {
     return _height;
 }
 
 /* virtual */
 HioFormat
-Glf_StbImage::GetHioFormat() const
+Hio_StbImage::GetFormat() const
 {
-    return _hioFormat;
+    return _format;
 }
 
 /* virtual */
 int
-Glf_StbImage::GetBytesPerPixel() const
+Hio_StbImage::GetBytesPerPixel() const
 {
-    return _GetBytesPerChannelFromType(_outputType) * _nchannels;
+    return HioGetDataSizeOfType(_outputType) * _nchannels;
 }
 
 /* virtual */
 bool
-Glf_StbImage::IsColorSpaceSRGB() const
+Hio_StbImage::IsColorSpaceSRGB() const
 {
-    if (_sourceColorSpace == SourceColorSpace::SRGB) {
+    if (_sourceColorSpace == HioImage::SRGB) {
         return true;
     }
-    if (_sourceColorSpace == SourceColorSpace::Raw) {
+    if (_sourceColorSpace == HioImage::Raw) {
         return false;
     }
 
@@ -350,34 +321,34 @@ Glf_StbImage::IsColorSpaceSRGB() const
 
     // Texture had no (recognized) gamma hint, make a reasonable guess
     return ((_nchannels == 3 || _nchannels == 4) && 
-            _outputType == GL_UNSIGNED_BYTE);
+            _outputType == HioTypeUnsignedByte);
 }
 
 //XXX Still need to investigate Metadata handling
 /* virtual */
 bool
-Glf_StbImage::GetMetadata(TfToken const & key, VtValue * value) const
+Hio_StbImage::GetMetadata(TfToken const & key, VtValue * value) const
 {
     return false;
 }
 
 /* virtual */
 bool
-Glf_StbImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
+Hio_StbImage::GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const
 {
     return false;
 }
 
 /* virtual */
 int
-Glf_StbImage::GetNumMipLevels() const
+Hio_StbImage::GetNumMipLevels() const
 {
     return 1;
 }
 
 /* virtual */
 bool
-Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
+Hio_StbImage::_OpenForReading(std::string const & filename, int subimage,
                               int mip, SourceColorSpace sourceColorSpace, 
                               bool suppressErrors)
 {
@@ -386,9 +357,9 @@ Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
 
     std::string fileExtension = _GetFilenameExtension();
     if (fileExtension == "hdr") {
-        _outputType = GL_FLOAT;
+        _outputType = HioTypeFloat;
     } else {
-        _outputType = GL_UNSIGNED_BYTE;
+        _outputType = HioTypeUnsignedByte;
     }
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
@@ -402,19 +373,17 @@ Glf_StbImage::_OpenForReading(std::string const & filename, int subimage,
     }
 
     const bool open =  stbi_info_from_memory(
-        reinterpret_cast<stbi_uc const*>(buffer.get()), asset->GetSize(), 
+        reinterpret_cast<stbi_uc const*>(buffer.get()), asset->GetSize(),
         &_width, &_height, &_nchannels, &_gamma) &&
             subimage == 0 && mip == 0;
     
-    _hioFormat = GlfGetHioFormat(GlfGetBaseFormat(_nchannels), 
-                                 _outputType, 
-                                 IsColorSpaceSRGB());
+    _format = HioGetFormat(_nchannels, _outputType, IsColorSpaceSRGB());
     return open;
 }
 
 /* virtual */
 bool
-Glf_StbImage::Read(StorageSpec const & storage)
+Hio_StbImage::Read(StorageSpec const & storage)
 {
     return ReadCropped(0, 0, 0, 0, storage);
 }
@@ -424,11 +393,11 @@ Glf_StbImage::Read(StorageSpec const & storage)
 /// cropped and/or resized.  The _width and _height are updated to match 
 /// storage.width and storage.height
 bool
-Glf_StbImage::ReadCropped(int const cropTop,
-                           int const cropBottom,
-                           int const cropLeft,
-                           int const cropRight,
-                           StorageSpec const & storage)
+Hio_StbImage::ReadCropped(int const cropTop,
+                          int const cropBottom,
+                          int const cropLeft,
+                          int const cropRight,
+                          StorageSpec const & storage)
 {
     // read from file
     // NOTE: stbi_load will always return image data as a contiguous block 
@@ -441,6 +410,10 @@ Glf_StbImage::ReadCropped(int const cropTop,
     // Calling stbi_set_flip_vertically_on_load(...) is not thread-safe,
     // thus we explicitly call stbi__vertical_flip below - assuming
     // that no other client called stbi_set_flip_vertically_on_load(true).
+    
+#if defined(ARCH_OS_IOS)
+    stbi_convert_iphone_png_to_rgb(true);
+#endif
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
     if (!asset) 
@@ -452,7 +425,7 @@ Glf_StbImage::ReadCropped(int const cropTop,
     std::shared_ptr<const char> buffer = asset->GetBuffer();
     if (buffer) {
         size_t bufferSize = asset->GetSize();
-        if (_outputType == GL_FLOAT) {
+        if (_outputType == HioTypeFloat) {
             imageData = stbi_loadf_from_memory(
                 reinterpret_cast<stbi_uc const *>(buffer.get()), bufferSize,
                 &_width, &_height, &_nchannels, 0);
@@ -502,11 +475,11 @@ Glf_StbImage::ReadCropped(int const cropTop,
     {
         int bpp = GetBytesPerPixel();
         int inputStrideInBytes = _width * bpp; 
-        bool resizeNeeded = _width != storage.width || _height != storage.height;
+        bool resizeNeeded = _width!=storage.width || _height!=storage.height;
 
         if (resizeNeeded) {
             // XXX STB only has a sRGB resize for 8bit
-            if (IsColorSpaceSRGB() && _outputType == GL_UNSIGNED_BYTE) {
+            if (IsColorSpaceSRGB() && _outputType == HioTypeUnsignedByte) {
                 int alphaIndex = (_nchannels != 4)?
                                  STBIR_ALPHA_CHANNEL_NONE : 3;
                 stbir_resize_uint8_srgb((unsigned char*)imageData, 
@@ -519,7 +492,7 @@ Glf_StbImage::ReadCropped(int const cropTop,
                                         storage.width * bpp,
                                         _nchannels, alphaIndex, 0);
             } else {
-                if (_outputType == GL_FLOAT) {
+                if (_outputType == HioTypeFloat) {
                     stbir_resize_float((float *)imageData, 
                                        _width, 
                                        _height,
@@ -564,7 +537,7 @@ Glf_StbImage::ReadCropped(int const cropTop,
 
 /* virtual */
 bool
-Glf_StbImage::_OpenForWriting(std::string const & filename)
+Hio_StbImage::_OpenForWriting(std::string const & filename)
 {
     _filename = filename;
     // think about whether or not we need to clear the data ptr
@@ -574,6 +547,7 @@ Glf_StbImage::_OpenForWriting(std::string const & filename)
 namespace
 {
 
+static
 uint8_t
 _Quantize(float value)
 {
@@ -585,16 +559,16 @@ _Quantize(float value)
 }
 
 template<typename T>
-Glf_StbImage::StorageSpec
-_Quantize(Glf_StbImage::StorageSpec const & storageIn,
-          std::unique_ptr<uint8_t[]> & quantizedData, 
+Hio_StbImage::StorageSpec
+_Quantize(Hio_StbImage::StorageSpec const & storageIn,
+          std::unique_ptr<uint8_t[]> & quantizedData,
           bool isSRGB)
 {
     // stb requires unsigned byte data to write non .hdr file formats.
     // We'll quantize the data ourselves here.
-    int numChanels = _GetNumChannelsFromHioFormat(storageIn.hioFormat);
-    
-    size_t numElements = storageIn.width * storageIn.height * numChanels;        
+    int numChannels = HioGetComponentCount(storageIn.format);
+    size_t numElements = storageIn.width * storageIn.height * numChannels;
+
     quantizedData.reset(new uint8_t[numElements]);
 
     const T* inData = static_cast<T*>(storageIn.data);
@@ -602,12 +576,13 @@ _Quantize(Glf_StbImage::StorageSpec const & storageIn,
         quantizedData[i] = _Quantize(inData[i]);
     }
 
-    Glf_StbImage::StorageSpec quantizedSpec;
+    Hio_StbImage::StorageSpec quantizedSpec;
     quantizedSpec = storageIn; // shallow copy
     quantizedSpec.data = quantizedData.get();
-    quantizedSpec.hioFormat = GlfGetHioFormat(GlfGetBaseFormat(numChanels),
-                                              GL_UNSIGNED_BYTE,
-                                              isSRGB);    
+    quantizedSpec.format = HioGetFormat(numChannels,
+                                           HioTypeUnsignedByte,
+                                           isSRGB);
+    
     return quantizedSpec;
 }
 
@@ -621,28 +596,28 @@ _Quantize(Glf_StbImage::StorageSpec const & storageIn,
 /// file type.
 /* virtual */
 bool
-Glf_StbImage::Write(StorageSpec const & storageIn,
-                     VtDictionary const & metadata)
+Hio_StbImage::Write(StorageSpec const & storageIn,
+                      VtDictionary const & metadata)
 {
     const std::string fileExtension = _GetFilenameExtension();
 
     StorageSpec quantizedSpec;
     std::unique_ptr<uint8_t[]> quantizedData;
-    GLenum storageInType = GlfGetGLType(storageIn.hioFormat);
+    HioType type = HioGetHioType(storageIn.format);
     bool isSRGB = IsColorSpaceSRGB();
 
-    if (storageInType == GL_FLOAT && fileExtension != "hdr") {
+    if (type == HioTypeFloat && fileExtension != "hdr") {
         quantizedSpec = _Quantize<float>(storageIn, quantizedData, isSRGB);
-    } 
-    else if (storageInType == GL_HALF_FLOAT && fileExtension != "hdr") {
+    }
+    else if (type == HioTypeHalfFloat && fileExtension != "hdr") {
         quantizedSpec = _Quantize<GfHalf>(storageIn, quantizedData, isSRGB);
     }
-    else if (storageInType != GL_UNSIGNED_BYTE && fileExtension != "hdr") {
+    else if (type != HioTypeUnsignedByte && fileExtension != "hdr") {
         TF_CODING_ERROR("stb expects unsigned byte data to write filetype %s",
                         fileExtension.c_str());
         return false;
     }
-    else if (storageInType != GL_FLOAT && fileExtension == "hdr") 
+    else if (type != HioTypeFloat && fileExtension == "hdr")
     {
         TF_CODING_ERROR("stb expects linear float data to write filetype hdr");
         return false;
@@ -686,7 +661,7 @@ Glf_StbImage::Write(StorageSpec const & storageIn,
                                  _width * GetBytesPerPixel());
     } 
     else if (fileExtension.compare("bmp") == 0 ||
-               fileExtension.compare("dib") == 0)  
+             fileExtension.compare("dib") == 0)
     {
         success = stbi_write_bmp(_filename.c_str(), _width, _height, 
                                  _nchannels, storage.data);

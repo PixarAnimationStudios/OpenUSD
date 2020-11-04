@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_IMAGE_REGISTRY_H
-#define PXR_IMAGING_GLF_IMAGE_REGISTRY_H
+#ifndef PXR_IMAGING_HIO_IMAGE_REGISTRY_H
+#define PXR_IMAGING_HIO_IMAGE_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/hio/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
@@ -35,34 +35,34 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
+typedef std::shared_ptr<class HioImage> HioImageSharedPtr;
 
-class GlfRankedTypeMap;
+class HioRankedTypeMap;
 
-/// \class GlfImageRegistry
+/// \class HioImageRegistry
 ///
-/// Manages plugin registration and loading for GlfImage subclasses.
+/// Manages plugin registration and loading for HioImage subclasses.
 ///
-class GlfImageRegistry : public TfSingleton<GlfImageRegistry> {
+class HioImageRegistry : public TfSingleton<HioImageRegistry> {
 public:
-    GLF_API
-    static GlfImageRegistry& GetInstance();
+    HIO_API
+    static HioImageRegistry& GetInstance();
 
-    GLF_API
+    HIO_API
     bool IsSupportedImageFile(std::string const & filename);
 
 private:
-    friend class TfSingleton<GlfImageRegistry>;
-    GlfImageRegistry();
+    friend class TfSingleton<HioImageRegistry>;
+    HioImageRegistry();
 
-    friend class GlfImage;
+    friend class HioImage;
 
-    GlfImageSharedPtr _ConstructImage(std::string const & filename);
+    HioImageSharedPtr _ConstructImage(std::string const & filename);
 
 private:
-    std::unique_ptr<GlfRankedTypeMap> _typeMap;
+    std::unique_ptr<HioRankedTypeMap> _typeMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_GLF_IMAGE_REGISTRY_H
+#endif // PXR_IMAGING_HIO_IMAGE_REGISTRY_H

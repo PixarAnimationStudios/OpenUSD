@@ -1,5 +1,5 @@
 set(PXR_PREFIX "")
-set(PXR_PACKAGE RtxGlfImage)
+set(PXR_PACKAGE RtxHioImage)
 
 pxr_plugin(${PXR_PACKAGE}
 

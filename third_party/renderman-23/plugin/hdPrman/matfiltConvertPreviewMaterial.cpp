@@ -173,7 +173,7 @@ MatfiltConvertPreviewMaterial(
                     std::string ext = ArGetResolver().GetExtension(path);
                     if (!ext.empty() && ext != "tex") {
                         std::string pluginName = 
-                            std::string("RtxGlfImage") + ARCH_LIBRARY_SUFFIX;
+                            std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
                         // Check for wrap mode. In Renderman, the
                         // texture asset specifies its wrap mode, so we
                         // must pass this from the shading node into the

@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/imageRegistry.h"
-#include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/glf/rankedTypeMap.h"
+#include "pxr/imaging/hio/imageRegistry.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hio/rankedTypeMap.h"
 
-#include "pxr/imaging/glf/debugCodes.h"
+#include "pxr/imaging/hio/debugCodes.h"
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -42,30 +42,30 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(GLF_IMAGE_PLUGIN_RESTRICTION, "",
-                  "Restricts GlfImage plugin loading to the specified plugin");
+TF_DEFINE_ENV_SETTING(HIO_IMAGE_PLUGIN_RESTRICTION, "",
+                  "Restricts HioImage plugin loading to the specified plugin");
 
-TF_INSTANTIATE_SINGLETON(GlfImageRegistry);
+TF_INSTANTIATE_SINGLETON(HioImageRegistry);
 
-GlfImageRegistry&
-GlfImageRegistry::GetInstance()
+HioImageRegistry&
+HioImageRegistry::GetInstance()
 {
-    return TfSingleton<GlfImageRegistry>::GetInstance();
+    return TfSingleton<HioImageRegistry>::GetInstance();
 }
 
-GlfImageRegistry::GlfImageRegistry() :
-    _typeMap(new GlfRankedTypeMap)
+HioImageRegistry::HioImageRegistry() :
+    _typeMap(new HioRankedTypeMap)
 {
     // Register all image types using plugin metadata.
-    _typeMap->Add(TfType::Find<GlfImage>(), "imageTypes",
-                 GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
-                 TfGetEnvSetting(GLF_IMAGE_PLUGIN_RESTRICTION));
+    _typeMap->Add(TfType::Find<HioImage>(), "imageTypes",
+                 HIO_DEBUG_TEXTURE_IMAGE_PLUGINS,
+                 TfGetEnvSetting(HIO_IMAGE_PLUGIN_RESTRICTION));
 }
 
-GlfImageSharedPtr
-GlfImageRegistry::_ConstructImage(std::string const & filename)
+HioImageSharedPtr
+HioImageRegistry::_ConstructImage(std::string const & filename)
 {
-    static GlfImageSharedPtr NULL_IMAGE;
+    static HioImageSharedPtr NULL_IMAGE;
 
     // Lookup the plug-in type name based on the filename.
     TfToken fileExtension(
@@ -75,7 +75,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
 
     if (!pluginType) {
         // Unknown prim type.
-        TF_DEBUG(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
+        TF_DEBUG(HIO_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
                 "[PluginLoad] Unknown image type '%s' for file '%s'\n",
                 fileExtension.GetText(),
                 filename.c_str());
@@ -91,7 +91,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
         return NULL_IMAGE;
     }
 
-    GlfImageFactoryBase* factory = pluginType.GetFactory<GlfImageFactoryBase>();
+    HioImageFactoryBase* factory = pluginType.GetFactory<HioImageFactoryBase>();
     if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
                 "for image type '%s' for file '%s'\n",
@@ -102,7 +102,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
         return NULL_IMAGE;
     }
 
-    GlfImageSharedPtr instance = factory->New();
+    HioImageSharedPtr instance = factory->New();
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s' "
                 "for image type '%s' for file '%s'\n",
@@ -112,7 +112,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
         return NULL_IMAGE;
     }
 
-    TF_DEBUG(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
+    TF_DEBUG(HIO_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
     	        "[PluginLoad] Loaded plugin '%s' for image type '%s' for "
                 "file '%s'\n",
                 pluginType.GetTypeName().c_str(),
@@ -123,7 +123,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
 }
 
 bool
-GlfImageRegistry::IsSupportedImageFile(std::string const & filename)
+HioImageRegistry::IsSupportedImageFile(std::string const & filename)
 {
     // We support image files for which we can construct an image object.
     return _ConstructImage(filename) != 0;

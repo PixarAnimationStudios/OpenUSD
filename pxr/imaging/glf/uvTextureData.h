@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <memory>
@@ -73,12 +73,12 @@ public:
         unsigned int cropBottom,
         unsigned int cropLeft,
         unsigned int cropRight,
-        GlfImage::SourceColorSpace sourceColorSpace=GlfImage::Auto);
+        HioImage::SourceColorSpace sourceColorSpace=HioImage::Auto);
 
     GLF_API
     static GlfUVTextureDataRefPtr
     New(std::string const &filePath, Params const &params, 
-        GlfImage::SourceColorSpace sourceColorSpace=GlfImage::Auto);
+        HioImage::SourceColorSpace sourceColorSpace=HioImage::Auto);
 
     int NumDimensions() const override;
 
@@ -94,8 +94,8 @@ public:
     GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
-    HioFormat GetHioFormat() const override {
-        return _hioFormat;
+    HioFormat GetFormat() const override {
+        return _format;
     };
 
     size_t TargetMemory() const override {
@@ -122,8 +122,8 @@ public:
     bool Read(
         int degradeLevel, 
         bool generateMipmap,
-        GlfImage::ImageOriginLocation originLocation = 
-            GlfImage::OriginUpperLeft) override;
+        HioImage::ImageOriginLocation originLocation = 
+            HioImage::OriginUpperLeft) override;
     
     GLF_API
     int GetNumMipLevels() const override;
@@ -147,7 +147,7 @@ private:
     // 512x256, scaleX=0.25 and scaleY=0.25).
     struct _DegradedImageInput {
         _DegradedImageInput(double scaleX, double scaleY, 
-            GlfImageSharedPtr image) : scaleX(scaleX), scaleY(scaleY)
+            HioImageSharedPtr image) : scaleX(scaleX), scaleY(scaleY)
         { 
             images.push_back(image);
         }
@@ -158,10 +158,10 @@ private:
 
         double         scaleX;
         double         scaleY;
-        std::vector<GlfImageSharedPtr> images;
+        std::vector<HioImageSharedPtr> images;
     };
 
-    // Reads an image using GlfImage. If possible and requested, it will
+    // Reads an image using HioImage. If possible and requested, it will
     // load a down-sampled version (when mipmapped .tex file) of the image.
     // If targetMemory is > 0, it will iterate through the down-sampled version
     // until the estimated required GPU memory is smaller than targetMemory.
@@ -179,13 +179,13 @@ private:
                                                     int startMip, 
                                                     int lastMip);
 
-    // Given a GlfImage it will return the number of mip levels that 
+    // Given a HioImage it will return the number of mip levels that 
     // are actually valid to be loaded to the GPU. For instance, it will
     // drop textures with non valid OpenGL pyramids.
-    int _GetNumMipLevelsValid(const GlfImageSharedPtr image) const;
+    int _GetNumMipLevelsValid(const HioImageSharedPtr image) const;
 
     GlfUVTextureData(std::string const &filePath, Params const &params, 
-                     GlfImage::SourceColorSpace sourceColorSpace);
+                     HioImage::SourceColorSpace sourceColorSpace);
     virtual ~GlfUVTextureData();
         
     const std::string _filePath;
@@ -197,7 +197,7 @@ private:
     int _resizedWidth, _resizedHeight;
     int _bytesPerPixel;
 
-    HioFormat _hioFormat;
+    HioFormat _format;
 
     WrapInfo _wrapInfo;
 
@@ -206,7 +206,7 @@ private:
     std::unique_ptr<unsigned char[]> _rawBuffer;
     std::vector<Mip> _rawBufferMips;
 
-    GlfImage::SourceColorSpace _sourceColorSpace;
+    HioImage::SourceColorSpace _sourceColorSpace;
 };
 
 

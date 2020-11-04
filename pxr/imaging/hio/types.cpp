@@ -24,9 +24,75 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hio/types.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/vec3i.h"
 #include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+// A few random format validations to make sure the HioFormat switch stays
+// aligned with the HioFormat table.
+constexpr bool _CompileTimeValidateHioFormatSwitch() {
+    return (HioFormatCount == 44 &&
+            HioFormatUNorm8 == 0 &&
+            HioFormatFloat32 == 12 &&
+            HioFormatUInt32 == 28 &&
+            HioFormatBC6FloatVec3 == 40) ? true : false;
+}
+
+static_assert(_CompileTimeValidateHioFormatSwitch(),
+              "HioGetNumChannelsFromFormat() and HioGetChannelTypeFromFormat() "
+              "switch in HioTypes out of sync with HioFormat enum");
+
+static HioFormat _hioFormats[][4] = {
+    { HioFormatUNorm8, HioFormatUNorm8Vec2,
+      HioFormatUNorm8Vec3, HioFormatUNorm8Vec4 },
+    { HioFormatUNorm8srgb, HioFormatUNorm8Vec2srgb,
+      HioFormatUNorm8Vec3srgb, HioFormatUNorm8Vec4srgb },
+    { HioFormatSNorm8, HioFormatSNorm8Vec2,
+      HioFormatSNorm8Vec3, HioFormatSNorm8Vec4 },
+    { HioFormatUInt16, HioFormatUInt16Vec2,
+      HioFormatUInt16Vec3, HioFormatUInt16Vec4 },
+    { HioFormatInt16, HioFormatInt16Vec2,
+      HioFormatInt16Vec3, HioFormatInt16Vec4 },
+    { HioFormatUInt32, HioFormatUInt32Vec2,
+      HioFormatUInt32Vec3, HioFormatUInt32Vec4 },
+    { HioFormatInt32, HioFormatInt32Vec2,
+      HioFormatInt32Vec3, HioFormatInt32Vec4 },
+    { HioFormatFloat16, HioFormatFloat16Vec2,
+      HioFormatFloat16Vec3, HioFormatFloat16Vec4 },
+    { HioFormatFloat32, HioFormatFloat32Vec2,
+      HioFormatFloat32Vec3, HioFormatFloat32Vec4 },
+    { HioFormatDouble64, HioFormatDouble64Vec2,
+      HioFormatDouble64Vec3, HioFormatDouble64Vec4 },
+};
+
+static_assert(
+    TfArraySize(_hioFormats) == HioTypeCount,
+    "_hioFormats array in HioUtils out of sync with "
+    "HioColorChannelType enum");
+
+HioFormat
+HioGetFormat(uint32_t nchannels,
+             HioType type,
+             bool isSRGB)
+{
+    if (type >= HioTypeCount) {
+        TF_CODING_ERROR("Invalid type");
+        return HioFormatInvalid;
+    }
+
+    if (nchannels == 0 || nchannels > 4) {
+        TF_CODING_ERROR("Invalid channel count");
+        return HioFormatInvalid;
+    }
+    
+    if (isSRGB && type == HioTypeUnsignedByte) {
+        type = HioTypeUnsignedByteSRGB;
+    }
+
+    return _hioFormats[type][nchannels - 1];
+}
 
 HioType 
 HioGetHioType(HioFormat format)
@@ -171,28 +237,24 @@ size_t
 HioGetDataSizeOfType(HioType type)
 {
     switch (type) {
+        case HioTypeCount:
+            return 0;
         case HioTypeUnsignedByte:
         case HioTypeSignedByte:
+        case HioTypeUnsignedByteSRGB:
             return 1;
-
         case HioTypeUnsignedShort:
         case HioTypeSignedShort:
-            return 2;
-
-        case HioTypeUnsignedInt:
-        case HioTypeInt:
-            return 4;
-
         case HioTypeHalfFloat:
             return 2;
-
+        case HioTypeUnsignedInt:
+        case HioTypeInt:
         case HioTypeFloat:
             return 4;
-
         case HioTypeDouble:
             return 8;
     }
-    TF_CODING_ERROR("Missing type");
+    TF_CODING_ERROR("Missing Format");
     return 1;
 }
 

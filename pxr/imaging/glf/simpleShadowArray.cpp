@@ -29,7 +29,7 @@
 #include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/vec2i.h"
@@ -281,11 +281,11 @@ GlfSimpleShadowArray::EndCapture(size_t index)
     glDisable(GL_DEPTH_CLAMP);
 
     if (TfDebug::IsEnabled(GLF_DEBUG_DUMP_SHADOW_TEXTURES)) {
-        GlfImage::StorageSpec storage;
+        HioImage::StorageSpec storage;
         GfVec2i resolution = GetShadowMapSize(index);
         storage.width = resolution[0];
         storage.height = resolution[1];
-        storage.hioFormat = HioFormatFloat32;
+        storage.format = HioFormatFloat32;
 
         // In OpenGL, (0, 0) is the lower left corner.
         storage.flipped = true;
@@ -324,7 +324,7 @@ GlfSimpleShadowArray::EndCapture(size_t index)
             TfStringPrintf("%s/GlfSimpleShadowArray.index_%zu.tif",
                            ArchGetTmpDir(),
                            index));
-        GlfImageSharedPtr image = GlfImage::OpenForWriting(outputImageFile);
+        HioImageSharedPtr image = HioImage::OpenForWriting(outputImageFile);
         if (image->Write(storage)) {
             TfDebug::Helper().Msg(
                 "Wrote shadow texture: %s\n", outputImageFile.c_str());

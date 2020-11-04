@@ -148,7 +148,7 @@ _Uniquify(const T &objects,
     }
 }
 
-// Variable left from a time when Glf_StbImage was not thread-safe
+// Variable left from a time when Hio_StbImage was not thread-safe
 // and testUsdImagingGLTextureWrapStormTextureSystem produced
 // wrong and non-deterministic results.
 //

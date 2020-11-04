@@ -228,7 +228,7 @@ _GetPremultiplyAlpha(const HdStSubtextureIdentifier * const subId,
 // Read from the HdStSubtextureIdentifier its source color space
 //
 static
-GlfImage::SourceColorSpace
+HioImage::SourceColorSpace
 _GetSourceColorSpace(const HdStSubtextureIdentifier * const subId,
                    const HdTextureType textureType)
 {    
@@ -251,12 +251,12 @@ _GetSourceColorSpace(const HdStSubtextureIdentifier * const subId,
     }
 
     if (sourceColorSpace == HdStTokens->sRGB) {
-        return GlfImage::SRGB;
+        return HioImage::SRGB;
     } 
     if (sourceColorSpace == HdStTokens->raw) {
-        return GlfImage::Raw;
+        return HioImage::Raw;
     }
-    return GlfImage::Auto;
+    return HioImage::Auto;
 }
 
 } // anonymous namespace
@@ -357,7 +357,7 @@ _GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
         case GL_CLAMP_TO_BORDER: return HdWrapBlack;
         case GL_MIRRORED_REPEAT: return HdWrapMirror;
         //
-        // For GlfImage legacy plugins that still use the GL_CLAMP
+        // For HioImage legacy plugins that still use the GL_CLAMP
         // (obsoleted in OpenGL 3.0).
         //
         // Note that some graphics drivers produce results for GL_CLAMP
@@ -395,17 +395,17 @@ _GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
 // vertical orientation opposite to UsdUvTexture.
 //
 static
-GlfImage::ImageOriginLocation
+HioImage::ImageOriginLocation
 _GetImageOriginLocation(const HdStSubtextureIdentifier * const subId)
 {
     using SubId = const HdStAssetUvSubtextureIdentifier;
     
     if (SubId* const uvSubId = dynamic_cast<SubId*>(subId)) {
         if (uvSubId->GetFlipVertically()) {
-            return GlfImage::OriginUpperLeft;
+            return HioImage::OriginUpperLeft;
         }
     }
-    return GlfImage::OriginLowerLeft;
+    return HioImage::OriginLowerLeft;
 }
 
 HdStAssetUvTextureObject::HdStAssetUvTextureObject(
@@ -819,7 +819,7 @@ HdStUdimTextureObject::_Commit()
     // Load tiles.
     _gpuTexture = GlfUdimTexture::New(
         GetTextureIdentifier().GetFilePath(),
-        GlfImage::OriginLowerLeft,
+        HioImage::OriginLowerLeft,
         std::move(_tiles),
         _GetPremultiplyAlpha(
             GetTextureIdentifier().GetSubtextureIdentifier(), 

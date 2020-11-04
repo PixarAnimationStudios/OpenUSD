@@ -34,7 +34,7 @@
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
 
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/utils.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -53,16 +53,16 @@ struct _TextureSize {
 };
 
 struct _MipDesc {
-    _MipDesc(const _TextureSize& s, GlfImageSharedPtr&& i) :
+    _MipDesc(const _TextureSize& s, HioImageSharedPtr&& i) :
         size(s), image(std::move(i)) { }
     _TextureSize size;
-    GlfImageSharedPtr image;
+    HioImageSharedPtr image;
 };
 
 using _MipDescArray = std::vector<_MipDesc>;
 
 _MipDescArray _GetMipLevels(const TfToken& filePath, 
-                            GlfImage::SourceColorSpace sourceColorSpace)
+                            HioImage::SourceColorSpace sourceColorSpace)
 {
     constexpr int maxMipReads = 32;
     _MipDescArray ret {};
@@ -70,7 +70,7 @@ _MipDescArray _GetMipLevels(const TfToken& filePath,
     unsigned int prevWidth = std::numeric_limits<int>::max();
     unsigned int prevHeight = std::numeric_limits<int>::max();
     for (unsigned int mip = 0; mip < maxMipReads; ++mip) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(filePath, 0, mip, 
+        HioImageSharedPtr image = HioImage::OpenForReading(filePath, 0, mip, 
                                                            sourceColorSpace);
         if (image == nullptr) {
             break;
@@ -101,10 +101,10 @@ TF_REGISTRY_FUNCTION(TfType)
 
 GlfUdimTexture::GlfUdimTexture(
     TfToken const& imageFilePath,
-    GlfImage::ImageOriginLocation originLocation,
+    HioImage::ImageOriginLocation originLocation,
     std::vector<std::tuple<int, TfToken>>&& tiles,
     bool const premultiplyAlpha,
-    GlfImage::SourceColorSpace sourceColorSpace)
+    HioImage::SourceColorSpace sourceColorSpace)
     : GlfTexture(originLocation), _tiles(std::move(tiles)), 
       _premultiplyAlpha(premultiplyAlpha), _sourceColorSpace(sourceColorSpace)
 {
@@ -118,10 +118,10 @@ GlfUdimTexture::~GlfUdimTexture()
 GlfUdimTextureRefPtr
 GlfUdimTexture::New(
     TfToken const& imageFilePath,
-    GlfImage::ImageOriginLocation originLocation,
+    HioImage::ImageOriginLocation originLocation,
     std::vector<std::tuple<int, TfToken>>&& tiles,
     bool const premultiplyAlpha,
-    GlfImage::SourceColorSpace sourceColorSpace)
+    HioImage::SourceColorSpace sourceColorSpace)
 {
     return TfCreateRefPtr(new GlfUdimTexture(
         imageFilePath, originLocation, std::move(tiles), premultiplyAlpha, 
@@ -317,11 +317,10 @@ GlfUdimTexture::_ReadImage()
         return;
     }
 
-    HioFormat hioFormat = firstImageMips[0].image->GetHioFormat();
+    HioFormat hioFormat = firstImageMips[0].image->GetFormat();
+    int numChannels = HioGetComponentCount(hioFormat);
     _format = GlfGetGLFormat(hioFormat);
     const GLenum type = GlfGetGLType(hioFormat);
-
-    unsigned int numChannels = GlfGetNumElements(hioFormat);
 
     GLenum internalFormat = GL_RGBA8;
     unsigned int sizePerElem = 1;
@@ -351,6 +350,8 @@ GlfUdimTexture::_ReadImage()
             internalFormat = internalFormats[numChannels - 1];
         }
         sizePerElem = 1;
+    } else {
+        TF_CODING_ERROR("Unexpected GL type %d\n", type);
     }
 
     const unsigned int maxTileCount =
@@ -451,10 +452,10 @@ GlfUdimTexture::_ReadImage()
                 _TextureSize const& mipSize = mips[mip];
                 const unsigned int numBytesPerLayer =
                     mipSize.width * mipSize.height * numBytesPerPixel;
-                GlfImage::StorageSpec spec;
+                HioImage::StorageSpec spec;
                 spec.width = mipSize.width;
                 spec.height = mipSize.height;
-                spec.hioFormat = hioFormat;
+                spec.format = hioFormat;
                 spec.flipped = true;
                 spec.data = mipData[mip].data() + (tileId * numBytesPerLayer);
                 const auto it = std::find_if(images.rbegin(), images.rend(),

@@ -1113,7 +1113,7 @@ HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options)
             paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
         }
         // Default hdPrman installation under 'plugins/usd'
-        // We need the path to RtxGlfImage and we assume that it lives in the
+        // We need the path to RtxHioImage and we assume that it lives in the
         // same directory as hdPrmanLoader
         PlugPluginPtr plugin =
             PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
