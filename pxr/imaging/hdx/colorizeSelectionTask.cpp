@@ -73,9 +73,6 @@ HdxColorizeSelectionTask::~HdxColorizeSelectionTask()
 {
     delete[] _outputBuffer;
 
-    if (_parameterBuffer) {
-        _GetHgi()->DestroyBuffer(&_parameterBuffer);
-    }
     if (_texture) {
         _GetHgi()->DestroyTexture(&_texture);
     }
@@ -234,8 +231,10 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
 
     _compositor->BindTextures({_tokens->colorIn}, {_texture});
 
-    _CreateParameterBuffer();
-    _compositor->BindBuffer(_parameterBuffer, 0);
+    if (_UpdateParameterBuffer()) {
+        size_t byteSize = sizeof(_ParameterBuffer);
+        _compositor->SetShaderConstants(byteSize, &_parameterData);
+    }
 
     // Blend the selection color on top.  ApplySelectionColor uses the
     // calculation:
@@ -372,8 +371,8 @@ HdxColorizeSelectionTask::_ColorizeSelection()
     }
 }
 
-void
-HdxColorizeSelectionTask::_CreateParameterBuffer()
+bool
+HdxColorizeSelectionTask::_UpdateParameterBuffer()
 {
     _ParameterBuffer pb;
 
@@ -385,32 +384,13 @@ HdxColorizeSelectionTask::_CreateParameterBuffer()
     pb.enableOutline = (int)_params.enableOutline;
     pb.radius = (int)_params.outlineRadius;
 
-    // All data is still the same, no need to update the storage buffer
-    if (_parameterBuffer && pb == _parameterData) {
-        return;
+    // All data is still the same, no need to update the compositor
+    if (pb == _parameterData) {
+        return false;
     }
-    _parameterData = pb;
 
-    if (!_parameterBuffer) {
-        // Create a new (storage) buffer for shader parameters
-        HgiBufferDesc bufDesc;
-        bufDesc.debugName = "HdxColorizeSelectionTask parameter buffer";
-        bufDesc.usage = HgiBufferUsageStorage;
-        bufDesc.initialData = &_parameterData;
-        bufDesc.byteSize = sizeof(_parameterData);
-        _parameterBuffer = _GetHgi()->CreateBuffer(bufDesc);
-    } else {
-        // Update the existing storage buffer with new values.
-        HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
-        HgiBufferCpuToGpuOp copyOp;
-        copyOp.byteSize = sizeof(_parameterData);
-        copyOp.cpuSourceBuffer = &_parameterData;
-        copyOp.sourceByteOffset = 0;
-        copyOp.destinationByteOffset = 0;
-        copyOp.gpuDestinationBuffer = _parameterBuffer;
-        blitCmds->CopyBufferCpuToGpu(copyOp);
-        _GetHgi()->SubmitCmds(blitCmds.get());
-    }
+    _parameterData = pb;
+    return true;
 }
 
 void

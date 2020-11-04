@@ -106,8 +106,9 @@ private:
 
     GfVec4f _GetColorForMode(int mode) const;
 
-    // Utility function to create a storage buffer for the shader parameters.
-    void _CreateParameterBuffer();
+    // Utility function to update the shader uniform parameters.
+    // Returns true if the values were updated. False if unchanged.
+    bool _UpdateParameterBuffer();
 
     // Create a new GPU texture for the provided format and pixel data.
     // If an old texture exists it will be destroyed first.
@@ -153,7 +154,6 @@ private:
     std::unique_ptr<HdxFullscreenShader> _compositor;
 
     _ParameterBuffer _parameterData;
-    HgiBufferHandle _parameterBuffer;
     HgiTextureHandle _texture;
     bool _pipelineCreated;
 };

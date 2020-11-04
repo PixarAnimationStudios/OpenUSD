@@ -35,6 +35,8 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
@@ -112,6 +114,14 @@ public:
         HgiBlendFactor dstAlphaBlendFactor,
         HgiBlendOp alphaBlendOp);
 
+    /// Provide the shader constant values (uniforms).
+    /// The data values are copied, so you do not have to set them
+    /// each frame if they do not change in value.
+    HDX_API
+    void SetShaderConstants(
+        uint32_t byteSize,
+        const void* data);
+
     /// Draw the internal textures to the provided destination textures.
     /// `depth` is optional.
     HDX_API
@@ -186,6 +196,8 @@ private:
 
     HgiAttachmentDesc _attachment0;
     HgiAttachmentDesc _depthAttachment;
+
+    std::vector<uint8_t> _constantsData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

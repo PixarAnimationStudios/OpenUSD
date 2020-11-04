@@ -245,6 +245,17 @@ HdxFullscreenShader::SetBlendState(
 }
 
 void
+HdxFullscreenShader::SetShaderConstants(
+    uint32_t byteSize,
+    const void* data)
+{
+    _constantsData.resize(byteSize);
+    if (byteSize > 0) {
+        memcpy(&_constantsData[0], data, byteSize);
+    }
+}
+
+void
 HdxFullscreenShader::_CreateBufferResources()
 {
     if (_vertexBuffer) {
@@ -469,6 +480,12 @@ HdxFullscreenShader::_CreatePipeline(
     desc.vertexBuffers.clear();
     desc.vertexBuffers.push_back(_vboDesc);
 
+    // shader constants
+    if (!_constantsData.empty()) {
+        desc.shaderConstantsDesc.byteSize = _constantsData.size();
+        desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
+    }
+
     _pipeline = _hgi->CreateGraphicsPipeline(desc);
 
     return true;
@@ -616,6 +633,13 @@ HdxFullscreenShader::_Draw(
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
     GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
     gfxCmds->SetViewport(vp);
+
+    if (!_constantsData.empty()) {
+        gfxCmds->SetConstantValues(
+            _pipeline, HgiShaderStageFragment, 0,
+            _constantsData.size(), _constantsData.data());
+    }
+
     gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
     gfxCmds->PopDebugGroup();
 
