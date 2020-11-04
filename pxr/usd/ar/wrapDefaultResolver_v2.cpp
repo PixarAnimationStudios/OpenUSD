@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,24 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_AR_DEFAULT_RESOLVER_H
-#define PXR_USD_AR_DEFAULT_RESOLVER_H
 
-/// \file ar/defaultResolver.h
+#include <boost/python/class.hpp>
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/defaultResolver.h"
 
-#define PXR_INCLUDED_FROM_AR_DEFAULT_RESOLVER_H
+using namespace boost::python;
 
-#if AR_VERSION == 1
-#include "pxr/usd/ar/defaultResolver_v1.h"
-#elif AR_VERSION == 2
-#include "pxr/usd/ar/defaultResolver_v2.h"
-#else
-#error Unhandled AR_VERSION
-#endif
+PXR_NAMESPACE_USING_DIRECTIVE
 
-#undef PXR_INCLUDED_FROM_AR_DEFAULT_RESOLVER_H
+void
+wrapDefaultResolver()
+{
+    using This = ArDefaultResolver;
 
-#endif
+    class_<This, bases<ArResolver>, boost::noncopyable>
+        ("DefaultResolver", no_init)
+
+        .def("SetDefaultSearchPath", &This::SetDefaultSearchPath,
+             args("searchPath"))
+        .staticmethod("SetDefaultSearchPath")
+        ;
+}

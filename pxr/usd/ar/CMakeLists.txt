@@ -24,10 +24,12 @@ set(versionedPymoduleCPPFiles "")
 
 if (AR_VERSION EQUAL 1)
     list(APPEND versionedHeaders 
+         defaultResolver_v1.h
          resolver_v1.h
          resolverContext_v1.h
     )
     list(APPEND versionedCPPFiles
+         defaultResolver_v1.cpp
          resolver_v1.cpp
          resolverContext_v1.cpp
     )
@@ -38,15 +40,18 @@ if (AR_VERSION EQUAL 1)
          pyResolverContext_v1.cpp
     )
     list(APPEND versionedPymoduleCPPFiles
+         wrapDefaultResolver_v1.cpp
          wrapResolver_v1.cpp
          wrapResolverContext_v1.cpp
     )
 elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedHeaders 
+         defaultResolver_v2.h
          resolver_v2.h
          resolverContext_v2.h
     )
     list(APPEND versionedCPPFiles
+         defaultResolver_v2.cpp
          resolver_v2.cpp
          resolverContext_v2.cpp
     )
@@ -60,6 +65,7 @@ elseif (AR_VERSION EQUAL 2)
          pyResolverContext_v2.cpp
     )
     list(APPEND versionedPymoduleCPPFiles
+         wrapDefaultResolver_v2.cpp
          wrapResolver_v2.cpp
          wrapResolverContext_v2.cpp
     )
@@ -112,7 +118,6 @@ pxr_library(ar
         resolverContextBinder.cpp
         resolverScopedCache.cpp
         debugCodes.cpp
-        defaultResolver.cpp
         defaultResolverContext.cpp
         ${versionedCPPFiles}
 
@@ -122,7 +127,6 @@ pxr_library(ar
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapDefaultResolver.cpp
         wrapDefaultResolverContext.cpp
         wrapPackageUtils.cpp
         wrapResolverContextBinder.cpp
