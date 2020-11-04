@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
+#include "pxr/usd/sdf/variantSpec.h"
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -171,6 +172,28 @@ struct Sdf_IsMetadataField
 
     const SdfSchema::SpecDefinition* _specDef;
 };
+
+////////////////////////////////////////////////////////////////////////
+
+static inline bool
+Sdf_WritePrim(
+    const SdfPrimSpec &prim, std::ostream &out, size_t indent);
+
+static inline bool
+Sdf_WriteAttribute(
+    const SdfAttributeSpec &attr, std::ostream &out, size_t indent);
+
+static inline bool
+Sdf_WriteRelationship(
+    const SdfRelationshipSpec &rel, std::ostream &out, size_t indent);
+
+static bool
+Sdf_WriteVariantSet(
+    const SdfVariantSetSpec &spec, std::ostream &out, size_t indent);
+
+static bool
+Sdf_WriteVariant(
+    const SdfVariantSpec &variantSpec, std::ostream &out, size_t indent);
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -501,8 +524,23 @@ Sdf_WritePrimProperties(
     std::vector<SdfPropertySpecHandle> properties =
         prim.GetProperties().values_as<std::vector<SdfPropertySpecHandle> >();
     std::sort(properties.begin(), properties.end(), _SortByNameThenType());
-    TF_FOR_ALL(it, properties) {
-        (*it)->WriteToStream(out, indent+1);
+
+    for (const SdfPropertySpecHandle& specHandle : properties) {
+        const SdfPropertySpec& spec = specHandle.GetSpec();
+        const SdfSpecType specType = spec.GetSpecType();
+
+        if (specType == SdfSpecTypeAttribute) {
+            Sdf_WriteAttribute(
+                Sdf_CastAccess::CastSpec<
+                    SdfAttributeSpec, SdfPropertySpec>(spec),
+                out, indent+1);
+        }
+        else {
+            Sdf_WriteRelationship(
+                Sdf_CastAccess::CastSpec<
+                    SdfRelationshipSpec, SdfPropertySpec>(spec),
+                out, indent+1);
+        }
     }
 
     return true;
@@ -537,12 +575,14 @@ Sdf_WritePrimChildren(
     const SdfPrimSpec &prim, std::ostream &out, size_t indent)
 {
     bool newline = false;
-    TF_FOR_ALL(i, prim.GetNameChildren()) {
-        if (newline)
+    for (const SdfPrimSpecHandle& childPrim : prim.GetNameChildren()) {
+        if (newline) {
             Sdf_FileIOUtility::Puts(out, 0, "\n");
-        else
+        }
+        else {
             newline = true;
-        (*i)->WriteToStream(out, indent+1);
+        }
+        Sdf_WritePrim(childPrim.GetSpec(), out, indent+1);
     }
 
     return true;
@@ -554,9 +594,9 @@ Sdf_WritePrimVariantSets(
 {
     SdfVariantSetsProxy variantSets = prim.GetVariantSets();
     if (variantSets) {
-        TF_FOR_ALL(it, variantSets) {
-            SdfVariantSetSpecHandle variantSet = it->second;
-            variantSet->WriteToStream(out, indent+1);
+        for (const auto& variantNameAndSet : variantSets) {
+            const SdfVariantSetSpecHandle& vset = variantNameAndSet.second;
+            Sdf_WriteVariantSet(vset.GetSpec(), out, indent+1);
         }
     }
     return true;
@@ -598,12 +638,55 @@ Sdf_WritePrim(
 }
 
 static bool
+Sdf_WriteVariant(
+    const SdfVariantSpec &variantSpec, std::ostream &out, size_t indent)
+{
+    SdfPrimSpec primSpec = variantSpec.GetPrimSpec().GetSpec();
+    Sdf_FileIOUtility::WriteQuotedString(out, indent, variantSpec.GetName());
+
+    Sdf_WritePrimMetadata( primSpec, out, indent );
+
+    Sdf_FileIOUtility::Write(out, 0, " {\n");
+
+    Sdf_WritePrimBody( primSpec, out, indent );
+
+    Sdf_FileIOUtility::Write(out, 0, "\n");
+    Sdf_FileIOUtility::Write(out, indent, "}\n");
+
+    return true;
+}
+
+static bool
+Sdf_WriteVariantSet(
+    const SdfVariantSetSpec &spec, std::ostream &out, size_t indent)
+{
+    SdfVariantSpecHandleVector variants = spec.GetVariantList();
+    std::sort(
+        variants.begin(), variants.end(), 
+        [](const SdfVariantSpecHandle& a, const SdfVariantSpecHandle& b) {
+            return a->GetName() < b->GetName();
+        });
+
+    if (!variants.empty()) {
+        Sdf_FileIOUtility::Write(out, indent, "variantSet ");
+        Sdf_FileIOUtility::WriteQuotedString(out, 0, spec.GetName());
+        Sdf_FileIOUtility::Write(out, 0, " = {\n");
+        for (const SdfVariantSpecHandle& v : variants) {
+            Sdf_WriteVariant(v.GetSpec(), out, indent+1);
+        }
+        Sdf_FileIOUtility::Write(out, indent, "}\n");
+    }
+
+    return true;
+}
+
+static bool
 Sdf_WriteConnectionStatement(
     std::ostream &out,
-            size_t indent, const SdfConnectionsProxy::ListProxy &connections,
-            const std::string &opStr,
-            const std::string &variabilityStr,
-            const std::string &typeStr, const std::string &nameStr,
+    size_t indent, const SdfConnectionsProxy::ListProxy &connections,
+    const std::string &opStr,
+    const std::string &variabilityStr,
+    const std::string &typeStr, const std::string &nameStr,
     const SdfAttributeSpec* attrOwner)
 {
     Sdf_FileIOUtility::Write(out, indent, "%s%s%s %s.connect = ",
@@ -632,9 +715,9 @@ Sdf_WriteConnectionStatement(
 static bool
 Sdf_WriteConnectionList(
     std::ostream &out,
-                       size_t indent, const SdfConnectionsProxy &connList,
-                       const std::string &variabilityStr,
-                       const std::string &typeStr, const std::string &nameStr,
+    size_t indent, const SdfConnectionsProxy &connList,
+    const std::string &variabilityStr,
+    const std::string &typeStr, const std::string &nameStr,
     const SdfAttributeSpec *attrOwner)
 {
     if (connList.IsExplicit()) {
@@ -822,8 +905,8 @@ inline Sdf_WriteFlag operator |(Sdf_WriteFlag a, Sdf_WriteFlag b)
 static bool
 Sdf_WriteRelationshipTargetList(
     const SdfRelationshipSpec &rel,
-            const SdfTargetsProxy::ListProxy &targetPaths,
-            std::ostream &out, size_t indent, Sdf_WriteFlag flags)
+    const SdfTargetsProxy::ListProxy &targetPaths,
+    std::ostream &out, size_t indent, Sdf_WriteFlag flags)
 {
     if (targetPaths.size() > 1) {
         Sdf_FileIOUtility::Write(out, 0," = [\n");

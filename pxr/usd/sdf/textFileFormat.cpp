@@ -231,8 +231,8 @@ _WriteLayer(
     // Partition this layer's fields so that all fields to write out are
     // in the range [fields.begin(), metadataFieldsEnd).
     TfTokenVector fields = pseudoRoot->ListFields();
-    TfTokenVector::iterator metadataFieldsEnd = 
-        std::partition(fields.begin(), fields.end(), Sdf_IsLayerMetadataField());
+    TfTokenVector::iterator metadataFieldsEnd = std::partition(
+        fields.begin(), fields.end(), Sdf_IsLayerMetadataField());
 
     // Write comment at the top of the metadata section for readability.
     const std::string comment = commentOverride.empty() ?
@@ -302,10 +302,9 @@ _WriteLayer(
     }
         
     // Root prims
-    TF_FOR_ALL(i, l->GetRootPrims())
-    {
+    for (const SdfPrimSpecHandle& rootPrim : l->GetRootPrims()) {
         _Write(out, 0,"\n");
-        (*i)->WriteToStream(out, 0);
+        Sdf_WritePrim(rootPrim.GetSpec(), out, 0);
     }
 
     _Write(out, 0,"\n");
