@@ -443,7 +443,7 @@ HdStAssetUvTextureObject::_Load()
         std::make_unique<HdStGlfTextureCpuData>(
             textureData,
             _GetDebugName(GetTextureIdentifier()),
-            /* generateMips = */ true,
+            /* useOrGenerateMips = */ true,
             _GetPremultiplyAlpha(
                 GetTextureIdentifier().GetSubtextureIdentifier(), 
                 GetTextureType())));
