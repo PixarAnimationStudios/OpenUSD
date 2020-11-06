@@ -352,7 +352,7 @@ SdfLayer::CreateNew(
         "SdfLayer::CreateNew('%s', '%s')\n",
         identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(TfNullPtr, identifier, ArAssetInfo(), args);
+    return _CreateNew(TfNullPtr, identifier, args);
 }
 
 SdfLayerRefPtr
@@ -366,14 +366,13 @@ SdfLayer::CreateNew(
         fileFormat->GetFormatId().GetText(), 
         identifier.c_str(), TfStringify(args).c_str());
 
-    return _CreateNew(fileFormat, identifier, ArAssetInfo(), args);
+    return _CreateNew(fileFormat, identifier, args);
 }
 
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
     const string& identifier,
-    const ArAssetInfo& assetInfo,
     const FileFormatArguments &args)
 {
     if (Sdf_IsAnonLayerIdentifier(identifier)) {
@@ -441,7 +440,7 @@ SdfLayer::_CreateNew(
         }
 
         layer = _CreateNewWithFormat(
-            fileFormat, absIdentifier, localPath, assetInfo, args);
+            fileFormat, absIdentifier, localPath, ArAssetInfo(), args);
 
         if (!TF_VERIFY(layer)) {
             return TfNullPtr;

@@ -1384,8 +1384,7 @@ private:
     static SdfLayerRefPtr _CreateNew(
         SdfFileFormatConstPtr fileFormat,
         const std::string& identifier,
-        const ArAssetInfo& assetInfo = ArAssetInfo(),
-        const FileFormatArguments& args = FileFormatArguments());
+        const FileFormatArguments& args);
 
     static SdfLayerRefPtr _CreateNewWithFormat(
         const SdfFileFormatConstPtr &fileFormat,
