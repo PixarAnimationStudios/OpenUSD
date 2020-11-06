@@ -314,5 +314,26 @@ def "Root"
         self.assertTrue(l.expired)
         self.assertTrue(len(repr(l)))
 
+    def test_Import(self):
+        # Create a test layer on disk to import and then verify that
+        # we can import its contents into another layer.
+        newLayer = Sdf.Layer.CreateNew('TestLayerImport.sdf')
+        Sdf.PrimSpec(newLayer, 'Root', Sdf.SpecifierDef)
+        self.assertTrue(newLayer.Save())
+
+        anonLayer = Sdf.Layer.CreateAnonymous('TestLayerImport')
+        self.assertTrue(anonLayer)
+        self.assertTrue(anonLayer.Import(newLayer.identifier))
+
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+        # Test error cases. These should not affect the contents of the
+        # destination layer.
+        self.assertFalse(anonLayer.Import(''))
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+        self.assertFalse(anonLayer.Import('bogus.sdf'))
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
 if __name__ == "__main__":
     unittest.main()

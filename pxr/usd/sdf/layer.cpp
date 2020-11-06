@@ -978,7 +978,7 @@ SdfLayer::ReloadLayers(
 bool 
 SdfLayer::Import(const string &layerPath)
 {
-    string filePath = Sdf_ComputeFilePath(layerPath);
+    string filePath = Sdf_ResolvePath(layerPath);
     if (filePath.empty())
         return false;
 
