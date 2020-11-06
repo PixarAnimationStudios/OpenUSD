@@ -337,6 +337,18 @@ _ConvertNodes(
                 sn.params.SetInteger(name, v);
                 ok = true;
             }
+        } else if (param.second.IsHolding<VtArray<int>>()) {
+            if (propType == SdrPropertyTypes->Float) {
+                const VtArray<float>& v =
+                    param.second.UncheckedGet<VtArray<float>>();
+                sn.params.SetFloatArray(name, v.cdata(), v.size());
+                ok = true;
+            } else if (propType == SdrPropertyTypes->Int) {
+                const VtArray<int>& v =
+                    param.second.UncheckedGet<VtArray<int>>();
+                sn.params.SetIntegerArray(name, v.cdata(), v.size());
+                ok = true;
+            }
         } else if (param.second.IsHolding<TfToken>()) {
             TfToken v = param.second.UncheckedGet<TfToken>();
             sn.params.SetString(name, RtUString(v.GetText()));
