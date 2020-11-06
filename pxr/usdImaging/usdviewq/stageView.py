@@ -2211,11 +2211,13 @@ class StageView(QtOpenGL.QGLWidget):
                 # camera guides are on), treat that as a de-select.
                 selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                    None, None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
+                    [-1,-1], None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
         
             # Correct for high DPI displays
-            coord = self._scaleMouseCoords( \
-                QtCore.QPoint(selectedPoint[0], selectedPoint[1]))
+            # Cast to int explicitly as some versions of PySide/Shiboken throw
+            # when converting extremely small doubles held in selectedPoint
+            coord = self._scaleMouseCoords(QtCore.QPoint(
+                int(selectedPoint[0]), int(selectedPoint[1])))
             selectedPoint[0] = coord.x()
             selectedPoint[1] = coord.y()
 
