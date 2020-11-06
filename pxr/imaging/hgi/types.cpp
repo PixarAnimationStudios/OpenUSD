@@ -66,6 +66,8 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
     case HgiFormatUNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         return 4;
     case HgiFormatCount:
     case HgiFormatInvalid:
@@ -132,6 +134,8 @@ HgiGetDataSizeOfFormat(
     case HgiFormatBC6UFloatVec3:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         if (blockWidth) {
             *blockWidth = 4;
         }
@@ -156,6 +160,8 @@ HgiIsCompressed(const HgiFormat f)
     case HgiFormatBC6UFloatVec3:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         return true;
     default:
         return false;

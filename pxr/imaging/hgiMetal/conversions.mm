@@ -69,9 +69,10 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
 
     MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
     MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
-
     MTLPixelFormatBC7_RGBAUnorm,      // HgiFormatBC7UNorm8Vec4
     MTLPixelFormatBC7_RGBAUnorm_sRGB, // HgiFormatBC7UNorm8Vec4srgb
+    MTLPixelFormatBC1_RGBA,           // HgiFormatBC1UNorm8Vec4
+    MTLPixelFormatBC3_RGBA,           // HgiFormatBC3UNorm8Vec4
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
     
@@ -81,12 +82,13 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
 // A few random format validations to make sure out GL table stays aligned
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (HgiFormatCount==28 &&
+    return (TfArraySize(_PIXEL_FORMAT_DESC) == HgiFormatCount &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
             HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
+            HgiFormatUNorm8Vec4srgb == 22 &&
+            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(),
@@ -133,20 +135,22 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
 
     MTLVertexFormatInvalid,             // HgiFormatBC6FloatVec3
     MTLVertexFormatInvalid,             // HgiFormatBC6UFloatVec3
-
     MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4
     MTLVertexFormatInvalid,             // HgiFormatBC7UNorm8Vec4srgb
+    MTLVertexFormatInvalid,             // HgiFormatBC1UNorm8Vec4
+    MTLVertexFormatInvalid,             // HgiFormatBC3UNorm8Vec4
 
     MTLVertexFormatInvalid,             // HgiFormatFloat32UInt8
 };
 
 constexpr bool _CompileTimeValidateHgiVertexFormatTable() {
-    return (HgiFormatCount==28 &&
+    return (TfArraySize(_VERTEX_FORMAT_DESC) == HgiFormatCount &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
             HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
+            HgiFormatUNorm8Vec4srgb == 22 &&
+            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiVertexFormatTable(),
@@ -396,14 +400,14 @@ HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
 
     if ((inFormat < 0) || (inFormat >= HgiFormatCount))
     {
-        TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
+        TF_CODING_ERROR("Unexpected HgiFormat %d", inFormat);
         return MTLPixelFormatRGBA8Unorm;
     }
 
     MTLPixelFormat outFormat = _PIXEL_FORMAT_DESC[inFormat];
     if (outFormat == MTLPixelFormatInvalid)
     {
-        TF_CODING_ERROR("Unsupported HdFormat %d", inFormat);
+        TF_CODING_ERROR("Unsupported HgiFormat %d", inFormat);
         return MTLPixelFormatRGBA8Unorm;
     }
     return outFormat;
@@ -414,14 +418,14 @@ HgiMetalConversions::GetVertexFormat(HgiFormat inFormat)
 {
     if ((inFormat < 0) || (inFormat >= HgiFormatCount))
     {
-        TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
+        TF_CODING_ERROR("Unexpected HgiFormat %d", inFormat);
         return MTLVertexFormatFloat4;
     }
 
     MTLVertexFormat outFormat = _VERTEX_FORMAT_DESC[inFormat];
     if (outFormat == MTLVertexFormatInvalid)
     {
-        TF_CODING_ERROR("Unsupported HdFormat %d", inFormat);
+        TF_CODING_ERROR("Unsupported HgiFormat %d", inFormat);
         return MTLVertexFormatFloat4;
     }
     return outFormat;

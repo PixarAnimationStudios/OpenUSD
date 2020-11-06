@@ -82,20 +82,25 @@ static const _FormatDesc FORMAT_DESC[] =
               GL_COMPRESSED_RGBA_BPTC_UNORM }, // BC7UNorm8Vec4
     {GL_RGBA, GL_UNSIGNED_BYTE,
               GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM }, // BC7UNorm8Vec4srgb
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_RGBA_S3TC_DXT1_EXT }, // BC1UNorm8Vec4
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_RGBA_S3TC_DXT5_EXT }, // BC3UNorm8Vec4
 
-    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // HdFormatFloat32UInt8
+    {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // Float32UInt8
 
 };
 
 // A few random format validations to make sure out GL table stays aligned
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (HgiFormatCount==28 &&
+    return (TfArraySize(FORMAT_DESC) == HgiFormatCount &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
             HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
+            HgiFormatUNorm8Vec4srgb == 22 &&
+            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 

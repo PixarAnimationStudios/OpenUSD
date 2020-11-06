@@ -82,18 +82,21 @@ _FormatTable[HgiFormatCount][2] =
     {HgiFormatBC6UFloatVec3,  VK_FORMAT_BC6H_UFLOAT_BLOCK},
     {HgiFormatBC7UNorm8Vec4,  VK_FORMAT_BC7_UNORM_BLOCK},
     {HgiFormatBC7UNorm8Vec4srgb, VK_FORMAT_BC7_SRGB_BLOCK},
+    {HgiFormatBC1UNorm8Vec4,  VK_FORMAT_BC1_RGBA_UNORM_BLOCK},
+    {HgiFormatBC3UNorm8Vec4,  VK_FORMAT_BC3_UNORM_BLOCK},
     {HgiFormatFloat32UInt8,   VK_FORMAT_D32_SFLOAT_S8_UINT}
 };
 
 // A few random format validations to make sure the table above stays in sync
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (HgiFormatCount==28 &&
+    return (HgiFormatCount==30 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
             HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatUNorm8Vec4srgb == 22) ? true : false;
+            HgiFormatUNorm8Vec4srgb == 22 &&
+            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 
