@@ -784,23 +784,31 @@ UsdSkelImagingSkeletonAdapter::GetDoubleSided(UsdPrim const& prim,
 {
     if (_IsCallbackForSkeleton(prim)) {
         return true;
-    } else {
-        return BaseAdapter::GetDoubleSided(prim, cachePath, time);
+    } else if (_IsSkinnedPrimPath(cachePath)) {
+        if (UsdImagingPrimAdapterSharedPtr adapter =
+                _GetPrimAdapter(prim)) {
+            return adapter->GetDoubleSided(prim, cachePath, time);
+        }
     }
+    return BaseAdapter::GetDoubleSided(prim, cachePath, time);
 }
 
 /*virtual*/
 SdfPath
 UsdSkelImagingSkeletonAdapter::GetMaterialId(UsdPrim const& prim, 
                                              SdfPath const& cachePath, 
-                                            UsdTimeCode time) const
+                                             UsdTimeCode time) const
 {
     if (_IsCallbackForSkeleton(prim)) {
         // skeleton has no material
         return SdfPath();
-    } else {
-        return BaseAdapter::GetMaterialId(prim, cachePath, time);
+    } else if (_IsSkinnedPrimPath(cachePath)) {
+        if (UsdImagingPrimAdapterSharedPtr adapter =
+                _GetPrimAdapter(prim)) {
+            return adapter->GetMaterialId(prim, cachePath, time);
+        }
     }
+    return BaseAdapter::GetMaterialId(prim, cachePath, time);
 }
 
 
