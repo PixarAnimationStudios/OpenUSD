@@ -25,9 +25,6 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/cameraUtil/conformWindow.h"
-
-#include "pxr/base/gf/frustum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,19 +32,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(HdCameraTokens, HD_CAMERA_TOKENS);
 
 HdCamera::HdCamera(SdfPath const &id)
- :  HdSprim(id)
+  :  HdSprim(id)
   , _windowPolicy(CameraUtilFit)
 {
 }
 
-HdCamera::~HdCamera()
-{
-}
+HdCamera::~HdCamera() = default;
 
 void
-HdCamera::Sync(HdSceneDelegate *sceneDelegate,
-                HdRenderParam   *renderParam,
-                HdDirtyBits     *dirtyBits)
+HdCamera::Sync(HdSceneDelegate * sceneDelegate,
+               HdRenderParam   * renderParam,
+               HdDirtyBits     * dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -68,7 +63,7 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
     
     if (bits & DirtyViewMatrix) {
         // extract and store view matrix
-        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
+        const VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->worldToViewMatrix);
         
         _worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
@@ -77,14 +72,14 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyProjMatrix) {
         // extract and store projection matrix
-        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
+        const VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->projectionMatrix);
         _projectionMatrix = vMatrix.Get<GfMatrix4d>();
     }
 
     if (bits & DirtyWindowPolicy) {
         // treat window policy as an optional parameter
-        VtValue vPolicy = sceneDelegate->GetCameraParamValue(id, 
+        const VtValue vPolicy = sceneDelegate->GetCameraParamValue(id, 
             HdCameraTokens->windowPolicy);
         if (!vPolicy.IsEmpty())  {
             _windowPolicy = vPolicy.Get<CameraUtilConformWindowPolicy>();
@@ -93,7 +88,7 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyClipPlanes) {
         // treat clip planes as an optional parameter
-        VtValue vClipPlanes = 
+        const VtValue vClipPlanes = 
             sceneDelegate->GetCameraParamValue(id, HdCameraTokens->clipPlanes);
         if (!vClipPlanes.IsEmpty()) {
             _clipPlanes = vClipPlanes.Get< std::vector<GfVec4d> >();
