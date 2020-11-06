@@ -149,7 +149,7 @@ HgiVulkanShaderGenerator::_Execute(
     std::ostream &ss,
     const std::string &originalShaderShader) 
 {
-    ss << _version << " \n";
+    ss << _GetVersion() << " \n";
 
     HgiVulkanShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
@@ -192,8 +192,8 @@ HgiVulkanShaderGenerator::_Execute(
 
     //write all the original shader except the version string
     ss.write(
-        (cstr+_version.length()),
-        originalShaderShader.length() - (_version.length()));
+        cstr + _GetVersion().length(),
+        originalShaderShader.length() - _GetVersion().length());
 }
 
 HgiVulkanShaderSectionUniquePtrVector*

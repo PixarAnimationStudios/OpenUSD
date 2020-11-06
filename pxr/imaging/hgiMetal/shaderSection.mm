@@ -212,7 +212,7 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     ss << "{\n";
     for (HgiShaderSection* member : _members) {
         if(member->GetAttribute() != nullptr) {
-            member->GetWriteAttributeWithIndex(ss);
+            member->WriteAttributeWithIndex(ss);
             ss << ";\n";
         }
         else {
@@ -302,7 +302,7 @@ HgiMetalArgumentBufferInputShaderSection::VisitEntryPointParameterDeclarations(
     }
     
     if(GetAttribute() != nullptr) {
-        GetWriteAttributeWithIndex(ss);
+        WriteAttributeWithIndex(ss);
     }
     else {
         WriteParameter(ss);

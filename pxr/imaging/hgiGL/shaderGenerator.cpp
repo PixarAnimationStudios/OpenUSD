@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "shaderGenerator.h"
+#include "pxr/imaging/hgiGL/shaderGenerator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -139,7 +139,7 @@ HgiGLShaderGenerator::_Execute(
     std::ostream &ss,
     const std::string &originalShaderShader) 
 {
-    ss << _version << " \n";
+    ss << _GetVersion() << " \n";
 
     HgiGLShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
@@ -182,8 +182,8 @@ HgiGLShaderGenerator::_Execute(
 
     //write all the original shader except the version string
     ss.write(
-        (cstr+_version.length()),
-        originalShaderShader.length() - (_version.length()));
+        cstr + _GetVersion().length(),
+        originalShaderShader.length() - _GetVersion().length());
 }
 
 HgiGLShaderSectionUniquePtrVector*

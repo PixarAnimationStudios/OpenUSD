@@ -22,40 +22,33 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "shaderGenerator.h"
+#include "pxr/imaging/hgi/shaderGenerator.h"
 
-#include <sstream>
+#include "pxr/imaging/hgi/shaderFunctionDesc.h"
+
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static void
-_ExtractVersionString(
-    const std::string &originalShader, std::string *version)
+static std::string
+_ExtractVersionString(const std::string &originalShader)
 {
-    if (originalShader.rfind("#version", 0) == 0) {
-        std::stringstream ss;
-        int ind = 0;
-
-        char curr = '\0';
-        while(curr != '\n') {
-            curr = originalShader[ind];
-            ss << curr;
-            ind++;
-        }
-        *version = ss.str();
+    if (TfStringStartsWith(originalShader, "#version")) {
+        return originalShader.substr(0, originalShader.find('\n'));
     }
+    return std::string();
 }
 
 HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
-    : _version()
+    // As we append to the top of complete GLSLFX files, the version
+    // string has to be hoisted for OpenGL and removed for Metal
+    : _version(_ExtractVersionString(descriptor.shaderCode))
     , _originalShader(descriptor.shaderCode)
     , _stage(descriptor.shaderStage)
 {
-    //As we append to the top of complete GLSLFX files, the version
-    //string has to be hoisted for OpenGL and removed for Metal
-    _ExtractVersionString(_originalShader, &_version);
 }
+
+HgiShaderGenerator::~HgiShaderGenerator() = default;
 
 void
 HgiShaderGenerator::Execute(std::ostream &ss)
@@ -65,15 +58,21 @@ HgiShaderGenerator::Execute(std::ostream &ss)
 }
 
 const std::string&
-HgiShaderGenerator::GetOriginalShader() const
+HgiShaderGenerator::_GetOriginalShader() const
 {
     return _originalShader;
 }
 
 HgiShaderStage
-HgiShaderGenerator::GetShaderStage() const
+HgiShaderGenerator::_GetShaderStage() const
 {
     return _stage;
+}
+
+const std::string&
+HgiShaderGenerator::_GetVersion() const
+{
+    return _version;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

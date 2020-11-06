@@ -25,11 +25,16 @@
 #ifndef PXR_IMAGING_HGI_SHADERGENERATOR_H
 #define PXR_IMAGING_HGI_SHADERGENERATOR_H
 
-#include "pxr/imaging/hgi/shaderFunctionDesc.h"
+#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/enums.h"
 
 #include <iosfwd>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HgiShaderFunctionDesc;
 
 /// \class HgiShaderGenerator
 ///
@@ -49,6 +54,9 @@ public:
     HGI_API
     void Execute(std::ostream &ss);
 
+    HGI_API
+    virtual ~HgiShaderGenerator();
+
 protected:
     HGI_API
     virtual void _Execute(
@@ -56,18 +64,20 @@ protected:
         const std::string &originalShaderCode) = 0;
 
     HGI_API
-    const std::string& GetOriginalShader() const;
+    const std::string& _GetOriginalShader() const;
 
     HGI_API
-    HgiShaderStage GetShaderStage() const;
+    HgiShaderStage _GetShaderStage() const;
 
-    std::string _version;
+    HGI_API
+    const std::string& _GetVersion() const;
 
 private:
     HgiShaderGenerator() = delete;
     HgiShaderGenerator & operator=(const HgiShaderGenerator&) = delete;
     HgiShaderGenerator(const HgiShaderGenerator&) = delete;
 
+    const std::string _version;
     const std::string _originalShader;
     const HgiShaderStage _stage;
 };

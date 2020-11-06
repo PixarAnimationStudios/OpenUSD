@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class HgiShaderSection
 ///
 /// A base class for a Shader Section.
-/// In it's simplest form then it is a construct that knows
+/// In its simplest form then it is a construct that knows
 /// how to declare itself, define and pass as param.
 /// Can be subclassed to add more behaviour for complex cases
 /// and to hook into the visitor tree.
@@ -53,30 +53,30 @@ public:
             const std::string *defaultValue = nullptr);
 
     HGI_API
-    virtual ~HgiShaderSection() = default;
+    virtual ~HgiShaderSection();
 
-    //Write out the type, shader section does not hold a type
-    //string as how a type is defined is fully controlled
-    //by sub classes and no assumptions are made
+    /// Write out the type, shader section does not hold a type
+    /// string as how a type is defined is fully controlled
+    /// by sub classes and no assumptions are made
     HGI_API
     virtual void WriteType(std::ostream& ss) const;
 
-    //Writes the unique name of an instance of the section
+    /// Writes the unique name of an instance of the section
     HGI_API
     virtual void WriteIdentifier(std::ostream& ss) const;
 
-    //Writes a decleration statement for a member or in global scope
+    /// Writes a decleration statement for a member or in global scope
     HGI_API
     virtual void WriteDeclaration(std::ostream& ss) const;
 
-    //Writes the section as a parameter to a function
+    /// Writes the section as a parameter to a function
     HGI_API
     virtual void WriteParameter(std::ostream& ss) const;
 
-    //Returns a function that attempts to write out the attribute
-    //and also the attribute index in case either exists
+    /// Write out the attribute and also the attribute index in case
+    /// either exists
     HGI_API
-    void GetWriteAttributeWithIndex(std::ostream& ss) const;
+    virtual void WriteAttributeWithIndex(std::ostream& ss) const;
 
     HGI_API
     const std::string* GetAttribute() const;

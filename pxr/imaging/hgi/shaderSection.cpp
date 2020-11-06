@@ -44,6 +44,8 @@ HgiShaderSection::HgiShaderSection(
 {
 }
 
+HgiShaderSection::~HgiShaderSection() = default;
+
 void
 HgiShaderSection::WriteType(std::ostream& ss) const
 {
@@ -73,7 +75,7 @@ HgiShaderSection::WriteParameter(std::ostream& ss) const
 }
 
 void
-HgiShaderSection::GetWriteAttributeWithIndex(std::ostream& ss) const
+HgiShaderSection::WriteAttributeWithIndex(std::ostream& ss) const
 {
     if(_attribute != nullptr) {
         if(_attributeIndex != nullptr) {
