@@ -1247,5 +1247,13 @@ HdStResourceRegistry::AllocateTextureObject(
             
 }    
 
+void
+HdStResourceRegistry::SetMemoryRequestForTextureType(
+    const HdTextureType textureType,
+    const size_t memoryRequest)
+{
+    _textureHandleRegistry->SetMemoryRequestForTextureType(
+        textureType, memoryRequest);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

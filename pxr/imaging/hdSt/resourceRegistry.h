@@ -191,6 +191,18 @@ public:
         /// Texture type, e.g., uv, ptex, ...
         HdTextureType textureType);
 
+    /// Sets how much memory a single texture can consume in bytes by
+    /// texture type.
+    ///
+    /// Only has an effect if non-zero and only applies to textures if
+    /// no texture handle referencing the texture has a memory
+    /// request.
+    ///
+    HDST_API
+    void SetMemoryRequestForTextureType(
+        HdTextureType textureType,
+        size_t memoryRequest);
+
     /// ------------------------------------------------------------------------
     /// BAR allocation API
     /// ------------------------------------------------------------------------

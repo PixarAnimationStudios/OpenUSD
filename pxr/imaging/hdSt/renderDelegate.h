@@ -136,6 +136,8 @@ public:
     Hgi* GetHgi();
 
 private:
+    void _ApplyTextureSettings();
+
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
 

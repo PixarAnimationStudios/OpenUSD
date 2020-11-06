@@ -182,7 +182,12 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
         HdRenderSettingDescriptor{
             "Step size when raymarching volume for lighting computation",
             HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-            VtValue(HdStVolume::defaultStepSizeLighting) }
+            VtValue(HdStVolume::defaultStepSizeLighting) },
+        HdRenderSettingDescriptor{
+            "Maximum memory for a volume field texture in Mb "
+            "(unless overridden by field prim)",
+            HdStRenderSettingsTokens->volumeMaxTextureMemoryPerField,
+            VtValue(HdStVolume::defaultMaxTextureMemoryPerField) }
     };
 
     _PopulateDefaultSettings(_settingDescriptors);
@@ -463,6 +468,8 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
     GLF_GROUP_FUNCTION();
     
+    _ApplyTextureSettings();
+
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
     // --------------------------------------------------------------------- //
@@ -513,6 +520,19 @@ Hgi*
 HdStRenderDelegate::GetHgi()
 {
     return _hgi;
+}
+
+void
+HdStRenderDelegate::_ApplyTextureSettings()
+{
+    const float memInMb =
+        std::max(0.0f,
+                 GetRenderSetting<float>(
+                     HdStRenderSettingsTokens->volumeMaxTextureMemoryPerField,
+                     HdStVolume::defaultMaxTextureMemoryPerField));
+
+    _resourceRegistry->SetMemoryRequestForTextureType(
+        HdTextureType::Field, 1048576 * memInMb);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -137,15 +137,34 @@ public:
     HDST_API
     std::set<HdStShaderCodeSharedPtr> Commit();
 
+    /// Sets how much memory a single texture can consume in bytes by
+    /// texture type.
+    ///
+    /// Only has an effect if non-zero and only applies to textures if
+    /// no texture handle referencing the texture has a memory
+    /// request.
+    ///
+    HDST_API
+    void SetMemoryRequestForTextureType(HdTextureType textureType, size_t memoryRequest);
+
 private:
     void _ComputeMemoryRequest(HdStTextureObjectSharedPtr const &);
     void _ComputeMemoryRequests(const std::set<HdStTextureObjectSharedPtr> &);
+    void _ComputeAllMemoryRequests();
 
     bool _GarbageCollectHandlesAndComputeTargetMemory();
     void _GarbageCollectAndComputeTargetMemory();
     std::set<HdStShaderCodeSharedPtr> _Commit();
 
     class _TextureToHandlesMap;
+
+    // Maps texture type to memory a single texture of that type can consume
+    // (in bytes).
+    // Will be taken into account when computing the maximum of all the
+    // memory requests of the texture handles.
+    std::map<HdTextureType, size_t> _textureTypeToMemoryRequest;
+    // Has _textureTypeToMemoryRequest changed since the last commit.
+    bool _textureTypeToMemoryRequestChanged;
 
     // Handles that are new or for which the underlying texture has
     // changed: samplers might need to be (re-)allocated and the

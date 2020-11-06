@@ -57,6 +57,10 @@ public:
     /// Default step size used for raymarching for lighting computation
     static const float defaultStepSizeLighting;
 
+    /// Default memory limit for a field texture (in Mb) if not
+    /// overridden by field prim with textureMemory.
+    static const float defaultMaxTextureMemoryPerField;
+
 protected:
     void _InitRepr(TfToken const &reprToken,
                    HdDirtyBits* dirtyBits) override;
