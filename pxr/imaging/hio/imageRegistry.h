@@ -27,15 +27,13 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hio/api.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/token.h"
 
 #include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef std::shared_ptr<class HioImage> HioImageSharedPtr;
+using HioImageSharedPtr = std::shared_ptr<class HioImage>;
 
 class HioRankedTypeMap;
 
@@ -43,7 +41,8 @@ class HioRankedTypeMap;
 ///
 /// Manages plugin registration and loading for HioImage subclasses.
 ///
-class HioImageRegistry : public TfSingleton<HioImageRegistry> {
+class HioImageRegistry : public TfSingleton<HioImageRegistry>
+{
 public:
     HIO_API
     static HioImageRegistry& GetInstance();
@@ -60,7 +59,7 @@ private:
     HioImageSharedPtr _ConstructImage(std::string const & filename);
 
 private:
-    std::unique_ptr<HioRankedTypeMap> _typeMap;
+    std::unique_ptr<HioRankedTypeMap> const _typeMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

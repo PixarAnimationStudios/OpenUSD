@@ -34,6 +34,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
 #include <set>
@@ -54,7 +55,7 @@ HioImageRegistry::GetInstance()
 }
 
 HioImageRegistry::HioImageRegistry() :
-    _typeMap(new HioRankedTypeMap)
+    _typeMap(std::make_unique<HioRankedTypeMap>())
 {
     // Register all image types using plugin metadata.
     _typeMap->Add(TfType::Find<HioImage>(), "imageTypes",
@@ -65,10 +66,10 @@ HioImageRegistry::HioImageRegistry() :
 HioImageSharedPtr
 HioImageRegistry::_ConstructImage(std::string const & filename)
 {
-    static HioImageSharedPtr NULL_IMAGE;
+    static const HioImageSharedPtr NULL_IMAGE;
 
     // Lookup the plug-in type name based on the filename.
-    TfToken fileExtension(
+    const TfToken fileExtension(
             TfStringToLower(ArGetResolver().GetExtension(filename)));
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
@@ -83,7 +84,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
     }
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
-    PlugPluginPtr plugin = plugReg.GetPluginForType(pluginType);
+    PlugPluginPtr const plugin = plugReg.GetPluginForType(pluginType);
     if (!plugin || !plugin->Load()) {
         TF_CODING_ERROR("[PluginLoad] PlugPlugin could not be loaded for "
                 "TfType '%s'\n",
@@ -91,7 +92,8 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
         return NULL_IMAGE;
     }
 
-    HioImageFactoryBase* factory = pluginType.GetFactory<HioImageFactoryBase>();
+    HioImageFactoryBase* const factory =
+        pluginType.GetFactory<HioImageFactoryBase>();
     if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
                 "for image type '%s' for file '%s'\n",
@@ -102,7 +104,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
         return NULL_IMAGE;
     }
 
-    HioImageSharedPtr instance = factory->New();
+    HioImageSharedPtr const instance = factory->New();
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s' "
                 "for image type '%s' for file '%s'\n",

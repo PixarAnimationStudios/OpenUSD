@@ -33,9 +33,7 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<HioImage>();
 }
 
-HioImage::~HioImage()
-{
-}
+HioImage::~HioImage() = default;
 
 /* static */
 bool

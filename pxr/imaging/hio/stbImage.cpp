@@ -49,53 +49,54 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hio_StbImage : public HioImage {
+class Hio_StbImage final : public HioImage
+{
 public:
-    typedef HioImage Base;
+    using Base = HioImage;
 
     Hio_StbImage();
 
-    virtual ~Hio_StbImage();
+    ~Hio_StbImage() override;
 
     // HioImage overrides
     std::string const & GetFilename() const override;
-    virtual int GetWidth() const override;
-    virtual int GetHeight() const override;
-    virtual HioFormat GetFormat() const override;
-    virtual int GetBytesPerPixel() const override;
-    virtual int GetNumMipLevels() const override;
+    int GetWidth() const override;
+    int GetHeight() const override;
+    HioFormat GetFormat() const override;
+    int GetBytesPerPixel() const override;
+    int GetNumMipLevels() const override;
 
-    virtual bool IsColorSpaceSRGB() const override;
+    bool IsColorSpaceSRGB() const override;
 
-    virtual bool GetMetadata(TfToken const & key, VtValue * value) const override;
-    virtual bool GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const override;
+    bool GetMetadata(TfToken const & key, VtValue * value) const override;
+    bool GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const override;
 
-    virtual bool Read(StorageSpec const & storage) override;
-    virtual bool ReadCropped(int const cropTop,
-                             int const cropBottom,
-                             int const cropLeft,
-                             int const cropRight,
-                             StorageSpec const & storage) override;
+    bool Read(StorageSpec const & storage) override;
+    bool ReadCropped(int const cropTop,
+                     int const cropBottom,
+                     int const cropLeft,
+                     int const cropRight,
+                     StorageSpec const & storage) override;
 
-    virtual bool Write(StorageSpec const & storage,
-                       VtDictionary const & metadata) override;
+    bool Write(StorageSpec const & storage,
+               VtDictionary const & metadata) override;
 
 protected:
-    virtual bool _OpenForReading(std::string const & filename, int subimage,
-                                 int mip, SourceColorSpace sourceColorSpace, 
-                                 bool suppressErrors) override;
-    virtual bool _OpenForWriting(std::string const & filename) override;
+    bool _OpenForReading(std::string const & filename, int subimage,
+                         int mip, SourceColorSpace sourceColorSpace, 
+                         bool suppressErrors) override;
+    bool _OpenForWriting(std::string const & filename) override;
 
 private:
     std::string _GetFilenameExtension();
     bool _IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRight);
     void _GetInfoFromStorageSpec(HioImage::StorageSpec const & storage);
     bool _CropAndResize(void const *sourceData, int const cropTop,
-                   int const cropBottom,
-                   int const cropLeft,
-                   int const cropRight,
-                   bool resizeNeeded,
-                   StorageSpec const & storage);
+                        int const cropBottom,
+                        int const cropLeft,
+                        int const cropRight,
+                        bool resizeNeeded,
+                        StorageSpec const & storage);
         
     std::string _filename;
     int _width;
@@ -112,7 +113,7 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef Hio_StbImage Image;
+    using Image = Hio_StbImage;
     TfType t = TfType::Define<Image, TfType::Bases<Image::Base> >();
     t.SetFactory< HioImageFactory<Image> >();
 }
@@ -120,8 +121,8 @@ TF_REGISTRY_FUNCTION(TfType)
 bool
 Hio_StbImage::_IsValidCrop(int cropTop, int cropBottom, int cropLeft, int cropRight)
 {
-    int cropImageWidth = _width - (cropLeft + cropRight);
-    int cropImageHeight = _height - (cropTop + cropBottom);
+    const int cropImageWidth = _width - (cropLeft + cropRight);
+    const int cropImageHeight = _height - (cropTop + cropBottom);
     return (cropTop >= 0 &&
             cropBottom >= 0 &&
             cropLeft >= 0 &&
@@ -168,20 +169,20 @@ Hio_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
         int const cropBottom,
         int const cropLeft,
         int const cropRight,
-        bool resizeNeeded,
+        bool const resizeNeeded,
         StorageSpec const & storage)
 {
     if (!TF_VERIFY(_IsValidCrop(cropTop, cropBottom, cropLeft, cropRight),
         "Invalid crop parameters")) {
         return false;
     }
-    int bpp = GetBytesPerPixel();
+    const int bpp = GetBytesPerPixel();
     
-    int cropWidth = _width - cropRight - cropLeft;
-    int cropHeight = _height - cropTop - cropBottom;
-    int croppedStrideLength = cropWidth * bpp;
+    const int cropWidth = _width - cropRight - cropLeft;
+    const int cropHeight = _height - cropTop - cropBottom;
+    const int croppedStrideLength = cropWidth * bpp;
 
-    int strideLength = _width * bpp; 
+    const int strideLength = _width * bpp; 
 
     
     // set destination
@@ -251,9 +252,7 @@ Hio_StbImage::_CropAndResize(void const *sourceData, int const cropTop,
 }
 
 /* virtual */
-Hio_StbImage::~Hio_StbImage()
-{
-}
+Hio_StbImage::~Hio_StbImage() = default;
 
 /* virtual */
 std::string const &
@@ -355,19 +354,19 @@ Hio_StbImage::_OpenForReading(std::string const & filename, int subimage,
     _filename = filename;
     _sourceColorSpace = sourceColorSpace;
 
-    std::string fileExtension = _GetFilenameExtension();
+    const std::string fileExtension = _GetFilenameExtension();
     if (fileExtension == "hdr") {
         _outputType = HioTypeFloat;
     } else {
         _outputType = HioTypeUnsignedByte;
     }
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(_filename);
     if (!asset) { 
         return false;
     }
 
-    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    std::shared_ptr<const char> const buffer = asset->GetBuffer();
     if (!buffer) {
         return false;
     }
@@ -415,14 +414,14 @@ Hio_StbImage::ReadCropped(int const cropTop,
     stbi_convert_iphone_png_to_rgb(true);
 #endif
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(_filename);
     if (!asset) 
     {
         TF_CODING_ERROR("Cannot open image %s for reading", _filename.c_str());
         return false;
     }
 
-    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    std::shared_ptr<const char> const buffer = asset->GetBuffer();
     if (buffer) {
         size_t bufferSize = asset->GetSize();
         if (_outputType == HioTypeFloat) {
@@ -457,8 +456,9 @@ Hio_StbImage::ReadCropped(int const cropTop,
     if (cropTop || cropBottom || cropLeft || cropRight)
     {
         //check if resizing is still necessary after cropping
-        bool resizeNeeded = (_width - cropRight - cropLeft != storage.width ) || 
-                            (_height - cropTop - cropBottom != storage.height);
+        const bool resizeNeeded =
+            (_width - cropRight - cropLeft != storage.width ) ||
+            (_height - cropTop - cropBottom != storage.height);
         
         // copy (and potentially resize)
         // cropped region of imageData into storage.data
@@ -473,15 +473,16 @@ Hio_StbImage::ReadCropped(int const cropTop,
     }
     else
     {
-        int bpp = GetBytesPerPixel();
-        int inputStrideInBytes = _width * bpp; 
-        bool resizeNeeded = _width!=storage.width || _height!=storage.height;
+        const int bpp = GetBytesPerPixel();
+        const int inputStrideInBytes = _width * bpp; 
+        const bool resizeNeeded =
+            _width!=storage.width || _height!=storage.height;
 
         if (resizeNeeded) {
             // XXX STB only has a sRGB resize for 8bit
             if (IsColorSpaceSRGB() && _outputType == HioTypeUnsignedByte) {
-                int alphaIndex = (_nchannels != 4)?
-                                 STBIR_ALPHA_CHANNEL_NONE : 3;
+                const int alphaIndex = (_nchannels != 4)?
+                                       STBIR_ALPHA_CHANNEL_NONE : 3;
                 stbir_resize_uint8_srgb((unsigned char*)imageData, 
                                         _width, 
                                         _height, 
@@ -520,7 +521,7 @@ Hio_StbImage::ReadCropped(int const cropTop,
         }
         else
         {
-            int imageSize = bpp * _width * _height;
+            const int imageSize = bpp * _width * _height;
             //no resizing needed, just copy image data to storage
             memcpy(storage.data, imageData, imageSize);
         }
@@ -554,7 +555,7 @@ _Quantize(float value)
     static constexpr int min = 0;
     static constexpr int max = std::numeric_limits<uint8_t>::max();
 
-    int result = min + std::floor((max - min) * value + 0.499999f);
+    const int result = min + std::floor((max - min) * value + 0.499999f);
     return std::min(max, std::max(min, result));
 }
 
@@ -566,12 +567,12 @@ _Quantize(Hio_StbImage::StorageSpec const & storageIn,
 {
     // stb requires unsigned byte data to write non .hdr file formats.
     // We'll quantize the data ourselves here.
-    int numChannels = HioGetComponentCount(storageIn.format);
-    size_t numElements = storageIn.width * storageIn.height * numChannels;
+    const int numChannels = HioGetComponentCount(storageIn.format);
+    const size_t numElements = storageIn.width * storageIn.height * numChannels;
 
     quantizedData.reset(new uint8_t[numElements]);
 
-    const T* inData = static_cast<T*>(storageIn.data);
+    const T* const inData = static_cast<T*>(storageIn.data);
     for (size_t i = 0; i < numElements; ++i) {
         quantizedData[i] = _Quantize(inData[i]);
     }
@@ -603,8 +604,8 @@ Hio_StbImage::Write(StorageSpec const & storageIn,
 
     StorageSpec quantizedSpec;
     std::unique_ptr<uint8_t[]> quantizedData;
-    HioType type = HioGetHioType(storageIn.format);
-    bool isSRGB = IsColorSpaceSRGB();
+    const HioType type = HioGetHioType(storageIn.format);
+    const bool isSRGB = IsColorSpaceSRGB();
 
     if (type == HioTypeFloat && fileExtension != "hdr") {
         quantizedSpec = _Quantize<float>(storageIn, quantizedData, isSRGB);

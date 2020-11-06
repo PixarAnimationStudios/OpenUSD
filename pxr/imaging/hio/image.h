@@ -76,7 +76,8 @@ public:
     ///
     /// Describes the memory layout and storage of a texture image
     ///
-    class StorageSpec {
+    class StorageSpec
+    {
     public:
         StorageSpec()
             : width(0), height(0), depth(0)
