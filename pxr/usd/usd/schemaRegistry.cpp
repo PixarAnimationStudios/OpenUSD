@@ -65,7 +65,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (appliedAPISchemas)
     (multipleApplyAPISchemas)
     (multipleApplyAPISchemaPrefixes)
+    (autoApplyAPISchemas)
 );
+
+using _TypeToTokenVecMap = 
+    TfHashMap<TfType, TfTokenVector, TfHash>;
+using _TokenToTokenMap = 
+    TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
 
 namespace {
 // Helper struct for caching a bidirecional mapping between schema TfType and
@@ -243,6 +249,179 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     return layer;
 }
 
+static bool
+_CollectAppliedAPISchemaNames(
+    const VtDictionary &customDataDict,
+    TfToken::HashSet *appliedAPISchemaNames)
+{
+    auto it = customDataDict.find(_tokens->appliedAPISchemas);
+    if (it == customDataDict.end()) {
+        return true;
+    }
+
+    if (!it->second.IsHolding<VtStringArray>()) {
+        TF_CODING_ERROR("Found an unexpected value type for layer customData "
+            "key '%s'; expected a string array. Applied API schemas may be "
+            "incorrect.",
+            _tokens->appliedAPISchemas.GetText());
+        return false;
+    }
+
+    const VtStringArray &appliedAPISchemas = 
+        it->second.UncheckedGet<VtStringArray>();
+    for (const auto &apiSchemaName : appliedAPISchemas) {
+        appliedAPISchemaNames->insert(TfToken(apiSchemaName));
+    }
+    return true;
+}
+
+static bool
+_CollectMultipleApplyAPISchemaNamespaces(
+    const VtDictionary &customDataDict,
+    _TokenToTokenMap *multipleApplyAPISchemaNamespaces)
+{
+    // Names of multiple apply API schemas are stored in their schemas
+    // in a dictionary mapping them to their property namespace prefixes. 
+    // These will be useful in mapping schema instance property names 
+    // to the schema property specs.
+
+    auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
+    if (it == customDataDict.end()) {
+        return true;
+    }
+
+    if (!it->second.IsHolding<VtDictionary>()) {
+        TF_CODING_ERROR("Found an unexpected value type for layer "
+            "customData key '%s'; expected a dictionary. Multiple apply API "
+            "schemas may be incorrect.",
+            _tokens->multipleApplyAPISchemas.GetText());
+        return false;
+    }
+
+    bool success = true;
+    const VtDictionary &multipleApplyAPISchemas = 
+        it->second.UncheckedGet<VtDictionary>();
+    for (const auto &it : multipleApplyAPISchemas) {
+        const TfToken apiSchemaName(it.first);
+
+        if (!it.second.IsHolding<std::string>()) {
+            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
+                "the dictionary for layer customData field '%s'; expected a "
+                "string. Multiple apply API schema of type '%s' will not be "
+                "correctly registered.",
+                apiSchemaName.GetText(),
+                _tokens->multipleApplyAPISchemas.GetText(),
+                apiSchemaName.GetText());
+            success = false;
+            continue;
+        }
+
+        (*multipleApplyAPISchemaNamespaces)[apiSchemaName] = 
+             TfToken(it.second.UncheckedGet<std::string>());
+    }
+    return success;
+}
+
+static bool
+_CollectAutoAppliedAPISchemaNames(
+    const VtDictionary &customDataDict,
+    const TfToken::HashSet &appliedAPISchemaNames,
+    _TokenToTokenMap &multipleApplyAPISchemaNamespaces,
+    _TypeToTokenVecMap *concreteTypeToAutoAppliedAPISchemaNames)
+{
+    auto it = customDataDict.find(_tokens->autoApplyAPISchemas);
+    if (it == customDataDict.end()) {
+        return true;
+    }
+
+    if (!it->second.IsHolding<VtDictionary>()) {
+        TF_CODING_ERROR("Found an unexpected value type for layer "
+            "customData key '%s'; expected a dictionary. Auto apply API "
+            "schemas may be incorrect.",
+            _tokens->autoApplyAPISchemas.GetText());
+        return false;
+    }
+
+    bool success = true;
+
+    const VtDictionary &autoApplyAPISchemas = 
+        it->second.UncheckedGet<VtDictionary>();
+    for (const auto &it : autoApplyAPISchemas) {
+        const TfToken apiSchemaName(it.first);
+
+        if (!it.second.IsHolding<VtTokenArray>()) {
+            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
+                "the dictionary for layer customData field '%s'; expected a "
+                "token array. API schemas of type '%s' will not be auto "
+                "applied.",
+                apiSchemaName.GetText(),
+                _tokens->autoApplyAPISchemas.GetText(),
+                apiSchemaName.GetText());
+            success = false;
+            continue;
+        }
+        if (!appliedAPISchemaNames.count(apiSchemaName)) {
+            TF_CODING_ERROR("Schema type '%s' is not an applied API schema "
+                "type in the generated schema file that defines it and cannot "
+                "be auto applied.",
+                apiSchemaName.GetText());
+            success = false;
+            continue;
+        }
+        if (multipleApplyAPISchemaNamespaces.count(apiSchemaName)) {
+            TF_CODING_ERROR("Schema type '%s' is a multiple apply API schema "
+                "and cannot be auto applied.",
+                apiSchemaName.GetText());
+            success = false;
+            continue;
+        }
+
+        // Collect all the types to apply the API schema to which includes any
+        // derived types of each of the listed types. 
+        std::set<TfType> applyToTypes;
+        const VtTokenArray &applyToSchemas = 
+            it.second.UncheckedGet<VtTokenArray>(); 
+        for (const TfToken &schemaName : applyToSchemas) {
+            // The names listed are the USD type names (not the full TfType 
+            // name) so we get actual concrete TfType and its derived types.
+            // 
+            // XXX: We want to be able to include all derived types of an 
+            // abstract schema types by including the abstract type name in 
+            // the list, but we don't have aliased type names for abstract 
+            // schemas yet. There is an upcoming task to address the lack 
+            // of abstract type aliases and this code can be updated to accept
+            // abstract types once that happens.
+            const TfType schemaType = 
+                UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(schemaName);
+            if (!schemaType.IsUnknown()) {
+                applyToTypes.insert(schemaType);
+                schemaType.GetAllDerivedTypes(&applyToTypes);
+            }
+        }
+
+        // With all the apply to types collected we can add the API schema to
+        // the list of applied schemas for each concrete type.
+        for (const TfType &applyToType : applyToTypes) {
+            (*concreteTypeToAutoAppliedAPISchemaNames)[applyToType].push_back(
+                apiSchemaName);
+        }
+    }
+
+    // Finally, with every concrete type mapped to all of its auto applied API
+    // scheemas, we sort the auto-applied API schemas in each list by name.
+    // This ordering is arbitrary but necessary to ensure we get a consistent 
+    // strength ordering for auto applied schemas every time. In practice, 
+    // schema writers should be careful to make sure that auto applied API 
+    // schemas have unique property names so that application order doesn't 
+    // matter, but this at least gives us consistent behavior if property name 
+    // collisions occur.
+    for (auto &valuePair : *concreteTypeToAutoAppliedAPISchemaNames) {
+        std::sort(valuePair.second.begin(), valuePair.second.end());
+    }
+
+    return success;
+}
+
 void
 UsdSchemaRegistry::_FindAndAddPluginSchema()
 {
@@ -281,45 +460,29 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
     SdfChangeBlock block;
     TfToken::HashSet appliedAPISchemaNames;
+    _TypeToTokenVecMap  concreteTypeToAutoAppliedAPISchemaNames;
+
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
             VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
 
-            if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
-                    _tokens->appliedAPISchemas)) {
-                        
-                const VtStringArray &appliedAPISchemas = 
-                        VtDictionaryGet<VtStringArray>(customDataDict, 
-                            _tokens->appliedAPISchemas);
-                for (const auto &apiSchemaName : appliedAPISchemas) {
-                    appliedAPISchemaNames.insert(TfToken(apiSchemaName));
-                }
+            bool hasErrors = false;
+
+            if (!_CollectAppliedAPISchemaNames(
+                    customDataDict, &appliedAPISchemaNames)) {
+                hasErrors = true;
             }
 
-            // Names of multiple apply API schemas are stored in their schemas
-            // in a dictionary mapping them to their property namespace prefixes. 
-            // These will be useful in mapping schema instance property names 
-            // to the schema property specs.
-            auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
-            if (VtDictionaryIsHolding<VtDictionary>(customDataDict, 
-                    _tokens->multipleApplyAPISchemas)) {
-                if (!it->second.IsHolding<VtDictionary>()) {
-                    TF_CODING_ERROR("Found a non-dictionary value for layer "
-                        "metadata key '%s' in generated schema file '%s'. "
-                        "Any multiple apply API schemas from this file will "
-                        "be incorrect. This schema must be regenerated.",
-                        _tokens->multipleApplyAPISchemas.GetText(),
-                        generatedSchema->GetRealPath().c_str());
-                    continue;
-                }
-                const VtDictionary &multipleApplyAPISchemas = 
-                    it->second.UncheckedGet<VtDictionary>();
-                for (const auto &it : multipleApplyAPISchemas) {
-                    if (it.second.IsHolding<std::string>()) {
-                        _multipleApplyAPISchemaNamespaces[TfToken(it.first)] = 
-                            TfToken(it.second.UncheckedGet<std::string>());
-                    }
-                }
+            if (!_CollectMultipleApplyAPISchemaNamespaces(
+                    customDataDict, &_multipleApplyAPISchemaNamespaces)) {
+                hasErrors = true;
+            }
+
+            if (!_CollectAutoAppliedAPISchemaNames(
+                    customDataDict, appliedAPISchemaNames,
+                    _multipleApplyAPISchemaNamespaces,
+                    &concreteTypeToAutoAppliedAPISchemaNames)) {
+                hasErrors = true;
             }
 
             _AddSchema(generatedSchema, _schematics);
@@ -343,6 +506,13 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                     }
                 }
             }
+
+            if (hasErrors) {
+                TF_CODING_ERROR(
+                    "Encountered errors in layer metadata from generated "
+                    "schema file '%s'. This schema must be regenerated.",
+                    generatedSchema->GetRealPath().c_str());
+            }
         }
     }
 
@@ -355,7 +525,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     struct _PrimDefInfo {
         TfToken usdTypeNameToken;
         SdfPrimSpecHandle primSpec;
-        TfTokenVector fallbackAPISchemas;
+        TfTokenVector apiSchemasToApply;
 
         _PrimDefInfo(const TfToken &usdTypeNameToken_,
                      const SdfPrimSpecHandle &primSpec_)
@@ -393,21 +563,42 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                                               /*isAPISchema=*/ true);
                 }
             } else {
-                // Otherwise it's a concrete type. If it has no API schemas,
-                // add the new prim definition to the concrete typed schema 
-                // map also using both the USD and TfType name. Otherwise
-                // collect the API schemas and defer.
-                SdfTokenListOp fallbackAPISchemaListOp;
+                // Otherwise it's a concrete type. We need to see if it requires
+                // any applied API schemas.
+                TfTokenVector apiSchemasToApply;
+
+                // First check for any applied API schemas defined in the 
+                // metadata for the type in the schematics.
+                SdfTokenListOp apiSchemasListOp;
                 if (_schematics->HasField(primPath, UsdTokens->apiSchemas, 
-                                          &fallbackAPISchemaListOp)) {
-                    primTypesWithAPISchemas.emplace_back(
-                        usdTypeNameToken, primSpec);
-                    fallbackAPISchemaListOp.ApplyOperations(
-                        &primTypesWithAPISchemas.back().fallbackAPISchemas);
-                } else {
+                                          &apiSchemasListOp)) {
+                    apiSchemasListOp.ApplyOperations(&apiSchemasToApply);
+                }
+                // Next, check if there are any API schemas that have been 
+                // setup to apply to this type. We add these after the metadata
+                // metadata defined API schemas so that auto applied APIs are
+                // weaker.
+                if (const TfTokenVector *autoAppliedAPIs = 
+                        TfMapLookupPtr(concreteTypeToAutoAppliedAPISchemaNames, 
+                                       valuePair.second.type)) {
+                    apiSchemasToApply.insert(apiSchemasToApply.end(), 
+                                             autoAppliedAPIs->begin(),
+                                             autoAppliedAPIs->end());
+                }
+
+                // If it has no API schemas, add the new prim definition to the 
+                // concrete typed schema map also using both the USD and TfType 
+                // name. Otherwise we defer the creation of the prim definition
+                // until all API schema definitions have processed..
+                if (apiSchemasToApply.empty()) {
                     _concreteTypedPrimDefinitions[usdTypeNameToken] = 
                         new UsdPrimDefinition(primSpec, 
                                               /*isAPISchema=*/ false);
+                } else {
+                    primTypesWithAPISchemas.emplace_back(
+                        usdTypeNameToken, primSpec);
+                    primTypesWithAPISchemas.back().apiSchemasToApply = 
+                        std::move(apiSchemasToApply);
                 }
             }
         }
@@ -423,7 +614,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         UsdPrimDefinition *primDef =
             _concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
             new UsdPrimDefinition();
-        _ApplyAPISchemasToPrimDefinition(primDef, it.fallbackAPISchemas);
+        _ApplyAPISchemasToPrimDefinition(primDef, it.apiSchemasToApply);
         primDef->_SetPrimSpec(it.primSpec, /*providesPrimMetadata=*/ true);
     }
 }

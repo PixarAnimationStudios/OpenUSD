@@ -304,6 +304,12 @@ Here's a short description of each datum in the per-class customData dictionary:
     will be inserted as a prefix to all properties created by this 
     multiple-apply API schema.
 
+  - \b apiSchemaAutoApplyTo - must only be specified on single apply API 
+    schemas. This is a token array value that lists the names of typed schemas 
+    that this API schema will be automatically applied to when the listed typed 
+    schemas are processed by the 
+    \ref Usd_OM_SchemaDefinitionRegistry "schema definition registry."
+
   - \b fallbackTypes - must only be specified for a concrete typed schema. 
     This is a token array value used to specify the preferred fallback schema 
     types that can be used instead when this schema isn't present.
@@ -465,7 +471,10 @@ class MyCustomPrim "MyCustomPrim" (
 class "MyParamsAPI" (
     inherits = </APISchemaBase>
     customData = {
-        apiSchemaType = "singleApply"
+        token apiSchemaType = "singleApply"
+        # This is an example of specifying typed schemas that this single apply
+        # schema will be automatically applied to.
+        token[] apiSchemaAutoApplyTo = ["MyCustomPrim", "OutsidePluginCustomPrim"]
     }
 )
 {

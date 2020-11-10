@@ -92,6 +92,11 @@ API_SCHEMA_TYPE_TOKENS = [NON_APPLIED, SINGLE_APPLY, MULTIPLE_APPLY]
 # schema definition, to define prefix for properties created by the API schema. 
 PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
 
+# Custom-data key optionally authored on a single-apply API schema class prim 
+# in the schema definition to define a list of typed schemas that the API 
+# schema will be automatically applied to in the schema registry. 
+API_AUTO_APPLY = "apiSchemaAutoApplyTo"
+
 # Custom-data key authored on a concrete typed schema class prim in the schema
 # definition, to define fallbacks for the type that can be saved in root layer
 # metadata to provide fallback types to versions of Usd without the schema 
@@ -442,11 +447,12 @@ class ClassInfo(object):
                 SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
             self.customData.get(PROPERTY_NAMESPACE_PREFIX)
+        self.apiAutoApply = self.customData.get(API_AUTO_APPLY, [])
 
         if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
             raise _GetSchemaDefException("propertyNamespacePrefix should only "
-                "be used as a metadata field on multiple-apply API schemas",
+                "be used as a customData field on multiple-apply API schemas",
                 sdfPrim.path)
 
         if self.isApi and \
@@ -454,6 +460,11 @@ class ClassInfo(object):
             raise _GetSchemaDefException(
                 "CustomData 'apiSchemaType' is %s. It must be one of %s for an "
                 "API schema." % (self.apiSchemaType, API_SCHEMA_TYPE_TOKENS),
+                sdfPrim.path)
+
+        if self.apiAutoApply and self.apiSchemaType != SINGLE_APPLY:
+            raise _GetSchemaDefException("%s should only be used as a "
+                "customData field on single-apply API schemas" % API_AUTO_APPLY,
                 sdfPrim.path)
 
         self.isAppliedAPISchema = \
@@ -1094,6 +1105,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
     allMultipleApplyAPISchemaNamespaces = {}
+    allAutoApplyAPISchemas = {}
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
@@ -1113,7 +1125,14 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                         "API schemas with properties", p.GetPath())
                 allAppliedAPISchemas.append(p.GetName())
             elif apiSchemaType in [None, SINGLE_APPLY]:
+                # Single apply API schemas may define typed schemas to auto
+                # apply to. These must be collected to add to the layer
+                # custom data.
                 allAppliedAPISchemas.append(p.GetName())
+                apiAutoApply = p.GetCustomDataByKey(API_AUTO_APPLY)
+                if apiAutoApply:
+                    allAutoApplyAPISchemas[p.GetName()] = \
+                        Vt.TokenArray(apiAutoApply)
             # API schema classes must not have authored metadata except for 
             # these exceptions:
             #   'documentation' - This is allowed
@@ -1149,10 +1168,15 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
     # Add the list of all applied and multiple-apply API schemas.
     if allAppliedAPISchemas or allMultipleApplyAPISchemaNamespaces:
-        flatLayer.customLayerData = {
-                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
-                'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
+        customLayerData = {
+            'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
+            'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
+        # If necessary add the mapping of single apply schemas to the typed
+        # schemas they will be automatically applied to.
+        if allAutoApplyAPISchemas:
+            customLayerData['autoApplyAPISchemas'] = allAutoApplyAPISchemas
+        flatLayer.customLayerData = customLayerData
 
     if allFallbackSchemaPrimTypes:
         flatLayer.GetPrimAtPath('/').SetInfo(Usd.Tokens.fallbackPrimTypes, 
