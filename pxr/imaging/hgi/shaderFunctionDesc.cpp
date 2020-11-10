@@ -25,13 +25,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
+  : dimensions(2)
+  , type("float")
+{
+}
+
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
-    : shaderStage(0)
-    , shaderCode(nullptr)
-    , textures()
-    , constantParams()
-    , stageInputs()
-    , stageOutputs()
+  : shaderStage(0)
+  , shaderCode(nullptr)
+  , textures()
+  , constantParams()
+  , stageInputs()
+  , stageOutputs()
 {
 }
 

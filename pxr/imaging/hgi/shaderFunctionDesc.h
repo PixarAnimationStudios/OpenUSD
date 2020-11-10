@@ -54,15 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HgiShaderFunctionTextureDesc
 {
     HGI_API
-    HgiShaderFunctionTextureDesc(
-        const std::string &nameInShader,
-        const uint32_t dimensions = 2,
-        const std::string &type = "float")
-        : nameInShader(nameInShader)
-        , dimensions(dimensions)
-        , type(type)
-    {
-    }
+    HgiShaderFunctionTextureDesc();
 
     std::string nameInShader;
     uint32_t dimensions;

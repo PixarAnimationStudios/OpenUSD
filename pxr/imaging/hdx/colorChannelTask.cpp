@@ -103,7 +103,11 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     const std::string position = "position";
     fragDesc.AddStageInput("hd_Position", "vec4", &position);
     fragDesc.AddStageInput("uvOut", "vec2");
-    fragDesc.textures.emplace_back("colorIn");
+    {
+        HgiShaderFunctionTextureDesc texDesc;
+        texDesc.nameInShader = "colorIn";
+        fragDesc.textures.push_back(std::move(texDesc));
+    }
     const std::string color = "color";
     fragDesc.AddStageOutput("hd_FragColor", "vec4", &color);
     

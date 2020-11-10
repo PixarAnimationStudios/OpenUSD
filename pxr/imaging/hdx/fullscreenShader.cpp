@@ -565,9 +565,16 @@ HdxFullscreenShader::_Draw(
         fragDesc.AddStageOutput(
                 "hd_FragDepth", "float", &depthAttr);
 
-        fragDesc.textures.emplace_back("colorIn");
+        {
+            HgiShaderFunctionTextureDesc texDesc;
+            texDesc.nameInShader = "colorIn";
+            fragDesc.textures.push_back(std::move(texDesc));
+        }
+
         if(depthAware) {
-            fragDesc.textures.emplace_back("depth");
+            HgiShaderFunctionTextureDesc texDesc;
+            texDesc.nameInShader = "depth";
+            fragDesc.textures.push_back(std::move(texDesc));
         }
         
         SetProgram(HdxPackageFullscreenShader(),

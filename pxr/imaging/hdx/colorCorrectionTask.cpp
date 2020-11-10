@@ -237,9 +237,16 @@ HdxColorCorrectionTask::_CreateShaderResources()
     fragDesc.AddStageInput(
             "hd_Position", "vec4", &position);
     fragDesc.AddStageInput("uvOut", "vec2");
-    fragDesc.textures.emplace_back("colorIn");
+    {
+        HgiShaderFunctionTextureDesc texDesc;
+        texDesc.nameInShader = "colorIn";
+        fragDesc.textures.push_back(std::move(texDesc));
+    }
     if (useOCIO) {
-        fragDesc.textures.emplace_back("Lut3DIn", 3);
+        HgiShaderFunctionTextureDesc texDesc;
+        texDesc.nameInShader = "Lut3DIn";
+        texDesc.dimensions = 3;
+        fragDesc.textures.push_back(std::move(texDesc));
     }
     const std::string color = "color";
     fragDesc.AddStageOutput(

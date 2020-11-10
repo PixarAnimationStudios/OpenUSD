@@ -212,7 +212,11 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     const std::string position = "position";
     fragDesc.AddStageInput("hd_Position", "vec4", &position);
     fragDesc.AddStageInput("uvOut", "vec2");
-    fragDesc.textures.emplace_back("colorIn");
+    {
+        HgiShaderFunctionTextureDesc texDesc;
+        texDesc.nameInShader = "colorIn";
+        fragDesc.textures.push_back(std::move(texDesc));
+    }
     
     fragDesc.AddConstantParam("texelSize", "vec2");
     fragDesc.AddConstantParam("enableOutline", "int");
