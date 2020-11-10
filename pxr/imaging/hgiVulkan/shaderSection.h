@@ -54,9 +54,9 @@ public:
     HGIVULKAN_API
     explicit HgiVulkanShaderSection(
         const std::string &identifier,
-        const HgiVulkanShaderSectionAttributeVector &attributes,
-        const std::string *storageQualifier = nullptr,
-        const std::string *defaultValue = nullptr);
+        const HgiVulkanShaderSectionAttributeVector &attributes = {},
+        const std::string &storageQualifier = std::string(),
+        const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
     virtual ~HgiVulkanShaderSection();
@@ -84,8 +84,8 @@ private:
     HgiVulkanShaderSection & operator=(const HgiVulkanShaderSection&) = delete;
     HgiVulkanShaderSection(const HgiVulkanShaderSection&) = delete;
 
-    std::unique_ptr<std::string> _storageQualifier;
-    HgiVulkanShaderSectionAttributeVector _attributes;
+    const std::string _storageQualifier;
+    const HgiVulkanShaderSectionAttributeVector _attributes;
 };
 
 /// \class HgiVulkanMacroShaderSection
@@ -129,8 +129,8 @@ public:
         const std::string &identifier,
         const std::string &typeName,
         const HgiVulkanShaderSectionAttributeVector &attributes,
-        const std::string *storageQualifier = nullptr,
-        const std::string *defaultValue = nullptr);
+        const std::string &storageQualifier,
+        const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
     virtual ~HgiVulkanMemberShaderSection();
@@ -184,8 +184,8 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
-        HgiVulkanShaderSectionAttributeVector &attributes,
-        const std::string *defaultValue = nullptr);
+        const HgiVulkanShaderSectionAttributeVector &attributes,
+        const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
     virtual ~HgiVulkanTextureShaderSection();

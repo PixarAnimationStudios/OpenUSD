@@ -44,14 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiShaderSection
 {
 public:
-
-    HGI_API
-    explicit HgiShaderSection(
-            const std::string &identifier,
-            const std::string *attribute = nullptr,
-            const std::string *attributeIndex = nullptr,
-            const std::string *defaultValue = nullptr);
-
     HGI_API
     virtual ~HgiShaderSection();
 
@@ -79,19 +71,27 @@ public:
     virtual void WriteAttributeWithIndex(std::ostream& ss) const;
 
     HGI_API
-    const std::string* GetAttribute() const;
+    const std::string& GetAttribute() const;
 
     HGI_API
-    const std::string* GetAttributeIndex() const;
+    const std::string& GetAttributeIndex() const;
 
 protected:
-    const std::string* GetDefaultValue() const;
+    HGI_API
+    explicit HgiShaderSection(
+            const std::string &identifier,
+            const std::string &attribute = std::string(),
+            const std::string &attributeIndex = std::string(),
+            const std::string &defaultValue = std::string());
+
+    HGI_API
+    const std::string& _GetDefaultValue() const;
 
 private:
     const std::string _identifierVar;
-    std::unique_ptr<std::string> _defaultValue;
-    std::unique_ptr<std::string> _attribute;
-    std::unique_ptr<std::string> _attributeIndex;
+    const std::string _attribute;
+    const std::string _attributeIndex;
+    const std::string _defaultValue;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

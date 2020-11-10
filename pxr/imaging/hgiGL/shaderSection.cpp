@@ -29,13 +29,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLShaderSection::HgiGLShaderSection(
     const std::string &identifier,
     const HgiGLShaderSectionAttributeVector &attributes,
-    const std::string *storageQualifier,
-    const std::string *defaultValue)
-    : HgiShaderSection(identifier)
-    , _storageQualifier(storageQualifier != nullptr
-            ? std::make_unique<std::string>(*storageQualifier)
-            : nullptr)
-    , _attributes(attributes)
+    const std::string &storageQualifier,
+    const std::string &defaultValue)
+  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  , _storageQualifier(storageQualifier)
+  , _attributes(attributes)
 {
 }
 
@@ -63,8 +61,8 @@ HgiGLShaderSection::WriteDeclaration(std::ostream &ss) const
         ss << ") ";
     }
     //If it has a storage qualifier, declare it
-    if(_storageQualifier != nullptr) {
-        ss << *_storageQualifier << " ";
+    if(!_storageQualifier.empty()) {
+        ss << _storageQualifier << " ";
     }
     WriteType(ss);
     ss << " ";
@@ -131,13 +129,13 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
     const HgiGLShaderSectionAttributeVector &attributes,
-    const std::string *storageQualifier,
-    const std::string *defaultValue )
-    : HgiGLShaderSection(identifier
-    , attributes
-    , storageQualifier
-    , defaultValue)
-    , _typeName(typeName)
+    const std::string &storageQualifier,
+    const std::string &defaultValue)
+  : HgiGLShaderSection(identifier,
+                       attributes,
+                       storageQualifier,
+                       defaultValue)
+  , _typeName(typeName)
 {
 }
 
@@ -189,13 +187,13 @@ HgiGLTextureShaderSection::HgiGLTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    HgiGLShaderSectionAttributeVector &attributes,
-    const std::string *defaultValue)
-    : HgiGLShaderSection( identifier
-    , attributes
-    , &_storageQualifier
-    , defaultValue)
-    , _dimensions(dimensions)
+    const HgiGLShaderSectionAttributeVector &attributes,
+    const std::string &defaultValue)
+  : HgiGLShaderSection( identifier,
+                        attributes,
+                        _storageQualifier,
+                        defaultValue)
+  , _dimensions(dimensions)
 {
 }
 

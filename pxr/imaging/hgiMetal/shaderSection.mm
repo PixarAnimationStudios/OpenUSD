@@ -63,10 +63,10 @@ HgiMetalShaderSection::VisitEntryPointFunctionExecutions(
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
     const std::string &identifier,
     const std::string &type,
-    const std::string *attribute,
-    const std::string *attributeIndex)
-    : HgiMetalShaderSection(identifier, attribute, attributeIndex)
-    , _type{type}
+    const std::string &attribute,
+    const std::string &attributeIndex)
+  : HgiMetalShaderSection(identifier, attribute, attributeIndex)
+  , _type{type}
 {
 }
 
@@ -94,11 +94,13 @@ HgiMetalMemberShaderSection::GetType()
 
 HgiMetalSamplerShaderSection::HgiMetalSamplerShaderSection(
     const std::string &textureSharedIdentifier,
-    const std::string *attribute,
-    const std::string *attributeIndex)
-    : HgiMetalShaderSection(
-        ("samplerBind_" + textureSharedIdentifier), attribute, attributeIndex)
-    , _textureSharedIdentifier(textureSharedIdentifier)
+    const std::string &attribute,
+    const std::string &attributeIndex)
+  : HgiMetalShaderSection(
+      "samplerBind_" + textureSharedIdentifier,
+      attribute,
+      attributeIndex)
+  , _textureSharedIdentifier(textureSharedIdentifier)
 {
 }
 
@@ -124,19 +126,19 @@ HgiMetalSamplerShaderSection::GetTextureSharedIdentifier()
 
 HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
     const std::string &samplerSharedIdentifier,
-    const std::string *attribute,
-    const std::string *attributeIndex,
+    const std::string &attribute,
+    const std::string &attributeIndex,
     const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
-    const std::string *defaultValue,
+    const std::string &defaultValue,
     uint32_t dimension)
-    : HgiMetalShaderSection(
-        ("textureBind_" + samplerSharedIdentifier), 
-        attribute, 
-        attributeIndex, 
-        defaultValue)
-    , _samplerShaderSectionDependency(samplerShaderSectionDependency)
-    , _dimensionsVar(dimension)
-    , _samplerSharedIdentifier(samplerSharedIdentifier)
+  : HgiMetalShaderSection(
+      "textureBind_" + samplerSharedIdentifier, 
+      attribute, 
+      attributeIndex, 
+      defaultValue)
+  , _samplerShaderSectionDependency(samplerShaderSectionDependency)
+  , _dimensionsVar(dimension)
+  , _samplerSharedIdentifier(samplerSharedIdentifier)
 {
 }
 
@@ -157,9 +159,9 @@ HgiMetalTextureShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 bool
 HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 {
-    std::string defValue = GetDefaultValue() == nullptr
+    const std::string defValue = _GetDefaultValue().empty()
         ? "0.0f"
-        : *GetDefaultValue();
+        : _GetDefaultValue();
 
     ss << "#define HdGetSampler_" << _samplerSharedIdentifier
     << "() ";
@@ -211,7 +213,7 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     WriteIdentifier(ss);
     ss << "{\n";
     for (HgiShaderSection* member : _members) {
-        if(member->GetAttribute() != nullptr) {
+        if(!member->GetAttribute().empty()) {
             member->WriteAttributeWithIndex(ss);
             ss << ";\n";
         }
@@ -237,16 +239,16 @@ HgiMetalStructTypeDeclarationShaderSection::GetMembers() const
 
 HgiMetalStructInstanceShaderSection::HgiMetalStructInstanceShaderSection(
     const std::string &identifier,
-    const std::string *attribute,
-    const std::string *attributeIndex,
+    const std::string &attribute,
+    const std::string &attributeIndex,
     HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration,
-    const std::string *defaultValue)
-    : HgiMetalShaderSection (
-        identifier,
-        attribute,
-        attributeIndex,
-        defaultValue)
-    , _structTypeDeclaration(structTypeDeclaration)
+    const std::string &defaultValue)
+  : HgiMetalShaderSection (
+      identifier,
+      attribute,
+      attributeIndex,
+      defaultValue)
+  , _structTypeDeclaration(structTypeDeclaration)
 {
 }
 
@@ -264,21 +266,18 @@ HgiMetalStructInstanceShaderSection::GetStructTypeDeclaration() const
 
 HgiMetalArgumentBufferInputShaderSection::HgiMetalArgumentBufferInputShaderSection(
     const std::string &identifier,
-    const std::string *attribute,
-    const std::string *attributeIndex,
-    const std::string *addressSpace,
+    const std::string &attribute,
+    const std::string &attributeIndex,
+    const std::string &addressSpace,
     const bool isPointer,
     HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration)
-    : HgiMetalStructInstanceShaderSection(
-        identifier,
-        attribute,
-        attributeIndex,
-        structTypeDeclaration)
-    , _addressSpace(
-            addressSpace != nullptr
-            ? std::make_unique<std::string>(*addressSpace)
-            : nullptr)
-    , _isPointer(isPointer)
+  : HgiMetalStructInstanceShaderSection(
+      identifier,
+      attribute,
+      attributeIndex,
+      structTypeDeclaration)
+  , _addressSpace(addressSpace)
+  , _isPointer(isPointer)
 {
 }
 
@@ -297,11 +296,11 @@ bool
 HgiMetalArgumentBufferInputShaderSection::VisitEntryPointParameterDeclarations(
     std::ostream &ss)
 {
-    if(_addressSpace != nullptr) {
-        ss << *_addressSpace << " ";
+    if(!_addressSpace.empty()) {
+        ss << _addressSpace << " ";
     }
     
-    if(GetAttribute() != nullptr) {
+    if(!GetAttribute().empty()) {
         WriteAttributeWithIndex(ss);
     }
     else {
@@ -346,27 +345,27 @@ HgiMetalArgumentBufferInputShaderSection::VisitGlobalMemberDeclarations(
 HgiMetalStageOutputShaderSection::HgiMetalStageOutputShaderSection(
     const std::string &identifier,
     HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration)
-    : HgiMetalStructInstanceShaderSection(
-        identifier,
-        nullptr,
-        nullptr,
-        structTypeDeclaration)
+  : HgiMetalStructInstanceShaderSection(
+      identifier,
+      std::string(),
+      std::string(),
+      structTypeDeclaration)
 {
 }
 
 HgiMetalStageOutputShaderSection::HgiMetalStageOutputShaderSection(
     const std::string &identifier,
-    const std::string *attribute,
-    const std::string *attributeIndex,
+    const std::string &attribute,
+    const std::string &attributeIndex,
     //for the time being, addressspace is just an adapter
-    const std::string *addressSpace,
+    const std::string &addressSpace,
     const bool isPointer,
     HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration)
-    : HgiMetalStructInstanceShaderSection(
-        identifier,
-        nullptr,
-        nullptr,
-        structTypeDeclaration)
+  : HgiMetalStructInstanceShaderSection(
+      identifier,
+      std::string(),
+      std::string(),
+      structTypeDeclaration)
 {
 }
 
@@ -420,8 +419,8 @@ HgiMetalShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 HgiMetalMacroShaderSection::HgiMetalMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
-    : HgiMetalShaderSection(macroDeclaration, {})
-    , _macroComment(macroComment)
+  : HgiMetalShaderSection(macroDeclaration)
+  , _macroComment(macroComment)
 {
 }
 

@@ -55,8 +55,8 @@ public:
     explicit HgiGLShaderSection(
         const std::string &identifier,
         const HgiGLShaderSectionAttributeVector &attributes,
-        const std::string *storageQualifier = nullptr,
-        const std::string *defaultValue = nullptr);
+        const std::string &storageQualifier = std::string(),
+        const std::string &defaultValue = std::string());
 
     HGIGL_API
     virtual ~HgiGLShaderSection();
@@ -84,8 +84,8 @@ private:
     HgiGLShaderSection & operator=(const HgiGLShaderSection&) = delete;
     HgiGLShaderSection(const HgiGLShaderSection&) = delete;
 
-    std::unique_ptr<std::string> _storageQualifier;
-    HgiGLShaderSectionAttributeVector _attributes;
+    const std::string _storageQualifier;
+    const HgiGLShaderSectionAttributeVector _attributes;
 };
 
 /// \class HgiGLMacroShaderSection
@@ -129,8 +129,8 @@ public:
         const std::string &identifier,
         const std::string &typeName,
         const HgiGLShaderSectionAttributeVector &attributes,
-        const std::string *storageQualifier = nullptr,
-        const std::string *defaultValue = nullptr);
+        const std::string &storageQualifier = std::string(),
+        const std::string &defaultValue = std::string());
 
     HGIGL_API
     virtual ~HgiGLMemberShaderSection();
@@ -186,8 +186,8 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
-        HgiGLShaderSectionAttributeVector &attributes,
-        const std::string *defaultValue = nullptr);
+        const HgiGLShaderSectionAttributeVector &attributes,
+        const std::string &defaultValue = std::string());
 
     HGIGL_API
     virtual ~HgiGLTextureShaderSection();

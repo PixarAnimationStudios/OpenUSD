@@ -28,19 +28,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderSection::HgiShaderSection(
     const std::string &identifier,
-    const std::string *attribute,
-    const std::string *attributeIndex,
-    const std::string *defaultValue)
-    : _identifierVar(identifier)
-    , _defaultValue(
-        defaultValue != nullptr ?
-            std::make_unique<std::string>(*defaultValue) : nullptr)
-    , _attribute(
-        attribute != nullptr ? 
-            std::make_unique<std::string>(*attribute) : nullptr)
-    , _attributeIndex(
-        attributeIndex != nullptr ?
-            std::make_unique<std::string>(*attributeIndex) : nullptr)
+    const std::string &attribute,
+    const std::string &attributeIndex,
+    const std::string &defaultValue)
+  : _identifierVar(identifier)
+  , _attribute(attribute)
+  , _attributeIndex(attributeIndex)
+  , _defaultValue(defaultValue)
 {
 }
 
@@ -77,34 +71,32 @@ HgiShaderSection::WriteParameter(std::ostream& ss) const
 void
 HgiShaderSection::WriteAttributeWithIndex(std::ostream& ss) const
 {
-    if(_attribute != nullptr) {
-        if(_attributeIndex != nullptr) {
-            WriteParameter(ss);
-            ss << "[[" << *_attribute
-            << "(" << *_attributeIndex << ")" << "]]";
-        } else {
-            WriteParameter(ss);
-            ss << "[[" << *_attribute << "]]";
+    if(!_attribute.empty()) {
+        WriteParameter(ss);
+        ss << "[[" << _attribute;
+        if(!_attributeIndex.empty()) {
+            ss << "(" << _attributeIndex << ")";
         }
+        ss << "]]";
     }
 }
 
-const std::string*
+const std::string&
 HgiShaderSection::GetAttribute() const
 {
-    return _attribute.get();
+    return _attribute;
 }
 
-const std::string*
+const std::string&
 HgiShaderSection::GetAttributeIndex() const
 {
-    return _attributeIndex.get();
+    return _attributeIndex;
 }
 
-const std::string*
-HgiShaderSection::GetDefaultValue() const
+const std::string&
+HgiShaderSection::_GetDefaultValue() const
 {
-    return _defaultValue.get();
+    return _defaultValue;
 }
 
 

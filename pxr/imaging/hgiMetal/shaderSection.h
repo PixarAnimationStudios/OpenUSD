@@ -108,8 +108,8 @@ public:
     HgiMetalMemberShaderSection(
         const std::string &identifier,
         const std::string &type,
-        const std::string *attribute = nullptr,
-        const std::string *attributeIndex = nullptr);
+        const std::string &attribute = std::string(),
+        const std::string &attributeIndex = std::string());
 
     HGIMETAL_API
     virtual ~HgiMetalMemberShaderSection();
@@ -139,8 +139,8 @@ public:
     HGIMETAL_API
     HgiMetalSamplerShaderSection(
         const std::string &textureSharedIdentifier,
-        const std::string *attribute = nullptr,
-        const std::string *attributeIndex = nullptr);
+        const std::string &attribute = std::string(),
+        const std::string &attributeIndex = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
@@ -173,10 +173,10 @@ public:
     HGIMETAL_API
     HgiMetalTextureShaderSection(
         const std::string &samplerSharedIdentifier,
-        const std::string *attribute,
-        const std::string *attributeIndex,
+        const std::string &attribute,
+        const std::string &attributeIndex,
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
-        const std::string *defaultValue = nullptr,
+        const std::string &defaultValue = std::string(),
         uint32_t dimension = 2);
 
     HGIMETAL_API
@@ -193,7 +193,7 @@ private:
         const HgiMetalTextureShaderSection&) = delete;
     HgiMetalTextureShaderSection(const HgiMetalTextureShaderSection&) = delete;
 
-    const HgiMetalSamplerShaderSection* _samplerShaderSectionDependency;
+    const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
     const std::string _samplerSharedIdentifier;
 };
@@ -241,10 +241,10 @@ public:
     HGIMETAL_API
     explicit HgiMetalStructInstanceShaderSection(
         const std::string &identifier,
-        const std::string *attribute,
-        const std::string *attributeIndex,
+        const std::string &attribute,
+        const std::string &attributeIndex,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration,
-        const std::string *defaultValue = nullptr);
+        const std::string &defaultValue = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream &ss) const override;
@@ -254,7 +254,7 @@ public:
     GetStructTypeDeclaration() const;
 
 private:
-    const HgiMetalStructTypeDeclarationShaderSection *_structTypeDeclaration;
+    const HgiMetalStructTypeDeclarationShaderSection * const _structTypeDeclaration;
 };
 
 
@@ -269,9 +269,9 @@ public:
     HGIMETAL_API
     explicit HgiMetalArgumentBufferInputShaderSection(
         const std::string &identifier,
-        const std::string *attribute,
-        const std::string *attributeIndex,
-        const std::string *addressSpace,
+        const std::string &attribute,
+        const std::string &attributeIndex,
+        const std::string &addressSpace,
         const bool isPointer,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
 
@@ -290,8 +290,8 @@ public:
     void WriteParameter(std::ostream& ss) const override;
 
 private:
-    std::unique_ptr<std::string> _addressSpace;
-    bool _isPointer;
+    const std::string _addressSpace;
+    const bool _isPointer;
 };
 
 /// \class HgiMetalStageOutputShaderSection
@@ -310,9 +310,9 @@ public:
     HGIMETAL_API
     explicit HgiMetalStageOutputShaderSection(
         const std::string &identifier,
-        const std::string *attribute,
-        const std::string *attributeIndex,
-        const std::string *addressSpace,
+        const std::string &attribute,
+        const std::string &attributeIndex,
+        const std::string &addressSpace,
         const bool isPointer,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
 

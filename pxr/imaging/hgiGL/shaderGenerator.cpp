@@ -38,7 +38,7 @@ _GetMacroBlob()
 
 HgiGLShaderGenerator::HgiGLShaderGenerator(
     const HgiShaderFunctionDesc &descriptor)
-    : HgiShaderGenerator(descriptor)
+  : HgiShaderGenerator(descriptor)
 {
     //Write out all GL shaders and add to shader sections
     std::unique_ptr<HgiGLMacroShaderSection> cs =
@@ -61,8 +61,7 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
                 textureDescription.nameInShader,
                 it - descriptor.textures.begin(),
                 it->dimensions,
-                attrs,
-                nullptr);
+                attrs);
 
         GetShaderSections()->push_back(std::move(texShaderSection));
     }
@@ -127,7 +126,7 @@ HgiGLShaderGenerator::_WriteInOuts(
                 paramName,
                 param.type,
                 attrs,
-            &qualifier)};
+                qualifier)};
 
         GetShaderSections()->push_back(std::move(cs));
         counter++;

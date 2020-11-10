@@ -47,9 +47,6 @@ class HgiShaderFunctionDesc;
 class HgiShaderGenerator
 {
 public:
-    HGI_API
-    explicit HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor);
-
     //Write the generated code to the stringstream given once set up
     HGI_API
     void Execute(std::ostream &ss);
@@ -58,6 +55,9 @@ public:
     virtual ~HgiShaderGenerator();
 
 protected:
+    HGI_API
+    explicit HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor);
+
     HGI_API
     virtual void _Execute(
         std::ostream &ss,

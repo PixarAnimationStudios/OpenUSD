@@ -87,8 +87,7 @@ HgiVulkanShaderGenerator::_WriteTextures(
                 desc.nameInShader,
                 _bindIndex,
                 desc.dimensions,
-                attrs,
-                nullptr);
+                attrs);
 
         GetShaderSections()->push_back(std::move(texShaderSection));
 
@@ -137,7 +136,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
                 paramName,
                 param.type,
                 attrs,
-            &qualifier)};
+                qualifier)};
 
         GetShaderSections()->push_back(std::move(cs));
         counter++;

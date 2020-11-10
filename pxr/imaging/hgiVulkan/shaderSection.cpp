@@ -29,13 +29,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiVulkanShaderSection::HgiVulkanShaderSection(
     const std::string &identifier,
     const HgiVulkanShaderSectionAttributeVector &attributes,
-    const std::string *storageQualifier,
-    const std::string *defaultValue)
-    : HgiShaderSection(identifier)
-    , _storageQualifier(storageQualifier != nullptr
-            ? std::make_unique<std::string>(*storageQualifier)
-            : nullptr)
-    , _attributes(attributes)
+    const std::string &storageQualifier,
+    const std::string &defaultValue)
+  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  , _storageQualifier(storageQualifier)
+  , _attributes(attributes)
 {
 }
 
@@ -63,8 +61,8 @@ HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
         ss << ") ";
     }
     //If it has a storage qualifier, declare it
-    if(_storageQualifier != nullptr) {
-        ss << *_storageQualifier << " ";
+    if(!_storageQualifier.empty()) {
+        ss << _storageQualifier << " ";
     }
     WriteType(ss);
     ss << " ";
@@ -113,8 +111,8 @@ HgiVulkanShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 HgiVulkanMacroShaderSection::HgiVulkanMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
-    : HgiVulkanShaderSection(macroDeclaration, {})
-    , _macroComment(macroComment)
+  : HgiVulkanShaderSection(macroDeclaration)
+  , _macroComment(macroComment)
 {
 }
 
@@ -131,13 +129,13 @@ HgiVulkanMemberShaderSection::HgiVulkanMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
     const HgiVulkanShaderSectionAttributeVector &attributes,
-    const std::string *storageQualifier,
-    const std::string *defaultValue )
-    : HgiVulkanShaderSection(identifier
-    , attributes
-    , storageQualifier
-    , defaultValue)
-    , _typeName(typeName)
+    const std::string &storageQualifier,
+    const std::string &defaultValue)
+  : HgiVulkanShaderSection(identifier,
+                           attributes,
+                           storageQualifier,
+                           defaultValue)
+  , _typeName(typeName)
 {
 }
 
@@ -159,8 +157,8 @@ HgiVulkanMemberShaderSection::WriteType(std::ostream& ss) const
 HgiVulkanBlockShaderSection::HgiVulkanBlockShaderSection(
     const std::string &identifier,
     const HgiShaderFunctionParamDescVector &parameters)
-    : HgiVulkanShaderSection(identifier,{})
-    , _parameters(parameters)
+  : HgiVulkanShaderSection(identifier)
+  , _parameters(parameters)
 {
 }
 
@@ -186,13 +184,13 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    HgiVulkanShaderSectionAttributeVector &attributes,
-    const std::string *defaultValue)
-    : HgiVulkanShaderSection( identifier
-    , attributes
-    , &_storageQualifier
-    , defaultValue)
-    , _dimensions(dimensions)
+    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const std::string &defaultValue)
+  : HgiVulkanShaderSection( identifier,
+                            attributes,
+                            _storageQualifier,
+                            defaultValue)
+  , _dimensions(dimensions)
 {
 }
 
