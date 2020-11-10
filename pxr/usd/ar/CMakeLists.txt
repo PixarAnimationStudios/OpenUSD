@@ -94,6 +94,7 @@ pxr_library(ar
         defineResolverContext.h
         packageResolver.h
         packageUtils.h
+        resolvedPath.h
         resolver.h
         resolverContext.h
         resolverContextBinder.h
@@ -115,6 +116,7 @@ pxr_library(ar
         filesystemAsset.cpp
         packageResolver.cpp
         packageUtils.cpp
+        resolvedPath.cpp
         resolverContextBinder.cpp
         resolverScopedCache.cpp
         debugCodes.cpp
@@ -129,6 +131,7 @@ pxr_library(ar
         module.cpp
         wrapDefaultResolverContext.cpp
         wrapPackageUtils.cpp
+        wrapResolvedPath.cpp
         wrapResolverContextBinder.cpp
         wrapResolverScopedCache.cpp
         ${versionedPymoduleCPPFiles}
@@ -147,6 +150,7 @@ pxr_test_scripts(
     testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
     testenv/testArPackageUtils.py
+    testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
 )
 
@@ -230,6 +234,11 @@ pxr_register_test(testArDefaultResolver_CPP
 pxr_register_test(testArPackageUtils
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPackageUtils"
+)
+
+pxr_register_test(testArResolvedPath
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolvedPath"
 )
 
 pxr_register_test(testArResolverContext
