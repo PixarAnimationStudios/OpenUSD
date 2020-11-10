@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdSt_GeometricShaderSharedPtr =
     std::shared_ptr<class HdSt_GeometricShader>;
-class HdSt_ShaderKey;
+struct HdSt_ShaderKey;
 
 /// \class HdSt_GeometricShader
 ///
