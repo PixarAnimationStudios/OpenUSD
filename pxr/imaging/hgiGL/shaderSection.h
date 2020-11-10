@@ -59,9 +59,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIGL_API
-    virtual ~HgiGLShaderSection();
-
-    using HgiShaderSection::WriteType;
+    virtual ~HgiGLShaderSection() override;
 
     HGIGL_API
     void WriteDeclaration(std::ostream &ss) const override;
@@ -102,7 +100,7 @@ public:
         const std::string &macroComment);
 
     HGIGL_API
-    virtual ~HgiGLMacroShaderSection();
+    virtual ~HgiGLMacroShaderSection() override;
 
     HGIGL_API
     bool VisitGlobalMacros(std::ostream &ss) override;
@@ -133,7 +131,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIGL_API
-    virtual ~HgiGLMemberShaderSection();
+    virtual ~HgiGLMemberShaderSection() override;
 
     HGIGL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -164,7 +162,7 @@ public:
             const uint32_t bindingNo=0);
 
     HGIGL_API
-    virtual ~HgiGLBlockShaderSection();
+    virtual ~HgiGLBlockShaderSection() override;
 
     HGIGL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -190,7 +188,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIGL_API
-    virtual ~HgiGLTextureShaderSection();
+    virtual ~HgiGLTextureShaderSection() override;
 
     HGIGL_API
     void WriteType(std::ostream &ss) const override;

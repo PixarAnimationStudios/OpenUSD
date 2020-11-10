@@ -44,7 +44,7 @@ class HgiMetalShaderSection: public HgiShaderSection
 {
 public:
     HGIMETAL_API
-    virtual ~HgiMetalShaderSection();
+    virtual ~HgiMetalShaderSection() override;
 
     HGIMETAL_API
     virtual bool VisitGlobalMacros(std::ostream &ss);
@@ -112,7 +112,7 @@ public:
         const std::string &attributeIndex = std::string());
 
     HGIMETAL_API
-    virtual ~HgiMetalMemberShaderSection();
+    virtual ~HgiMetalMemberShaderSection() override;
 
     HGIMETAL_API
     void WriteType(std::ostream &ss) const override;

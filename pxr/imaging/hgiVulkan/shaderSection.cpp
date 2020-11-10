@@ -172,13 +172,11 @@ HgiVulkanBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     ss << "\n";
     ss << "{\n";
     for(const HgiShaderFunctionParamDesc &param : _parameters) {
-        ss << "\t" << param.type << " " << param.nameInShader << ";\n";
+        ss << "    " << param.type << " " << param.nameInShader << ";\n";
     }
     ss << "\n};";
     return true;
 }
-
-const std::string HgiVulkanTextureShaderSection::_storageQualifier = "uniform";
 
 HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &identifier,
@@ -188,7 +186,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &defaultValue)
   : HgiVulkanShaderSection( identifier,
                             attributes,
-                            _storageQualifier,
+                            "uniform",
                             defaultValue)
   , _dimensions(dimensions)
 {
@@ -222,10 +220,10 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     WriteIdentifier(ss);
     ss << "(vec" << std::to_string(_dimensions)
              << " uv) {\n";
-    ss << "\tvec4 result = texture(";
+    ss << "    vec4 result = texture(";
     WriteIdentifier(ss);
     ss << ", uv);\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}";
 
     //Same except for texelfetch
@@ -236,10 +234,10 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     ss << "vec4 HdTexelFetch_";
     WriteIdentifier(ss);
     ss << "(ivec2 coord) {\n";
-    ss << "\tvec4 result = texelFetch(";
+    ss << "    vec4 result = texelFetch(";
     WriteIdentifier(ss);
     ss << ", coord, 0);\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}\n";
 
     return true;

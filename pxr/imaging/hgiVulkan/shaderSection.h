@@ -59,9 +59,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanShaderSection();
-
-    using HgiShaderSection::WriteType;
+    virtual ~HgiVulkanShaderSection() override;
 
     HGIVULKAN_API
     void WriteDeclaration(std::ostream &ss) const override;
@@ -79,12 +77,14 @@ public:
     HGIVULKAN_API
     virtual bool VisitGlobalFunctionDefinitions(std::ostream &ss);
 
+protected:
+    const std::string _storageQualifier;
+
 private:
     HgiVulkanShaderSection() = delete;
     HgiVulkanShaderSection & operator=(const HgiVulkanShaderSection&) = delete;
     HgiVulkanShaderSection(const HgiVulkanShaderSection&) = delete;
 
-    const std::string _storageQualifier;
     const HgiVulkanShaderSectionAttributeVector _attributes;
 };
 
@@ -102,7 +102,7 @@ public:
         const std::string &macroComment);
 
     HGIVULKAN_API
-    virtual ~HgiVulkanMacroShaderSection();
+    virtual ~HgiVulkanMacroShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMacros(std::ostream &ss) override;
@@ -133,7 +133,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanMemberShaderSection();
+    virtual ~HgiVulkanMemberShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -163,7 +163,7 @@ public:
             const HgiShaderFunctionParamDescVector &parameters);
 
     HGIVULKAN_API
-    virtual ~HgiVulkanBlockShaderSection();
+    virtual ~HgiVulkanBlockShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -188,7 +188,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanTextureShaderSection();
+    virtual ~HgiVulkanTextureShaderSection() override;
 
     HGIVULKAN_API
     void WriteType(std::ostream &ss) const override;
@@ -205,7 +205,6 @@ private:
     HgiVulkanTextureShaderSection(const HgiVulkanTextureShaderSection&) = delete;
 
     const uint32_t _dimensions;
-    static const std::string _storageQualifier;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

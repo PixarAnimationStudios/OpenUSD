@@ -46,29 +46,31 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
 
     GetShaderSections()->push_back(std::move(cs));
 
+    _WriteTextures(descriptor.textures);
+    _WriteInOuts(descriptor.stageInputs, "in");
+    _WriteConstantParams(descriptor.constantParams);
+    _WriteInOuts(descriptor.stageOutputs, "out");
+}
+
+void
+HgiGLShaderGenerator::_WriteTextures(
+    const HgiShaderFunctionTextureDescVector &textures)
+{
     //Extract texture descriptors and add appropriate texture sections
-    for(auto it = descriptor.textures.begin();
-            it != descriptor.textures.end(); ++it)
-    {
-        const HgiShaderFunctionTextureDesc &textureDescription = (*it);
+    for(size_t i=0; i<textures.size(); i++) {
+        const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
         HgiGLShaderSectionAttributeVector attrs = {
-            HgiGLShaderSectionAttribute{
-                "binding",
-                std::to_string(it-descriptor.textures.begin())}};
+            HgiGLShaderSectionAttribute{"binding", std::to_string(i)}};
 
         std::unique_ptr<HgiGLTextureShaderSection> texShaderSection =
             std::make_unique<HgiGLTextureShaderSection>(
                 textureDescription.nameInShader,
-                it - descriptor.textures.begin(),
-                it->dimensions,
+                i,
+                textureDescription.dimensions,
                 attrs);
 
         GetShaderSections()->push_back(std::move(texShaderSection));
     }
-
-    _WriteInOuts(descriptor.stageInputs, "in");
-    _WriteConstantParams(descriptor.constantParams);
-    _WriteInOuts(descriptor.stageOutputs, "out");
 }
 
 void
@@ -115,10 +117,8 @@ HgiGLShaderGenerator::_WriteInOuts(
             continue;
         }
 
-        std::string counterStr = std::to_string(counter);
-
         HgiGLShaderSectionAttributeVector attrs {
-            HgiGLShaderSectionAttribute{"location",counterStr}
+            HgiGLShaderSectionAttribute{"location", std::to_string(counter)}
         };
 
         std::unique_ptr<HgiGLMemberShaderSection> cs {

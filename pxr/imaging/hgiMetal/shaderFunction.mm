@@ -21,9 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <unordered_map>
-#include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
@@ -31,6 +28,9 @@
 #include "pxr/imaging/hgiMetal/shaderGenerator.h"
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/tf/diagnostic.h"
+
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -115,7 +115,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
         HdxPackageColorChannelShader(), 
         _tokens->colorChannelFrag,
         fragDesc);
-    auto &aovDesc = aovTexture->GetDescriptor();
+    const auto &aovDesc = aovTexture->GetDescriptor();
     _CreateParameterBuffer(
         static_cast<float>(aovDesc.dimensions[0]),
         static_cast<float>(aovDesc.dimensions[1]));

@@ -66,13 +66,13 @@ public:
     /// whatever textures or uniforms have been passed in by the caller.
     ///   \param glslfx The name of the glslfx file where the fragment shader
     ///                 is located.
-    ///   \param technique The technique name of the fragment shader.
+    ///   \param shaderName The (technique) name of the fragment shader.
     ///   \param vertDesc Describes inputs, outputs and stage of vertex shader.
     ///   \param fragDesc Describes inputs, outputs and stage of fragment shader.
     HDX_API
     void SetProgram(
         TfToken const& glslfx,
-        TfToken const& technique,
+        TfToken const& shaderName,
         HgiShaderFunctionDesc &fragDesc,
         HgiShaderFunctionDesc vertDesc = GetFullScreenVertexDesc()
         );

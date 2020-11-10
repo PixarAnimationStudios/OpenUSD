@@ -133,8 +133,8 @@ HdxFullscreenShader::SetProgram(
     }
     TfToken const& technique = HioGlslfxTokens->defVal;
 
-    HioGlslfx vsGlslfx(HdxPackageFullscreenShader(), technique);
-    HioGlslfx fsGlslfx(glslfx, technique);
+    const HioGlslfx vsGlslfx(HdxPackageFullscreenShader(), technique);
+    const HioGlslfx fsGlslfx(glslfx, technique);
 
     // Setup the vertex shader
     std::string vsCode;
@@ -175,7 +175,8 @@ HdxFullscreenShader::SetProgram(
     }
 }
 
-HgiShaderFunctionDesc HdxFullscreenShader::GetFullScreenVertexDesc()
+HgiShaderFunctionDesc
+HdxFullscreenShader::GetFullScreenVertexDesc()
 {
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex;
@@ -301,8 +302,8 @@ HdxFullscreenShader::_CreateBufferResources()
     vboDesc.debugName = "HdxFullscreenShader VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
     vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
-        ? vertDataOther : vertDataGL;;
-    vboDesc.byteSize = sizeof(vertDataGL) * sizeof(vertDataGL[0]);
+        ? vertDataOther : vertDataGL;
+    vboDesc.byteSize = sizeof(vertDataGL);
     vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
     _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 

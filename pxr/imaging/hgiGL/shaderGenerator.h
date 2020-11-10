@@ -59,6 +59,8 @@ private:
     HgiGLShaderGenerator & operator=(const HgiGLShaderGenerator&) = delete;
     HgiGLShaderGenerator(const HgiGLShaderGenerator&) = delete;
 
+    void _WriteTextures(const HgiShaderFunctionTextureDescVector &textures);
+
     void _WriteConstantParams(
         const HgiShaderFunctionParamDescVector &parameters);
 

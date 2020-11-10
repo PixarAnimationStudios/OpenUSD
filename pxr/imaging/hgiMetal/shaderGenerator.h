@@ -64,7 +64,7 @@ public:
         id<MTLDevice> device);
 
     HGIMETAL_API
-    virtual ~HgiMetalShaderGenerator();
+    virtual ~HgiMetalShaderGenerator() override;
 
     HGIMETAL_API
     HgiMetalShaderSectionUniquePtrVector* GetShaderSections();

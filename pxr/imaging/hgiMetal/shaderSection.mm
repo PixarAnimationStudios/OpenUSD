@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "shaderSection.h"
+#include "pxr/imaging/hgiMetal/shaderSection.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -170,21 +170,21 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 
     ss << "vec4 HdGet_" << _samplerSharedIdentifier
        << "(vec2 coord) {\n";
-    ss << "\tvec4 result = is_null_texture(";
+    ss << "    vec4 result = is_null_texture(";
     WriteIdentifier(ss);
     ss << ") ? "<< defValue << ": ";
     WriteIdentifier(ss);
     ss << ".sample(";
     _samplerShaderSectionDependency->WriteIdentifier(ss);
         ss << ", coord);\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}\n";
 
     ss << "vec4 HdTexelFetch_"
        << _samplerSharedIdentifier << "(ivec2 coord) {\n";
-    ss << "\tvec4 result =  " << "textureBind_" << _samplerSharedIdentifier
+    ss << "    vec4 result =  " << "textureBind_" << _samplerSharedIdentifier
        << ".read(ushort2(coord.x, coord.y));\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}\n";
 
     return true;

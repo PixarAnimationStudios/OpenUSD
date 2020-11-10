@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "shaderSection.h"
+#include "pxr/imaging/hgiGL/shaderSection.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,16 +46,15 @@ HgiGLShaderSection::WriteDeclaration(std::ostream &ss) const
     //identifiers and indicies
     if(!_attributes.empty()) {
         ss << "layout(";
-        for (auto it = _attributes.begin();
-             it != _attributes.end();
-             ++it) {
-            const HgiGLShaderSectionAttribute &a = (*it);
+        for (size_t i = 0; i < _attributes.size(); i++)
+        {
+            if (i > 0) {
+                ss << ", ";
+            }
+            const HgiGLShaderSectionAttribute &a = _attributes[i];
             ss << a.identifier;
             if(!a.index.empty()) {
                 ss << " = " << a.index;
-            }
-            if(std::next(it) != _attributes.end()) {
-                ss << ", ";
             }
         }
         ss << ") ";
@@ -175,7 +174,7 @@ HgiGLBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     ss << "\n";
     ss << "{\n";
     for(const HgiShaderFunctionParamDesc &param : _parameters) {
-        ss << "\t" << param.type << " " << param.nameInShader << ";\n";
+        ss << "        " << param.type << " " << param.nameInShader << ";\n";
     }
     ss << "\n};";
     return true;
@@ -225,10 +224,10 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     WriteIdentifier(ss);
     ss << "(vec" << std::to_string(_dimensions)
              << " uv) {\n";
-    ss << "\tvec4 result = texture(";
+    ss << "    vec4 result = texture(";
     WriteIdentifier(ss);
     ss << ", uv);\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}";
 
     //Same except for texelfetch
@@ -239,10 +238,10 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     ss << "vec4 HdTexelFetch_";
     WriteIdentifier(ss);
     ss << "(ivec2 coord) {\n";
-    ss << "\tvec4 result = texelFetch(";
+    ss << "    vec4 result = texelFetch(";
     WriteIdentifier(ss);
     ss << ", coord, 0);\n";
-    ss << "\treturn result;\n";
+    ss << "    return result;\n";
     ss << "}\n";
 
     return true;
