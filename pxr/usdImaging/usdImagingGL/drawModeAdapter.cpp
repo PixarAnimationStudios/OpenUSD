@@ -307,6 +307,22 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
     }
 }
 
+bool
+UsdImagingGLDrawModeAdapter::_HasVaryingExtent(UsdPrim const& prim) const
+{
+    UsdAttribute attr;
+
+    attr = prim.GetAttribute(UsdGeomTokens->extent);
+    if (attr && attr.ValueMightBeTimeVarying())
+        return true;
+
+    attr = prim.GetAttribute(UsdGeomTokens->extentsHint);
+    if (attr && attr.ValueMightBeTimeVarying())
+        return true;
+
+    return false;
+}
+
 void
 UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
     UsdPrim const& prim,
@@ -320,11 +336,13 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
     VtValue* assign) const
 {
     if (drawMode == UsdGeomTokens->origin) {
-        *extent = _ComputeExtent(prim);
+        *extent = _ComputeExtent(prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
         _GenerateOriginGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->bounds) {
-        *extent = _ComputeExtent(prim);
+        *extent = _ComputeExtent(prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
         _GenerateBoundsGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->cards) {
@@ -346,7 +364,8 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
 
         } else {
             // First compute the extents.
-            *extent = _ComputeExtent(prim);
+            *extent = _ComputeExtent(prim,
+                _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
 
             // Generate mask for suppressing axes with no textures
             uint8_t axes_mask = 0;
@@ -761,6 +780,21 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
+    // Discover time-varying extents. Look for time samples on either the
+    // extent or extentsHint attribute.
+    if (!_IsVarying(prim,
+            UsdGeomTokens->extent,
+            HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent,
+            UsdImagingTokens->usdVaryingExtent,
+            timeVaryingBits,
+            false)) {
+        _IsVarying(prim,
+            UsdGeomTokens->extentsHint,
+            HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent,
+            UsdImagingTokens->usdVaryingExtent,
+            timeVaryingBits,
+            false);
+    }
 }
 
 void
@@ -1373,7 +1407,8 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
 }
 
 GfRange3d
-UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
+UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim,
+        const UsdTimeCode& timecode) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1381,12 +1416,8 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
     TfTokenVector purposes = { UsdGeomTokens->default_, UsdGeomTokens->proxy,
                                UsdGeomTokens->render };
 
-    // XXX: The use of UsdTimeCode::EarliestTime() in the code below is
-    // problematic, as it may produce unexpected results for animated models.
-
     if (prim.IsLoaded()) {
-        UsdGeomBBoxCache bboxCache(
-            UsdTimeCode::EarliestTime(), purposes, true);
+        UsdGeomBBoxCache bboxCache(timecode, purposes, true);
         return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
     } else {
         GfRange3d extent;
@@ -1397,12 +1428,12 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         // prim.
         if (prim.IsA<UsdGeomBoundable>() &&
             (attr = UsdGeomBoundable(prim).GetExtentAttr()) &&
-            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            attr.Get(&extentsHint, timecode) &&
             extentsHint.size() == 2) {
             extent = GfRange3d(extentsHint[0], extentsHint[1]);
         }
         else if ((attr = UsdGeomModelAPI(prim).GetExtentsHintAttr()) &&
-            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            attr.Get(&extentsHint, timecode) &&
             extentsHint.size() >= 2) {
             // XXX: This code to merge the extentsHint values over a set of
             // purposes probably belongs in UsdGeomBBoxCache.
