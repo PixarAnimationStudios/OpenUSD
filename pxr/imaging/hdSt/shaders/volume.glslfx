@@ -115,8 +115,10 @@ inBoundingBox(vec3 p)
 // and accumulatedTransmittance, so computed only once in main.
 //
 MAT4 instanceModelViewInverse;
-float resolvedStepSize;
-float resolvedStepSizeLighting;
+float resolvedStepSizeEye;
+float resolvedStepSizeEyeLighting;
+float resolvedStepSizeWorld;
+float resolvedStepSizeWorldLighting;
 
 vec3
 eyeToLocal(vec3 p)
@@ -148,7 +150,7 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
     
     while(i < maxNumSteps) {
         const vec3 rayPointEye =
-            rayStartEye + resolvedStepSizeLighting * i * rayDirectionEye;
+            rayStartEye + resolvedStepSizeEyeLighting * i * rayDirectionEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         if (!inBoundingBox(rayPoint)) {
@@ -160,7 +162,7 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
         i+=1;
     }
 
-    return exp(-totalExtinction * resolvedStepSizeLighting);
+    return exp(-totalExtinction * resolvedStepSizeWorldLighting);
 }
 
 // Computes amount of light arriving at point Peye
@@ -233,12 +235,12 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     result.transmittance = 1.0;
 
     const int numSteps =
-        int(floor(min(maxNumSteps, rayLength / resolvedStepSize)));
+        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEye)));
 
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
         const vec3 rayPointEye =
-            rayStartEye + resolvedStepSize * i * rayDirectionEye;
+            rayStartEye + resolvedStepSizeEye * i * rayDirectionEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         // Evaluate volume shader functions to determine extinction,
@@ -260,18 +262,18 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
         // In scattering contribution, lighting only computed if scattering
         // is non-trivial.
         const vec3 inScattering =
-            (resolvedStepSize * scatteringValue >= minScattering) ?
+            (resolvedStepSizeWorld * scatteringValue >= minScattering) ?
                 (scatteringValue *
                  lightingComputation(rayPointEye, rayDirectionEye))
             : vec3(0.0);
 
         // In scattering and emission contribution
         result.color += 
-            (resolvedStepSize * result.transmittance) *
+            (resolvedStepSizeWorld * result.transmittance) *
             (inScattering + emissionValue);
 
         // Update transmittance
-        result.transmittance *= exp(-extinctionValue * resolvedStepSize);
+        result.transmittance *= exp(-extinctionValue * resolvedStepSizeWorld);
 
         // Stop when the volume has become close to opaque.
         if (result.transmittance < minTransmittance) {
@@ -534,7 +536,7 @@ float max3(float a, float b, float c)
 // Approximately - since most transforms have uniform scaling
 // and no shear, this is fine.
 float
-inverseScale(MAT4 m)
+scaleOfMatrix(MAT4 m)
 {
     // Take the maximum of the lengths of the images of the x, y
     // and z vector.
@@ -543,9 +545,9 @@ inverseScale(MAT4 m)
     // the minimum singular value from the singular value decomposition.
     //
     const mat3 affinePart = mat3(m);
-    return 1.0 / max3(length(affinePart[0]),
-                      length(affinePart[1]),
-                      length(affinePart[2]));
+    return max3(length(affinePart[0]),
+                length(affinePart[1]),
+                length(affinePart[2]));
 }
 
 
@@ -557,12 +559,18 @@ void main(void)
 
     const float halfWorldSampleDistance =
         0.5 * float(HdGet_sampleDistance())
-            * inverseScale(instanceModelViewInverse);
+            / scaleOfMatrix(instanceModelViewInverse);
 
-    resolvedStepSize =
+    const float viewScale = scaleOfMatrix(GetWorldToViewInverseMatrix());
+
+    resolvedStepSizeEye =
         HdGet_stepSize() * halfWorldSampleDistance;
-    resolvedStepSizeLighting =
+    resolvedStepSizeWorld =
+        viewScale * resolvedStepSizeEye;
+    resolvedStepSizeEyeLighting =
         HdGet_stepSizeLighting() * halfWorldSampleDistance;
+    resolvedStepSizeWorldLighting =
+        viewScale * resolvedStepSizeEyeLighting;
 
     // Discard front faces - ray marching stops at fragment eye position
     // and starts at the intersection of ray with volume bounding box or
