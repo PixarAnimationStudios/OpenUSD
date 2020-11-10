@@ -42,13 +42,67 @@ HgiShaderFunctionDesc::HgiShaderFunctionDesc()
 }
 
 bool operator==(
+    const HgiShaderFunctionTextureDesc& lhs,
+    const HgiShaderFunctionTextureDesc& rhs)
+{
+    return lhs.nameInShader == rhs.nameInShader &&
+           lhs.dimensions == rhs.dimensions &&
+           lhs.type == rhs.type;
+}
+
+bool operator!=(
+    const HgiShaderFunctionTextureDesc& lhs,
+    const HgiShaderFunctionTextureDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+static
+bool
+_IsEqual(
+    const std::unique_ptr<std::string> &a,
+    const std::unique_ptr<std::string> &b)
+{
+    if ((!a) && (!b)) {
+        return true;
+    }
+    if (!(a && b)) {
+        return false;
+    }
+
+    return (*a) == (*b);
+}
+
+bool operator==(
+    const HgiShaderFunctionParamDesc& lhs,
+    const HgiShaderFunctionParamDesc& rhs)
+{
+    return lhs.nameInShader == rhs.nameInShader &&
+           lhs.type == rhs.type && 
+           _IsEqual(lhs.role, rhs.role) &&
+           _IsEqual(lhs.attribute, rhs.attribute) &&
+           _IsEqual(lhs.attributeIndex, rhs.attributeIndex);
+}
+
+bool operator!=(
+    const HgiShaderFunctionParamDesc& lhs,
+    const HgiShaderFunctionParamDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
     const HgiShaderFunctionDesc& lhs,
     const HgiShaderFunctionDesc& rhs)
 {
     return lhs.debugName == rhs.debugName &&
-           lhs.shaderStage == rhs.shaderStage;
+           lhs.shaderStage == rhs.shaderStage &&
            // Omitted. Only used tmp during shader compile
            // lhs.shaderCode == rhs.shaderCode
+           lhs.textures == rhs.textures &&
+           lhs.constantParams == rhs.constantParams &&
+           lhs.stageInputs == rhs.stageInputs &&
+           lhs.stageOutputs == rhs.stageOutputs;
 }
 
 bool operator!=(

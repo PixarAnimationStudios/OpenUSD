@@ -64,6 +64,16 @@ struct HgiShaderFunctionTextureDesc
 using HgiShaderFunctionTextureDescVector =
     std::vector<HgiShaderFunctionTextureDesc>;
 
+HGI_API
+bool operator==(
+    const HgiShaderFunctionTextureDesc& lhs,
+    const HgiShaderFunctionTextureDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionTextureDesc& lhs,
+    const HgiShaderFunctionTextureDesc& rhs);
+
 /// \struct HgiShaderFunctionParamDesc
 ///
 /// Describes a constant param passed into a shader
@@ -146,6 +156,16 @@ struct HgiShaderFunctionParamDesc
 
 using HgiShaderFunctionParamDescVector =
     std::vector<HgiShaderFunctionParamDesc>;
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionParamDesc& lhs,
+    const HgiShaderFunctionParamDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionParamDesc& lhs,
+    const HgiShaderFunctionParamDesc& rhs);
 
 /// \struct HgiShaderFunctionDesc
 ///
@@ -234,14 +254,14 @@ using HgiShaderFunctionDescVector =
     std::vector<HgiShaderFunctionDesc>;
 
 HGI_API
-inline bool operator==(
-        const HgiShaderFunctionDesc& lhs,
-        const HgiShaderFunctionDesc& rhs);
+bool operator==(
+    const HgiShaderFunctionDesc& lhs,
+    const HgiShaderFunctionDesc& rhs);
 
 HGI_API
-inline bool operator!=(
-        const HgiShaderFunctionDesc& lhs,
-        const HgiShaderFunctionDesc& rhs);
+bool operator!=(
+    const HgiShaderFunctionDesc& lhs,
+    const HgiShaderFunctionDesc& rhs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
