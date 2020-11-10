@@ -51,6 +51,12 @@ _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 || path.find("../") == 0;
 }
 
+static std::vector<std::string>
+_ParseSearchPaths(const std::string& pathStr)
+{
+    return TfStringTokenize(pathStr, ARCH_PATH_LIST_SEP);
+}
+
 static TfStaticData<std::vector<std::string>> _SearchPath;
 
 struct ArDefaultResolver::_Cache
@@ -67,7 +73,7 @@ ArDefaultResolver::ArDefaultResolver()
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (!envPath.empty()) {
         const std::vector<std::string> envSearchPath = 
-            TfStringTokenize(envPath, ARCH_PATH_LIST_SEP);
+            _ParseSearchPaths(envPath);
         searchPath.insert(
             searchPath.end(), envSearchPath.begin(), envSearchPath.end());
     }
@@ -322,6 +328,13 @@ ArResolverContext
 ArDefaultResolver::CreateDefaultContext()
 {
     return _defaultContext;
+}
+
+ArResolverContext
+ArDefaultResolver::_CreateContextFromString(
+    const std::string& contextStr)
+{
+    return ArDefaultResolverContext(_ParseSearchPaths(contextStr));
 }
 
 ArResolverContext 

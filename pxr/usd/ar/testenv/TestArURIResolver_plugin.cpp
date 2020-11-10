@@ -236,6 +236,13 @@ public:
     {
     }
 
+protected:
+    virtual ArResolverContext _CreateContextFromString(
+        const std::string& contextStr) override
+    {
+        return ArResolverContext(_TestURIResolverContext(contextStr));
+    };
+
 private:
     const _TestURIResolverContext* _GetCurrentContext()
     {

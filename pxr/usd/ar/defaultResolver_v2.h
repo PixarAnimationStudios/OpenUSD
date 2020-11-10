@@ -64,6 +64,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///      expected to be a list of directories delimited by the platform's 
 ///      standard path separator.
 ///
+/// ArDefaultResolver supports creating an ArDefaultResolverContext via
+/// ArResolver::CreateContextFromString by passing a list of directories
+/// delimited by the platform's standard path separator.
 class ArDefaultResolver
     : public ArResolver
 {
@@ -198,6 +201,14 @@ public:
     virtual void UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override;
+
+protected:
+    /// Creates an ArDefaultResolverContext from \p contextStr. This
+    /// string is expected to be a list of directories delimited by
+    /// the platform's standard path separator.
+    AR_API
+    virtual ArResolverContext _CreateContextFromString(
+        const std::string& contextStr) override;
 
 private:
     struct _Cache;

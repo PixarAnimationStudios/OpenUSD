@@ -182,6 +182,24 @@ class TestArDefaultResolver(unittest.TestCase):
 
         self.assertNotEqual(emptyContext, context)
 
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateContextFromString"),
+                     "No CreateContextFromString(s) API")
+    def test_CreateContextFromString(self):
+        resolver = Ar.GetResolver()
+
+        def _TestWithPaths(searchPaths):
+            self.assertEqual(
+                resolver.CreateContextFromString(os.pathsep.join(searchPaths)),
+                Ar.ResolverContext(Ar.DefaultResolverContext(searchPaths)))
+            self.assertEqual(
+                resolver.CreateContextFromStrings(
+                    [("", os.pathsep.join(searchPaths))]),
+                Ar.ResolverContext(Ar.DefaultResolverContext(searchPaths)))
+
+        _TestWithPaths([])
+        _TestWithPaths(["/a"])
+        _TestWithPaths(["/a", "/b"])
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -88,16 +88,6 @@ ArSetPreferredResolver(const std::string& resolverTypeName)
 
 // ------------------------------------------------------------
 
-ArResolver::ArResolver()
-{
-}
-
-ArResolver::~ArResolver()
-{
-}
-
-// ------------------------------------------------------------
-
 namespace
 {
 std::string 
@@ -377,6 +367,33 @@ public:
         return *_resolver;
     }
 
+    ArResolverContext CreateContextFromString(
+        const std::string& uriScheme, const std::string& contextStr)
+    {
+        ArResolver* resolver =
+            uriScheme.empty() ?
+            _resolver.get()  : _GetURIResolverForScheme(uriScheme);
+        return resolver ? 
+            resolver->CreateContextFromString(contextStr) : ArResolverContext();
+    }
+
+    ArResolverContext CreateContextFromStrings(
+        const std::vector<std::pair<std::string, std::string>>& strs)
+    {
+        std::vector<ArResolverContext> contexts;
+        contexts.reserve(strs.size());
+
+        for (const auto& entry : strs) {
+            ArResolverContext ctx =
+                CreateContextFromString(entry.first, entry.second);
+            if (!ctx.IsEmpty()) {
+                contexts.push_back(std::move(ctx));
+            }
+        };
+
+        return ArResolverContext(contexts);
+    }
+
     virtual void ConfigureResolverForAsset(const std::string& path) override
     { 
         ArResolver& resolver = _GetResolver(path);
@@ -595,6 +612,12 @@ public:
         }
 
         return ArResolverContext(contexts);
+    }
+
+    virtual ArResolverContext _CreateContextFromString(
+        const std::string& str) override
+    {
+        return _resolver->CreateContextFromString(str);
     }
 
     virtual ArResolverContext CreateDefaultContextForAsset(
@@ -1090,14 +1113,18 @@ private:
             return nullptr;
         }
 
+        return _GetURIResolverForScheme(
+            std::string(assetPath.begin(), delimIt));
+    }
+
+    ArResolver*
+    _GetURIResolverForScheme(const std::string& scheme)
+    {
         // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
         // stored in _uriResolvers are always stored in lower-case, so
         // convert our candidate scheme to lower case as well.
-        const std::string scheme = 
-            TfStringToLower(std::string(assetPath.begin(), delimIt));
-
         const _URIResolverSharedPtr* uriResolver = 
-            TfMapLookupPtr(_uriResolvers, scheme);
+            TfMapLookupPtr(_uriResolvers, TfStringToLower(scheme));
         return uriResolver ? (*uriResolver)->Get() : nullptr;
     }
 
@@ -1238,6 +1265,45 @@ _GetResolver()
 } // end anonymous namespace
 
 
+// ------------------------------------------------------------
+
+ArResolver::ArResolver()
+{
+}
+
+ArResolver::~ArResolver()
+{
+}
+
+ArResolverContext
+ArResolver::CreateContextFromString(
+    const std::string& contextStr)
+{
+    return _CreateContextFromString(contextStr);
+}
+
+ArResolverContext
+ArResolver::CreateContextFromString(
+    const std::string& uriScheme, const std::string& contextStr)
+{
+    return _GetResolver().CreateContextFromString(uriScheme, contextStr);
+}
+
+ArResolverContext
+ArResolver::CreateContextFromStrings(
+    const std::vector<std::pair<std::string, std::string>>& contextStrs)
+{
+    return _GetResolver().CreateContextFromStrings(contextStrs);
+}
+
+ArResolverContext
+ArResolver::_CreateContextFromString(
+    const std::string& contextStr)
+{
+    return ArResolverContext();
+}
+
+// ------------------------------------------------------------
 
 ArResolver& 
 ArGetResolver()

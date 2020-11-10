@@ -164,6 +164,52 @@ public:
     AR_API
     virtual ArResolverContext CreateDefaultContext() = 0;
 
+    /// Return an ArResolverContext created from the primary ArResolver
+    /// implementation using the given \p contextStr.
+    AR_API
+    ArResolverContext CreateContextFromString(
+        const std::string& contextStr);
+
+    /// Return an ArResolverContext created from the ArResolver registered
+    /// for the given \p uriScheme using the given \p contextStr.
+    ///
+    /// An empty \p uriScheme indicates the primary resolver and is
+    /// equivalent to CreateContextFromString(string).
+    ///
+    /// If no resolver is registered for \p uriScheme, returns an empty
+    /// ArResolverContext.
+    AR_API
+    ArResolverContext CreateContextFromString(
+        const std::string& uriScheme, const std::string& contextStr);
+
+    /// Return an ArResolverContext created by combining the ArResolverContext
+    /// objects created from the given \p contextStrs.
+    ///
+    /// \p contextStrs is a list of pairs of strings. The first element in the
+    /// pair is the URI scheme for the ArResolver that will be used to create
+    /// the ArResolverContext from the second element in the pair. An empty
+    /// URI scheme indicates the primary resolver.
+    ///
+    /// For example:
+    ///
+    /// \code
+    /// ArResolverContext ctx = ArGetResolver().CreateContextFromStrings(
+    ///    { {"", "context str 1"}, 
+    ///      {"my_scheme", "context str 2"} });
+    /// \endcode
+    /// 
+    /// This will use the primary resolver to create an ArResolverContext
+    /// using the string "context str 1" and use the resolver registered for
+    /// the "my_scheme" URI scheme to create an ArResolverContext using
+    /// "context str 2". These contexts will be combined into a single
+    /// ArResolverContext and returned.
+    ///
+    /// If no resolver is registered for a URI scheme in an entry in
+    /// \p contextStrs, that entry will be ignored.
+    AR_API
+    ArResolverContext CreateContextFromStrings(
+        const std::vector<std::pair<std::string, std::string>>& contextStrs);
+    
     /// Return a default ArResolverContext that may be bound to this resolver
     /// to resolve the asset located at \p filePath when no other context is
     /// explicitly specified.
@@ -374,6 +420,17 @@ public:
 protected:
     AR_API
     ArResolver();
+
+    /// Implementation
+    /// @{
+
+    /// Return an ArResolverContext created from the given \p contextStr.
+    /// The default implementation returns an empty ArResolverContext.
+    AR_API
+    virtual ArResolverContext _CreateContextFromString(
+        const std::string& contextStr);
+
+    /// @}
 };
 
 /// Returns the configured asset resolver.

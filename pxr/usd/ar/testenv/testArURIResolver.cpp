@@ -46,6 +46,10 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 static void
 SetupPlugins()
 {
+    // Set the preferred resolver to ArDefaultResolver before
+    // running any test cases.
+    ArSetPreferredResolver("ArDefaultResolver");
+
     // Register TestArURIResolver plugin. We assume the build system will
     // install it to the ArPlugins subdirectory in the same location as
     // this test.
@@ -92,12 +96,68 @@ TestResolveWithContext()
     TF_AXIOM(resolver.Resolve("test://foo") == "test://foo?context");
 }
 
+static void
+TestCreateContextFromString()
+{
+    ArResolver& resolver = ArGetResolver();
+
+    const std::vector<std::string> searchPaths = { "/a", "/b" };
+    const std::string searchPathStr = 
+        TfStringJoin(searchPaths, ARCH_PATH_LIST_SEP);
+
+    // CreateContextFromString with an empty URI scheme should be
+    // equivalent to CreateContextFromString without a URI scheme.
+    TF_AXIOM(
+        resolver.CreateContextFromString("", searchPathStr) ==
+        ArResolverContext(ArDefaultResolverContext(searchPaths)));
+
+    TF_AXIOM(
+        resolver.CreateContextFromString("", searchPathStr) ==
+        resolver.CreateContextFromString(searchPathStr));
+
+    // CreateContextFromString with a URI scheme that has no registered
+    // resolver results in an empty ArResolverContext.
+    TF_AXIOM(
+        resolver.CreateContextFromString("bogus", "context string") ==
+        ArResolverContext());
+    
+    // CreateContextFromString with a URI scheme with a registered resolver
+    // results in whatever context is returned from that resolver.
+    TF_AXIOM(
+        resolver.CreateContextFromString("test", "context string") ==
+        ArResolverContext(_TestURIResolverContext("context string")));
+
+    // CreateContextFromStrings should return a single ArResolverContext
+    // containing context objects based on the given URI schemes and
+    // context strings.
+    TF_AXIOM(
+        resolver.CreateContextFromStrings({
+            {"test", "context string"}
+        }) ==
+        ArResolverContext(
+            _TestURIResolverContext("context string")
+        ));
+
+    TF_AXIOM(
+        resolver.CreateContextFromStrings({
+            {"", TfStringJoin(searchPaths, ARCH_PATH_LIST_SEP)},
+            {"test", "context string"},
+            {"bogus", "context string" }
+        }) ==
+        ArResolverContext(
+            ArDefaultResolverContext(searchPaths),
+            _TestURIResolverContext("context string")));
+}
+
 int main(int argc, char** argv)
 {
     SetupPlugins();
 
     printf("TestResolveWithContext ...\n");
     TestResolveWithContext();
+
+    printf("TestCreateContextFromString ...\n");
+    TestCreateContextFromString();
 
     printf("Test PASSED\n");
     return 0;

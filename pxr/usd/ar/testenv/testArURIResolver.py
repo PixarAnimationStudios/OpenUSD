@@ -25,6 +25,10 @@
 import os
 import unittest
 
+# Force the use of ArDefaultResolver as the primary resolver for
+# this test.
+os.environ["PXR_AR_DISABLE_PLUGIN_RESOLVER"] = "1"
+
 from pxr import Plug, Ar, Tf
 
 class TestArURIResolver(unittest.TestCase):
@@ -80,6 +84,32 @@ class TestArURIResolver(unittest.TestCase):
                          "TEST://foo")
         self.assertEqual(resolver.Resolve("TEST://foo.package[bar.file]"), 
                          "TEST://foo.package[bar.file]")
+
+    def test_CreateContextFromString(self):
+        resolver = Ar.GetResolver()
+
+        # Exercise the CreateContextFromString(s) API in Python.
+        # Since the _TestURIResolverContext object isn't wrapped to
+        # Python these tests are a bit limited, but more extensive
+        # tests are in the C++ version of this test.
+
+        # CreateContextFromString with an empty URI scheme should
+        # be equivalent to CreateContextFromString with no URI scheme.
+        searchPaths = os.pathsep.join(["/a", "/b"])
+        self.assertEqual(
+            resolver.CreateContextFromString(searchPaths),
+            resolver.CreateContextFromString("", searchPaths))
+
+        # CreateContextFromStrings should be equivalent to creating an
+        # Ar.ResolverContext combining the results of CreateContextFromString.
+        self.assertEqual(
+            Ar.ResolverContext(
+                (resolver.CreateContextFromString("test", "context str"),
+                 resolver.CreateContextFromString("", searchPaths))),
+            resolver.CreateContextFromStrings([
+                ("", searchPaths),
+                ("test", "context str")
+            ]))
 
 if __name__ == '__main__':
     unittest.main()
