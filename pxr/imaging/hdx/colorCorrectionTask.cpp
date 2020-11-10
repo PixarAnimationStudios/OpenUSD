@@ -55,24 +55,24 @@ TF_DEFINE_PRIVATE_TOKENS(
 static const int HDX_DEFAULT_LUT3D_SIZE_OCIO = 65;
 
 HdxColorCorrectionTaskParams::HdxColorCorrectionTaskParams()
-    : colorCorrectionMode(HdxColorCorrectionTokens->disabled)
-    , lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+  : colorCorrectionMode(HdxColorCorrectionTokens->disabled)
+  , lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
 {
 }
 
 HdxColorCorrectionTask::HdxColorCorrectionTask(
     HdSceneDelegate* delegate, 
     SdfPath const& id)
-    : HdxTask(id)
-    , _indexBuffer()
-    , _vertexBuffer()
-    , _texture3dLUT()
-    , _sampler()
-    , _shaderProgram()
-    , _resourceBindings()
-    , _pipeline()
-    , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
-    , _screenSize{}
+  : HdxTask(id)
+  , _indexBuffer()
+  , _vertexBuffer()
+  , _texture3dLUT()
+  , _sampler()
+  , _shaderProgram()
+  , _resourceBindings()
+  , _pipeline()
+  , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+  , _screenSize{}
 {
 }
 
@@ -209,8 +209,8 @@ HdxColorCorrectionTask::_CreateShaderResources()
         return true;
     }
 
-    bool useOCIO =_GetUseOcio();
-    HioGlslfx glslfx(
+    const bool useOCIO =_GetUseOcio();
+    const HioGlslfx glslfx(
             HdxPackageColorCorrectionShader(), HioGlslfxTokens->defVal);
 
     // Setup the vertex shader
@@ -218,14 +218,18 @@ HdxColorCorrectionTask::_CreateShaderResources()
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
-    vertDesc.AddStageInput("position", "vec4");
-    vertDesc.AddStageInput("uvIn", "vec2");
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "position", "vec4");
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "uvIn", "vec2");
     if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
        _hgi->GetAPIName() == HgiTokens->Vulkan) {
         vsCode = "#version 450 \n";
     }
-    vertDesc.AddStageOutput("gl_Position", "vec4", "position");
-    vertDesc.AddStageOutput("uvOut", "vec2");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "gl_Position", "vec4", "position");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "uvOut", "vec2");
     vsCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
     vertDesc.shaderCode = vsCode.c_str();
     HgiShaderFunctionHandle vertFn = _GetHgi()->CreateShaderFunction(vertDesc);
@@ -233,25 +237,20 @@ HdxColorCorrectionTask::_CreateShaderResources()
     // Setup the fragment shader
     std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.AddStageInput(
-            "hd_Position", "vec4", "position");
-    fragDesc.AddStageInput("uvOut", "vec2");
-    {
-        HgiShaderFunctionTextureDesc texDesc;
-        texDesc.nameInShader = "colorIn";
-        fragDesc.textures.push_back(std::move(texDesc));
-    }
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "hd_Position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddTexture(
+        &fragDesc, "colorIn");
     if (useOCIO) {
-        HgiShaderFunctionTextureDesc texDesc;
-        texDesc.nameInShader = "Lut3DIn";
-        texDesc.dimensions = 3;
-        fragDesc.textures.push_back(std::move(texDesc));
+        HgiShaderFunctionAddTexture(
+            &fragDesc, "Lut3DIn", 3);
     }
-    fragDesc.AddStageOutput(
-            "hd_FragColor",
-            "vec4",
-            "color");
-    fragDesc.AddConstantParam("screenSize", "vec2");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "screenSize", "vec2");
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
@@ -276,8 +275,8 @@ HdxColorCorrectionTask::_CreateShaderResources()
     // Setup the shader program
     HgiShaderProgramDesc programDesc;
     programDesc.debugName =_tokens->colorCorrectionShader.GetString();
-    programDesc.shaderFunctions.emplace_back(std::move(vertFn));
-    programDesc.shaderFunctions.emplace_back(std::move(fragFn));
+    programDesc.shaderFunctions.push_back(std::move(vertFn));
+    programDesc.shaderFunctions.push_back(std::move(fragFn));
     _shaderProgram = _GetHgi()->CreateShaderProgram(programDesc);
 
     if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
@@ -434,10 +433,10 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     _attachment0.storeOp = HgiAttachmentStoreOpStore;
     _attachment0.format = aovTexture->GetDescriptor().format;
     _attachment0.usage = aovTexture->GetDescriptor().usage;
-    desc.colorAttachmentDescs.emplace_back(_attachment0);
+    desc.colorAttachmentDescs.push_back(_attachment0);
 
     desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
-    desc.shaderConstantsDesc.byteSize = sizeof(_screenSize[0]) * 2;
+    desc.shaderConstantsDesc.byteSize = sizeof(_screenSize);
 
     _pipeline = _GetHgi()->CreateGraphicsPipeline(desc);
 
@@ -472,8 +471,8 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
 
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
-    gfxDesc.colorAttachmentDescs.emplace_back(_attachment0);
-    gfxDesc.colorTextures.emplace_back(aovTexture);
+    gfxDesc.colorAttachmentDescs.push_back(_attachment0);
+    gfxDesc.colorTextures.push_back(aovTexture);
 
     // Begin rendering
     HgiGraphicsCmdsUniquePtr gfxCmds = _GetHgi()->CreateGraphicsCmds(gfxDesc);
@@ -481,14 +480,14 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
-    GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
+    const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);
     gfxCmds->SetConstantValues(
         _pipeline,
         HgiShaderStageFragment,
         0,
-        sizeof(_screenSize[0]) * 2,
+        sizeof(_screenSize),
         &_screenSize);
     gfxCmds->SetViewport(vp);
     gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);

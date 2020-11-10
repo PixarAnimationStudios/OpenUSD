@@ -98,4 +98,77 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+void
+HgiShaderFunctionAddTexture(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const uint32_t dimensions,
+    const std::string &type)
+{
+    HgiShaderFunctionTextureDesc texDesc;
+    texDesc.nameInShader = nameInShader;
+    texDesc.dimensions = dimensions;
+    texDesc.type = type;
+
+    desc->textures.push_back(std::move(texDesc));
+}
+
+void
+HgiShaderFunctionAddConstantParam(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role,
+    const std::string &attribute,
+    const std::string &attributeIndex)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.role = role;
+    paramDesc.attribute = attribute;
+    paramDesc.attributeIndex = attributeIndex;
+    
+    desc->constantParams.push_back(std::move(paramDesc));
+}
+
+void
+HgiShaderFunctionAddStageInput(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role,
+    const std::string &attribute,
+    const std::string &attributeIndex)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.role = role;
+    paramDesc.attribute = attribute;
+    paramDesc.attributeIndex = attributeIndex;
+    
+    desc->stageInputs.push_back(std::move(paramDesc));
+}
+
+void
+HgiShaderFunctionAddStageOutput(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role,
+    const std::string &attribute,
+    const std::string &attributeIndex)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.role = role;
+    paramDesc.attribute = attribute;
+    paramDesc.attributeIndex = attributeIndex;
+    
+    desc->stageOutputs.push_back(std::move(paramDesc));
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

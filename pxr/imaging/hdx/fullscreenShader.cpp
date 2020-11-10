@@ -50,21 +50,21 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxFullscreenShader::HdxFullscreenShader(
     Hgi* hgi,
     std::string const& debugName)
-    : _hgi(hgi)
-    , _debugName(debugName)
-    , _indexBuffer()
-    , _vertexBuffer()
-    , _shaderProgram()
-    , _resourceBindings()
-    , _pipeline()
-    , _sampler()
-    , _blendingEnabled(false)
-    , _srcColorBlendFactor(HgiBlendFactorZero)
-    , _dstColorBlendFactor(HgiBlendFactorZero)
-    , _colorBlendOp(HgiBlendOpAdd)
-    , _srcAlphaBlendFactor(HgiBlendFactorZero)
-    , _dstAlphaBlendFactor(HgiBlendFactorZero)
-    , _alphaBlendOp(HgiBlendOpAdd)
+  : _hgi(hgi)
+  , _debugName(debugName)
+  , _indexBuffer()
+  , _vertexBuffer()
+  , _shaderProgram()
+  , _resourceBindings()
+  , _pipeline()
+  , _sampler()
+  , _blendingEnabled(false)
+  , _srcColorBlendFactor(HgiBlendFactorZero)
+  , _dstColorBlendFactor(HgiBlendFactorZero)
+  , _colorBlendOp(HgiBlendOpAdd)
+  , _srcAlphaBlendFactor(HgiBlendFactorZero)
+  , _dstAlphaBlendFactor(HgiBlendFactorZero)
+  , _alphaBlendOp(HgiBlendOpAdd)
 {
     if (_debugName.empty()) {
         _debugName = "HdxFullscreenShader";
@@ -163,8 +163,8 @@ HdxFullscreenShader::SetProgram(
     // Setup the shader program
     HgiShaderProgramDesc programDesc;
     programDesc.debugName = _tokens->fullscreenShader.GetString();
-    programDesc.shaderFunctions.emplace_back(std::move(vertFn));
-    programDesc.shaderFunctions.emplace_back(std::move(fragFn));
+    programDesc.shaderFunctions.push_back(std::move(vertFn));
+    programDesc.shaderFunctions.push_back(std::move(fragFn));
     _shaderProgram = _hgi->CreateShaderProgram(programDesc);
 
     if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
@@ -181,10 +181,15 @@ HdxFullscreenShader::GetFullScreenVertexDesc()
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex;
     vertDesc.shaderStage = HgiShaderStageVertex;
-    vertDesc.AddStageInput("position", "vec4", "position");
-    vertDesc.AddStageInput("uvIn", "vec2");
-    vertDesc.AddStageOutput("gl_Position", "vec4", "position");
-    vertDesc.AddStageOutput("uvOut", "vec2");
+    
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "uvIn", "vec2");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "gl_Position", "vec4", "position");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "uvOut", "vec2");
     return vertDesc;
 }
 
@@ -358,7 +363,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         texBind.stageUsage = HgiShaderStageFragment;
         texBind.textures.push_back(texHandle);
         texBind.samplers.push_back(_sampler);
-        resourceDesc.textures.emplace_back(std::move(texBind));
+        resourceDesc.textures.push_back(std::move(texBind));
     }
 
     for (auto const& buffer : _buffers) {
@@ -370,7 +375,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         bufBind.stageUsage = HgiShaderStageFragment;
         bufBind.offsets.push_back(0);
         bufBind.buffers.push_back(bufferHandle);
-        resourceDesc.buffers.emplace_back(std::move(bufBind));
+        resourceDesc.buffers.push_back(std::move(bufBind));
     }
 
     // If nothing has changed in the descriptor we avoid re-creating the
@@ -547,31 +552,32 @@ HdxFullscreenShader::_Draw(
         
         vertDesc.debugName = _tokens->fullscreenVertex.GetString();
         vertDesc.shaderStage = HgiShaderStageVertex;
-        vertDesc.AddStageInput("position", "vec4", "position");
-        vertDesc.AddStageInput("uvIn", "vec2");
-        vertDesc.AddStageOutput("gl_Position", "vec4", "position");
-        vertDesc.AddStageOutput("uvOut", "vec2");
+        HgiShaderFunctionAddStageInput(
+            &vertDesc, "position", "vec4", "position");
+        HgiShaderFunctionAddStageInput(
+            &vertDesc, "uvIn", "vec2");
+        HgiShaderFunctionAddStageOutput(
+            &vertDesc, "gl_Position", "vec4", "position");
+        HgiShaderFunctionAddStageOutput(
+            &vertDesc, "uvOut", "vec2");
         
         HgiShaderFunctionDesc fragDesc;
         fragDesc.debugName = _shaderName.GetString();
         fragDesc.shaderStage = HgiShaderStageFragment;
-        fragDesc.AddStageInput("hd_Position", "vec4", "position");
-        fragDesc.AddStageInput("uvOut", "vec2");
-        fragDesc.AddStageOutput(
-            "hd_FragColor", "vec4", "color");
-        fragDesc.AddStageOutput(
-            "hd_FragDepth", "float", "depth(any)");
-
-        {
-            HgiShaderFunctionTextureDesc texDesc;
-            texDesc.nameInShader = "colorIn";
-            fragDesc.textures.push_back(std::move(texDesc));
-        }
+        HgiShaderFunctionAddStageInput(
+            &fragDesc, "hd_Position", "vec4", "position");
+        HgiShaderFunctionAddStageInput(
+            &fragDesc, "uvOut", "vec2");
+        HgiShaderFunctionAddStageOutput(
+            &fragDesc, "hd_FragColor", "vec4", "color");
+        HgiShaderFunctionAddStageOutput(
+            &fragDesc, "hd_FragDepth", "float", "depth(any)");
+        HgiShaderFunctionAddTexture(
+            &fragDesc, "colorIn");
 
         if(depthAware) {
-            HgiShaderFunctionTextureDesc texDesc;
-            texDesc.nameInShader = "depth";
-            fragDesc.textures.push_back(std::move(texDesc));
+            HgiShaderFunctionAddTexture(
+                &fragDesc, "depth");
         }
         
         SetProgram(HdxPackageFullscreenShader(),
@@ -620,8 +626,8 @@ HdxFullscreenShader::_Draw(
     HgiGraphicsCmdsDesc gfxDesc;
 
     if (colorDst) {
-        gfxDesc.colorAttachmentDescs.emplace_back(_attachment0);
-        gfxDesc.colorTextures.emplace_back(colorDst);
+        gfxDesc.colorAttachmentDescs.push_back(_attachment0);
+        gfxDesc.colorTextures.push_back(colorDst);
     }
 
     if (depthDst) {
@@ -635,7 +641,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
-    GfVec4i vp = GfVec4i(0, 0, dimensions[0], dimensions[1]);
+    const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     gfxCmds->SetViewport(vp);
 
     if (!_constantsData.empty()) {

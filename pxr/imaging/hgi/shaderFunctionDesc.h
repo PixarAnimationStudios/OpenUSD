@@ -139,61 +139,6 @@ struct HgiShaderFunctionDesc
 {
     HGI_API
     HgiShaderFunctionDesc();
-
-    HGI_API
-    void AddConstantParam(
-        const std::string &nameInShader,
-        const std::string &type,
-        const std::string &role = std::string(),
-        const std::string &attribute = std::string(),
-        const std::string &attributeIndex = std::string())
-    {
-        HgiShaderFunctionParamDesc desc;
-        desc.nameInShader = nameInShader;
-        desc.type = type;
-        desc.role = role;
-        desc.attribute = attribute;
-        desc.attributeIndex = attributeIndex;
-        
-        constantParams.push_back(std::move(desc));
-    }
-
-    HGI_API
-    void AddStageInput(
-        const std::string &nameInShader,
-        const std::string &type,
-        const std::string &role = std::string(),
-        const std::string &attribute = std::string(),
-        const std::string &attributeIndex = std::string())
-    {
-        HgiShaderFunctionParamDesc desc;
-        desc.nameInShader = nameInShader;
-        desc.type = type;
-        desc.role = role;
-        desc.attribute = attribute;
-        desc.attributeIndex = attributeIndex;
-        
-        stageInputs.push_back(std::move(desc));
-    }
-
-    HGI_API
-    void AddStageOutput(
-        const std::string &nameInShader,
-        const std::string &type,
-        const std::string &role = std::string(),
-        const std::string &attribute = std::string(),
-        const std::string &attributeIndex = std::string())
-    {
-        HgiShaderFunctionParamDesc desc;
-        desc.nameInShader = nameInShader;
-        desc.type = type;
-        desc.role = role;
-        desc.attribute = attribute;
-        desc.attributeIndex = attributeIndex;
-        
-        stageOutputs.push_back(std::move(desc));
-    }
-
     std::string debugName;
     HgiShaderStage shaderStage;
     const char*  shaderCode;
@@ -215,6 +160,51 @@ HGI_API
 bool operator!=(
     const HgiShaderFunctionDesc& lhs,
     const HgiShaderFunctionDesc& rhs);
+
+/// Adds texture descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddTexture(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    uint32_t dimensions = 2,
+    const std::string &type = "float");
+
+/// Adds constant function param descriptor to given shader function
+/// descriptor.
+HGI_API
+void
+HgiShaderFunctionAddConstantParam(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role = std::string(),
+    const std::string &attribute = std::string(),
+    const std::string &attributeIndex = std::string());
+
+/// Adds stage input function param descriptor to given shader function
+/// descriptor.
+HGI_API
+void
+HgiShaderFunctionAddStageInput(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role = std::string(),
+    const std::string &attribute = std::string(),
+    const std::string &attributeIndex = std::string());
+
+/// Adds stage output function param descriptor to given shader function
+/// descriptor.
+HGI_API
+void
+HgiShaderFunctionAddStageOutput(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &role = std::string(),
+    const std::string &attribute = std::string(),
+    const std::string &attributeIndex = std::string());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

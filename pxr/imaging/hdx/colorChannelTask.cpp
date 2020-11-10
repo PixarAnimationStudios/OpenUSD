@@ -46,8 +46,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxColorChannelTask::HdxColorChannelTask(
     HdSceneDelegate* delegate, 
     SdfPath const& id)
-    : HdxTask(id)
-    , _channel(HdxColorChannelTokens->color)
+  : HdxTask(id)
+  , _channel(HdxColorChannelTokens->color)
 {
 }
 
@@ -67,7 +67,8 @@ HdxColorChannelTask::_Sync(HdSceneDelegate* delegate,
     HF_MALLOC_TAG_FUNCTION();
 
     if (!_compositor) {
-        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "ColorChannel"));
+        _compositor = std::make_unique<HdxFullscreenShader>(
+            _GetHgi(), "ColorChannel");
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
@@ -83,7 +84,7 @@ HdxColorChannelTask::_Sync(HdSceneDelegate* delegate,
 
 void
 HdxColorChannelTask::Prepare(HdTaskContext* ctx,
-                                HdRenderIndex* renderIndex)
+                             HdRenderIndex* renderIndex)
 {
 }
 
@@ -99,17 +100,19 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->colorChannelFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    fragDesc.AddConstantParam("screenSize", "vec2");
-    fragDesc.AddStageInput("hd_Position", "vec4", "position");
-    fragDesc.AddStageInput("uvOut", "vec2");
-    {
-        HgiShaderFunctionTextureDesc texDesc;
-        texDesc.nameInShader = "colorIn";
-        fragDesc.textures.push_back(std::move(texDesc));
-    }
-    fragDesc.AddStageOutput("hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "screenSize", "vec2");
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "hd_Position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddTexture(
+        &fragDesc, "colorIn");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "hd_FragColor", "vec4", "color");
     
-    fragDesc.AddConstantParam("channel", "int");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "channel", "int");
     
     _compositor->SetProgram(
         HdxPackageColorChannelShader(), 

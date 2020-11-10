@@ -53,19 +53,19 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxColorizeSelectionTask::HdxColorizeSelectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
-    : HdxTask(id)
-    , _params()
-    , _lastVersion(-1)
-    , _hasSelection(false)
-    , _selectionOffsets()
-    , _primId(nullptr)
-    , _instanceId(nullptr)
-    , _elementId(nullptr)
-    , _outputBuffer(nullptr)
-    , _outputBufferSize(0)
-    , _converged(false)
-    , _compositor()
-    , _pipelineCreated(false)
+  : HdxTask(id)
+  , _params()
+  , _lastVersion(-1)
+  , _hasSelection(false)
+  , _selectionOffsets()
+  , _primId(nullptr)
+  , _instanceId(nullptr)
+  , _elementId(nullptr)
+  , _outputBuffer(nullptr)
+  , _outputBufferSize(0)
+  , _converged(false)
+  , _compositor()
+  , _pipelineCreated(false)
 {
 }
 
@@ -93,7 +93,8 @@ HdxColorizeSelectionTask::_Sync(HdSceneDelegate* delegate,
     HF_MALLOC_TAG_FUNCTION();
 
     if (!_compositor) {
-        _compositor.reset(new HdxFullscreenShader(_GetHgi(), "ColorizeSelection"));
+        _compositor = std::make_unique<HdxFullscreenShader>(
+            _GetHgi(), "ColorizeSelection");
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
@@ -209,19 +210,22 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->outlineFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    fragDesc.AddStageInput("hd_Position", "vec4", "position");
-    fragDesc.AddStageInput("uvOut", "vec2");
-    {
-        HgiShaderFunctionTextureDesc texDesc;
-        texDesc.nameInShader = "colorIn";
-        fragDesc.textures.push_back(std::move(texDesc));
-    }
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "hd_Position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddTexture(
+        &fragDesc, "colorIn");
     
-    fragDesc.AddConstantParam("texelSize", "vec2");
-    fragDesc.AddConstantParam("enableOutline", "int");
-    fragDesc.AddConstantParam("radius", "int");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "texelSize", "vec2");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "enableOutline", "int");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "radius", "int");
     
-    fragDesc.AddStageOutput("hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "hd_FragColor", "vec4", "color");
     
     _compositor->SetProgram(HdxPackageOutlineShader(), _tokens->outlineFrag, fragDesc);
 
@@ -234,7 +238,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures({_tokens->colorIn}, {_texture});
 
     if (_UpdateParameterBuffer()) {
-        size_t byteSize = sizeof(_ParameterBuffer);
+        const size_t byteSize = sizeof(_ParameterBuffer);
         _compositor->SetShaderConstants(byteSize, &_parameterData);
     }
 
@@ -415,7 +419,7 @@ HdxColorizeSelectionTask::_CreateTexture(
         return;
     }
 
-    size_t pixelByteSize = HdDataSizeOfFormat(format);
+    const size_t pixelByteSize = HdDataSizeOfFormat(format);
 
     HgiTextureDesc texDesc;
     texDesc.debugName = "HdxColorizeSelectionTask texture";
