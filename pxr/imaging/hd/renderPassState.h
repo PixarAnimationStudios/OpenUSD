@@ -82,16 +82,37 @@ public:
     /// \name Camera and framing state
     // ---------------------------------------------------------------------- //
 
-    typedef std::vector<GfVec4d> ClipPlanesVector;
+    using ClipPlanesVector = std::vector<GfVec4d>;
+
     /// Camera setter API
     /// The view, projection and clipping plane info of the camera will be used.
     HD_API
     void SetCameraAndViewport(HdCamera const *camera,
                               GfVec4d const& viewport);
     /// Camera getter API
+    ///
+    /// For backwards compatibility, use the worldToView matrix of the HdCamera
+    /// if given. Otherwise, use the HdCamera's transform.
+    ///
+    /// The HdRenderPassState also has a fallback value for the view
+    /// matrix that is used if no HdCamera was specified, that can be set with,
+    /// e.g.g, HdStRenderPassState::SetCameraFramingState.
+    ///
     HD_API
-    GfMatrix4d const & GetWorldToViewMatrix() const;
+    GfMatrix4d GetWorldToViewMatrix() const;
 
+    /// It is expected that an HdCamera was specified that has physically based
+    /// attributes. The projection matrix is computed from those attributes and
+    /// the conform window policy is applied.
+    ///
+    /// For backwards compatibility with scene and render delegates:
+    /// if the HdCamera has no physically based attributes (more precisely,
+    /// the scene delegate provided a VtValue for focalLength that is either
+    /// empty or 1.0f), the HdCamera's projection matrix is used.
+    /// The HdRenderPassState also has a fallback value for the projection
+    /// matrix that is used if no HdCamera was specified, that can be set with,
+    /// e.g.g, HdStRenderPassState::SetCameraFramingState.
+    ///
     HD_API
     GfMatrix4d GetProjectionMatrix() const;
 
