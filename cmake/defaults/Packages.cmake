@@ -219,13 +219,13 @@ if (PXR_BUILD_IMAGING)
             # XXX In cmake 3.18+ we can instead use: Vulkan::glslc
             set(EXTRA_VULKAN_LIBS glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen SPIRV SPIRV-Tools SPIRV-Tools-opt SPIRV-Tools-shared)
             foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
-                find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" HINTS $ENV{VULKAN_SDK}/lib)
+                find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")
             endforeach()
 
             # Find the OS specific libs we need
             if (APPLE)
-                find_library(MVK_LIBRARIES NAMES MoltenVK HINTS $ENV{VULKAN_SDK}/lib)
+                find_library(MVK_LIBRARIES NAMES MoltenVK PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS ${MVK_LIBRARIES})
             elseif (UNIX AND NOT APPLE)
                 find_package(X11 REQUIRED)
