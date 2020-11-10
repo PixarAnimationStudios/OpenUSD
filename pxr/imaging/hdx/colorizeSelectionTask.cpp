@@ -209,8 +209,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->outlineFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    const std::string position = "position";
-    fragDesc.AddStageInput("hd_Position", "vec4", &position);
+    fragDesc.AddStageInput("hd_Position", "vec4", "position");
     fragDesc.AddStageInput("uvOut", "vec2");
     {
         HgiShaderFunctionTextureDesc texDesc;
@@ -222,8 +221,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     fragDesc.AddConstantParam("enableOutline", "int");
     fragDesc.AddConstantParam("radius", "int");
     
-    const std::string color = "color";
-    fragDesc.AddStageOutput("hd_FragColor", "vec4", &color);
+    fragDesc.AddStageOutput("hd_FragColor", "vec4", "color");
     
     _compositor->SetProgram(HdxPackageOutlineShader(), _tokens->outlineFrag, fragDesc);
 

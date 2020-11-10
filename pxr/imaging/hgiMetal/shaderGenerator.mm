@@ -472,16 +472,15 @@ ShaderStageData::AccumulateParams(
             uint32_t index = 0;
             bool hasIndex = false;
             //check if has a role
-            bool hasRole = p.role != nullptr;
-            if(hasRole) {
-                auto it = roleIndexM.find(*(p.role));
-                bool isRoleMappable = it != roleIndexM.end();
+            if(!p.role.empty()) {
+                auto it = roleIndexM.find(p.role);
+                const bool isRoleMappable = it != roleIndexM.end();
                 if(isRoleMappable) {
                     index = it->second;
                     hasIndex = true;
                     //Increment index, so that the next color
                     //or texture or vertex has a higher index
-                    (it)->second += 1.0;
+                    (it)->second += 1;
                 }
             }
 
@@ -492,7 +491,7 @@ ShaderStageData::AccumulateParams(
                     = std::make_unique<HgiMetalMemberShaderSection>(
                             p.nameInShader,
                             p.type,
-                            hasRole ? *p.role : std::string(),
+                            p.role,
                             indexAsStr);
             auto shaderSections = generator->GetShaderSections();
             shaderSections->push_back(std::move(cs));

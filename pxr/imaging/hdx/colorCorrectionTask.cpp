@@ -224,8 +224,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
        _hgi->GetAPIName() == HgiTokens->Vulkan) {
         vsCode = "#version 450 \n";
     }
-    const std::string position = "position";
-    vertDesc.AddStageOutput("gl_Position", "vec4", &position);
+    vertDesc.AddStageOutput("gl_Position", "vec4", "position");
     vertDesc.AddStageOutput("uvOut", "vec2");
     vsCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
     vertDesc.shaderCode = vsCode.c_str();
@@ -235,7 +234,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
     std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
     fragDesc.AddStageInput(
-            "hd_Position", "vec4", &position);
+            "hd_Position", "vec4", "position");
     fragDesc.AddStageInput("uvOut", "vec2");
     {
         HgiShaderFunctionTextureDesc texDesc;
@@ -248,11 +247,10 @@ HdxColorCorrectionTask::_CreateShaderResources()
         texDesc.dimensions = 3;
         fragDesc.textures.push_back(std::move(texDesc));
     }
-    const std::string color = "color";
     fragDesc.AddStageOutput(
             "hd_FragColor",
             "vec4",
-            &color);
+            "color");
     fragDesc.AddConstantParam("screenSize", "vec2");
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;

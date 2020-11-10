@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiShaderFunctionDesc;
+struct HgiShaderFunctionDesc;
 
 /// \class HgiShaderGenerator
 ///

@@ -180,10 +180,9 @@ HgiShaderFunctionDesc HdxFullscreenShader::GetFullScreenVertexDesc()
     HgiShaderFunctionDesc vertDesc;
     vertDesc.debugName = _tokens->fullscreenVertex;
     vertDesc.shaderStage = HgiShaderStageVertex;
-    const std::string position = "position";
-    vertDesc.AddStageInput("position", "vec4", &position);
+    vertDesc.AddStageInput("position", "vec4", "position");
     vertDesc.AddStageInput("uvIn", "vec2");
-    vertDesc.AddStageOutput("gl_Position", "vec4", &position);
+    vertDesc.AddStageOutput("gl_Position", "vec4", "position");
     vertDesc.AddStageOutput("uvOut", "vec2");
     return vertDesc;
 }
@@ -542,28 +541,25 @@ HdxFullscreenShader::_Draw(
     // If the user has not set a custom shader program, pick default program.
     if (!_shaderProgram) {
         auto const& it = textures.find(HdAovTokens->depth);
-        bool depthAware = it != textures.end();
+        const bool depthAware = it != textures.end();
         HgiShaderFunctionDesc vertDesc;
         
         vertDesc.debugName = _tokens->fullscreenVertex.GetString();
         vertDesc.shaderStage = HgiShaderStageVertex;
-        const std::string position = "position";
-        vertDesc.AddStageInput("position", "vec4", &position);
+        vertDesc.AddStageInput("position", "vec4", "position");
         vertDesc.AddStageInput("uvIn", "vec2");
-        vertDesc.AddStageOutput("gl_Position", "vec4", &position);
+        vertDesc.AddStageOutput("gl_Position", "vec4", "position");
         vertDesc.AddStageOutput("uvOut", "vec2");
         
         HgiShaderFunctionDesc fragDesc;
         fragDesc.debugName = _shaderName.GetString();
         fragDesc.shaderStage = HgiShaderStageFragment;
-        fragDesc.AddStageInput("hd_Position", "vec4", &position);
+        fragDesc.AddStageInput("hd_Position", "vec4", "position");
         fragDesc.AddStageInput("uvOut", "vec2");
-        const std::string color = "color";
         fragDesc.AddStageOutput(
-                "hd_FragColor", "vec4", &color);
-        std::string depthAttr = "depth(any)";
+            "hd_FragColor", "vec4", "color");
         fragDesc.AddStageOutput(
-                "hd_FragDepth", "float", &depthAttr);
+            "hd_FragDepth", "float", "depth(any)");
 
         {
             HgiShaderFunctionTextureDesc texDesc;

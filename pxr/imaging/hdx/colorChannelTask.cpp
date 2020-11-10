@@ -100,16 +100,14 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     fragDesc.debugName = _tokens->colorChannelFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     fragDesc.AddConstantParam("screenSize", "vec2");
-    const std::string position = "position";
-    fragDesc.AddStageInput("hd_Position", "vec4", &position);
+    fragDesc.AddStageInput("hd_Position", "vec4", "position");
     fragDesc.AddStageInput("uvOut", "vec2");
     {
         HgiShaderFunctionTextureDesc texDesc;
         texDesc.nameInShader = "colorIn";
         fragDesc.textures.push_back(std::move(texDesc));
     }
-    const std::string color = "color";
-    fragDesc.AddStageOutput("hd_FragColor", "vec4", &color);
+    fragDesc.AddStageOutput("hd_FragColor", "vec4", "color");
     
     fragDesc.AddConstantParam("channel", "int");
     

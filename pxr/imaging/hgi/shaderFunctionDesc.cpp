@@ -31,6 +31,8 @@ HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
 {
 }
 
+HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
+
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
   , shaderCode(nullptr)
@@ -57,31 +59,15 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
-static
-bool
-_IsEqual(
-    const std::unique_ptr<std::string> &a,
-    const std::unique_ptr<std::string> &b)
-{
-    if ((!a) && (!b)) {
-        return true;
-    }
-    if (!(a && b)) {
-        return false;
-    }
-
-    return (*a) == (*b);
-}
-
 bool operator==(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs)
 {
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.type == rhs.type && 
-           _IsEqual(lhs.role, rhs.role) &&
-           _IsEqual(lhs.attribute, rhs.attribute) &&
-           _IsEqual(lhs.attributeIndex, rhs.attributeIndex);
+           lhs.role == rhs.role &&
+           lhs.attribute == rhs.attribute &&
+           lhs.attributeIndex == rhs.attributeIndex;
 }
 
 bool operator!=(

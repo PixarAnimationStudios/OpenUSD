@@ -28,10 +28,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
-#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -94,64 +92,13 @@ bool operator!=(
 struct HgiShaderFunctionParamDesc
 {
     HGI_API
-    HgiShaderFunctionParamDesc(
-        const std::string &nameInShader,
-        const std::string &type,
-        const std::string *role,
-        const std::string *attribute,
-        const std::string *attributeIndex)
-        : nameInShader(nameInShader)
-        , type(type)
-        , role(role != nullptr ? std::make_unique<std::string>(*role) : nullptr)
-        , attribute(attribute != nullptr ?
-            std::make_unique<std::string>(*attribute) : nullptr)
-        , attributeIndex(attributeIndex != nullptr ?
-            std::make_unique<std::string>(*attributeIndex) : nullptr)
-    {
-    }
-
-    HGI_API
-    HgiShaderFunctionParamDesc(const HgiShaderFunctionParamDesc& o)
-    {
-        if (this != &o) {
-            nameInShader = o.nameInShader;
-            type = o.type;
-            role = o.role != nullptr
-                ? std::make_unique<std::string>(*o.role)
-                : nullptr;
-            attribute = o.attribute != nullptr
-                ? std::make_unique<std::string>(*o.attribute)
-                : nullptr;
-            attributeIndex = o.attributeIndex != nullptr
-                ? std::make_unique<std::string>(*o.attributeIndex)
-                : nullptr;
-        }
-    }
-
-    HGI_API
-    HgiShaderFunctionParamDesc& operator=(const HgiShaderFunctionParamDesc& o) {
-        if(this == &o) {
-            return *this;
-        }
-        nameInShader = o.nameInShader;
-        type = o.type;
-        role = o.role != nullptr
-            ? std::make_unique<std::string>(*o.role)
-            : nullptr;
-        attribute = o.attribute != nullptr
-            ? std::make_unique<std::string>(*o.attribute)
-            : nullptr;
-        attributeIndex = o.attributeIndex != nullptr
-            ? std::make_unique<std::string>(*o.attributeIndex)
-            : nullptr;
-        return *this;
-    }
+    HgiShaderFunctionParamDesc();
 
     std::string nameInShader;
     std::string type;
-    std::unique_ptr<std::string> role;
-    std::unique_ptr<std::string> attribute;
-    std::unique_ptr<std::string> attributeIndex;
+    std::string role;
+    std::string attribute;
+    std::string attributeIndex;
 };
 
 using HgiShaderFunctionParamDescVector =
@@ -197,48 +144,54 @@ struct HgiShaderFunctionDesc
     void AddConstantParam(
         const std::string &nameInShader,
         const std::string &type,
-        const std::string *role = nullptr,
-        const std::string *attribute = nullptr,
-        const std::string *attributeIndex = nullptr)
+        const std::string &role = std::string(),
+        const std::string &attribute = std::string(),
+        const std::string &attributeIndex = std::string())
     {
-        constantParams.emplace_back(
-                nameInShader,
-                type,
-                role,
-                attribute,
-                attributeIndex);
+        HgiShaderFunctionParamDesc desc;
+        desc.nameInShader = nameInShader;
+        desc.type = type;
+        desc.role = role;
+        desc.attribute = attribute;
+        desc.attributeIndex = attributeIndex;
+        
+        constantParams.push_back(std::move(desc));
     }
 
     HGI_API
     void AddStageInput(
         const std::string &nameInShader,
         const std::string &type,
-        const std::string *role = nullptr,
-        const std::string *attribute = nullptr,
-        const std::string *attributeIndex = nullptr)
+        const std::string &role = std::string(),
+        const std::string &attribute = std::string(),
+        const std::string &attributeIndex = std::string())
     {
-        stageInputs.emplace_back(
-            nameInShader,
-            type,
-            role,
-            attribute,
-            attributeIndex);
+        HgiShaderFunctionParamDesc desc;
+        desc.nameInShader = nameInShader;
+        desc.type = type;
+        desc.role = role;
+        desc.attribute = attribute;
+        desc.attributeIndex = attributeIndex;
+        
+        stageInputs.push_back(std::move(desc));
     }
 
     HGI_API
     void AddStageOutput(
         const std::string &nameInShader,
         const std::string &type,
-        const std::string *role = nullptr,
-        const std::string *attribute = nullptr,
-        const std::string *attributeIndex = nullptr)
+        const std::string &role = std::string(),
+        const std::string &attribute = std::string(),
+        const std::string &attributeIndex = std::string())
     {
-        stageOutputs.emplace_back(
-            nameInShader,
-            type,
-            role,
-            attribute,
-            attributeIndex);
+        HgiShaderFunctionParamDesc desc;
+        desc.nameInShader = nameInShader;
+        desc.type = type;
+        desc.role = role;
+        desc.attribute = attribute;
+        desc.attributeIndex = attributeIndex;
+        
+        stageOutputs.push_back(std::move(desc));
     }
 
     std::string debugName;
