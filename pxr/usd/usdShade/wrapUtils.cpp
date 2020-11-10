@@ -30,6 +30,8 @@
 #include <boost/python/tuple.hpp>
 
 #include "pxr/usd/usdShade/utils.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
 
 using namespace boost::python;
 
@@ -48,11 +50,12 @@ _GetBaseNameAndType(const TfToken &fullName)
 
 void wrapUsdShadeUtils()
 {
-    enum_<UsdShadeAttributeType>("AttributeType")
-        .value("Invalid", UsdShadeAttributeType::Invalid)
-        .value("Input", UsdShadeAttributeType::Input)
-        .value("Output", UsdShadeAttributeType::Output)
-        ;
+    UsdShadeAttributeVector (*GetValueProducingAttributes_Input)(
+        const UsdShadeInput &input) = 
+            &UsdShadeUtils::GetValueProducingAttributes;
+    UsdShadeAttributeVector (*GetValueProducingAttributes_Output)(
+        const UsdShadeOutput &output) = 
+            &UsdShadeUtils::GetValueProducingAttributes;
 
     scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
         .def("GetPrefixForAttributeType", 
@@ -62,9 +65,15 @@ void wrapUsdShadeUtils()
         .def("GetBaseNameAndType", _GetBaseNameAndType)
         .staticmethod("GetBaseNameAndType")
 
+        .def("GetType", UsdShadeUtils::GetType)
+        .staticmethod("GetType")
+
         .def("GetFullName", UsdShadeUtils::GetFullName)
         .staticmethod("GetFullName")
-    ;
+
+        .def("GetValueProducingAttributes", GetValueProducingAttributes_Input)
+        .def("GetValueProducingAttributes", GetValueProducingAttributes_Output)
+        .staticmethod("GetValueProducingAttributes")
+        ;
 
 }
-

@@ -129,6 +129,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,27 +163,43 @@ UsdShadeNodeGraph::GetOutputs() const
     return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }
 
-UsdShadeShader 
+UsdShadeShader
 UsdShadeNodeGraph::ComputeOutputSource(
-    const TfToken &outputName, 
-    TfToken *sourceName, 
+    const TfToken &outputName,
+    TfToken *sourceName,
     UsdShadeAttributeType *sourceType) const
 {
-    UsdShadeOutput output = GetOutput(outputName); 
-    if (!output)
+    // Check that we have a legit output
+    UsdShadeOutput output = GetOutput(outputName);
+    if (!output) {
         return UsdShadeShader();
-
-    UsdShadeConnectableAPI source;
-    if (output.GetConnectedSource(&source, sourceName, sourceType)) {
-        // XXX: we're not doing anything to detect cycles here, which will lead
-        // to an infinite loop.
-        if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
-            source = UsdShadeNodeGraph(source).ComputeOutputSource(*sourceName,
-                sourceName, sourceType);
-        }
     }
 
-    return source;
+    UsdShadeAttributeVector valueAttrs =
+        UsdShadeUtils::GetValueProducingAttributes(output);
+
+    if (valueAttrs.empty()) {
+        return UsdShadeShader();
+    }
+
+    if (valueAttrs.size() > 1) {
+        TF_WARN("Found multiple upstream attributes for output %s on NodeGraph "
+                "%s. ComputeOutputSource will only report the first upsteam "
+                "UsdShadeShader. Please use GetValueProducingAttributes to "
+                "retrieve all.", outputName.GetText(), GetPath().GetText());
+    }
+
+    UsdAttribute attr = valueAttrs[0];
+    std::tie(*sourceName, *sourceType) =
+        UsdShadeUtils::GetBaseNameAndType(attr.GetName());
+
+    UsdShadeShader shader(attr.GetPrim());
+
+    if (*sourceType != UsdShadeAttributeType::Output || !shader) {
+        return UsdShadeShader();
+    }
+
+    return shader;
 }
 
 UsdShadeInput

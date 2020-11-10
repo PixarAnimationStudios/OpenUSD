@@ -29,6 +29,7 @@ pxr_library(usdShade
 
     PUBLIC_HEADERS
         api.h
+        types.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -41,12 +42,13 @@ pxr_library(usdShade
         wrapMaterial.cpp
         wrapMaterialBindingAPI.cpp
         wrapNodeDefAPI.cpp
+        wrapNodeGraph.cpp
         wrapOutput.cpp
         wrapShader.cpp
         wrapShaderDefParser.cpp
         wrapShaderDefUtils.cpp
-        wrapNodeGraph.cpp
         wrapTokens.cpp
+        wrapTypes.cpp
         wrapUtils.cpp
 
     PYMODULE_FILES

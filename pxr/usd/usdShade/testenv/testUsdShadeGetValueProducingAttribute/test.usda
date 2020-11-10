@@ -20,6 +20,16 @@ def Material "Material"
         token inputs:terminalInput6.connect = </Material.inputs:topLevelValue>
         token inputs:terminalInput7.connect = </Material/NodeGraph.outputs:nodeGraphOutUnused>
         token inputs:terminalInput8.connect = </Material/NodeGraph.outputs:nodeGraphOut6>
+        token inputs:multiInput1.connect = [
+            </Material/NodeGraph.outputs:nodeGraphOut1>,
+            </Material/RegularNode.outputs:nodeOutput>
+        ]
+        token inputs:multiInput2.connect = </Material/NodeGraph.outputs:nodeGraphMultiOutput>
+        token inputs:multiInput3.connect = [
+            </Material/NodeGraph.outputs:nodeGraphOut2>,
+            </Material/NodeGraph.outputs:nodeGraphMultiOutput>,
+            </Material/RegularNode.outputs:nodeOutput>
+        ]
     }
 
     def NodeGraph "NodeGraph"
@@ -44,6 +54,10 @@ def Material "Material"
         token outputs:nodeGraphOutUnused
         token outputs:nodeGraphOut6
         token outputs:nodeGraphOut6.connect = </Material/NodeGraph.outputs:nodeGraphInUnconnected>
+        token outputs:nodeGraphMultiOutput.connect = [
+            </Material/NodeGraph/NestedNode1.outputs:nestedOut1>,
+            </Material/NodeGraph/NestedNode2.outputs:nestedOut2>
+        ]
 
         # connections with a cycle, which is very bad, but something we want to handle gracefully
         token inputs:cycleA.connect = </Material/NodeGraph.outputs:cycleB>

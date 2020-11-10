@@ -463,21 +463,18 @@ public:
     /// @}
 
 private:
-    // Helper method to compute the source of a given output, identified by its 
+    // Helper method to compute the sources of a given output, identified by its 
     // baseName, for the specified renderContext.
-    bool _ComputeNamedOutputSource(
-        const TfToken &baseName, 
-        const TfToken &renderContext,
-        UsdShadeConnectableAPI *source,
-        TfToken *sourceName,
-        UsdShadeAttributeType *sourceType) const;
+    UsdShadeAttributeVector _ComputeNamedOutputSources(
+        const TfToken &baseName,
+        const TfToken &renderContext) const;
 
     // Helper method to compute the source shader of a given output, identified 
     // by its baseName, for the specified renderContext.
     UsdShadeShader _ComputeNamedOutputShader(
         const TfToken &baseName,
         const TfToken &renderContext,
-        TfToken *sourceName, 
+        TfToken *sourceName,
         UsdShadeAttributeType *sourceType) const;
 
     // Helper method to retrieve outputs in all renderContexts that match the

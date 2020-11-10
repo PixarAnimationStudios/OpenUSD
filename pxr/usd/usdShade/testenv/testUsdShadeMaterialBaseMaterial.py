@@ -60,7 +60,7 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
                                                 floatShaderOutput))
 
         print(stage.GetRootLayer().ExportToString())
-        print(ConnAPI.GetConnectedSource(floatShaderInput))
+        print(ConnAPI.GetConnectedSources(floatShaderInput))
         self.assertTrue(ConnAPI.HasConnectedSource(floatShaderInput))
         self.assertFalse(ConnAPI.IsSourceConnectionFromBaseMaterial(
                 floatShaderInput))

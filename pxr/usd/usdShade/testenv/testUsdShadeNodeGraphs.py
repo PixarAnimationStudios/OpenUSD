@@ -136,22 +136,23 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         nestedNodeGraphOutput = nestedNodeGraphOutputs[0]
 
         nodeGraphOutput = nodeGraph.GetOutput("OutputThree")
-        outputSource = nodeGraphOutput.GetConnectedSource()
-        self.assertEqual(outputSource[0].GetPath(), nestedNodeGraph.GetPath())
-        self.assertEqual(outputSource[1], "NestedOutput")
-        self.assertEqual(outputSource[2], UsdShade.AttributeType.Output)
+        outputSource = nodeGraphOutput.GetConnectedSources()[0][0]
+        self.assertEqual(outputSource.source.GetPath(), nestedNodeGraph.GetPath())
+        self.assertEqual(outputSource.sourceName, "NestedOutput")
+        self.assertEqual(outputSource.sourceType, UsdShade.AttributeType.Output)
 
-        nestedOutputSource = nestedNodeGraphOutputs[0].GetConnectedSource()
-        self.assertEqual(nestedOutputSource[0].GetPath(), nestedNodeGraphShader.GetPath())
-        self.assertEqual(nestedOutputSource[1], "NestedShaderOutput")
-        self.assertEqual(nestedOutputSource[2], UsdShade.AttributeType.Output)
+        nestedOutputSource = nestedNodeGraphOutputs[0].GetConnectedSources()[0][0]
+        self.assertEqual(nestedOutputSource.source.GetPath(), nestedNodeGraphShader.GetPath())
+        self.assertEqual(nestedOutputSource.sourceName, "NestedShaderOutput")
+        self.assertEqual(nestedOutputSource.sourceType, UsdShade.AttributeType.Output)
 
-        computedNodeGraphOutputSource = nodeGraph.ComputeOutputSource(
-            "OutputThree")
-        self.assertEqual(computedNodeGraphOutputSource[0].GetPath(), 
-                         nestedOutputSource[0].GetPath())
-        self.assertEqual(computedNodeGraphOutputSource[1:2], 
-                         nestedOutputSource[1:2])
+        valueAttrs = nodeGraph.GetOutput("OutputThree").GetValueProducingAttributes();
+        self.assertEqual(len(valueAttrs), 1)
+        self.assertEqual(valueAttrs[0].GetPrim().GetPath(),
+                         nestedOutputSource.source.GetPath())
+        self.assertEqual(UsdShade.Utils.GetBaseNameAndType(valueAttrs[0].GetName()),
+                         (nestedOutputSource.sourceName,
+                          nestedOutputSource.sourceType))
 
     def _TestInputs(self, usdStage):
         nodeGraph = UsdShade.NodeGraph.Get(usdStage, NODEGRAPH_PATH)
@@ -172,10 +173,10 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         # Test input to input connections.
         nestedInputs = nestedNodeGraph.GetInputs()
         self.assertEqual(len(nestedInputs), 1)
-        nestedInputSource = nestedInputs[0].GetConnectedSource()
-        self.assertEqual(nestedInputSource[0].GetPath(), nodeGraph.GetPath())
-        self.assertEqual(nestedInputSource[1], 'InputTwo')
-        self.assertEqual(nestedInputSource[2], UsdShade.AttributeType.Input)
+        nestedInputSource = nestedInputs[0].GetConnectedSources()[0][0]
+        self.assertEqual(nestedInputSource.source.GetPath(), nodeGraph.GetPath())
+        self.assertEqual(nestedInputSource.sourceName, 'InputTwo')
+        self.assertEqual(nestedInputSource.sourceType, UsdShade.AttributeType.Input)
     
         # Test ComputeInterfaceInputConsumersMap.
         inputConsumersMap = nodeGraph.ComputeInterfaceInputConsumersMap()

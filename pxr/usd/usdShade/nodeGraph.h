@@ -226,6 +226,7 @@ public:
     USDSHADE_API
     std::vector<UsdShadeOutput> GetOutputs() const;
 
+    /// \deprecated in favor of GetValueProducingAttributes on UsdShadeOutput
     /// Resolves the connection source of the requested output, identified by
     /// \p outputName to a shader output.
     /// 

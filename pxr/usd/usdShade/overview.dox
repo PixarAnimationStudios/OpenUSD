@@ -241,12 +241,12 @@ of 42 on _connected_.
 ## Resolving Interface Connections ## {#UsdShadeResolvingInterface}
 
 When we create inputs on NodeGraphs or Materials to serve as "public interface"
-for shading properties, it is common to _create_ an approrpiately-typed
+for shading properties, it is common to _create_ an appropriately-typed
 attribute, but __not provide a default value for it__.  When USD is the document
 for a material shading network, this "uninitialized interface attribute"
 allows the Material to continue to receive updates to published shaders made
-available through the SdrShaderRegistry long after the Material has been
-created.  Why? Because of the first rule of interface value propagation:
+available through the SdrRegistry long after the Material has been created.
+Why? Because of the first rule of interface value propagation:
 
 - If a Material or NodeGraph input provides no value, and one or more of its
   shader's inputs connects to the interface attribute, then the value supplied
@@ -324,6 +324,101 @@ following values to be passed to the renderer for each shader input:
     }
 ~~~~~~~~~~~~~
 
+NodeGraphs also define outputs to declare the signals that are provided for the
+rest of the network. From the outside, which is where the NodeGraph is connected
+to other shading nodes or NodeGraphs, the outputs behave conceptually like those
+on shadering nodes. On the inside of the NodeGraph the outputs are connected to
+outputs of nested shading nodes or nested NodeGraphs _or_ they can be connected
+to input attributes on the same NodeGraph as a pass through mechanism.
+
+In the example below we have a NodGraph with two inputs (_ngPassThruIn_ and
+_ngToModifyIn_) and two outputs (_ngPassThruOut_ and _ngModifiedOut_).
+_ngPassThruIn_ is sent straight to _ngPassThruOut_ without modification, which
+means it is essentially forwarding connections and effectively _result1_ is
+connected to _input1_ directly. The input of _ngToModifyIn_ is fed to the
+_Modifier_ shading node, which sends a modified result to _ngModifiedOut_, which
+effectively models _result2_ -> _toModify_ (on _Modifier_) and _modified_ ->
+_input2_.
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+
+                def Shader "Generator"
+                {
+                    float outputs:result1
+                    float outputs:result2
+                }
+
+                def NodeGraph "Package"
+                {
+                    float inputs:ngPassThruIn.connect = 
+                        </Model/Materials/MyMaterial/Generator.outputs:result1>
+                    float inputs:ngToModifyIn.connect =
+                        </Model/Materials/MyMaterial/Generator.outputs:result2>
+
+                    float outputs:ngPassThruOut.connect =
+                        </Model/Materials/MyMaterial/Package.inputs:ngPassThruIn>
+                    float outputs:ngModifiedOut.connect =
+                        </Model/Materials/MyMaterial/Package/Modifier.outputs:modified>
+
+                    def Shader "Modifier"
+                    {
+                        float inputs:toModify.connect = 
+                            </Model/Materials/MyMaterial/Package.inputs:ngToModifyIn>
+
+                        float outputs:modified
+                    }
+                }
+
+                def Shader "Consumer"
+                {
+                    float inputs:input1.connect =
+                        </Model/Materials/MyMaterial/Package.outputs:ngPassThruOut>
+                    float inputs:input2.connect =
+                        </Model/Materials/MyMaterial/Package.outputs:ngModifiedOut>
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
+
+## Connection Resolution Utilities {#UsdShadeAttributeResolution}
+
+The resolution of the rules described above are implemented in a helper function
+called \ref UsdShadeUtils::GetValueProducingAttributes, which takes either a
+UsdShadeInput or UsdShadeOutput and computes the UsdAttribute(s) that either
+carry the default value(s) that should be sent to the renderer or the
+UsdShadeOutput(s) of nodes to which connections should be established. For
+convenience and discoverability this method is also available on Inputs and
+Outputs directly as \ref UsdShadeInput::GetValueProducingAttributes and
+\ref UsdShadeOutput::GetValueProducingAttributes.
+
+This handles both the rules that connections win over default values and the
+forwarding logic to the interfaces of containers, like Materials or NodeGraphs.
+This utility function can be seen as a way to turn physical connections into
+logical ones. This can be useful for renderers ingesting a Material network
+because generally the logical connections are their only concern. This
+conversion "flattens" the network into a simple network that only contains
+Shaders with their respective input values and connections.
+
+Attributes in Usd can have not just a single connection target, but potentially
+multiple attributes they target. UsdShade supports having multiple connections
+for Inputs and Output (of containers, only), which means that
+\ref UsdShadeUtils::GetValueProducingAttributes also handles these scenarios.
+The function is essentially performing a depth first connection tracing, which
+means that when a multi-connection is encountered along the path the tracing
+splits and potentially multiple source attributes are found. Note that invalid
+connections targets are skipped. The function will report all valid upstream
+attributes, which can be a mix of Inputs with default values and Outputs of
+Shader nodes. It is up to the client to resolve and report any inconsistencies
+based on what is supported in the target rendering system.
 
 # UsdShade Based Shader Definition {#UsdShadeShaderDefinition}
 

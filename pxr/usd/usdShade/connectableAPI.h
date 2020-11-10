@@ -34,7 +34,7 @@
 
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/nodeGraph.h"
-    
+#include "pxr/usd/usdShade/types.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -277,69 +277,97 @@ public:
         return CanConnect(output, sourceOutput.GetAttr());
     }
 
+    using ConnectionModification = UsdShadeConnectionModification;
+
     /// Authors a connection for a given shading attribute \p shadingAttr. 
     /// 
     /// \p shadingAttr can represent a parameter, an input or an output.
-    /// \p sourceName is the name of the shading attribute that is the target
-    /// of the connection. This excludes any namespace prefix that determines 
-    /// the type of the source (eg, output).
-    /// \p sourceType is used to indicate the type of the shading attribute 
-    /// that is the target of the connection. The source type is used to 
-    /// determine the namespace prefix that must be attached to \p sourceName
-    /// to determine the source full attribute name.
-    /// \p typeName if specified, is the typename of the attribute to create 
-    /// on the source if it doesn't exist. It is also used to validate whether 
-    /// the types of the source and consumer of the connection are compatible.
-    /// \p source is the connectable prim that produces or contains a value 
-    /// for the given shading attribute.
+    /// \p source is a struct that describes the upstream source attribute
+    /// with all the information necessary to make a connection. See the
+    /// documentation for UsdShadeConnectionSourceInfo.
+    /// \p mod describes the operation that should be applied to the list of
+    /// connections. By default the new connection will replace any existing
+    /// connections, but it can add to the list of connections to represent
+    /// multiple input connections.
     /// 
-    /// \return 
-    /// \c true if a connection was created successfully. 
+    /// \return
+    /// \c true if a connection was created successfully.
     /// \c false if \p shadingAttr or \p source is invalid.
     /// 
     /// \note This method does not verify the connectability of the shading
     /// attribute to the source. Clients must invoke CanConnect() themselves
     /// to ensure compatibility.
-    /// \note The source shading attribute is created if it doesn't exist 
+    /// \note The source shading attribute is created if it doesn't exist
     /// already.
     ///
     USDSHADE_API
     static bool ConnectToSource(
         UsdAttribute const &shadingAttr,
-        UsdShadeConnectableAPI const &source, 
-        TfToken const &sourceName, 
-        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
-        SdfValueTypeName typeName=SdfValueTypeName());
+        UsdShadeConnectionSourceInfo const &source,
+        ConnectionModification const mod = ConnectionModification::Replace);
 
     /// \overload
     USDSHADE_API
     static bool ConnectToSource(
         UsdShadeInput const &input,
-        UsdShadeConnectableAPI const &source, 
-        TfToken const &sourceName, 
-        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
-        SdfValueTypeName typeName=SdfValueTypeName()) 
+        UsdShadeConnectionSourceInfo const &source,
+        ConnectionModification const mod = ConnectionModification::Replace)
     {
-        return ConnectToSource(input.GetAttr(), source, sourceName, sourceType, 
-            typeName);
+        return ConnectToSource(input.GetAttr(), source, mod);
     }
 
     /// \overload
     USDSHADE_API
     static bool ConnectToSource(
         UsdShadeOutput const &output,
-        UsdShadeConnectableAPI const &source, 
-        TfToken const &sourceName, 
-        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
-        SdfValueTypeName typeName=SdfValueTypeName()) 
+        UsdShadeConnectionSourceInfo const &source,
+        ConnectionModification const mod = ConnectionModification::Replace)
     {
-        return ConnectToSource(output.GetAttr(), source, sourceName, sourceType, 
+        return ConnectToSource(output.GetAttr(), source, mod);
+    }
+
+    /// \deprecated Please use the versions that take a
+    /// UsdShadeConnectionSourceInfo to describe the upstream source
+    /// \overload
+    USDSHADE_API
+    static bool ConnectToSource(
+        UsdAttribute const &shadingAttr,
+        UsdShadeConnectableAPI const &source,
+        TfToken const &sourceName,
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName());
+
+    /// \deprecated
+    /// \overload
+    USDSHADE_API
+    static bool ConnectToSource(
+        UsdShadeInput const &input,
+        UsdShadeConnectableAPI const &source,
+        TfToken const &sourceName,
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName())
+    {
+        return ConnectToSource(input.GetAttr(), source, sourceName, sourceType,
+            typeName);
+    }
+
+    /// \deprecated
+    /// \overload
+    USDSHADE_API
+    static bool ConnectToSource(
+        UsdShadeOutput const &output,
+        UsdShadeConnectableAPI const &source,
+        TfToken const &sourceName,
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName())
+    {
+        return ConnectToSource(output.GetAttr(), source, sourceName, sourceType,
             typeName);
     }
 
     /// \overload
     /// 
-    /// Connect the given shading attribute to the source at path, \p sourcePath. 
+    /// Connect the given shading attribute to the source at path, \p sourcePath.
     /// 
     /// \p sourcePath should be the fully namespaced property path. 
     /// 
@@ -347,68 +375,92 @@ public:
     /// the prim types are unknown or unavailable.
     /// 
     USDSHADE_API
-    static bool ConnectToSource(UsdAttribute const &shadingAttr, 
+    static bool ConnectToSource(UsdAttribute const &shadingAttr,
                                 SdfPath const &sourcePath);
 
     /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeInput const &input, 
+    static bool ConnectToSource(UsdShadeInput const &input,
                                 SdfPath const &sourcePath) {
         return ConnectToSource(input.GetAttr(), sourcePath);
     }
 
     /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeOutput const &output, 
+    static bool ConnectToSource(UsdShadeOutput const &output,
                                 SdfPath const &sourcePath) {
         return ConnectToSource(output.GetAttr(), sourcePath);
     }
 
-    /// \overload 
+    /// \overload
     /// 
-    /// Connect the given shading attribute to the given source input. 
+    /// Connect the given shading attribute to the given source input.
     /// 
     USDSHADE_API
-    static bool ConnectToSource(UsdAttribute const &shadingAttr, 
+    static bool ConnectToSource(UsdAttribute const &shadingAttr,
                                 UsdShadeInput const &sourceInput);
 
     /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeInput const &input, 
+    static bool ConnectToSource(UsdShadeInput const &input,
                                 UsdShadeInput const &sourceInput) {
         return ConnectToSource(input.GetAttr(), sourceInput);
     }
 
     /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeOutput const &output, 
+    static bool ConnectToSource(UsdShadeOutput const &output,
                                 UsdShadeInput const &sourceInput) {
-        return ConnectToSource(output.GetAttr(), sourceInput);                                
+        return ConnectToSource(output.GetAttr(), sourceInput);
     }
 
-    /// \overload 
+    /// \overload
     /// 
-    /// Connect the given shading attribute to the given source output. 
+    /// Connect the given shading attribute to the given source output.
     /// 
     USDSHADE_API
-    static bool ConnectToSource(UsdAttribute const &shadingAttr, 
+    static bool ConnectToSource(UsdAttribute const &shadingAttr,
                                 UsdShadeOutput const &sourceOutput);
 
-    /// \overload 
+    /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeInput const &input, 
+    static bool ConnectToSource(UsdShadeInput const &input,
                                 UsdShadeOutput const &sourceOutput) {
-        return ConnectToSource(input.GetAttr(), sourceOutput);                            
+        return ConnectToSource(input.GetAttr(), sourceOutput);
     }
 
-    /// \overload 
+    /// \overload
     USDSHADE_API
-    static bool ConnectToSource(UsdShadeOutput const &output, 
+    static bool ConnectToSource(UsdShadeOutput const &output,
                                 UsdShadeOutput const &sourceOutput) {
         return ConnectToSource(output.GetAttr(), sourceOutput);
     }
 
+    /// Authors a list of connections for a given shading attribute
+    /// \p shadingAttr.
+    /// 
+    /// \p shadingAttr can represent a parameter, an input or an output.
+    /// \p sourceInfos is a vector of structs that describes the upstream source
+    /// attributes with all the information necessary to make all the
+    /// connections. See the documentation for UsdShadeConnectionSourceInfo.
+    /// 
+    /// \return 
+    /// \c true if all connection were created successfully.
+    /// \c false if the \p shadingAttr or one of the sources are invalid.
+    /// 
+    /// \note A valid connection is one that has a valid
+    /// \p UsdShadeConnectionSourceInfo, which requires the existence of the
+    /// upstream source prim. It does not require the existence of the source
+    /// attribute as it will be create if necessary.
+    USDSHADE_API
+    static bool SetConnectedSources(
+        UsdAttribute const &shadingAttr,
+        std::vector<UsdShadeConnectionSourceInfo> const &sourceInfos);
 
+
+    /// \deprecated Shading attributes can have multiple connections and so
+    /// using GetConnectedSources is needed in general
+    /// 
     /// Finds the source of a connection for the given shading attribute.
     /// 
     /// \p shadingAttr is the shading attribute whose connection we want to
@@ -424,45 +476,86 @@ public:
     /// \c true if the shading attribute is connected to a valid, defined source
     /// attribute.
     /// \c false if the shading attribute is not connected to a single, defined 
-    /// source attribute. 
+    /// source attribute.
     /// 
+    /// \note Previously this method would silently return false for multiple
+    /// connections. We are changing the behavior of this method to return the
+    /// result for the first connection and issue a TfWarn about it. We want to
+    /// encourage clients to use GetConnectedSources going forward.
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the parameter is connected, 
     /// else \c None
-    ///
     USDSHADE_API
     static bool GetConnectedSource(UsdAttribute const &shadingAttr,
-                                   UsdShadeConnectableAPI *source, 
+                                   UsdShadeConnectableAPI *source,
                                    TfToken *sourceName,
                                    UsdShadeAttributeType *sourceType);
 
+    /// \deprecated
     /// \overload
     USDSHADE_API
     static bool GetConnectedSource(UsdShadeInput const &input,
-                                   UsdShadeConnectableAPI *source, 
+                                   UsdShadeConnectableAPI *source,
                                    TfToken *sourceName,
                                    UsdShadeAttributeType *sourceType) {
-        return GetConnectedSource(input.GetAttr(), source, sourceName, 
+        return GetConnectedSource(input.GetAttr(), source, sourceName,
                                   sourceType);
     }
 
+    /// \deprecated
     /// \overload
     USDSHADE_API
     static bool GetConnectedSource(UsdShadeOutput const &output,
-                                   UsdShadeConnectableAPI *source, 
+                                   UsdShadeConnectableAPI *source,
                                    TfToken *sourceName,
                                    UsdShadeAttributeType *sourceType) {
-        return GetConnectedSource(output.GetAttr(), source, sourceName, 
+        return GetConnectedSource(output.GetAttr(), source, sourceName,
                                   sourceType);
     }
 
+    /// Finds the valid sources of connections for the given shading attribute.
+    /// 
+    /// \p shadingAttr is the shading attribute whose connections we want to
+    /// interrogate.
+    /// \p invalidSourcePaths is an optional output parameter to collect the
+    /// invalid source paths that have not been reported in the returned vector.
+    /// 
+    /// Returns a vector of \p UsdShadeConnectionSourceInfo structs with
+    /// information about each upsteam attribute. If the vector is empty, there
+    /// have been no connections.
+    /// 
+    /// \note A valid connection requires the existence of the source attribute
+    /// and also requires that the source prim is UsdShadeConnectableAPI
+    /// compatible.
+    /// \note The python wrapping returns a tuple with the valid connections
+    /// first, followed by the invalid source paths.
+    USDSHADE_API
+    static UsdShadeSourceInfoVector GetConnectedSources(
+        UsdAttribute const &shadingAttr,
+        SdfPathVector *invalidSourcePaths = nullptr);
+
+    /// \overload
+    USDSHADE_API
+    static UsdShadeSourceInfoVector GetConnectedSources(
+        UsdShadeInput const &input,
+        SdfPathVector *invalidSourcePaths = nullptr);
+
+    /// \overload
+    USDSHADE_API
+    static UsdShadeSourceInfoVector GetConnectedSources(
+        UsdShadeOutput const &output,
+        SdfPathVector *invalidSourcePaths = nullptr);
+
+    /// \deprecated Please us GetConnectedSources to retrieve multiple
+    /// connections
+    ///
     /// Returns the "raw" (authored) connected source paths for the given 
     /// shading attribute.
-    /// 
     USDSHADE_API
     static bool GetRawConnectedSourcePaths(UsdAttribute const &shadingAttr, 
                                            SdfPathVector *sourcePaths);
 
+    /// \deprecated
     /// \overload
     USDSHADE_API
     static bool GetRawConnectedSourcePaths(UsdShadeInput const &input, 
@@ -470,6 +563,7 @@ public:
         return GetRawConnectedSourcePaths(input.GetAttr(), sourcePaths);
     }
 
+    /// \deprecated
     /// \overload
     USDSHADE_API
     static bool GetRawConnectedSourcePaths(UsdShadeOutput const &output, 
@@ -477,14 +571,16 @@ public:
         return GetRawConnectedSourcePaths(output.GetAttr(), sourcePaths);
     }
 
-    /// Returns true if and only if the shading attribute is currently connected 
-    /// to a valid (defined) source. 
+    /// Returns true if and only if the shading attribute is currently connected
+    /// to at least one valid (defined) source.
     ///
-    /// If you will be calling GetConnectedSource() afterwards anyways, 
-    /// it will be \em much faster to instead guard like so:
+    /// If you will be calling GetConnectedSources() afterwards anyways,
+    /// it will be \em much faster to instead check if the returned vector is
+    /// empty:
     /// \code
-    /// if (UsdShadeConnectableAPI::GetConnectedSource(attribute, &source, 
-    ///         &sourceName, &sourceType)){
+    /// UsdShadeSourceInfoVector connections =
+    ///     UsdShadeConnectableAPI::GetConnectedSources(attribute);
+    /// if (!connections.empty()){
     ///      // process connected attribute
     /// } else {
     ///      // process unconnected attribute
@@ -521,12 +617,16 @@ public:
 
     /// \overload
     USDSHADE_API
-    static bool IsSourceConnectionFromBaseMaterial(const UsdShadeOutput &output) 
+    static bool IsSourceConnectionFromBaseMaterial(const UsdShadeOutput &output)
     {
         return IsSourceConnectionFromBaseMaterial(output.GetAttr());
     }
 
     /// Disconnect source for this shading attribute.
+    ///
+    /// If \p sourceAttr is valid it will disconnect the connection to this
+    /// upstream attribute. Otherwise it will disconnect all connections by
+    /// authoring an empty list of connections for the attribute \p shadingAttr.
     ///
     /// This may author more scene description than you might expect - we define
     /// the behavior of disconnect to be that, even if a shading attribute 
@@ -536,39 +636,66 @@ public:
     ///
     /// \sa ConnectToSource().
     USDSHADE_API
-    static bool DisconnectSource(UsdAttribute const &shadingAttr);
+    static bool DisconnectSource(
+        UsdAttribute const &shadingAttr,
+        UsdAttribute const &sourceAttr = UsdAttribute());
 
     /// \overload
     USDSHADE_API
-    static bool DisconnectSource(UsdShadeInput const &input) {
-        return DisconnectSource(input.GetAttr());
+    static bool DisconnectSource(
+        UsdShadeInput const &input,
+        UsdAttribute const &sourceAttr = UsdAttribute()) {
+        return DisconnectSource(input.GetAttr(), sourceAttr);
     }
 
     /// \overload
     USDSHADE_API
-    static bool DisconnectSource(UsdShadeOutput const &output) {
-        return DisconnectSource(output.GetAttr());
+    static bool DisconnectSource(
+        UsdShadeOutput const &output,
+        UsdAttribute const &sourceAttr = UsdAttribute()) {
+        return DisconnectSource(output.GetAttr(), sourceAttr);
     }
 
-    /// Clears source for this shading attribute in the current UsdEditTarget.
+    /// Clears sources for this shading attribute in the current UsdEditTarget.
     ///
     /// Most of the time, what you probably want is DisconnectSource()
     /// rather than this function.
     ///
     /// \sa DisconnectSource()
     USDSHADE_API
-    static bool ClearSource(UsdAttribute const &shadingAttr);
+    static bool ClearSources(UsdAttribute const &shadingAttr);
 
-    /// \overload 
+    /// \overload
     USDSHADE_API
-    static bool ClearSource(UsdShadeInput const &input) {
-        return ClearSource(input.GetAttr());
+    static bool ClearSources(UsdShadeInput const &input) {
+        return ClearSources(input.GetAttr());
     }
 
-    /// \overload 
+    /// \overload
+    USDSHADE_API
+    static bool ClearSources(UsdShadeOutput const &output) {
+        return ClearSources(output.GetAttr());
+    }
+
+    /// \deprecated This is the older version that only referenced a single
+    /// source. Please use ClearSources instead.
+    USDSHADE_API
+    static bool ClearSource(UsdAttribute const &shadingAttr) {
+        return ClearSources(shadingAttr);
+    }
+
+    /// \deprecated
+    /// \overload
+    USDSHADE_API
+    static bool ClearSource(UsdShadeInput const &input) {
+        return ClearSources(input.GetAttr());
+    }
+
+    /// \deprecated
+    /// \overload
     USDSHADE_API
     static bool ClearSource(UsdShadeOutput const &output) {
-        return ClearSource(output.GetAttr());
+        return ClearSources(output.GetAttr());
     }
 
     /// Return true if the \p schemaType has a connectableAPIBehavior
@@ -643,6 +770,82 @@ public:
 
     /// @}
 
+};
+
+/// A compact struct to represent a bundle of information about an upstream
+/// source attribute
+struct UsdShadeConnectionSourceInfo {
+    /// \p source is the connectable prim that produces or contains a value
+    /// for the given shading attribute.
+    UsdShadeConnectableAPI source;
+    /// \p sourceName is the name of the shading attribute that is the target
+    /// of the connection. This excludes any namespace prefix that determines
+    /// the type of the source (eg, output).
+    TfToken sourceName;
+    /// \p sourceType is used to indicate the type of the shading attribute
+    /// that is the target of the connection. The source type is used to
+    /// determine the namespace prefix that must be attached to \p sourceName
+    /// to determine the source full attribute name.
+    UsdShadeAttributeType sourceType = UsdShadeAttributeType::Invalid;
+    /// \p typeName, if specified, is the typename of the attribute to create
+    /// on the source if it doesn't exist when creating a connection
+    SdfValueTypeName typeName;
+
+    UsdShadeConnectionSourceInfo() = default;
+    explicit UsdShadeConnectionSourceInfo(
+        UsdShadeConnectableAPI const &source_,
+        TfToken const &sourceName_,
+        UsdShadeAttributeType sourceType_,
+        SdfValueTypeName typeName_ = SdfValueTypeName())
+    : source(source_)
+    , sourceName(sourceName_)
+    , sourceType(sourceType_)
+    , typeName(typeName_)
+    {}
+    explicit UsdShadeConnectionSourceInfo(UsdShadeInput const &input)
+        : source(input.GetPrim())
+        , sourceName(input.GetBaseName())
+        , sourceType(UsdShadeAttributeType::Input)
+        , typeName(input.GetAttr().GetTypeName())
+    {}
+    explicit UsdShadeConnectionSourceInfo(UsdShadeOutput const &output)
+        : source(output.GetPrim())
+        , sourceName(output.GetBaseName())
+        , sourceType(UsdShadeAttributeType::Output)
+        , typeName(output.GetAttr().GetTypeName())
+    {}
+    /// Construct the information for this struct from a property path. The
+    /// source attribute does not have to exist, but the \p sourcePath needs to
+    /// have a valid prefix to identify the sourceType. The source prim needs
+    /// to exist and be UsdShadeConnectableAPI compatible
+    USDSHADE_API
+    explicit UsdShadeConnectionSourceInfo(
+        UsdStagePtr const& stage,
+        SdfPath const& sourcePath);
+
+    /// Return true if this source info is valid for setting up a connection
+    bool IsValid() const {
+        // typeName can be invalid, so we don't check it. Order of checks is in
+        // order of cost (cheap to expensive).
+        // Note, for the source we only check that the prim is valid. We do not
+        // verify that the prim is compatibel with UsdShadeConnectableAPI. This
+        // makes it possible to target pure overs
+        return (sourceType != UsdShadeAttributeType::Invalid) &&
+               !sourceName.IsEmpty() &&
+               (bool)source.GetPrim();
+    }
+    explicit operator bool() const {
+        return IsValid();
+    }
+    bool operator==(UsdShadeConnectionSourceInfo const& other) const {
+        // We don't compare the typeName, since it is optional
+        return sourceName == other.sourceName &&
+               sourceType == other.sourceType &&
+               source.GetPrim() == other.source.GetPrim();
+    }
+    bool operator!=(const UsdShadeConnectionSourceInfo &other) const {
+        return !(*this == other);
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

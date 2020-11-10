@@ -504,22 +504,25 @@ _GetOutputName(const TfToken &baseName, const TfToken &renderContext)
     return TfToken(SdfPath::JoinIdentifier(renderContext, baseName));
 }
 
-bool
-UsdShadeMaterial::_ComputeNamedOutputSource(
-    const TfToken &baseName, 
-    const TfToken &renderContext,
-    UsdShadeConnectableAPI *source,
-    TfToken *sourceName,
-    UsdShadeAttributeType *sourceType) const
+UsdShadeAttributeVector
+UsdShadeMaterial::_ComputeNamedOutputSources(
+        const TfToken &baseName,
+        const TfToken &renderContext) const
 {
     const TfToken outputName = _GetOutputName(baseName, renderContext);
     UsdShadeOutput output = GetOutput(outputName);
     if (output) {
         if (renderContext == UsdShadeTokens->universalRenderContext && 
             !output.GetAttr().IsAuthored()) {
-            return false;
-        } else if (output.GetConnectedSource(source, sourceName, sourceType)) {
-            return true;
+            return {};
+        }
+
+        UsdShadeAttributeVector valueAttrs =
+            UsdShadeUtils::GetValueProducingAttributes(output);
+        // If we didn't find any connected attributes we will check the
+        // universal context below
+        if (!valueAttrs.empty()) {
+            return valueAttrs;
         }
     }
 
@@ -528,41 +531,50 @@ UsdShadeMaterial::_ComputeNamedOutputSource(
                 baseName, UsdShadeTokens->universalRenderContext);
         UsdShadeOutput universalOutput = GetOutput(universalOutputName);
         if (TF_VERIFY(universalOutput)) {
-            if (renderContext == UsdShadeTokens->universalRenderContext && 
-                !universalOutput.GetAttr().IsAuthored()) {
-                return false;
-            } else if (universalOutput.GetConnectedSource(source, sourceName, 
-                    sourceType)) {
-                return true;
-            }
+            return UsdShadeUtils::GetValueProducingAttributes(universalOutput);
         }
     }
 
-    return false;
+    return {};
 }
 
 UsdShadeShader 
 UsdShadeMaterial::_ComputeNamedOutputShader(
     const TfToken &baseName,
     const TfToken &renderContext,
-    TfToken *sourceName, 
+    TfToken *sourceName,
     UsdShadeAttributeType *sourceType) const
 {
-    UsdShadeConnectableAPI source;
-    TfToken srcName; 
-    UsdShadeAttributeType srcType;
-    if (_ComputeNamedOutputSource(baseName, renderContext, 
-                                  &source, &srcName, &srcType)) {
-        if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
-            source = UsdShadeNodeGraph(source.GetPrim()).ComputeOutputSource(
-                srcName, &srcName, &srcType);
-        }
-        if (sourceName)
-            *sourceName = srcName;
-        if (sourceType)
-            *sourceType = srcType;
+    UsdShadeAttributeVector valueAttrs =
+        _ComputeNamedOutputSources(baseName, renderContext);
+
+    if (valueAttrs.empty()) {
+        return UsdShadeShader();
     }
-    return source;
+
+    // XXX To remove this limitation we need to change the APIs for the
+    //     Compute*Source calls to forward multiple result attributes
+    if (valueAttrs.size() > 1) {
+        TF_WARN("Multiple connected sources for output %s:%s on material %s. "
+                "Only the first will be consider as a terminal.",
+                renderContext.GetText(), baseName.GetText(),
+                GetPath().GetText());
+    }
+
+    if (sourceName || sourceType) {
+        TfToken srcName;
+        UsdShadeAttributeType srcType;
+        std::tie(srcName, srcType) =
+            UsdShadeUtils::GetBaseNameAndType(valueAttrs[0].GetName());
+        if (sourceName) {
+            *sourceName = srcName;
+        }
+        if (sourceType) {
+            *sourceType = srcType;
+        }
+    }
+
+    return UsdShadeShader(valueAttrs[0].GetPrim());
 }
 
 std::vector<UsdShadeOutput>
