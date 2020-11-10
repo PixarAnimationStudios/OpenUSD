@@ -221,7 +221,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
             expectedResult = (1.178097, -1.570796, 1.178097, 0.0))
 
     # Test zero Tw
-    def TestDecomposeRotationsZeroTw(self):
+    def test_DecomposeRotationsZeroTw(self):
         rot = Gf.Matrix4d(
             -0.77657773110174733, 0.41334436580878597, -0.47547183177449759, 0.0,
             0.53325734733674601, 0.029348545343396093, -0.8454438268729656, 0.0,
