@@ -30,7 +30,6 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/base/gf/frustum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -247,10 +246,6 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         TfToken v;
         cam.GetProjectionAttr().Get(&v, time);
         return VtValue(_ToProjection(v));
-    } else if (key == HdCameraTokens->worldToViewMatrix) {
-        return VtValue(cam.GetCamera(time).GetFrustum().ComputeViewMatrix());
-    } else if (key == HdCameraTokens->projectionMatrix) {
-        return VtValue(cam.GetCamera(time).GetFrustum().ComputeProjectionMatrix());
     } else if (key == HdCameraTokens->horizontalAperture) {
         // The USD schema specifies several camera parameters in tenths of a
         // world unit (e.g., focalLength = 50mm)
