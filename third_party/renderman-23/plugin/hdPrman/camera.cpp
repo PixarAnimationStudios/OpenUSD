@@ -39,9 +39,7 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
     /* NOTHING */
 }
 
-HdPrmanCamera::~HdPrmanCamera()
-{
-}
+HdPrmanCamera::~HdPrmanCamera() = default;
 
 /* virtual */
 void
@@ -64,27 +62,6 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyParams) {
-        TfToken params[] = {
-            HdCameraTokens->horizontalAperture,
-            HdCameraTokens->verticalAperture,
-            HdCameraTokens->horizontalApertureOffset,
-            HdCameraTokens->verticalApertureOffset,
-            HdCameraTokens->focalLength,
-            HdCameraTokens->clippingRange,
-            HdCameraTokens->fStop,
-            HdCameraTokens->focusDistance,
-            HdCameraTokens->shutterOpen,
-            HdCameraTokens->shutterClose,
-            HdCameraTokens->exposure
-        };
-
-        for (TfToken const& param : params) {
-            VtValue val = sceneDelegate->GetCameraParamValue(id, param);
-            if (!val.IsEmpty()) {
-                _params[param] = val;
-            }
-        }
-
         _dirtyParams = true;
     }
 
@@ -97,28 +74,12 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
 
 }
 
-/* virtual */
-HdDirtyBits
-HdPrmanCamera::GetInitialDirtyBitsMask() const
-{
-    // Ensure that DirtyParams is also set.
-    return AllDirty; 
-}
-
 bool
 HdPrmanCamera::GetAndResetHasParamsChanged()
 {
     bool paramsChanged = _dirtyParams;
     _dirtyParams = false;
     return paramsChanged;
-}
-
-template <class T>
-static const T*
-_GetDictItem(const VtDictionary& dict, const TfToken& key)
-{
-    const VtValue* v = TfMapLookupPtr(dict, key.GetString());
-    return v && v->IsHolding<T>() ? &v->UncheckedGet<T>() : nullptr;
 }
 
 void
@@ -131,24 +92,25 @@ HdPrmanCamera::SetRileyCameraParams(RtParamList& camParams,
     // fStop
     // focalLength
     // focalDistance
-    float const *fStop =
-        _GetDictItem<float>(_params, HdCameraTokens->fStop);
-    if (fStop) {
-        // RenderMan defines disabled DOF as fStop=inf not zero
-        float const value = (*fStop <= 0) ? RI_INFINITY : *fStop;
-        projParams.SetFloat(RixStr.k_fStop, value);
+    // RenderMan defines disabled DOF as fStop=inf not zero
+    const float fStop = GetFStop();
+    if (GetFStop() > 0) {
+        projParams.SetFloat(RixStr.k_fStop, fStop);
+    } else {
+        projParams.SetFloat(RixStr.k_fStop, RI_INFINITY);
+    }
+    
+    // Do not use the initial value 0 which we get if the scene delegate
+    // did not provide a focal length.
+    const float focalLength = GetFocalLength();
+    if (focalLength > 0) {
+        projParams.SetFloat(RixStr.k_focalLength, focalLength);
     }
 
-    float const *focalLength =
-        _GetDictItem<float>(_params, HdCameraTokens->focalLength);
-    if (focalLength) {
-        projParams.SetFloat(RixStr.k_focalLength, *focalLength);
-    }
-
-    float const *focusDistance =
-        _GetDictItem<float>(_params, HdCameraTokens->focusDistance);
-    if (focusDistance) {
-        projParams.SetFloat(RixStr.k_focalDistance, *focusDistance);
+    // Similar for focus distance.
+    const float focusDistance = GetFocusDistance();
+    if (focusDistance > 0) {
+        projParams.SetFloat(RixStr.k_focalDistance, focusDistance);
     }
 
     // Following parameters are currently set on the Riley camera:
@@ -168,28 +130,32 @@ HdPrmanCamera::SetRileyCameraParams(RtParamList& camParams,
     // Parameter that is handled during Riley camera creation:
     // Rix::k_shutteropening (float[8] [c1 c2 d1 d2 e1 e2 f1 f2): additional
     // control points
-    GfRange1f const *clippingRange =
-        _GetDictItem<GfRange1f>(_params, HdCameraTokens->clippingRange);
-    if (clippingRange) {
-        camParams.SetFloat(RixStr.k_nearClip, clippingRange->GetMin());
-        camParams.SetFloat(RixStr.k_farClip, clippingRange->GetMax());
+
+    // Do not use clipping range if scene delegate did not provide one.
+    // Note that we do a sanity check slightly stronger than
+    // GfRange1f::IsEmpty() in that we do not allow the range to contain
+    // only exactly one point.
+    const GfRange1f &clippingRange = GetClippingRange();
+    if (clippingRange.GetMin() < clippingRange.GetMax()) {
+        camParams.SetFloat(RixStr.k_nearClip, clippingRange.GetMin());
+        camParams.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
     }
 
-        // XXX : Ideally we would want to set the proper shutter open and close,
-        // however we can not fully change the shutter without restarting
-        // Riley.
-
-        // double const *shutterOpen =
-        //     _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
-        // if (shutterOpen) {
-        //     camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
-        // }
-        
-        // double const *shutterClose =
-        //     _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
-        // if (shutterClose) {
-        //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
-        // }
+    // XXX : Ideally we would want to set the proper shutter open and close,
+    // however we can not fully change the shutter without restarting
+    // Riley.
+    
+    // double const *shutterOpen =
+    //     _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
+    // if (shutterOpen) {
+    //     camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
+    // }
+    
+    // double const *shutterClose =
+    //     _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
+    // if (shutterClose) {
+    //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
+    // }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
