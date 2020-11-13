@@ -25,8 +25,10 @@
 #include <boost/python/def.hpp>
 #include <boost/python/reference_existing_object.hpp>
 #include <boost/python/return_value_policy.hpp>
+#include <boost/python/tuple.hpp>
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/refPtr.h"
@@ -36,6 +38,20 @@
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static ArResolvedPath
+_Resolve(ArResolver& resolver, const std::string& assetPath)
+{
+    return resolver.Resolve(assetPath);
+}
+
+static tuple
+_ResolveWithAssetInfo(ArResolver& resolver, const std::string& assetPath)
+{
+    ArAssetInfo assetInfo;
+    const ArResolvedPath resolvedPath = resolver.Resolve(assetPath, &assetInfo);
+    return boost::python::make_tuple(resolvedPath, assetInfo);
+}
 
 void
 wrapResolver()
@@ -68,7 +84,11 @@ wrapResolver()
 
         .def("IsRelativePath", &This::IsRelativePath)
         .def("AnchorRelativePath", &This::AnchorRelativePath)
-        .def("Resolve", &This::Resolve)
+
+        .def("Resolve", &_Resolve,
+             (args("assetPath")))
+        .def("ResolveWithAssetInfo", &_ResolveWithAssetInfo,
+             (args("assetPath")))
 
         .def("GetExtension", &This::GetExtension)
         .def("RefreshContext", &This::RefreshContext)

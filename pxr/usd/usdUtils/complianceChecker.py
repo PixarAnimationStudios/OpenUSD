@@ -661,7 +661,7 @@ class ComplianceChecker(object):
         self._checkedPackages.add(packagePath)
 
         resolvedPath = Ar.GetResolver().Resolve(packagePath)
-        if len(resolvedPath) == 0:
+        if not resolvedPath:
             self._AddError("Failed to resolve package path '%s'." % packagePath)
             return
 

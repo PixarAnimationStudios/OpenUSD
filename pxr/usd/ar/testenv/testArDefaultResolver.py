@@ -79,7 +79,9 @@ class TestArDefaultResolver(unittest.TestCase):
         with open(testFilePath, 'w') as ofp:
             print('Garbage', file=ofp)
         
-        resolvedPath = Ar.GetResolver().Resolve(testFileName)
+        # XXX: Explicit conversion to str to accommodate change in
+        # return type to Ar.ResolvedPath in Ar 2.0.
+        resolvedPath = str(Ar.GetResolver().Resolve(testFileName))
 
         # The resolved path should be absolute.
         self.assertTrue(os.path.isabs(resolvedPath))

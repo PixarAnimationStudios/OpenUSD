@@ -92,7 +92,11 @@ Sdf_ResolvePath(
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
+#if AR_VERSION == 1
     return ArGetResolver().ResolveWithAssetInfo(layerPath, assetInfo);
+#else
+    return ArGetResolver().Resolve(layerPath, assetInfo);
+#endif
 }
 
 bool

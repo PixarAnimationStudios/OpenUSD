@@ -107,17 +107,18 @@ public:
         return std::string();
     }
 
-    virtual std::string Resolve(
-        const std::string& path) final
+    virtual ArResolvedPath _Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), "test:"));
 
         const _TestURIResolverContext* uriContext = _GetCurrentContext();
         if (uriContext && !uriContext->data.empty()) {
-            return path + "?" + uriContext->data;
+            return ArResolvedPath(assetPath + "?" + uriContext->data);
         }
 
-        return path;
+        return ArResolvedPath(assetPath);
     }
 
     virtual void BindContext(
@@ -161,14 +162,6 @@ public:
             return ArResolverContext(*uriContext);
         }
         return ArResolverContext();
-    }
-
-    virtual std::string ResolveWithAssetInfo(
-        const std::string& path, 
-        ArAssetInfo* assetInfo) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return Resolve(path);
     }
 
     virtual void UpdateAssetInfo(

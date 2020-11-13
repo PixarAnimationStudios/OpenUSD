@@ -536,15 +536,6 @@ public:
         return resolver.ComputeLocalPath(path);
     }
 
-    virtual std::string Resolve(const std::string& path) override
-    {
-        return _ResolveHelper(
-            path, 
-            [this](const std::string& path) {
-                return _GetResolver(path).Resolve(path);
-            });
-    }
-
     // The primary resolver and the URI resolvers all participate
     // in context binding and may have context-related data to store
     // away. To accommodate this, _Resolve stores away a vector of
@@ -660,15 +651,14 @@ public:
         return ArResolverContext(contexts);
     }
 
-    virtual std::string ResolveWithAssetInfo(
-        const std::string& path, 
+    virtual ArResolvedPath _Resolve(
+        const std::string& assetPath, 
         ArAssetInfo* assetInfo) override
     {
-        std::string resolvedPath = _ResolveHelper(
-            path, 
+        ArResolvedPath resolvedPath = _ResolveHelper(
+            assetPath, 
             [assetInfo, this](const std::string& path) {
-                return _GetResolver(path).ResolveWithAssetInfo(
-                    path, assetInfo);
+                return _GetResolver(path).Resolve(path, assetInfo);
             });
 
         // If path was a package-relative path, make sure the repoPath field
@@ -1145,7 +1135,7 @@ private:
     }
 
     template <class ResolveFn>
-    std::string
+    ArResolvedPath
     _ResolveHelper(const std::string& path, ResolveFn resolveFn)
     {
         if (ArIsPackageRelativePath(path)) {
@@ -1159,7 +1149,7 @@ private:
 
             std::string resolvedPackagePath = resolveFn(packagePath);
             if (resolvedPackagePath.empty()) {
-                return std::string();
+                return ArResolvedPath();
             }
 
             // Loop through the remaining packaged paths and resolve each
@@ -1176,20 +1166,20 @@ private:
                 ArPackageResolver* packageResolver =
                     _GetPackageResolver(resolvedPackagePath);
                 if (!packageResolver) {
-                    return std::string();
+                    return ArResolvedPath();
                 }
 
                 packagePath = packageResolver->Resolve(
                     resolvedPackagePath, packagePath);
                 if (packagePath.empty()) {
-                    return std::string();
+                    return ArResolvedPath();
                 }
 
                 resolvedPackagePath = ArJoinPackageRelativePath(
                     resolvedPackagePath, packagePath);
             }
 
-            return resolvedPackagePath;
+            return ArResolvedPath(std::move(resolvedPackagePath));
         }
 
         return resolveFn(path);
@@ -1273,6 +1263,14 @@ ArResolver::ArResolver()
 
 ArResolver::~ArResolver()
 {
+}
+
+ArResolvedPath
+ArResolver::Resolve(
+    const std::string& assetPath,
+    ArAssetInfo* assetInfo)
+{
+    return _Resolve(assetPath, assetInfo);
 }
 
 ArResolverContext

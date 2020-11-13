@@ -32,6 +32,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -119,11 +120,16 @@ public:
     AR_API
     virtual std::string ComputeLocalPath(const std::string& path) = 0;
 
-    /// Returns the resolved filesystem path for the file identified by
-    /// the given \p path if it exists. If the file does not exist,
-    /// returns an empty string.
+    /// Returns the resolved path for the asset identified by the given \p
+    /// assetPath if it exists. If the asset does not exist, returns an empty
+    /// ArResolvedPath.
+    ///
+    /// If \p assetInfo is not \c nullptr, the ArAssetInfo object may be
+    /// populated with additional metadata about the asset.
     AR_API
-    virtual std::string Resolve(const std::string& path) = 0;
+    ArResolvedPath Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo = nullptr);
 
     /// @}
 
@@ -238,21 +244,6 @@ public:
     ///
     /// @{
     // --------------------------------------------------------------------- //
-
-    /// Returns the resolved filesystem path for the file identified
-    /// by \p path following the same path resolution behavior as in
-    /// \ref Resolve(const std::string&).
-    ///
-    /// If the file identified by \p path represents an asset and
-    /// \p assetInfo is not \c nullptr, the resolver should populate 
-    /// \p assetInfo with whatever additional metadata it knows or can
-    /// reasonably compute about the asset without actually opening it.
-    ///
-    /// \see Resolve(const std::string&).
-    AR_API
-    virtual std::string ResolveWithAssetInfo(
-        const std::string& path, 
-        ArAssetInfo* assetInfo) = 0;
 
     /// Update \p assetInfo with respect to the given \p fileVersion .
     /// \note This API is currently in flux.  In general, you should prefer
@@ -423,6 +414,14 @@ protected:
 
     /// Implementation
     /// @{
+
+    /// Return the resolved path for the given \p assetPath or an empty
+    /// ArResolvedPath if no asset exists at that path. If an asset does
+    /// exist at that path and \p assetInfo is not \c nullptr, populate
+    /// \p assetInfo with any additional metadata about the asset.
+    virtual ArResolvedPath _Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) = 0;
 
     /// Return an ArResolverContext created from the given \p contextStr.
     /// The default implementation returns an empty ArResolverContext.

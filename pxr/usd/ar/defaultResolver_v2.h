@@ -122,14 +122,6 @@ public:
     virtual std::string ComputeLocalPath(const std::string& path) override;
 
     AR_API
-    virtual std::string Resolve(const std::string& path) override;
-
-    AR_API
-    virtual std::string ResolveWithAssetInfo(
-        const std::string& path, 
-        ArAssetInfo* assetInfo) override;
-
-    AR_API
     virtual void UpdateAssetInfo(
        const std::string& identifier,
        const std::string& filePath,
@@ -203,6 +195,11 @@ public:
         VtValue* bindingData) override;
 
 protected:
+    AR_API
+    virtual ArResolvedPath _Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) override;
+
     /// Creates an ArDefaultResolverContext from \p contextStr. This
     /// string is expected to be a list of directories delimited by
     /// the platform's standard path separator.
@@ -218,7 +215,7 @@ private:
 
     const ArDefaultResolverContext* _GetCurrentContext();
 
-    std::string _ResolveNoCache(const std::string& path);
+    ArResolvedPath _ResolveNoCache(const std::string& path);
 
 private:
     ArDefaultResolverContext _fallbackContext;

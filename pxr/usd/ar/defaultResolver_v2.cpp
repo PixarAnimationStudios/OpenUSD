@@ -62,7 +62,7 @@ static TfStaticData<std::vector<std::string>> _SearchPath;
 struct ArDefaultResolver::_Cache
 {
     using _PathToResolvedPathMap = 
-        tbb::concurrent_hash_map<std::string, std::string>;
+        tbb::concurrent_hash_map<std::string, ArResolvedPath>;
     _PathToResolvedPathMap _pathToResolvedPathMap;
 };
 
@@ -156,8 +156,8 @@ ArDefaultResolver::ComputeRepositoryPath(const std::string& path)
     return std::string();
 }
 
-static std::string
-_Resolve(
+static ArResolvedPath
+_ResolveAnchored(
     const std::string& anchorPath,
     const std::string& path)
 {
@@ -173,21 +173,22 @@ _Resolve(
         // and fix up all the callers to accommodate this.
         resolvedPath = TfStringCatPaths(anchorPath, path);
     }
-    return TfPathExists(resolvedPath) ? resolvedPath : std::string();
+    return TfPathExists(resolvedPath) ?
+        ArResolvedPath(std::move(resolvedPath)) : ArResolvedPath();
 }
 
-std::string
+ArResolvedPath
 ArDefaultResolver::_ResolveNoCache(const std::string& path)
 {
     if (path.empty()) {
-        return path;
+        return ArResolvedPath();
     }
 
     if (IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
-        std::string resolvedPath = _Resolve(ArchGetCwd(), path);
-        if (!resolvedPath.empty()) {
+        ArResolvedPath resolvedPath = _ResolveAnchored(ArchGetCwd(), path);
+        if (resolvedPath) {
             return resolvedPath;
         }
 
@@ -199,8 +200,8 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
             for (const ArDefaultResolverContext* ctx : contexts) {
                 if (ctx) {
                     for (const auto& searchPath : ctx->GetSearchPath()) {
-                        resolvedPath = _Resolve(searchPath, path);
-                        if (!resolvedPath.empty()) {
+                        resolvedPath = _ResolveAnchored(searchPath, path);
+                        if (resolvedPath) {
                             return resolvedPath;
                         }
                     }
@@ -208,37 +209,31 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
             }
         }
 
-        return std::string();
+        return ArResolvedPath();
     }
 
-    return _Resolve(std::string(), path);
+    return _ResolveAnchored(std::string(), path);
 }
 
-std::string
-ArDefaultResolver::Resolve(const std::string& path)
-{
-    return ResolveWithAssetInfo(path, /* assetInfo = */ nullptr);
-}
-
-std::string
-ArDefaultResolver::ResolveWithAssetInfo(
-    const std::string& path, 
+ArResolvedPath
+ArDefaultResolver::_Resolve(
+    const std::string& assetPath, 
     ArAssetInfo* assetInfo)
 {
-    if (path.empty()) {
-        return path;
+    if (assetPath.empty()) {
+        return ArResolvedPath();
     }
 
     if (_CachePtr currentCache = _GetCurrentCache()) {
         _Cache::_PathToResolvedPathMap::accessor accessor;
         if (currentCache->_pathToResolvedPathMap.insert(
-                accessor, std::make_pair(path, std::string()))) {
-            accessor->second = _ResolveNoCache(path);
+                accessor, std::make_pair(assetPath, ArResolvedPath()))) {
+            accessor->second = _ResolveNoCache(assetPath);
         }
         return accessor->second;
     }
 
-    return _ResolveNoCache(path);
+    return _ResolveNoCache(assetPath);
 }
 
 std::string
