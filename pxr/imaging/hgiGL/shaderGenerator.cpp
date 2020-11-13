@@ -41,10 +41,9 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
   : HgiShaderGenerator(descriptor)
 {
     //Write out all GL shaders and add to shader sections
-    std::unique_ptr<HgiGLMacroShaderSection> cs =
-        std::make_unique<HgiGLMacroShaderSection>(_GetMacroBlob(), "");
-
-    GetShaderSections()->push_back(std::move(cs));
+    GetShaderSections()->push_back(
+        std::make_unique<HgiGLMacroShaderSection>(
+            _GetMacroBlob(), ""));
 
     _WriteTextures(descriptor.textures);
     _WriteInOuts(descriptor.stageInputs, "in");
@@ -59,17 +58,15 @@ HgiGLShaderGenerator::_WriteTextures(
     //Extract texture descriptors and add appropriate texture sections
     for(size_t i=0; i<textures.size(); i++) {
         const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
-        HgiGLShaderSectionAttributeVector attrs = {
+        const HgiGLShaderSectionAttributeVector attrs = {
             HgiGLShaderSectionAttribute{"binding", std::to_string(i)}};
 
-        std::unique_ptr<HgiGLTextureShaderSection> texShaderSection =
+        GetShaderSections()->push_back(
             std::make_unique<HgiGLTextureShaderSection>(
                 textureDescription.nameInShader,
                 i,
                 textureDescription.dimensions,
-                attrs);
-
-        GetShaderSections()->push_back(std::move(texShaderSection));
+                attrs));
     }
 }
 
@@ -80,12 +77,11 @@ HgiGLShaderGenerator::_WriteConstantParams(
     if (parameters.size() < 1) {
         return;
     }
-    std::unique_ptr<HgiGLBlockShaderSection> constantParams =
+    GetShaderSections()->push_back(
         std::make_unique<HgiGLBlockShaderSection>(
             "ParamBuffer",
             parameters,
-            0);
-    GetShaderSections()->push_back(std::move(constantParams));
+            0));
 }
 
 void
@@ -112,23 +108,21 @@ HgiGLShaderGenerator::_WriteInOuts(
                 takenOutParams.find(param.nameInShader) != takenOutParams.end()) {
             continue;
         }
-        if(qualifier == "in" && takenInParams.find(param.nameInShader)
-         != takenInParams.end()) {
+        if(qualifier == "in" &&
+                takenInParams.find(param.nameInShader) != takenInParams.end()) {
             continue;
         }
 
-        HgiGLShaderSectionAttributeVector attrs {
+        const HgiGLShaderSectionAttributeVector attrs {
             HgiGLShaderSectionAttribute{"location", std::to_string(counter)}
         };
 
-        std::unique_ptr<HgiGLMemberShaderSection> cs {
+        GetShaderSections()->push_back(
             std::make_unique<HgiGLMemberShaderSection>(
                 paramName,
                 param.type,
                 attrs,
-                qualifier)};
-
-        GetShaderSections()->push_back(std::move(cs));
+                qualifier));
         counter++;
     }
 }

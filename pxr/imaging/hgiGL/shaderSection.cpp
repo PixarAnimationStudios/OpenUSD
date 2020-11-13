@@ -110,8 +110,8 @@ HgiGLShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 HgiGLMacroShaderSection::HgiGLMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
-    : HgiGLShaderSection(macroDeclaration, {})
-    , _macroComment(macroComment)
+  : HgiGLShaderSection(macroDeclaration)
+  , _macroComment(macroComment)
 {
 }
 
@@ -157,9 +157,9 @@ HgiGLBlockShaderSection::HgiGLBlockShaderSection(
     const std::string &identifier,
     const HgiShaderFunctionParamDescVector &parameters,
     const unsigned int bindingNo)
-    : HgiGLShaderSection(identifier,{})
-    , _parameters(parameters)
-    , _bindingNo(bindingNo)
+  : HgiGLShaderSection(identifier)
+  , _parameters(parameters)
+  , _bindingNo(bindingNo)
 {
 }
 
@@ -204,7 +204,7 @@ HgiGLTextureShaderSection::WriteType(std::ostream &ss) const
     if(_dimensions < 1 || _dimensions > 3) {
         TF_CODING_ERROR("Invalid texture dimension");
     }
-    ss << "sampler" << std::to_string(_dimensions) << "D";
+    ss << "sampler" << _dimensions << "D";
 }
 
 bool
@@ -222,7 +222,7 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     //and don't store textures in global space
     ss << "vec4 HdGet_";
     WriteIdentifier(ss);
-    ss << "(vec" << std::to_string(_dimensions)
+    ss << "(vec" << _dimensions
              << " uv) {\n";
     ss << "    vec4 result = texture(";
     WriteIdentifier(ss);
