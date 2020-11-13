@@ -27,6 +27,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static HgiVulkanCommandQueue::HgiVulkan_CommandPool*
 _CreateCommandPool(HgiVulkanDevice* device)
@@ -306,3 +307,5 @@ HgiVulkanCommandQueue::_SetInflightBit(uint8_t id, bool enabled)
             expect, expect & ~(1ULL<<id)));
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
