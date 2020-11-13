@@ -166,12 +166,12 @@ public:
     {
     }
 
-    virtual size_t GetSize() override
+    size_t GetSize() override
     {
         return _sizeInZipFile;
     }
 
-    virtual std::shared_ptr<const char> GetBuffer() override
+    std::shared_ptr<const char> GetBuffer() override
     {
         struct _Deleter
         {
@@ -188,7 +188,7 @@ public:
         return std::shared_ptr<const char>(_dataInZipFile, d);
     }
 
-    virtual size_t Read(void* buffer, size_t count, size_t offset)
+    size_t Read(void* buffer, size_t count, size_t offset) override
     {
         if (ARCH_UNLIKELY(offset + count > _sizeInZipFile)) {
             return 0;
@@ -197,7 +197,7 @@ public:
         return count;
     }
     
-    virtual std::pair<FILE*, size_t> GetFileUnsafe() override
+    std::pair<FILE*, size_t> GetFileUnsafe() override
     {
         std::pair<FILE*, size_t> result = _sourceAsset->GetFileUnsafe();
         if (result.first) {

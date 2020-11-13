@@ -212,8 +212,6 @@ private:
 
     TraceAggregateTreeRefPtr _aggregateTree;
     TraceEventTreeRefPtr _eventTree;
-
-    bool _buildEventTree;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -122,24 +122,24 @@ public:
                        float lineWidth = 0);
 
     HDST_API
-    virtual ~HdSt_GeometricShader();
+    ~HdSt_GeometricShader() override;
 
     // HdShader overrides
     HDST_API
-    virtual ID ComputeHash() const;
+    ID ComputeHash() const override;
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual void BindResources(int program,
+    void BindResources(int program,
                                HdSt_ResourceBinder const &binder,
                                HdRenderPassState const &state) override;
     
     HDST_API
-    virtual void UnbindResources(int program,
+    void UnbindResources(int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state) override;
     HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
+    void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// Returns true if this geometric shader is used for GPU frustum culling.
     bool IsFrustumCullingPass() const {

@@ -58,11 +58,11 @@ public:
     PerfReporter() {
         TfNotice::Register(TfCreateWeakPtr(this), &This::_OnCollection);
     }
-    virtual bool AcceptsCategory(TraceCategoryId id) {
+    bool AcceptsCategory(TraceCategoryId id) override {
         return id == PerfCategory::GetId();
     }
     
-    virtual void OnEvent(
+    void OnEvent(
         const TraceThreadId&, const TfToken& k, const TraceEvent& e) override {
         if (e.GetType() != TraceEvent::EventType::CounterDelta) {
             return;
@@ -79,10 +79,10 @@ public:
     }
 
     // Callbacks that are not used
-    virtual void OnBeginCollection() override {}
-    virtual void OnEndCollection() override {}
-    virtual void OnBeginThread(const TraceThreadId&) override {}
-    virtual void OnEndThread(const TraceThreadId&) override {}
+    void OnBeginCollection() override {}
+    void OnEndCollection() override {}
+    void OnBeginThread(const TraceThreadId&) override {}
+    void OnEndThread(const TraceThreadId&) override {}
 
     bool HasCounter(const std::string& key) const {
         return counters.find(key) != counters.end();

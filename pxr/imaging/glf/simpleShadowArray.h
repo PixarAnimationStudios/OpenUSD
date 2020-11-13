@@ -48,7 +48,7 @@ public:
     GLF_API
     GlfSimpleShadowArray();
     GLF_API
-    virtual ~GlfSimpleShadowArray();
+    ~GlfSimpleShadowArray() override;
 
     // Disallow copies
     GlfSimpleShadowArray(const GlfSimpleShadowArray&) = delete;
@@ -160,7 +160,6 @@ private:
     std::vector<uint64_t> _bindlessTextureHandles;
 
     // common state
-    bool _usingBindlessShadowMaps;
     std::vector<GfMatrix4d> _viewMatrix;
     std::vector<GfMatrix4d> _projectionMatrix;
 
