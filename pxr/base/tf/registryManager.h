@@ -33,9 +33,6 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/preprocessor/cat.hpp>
-
 #include <functional>
 #include <typeinfo>
 
@@ -48,7 +45,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// See \ref page_tf_RegistryManager for a detailed description.
 ///
-class TfRegistryManager : boost::noncopyable {
+class TfRegistryManager {
+    TfRegistryManager(const TfRegistryManager&) = delete;
+    TfRegistryManager& operator=(const TfRegistryManager&) = delete;
+
 public:
     // The type of a registration function.  The arguments are not used.
     typedef void (*RegistrationFunctionType)(void*, void*);
@@ -162,7 +162,7 @@ public:
 // the body of the function inside braces.  KEY_TYPE and TAG must be types.
 #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG)                            \
     static void _Tf_RegistryFunction(KEY_TYPE*, TAG*);                         \
-    ARCH_CONSTRUCTOR(BOOST_PP_CAT(_Tf_RegistryAdd, __LINE__),                  \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __LINE__),                     \
                      TF_REGISTRY_PRIORITY, KEY_TYPE*, TAG*)                    \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
@@ -176,17 +176,17 @@ public:
 // the body of the function inside braces.  KEY_TYPE must be a type and NAME
 // must be a valid C++ name.
 #define TF_REGISTRY_DEFINE(KEY_TYPE, NAME)                                     \
-    static void BOOST_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*);    \
-    ARCH_CONSTRUCTOR(BOOST_PP_CAT(_Tf_RegistryAdd, NAME),                      \
+    static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*);       \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME),                         \
                      TF_REGISTRY_PRIORITY, KEY_TYPE*)                          \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, void*))                       \
-                             BOOST_PP_CAT(_Tf_RegistryFunction, NAME),         \
+                             TF_PP_CAT(_Tf_RegistryFunction, NAME),            \
                              TF_PP_STRINGIZE(KEY_TYPE));                       \
     }                                                                          \
     _ARCH_ENSURE_PER_LIB_INIT(Tf_RegistryStaticInit, _tfRegistryInit);         \
-    static void BOOST_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*)
+    static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*)
 
 
 /// Define a function that is called on demand by \c TfRegistryManager.
@@ -258,7 +258,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, BOOST_PP_CAT(TAG, __LINE__))
+    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __LINE__))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

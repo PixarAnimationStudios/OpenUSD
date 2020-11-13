@@ -174,7 +174,10 @@ GetLibraryPath(const char* libraryName,
     return result;
 }
 
-class Tf_RegistryManagerImpl : boost::noncopyable {
+class Tf_RegistryManagerImpl {
+    Tf_RegistryManagerImpl(const Tf_RegistryManagerImpl&) = delete;
+    Tf_RegistryManagerImpl& operator=(const Tf_RegistryManagerImpl&) = delete;
+
 public:
     typedef size_t LibraryIdentifier;
     typedef TfRegistryManager::RegistrationFunctionType RegistrationFunction;
