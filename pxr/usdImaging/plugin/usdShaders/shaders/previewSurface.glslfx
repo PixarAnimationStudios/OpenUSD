@@ -322,15 +322,17 @@ evaluateIndirectLighting(
 
     mat4 transformationMatrix = GetDomeLightTransform(worldToLightTransform);
 
-    // Diffuse Component
-    vec3 dir = vec4(transformationMatrix * vec4(Neye,0.0)).xyz;
+    // Diffuse Component (make sure to normalize the direction after the 
+    // space transformation before calling acos in projectToLatLong).
+    vec3 dir = normalize((transformationMatrix * vec4(Neye,0.0)).xyz);
     vec2 coord = projectToLatLong(dir);
     vec3 diffuse = HdGet_domeLightIrradiance(coord).rgb;
 
-    // Specular Component
+    // Specular Component (make sure to normalize the direction after the
+    // space transformation before calling acos in projectToLatLong).
     const float MAX_REFLECTION_LOD = 4.0;
     float lod = roughness * MAX_REFLECTION_LOD;
-    vec3 Rdir = vec4(transformationMatrix * vec4(Reye,0.0)).xyz;
+    vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
     vec2 Rcoord = projectToLatLong(Rdir);
     vec3 prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
                                 Rcoord, lod).rgb;
