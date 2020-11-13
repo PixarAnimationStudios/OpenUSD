@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "shaderGenerator.h"
+#include "pxr/imaging/hgiMetal/shaderGenerator.h"
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //In purity we don't want the shader generator to know how to
 //turn descriptors into sections, it is more interested in
 //writing abstract sections
-class ShaderStageData
+class ShaderStageData final
 {
 public:
     ShaderStageData(
@@ -62,10 +62,9 @@ private:
 ///
 /// Generates a metal stage function. Base class for vertex/fragment/compute
 ///
-class ShaderStageEntryPoint
+class ShaderStageEntryPoint final
 {
 public:
-    virtual ~ShaderStageEntryPoint() = default;
     template<typename T>
     T* BuildStructInstance(
         const std::string &typeName,
@@ -439,15 +438,19 @@ _GetHeader(id<MTLDevice> device)
 ShaderStageData::ShaderStageData(
     const HgiShaderFunctionDesc &descriptor,
     HgiMetalShaderGenerator *generator)
-    : _constantParams(
-    AccumulateParams(descriptor.constantParams,generator))
-    , _inputs(
+  : _constantParams(
           AccumulateParams(
-                descriptor.stageInputs,
-                generator,
-                descriptor.shaderStage == HgiShaderStageVertex))
-    , _outputs(
-          AccumulateParams(descriptor.stageOutputs, generator))
+              descriptor.constantParams,
+              generator))
+  , _inputs(
+          AccumulateParams(
+              descriptor.stageInputs,
+              generator,
+              descriptor.shaderStage == HgiShaderStageVertex))
+  , _outputs(
+          AccumulateParams(
+              descriptor.stageOutputs,
+              generator))
 {
 }
 

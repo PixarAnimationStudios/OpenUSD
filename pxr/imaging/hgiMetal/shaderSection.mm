@@ -193,8 +193,8 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 HgiMetalStructTypeDeclarationShaderSection::HgiMetalStructTypeDeclarationShaderSection(
     const std::string &identifier,
     const HgiMetalShaderSectionPtrVector &members)
-    : HgiMetalShaderSection(identifier)
-    , _members(members)
+  : HgiMetalShaderSection(identifier)
+  , _members(members)
 {
 }
 
@@ -314,7 +314,7 @@ HgiMetalArgumentBufferInputShaderSection::VisitEntryPointFunctionExecutions(
     std::ostream& ss,
     const std::string &scopeInstanceName)
 {
-    auto structDeclMembers = GetStructTypeDeclaration()->GetMembers();
+    const auto &structDeclMembers = GetStructTypeDeclaration()->GetMembers();
     for (auto it = structDeclMembers.begin();
          it != structDeclMembers.end();
          ++it) {
@@ -377,7 +377,8 @@ HgiMetalStageOutputShaderSection::VisitEntryPointFunctionExecutions(
     ss << scopeInstanceName << ".main();\n";
     WriteDeclaration(ss);
     ss << "\n";
-    auto structTypeDeclMembers = GetStructTypeDeclaration()->GetMembers();
+    const auto &structTypeDeclMembers =
+        GetStructTypeDeclaration()->GetMembers();
     for (auto it = structTypeDeclMembers.begin();
          it != structTypeDeclMembers.end();
          ++it) {
