@@ -43,7 +43,7 @@ _Repr(const ArResolvedPath& p)
     return TfStringPrintf(
         "%sResolvedPath(%s)",
         TF_PY_REPR_PREFIX.c_str(), 
-        !p ? "" : TfStringPrintf("'%s'", p.GetResolvedPath().c_str()).c_str());
+        !p ? "" : TfStringPrintf("'%s'", p.GetPathString().c_str()).c_str());
 }
 
 static bool
@@ -78,10 +78,10 @@ wrapResolvedPath()
         .def(TfPyBoolBuiltinFuncName, _NonZero)
         .def("__hash__", &This::GetHash)
         .def("__repr__", &_Repr)
-        .def("__str__", &This::GetResolvedPath,
+        .def("__str__", &This::GetPathString,
              return_value_policy<return_by_value>())
 
-        .def("GetResolvedPath", &This::GetResolvedPath,
+        .def("GetPathString", &This::GetPathString,
              return_value_policy<return_by_value>())
         ;
 

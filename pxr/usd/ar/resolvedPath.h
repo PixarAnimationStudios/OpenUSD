@@ -110,11 +110,11 @@ public:
     /// compatibility.
     bool empty() const { return IsEmpty(); }
 
-    /// Return the resolved path held by this object.
-    operator const std::string&() const { return GetResolvedPath(); }
+    /// Return the resolved path held by this object as a string.
+    operator const std::string&() const { return GetPathString(); }
 
-    /// Return the resolved path held by this object.
-    const std::string& GetResolvedPath() const { return _resolvedPath; }
+    /// Return the resolved path held by this object as a string.
+    const std::string& GetPathString() const { return _resolvedPath; }
 
 private:
     std::string _resolvedPath;
@@ -124,7 +124,7 @@ template <class HashState>
 void
 TfHashAppend(HashState& h, const ArResolvedPath& p)
 {
-    h.Append(p.GetResolvedPath());
+    h.Append(p.GetPathString());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -55,9 +55,9 @@ class TestArResolvedPath(unittest.TestCase):
         self.assertTrue("/bar" < Ar.ResolvedPath("/foo"))
         self.assertTrue("/bar" <= Ar.ResolvedPath("/foo"))
 
-    def test_GetResolvedPath(self):
-        self.assertEqual(Ar.ResolvedPath().GetResolvedPath(), "")
-        self.assertEqual(Ar.ResolvedPath("/foo").GetResolvedPath(), "/foo")
+    def test_GetPathString(self):
+        self.assertEqual(Ar.ResolvedPath().GetPathString(), "")
+        self.assertEqual(Ar.ResolvedPath("/foo").GetPathString(), "/foo")
 
     def test_Repr(self):
         self.assertEqual(repr(Ar.ResolvedPath()), "Ar.ResolvedPath()")
