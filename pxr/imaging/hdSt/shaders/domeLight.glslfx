@@ -58,7 +58,8 @@ layout(rgba16f, binding = 1) uniform image2D outTexture;
 vec2 GetTexCoords(ivec2 outCoords)
 {
     vec2 outDims = imageSize(outTexture);
-    vec2 texCoords = outCoords / outDims;
+    // apply a (.5,.5) offset to use pixel centers and not pixel corners
+    vec2 texCoords = (outCoords + vec2(0.5, 0.5)) / outDims;
     return texCoords;
 }
 
