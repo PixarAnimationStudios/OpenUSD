@@ -360,6 +360,18 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 }
 
 void
+HgiVulkanBlitCmds::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
+{
+    TF_CODING_ERROR("Missing Implementation");
+}
+
+void
+HgiVulkanBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
+{
+    TF_CODING_ERROR("Missing Implementation");
+}
+
+void
 HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     _CreateCommandBuffer();

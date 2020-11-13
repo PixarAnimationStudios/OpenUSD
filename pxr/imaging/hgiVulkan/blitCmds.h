@@ -66,6 +66,12 @@ public:
     void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) override;
 
     HGIVULKAN_API
+    void CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp) override;
+    
+    HGIVULKAN_API
+    void CopyBufferToTexture(HgiBufferToTextureOp const& copyOp) override;
+
+    HGIVULKAN_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
 
     HGIVULKAN_API

@@ -306,6 +306,176 @@ HgiGLOps::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     };
 }
 
+HgiGLOpsFn 
+HgiGLOps::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
+{
+    return [copyOp] {
+        TRACE_SCOPE("HgiGLOps::CopyTextureToBuffer");
+
+        HgiTextureHandle texHandle = copyOp.gpuSourceTexture;
+        HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(texHandle.Get());
+
+        if (!TF_VERIFY(srcTexture && srcTexture->GetTextureId(),
+            "Invalid texture handle")) {
+            return;
+        }
+
+        // There is no super efficient way of copying a texture region with an
+        // offset to a PBO. Note that glGetTextureSubImage() does not work with
+        // a bound PBO, so glGetTextureImage() is used instead, which does not
+        // allow to specify an offset. Only the whole texture copy is supported
+        // in HgiGL.
+        if (copyOp.sourceTexelOffset != GfVec3i(0)) {
+            TF_WARN("Texture offset not supported (aborted).");
+            return;
+        }
+        
+        HgiBufferHandle const& bufHandle = copyOp.gpuDestinationBuffer;
+        HgiGLBuffer* dstBuffer = static_cast<HgiGLBuffer*>(bufHandle.Get());
+
+        if (!TF_VERIFY(dstBuffer && dstBuffer->GetBufferId(),
+            "Invalid destination buffer handle")) {
+            return;
+        }
+
+        if (copyOp.byteSize == 0) {
+            TF_WARN("The size of the data to copy was zero (aborted)");
+            return;
+        }
+
+        HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
+
+        // In a PBO transfer the pixels argument of glGetTextureImage() is
+        // interpreted as the PBO byte offset.
+        void* byteOffset = (void*)copyOp.destinationByteOffset;
+
+        // Bind the buffer as a pixel packing PBO and transfer the data
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, dstBuffer->GetBufferId());
+        if (HgiIsCompressed(texDesc.format)) {
+            glGetCompressedTextureImage(srcTexture->GetTextureId(),
+                                        copyOp.mipLevel,
+                                        copyOp.byteSize,
+                                        byteOffset);
+        } else {
+            GLenum format = 0;
+            GLenum type = 0;
+            HgiGLConversions::GetFormat(texDesc.format, &format, &type);
+            glGetTextureImage(srcTexture->GetTextureId(),
+                              copyOp.mipLevel,
+                              format,
+                              type,
+                              copyOp.byteSize,
+                              byteOffset);
+        }
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
+HgiGLOpsFn 
+HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
+{
+     return [copyOp] {
+        TRACE_SCOPE("HgiGLOps::CopyTextureToBuffer");
+
+        HgiBufferHandle const& bufHandle = copyOp.gpuSourceBuffer;
+        HgiGLBuffer* srcBuffer = static_cast<HgiGLBuffer*>(bufHandle.Get());
+
+        if (!TF_VERIFY(srcBuffer && srcBuffer->GetBufferId(),
+            "Invalid source buffer handle")) {
+            return;
+        }
+
+        HgiTextureHandle texHandle = copyOp.gpuDestinationTexture;
+        HgiGLTexture* dstTexture = static_cast<HgiGLTexture*>(texHandle.Get());
+
+        if (!TF_VERIFY(dstTexture && dstTexture->GetTextureId(),
+            "Invalid texture handle")) {
+            return;
+        }
+
+        if (copyOp.byteSize == 0) {
+            TF_WARN("The size of the data to copy was zero (aborted)");
+            return;
+        }
+
+        HgiTextureDesc const& texDesc = dstTexture->GetDescriptor();
+
+        GLenum internalFormat = 0;
+        GLenum format = 0;
+        GLenum type = 0;
+
+        HgiGLConversions::GetFormat(texDesc.format,
+                                    &format,
+                                    &type,
+                                    &internalFormat);
+
+        const bool isCompressed = HgiIsCompressed(texDesc.format);
+        GfVec3i const& offsets = copyOp.destinationTexelOffset;
+        GfVec3i const& dimensions = texDesc.dimensions;
+
+        // In a PBO transfer the pixels argument of glTextureSubImage*() and
+        // glCompressedTextureSubImage*() is interpreted as the PBO byte offset.
+        void* byteOffset = (void*)copyOp.sourceByteOffset;
+
+        // Bind the buffer as a pixel unpacking PBO
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, srcBuffer->GetBufferId());
+
+        switch(texDesc.type) {
+        case HgiTextureType2D:
+            if (isCompressed) {
+                glCompressedTextureSubImage2D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1],
+                    dimensions[0], dimensions[1],
+                    format,
+                    copyOp.byteSize,
+                    byteOffset);
+            } else {
+                glTextureSubImage2D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1],
+                    dimensions[0], dimensions[1],
+                    format,
+                    type,
+                    byteOffset);
+            }
+            break;
+        case HgiTextureType3D:
+            if (isCompressed) {
+                glCompressedTextureSubImage3D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1], offsets[2],
+                    dimensions[0], dimensions[1], dimensions[2],
+                    format,
+                    copyOp.byteSize,
+                    byteOffset);
+            } else {
+                glTextureSubImage3D(
+                    dstTexture->GetTextureId(),
+                    copyOp.mipLevel,
+                    offsets[0], offsets[1], offsets[2],
+                    dimensions[0], dimensions[1], dimensions[2],
+                    format,
+                    type,
+                    byteOffset);
+            }
+            break;
+        default:
+            TF_CODING_ERROR("Unsupported HgiTextureType enum value");
+            break;
+        }
+
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    };
+}
+
 HgiGLOpsFn
 HgiGLOps::SetViewport(GfVec4i const& vp)
 {

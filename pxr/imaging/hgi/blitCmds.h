@@ -38,6 +38,8 @@ struct HgiTextureCpuToGpuOp;
 struct HgiBufferGpuToGpuOp;
 struct HgiBufferCpuToGpuOp;
 struct HgiBufferGpuToCpuOp;
+struct HgiTextureToBufferOp;
+struct HgiBufferToTextureOp;
 struct HgiResolveImageOp;
 
 using HgiBlitCmdsUniquePtr = std::unique_ptr<class HgiBlitCmds>;
@@ -87,6 +89,14 @@ public:
     /// the client by supplying the correct 'wait' flags in SubmitCmds.
     HGI_API
     virtual void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) = 0;
+
+    /// Copy a texture resource into a buffer resource from GPU to GPU.
+    HGI_API
+    virtual void CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp) = 0;
+
+    /// Copy a buffer resource into a texture resource from GPU to GPU.
+    HGI_API
+    virtual void CopyBufferToTexture(HgiBufferToTextureOp const& copyOp) = 0;
 
     /// Generate mip maps for a texture
     HGI_API
