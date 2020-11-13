@@ -24,7 +24,7 @@
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/codeGen.h"
-#include "pxr/imaging/hdSt/computeShader.h"
+#include "pxr/imaging/hdSt/extCompComputeShader.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"

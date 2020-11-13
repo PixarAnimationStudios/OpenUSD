@@ -116,9 +116,9 @@ pxr_library(hdSt
         basisCurvesShaderKey
         basisCurvesTopology
         codeGen
-        computeShader
         cullingShaderKey
         drawBatch
+        extCompComputeShader
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch

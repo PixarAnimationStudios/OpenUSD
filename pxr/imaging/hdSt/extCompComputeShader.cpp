@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdSt/computeShader.h"
+#include "pxr/imaging/hdSt/extCompComputeShader.h"
+#include "pxr/imaging/hdSt/extComputation.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resource.h"
@@ -37,14 +38,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-HdSt_ComputeShader::HdSt_ComputeShader()
- : HdStShaderCode()
+HdSt_ExtCompComputeShader::HdSt_ExtCompComputeShader(
+    HdExtComputation const *extComp)
+ : _extComp(extComp)
 {
 }
 
-HdSt_ComputeShader::~HdSt_ComputeShader()
-{
-}
+HdSt_ExtCompComputeShader::~HdSt_ExtCompComputeShader() = default;
 
 // -------------------------------------------------------------------------- //
 // HdStShaderCode Virtual Interface                                           //
@@ -52,10 +52,12 @@ HdSt_ComputeShader::~HdSt_ComputeShader()
 
 /*virtual*/
 std::string
-HdSt_ComputeShader::GetSource(TfToken const &shaderStageKey) const
+HdSt_ExtCompComputeShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->computeShader) {
-        return _computeSource;
+         if (TF_VERIFY(_extComp)) {
+            return _extComp->GetGpuKernelSource();
+         }
     }
 
     return std::string();
@@ -63,7 +65,7 @@ HdSt_ComputeShader::GetSource(TfToken const &shaderStageKey) const
 
 /*virtual*/
 void
-HdSt_ComputeShader::BindResources(const int program,
+HdSt_ExtCompComputeShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state)
 {
@@ -75,39 +77,32 @@ HdSt_ComputeShader::BindResources(const int program,
 
 /*virtual*/
 void
-HdSt_ComputeShader::UnbindResources(const int program,
+HdSt_ExtCompComputeShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder,
                                    HdRenderPassState const &state)
 {
-    // Compute shaders currently serve GPU ExtComputations, wherein
-    // resource binding is managed explicitly.
-    // See HdStExtCompGpuComputationResource::Resolve() and
-    // HdStExtCompGpuComputation::Execute(..)
+    // Resource binding is managed explicitly. See above comment.
 }
 
 /*virtual*/
 void
-HdSt_ComputeShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_ExtCompComputeShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // Resource binding is managed explicitly. See above comment.
 }
 
 /*virtual*/
 HdStShaderCode::ID
-HdSt_ComputeShader::ComputeHash() const
+HdSt_ExtCompComputeShader::ComputeHash() const
 {
+    if (!TF_VERIFY(_extComp)) {
+        return 0;
+    }
+
     size_t hash = 0;
-    boost::hash_combine(hash, 
-        ArchHash(_computeSource.c_str(), _computeSource.size()));
+    std::string const & kernel = _extComp->GetGpuKernelSource();
+    boost::hash_combine(hash, ArchHash(kernel.c_str(), kernel.size()));
     return hash;
-}
-
-// -------------------------------------------------------------------------- //
-
-void
-HdSt_ComputeShader::SetComputeSource(const std::string &source)
-{
-    _computeSource = source;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

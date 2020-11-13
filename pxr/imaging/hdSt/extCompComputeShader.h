@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_COMPUTE_SHADER_H
-#define PXR_IMAGING_HD_ST_COMPUTE_SHADER_H
+#ifndef PXR_IMAGING_HD_ST_EXT_COMP_COMPUTE_SHADER_H
+#define PXR_IMAGING_HD_ST_EXT_COMP_COMPUTE_SHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -40,20 +40,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdSt_ComputeShaderSharedPtr = std::shared_ptr<class HdSt_ComputeShader>;
+using HdSt_ExtCompComputeShaderSharedPtr =
+    std::shared_ptr<class HdSt_ExtCompComputeShader>;
 
-/// \class HdSt_ComputeShader
+class HdExtComputation;
+
+/// \class HdSt_ExtCompComputeShader
 ///
 /// An internal representation of a compute shader in Storm that allows the
 /// use of the code generation and resource binding system to generate a
 /// shader program.
 ///
-class HdSt_ComputeShader : public HdStShaderCode {
+class HdSt_ExtCompComputeShader final : public HdStShaderCode {
 public:
     HDST_API
-    HdSt_ComputeShader();
+    HdSt_ExtCompComputeShader(HdExtComputation const *extComp);
+
     HDST_API
-    virtual ~HdSt_ComputeShader();
+    ~HdSt_ExtCompComputeShader() override;
 
 
     // ---------------------------------------------------------------------- //
@@ -62,34 +66,33 @@ public:
 
     HDST_API
     std::string GetSource(TfToken const &shaderStageKey) const override;
+
     HDST_API
     void BindResources(int program,
                        HdSt_ResourceBinder const &binder,
                        HdRenderPassState const &state) override;
+
     HDST_API
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder,
                          HdRenderPassState const &state) override;
+
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
+
     HDST_API
     ID ComputeHash() const override;
 
-    // ---------------------------------------------------------------------- //
-
-    /// Setter method for prim
-    HDST_API
-    void SetComputeSource(const std::string &source);
-
 private:
-    std::string _computeSource;
-
     // No copying
-    HdSt_ComputeShader(const HdSt_ComputeShader &) = delete;
-    HdSt_ComputeShader &operator =(const HdSt_ComputeShader &) = delete;
+    HdSt_ExtCompComputeShader(const HdSt_ExtCompComputeShader &) = delete;
+    HdSt_ExtCompComputeShader &operator =(const HdSt_ExtCompComputeShader &)
+        = delete;
+    
+    HdExtComputation const * const _extComp;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_ST_COMPUTE_SHADER_H
+#endif // PXR_IMAGING_HD_ST_EXT_COMP_COMPUTE_SHADER_H
