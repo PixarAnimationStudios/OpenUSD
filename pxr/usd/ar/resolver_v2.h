@@ -116,10 +116,6 @@ public:
     AR_API
     virtual std::string ComputeRepositoryPath(const std::string& path) = 0;
 
-    /// Returns the local path for the given \p path.
-    AR_API
-    virtual std::string ComputeLocalPath(const std::string& path) = 0;
-
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
     /// ArResolvedPath.
@@ -128,6 +124,20 @@ public:
     /// populated with additional metadata about the asset.
     AR_API
     ArResolvedPath Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo = nullptr);
+
+    /// Returns the resolved path for the given \p assetPath that may be used
+    /// to create a new asset. If such a path cannot be computed for
+    /// \p assetPath, returns an empty ArResolvedPath.
+    ///
+    /// If \p assetInfo is not \c nullptr, the ArAssetInfo object may be
+    /// populated with additional metadata about the asset.
+    ///
+    /// Note that an asset might or might not already exist at the returned
+    /// resolved path.
+    AR_API
+    ArResolvedPath ResolveForNewAsset(
         const std::string& assetPath,
         ArAssetInfo* assetInfo = nullptr);
 
@@ -420,6 +430,16 @@ protected:
     /// exist at that path and \p assetInfo is not \c nullptr, populate
     /// \p assetInfo with any additional metadata about the asset.
     virtual ArResolvedPath _Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) = 0;
+
+    /// Return the resolved path for the given \p assetPath that may be used
+    /// to create a new asset or an empty ArResolvedPath if such a path cannot
+    /// be computed. If a path can be computed and \p assetInfo is not nullptr,
+    /// populate \p assetInfo with any additional metadata about the asset.
+    /// If an asset already exists at the resolved path, it should be ignored
+    /// when populating \p assetInfo.
+    virtual ArResolvedPath _ResolveForNewAsset(
         const std::string& assetPath,
         ArAssetInfo* assetInfo) = 0;
 

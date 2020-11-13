@@ -85,6 +85,36 @@ class TestArURIResolver(unittest.TestCase):
         self.assertEqual(resolver.Resolve("TEST://foo.package[bar.file]"), 
                          "TEST://foo.package[bar.file]")
 
+    def test_ResolveForNewAsset(self):
+        resolver = Ar.GetResolver()
+
+        # The test URI resolver handles asset paths of the form "test:..."
+        # and simply returns the path unchanged. We can use this to
+        # verify that our test URI resolver is getting invoked.
+
+        # These calls to ResolveForNewAsset should hit the default resolver and
+        # not the URI resolver and return some non-empty path. If this did
+        # hit the URI resolver it would trip a TF_AXIOM.
+        self.assertNotEqual(resolver.ResolveForNewAsset("doesnotexist"), "")
+        self.assertNotEqual(
+            resolver.ResolveForNewAsset("doesnotexist.package[foo.file]"), "")
+
+        # These calls should hit the URI resolver, which should return the
+        # given paths unchanged.
+        self.assertEqual(
+            resolver.ResolveForNewAsset("test://foo"), "test://foo")
+        self.assertEqual(
+            resolver.ResolveForNewAsset("test://foo.package[bar.file]"), 
+            "test://foo.package[bar.file]")
+
+        # These calls should hit the URI resolver since schemes are
+        # case-insensitive.
+        self.assertEqual(
+            resolver.ResolveForNewAsset("TEST://foo"), "TEST://foo")
+        self.assertEqual(
+            resolver.ResolveForNewAsset("TEST://foo.package[bar.file]"), 
+            "TEST://foo.package[bar.file]")
+
     def test_CreateContextFromString(self):
         resolver = Ar.GetResolver()
 

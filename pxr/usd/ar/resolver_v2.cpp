@@ -524,18 +524,6 @@ public:
         return resolver.ComputeRepositoryPath(path);
     }
 
-    virtual std::string ComputeLocalPath(const std::string& path) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            std::pair<std::string, std::string> packagePath =
-                ArSplitPackageRelativePathOuter(path);
-            packagePath.first = resolver.ComputeLocalPath(packagePath.first);
-            return ArJoinPackageRelativePath(packagePath);
-        }
-        return resolver.ComputeLocalPath(path);
-    }
-
     // The primary resolver and the URI resolvers all participate
     // in context binding and may have context-related data to store
     // away. To accommodate this, _Resolve stores away a vector of
@@ -673,6 +661,21 @@ public:
 
         return resolvedPath;
     }
+
+    virtual ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) override
+    {
+        ArResolver& resolver = _GetResolver(assetPath);
+        if (ArIsPackageRelativePath(assetPath)) {
+            std::pair<std::string, std::string> packagePath =
+                ArSplitPackageRelativePathOuter(assetPath);
+            packagePath.first = resolver.ResolveForNewAsset(
+                packagePath.first, assetInfo);
+            return ArResolvedPath(ArJoinPackageRelativePath(packagePath));
+        }
+        return resolver.ResolveForNewAsset(assetPath, assetInfo);
+    };
 
     virtual void UpdateAssetInfo(
         const std::string& identifier,
@@ -1271,6 +1274,14 @@ ArResolver::Resolve(
     ArAssetInfo* assetInfo)
 {
     return _Resolve(assetPath, assetInfo);
+}
+
+ArResolvedPath
+ArResolver::ResolveForNewAsset(
+    const std::string& assetPath,
+    ArAssetInfo* assetInfo)
+{
+    return _ResolveForNewAsset(assetPath, assetInfo);
 }
 
 ArResolverContext

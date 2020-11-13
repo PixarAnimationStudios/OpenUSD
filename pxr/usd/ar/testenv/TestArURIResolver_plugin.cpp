@@ -100,13 +100,6 @@ public:
         return std::string();
     }
 
-    virtual std::string ComputeLocalPath(
-        const std::string& path)
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return std::string();
-    }
-
     virtual ArResolvedPath _Resolve(
         const std::string& assetPath,
         ArAssetInfo* assetInfo) final
@@ -119,6 +112,13 @@ public:
         }
 
         return ArResolvedPath(assetPath);
+    }
+
+    virtual ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) final
+    {
+        return _Resolve(assetPath, assetInfo);
     }
 
     virtual void BindContext(

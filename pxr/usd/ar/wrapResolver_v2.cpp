@@ -53,6 +53,22 @@ _ResolveWithAssetInfo(ArResolver& resolver, const std::string& assetPath)
     return boost::python::make_tuple(resolvedPath, assetInfo);
 }
 
+static ArResolvedPath
+_ResolveForNewAsset(ArResolver& resolver, const std::string& assetPath)
+{
+    return resolver.ResolveForNewAsset(assetPath);
+}
+
+static tuple
+_ResolveForNewAssetWithAssetInfo(
+    ArResolver& resolver, const std::string& assetPath)
+{
+    ArAssetInfo assetInfo;
+    const ArResolvedPath resolvedPath =
+        resolver.ResolveForNewAsset(assetPath, &assetInfo);
+    return boost::python::make_tuple(resolvedPath, assetInfo);
+}
+
 void
 wrapResolver()
 {
@@ -88,6 +104,12 @@ wrapResolver()
         .def("Resolve", &_Resolve,
              (args("assetPath")))
         .def("ResolveWithAssetInfo", &_ResolveWithAssetInfo,
+             (args("assetPath")))
+
+        .def("ResolveForNewAsset", &_ResolveForNewAsset,
+             (args("assetPath")))
+        .def("ResolveForNewAssetWithAssetInfo", 
+             &_ResolveForNewAssetWithAssetInfo,
              (args("assetPath")))
 
         .def("GetExtension", &This::GetExtension)

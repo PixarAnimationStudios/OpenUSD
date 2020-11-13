@@ -119,9 +119,6 @@ public:
     virtual std::string ComputeRepositoryPath(const std::string& path) override;
 
     AR_API
-    virtual std::string ComputeLocalPath(const std::string& path) override;
-
-    AR_API
     virtual void UpdateAssetInfo(
        const std::string& identifier,
        const std::string& filePath,
@@ -197,6 +194,11 @@ public:
 protected:
     AR_API
     virtual ArResolvedPath _Resolve(
+        const std::string& assetPath,
+        ArAssetInfo* assetInfo) override;
+
+    AR_API
+    virtual ArResolvedPath _ResolveForNewAsset(
         const std::string& assetPath,
         ArAssetInfo* assetInfo) override;
 

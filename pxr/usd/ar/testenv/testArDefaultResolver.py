@@ -184,6 +184,44 @@ class TestArDefaultResolver(unittest.TestCase):
 
         self.assertNotEqual(emptyContext, context)
 
+    @unittest.skipIf(not hasattr(Ar.Resolver, "ResolveForNewAsset"),
+                     "No ResolveForNewAsset API")
+    def test_ResolveForNewAsset(self):
+        resolver  = Ar.GetResolver()
+
+        # ResolveForNewAsset returns the path a new asset would be written
+        # to for a given asset path. ArDefaultResolver assumes all asset paths
+        # are filesystem paths, so this is just the absolute path of the
+        # input.
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset('/test/path/1/newfile'),
+            '/test/path/1/newfile')
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset('test/path/1/newfile'),
+            os.path.abspath('test/path/1/newfile'))
+
+        # This should work even if a file happens to already exist at the
+        # computed path.
+        testDir = os.path.abspath('ResolveForNewAsset')
+        if os.path.isdir(testDir):
+            shutil.rmtree(testDir)
+        os.makedirs(testDir)
+
+        testFileName = 'test_ResolveForNewAsset.txt'
+        testFileAbsPath = os.path.join(testDir, testFileName)
+        with open(testFileAbsPath, 'w') as ofp:
+            print('Garbage', file=ofp)
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset(testFileAbsPath),
+            testFileAbsPath)
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset(
+                'ResolveForNewAsset/test_ResolveForNewAsset.txt'),
+            testFileAbsPath)
+
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateContextFromString"),
                      "No CreateContextFromString(s) API")
     def test_CreateContextFromString(self):

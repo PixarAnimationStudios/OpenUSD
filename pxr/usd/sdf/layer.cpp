@@ -397,11 +397,16 @@ SdfLayer::_CreateNew(
     const string absIdentifier = 
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
+#if AR_VERSION == 1
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
+#else
+    // Resolve the identifier to the path where new assets should go.
+    const string localPath = resolver.ResolveForNewAsset(absIdentifier);
+#endif
     if (localPath.empty()) {
         TF_CODING_ERROR(
-            "Failed to compute local path for new layer with "
+            "Failed to compute path for new layer with "
             "identifier '%s'", absIdentifier.c_str());
         return TfNullPtr;
     }

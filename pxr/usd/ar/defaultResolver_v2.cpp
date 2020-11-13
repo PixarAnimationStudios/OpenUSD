@@ -236,10 +236,12 @@ ArDefaultResolver::_Resolve(
     return _ResolveNoCache(assetPath);
 }
 
-std::string
-ArDefaultResolver::ComputeLocalPath(const std::string& path)
+ArResolvedPath
+ArDefaultResolver::_ResolveForNewAsset(
+    const std::string& assetPath,
+    ArAssetInfo* assetInfo)
 {
-    return path.empty() ? path : TfAbsPath(path);
+    return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
 
 void
