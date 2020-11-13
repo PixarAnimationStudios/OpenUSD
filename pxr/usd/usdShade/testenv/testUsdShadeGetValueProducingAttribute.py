@@ -62,7 +62,7 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
                    expectedTypes, expectedPaths, expectedValues=None):
         attrs = prim.GetInput(inputName).GetValueProducingAttributes()
         self.assertEqual(len(attrs), len(expectedPaths))
-        for i in xrange(len(attrs)):
+        for i in range(len(attrs)):
             self.assertEqual(self._getType(attrs[i]), expectedTypes[i])
             expectedValue = expectedValues[i] if expectedValues else None
             self._check(attrs[i], expectedPaths[i], expectedValue)
