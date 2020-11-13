@@ -119,27 +119,31 @@ private:
 using HdSt_TestLightingShaderSharedPtr =
     std::shared_ptr<class HdSt_TestLightingShader>;
 
-class HdSt_TestLightingShader : public HdStLightingShader {
+class HdSt_TestLightingShader : public HdStLightingShader
+{
 public:
+    HDST_API
     HdSt_TestLightingShader();
-    virtual ~HdSt_TestLightingShader();
+    HDST_API
+    ~HdSt_TestLightingShader() override;
 
     /// HdStShaderCode overrides
-    virtual ID ComputeHash() const;
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) override;
+    ID ComputeHash() const override;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) override;
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
+    void BindResources(int program,
+                       HdSt_ResourceBinder const &binder,
+                       HdRenderPassState const &state) override;
+    HDST_API
+    void UnbindResources(int program,
+                         HdSt_ResourceBinder const &binder,
+                         HdRenderPassState const &state) override;
+    void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// HdStLightingShader overrides
-    virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
-                           GfMatrix4d const &projectionMatrix);
+    void SetCamera(GfMatrix4d const &worldToViewMatrix,
+                   GfMatrix4d const &projectionMatrix) override;
 
     void SetSceneAmbient(GfVec3f const &color);
     void SetLight(int light, GfVec3f const &dir, GfVec3f const &color);

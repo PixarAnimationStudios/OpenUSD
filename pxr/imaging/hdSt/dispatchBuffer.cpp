@@ -35,64 +35,65 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hd_DispatchBufferArrayRange : public HdStBufferArrayRange {
+class Hd_DispatchBufferArrayRange : public HdStBufferArrayRange
+{
 public:
     /// Constructor.
     Hd_DispatchBufferArrayRange(
         HdStResourceRegistry* resourceRegistry, HdStDispatchBuffer *buffer)
-        : HdStBufferArrayRange(resourceRegistry)
-        , _buffer(buffer) {
+      : HdStBufferArrayRange(resourceRegistry)
+      , _buffer(buffer) {
     }
 
     /// Returns true if this range is valid
-    virtual bool IsValid() const {
+    bool IsValid() const override {
         return true;
     }
 
     /// Returns true is the range has been assigned to a buffer
-    virtual bool IsAssigned() const {
-        return (_buffer != nullptr);
+    bool IsAssigned() const override {
+        return _buffer != nullptr;
     }
 
     /// Dispatch buffer array range is always mutable
-    virtual bool IsImmutable() const {
+    bool IsImmutable() const override {
         return false;
     }
 
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
-    virtual bool Resize(int numElements) {
+    bool Resize(int numElements) override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return false;
     }
 
     /// Copy source data into buffer
-    virtual void CopyData(HdBufferSourceSharedPtr const &bufferSource) {
+    void CopyData(HdBufferSourceSharedPtr const &bufferSource) override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
     }
 
     /// Read back the buffer content
-    virtual VtValue ReadData(TfToken const &name) const {
+    VtValue ReadData(TfToken const &name) const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return VtValue();
     }
 
     /// Returns the offset at which this range begins in the underlying buffer 
     /// array in terms of elements.
-    virtual int GetElementOffset() const {
+    int GetElementOffset() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
 
     /// Returns the byte offset at which this range begins in the underlying
     /// buffer array for the given resource.
-    virtual int GetByteOffset(TfToken const& resourceName) const {
+    int GetByteOffset(TfToken const& resourceName) const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
 
     /// Returns the number of elements allocated
-    virtual size_t GetNumElements() const {
+    size_t GetNumElements() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
@@ -110,44 +111,44 @@ public:
     }
 
     /// Increment the version of the buffer array.
-    virtual void IncrementVersion() {
+    void IncrementVersion() override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
     }
 
     /// Returns the max number of elements
-    virtual size_t GetMaxNumElements() const {
+    size_t GetMaxNumElements() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 1;
     }
 
     /// Returns the usage hint from the underlying buffer array
-    virtual HdBufferArrayUsageHint GetUsageHint() const override {
+    HdBufferArrayUsageHint GetUsageHint() const override {
         return _buffer->GetUsageHint();
     }
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
-    virtual HdStBufferResourceSharedPtr GetResource() const {
+    HdStBufferResourceSharedPtr GetResource() const override {
         return _buffer->GetResource();
     }
 
     /// Returns the named GPU resource.
-    virtual HdStBufferResourceSharedPtr GetResource(TfToken const& name) {
+    HdStBufferResourceSharedPtr GetResource(TfToken const& name) override {
         return _buffer->GetResource(name);
     }
 
     /// Returns the list of all named GPU resources for this bufferArrayRange.
-    virtual HdStBufferResourceNamedList const& GetResources() const {
+    HdStBufferResourceNamedList const& GetResources() const override {
         return _buffer->GetResources();
     }
 
     /// Sets the buffer array associated with this buffer;
-    virtual void SetBufferArray(HdBufferArray *bufferArray) {
+    void SetBufferArray(HdBufferArray *bufferArray) override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
     }
 
     /// Debug dump
-    virtual void DebugDump(std::ostream &out) const {
+    void DebugDump(std::ostream &out) const override {
     }
 
     /// Make this range invalid
@@ -157,7 +158,7 @@ public:
 
 protected:
     /// Returns the aggregation container
-    virtual const void *_GetAggregation() const {
+    const void *_GetAggregation() const override {
         return this;
     }
 

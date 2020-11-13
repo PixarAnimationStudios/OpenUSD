@@ -88,7 +88,8 @@ using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 /// XXX: it would be better to generalize this class not only for dispatch
 /// buffer, if we see other similar use-cases.
 ///
-class HdStDispatchBuffer : public HdBufferArray {
+class HdStDispatchBuffer : public HdBufferArray
+{
 public:
     /// Constructor. commandNumUints is given in how many integers.
     HDST_API
@@ -99,7 +100,7 @@ public:
 
     /// Destructor.
     HDST_API
-    ~HdStDispatchBuffer();
+    ~HdStDispatchBuffer() override;
 
     /// Update entire buffer data
     HDST_API
