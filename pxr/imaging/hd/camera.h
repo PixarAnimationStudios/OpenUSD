@@ -214,21 +214,18 @@ public:
 
     /// Returns the matrix transformation from world to camera space.
     /// \deprecated Use GetTransform instead
-    GfMatrix4d const& GetViewMatrix() const {
-        return _worldToViewMatrix;
-    }
+    HD_API
+    GfMatrix4d GetViewMatrix() const;
 
     /// Returns the matrix transformation from camera to world space.
     /// \deprecated Use GetTransform and invert instead
-    GfMatrix4d const& GetViewInverseMatrix() const {
-        return _worldToViewInverseMatrix;
-    }
+    HD_API
+    GfMatrix4d GetViewInverseMatrix() const;
 
     /// Returns the projection matrix for the camera.
     /// \deprecated Compute from above physically based attributes
-    GfMatrix4d const& GetProjectionMatrix() const {
-        return _projectionMatrix;
-    }
+    HD_API
+    GfMatrix4d GetProjectionMatrix() const;
 
 protected:
     // frustum

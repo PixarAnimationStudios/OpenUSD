@@ -26,6 +26,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include "pxr/base/gf/camera.h"
+#include "pxr/base/gf/frustum.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -208,6 +211,61 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
     // Clear all the dirty bits. This ensures that the sprim doesn't
     // remain in the dirty list always.
     *dirtyBits = Clean;
+}
+
+GfMatrix4d
+HdCamera::GetViewMatrix() const
+{
+    if (_worldToViewMatrix == GfMatrix4d(0.0)) {
+        return _transform.GetInverse();
+    }
+    return _worldToViewMatrix;
+}
+
+GfMatrix4d
+HdCamera::GetViewInverseMatrix() const
+{
+    if (_worldToViewInverseMatrix == GfMatrix4d(0.0)) {
+        return _transform;
+    }
+    return _worldToViewInverseMatrix;
+}
+
+GfMatrix4d
+HdCamera::GetProjectionMatrix() const
+{
+    HD_TRACE_FUNCTION();
+
+    if (GetFocalLength() == 0.0f) {
+        return _projectionMatrix;
+    }
+
+    GfCamera cam;
+    
+    // Only set the values needed to compute projection matrix.
+    cam.SetProjection(
+        GetProjection() == HdCamera::Orthographic
+        ? GfCamera::Orthographic
+        : GfCamera::Perspective);
+    cam.SetHorizontalAperture(
+        GetHorizontalAperture()
+        / GfCamera::APERTURE_UNIT);
+    cam.SetVerticalAperture(
+        GetVerticalAperture()
+        / GfCamera::APERTURE_UNIT);
+    cam.SetHorizontalApertureOffset(
+        GetHorizontalApertureOffset()
+        / GfCamera::APERTURE_UNIT);
+    cam.SetVerticalApertureOffset(
+        GetVerticalApertureOffset()
+        / GfCamera::APERTURE_UNIT);
+    cam.SetFocalLength(
+        GetFocalLength()
+        / GfCamera::FOCAL_LENGTH_UNIT);
+    cam.SetClippingRange(
+        GetClippingRange());
+    
+    return cam.GetFrustum().ComputeProjectionMatrix();
 }
 
 /* virtual */

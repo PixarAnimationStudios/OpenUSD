@@ -125,11 +125,7 @@ HdRenderPassState::GetWorldToViewMatrix() const
         return _worldToViewMatrix;
     }
 
-    if (_camera->GetViewMatrix() != GfMatrix4d(0.0)) {
-        return _camera->GetViewMatrix();
-    }
-
-    return _camera->GetTransform().GetInverse();
+    return _camera->GetViewMatrix();
 }
 
 GfMatrix4d
@@ -143,49 +139,9 @@ HdRenderPassState::GetProjectionMatrix() const
     const double aspect =
         (_viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
 
-    if (_camera->GetFocalLength() != 0.0f) {
-        GfCamera cam;
-
-        // Only set the values needed to compute projection matrix.
-
-        cam.SetProjection(
-            _camera->GetProjection() == HdCamera::Orthographic
-                    ? GfCamera::Orthographic
-                    : GfCamera::Perspective);
-        cam.SetHorizontalAperture(
-            _camera->GetHorizontalAperture()
-            / GfCamera::APERTURE_UNIT);
-        cam.SetVerticalAperture(
-            _camera->GetVerticalAperture()
-            / GfCamera::APERTURE_UNIT);
-        cam.SetHorizontalApertureOffset(
-            _camera->GetHorizontalApertureOffset()
-            / GfCamera::APERTURE_UNIT);
-        cam.SetVerticalApertureOffset(
-            _camera->GetVerticalApertureOffset()
-            / GfCamera::APERTURE_UNIT);
-        cam.SetFocalLength(
-            _camera->GetFocalLength()
-            / GfCamera::FOCAL_LENGTH_UNIT);
-        cam.SetClippingRange(
-            _camera->GetClippingRange());
-
-
-//        std::cout << "projection matrix = " << cam.GetFrustum().ComputeProjectionMatrix() << std::endl;
-        
-        CameraUtilConformWindow(&cam, policy, aspect);
-        
-//        std::cout << "projection matrix = (conf) " << cam.GetFrustum().ComputeProjectionMatrix() << std::endl;
-
-        return cam.GetFrustum().ComputeProjectionMatrix();
-    } else {
-
-//        std::cout << "projection matrix = (p) " << _camera->GetProjectionMatrix() << std::endl;
-
-        // Adjust the camera frustum based on the window policy.
-        return CameraUtilConformedWindow(
-            _camera->GetProjectionMatrix(), policy, aspect);
-    }
+    // Adjust the camera frustum based on the window policy.
+    return CameraUtilConformedWindow(
+        _camera->GetProjectionMatrix(), policy, aspect);
 }
 
 HdRenderPassState::ClipPlanesVector const &
