@@ -51,6 +51,8 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+#include "pxr/base/gf/camera.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -101,28 +103,19 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 GfMatrix4d
 HdxTaskController::_Delegate::GetTransform(SdfPath const& id)
 {
-    GfMatrix4d xform(1.0);
-    VtValue val;
-
-    // Try to extract from the cache first, otherwise it is a camera
-    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
-    if (vcache && TfMapLookup(*vcache, HdTokens->transform, &val)) {
-        if (val.IsHolding<GfMatrix4d>()) {
-            xform = val.Get<GfMatrix4d>();
-            return xform;
+    // Extract from value cache.
+    if (_ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id)) {
+        if (VtValue * val = TfMapLookupPtr(*vcache, HdTokens->transform)) {
+            if (val->IsHolding<GfMatrix4d>()) {
+                return val->Get<GfMatrix4d>();
+            }
         }
     }
-    
-    // We expect this to be called only for the free cam.
-    val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
-    if (val.IsHolding<GfMatrix4d>()) {
-        xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
-    } else {
-        TF_CODING_ERROR(
-            "Unexpected call to GetTransform for %s in HdxTaskController's "
-            "internal scene delegate.\n", id.GetText());
-    }
-    return xform;
+
+    TF_CODING_ERROR(
+        "Unexpected call to GetTransform for %s in HdxTaskController's "
+        "internal scene delegate.\n", id.GetText());
+    return GfMatrix4d(1.0);
 }
 
 /* virtual */
@@ -130,14 +123,19 @@ VtValue
 HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
                                                   TfToken const& key)
 {   
-    if (key == HdCameraTokens->worldToViewMatrix ||
-        key == HdCameraTokens->projectionMatrix ||
-        key == HdCameraTokens->clipPlanes ||
-        key == HdCameraTokens->windowPolicy) {
-
+    if ( key == HdCameraTokens->projection ||
+         key == HdCameraTokens->horizontalAperture ||
+         key == HdCameraTokens->verticalAperture ||
+         key == HdCameraTokens->horizontalApertureOffset ||
+         key == HdCameraTokens->verticalApertureOffset ||
+         key == HdCameraTokens->focalLength ||
+         key == HdCameraTokens->clippingRange ||
+         key == HdCameraTokens->clipPlanes ||
+         key == HdCameraTokens->windowPolicy) {
         return Get(id, key);
     } else {
-        // XXX: For now, skip handling physical params on the free cam.
+        // Return empty VtValue for, e.g., fStop not in the
+        // value cache.
         return VtValue();
     }
 }
@@ -326,10 +324,22 @@ HdxTaskController::_CreateCamera()
 
     _delegate.SetParameter(_freeCamId, HdCameraTokens->windowPolicy,
         VtValue(CameraUtilFit));
-    _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
+    _delegate.SetParameter(_freeCamId, HdTokens->transform,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
-        VtValue(GfMatrix4d(1.0)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->projection,
+        VtValue(HdCamera::Perspective));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->horizontalAperture,
+        VtValue(float(GfCamera::DEFAULT_HORIZONTAL_APERTURE / GfCamera::APERTURE_UNIT)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->verticalAperture,
+        VtValue(float(GfCamera::DEFAULT_VERTICAL_APERTURE / GfCamera::APERTURE_UNIT)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->horizontalApertureOffset,
+        VtValue(0.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->verticalApertureOffset,
+        VtValue(0.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->focalLength,
+        VtValue(5.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->clippingRange,
+        VtValue(GfRange1f(1.0f, 1000000.0f)));
     _delegate.SetParameter(_freeCamId, HdCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
@@ -1609,28 +1619,94 @@ HdxTaskController::SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
 
     _SetCameraParamForTasks(_freeCamId);
 
-    GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
-        HdCameraTokens->worldToViewMatrix);
+    GfCamera cam;
+    cam.SetFromViewAndProjectionMatrix(viewMatrix, projMatrix);
 
-    if (viewMatrix != oldView) {
+    const GfMatrix4d &transform = cam.GetTransform();
+    if (transform != _delegate.GetParameter<GfMatrix4d>(
+            _freeCamId, HdTokens->transform)) {
         // Cache the new view matrix
-        _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
-            viewMatrix);
+        _delegate.SetParameter(
+            _freeCamId, HdTokens->transform, transform);
         // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
-            HdCamera::DirtyViewMatrix);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyTransform);
     }
 
-    GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
-        HdCameraTokens->projectionMatrix);
+    const HdCamera::Projection projection =
+        cam.GetProjection() == GfCamera::Perspective
+            ? HdCamera::Perspective
+            : HdCamera::Orthographic;
+    if (projection != _delegate.GetParameter<HdCamera::Projection>(
+            _freeCamId, HdCameraTokens->projection)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->projection, projection);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
 
-    if (projMatrix != oldProj) {
-        // Cache the new proj matrix
-        _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
-            projMatrix);
-        // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
-            HdCamera::DirtyProjMatrix);
+    const float focalLength =
+        cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT);
+    if (focalLength != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->focalLength)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->focalLength, focalLength);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float horizontalAperture =
+        cam.GetHorizontalAperture() * float(GfCamera::APERTURE_UNIT);
+    if (horizontalAperture != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->horizontalAperture)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->horizontalAperture,
+            horizontalAperture);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float verticalAperture =
+        cam.GetVerticalAperture() * float(GfCamera::APERTURE_UNIT);
+    if (verticalAperture != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->verticalAperture)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->verticalAperture,
+            verticalAperture);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float horizontalApertureOffset =
+        cam.GetHorizontalApertureOffset() * float(GfCamera::APERTURE_UNIT);
+    if (horizontalApertureOffset != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->horizontalApertureOffset)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->horizontalApertureOffset,
+            horizontalApertureOffset);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float verticalApertureOffset =
+        cam.GetVerticalApertureOffset() * float(GfCamera::APERTURE_UNIT);
+    if (verticalApertureOffset != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->verticalApertureOffset)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->verticalApertureOffset,
+            verticalApertureOffset);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const GfRange1f &clippingRange = cam.GetClippingRange();
+    if (clippingRange != _delegate.GetParameter<GfRange1f>(
+            _freeCamId, HdCameraTokens->clippingRange)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->clippingRange,
+            clippingRange);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
     }
 }
 
