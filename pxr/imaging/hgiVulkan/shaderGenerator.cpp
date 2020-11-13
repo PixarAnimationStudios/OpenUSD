@@ -38,14 +38,12 @@ _GetMacroBlob()
 
 HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     const HgiShaderFunctionDesc &descriptor)
-    : HgiShaderGenerator(descriptor)
-    , _bindIndex(0)
+  : HgiShaderGenerator(descriptor)
+  , _bindIndex(0)
 {
     //Write out all GL shaders and add to shader sections
-    std::unique_ptr<HgiVulkanMacroShaderSection> cs =
-        std::make_unique<HgiVulkanMacroShaderSection>(_GetMacroBlob(), "");
-
-    GetShaderSections()->push_back(std::move(cs));
+    GetShaderSections()->push_back(
+        std::make_unique<HgiVulkanMacroShaderSection>(_GetMacroBlob(), ""));
 
     // The ordering here is important (buffers before textures), because we
     // need to increment the bind location for resources in the same order
@@ -62,14 +60,13 @@ void
 HgiVulkanShaderGenerator::_WriteConstantParams(
     const HgiShaderFunctionParamDescVector &parameters)
 {
-    if (parameters.size() < 1) {
+    if (parameters.empty()) {
         return;
     }
-    std::unique_ptr<HgiVulkanBlockShaderSection> constantParams =
+    GetShaderSections()->push_back(
         std::make_unique<HgiVulkanBlockShaderSection>(
             "ParamBuffer",
-            parameters);
-    GetShaderSections()->push_back(std::move(constantParams));
+            parameters));
 }
 
 void
@@ -77,19 +74,17 @@ HgiVulkanShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector& textures)
 {
     for(const HgiShaderFunctionTextureDesc& desc : textures) {
-        HgiVulkanShaderSectionAttributeVector attrs = {
+        const HgiVulkanShaderSectionAttributeVector attrs = {
             HgiVulkanShaderSectionAttribute{
                 "binding",
                 std::to_string(_bindIndex)}};
 
-        std::unique_ptr<HgiVulkanTextureShaderSection> texShaderSection =
+        GetShaderSections()->push_back(
             std::make_unique<HgiVulkanTextureShaderSection>(
                 desc.nameInShader,
                 _bindIndex,
                 desc.dimensions,
-                attrs);
-
-        GetShaderSections()->push_back(std::move(texShaderSection));
+                attrs));
 
         // In Vulkan buffers and textures cannot have the same binding index.
         _bindIndex++;
@@ -115,30 +110,25 @@ HgiVulkanShaderGenerator::_WriteInOuts(
 
     for(const HgiShaderFunctionParamDesc &param : parameters) {
         //Skip writing out taken parameter names
-        std::string paramName = param.nameInShader;
-        if(qualifier == "out" &&
-                takenOutParams.find(param.nameInShader) != takenOutParams.end()) {
+        const std::string &paramName = param.nameInShader;
+        if(qualifier == "out" && takenOutParams.count(paramName) > 0) {
             continue;
         }
-        if(qualifier == "in" && takenInParams.find(param.nameInShader)
-         != takenInParams.end()) {
+        if(qualifier == "in" && takenInParams.count(paramName) > 0) {
             continue;
         }
 
-        std::string counterStr = std::to_string(counter);
-
-        HgiVulkanShaderSectionAttributeVector attrs {
-            HgiVulkanShaderSectionAttribute{"location",counterStr}
+        const HgiVulkanShaderSectionAttributeVector attrs {
+            HgiVulkanShaderSectionAttribute{
+                "location", std::to_string(counter) }
         };
 
-        std::unique_ptr<HgiVulkanMemberShaderSection> cs {
+        GetShaderSections()->push_back(
             std::make_unique<HgiVulkanMemberShaderSection>(
                 paramName,
                 param.type,
                 attrs,
-                qualifier)};
-
-        GetShaderSections()->push_back(std::move(cs));
+                qualifier));
         counter++;
     }
 }

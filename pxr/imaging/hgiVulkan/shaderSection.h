@@ -59,7 +59,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanShaderSection() override;
+    ~HgiVulkanShaderSection() override;
 
     HGIVULKAN_API
     void WriteDeclaration(std::ostream &ss) const override;
@@ -102,7 +102,7 @@ public:
         const std::string &macroComment);
 
     HGIVULKAN_API
-    virtual ~HgiVulkanMacroShaderSection() override;
+    ~HgiVulkanMacroShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMacros(std::ostream &ss) override;
@@ -133,7 +133,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanMemberShaderSection() override;
+    ~HgiVulkanMemberShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -163,7 +163,7 @@ public:
             const HgiShaderFunctionParamDescVector &parameters);
 
     HGIVULKAN_API
-    virtual ~HgiVulkanBlockShaderSection() override;
+    ~HgiVulkanBlockShaderSection() override;
 
     HGIVULKAN_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -188,7 +188,7 @@ public:
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API
-    virtual ~HgiVulkanTextureShaderSection() override;
+    ~HgiVulkanTextureShaderSection() override;
 
     HGIVULKAN_API
     void WriteType(std::ostream &ss) const override;

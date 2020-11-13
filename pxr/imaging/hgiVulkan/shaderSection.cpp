@@ -46,16 +46,14 @@ HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
     //identifiers and indicies
     if(!_attributes.empty()) {
         ss << "layout(";
-        for (auto it = _attributes.begin();
-             it != _attributes.end();
-             ++it) {
-            const HgiVulkanShaderSectionAttribute &a = (*it);
+        for (size_t i = 0; i < _attributes.size(); ++i) {
+            const HgiVulkanShaderSectionAttribute &a = _attributes[i];
+            if (i > 0) {
+                ss << ", ";
+            }
             ss << a.identifier;
             if(!a.index.empty()) {
                 ss << " = " << a.index;
-            }
-            if(std::next(it) != _attributes.end()) {
-                ss << ", ";
             }
         }
         ss << ") ";
@@ -200,7 +198,7 @@ HgiVulkanTextureShaderSection::WriteType(std::ostream &ss) const
     if(_dimensions < 1 || _dimensions > 3) {
         TF_CODING_ERROR("Invalid texture dimension");
     }
-    ss << "sampler" << std::to_string(_dimensions) << "D";
+    ss << "sampler" << _dimensions << "D";
 }
 
 bool
@@ -218,7 +216,7 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     //and don't store textures in global space
     ss << "vec4 HdGet_";
     WriteIdentifier(ss);
-    ss << "(vec" << std::to_string(_dimensions)
+    ss << "(vec" << _dimensions
              << " uv) {\n";
     ss << "    vec4 result = texture(";
     WriteIdentifier(ss);
