@@ -32,6 +32,11 @@ import shutil
 class TestArDefaultResolver(unittest.TestCase):
 
     def assertPathsEqual(self, path1, path2):
+        # XXX: Explicit conversion to str to accommodate change in
+        # return type to Ar.ResolvedPath in Ar 2.0.
+        path1 = str(path1)
+        path2 = str(path2)
+
         # Flip backslashes to forward slashes and make sure path case doesn't
         # cause test failures to accommodate platform differences. We don't use
         # os.path.normpath since that might fix up other differences we'd want
