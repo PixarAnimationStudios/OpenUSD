@@ -529,6 +529,32 @@ class TestGfCamera(unittest.TestCase):
         self.assertAlmostEqual(Gf.Camera.APERTURE_UNIT, 0.1)
         self.assertAlmostEqual(Gf.Camera.FOCAL_LENGTH_UNIT, 0.1)
 
+    def test_SetFromViewAndProjectionMatrix(self):
+
+        for projection in [Gf.Camera.Perspective, Gf.Camera.Orthographic]:
+            cam1 = Gf.Camera()
+            cam1.projection = projection
+            cam1.focalLength = 30
+            cam1.horizontalAperture = 12.4
+            cam1.verticalAperture = 14.3
+            cam1.horizontalApertureOffset = 34.5
+            cam1.verticalApertureOffset = 25.6
+            cam1.clippingRange = Gf.Range1f(0.123, 345.3)
+            cam1.transform = (
+                Gf.Matrix4d().SetRotate(
+                    Gf.Rotation(Gf.Vec3d(1,2,3), 20.3)) *
+                Gf.Matrix4d().SetTranslate(
+                    Gf.Vec3d(100,123,153)))
+            
+            cam2 = Gf.Camera()
+            cam2.SetFromViewAndProjectionMatrix(
+                cam1.frustum.ComputeViewMatrix(),
+                cam1.frustum.ComputeProjectionMatrix())
+
+            self.AssertListGfClose(cam1.frustum.ComputeCorners(),
+                                   cam2.frustum.ComputeCorners(),
+                                   delta = 1e-5)
+
 if __name__ == '__main__':
     unittest.main()
 

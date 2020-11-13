@@ -181,7 +181,11 @@ wrapCamera()
              ( arg("aspectRatio"),
                arg("orthographicSize"),
                arg("direction")))
-
+        .def("SetFromViewAndProjectionMatrix",
+                      &This::SetFromViewAndProjectionMatrix,
+             ( arg("viewMatrix"),
+               arg("projMatrix"),
+               arg("focalLength") = 50))
         .setattr("APERTURE_UNIT",
             This::APERTURE_UNIT)
         .setattr("FOCAL_LENGTH_UNIT",

@@ -181,6 +181,63 @@ GfCamera::SetOrthographicFromAspectRatioAndSize(
 }
 
 void
+GfCamera::SetFromViewAndProjectionMatrix(
+    const GfMatrix4d &viewMatrix, const GfMatrix4d &projMatrix,
+    const float focalLength)
+{
+    _transform = viewMatrix.GetInverse();
+
+    _focalLength = focalLength;
+
+    if (projMatrix[2][3] < -0.5) {
+        // Use !(a<b) rather than a>=b so that NaN is caught.
+        if (!(fabs(projMatrix[2][3] - (-1.0)) < 1e-6)) {
+            TF_WARN("GfCamera: Given projection matrix does not appear to be "
+                    "valid.");
+        }
+
+        _projection = Perspective;
+
+        const float apertureBase =
+            2.0f * focalLength * (FOCAL_LENGTH_UNIT / APERTURE_UNIT);
+
+        _horizontalAperture =
+            apertureBase / projMatrix[0][0];
+        _verticalAperture =
+            apertureBase / projMatrix[1][1];
+        _horizontalApertureOffset =
+            0.5 * _horizontalAperture * projMatrix[2][0];
+        _verticalApertureOffset =
+            0.5 * _verticalAperture * projMatrix[2][1];
+        _clippingRange = GfRange1f(
+            projMatrix[3][2] / (projMatrix[2][2] - 1.0),
+            projMatrix[3][2] / (projMatrix[2][2] + 1.0));
+    } else {
+        if (!(fabs(projMatrix[2][3]) < 1e-6)) {
+            TF_WARN("GfCamera: Given projection matrix does not appear to be "
+                    "valid.");
+        }
+
+        _projection = Orthographic;
+        _horizontalAperture =
+            (2.0 / APERTURE_UNIT) / projMatrix[0][0];
+        _verticalAperture =
+            (2.0 / APERTURE_UNIT) / projMatrix[1][1];
+        _horizontalApertureOffset =
+            -0.5 * (_horizontalAperture) * projMatrix[3][0];
+        _verticalApertureOffset =
+            -0.5 * (_verticalAperture) * projMatrix[3][1];
+        const double nearMinusFarHalf =
+            1.0 / projMatrix[2][2];
+        const double nearPlusFarHalf =
+            nearMinusFarHalf * projMatrix[3][2];
+        _clippingRange = GfRange1f(
+            nearPlusFarHalf + nearMinusFarHalf,
+            nearPlusFarHalf - nearMinusFarHalf);
+    }
+}
+
+void
 GfCamera::SetClippingRange(const GfRange1f &val) {
     _clippingRange = val;
 }

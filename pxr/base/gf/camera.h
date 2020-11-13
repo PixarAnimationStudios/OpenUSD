@@ -147,6 +147,16 @@ public:
     GF_API void SetOrthographicFromAspectRatioAndSize(
         float aspectRatio, float orthographicSize, FOVDirection direction);
 
+    /// Sets the camera from a view and projection matrix.
+    ///
+    /// Note that the projection matrix does only determine the ratio
+    /// of aperture to focal length, so there is a choice which defaults
+    /// to 50mm (or more accurately, 50 tenths of a world unit).
+
+    GF_API void SetFromViewAndProjectionMatrix(
+        const GfMatrix4d &viewMatrix, const GfMatrix4d &projMatix,
+        const float focalLength = 50.0);
+
     /// @}
 
     /// Sets the clipping range in world units.
