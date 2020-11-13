@@ -460,6 +460,8 @@ _IsMasterAttribute(TfToken const& primvarName)
         TfToken("ri:attributes:Ri:Orientation"),
         TfToken("ri:attributes:trace:autobias"),
         TfToken("ri:attributes:trace:bias"),
+        TfToken("ri:attributes:trace:sssautobias"),
+        TfToken("ri:attributes:trace:sssbias"),
         TfToken("ri:attributes:trace:displacements"),
         // Dicing
         TfToken("ri:attributes:dice:micropolygonlength"),
