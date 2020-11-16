@@ -1178,6 +1178,24 @@ std::string ArchReadLink(const char* path)
 
             return str;
         }
+        else if (reparse->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
+            const size_t length =
+                reparse->MountPointReparseBuffer.PrintNameLength /
+                                                                sizeof(WCHAR);
+            std::unique_ptr<WCHAR[]> reparsePath(new WCHAR[length + 1]);
+            wcsncpy(reparsePath.get(),
+              &reparse->MountPointReparseBuffer.PathBuffer[
+              reparse->MountPointReparseBuffer.PrintNameOffset / sizeof(WCHAR)
+              ], length);
+
+            reparsePath.get()[length] = 0;
+
+            // Convert wide-char to narrow char
+            std::wstring ws(reparsePath.get());
+            string str(ws.begin(), ws.end());
+
+            return str;
+        }
     }
 
     return std::string();
