@@ -28,6 +28,7 @@
 
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/definePackageResolver.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include <tbb/concurrent_hash_map.h>
@@ -77,7 +78,7 @@ Usd_UsdzResolverCache::AssetAndZipFile
 Usd_UsdzResolverCache::_OpenZipFile(const std::string& path)
 {
     AssetAndZipFile result;
-    result.first = ArGetResolver().OpenAsset(path);
+    result.first = ArGetResolver().OpenAsset(ArResolvedPath(path));
     if (result.first) {
         result.second = UsdZipFile::Open(result.first);
     }

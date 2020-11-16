@@ -286,10 +286,10 @@ ArDefaultResolver::FetchToLocalResolvedPath(
 }
 
 std::shared_ptr<ArAsset> 
-ArDefaultResolver::OpenAsset(
-    const std::string& resolvedPath)
+ArDefaultResolver::_OpenAsset(
+    const ArResolvedPath& resolvedPath)
 {
-    FILE* f = ArchOpenFile(resolvedPath.c_str(), "rb");
+    FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
     if (!f) {
         return nullptr;
     }

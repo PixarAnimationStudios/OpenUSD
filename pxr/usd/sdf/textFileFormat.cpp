@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/trace/trace.h"
@@ -139,7 +140,8 @@ SdfTextFileFormat::CanRead(const string& filePath) const
 {
     TRACE_FUNCTION();
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(filePath));
     return asset && _CanReadImpl(asset, GetFileCookie());
 }
 
@@ -151,7 +153,8 @@ SdfTextFileFormat::Read(
 {
     TRACE_FUNCTION();
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(resolvedPath));
     if (!asset) {
         return false;
     }

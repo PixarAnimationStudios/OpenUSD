@@ -26,6 +26,7 @@
 #include "pxr/imaging/hio/types.h"
 
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 // use gf types to read and write metadata
@@ -361,7 +362,8 @@ Hio_StbImage::_OpenForReading(std::string const & filename, int subimage,
         _outputType = HioTypeUnsignedByte;
     }
 
-    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(_filename));
     if (!asset) { 
         return false;
     }
@@ -414,7 +416,8 @@ Hio_StbImage::ReadCropped(int const cropTop,
     stbi_convert_iphone_png_to_rgb(true);
 #endif
 
-    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> const asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(_filename));
     if (!asset) 
     {
         TF_CODING_ERROR("Cannot open image %s for reading", _filename.c_str());

@@ -25,6 +25,7 @@
 
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/filesystemAsset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -52,7 +53,8 @@ TestOpenAsset()
 
     // Now, try to open it via ArResolver::OpenAsset and check
     // that the contents are what we expect.
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(tmpPath);
+    std::shared_ptr<ArAsset> asset =
+        ArGetResolver().OpenAsset(ArResolvedPath(tmpPath));
     TF_AXIOM(asset);
     TF_AXIOM(dynamic_cast<ArFilesystemAsset*>(asset.get()));
 

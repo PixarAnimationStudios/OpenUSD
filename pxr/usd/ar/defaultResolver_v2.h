@@ -33,6 +33,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/defaultResolverContext.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/threadLocalScopedCache.h"
 
@@ -136,10 +137,6 @@ public:
         const std::string& resolvedPath) override;
 
     AR_API
-    virtual std::shared_ptr<ArAsset> OpenAsset(
-        const std::string& resolvedPath) override;
-
-    AR_API
     virtual bool CreatePathForLayer(
         const std::string& path) override;
 
@@ -208,6 +205,10 @@ protected:
     AR_API
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr) override;
+
+    AR_API
+    virtual std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) override;
 
 private:
     struct _Cache;

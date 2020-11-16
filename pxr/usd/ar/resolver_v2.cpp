@@ -30,6 +30,7 @@
 #include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/packageResolver.h"
 #include "pxr/usd/ar/packageUtils.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/vt/value.h"
@@ -740,8 +741,8 @@ public:
         return resolver.FetchToLocalResolvedPath(path, resolvedPath);
     }
 
-    virtual std::shared_ptr<ArAsset> OpenAsset(
-        const std::string& resolvedPath) override
+    virtual std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) override
     { 
         ArResolver& resolver = _GetResolver(resolvedPath);
         if (ArIsPackageRelativePath(resolvedPath)) {
@@ -1303,6 +1304,13 @@ ArResolver::CreateContextFromStrings(
     const std::vector<std::pair<std::string, std::string>>& contextStrs)
 {
     return _GetResolver().CreateContextFromStrings(contextStrs);
+}
+
+std::shared_ptr<ArAsset>
+ArResolver::OpenAsset(
+    const ArResolvedPath& resolvedPath)
+{
+    return _OpenAsset(resolvedPath);
 }
 
 ArResolverContext

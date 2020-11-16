@@ -305,15 +305,9 @@ public:
     ///
     /// The returned ArAsset object provides functions for accessing the
     /// contents of the specified asset. 
-    ///
-    /// Note that clients may still be using the data associated with 
-    /// this object even after the last shared_ptr has been destroyed. For 
-    /// example, a client may have created a memory mapping using the FILE* 
-    /// presented in the ArAsset object; this would preclude truncating or
-    /// overwriting any of the contents of that file.
     AR_API
-    virtual std::shared_ptr<ArAsset> OpenAsset(
-        const std::string& resolvedPath) = 0;
+    std::shared_ptr<ArAsset> OpenAsset(
+        const ArResolvedPath& resolvedPath);
 
     /// Create path needed to write a file to the given \p path. 
     ///
@@ -448,6 +442,18 @@ protected:
     AR_API
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr);
+
+    /// Return an ArAsset object for the asset located at \p resolvedPath.
+    /// Return an invalid std::shared_ptr if object could not be created.
+    ///
+    /// Note that clients may still be using the data associated with 
+    /// this object even after the last shared_ptr has been destroyed. For 
+    /// example, a client may have created a memory mapping using the FILE* 
+    /// presented in the ArAsset object; this would preclude truncating or
+    /// overwriting any of the contents of that file.
+    AR_API
+    virtual std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) = 0;
 
     /// @}
 };

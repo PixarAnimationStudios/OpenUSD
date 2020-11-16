@@ -25,6 +25,7 @@
 #include "pxr/imaging/hio/types.h"
 
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 // use gf types to read and write metadata
@@ -589,7 +590,8 @@ HioOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
     _imagespec = ImageSpec();
 
 #if OIIO_VERSION >= 20003
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(_filename));
     if (!asset) { 
         return false;
     }
@@ -650,7 +652,8 @@ HioOIIO_Image::ReadCropped(int const cropTop,
 {
 
 #if OIIO_VERSION >= 20003
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(_filename));
     if (!asset) { 
         return false;
     }

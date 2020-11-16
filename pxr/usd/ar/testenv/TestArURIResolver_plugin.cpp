@@ -189,8 +189,8 @@ public:
         return false;
     }
 
-    virtual std::shared_ptr<ArAsset> OpenAsset(
-        const std::string& resolvedPath)
+    virtual std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath)
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), "test:"));
         return nullptr;
