@@ -1,0 +1,20 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def "TestPrim"(
+    displayGroupOrder = [ 'C', 'B', 'A' ]
+)
+{
+    custom double attr1 (
+        displayGroup = 'A'
+    )
+    custom double attr2 (
+        displayGroup = "B"
+    )
+    custom double attr3 (
+        displayGroup = "C"
+    )
+}

@@ -577,6 +577,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((Default, "default"))                                   \
     ((DefaultPrim, "defaultPrim"))                           \
     ((DisplayGroup, "displayGroup"))                         \
+    ((DisplayGroupOrder, "displayGroupOrder"))               \
     ((DisplayName, "displayName"))                           \
     ((DisplayUnit, "displayUnit"))                           \
     ((Documentation, "documentation"))                       \

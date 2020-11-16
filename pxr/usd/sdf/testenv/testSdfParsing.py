@@ -54,6 +54,7 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        202_displayGroups.sdf
         201_format_specifiers_in_strings.sdf
         200_bad_emptyFile.sdf
         199_bad_colorSpace_metadata.sdf
