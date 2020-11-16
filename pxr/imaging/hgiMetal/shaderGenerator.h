@@ -48,7 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 //Stage function entryPoint definition
 //Stage function implementation
 
-class ShaderStageEntryPoint;
+using HgiMetalShaderStageEntryPointUniquePtr =
+    std::unique_ptr<class HgiMetalShaderStageEntryPoint>;
 
 /// \class HgiMetalShaderGenerator
 ///
@@ -76,19 +77,14 @@ protected:
         const std::string &originalShaderShader) override;
 
 private:
-    friend class ShaderStageData;
-    friend class ShaderStageEntryPoint;
-    friend class MetalVertexShaderSections;
-    friend class MetalFragmentShaderSections;
-    friend class MetalComputeShaderSections;
-
-    std::unique_ptr<ShaderStageEntryPoint> _BuildShaderStageEntryPoints(
+    HgiMetalShaderStageEntryPointUniquePtr
+    _BuildShaderStageEntryPoints(
         const HgiShaderFunctionDesc &descriptor);
 
     void _BuildTextureShaderSections(const HgiShaderFunctionDesc &descriptor);
 
     HgiMetalShaderSectionUniquePtrVector _shaderSections;
-    std::unique_ptr<ShaderStageEntryPoint> _generatorShaderSections;
+    HgiMetalShaderStageEntryPointUniquePtr _generatorShaderSections;
 };
 
 

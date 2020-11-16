@@ -27,6 +27,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
 //This is a conversion layer from descriptors into shader sections
 //In purity we don't want the shader generator to know how to
 //turn descriptors into sections, it is more interested in
@@ -58,15 +60,58 @@ private:
     const HgiMetalShaderSectionPtrVector _outputs;
 };
 
-/// \class ShaderStageEntryPoint
+} // anonymous namespace
+
+/// \class HgiMetalShaderStageEntryPoint
 ///
 /// Generates a metal stage function. Base class for vertex/fragment/compute
 ///
-class ShaderStageEntryPoint final
+class HgiMetalShaderStageEntryPoint final
 {
-public:
+public:    
+    HgiMetalShaderStageEntryPoint(
+          const ShaderStageData &stageData,
+          HgiMetalShaderGenerator *generator,
+          const std::string &outputShortHandPrefix,
+          const std::string &scopePostfix,
+          const std::string &entryPointStageName,
+          const std::string &outputTypeName,
+          const std::string &entryPointFunctionName);
+    
+    HgiMetalShaderStageEntryPoint(
+          const ShaderStageData &stageData,
+          HgiMetalShaderGenerator *generator,
+          const std::string &outputShortHandPrefix,
+          const std::string &scopePostfix,
+          const std::string &entryPointStageName,
+          const std::string &inputInstanceName);
+
+    const std::string& GetOutputShortHandPrefix() const;
+    const std::string& GetScopePostfix() const;
+    const std::string& GetEntryPointStageName() const;
+    const std::string& GetEntryPointFunctionName() const;
+    const std::string& GetOutputTypeName() const;
+    const std::string& GetInputsInstanceName() const;
+    
+    const std::string& GetOutputInstanceName() const;
+    const std::string& GetScopeInstanceName() const;
+    const std::string& GetConstantBufferTypeName() const;
+    const std::string& GetConstantBufferInstanceName() const;
+    const std::string& GetScopeTypeName() const;
+    const std::string& GetInputsTypeName() const;
+    HgiMetalArgumentBufferInputShaderSection* GetParameters();
+    HgiMetalArgumentBufferInputShaderSection* GetInputs();
+    HgiMetalStageOutputShaderSection* GetOutputs();
+
+private:
+    void _Init(
+        const HgiMetalShaderSectionPtrVector &stageConstantBuffers,
+        const HgiMetalShaderSectionPtrVector &stageInputs,
+        const HgiMetalShaderSectionPtrVector &stageOutputs,
+        HgiMetalShaderGenerator *generator);
+
     template<typename T>
-    T* BuildStructInstance(
+    T* _BuildStructInstance(
         const std::string &typeName,
         const std::string &instanceName,
         const std::string &attribute,
@@ -117,53 +162,11 @@ public:
             return nullptr;
         }
     }
-    
-    ShaderStageEntryPoint(
-          const ShaderStageData &stageData,
-          HgiMetalShaderGenerator *generator,
-          const std::string &outputShortHandPrefix,
-          const std::string &scopePostfix,
-          const std::string &entryPointStageName,
-          const std::string &outputTypeName,
-          const std::string &entryPointFunctionName);
-    
-    ShaderStageEntryPoint(
-          const ShaderStageData &stageData,
-          HgiMetalShaderGenerator *generator,
-          const std::string &outputShortHandPrefix,
-          const std::string &scopePostfix,
-          const std::string &entryPointStageName,
-          const std::string &inputInstanceName);
 
-    const std::string& GetOutputShortHandPrefix() const;
-    const std::string& GetScopePostfix() const;
-    const std::string& GetEntryPointStageName() const;
-    const std::string& GetEntryPointFunctionName() const;
-    const std::string& GetOutputTypeName() const;
-    const std::string& GetInputsInstanceName() const;
-    
-    const std::string& GetOutputInstanceName() const;
-    const std::string& GetScopeInstanceName() const;
-    const std::string& GetConstantBufferTypeName() const;
-    const std::string& GetConstantBufferInstanceName() const;
-    const std::string& GetScopeTypeName() const;
-    const std::string& GetInputsTypeName() const;
-    HgiMetalArgumentBufferInputShaderSection* GetParameters();
-    HgiMetalArgumentBufferInputShaderSection* GetInputs();
-    HgiMetalStageOutputShaderSection* GetOutputs();
-
-protected:
-    void _Init(
-        const HgiMetalShaderSectionPtrVector &stageConstantBuffers,
-        const HgiMetalShaderSectionPtrVector &stageInputs,
-        const HgiMetalShaderSectionPtrVector &stageOutputs,
-        HgiMetalShaderGenerator *generator);
-
-private:
-    ShaderStageEntryPoint & operator=(const ShaderStageEntryPoint&) = delete;
-    ShaderStageEntryPoint(const ShaderStageEntryPoint&) = delete;
-
-    friend class HgiMetalShaderGenerator;
+    HgiMetalShaderStageEntryPoint & operator=(
+        const HgiMetalShaderStageEntryPoint&) = delete;
+    HgiMetalShaderStageEntryPoint(
+        const HgiMetalShaderStageEntryPoint&) = delete;
 
     //Owned by and stored in shadersections
     HgiMetalArgumentBufferInputShaderSection* _parameters;
@@ -177,9 +180,11 @@ private:
     const std::string _inputInstanceName;
 };
 
+namespace {
+
 //This is used by the macro blob, basically this is dumped on top
 //of the generated shader
-static const char *
+const char *
 _GetPackedTypeDefinitions()
 {
     return
@@ -299,10 +304,10 @@ _GetPackedTypeDefinitions()
     "}\n\n";
 }
 
-static std::string
+std::string
 _ComputeHeader(id<MTLDevice> device)
 {
-    static std::stringstream header;
+    std::stringstream header;
 
     // Metal feature set defines
     // Define all macOS 10.13 feature set enums onwards
@@ -428,9 +433,10 @@ _ComputeHeader(id<MTLDevice> device)
     return header.str();
 }
 
-static std::string const&
+std::string const&
 _GetHeader(id<MTLDevice> device)
 {
+    // This assumes that there is only ever one MTLDevice.
     static std::string header = _ComputeHeader(device);
     return header;
 }
@@ -546,7 +552,7 @@ ShaderStageData::GetOutputs() const
     return _outputs;
 }
 
-std::string buildOutputTypeName(const ShaderStageEntryPoint &ep)
+std::string _buildOutputTypeName(const HgiMetalShaderStageEntryPoint &ep)
 {
     std::stringstream ss;
     auto stageShortHandFirstChar =
@@ -558,19 +564,21 @@ std::string buildOutputTypeName(const ShaderStageEntryPoint &ep)
     return ss.str();;
 }
 
-ShaderStageEntryPoint::ShaderStageEntryPoint(
+} // anonymous namespace
+
+HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
       const ShaderStageData &stageData,
       HgiMetalShaderGenerator *generator,
       const std::string &outputShortHandPrefix,
       const std::string &scopePostfix,
       const std::string &entryPointStageName,
       const std::string &inputInstanceName)
-      : _outputShortHandPrefix(outputShortHandPrefix),
-        _scopePostfix(scopePostfix),
-        _entryPointStageName(entryPointStageName),
-        _outputTypeName(buildOutputTypeName(*this)),
-        _entryPointFunctionName(entryPointStageName + "EntryPoint"),
-        _inputInstanceName(inputInstanceName)
+    : _outputShortHandPrefix(outputShortHandPrefix),
+      _scopePostfix(scopePostfix),
+      _entryPointStageName(entryPointStageName),
+      _outputTypeName(_buildOutputTypeName(*this)),
+      _entryPointFunctionName(entryPointStageName + "EntryPoint"),
+      _inputInstanceName(inputInstanceName)
 {
     _Init(
         stageData.GetConstantParams(),
@@ -579,7 +587,7 @@ ShaderStageEntryPoint::ShaderStageEntryPoint(
         generator);
 }
 
-ShaderStageEntryPoint::ShaderStageEntryPoint(
+HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
     const ShaderStageData &stageData,
     HgiMetalShaderGenerator *generator,
     const std::string &outputShortHandPrefix,
@@ -587,12 +595,12 @@ ShaderStageEntryPoint::ShaderStageEntryPoint(
     const std::string &entryPointStageName,
     const std::string &outputTypeName,
     const std::string &entryPointFunctionName)
-    : _outputShortHandPrefix(outputShortHandPrefix),
-      _scopePostfix(scopePostfix),
-      _entryPointStageName(entryPointStageName),
-      _outputTypeName(outputTypeName),
-      _entryPointFunctionName(entryPointFunctionName),
-      _inputInstanceName()
+  : _outputShortHandPrefix(outputShortHandPrefix),
+    _scopePostfix(scopePostfix),
+    _entryPointStageName(entryPointStageName),
+    _outputTypeName(outputTypeName),
+    _entryPointFunctionName(entryPointFunctionName),
+    _inputInstanceName()
 {
     _Init(
         stageData.GetConstantParams(),
@@ -602,25 +610,25 @@ ShaderStageEntryPoint::ShaderStageEntryPoint(
 }
 
 const std::string&
-ShaderStageEntryPoint::GetInputsInstanceName() const
+HgiMetalShaderStageEntryPoint::GetInputsInstanceName() const
 {
     return _inputInstanceName;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetEntryPointFunctionName() const
+HgiMetalShaderStageEntryPoint::GetEntryPointFunctionName() const
 {
     return _entryPointFunctionName;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetOutputTypeName() const
+HgiMetalShaderStageEntryPoint::GetOutputTypeName() const
 {
     return _outputTypeName;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetOutputInstanceName() const
+HgiMetalShaderStageEntryPoint::GetOutputInstanceName() const
 {
     static std::string instanceName;
     instanceName = GetOutputShortHandPrefix() + "Output";
@@ -628,7 +636,7 @@ ShaderStageEntryPoint::GetOutputInstanceName() const
 }
 
 const std::string&
-ShaderStageEntryPoint::GetScopeInstanceName() const
+HgiMetalShaderStageEntryPoint::GetScopeInstanceName() const
 {
     static std::string scopeInstanceName;
     scopeInstanceName = "scope";
@@ -636,25 +644,25 @@ ShaderStageEntryPoint::GetScopeInstanceName() const
 }
 
 const std::string&
-ShaderStageEntryPoint::GetScopePostfix() const
+HgiMetalShaderStageEntryPoint::GetScopePostfix() const
 {
     return _scopePostfix;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetEntryPointStageName() const
+HgiMetalShaderStageEntryPoint::GetEntryPointStageName() const
 {
     return _entryPointStageName;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetOutputShortHandPrefix() const
+HgiMetalShaderStageEntryPoint::GetOutputShortHandPrefix() const
 {
     return _outputShortHandPrefix;
 }
 
 const std::string&
-ShaderStageEntryPoint::GetConstantBufferTypeName() const
+HgiMetalShaderStageEntryPoint::GetConstantBufferTypeName() const
 {
     static std::string constantBufferTypeName;
     constantBufferTypeName = [&]{
@@ -671,7 +679,7 @@ ShaderStageEntryPoint::GetConstantBufferTypeName() const
 }
 
 const std::string&
-ShaderStageEntryPoint::GetConstantBufferInstanceName() const
+HgiMetalShaderStageEntryPoint::GetConstantBufferInstanceName() const
 {
     static std::string constantBufferInstanceName;
     constantBufferInstanceName = GetOutputShortHandPrefix()
@@ -680,7 +688,7 @@ ShaderStageEntryPoint::GetConstantBufferInstanceName() const
 }
 
 const std::string&
-ShaderStageEntryPoint::GetScopeTypeName() const
+HgiMetalShaderStageEntryPoint::GetScopeTypeName() const
 {
     static std::string constantBufferInstanceName;
     constantBufferInstanceName =
@@ -689,7 +697,7 @@ ShaderStageEntryPoint::GetScopeTypeName() const
 }
 
 const std::string&
-ShaderStageEntryPoint::GetInputsTypeName() const
+HgiMetalShaderStageEntryPoint::GetInputsTypeName() const
 {
     static std::string inputsTypeName;
     inputsTypeName = [&] {
@@ -706,25 +714,25 @@ ShaderStageEntryPoint::GetInputsTypeName() const
 
 
 HgiMetalArgumentBufferInputShaderSection*
-ShaderStageEntryPoint::GetParameters()
+HgiMetalShaderStageEntryPoint::GetParameters()
 {
     return _parameters;
 }
 
 HgiMetalArgumentBufferInputShaderSection*
-ShaderStageEntryPoint::GetInputs()
+HgiMetalShaderStageEntryPoint::GetInputs()
 {
     return _inputs;
 }
 
 HgiMetalStageOutputShaderSection*
-ShaderStageEntryPoint::GetOutputs()
+HgiMetalShaderStageEntryPoint::GetOutputs()
 {
     return _outputs;
 }
 
 void
-ShaderStageEntryPoint::_Init(
+HgiMetalShaderStageEntryPoint::_Init(
     const HgiMetalShaderSectionPtrVector &stageConstantBuffers,
     const HgiMetalShaderSectionPtrVector &stageInputs,
     const HgiMetalShaderSectionPtrVector &stageOutputs,
@@ -733,7 +741,7 @@ ShaderStageEntryPoint::_Init(
     const std::string bufferattr = "buffer(0)";
     const std::string deviceSpace = "const device";
 
-    _parameters = BuildStructInstance
+    _parameters = _BuildStructInstance
         <HgiMetalArgumentBufferInputShaderSection>(
         GetConstantBufferTypeName(),
         GetConstantBufferInstanceName(),
@@ -744,7 +752,7 @@ ShaderStageEntryPoint::_Init(
         generator);
 
     const std::string inStage = "stage_in";
-    _inputs = BuildStructInstance
+    _inputs = _BuildStructInstance
         <HgiMetalArgumentBufferInputShaderSection>(
         GetInputsTypeName(),
         GetInputsInstanceName(),
@@ -754,7 +762,7 @@ ShaderStageEntryPoint::_Init(
         stageInputs,
         generator);
 
-    _outputs = BuildStructInstance<HgiMetalStageOutputShaderSection>(
+    _outputs = _BuildStructInstance<HgiMetalStageOutputShaderSection>(
         GetOutputTypeName(),
         GetOutputInstanceName(),
         std::string(),
@@ -840,7 +848,7 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
     shaderSections->emplace_back(std::move(fxTexturingInstance));
 }
 
-std::unique_ptr<ShaderStageEntryPoint>
+std::unique_ptr<HgiMetalShaderStageEntryPoint>
 HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     const HgiShaderFunctionDesc &descriptor)
 {
@@ -854,7 +862,7 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     switch (descriptor.shaderStage) {
         case HgiShaderStageVertex: {
             return std::make_unique
-                    <ShaderStageEntryPoint>(
+                    <HgiMetalShaderStageEntryPoint>(
                         stageData,
                         this,
                         "vsInput",
@@ -864,7 +872,7 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
         }
         case HgiShaderStageFragment: {
             return std::make_unique
-                    <ShaderStageEntryPoint>(
+                    <HgiMetalShaderStageEntryPoint>(
                         stageData,
                         this,
                         "fs",
@@ -874,7 +882,7 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
         }
         case HgiShaderStageCompute: {
             return std::make_unique
-                    <ShaderStageEntryPoint>(
+                    <HgiMetalShaderStageEntryPoint>(
                         stageData,
                         this,
                         "cs",
@@ -904,10 +912,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     GetShaderSections()->push_back(std::move(macroheaders));
 }
 
-HgiMetalShaderGenerator::~HgiMetalShaderGenerator()
-{
-}
-
+HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
 
 void HgiMetalShaderGenerator::_Execute(
     std::ostream &ss, const std::string &originalShaderCode)

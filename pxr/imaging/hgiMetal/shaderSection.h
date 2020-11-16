@@ -101,7 +101,7 @@ private:
 ///
 /// Defines a member that will be defined within the scope
 ///
-class HgiMetalMemberShaderSection : public HgiMetalShaderSection
+class HgiMetalMemberShaderSection final : public HgiMetalShaderSection
 {
 public:
     HGIMETAL_API
