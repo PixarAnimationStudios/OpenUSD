@@ -200,7 +200,7 @@ class TestArDefaultResolver(unittest.TestCase):
         # input.
         self.assertPathsEqual(
             resolver.ResolveForNewAsset('/test/path/1/newfile'),
-            '/test/path/1/newfile')
+            os.path.abspath('/test/path/1/newfile'))
 
         self.assertPathsEqual(
             resolver.ResolveForNewAsset('test/path/1/newfile'),
