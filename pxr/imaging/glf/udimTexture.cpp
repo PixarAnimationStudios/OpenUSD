@@ -42,6 +42,7 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 
+#include <algorithm>
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
