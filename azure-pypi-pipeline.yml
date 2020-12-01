@@ -1,0 +1,251 @@
+name: PyPI_Packaging
+
+# Trigger this build whenever this pipeline file is changed, or when setup.py
+# or other supporting files are updated. This way we will build new pypi
+# packages each time we update the version number, or any other information
+# listed here or in setup.py, like supported python versions.
+trigger:
+    branches:
+        include:
+        - dev
+        - release
+    paths:
+        include:
+        - azure-pypi-pipeline.yml
+        - build_scripts/pypi/*.py
+        - build_scripts/pypi/package_files/*
+        exclude:
+        - /
+
+stages:
+- stage: Build_and_Package
+  jobs:
+
+  - job: Linux
+    strategy:
+      matrix:
+        Python36:
+          PYTHON_INTERPRETER: /opt/python/cp36-cp36m/bin/python
+          PYTHON_TAG: cp36
+        Python37:
+          PYTHON_INTERPRETER: /opt/python/cp37-cp37m/bin/python
+          PYTHON_TAG: cp37
+    timeoutInMinutes: 90
+    pool:
+      vmImage: Ubuntu-18.04
+    steps:
+    - bash: |
+        docker build -t manylinuxwithcmake build_scripts/pypi/docker
+        docker run --name usdmanylinux --rm -id -v $(Build.SourcesDirectory):/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+      displayName: 'Creating docker build environment'
+    - bash: |
+        docker exec usdmanylinux $(PYTHON_INTERPRETER)  build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build /opt/USD/gen/build --src /opt/USD/gen/src /opt/USD/inst -v
+      displayName: 'Building USD'
+    - bash: |
+        docker exec usdmanylinux mkdir ./packaging
+        docker exec usdmanylinux cp -R /opt/USD/inst ./packaging
+        docker exec usdmanylinux sh -c 'cp build_scripts/pypi/package_files/* ./packaging'
+        docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
+      displayName: "Creating packaging directory"
+    - bash: |
+        docker exec -w /opt/USD/packaging usdmanylinux $(PYTHON_INTERPRETER) setup.py bdist_wheel --python-tag ${PYTHON_TAG}
+      displayName: 'Running setup.py'
+    - bash: |
+        docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
+      displayName: 'Running auditwheel repair (moves .so files into package)'
+    - bash: |
+        WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
+        docker exec usdmanylinux $(PYTHON_INTERPRETER) build_scripts/pypi/updatePluginfos.py "wheelhouse/$WHEEL_PACKAGE_NAME" "/opt/USD-dist/$WHEEL_PACKAGE_NAME"
+      displayName: 'Updating pluginfo paths'
+    - bash: |
+        docker stop usdmanylinux
+      displayName: 'Stopping docker container'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: dist-linux-$(PYTHON_TAG)
+        targetPath: /home/vsts/dist
+
+  - job: Windows
+    strategy:
+      matrix:
+        Python36:
+          PYTHON_VERSION_SPEC: 3.6
+          PYTHON_TAG: cp36
+        Python37:
+          PYTHON_VERSION_SPEC: 3.7
+          PYTHON_TAG: cp37
+    timeoutInMinutes: 90
+    pool:
+      vmImage: 'VS2017-Win2016'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: $(PYTHON_VERSION_SPEC)
+        addToPath: true
+    - script: |
+        call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+        set BOOST_ROOT=
+        python --version
+        python build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
+      displayName: 'Building USD'
+    - script: |
+        dir
+        mkdir D:\packaging
+        xcopy /E /I %HOME%\USDinst D:\packaging\inst
+        copy build_scripts\pypi\package_files\* D:\packaging
+        copy LICENSE.txt D:\packaging
+        dir D:\packaging
+        dir D:\packaging\inst
+      displayName: "Creating packaging directory"
+    - script: |
+        python -m pip install wheel
+      displayName: 'Installing python packages'
+    - script: |
+        cd D:\packaging
+        dir
+        python setup.py bdist_wheel --python-tag $(PYTHON_TAG) --plat-name win_amd64
+      displayName: 'Running setup.py'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: dist-windows-$(PYTHON_TAG)
+        targetPath: D:\packaging\dist
+
+  - job: Mac
+    strategy:
+      matrix:
+        Python36:
+          PYTHON_VERSION_SPEC: 3.6
+          PYTHON_INTERPRETER: python3.6
+          PYTHON_TAG: cp36
+        Python37:
+          PYTHON_VERSION_SPEC: 3.7
+          PYTHON_INTERPRETER: python3.7
+          PYTHON_TAG: cp37
+    timeoutInMinutes: 90
+    pool:
+      vmImage: 'macOS-10.14'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: $(PYTHON_VERSION_SPEC)
+        addToPath: true
+    - script: |
+        # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
+        unset SYSTEM
+        /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+        $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-imaging --no-examples --no-tutorials --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
+      displayName: 'Building USD'
+    - bash: |
+        $(PYTHON_INTERPRETER) -m pip install delocate wheel
+      displayName: 'Installing python packages'
+    - bash: |
+        mkdir ./packaging
+        mkdir ./packaging/inst
+        cp -R $HOME/USDinst/* ./packaging/inst
+        cp build_scripts/pypi/package_files/* ./packaging
+        cp LICENSE.txt ./packaging
+      displayName: "Creating packaging directory"
+    - bash: |
+        cd ./packaging
+        $(PYTHON_INTERPRETER) setup.py bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_x86_64
+      displayName: 'Running setup.py'
+    - bash: |
+        delocate-wheel -v -w dist-delocated packaging/dist/*
+      displayName: 'Running delocate (moves shared lib files into package)'
+    - bash: |
+        WHEEL_PACKAGE_NAME=`ls ./packaging/dist`
+        mkdir -p ./dist
+        $(PYTHON_INTERPRETER)  build_scripts/pypi/updatePluginfos.py "./dist-delocated/$WHEEL_PACKAGE_NAME" "./dist/$WHEEL_PACKAGE_NAME"
+      displayName: 'Updating pluginfo paths'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: dist-mac-$(PYTHON_TAG)
+        targetPath: ./dist
+
+
+- stage: Deliver
+  dependsOn: Build_and_Package
+  jobs:
+  - job: Collect_Packages
+    timeoutInMinutes: 15
+    pool:
+      vmImage: Ubuntu-18.04
+    steps:
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Downloading all artifacts'
+      inputs:
+        source: current
+        # Not specifying artifact names so we get all of them
+        downloadPath: '$(Pipeline.Workspace)'
+    - bash: |
+        cd $(Pipeline.Workspace)
+        mkdir dist-final
+        cp dist*/*.whl dist-final
+      displayName: 'Collecting whl packages'
+    - task: PublishPipelineArtifact@0
+      displayName: 'Publishing in a single download'
+      inputs:
+        artifactName: dist
+        targetPath: '$(Pipeline.Workspace)/dist-final'
+
+
+# The matrix below is verbose. There is a way to do this with a more n x m
+# syntax using a foreach loop kind of construct. For now, opting for the below
+# because it seems easier to read. An example of the other approach can be
+# found here:
+# https://github.com/nedrebo/parameterized-azure-jobs
+- stage: Test_Packages
+  dependsOn: Deliver
+  jobs:
+  - job: Test_Install
+    strategy:
+      matrix:
+        Linux_Python36:
+          PYTHON_VERSION_SPEC: 3.6
+          IMAGE: 'Ubuntu-18.04'
+          PYTHON_INTERPRETER: python3
+        Linux_Python37:
+          PYTHON_VERSION_SPEC: 3.7
+          IMAGE: 'Ubuntu-18.04'
+          PYTHON_INTERPRETER: python3
+        Windows_Python36:
+          PYTHON_VERSION_SPEC: 3.6
+          IMAGE: 'VS2017-Win2016'
+          PYTHON_INTERPRETER: python
+        Windows_Python37:
+          PYTHON_VERSION_SPEC: 3.7
+          IMAGE: 'VS2017-Win2016'
+          PYTHON_INTERPRETER: python
+        Mac_Python36:
+          PYTHON_VERSION_SPEC: 3.6
+          IMAGE: 'macOS-10.14'
+          PYTHON_INTERPRETER: python3
+        Mac_Python37:
+          PYTHON_VERSION_SPEC: 3.7
+          IMAGE: 'macOS-10.14'
+          PYTHON_INTERPRETER: python3
+    timeoutInMinutes: 10
+    pool:
+      vmImage: '$(IMAGE)'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: $(PYTHON_VERSION_SPEC)
+        addToPath: true
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Downloading dist package'
+      inputs:
+        source: current
+        artifact: dist
+        downloadPath: '$(Pipeline.Workspace)'
+    - script: |
+        $(PYTHON_INTERPRETER) --version
+        $(PYTHON_INTERPRETER) -m pip install pytest
+        $(PYTHON_INTERPRETER) -m pip install --no-index --find-links=file://$(Pipeline.Workspace) usd-core
+        py.test --junitxml TEST-usdinstall.xml build_scripts/pypi/test.py
+      displayName: "Testing fresh pip install"
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: 'Test results for $(IMAGE) Python $(PYTHON_VERSION_SPEC)'
+
