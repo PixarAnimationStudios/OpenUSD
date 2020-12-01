@@ -37,15 +37,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiMetalShaderFunction::HgiMetalShaderFunction(
     HgiMetal *hgi,
     HgiShaderFunctionDesc const& desc)
-    : HgiShaderFunction(desc)
-    , _shaderId(nil)
+  : HgiShaderFunction(desc)
+  , _shaderId(nil)
 {
     if (desc.shaderCode) {
-    id<MTLDevice> device = hgi->GetPrimaryDevice();
+        id<MTLDevice> device = hgi->GetPrimaryDevice();
 
-    HgiMetalShaderGenerator shaderGenerator {desc, device};
-    std::stringstream ss;
-    shaderGenerator.HgiShaderGenerator::Execute(ss);
+        HgiMetalShaderGenerator shaderGenerator {desc, device};
+        std::stringstream ss;
+        shaderGenerator.Execute(ss);
         MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
         options.fastMathEnabled = YES;
         options.languageVersion = MTLLanguageVersion2_1;
@@ -54,10 +54,10 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         };
 
         NSError *error = NULL;
-    std::string shaderStr = ss.str();
-    id<MTLLibrary> library =
-        [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderStr.c_str())
-                                                      options:options
+        std::string shaderStr = ss.str();
+        id<MTLLibrary> library =
+            [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderStr.c_str())
+                                                        options:options
                                                         error:&error];
 
         NSString *entryPoint = nullptr;
@@ -84,9 +84,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             NSString *err = [error localizedDescription];
             TF_WARN("Failed to compile shader: \n%s",
                     [err UTF8String]);
-        TF_WARN("%s", shaderStr.c_str());
-    }
-    else {
+            TF_WARN("%s", shaderStr.c_str());
+        }
+        else {
             HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
         }
         
