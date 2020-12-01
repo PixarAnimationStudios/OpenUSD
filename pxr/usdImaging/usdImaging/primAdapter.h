@@ -64,7 +64,8 @@ using UsdImagingPrimAdapterSharedPtr =
 /// Base class for all PrimAdapters.
 ///
 class UsdImagingPrimAdapter 
-            : public std::enable_shared_from_this<UsdImagingPrimAdapter> {
+            : public std::enable_shared_from_this<UsdImagingPrimAdapter>
+{
 public:
     
     // ---------------------------------------------------------------------- //

@@ -36,24 +36,25 @@ struct HdMaterialNetworkMap;
 
 /// \class UsdImagingMaterialAdapter
 /// \brief Provides information that can be used to generate a material.
-class UsdImagingMaterialAdapter : public UsdImagingPrimAdapter {
+class UsdImagingMaterialAdapter : public UsdImagingPrimAdapter
+{
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingMaterialAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
-    virtual ~UsdImagingMaterialAdapter();
+    ~UsdImagingMaterialAdapter() override;
 
     USDIMAGING_API
-    virtual SdfPath Populate(UsdPrim const& prim,
+    SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+                     UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -61,21 +62,21 @@ public:
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void TrackVariability(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const;
+    void TrackVariability(UsdPrim const& prim,
+                          SdfPath const& cachePath,
+                          HdDirtyBits* timeVaryingBits,
+                          UsdImagingInstancerContext const* 
+                              instancerContext = NULL) const override;
 
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const;
+    void UpdateForTime(UsdPrim const& prim,
+                       SdfPath const& cachePath, 
+                       UsdTimeCode time,
+                       HdDirtyBits requestedBits,
+                       UsdImagingInstancerContext const* 
+                           instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -84,30 +85,30 @@ public:
     /// Returns a bit mask of attributes to be updated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     USDIMAGING_API
-    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName) override;
 
     USDIMAGING_API
-    virtual void MarkDirty(UsdPrim const& prim,
+    void MarkDirty(UsdPrim const& prim,
+                   SdfPath const& cachePath,
+                   HdDirtyBits dirty,
+                   UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    void MarkMaterialDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
-                           HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     USDIMAGING_API
-    virtual void MarkMaterialDirty(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   UsdImagingIndexProxy* index);
-
-    USDIMAGING_API
-    virtual VtValue GetMaterialResource(UsdPrim const& prim, 
-                                  SdfPath const& cachePath, 
-                                  UsdTimeCode time) const override;
+    VtValue GetMaterialResource(UsdPrim const& prim, 
+                                SdfPath const& cachePath, 
+                                UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API
-    virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) final;
+    void _RemovePrim(SdfPath const& cachePath,
+                     UsdImagingIndexProxy* index) final;
 
 private:
     void _GetMaterialNetworkMap(UsdPrim const &prim, 
