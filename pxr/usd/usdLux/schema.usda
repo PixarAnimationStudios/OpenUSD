@@ -602,3 +602,37 @@ class LightPortal "LightPortal" (
     The rectangle is 1 unit in length."""
 ) {
 }
+
+class PluginLight "PluginLight" (
+    inherits = </Light>
+    doc = """Light that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+    prepend apiSchemas = ["NodeDefAPI"]
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/nodeDefAPI.h" """
+    }
+) {
+}
+
+class PluginLightFilter "PluginLightFilter" (
+    inherits = </LightFilter>
+    doc = """Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light filter's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+    prepend apiSchemas = ["NodeDefAPI"]
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/nodeDefAPI.h" """
+    }
+) {
+}

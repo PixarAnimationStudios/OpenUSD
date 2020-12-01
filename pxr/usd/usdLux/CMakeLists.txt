@@ -18,12 +18,14 @@ pxr_library(usdLux
         domeLight
         geometryLight
         light
-        listAPI
-        shapingAPI
-        shadowAPI
         lightFilter
         lightPortal
+        listAPI
+        pluginLight
+        pluginLightFilter
         rectLight
+        shadowAPI
+        shapingAPI
         sphereLight
         tokens
 
@@ -39,14 +41,16 @@ pxr_library(usdLux
         wrapDiskLight.cpp
         wrapDistantLight.cpp
         wrapDomeLight.cpp
-        wrapLightPortal.cpp
         wrapGeometryLight.cpp
         wrapLight.cpp
-        wrapListAPI.cpp
-        wrapShapingAPI.cpp
-        wrapShadowAPI.cpp
         wrapLightFilter.cpp
+        wrapLightPortal.cpp
+        wrapListAPI.cpp
+        wrapPluginLight.cpp
+        wrapPluginLightFilter.cpp
         wrapRectLight.cpp
+        wrapShadowAPI.cpp
+        wrapShapingAPI.cpp
         wrapSphereLight.cpp
         wrapTokens.cpp
 

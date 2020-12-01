@@ -1322,3 +1322,179 @@ class LightPortal "LightPortal" (
     )
 }
 
+class PluginLight "PluginLight" (
+    apiSchemas = ["NodeDefAPI", "CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    doc = """Light that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+)
+{
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
+        doc = "The color of emitted light, in energy-linear terms."
+    )
+    float inputs:colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
+    )
+    float inputs:diffuse = 1 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    bool inputs:enableColorTemperature = 0 (
+        displayName = "Enable Color Temperature"
+        doc = "Enables using colorTemperature."
+    )
+    float inputs:exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    float inputs:intensity = 1 (
+        doc = "Scales the power of the light linearly."
+    )
+    bool inputs:normalize = 0 (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
+    uniform token[] xformOpOrder (
+        doc = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims.
+        
+        You should rarely, if ever, need to manipulate this attribute directly.
+        It is managed by the AddXformOp(), SetResetXformStack(), and
+        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
+        GetLocalTransformation()."""
+    )
+}
+
+class PluginLightFilter "PluginLightFilter" (
+    apiSchemas = ["NodeDefAPI", "CollectionAPI:filterLink"]
+    doc = """Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light filter's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+)
+{
+    uniform bool collection:filterLink:includeRoot = 1
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
+    uniform token[] xformOpOrder (
+        doc = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims.
+        
+        You should rarely, if ever, need to manipulate this attribute directly.
+        It is managed by the AddXformOp(), SetResetXformStack(), and
+        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
+        GetLocalTransformation()."""
+    )
+}
+
