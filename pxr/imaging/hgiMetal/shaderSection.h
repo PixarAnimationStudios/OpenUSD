@@ -66,8 +66,10 @@ public:
     using HgiShaderSection::HgiShaderSection;
 };
 
+using HgiMetalShaderSectionUniquePtr = 
+    std::unique_ptr<HgiMetalShaderSection>;
 using HgiMetalShaderSectionUniquePtrVector = 
-    std::vector<std::unique_ptr<HgiMetalShaderSection>>;
+    std::vector<HgiMetalShaderSectionUniquePtr>;
 using HgiMetalShaderSectionPtrVector = 
     std::vector<HgiMetalShaderSection*>;
 
@@ -120,10 +122,6 @@ public:
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
 
-protected:
-    HGIMETAL_API
-    const std::string& GetType();
-
 private:
     const std::string _type;
 };
@@ -148,17 +146,11 @@ public:
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
 
-protected:
-    HGIMETAL_API
-    const std::string& GetTextureSharedIdentifier();
-
 private:
     HgiMetalSamplerShaderSection() = delete;
     HgiMetalSamplerShaderSection & operator=(
         const HgiMetalSamplerShaderSection&) = delete;
     HgiMetalSamplerShaderSection(const HgiMetalSamplerShaderSection&) = delete;
-
-    const std::string _textureSharedIdentifier;
 };
 
 /// \class HgiMetalTextureShaderSection

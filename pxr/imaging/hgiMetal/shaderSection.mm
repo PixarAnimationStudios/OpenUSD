@@ -86,12 +86,6 @@ HgiMetalMemberShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
     return true;
 }
 
-const std::string&
-HgiMetalMemberShaderSection::GetType()
-{
-    return _type;
-}
-
 HgiMetalSamplerShaderSection::HgiMetalSamplerShaderSection(
     const std::string &textureSharedIdentifier,
     const std::string &attribute,
@@ -100,7 +94,6 @@ HgiMetalSamplerShaderSection::HgiMetalSamplerShaderSection(
       "samplerBind_" + textureSharedIdentifier,
       attribute,
       attributeIndex)
-  , _textureSharedIdentifier(textureSharedIdentifier)
 {
 }
 
@@ -116,12 +109,6 @@ HgiMetalSamplerShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
     WriteDeclaration(ss);
     ss << std::endl;
     return true;
-}
-
-const std::string&
-HgiMetalSamplerShaderSection::GetTextureSharedIdentifier()
-{
-    return _textureSharedIdentifier;
 }
 
 HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
@@ -215,12 +202,11 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     for (HgiShaderSection* member : _members) {
         if(!member->GetAttribute().empty()) {
             member->WriteAttributeWithIndex(ss);
-            ss << ";\n";
         }
         else {
             member->WriteParameter(ss);
-            ss << ";\n";
         }
+        ss << ";\n";
     }
     ss << "};";
 }
@@ -315,10 +301,11 @@ HgiMetalArgumentBufferInputShaderSection::VisitEntryPointFunctionExecutions(
     const std::string &scopeInstanceName)
 {
     const auto &structDeclMembers = GetStructTypeDeclaration()->GetMembers();
-    for (auto it = structDeclMembers.begin();
-         it != structDeclMembers.end();
-         ++it) {
-        HgiShaderSection *member = (*it);
+    for (size_t i = 0; i < structDeclMembers.size(); ++i) {
+        if (i > 0) {
+            ss << "\n";
+        }
+        HgiShaderSection *member = structDeclMembers[i];
         ss << scopeInstanceName << ".";
         member->WriteIdentifier(ss);
         ss << " = ";
@@ -326,9 +313,6 @@ HgiMetalArgumentBufferInputShaderSection::VisitEntryPointFunctionExecutions(
         ss << (_isPointer ? "->" : ".");
         member->WriteIdentifier(ss);
         ss << ";";
-        if(std::next(it) != structDeclMembers.end()){
-            ss << "\n";
-        }
     }
     return true;
 }
@@ -379,19 +363,17 @@ HgiMetalStageOutputShaderSection::VisitEntryPointFunctionExecutions(
     ss << "\n";
     const auto &structTypeDeclMembers =
         GetStructTypeDeclaration()->GetMembers();
-    for (auto it = structTypeDeclMembers.begin();
-         it != structTypeDeclMembers.end();
-         ++it) {
-        HgiMetalShaderSection *member = (*it);
+    for (size_t i = 0; i < structTypeDeclMembers.size(); ++i) {
+        if (i > 0) {
+            ss << "\n";
+        }
+        HgiShaderSection *member = structTypeDeclMembers[i];
         WriteIdentifier(ss);
         ss << ".";
         member->WriteIdentifier(ss);
         ss << " = " << scopeInstanceName << ".";
         member->WriteIdentifier(ss);
         ss << ";";
-        if(std::next(it) != structTypeDeclMembers.end()){
-            ss << "\n";
-        }
     }
     return true;
 }
