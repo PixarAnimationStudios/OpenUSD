@@ -379,6 +379,16 @@ function(pxr_setup_python)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
          "__all__ = [${pyModulesStr}]\n")
 
+    # On windows also write out code to add the dll import directory
+    if (WIN32)
+        set(PY_WIN32_DLL_IMPORT_CODE_STRING "\nimport os, sys\n"
+            "if sys.version_info >= (3, 8, 0):\n"
+            "    dllPath = os.path.split(os.path.realpath(__file__))[0]\n"
+            "    os.add_dll_directory(dllPath)\n")
+        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+             ${PY_WIN32_DLL_IMPORT_CODE_STRING})
+    endif()
+
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
         DESTINATION ${installPrefix}
