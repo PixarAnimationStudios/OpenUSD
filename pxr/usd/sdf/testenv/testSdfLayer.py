@@ -22,7 +22,19 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import os, sys, unittest
+import os, itertools, sys, unittest
+
+# Initialize Ar to use ArDefaultResolver unless a different implementation
+# is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
+# filesystem-based resolvers.
+preferredResolver = os.environ.get(
+    "TEST_SDF_LAYER_RESOLVER", "ArDefaultResolver")
+
+from pxr import Ar
+Ar.SetPreferredResolver(preferredResolver)
+
+# Import other modules from pxr after Ar to ensure we don't pull on Ar
+# before the preferred resolver has been specified.
 from pxr import Sdf, Tf
 
 class TestSdfLayer(unittest.TestCase):
@@ -335,6 +347,53 @@ def "Root"
         self.assertFalse(anonLayer.Import('bogus.sdf'))
         self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
 
+    def test_LayersWithEquivalentPaths(self):
+        # Test that FindOrOpen and Find return the same layer when
+        # given different paths that should point to the same location.
+        if not os.path.isdir("eqPaths"):
+            os.makedirs("eqPaths")
+
+        # These paths should all be equivalent.
+        testPaths = [
+            "",
+            os.getcwd(),
+            "eqPaths/../.",
+            os.path.join(os.getcwd(), "eqPaths/../.")
+        ]
+
+        # Iterate over all permutations of these paths calling FindOrOpen
+        # or Find on each one and verifying that they all return the same
+        # layer.
+        i = 0
+        for paths in itertools.permutations(testPaths):
+            i += 1
+            testLayerName = "FindOrOpenEqPaths_{}.sdf".format(i)
+            testLayer = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(testLayer, "/TestLayer_{}".format(i))
+            self.assertTrue(testLayer.Export(testLayerName))
+
+            paths = [os.path.join(p, testLayerName) for p in paths]
+            firstLayer = Sdf.Layer.FindOrOpen(paths[0])
+            self.assertTrue(
+                firstLayer, "Unable to open {} (from {})".format(p, paths))
+
+            for p in paths:
+                testLayer = Sdf.Layer.FindOrOpen(p)
+                self.assertTrue(
+                    testLayer, "Unable to open {} (from {})".format(p, paths))
+                self.assertEqual(
+                    firstLayer, testLayer,
+                    "Layer opened with {} not the same as layer opened "
+                    "with {}".format(p, paths[0]))
+
+                testLayer = Sdf.Layer.Find(p)
+                self.assertTrue(
+                    testLayer, "Unable to find {} (from {})".format(p, paths))
+                self.assertEqual(
+                    firstLayer, testLayer,
+                    "Layer found with {} not the same as layer opened "
+                    "with {}".format(p, paths[0]))
+
     def test_FindRelativeToLayer(self):
         with self.assertRaises(Tf.ErrorException):
             Sdf.Layer.FindRelativeToLayer(None, 'foo.sdf')
@@ -401,6 +460,67 @@ def "Root"
         _TestWithRelativePath('FindOrOpenRelativeLayer.sdf')
         _TestWithRelativePath('subdir/FindOrOpenRelativeLayer.sdf')
 
+    @unittest.skipIf(preferredResolver != "ArDefaultResolver",
+                     "Test uses search-path functionality specific to "
+                     "ArDefaultResolver")
+    def test_FindOrOpenDefaultResolverSearchPaths(self):
+        # Set up test directory structure by exporting layers. We
+        # don't use Sdf.Layer.CreateNew here to avoid populating the
+        # layer registry.
+        layerA_Orig = Sdf.Layer.CreateAnonymous()
+        Sdf.CreatePrimInLayer(layerA_Orig, "/LayerA")
+        layerA_Orig.Export("dir1/sub/searchPath.sdf")
+
+        layerB_Orig = Sdf.Layer.CreateAnonymous()
+        Sdf.CreatePrimInLayer(layerB_Orig, "/LayerB")
+        layerB_Orig.Export("dir2/sub/searchPath.sdf")
+
+        # This should fail since there is no searchPath.sdf layer in the
+        # current directory and no context is bound.
+        self.assertFalse(Sdf.Layer.FindOrOpen("sub/searchPath.sdf"))
+
+        # Bind an Ar.DefaultResolverContext with dir1 as a search path.
+        # Now sub/searchPath.sdf should be discovered in dir1/.
+        ctx1 = Ar.DefaultResolverContext([os.path.abspath("dir1/")])
+        with Ar.ResolverContextBinder(ctx1):
+            layerA = Sdf.Layer.FindOrOpen("sub/searchPath.sdf")
+            self.assertTrue(layerA)
+            self.assertTrue(layerA.GetPrimAtPath("/LayerA"))
+            self.assertEqual(layerA.identifier, "sub/searchPath.sdf")
+
+        # Do the same as above, but with dir2 as the search path.
+        # Now sub/searchPath.sdf should be discovered in dir2/.
+        ctx2 = Ar.DefaultResolverContext([os.path.abspath("dir2/")])
+        with Ar.ResolverContextBinder(ctx2):
+            layerB = Sdf.Layer.FindOrOpen("sub/searchPath.sdf")
+            self.assertTrue(layerB)
+            self.assertTrue(layerB.GetPrimAtPath("/LayerB"))
+            self.assertEqual(layerB.identifier, "sub/searchPath.sdf")
+
+        # Note that layerB has the same identifier as layerA, but
+        # different resolved paths.
+        self.assertEqual(layerA.identifier, layerB.identifier)
+        self.assertNotEqual(layerA.realPath, layerB.realPath)
+
+        # Sdf.Layer.Find should fail since no context is bound.
+        self.assertFalse(Sdf.Layer.Find("sub/searchPath.sdf"))
+
+        # Binding the contexts from above will allow Sdf.Layer.Find
+        # to find the right layers.
+        with Ar.ResolverContextBinder(ctx1):
+            self.assertEqual(Sdf.Layer.Find("sub/searchPath.sdf"), layerA)
+
+        with Ar.ResolverContextBinder(ctx2):
+            self.assertEqual(Sdf.Layer.Find("sub/searchPath.sdf"), layerB)
+
+        # Anonymous layers should be discoverable regardless of context.
+        anonLayerA = Sdf.Layer.CreateAnonymous()
+        with Ar.ResolverContextBinder(ctx1):
+            self.assertEqual(Sdf.Layer.Find(anonLayerA.identifier), anonLayerA)
+
+        with Ar.ResolverContextBinder(ctx2):
+            anonLayerB = Sdf.Layer.CreateAnonymous()
+        self.assertEqual(Sdf.Layer.Find(anonLayerB.identifier), anonLayerB)
 
 if __name__ == "__main__":
     unittest.main()
