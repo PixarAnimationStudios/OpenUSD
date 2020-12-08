@@ -277,6 +277,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
       : offscreen(false)
       , clearColor{1.0f, 0.5f, 0.1f, 1.0f}
       , translate{0.0f, -1000.0f, -2500.0f}
+      , widgetSize{640, 480}
       , pixelAspectRatio(1.0f)
       , dataWindow{0, 0, 0, 0}
       , displayWindow{0.0f, 0.0f, 0.0f, 0.0f}
@@ -290,6 +291,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
     std::vector<double> complexities;
     float clearColor[4];
     float translate[3];
+    int widgetSize[2];
     float pixelAspectRatio;
     int dataWindow[4];
     float displayWindow[4];
@@ -386,6 +388,9 @@ static void Usage(int argc, char *argv[])
 "                      force prims of purpose 'render' to be shown or hidden\n"
 "  -proxyPurpose [show|hide]\n"
 "                      force prims of purpose 'proxy' to be shown or hidden\n"
+"  -widgetSize w h     width and height of widget and render buffers\n"
+"  -pixelAspectRatio a\n"
+"                      width of pixel divided by height of pixel\n"
 "  -dataWindow x y width height\n"
 "                      Specifies data window for rendering\n"
 "  -displayWindow x y width height\n"
@@ -592,6 +597,11 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             args->translate[1] = (float)ParseDouble(i, argc, argv);
             args->translate[2] = (float)ParseDouble(i, argc, argv);
         }
+        else if (strcmp(argv[i], "-widgetSize") == 0) {
+            CheckForMissingArguments(i, 2, argc, argv);
+            args->widgetSize[0] = (int)ParseDouble(i, argc, argv);
+            args->widgetSize[1] = (int)ParseDouble(i, argc, argv);
+        }
         else if (strcmp(argv[i], "-pixelAspectRatio") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             args->pixelAspectRatio = (float)ParseDouble(i, argc, argv);
@@ -700,7 +710,8 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _stageFilePath = args.unresolvedStageFilePath;
     }
 
-    _widget = new UsdImagingGL_UnitTestWindow(this, 640, 480);
+    _widget = new UsdImagingGL_UnitTestWindow(
+        this, args.widgetSize[0], args.widgetSize[1]);
     _widget->Init();
 
     if (_times.empty()) {
