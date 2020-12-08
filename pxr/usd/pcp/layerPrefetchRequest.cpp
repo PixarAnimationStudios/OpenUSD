@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/threadLimits.h"
 
@@ -61,10 +60,10 @@ private:
         }
 
         // Open this specific sublayer path.
-        // The call to SdfFindOrOpenRelativeToLayer() may take some time,
-        // potentially multiple seconds.
+        // The call to SdfLayer::FindOrOpenRelativeToLayer() may take some
+        // time, potentially multiple seconds.
         if (SdfLayerRefPtr sublayer =
-            SdfFindOrOpenRelativeToLayer(anchorLayer, &path, layerArgs)) {
+            SdfLayer::FindOrOpenRelativeToLayer(anchorLayer, path, layerArgs)) {
             // Retain this sublayer.
             bool didInsert;
             {

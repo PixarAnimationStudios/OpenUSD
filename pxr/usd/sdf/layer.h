@@ -160,31 +160,57 @@ public:
                               const FileFormatArguments &args = 
                               FileFormatArguments());
 
-    /// Returns the layer for the given path if found in the layer registry.
-    /// If the layer cannot be found, a null handle is returned.
+    /// Return an existing layer with the given \p identifier and \p args.  If
+    /// the layer can't be found, an error is posted and a null layer is
+    /// returned.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
     SDF_API
     static SdfLayerHandle Find(
         const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
 
-    /// Returns the layer for \p layerPath, assumed to be relative to the path
-    /// of the \p anchor layer. If the \p anchor layer is invalid, a coding
-    /// error is raised, and a null handle is returned. If \p layerPath is not
-    /// relative, this method is equivalent to \c Find(layerPath).
+    /// Return an existing layer with the given \p identifier and \p args.
+    /// The given \p identifier will be resolved relative to the \p anchor
+    /// layer. If the layer can't be found, an error is posted and a null
+    /// layer is returned.
+    ///
+    /// If the \p anchor layer is invalid, a coding error is raised, and a null
+    /// handle is returned.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
     SDF_API
     static SdfLayerHandle FindRelativeToLayer(
         const SdfLayerHandle &anchor,
-        const std::string &layerPath,
+        const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
 
-    /// Return an existing layer with the given \p identifier and \p args, or 
-    /// else load it from disk. If the layer can't be found or loaded, 
-    /// an error is posted and a null layer is returned.
+    /// Return an existing layer with the given \p identifier and \p args, or
+    /// else load it. If the layer can't be found or loaded, an error is posted
+    /// and a null layer is returned.
     ///
     /// Arguments in \p args will override any arguments specified in
     /// \p identifier.
     SDF_API
     static SdfLayerRefPtr FindOrOpen(
+        const std::string &identifier,
+        const FileFormatArguments &args = FileFormatArguments());
+
+    /// Return an existing layer with the given \p identifier and \p args, or
+    /// else load it. The given \p identifier will be resolved relative to the
+    /// \p anchor layer. If the layer can't be found or loaded, an error is
+    /// posted and a null layer is returned.
+    ///
+    /// If the \p anchor layer is invalid, issues a coding error and returns
+    /// a null handle.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
+    SDF_API
+    static SdfLayerRefPtr FindOrOpenRelativeToLayer(
+        const SdfLayerHandle &anchor,
         const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
         

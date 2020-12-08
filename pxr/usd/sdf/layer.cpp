@@ -36,6 +36,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerRegistry.h"
 #include "pxr/usd/sdf/layerStateDelegate.h"
+#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -780,6 +781,31 @@ SdfLayer::FindOrOpen(const string &identifier,
 
 /* static */
 SdfLayerRefPtr
+SdfLayer::FindOrOpenRelativeToLayer(
+    const SdfLayerHandle &anchor,
+    const string &identifier,
+    const FileFormatArguments &args)
+{
+    TRACE_FUNCTION();
+
+    if (!anchor) {
+        TF_CODING_ERROR("Anchor layer is invalid");
+        return TfNullPtr;
+    }
+
+    // For consistency with FindOrOpen, we silently bail out if identifier
+    // is empty here to avoid the coding error that is emitted in that case
+    // in SdfComputeAssetPathRelativeToLayer.
+    if (identifier.empty()) {
+        return TfNullPtr;
+    }
+
+    return FindOrOpen(
+        SdfComputeAssetPathRelativeToLayer(anchor, identifier), args);
+}
+
+/* static */
+SdfLayerRefPtr
 SdfLayer::OpenAsAnonymous(
     const std::string &layerPath,
     bool metadataOnly,
@@ -1061,7 +1087,7 @@ SdfLayer::Find(const string &identifier,
 SdfLayerHandle
 SdfLayer::FindRelativeToLayer(
     const SdfLayerHandle &anchor,
-    const string &layerPath,
+    const string &identifier,
     const FileFormatArguments &args)
 {
     TRACE_FUNCTION();
@@ -1071,7 +1097,15 @@ SdfLayer::FindRelativeToLayer(
         return TfNullPtr;
     }
 
-    return Find(anchor->ComputeAbsolutePath(layerPath), args);
+    // For consistency with FindOrOpen, we silently bail out if identifier
+    // is empty here to avoid the coding error that is emitted in that case
+    // in SdfComputeAssetPathRelativeToLayer.
+    if (identifier.empty()) {
+        return TfNullPtr;
+    }
+
+    return Find(
+        SdfComputeAssetPathRelativeToLayer(anchor, identifier), args);
 }
 
 std::set<double>

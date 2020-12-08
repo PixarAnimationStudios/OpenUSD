@@ -45,7 +45,6 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
@@ -1970,7 +1969,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
             // Relative asset paths will already have been anchored to their 
             // source layers in PcpComposeSiteReferences, so we can just call
-            // SdfLayer::FindOrOpen instead of SdfFindOrOpenRelativeToLayer.
+            // SdfLayer::FindOrOpen instead of FindOrOpenRelativeToLayer.
             layer = SdfLayer::FindOrOpen(refOrPayload.GetAssetPath(), args);
 
             if (!layer) {

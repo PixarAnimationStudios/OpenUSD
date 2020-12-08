@@ -778,12 +778,11 @@ Usd_Clip::_GetLayerForClip() const
     SdfLayerRefPtr layer;
 
     if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
-        std::string resolvedPath = assetPath.GetAssetPath();
         const ArResolverContextBinder binder(
             sourceLayerStack->GetIdentifier().pathResolverContext);
-        layer = SdfFindOrOpenRelativeToLayer(
+        layer = SdfLayer::FindOrOpenRelativeToLayer(
             sourceLayerStack->GetLayers()[sourceLayerIndex],
-            &resolvedPath);
+            assetPath.GetAssetPath());
     }
 
     if (!layer) {

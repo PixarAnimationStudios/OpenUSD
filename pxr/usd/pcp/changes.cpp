@@ -35,7 +35,6 @@
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/trace/trace.h"
 
@@ -1326,10 +1325,9 @@ PcpChanges::DidMaybeFixAsset(
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
 
     // Load the layer.
-    std::string resolvedAssetPath(assetPath);
     TfErrorMark m;
-    SdfLayerRefPtr layer = SdfFindOrOpenRelativeToLayer(
-        srcLayer, &resolvedAssetPath);
+    SdfLayerRefPtr layer = SdfLayer::FindOrOpenRelativeToLayer(
+        srcLayer, assetPath);
     m.Clear();
     
     PCP_APPEND_DEBUG("  Asset @%s@ %s\n",
@@ -1749,7 +1747,6 @@ PcpChanges::_LoadSublayerForChange(
         cache->GetLayerStackIdentifier().pathResolverContext);
 
     // Load the layer.
-    std::string resolvedAssetPath(sublayerPath);
     SdfLayerRefPtr sublayer;
 
     const SdfLayer::FileFormatArguments sublayerArgs = 
@@ -1757,8 +1754,8 @@ PcpChanges::_LoadSublayerForChange(
             sublayerPath, cache->GetFileFormatTarget());
 
     // Note the possible conversions from SdfLayerHandle to SdfLayerRefPtr below.
-    if (SdfLayer::IsAnonymousLayerIdentifier(resolvedAssetPath)) {
-        sublayer = SdfLayer::Find(resolvedAssetPath, sublayerArgs);
+    if (SdfLayer::IsAnonymousLayerIdentifier(sublayerPath)) {
+        sublayer = SdfLayer::Find(sublayerPath, sublayerArgs);
     }
     else {
         // Don't bother trying to open a sublayer if we're removing it;
@@ -1766,14 +1763,13 @@ PcpChanges::_LoadSublayerForChange(
         // it's invalid, which we'll deal with below.
         if (sublayerChange == _SublayerAdded) {
             TfErrorMark m;
-            sublayer = SdfFindOrOpenRelativeToLayer(
-                layer, &resolvedAssetPath, sublayerArgs);
+            sublayer = SdfLayer::FindOrOpenRelativeToLayer(
+                layer, sublayerPath, sublayerArgs);
             m.Clear();
         }
         else {
-            resolvedAssetPath = SdfComputeAssetPathRelativeToLayer(
-                layer, sublayerPath);
-            sublayer = SdfLayer::Find(resolvedAssetPath, sublayerArgs);
+            sublayer = SdfLayer::FindRelativeToLayer(
+                layer, sublayerPath, sublayerArgs);
         }
     }
     

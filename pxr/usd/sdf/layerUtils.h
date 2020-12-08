@@ -35,7 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_REF_PTRS(SdfLayer);
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// Returns the path to the asset specified by \p assetPath, using the
@@ -51,21 +50,6 @@ SDF_API std::string
 SdfComputeAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const std::string& assetPath);
-
-/// Returns a layer with the given \p layerPath relative to the \p anchor 
-/// layer.  This function uses \ref SdfComputeAssetPathRelativeToLayer with
-/// \p anchor and \p layerPath to compute the layer path to find or open.
-/// See documentation on that function for more details.
-///
-/// If the \p anchor layer is invalid, the \p layerPath pointer is invalid, or
-/// \p layerPath contains an empty string, a coding error is raised and a null
-/// layer is returned.
-SDF_API SdfLayerRefPtr 
-SdfFindOrOpenRelativeToLayer(
-    const SdfLayerHandle& anchor,
-    std::string* layerPath,
-    const SdfLayer::FileFormatArguments& args 
-        = SdfLayer::FileFormatArguments());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

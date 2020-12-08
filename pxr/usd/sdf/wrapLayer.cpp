@@ -458,7 +458,7 @@ _Find(
 static SdfLayerHandle
 _FindRelativeToLayer(
     const SdfLayerHandle& anchor,
-    const std::string& assetPath,
+    const std::string& identifier,
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
@@ -466,13 +466,13 @@ _FindRelativeToLayer(
         return SdfLayerHandle();
     }
 
-    return SdfLayer::FindRelativeToLayer(anchor, assetPath, args);
+    return SdfLayer::FindRelativeToLayer(anchor, identifier, args);
 }
 
 static SdfLayerRefPtr
 _FindOrOpenRelativeToLayer(
     const SdfLayerHandle& anchor,
-    const std::string& layerPath,
+    const std::string& identifier,
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
@@ -480,8 +480,7 @@ _FindOrOpenRelativeToLayer(
         return SdfLayerHandle();
     }
 
-    std::string mutableLayerPath(layerPath);
-    return SdfFindOrOpenRelativeToLayer(anchor, &mutableLayerPath, args);
+    return SdfLayer::FindOrOpenRelativeToLayer(anchor, identifier, args);
 }
 
 using Py_SdfLayerTraversalFunctionSig = void(const SdfPath&);
@@ -500,12 +499,6 @@ void wrapLayer()
     typedef SdfLayerHandle ThisHandle;
 
     TfPyFunctionFromPython<::Py_SdfLayerTraversalFunctionSig>();
-
-    def("FindOrOpenRelativeToLayer", &_FindOrOpenRelativeToLayer,
-         ( arg("anchor"),
-           arg("layerPath"),
-           arg("args") = boost::python::dict()),
-         return_value_policy<TfPyRefPtrFactory<ThisHandle> >());
 
     def("ComputeAssetPathRelativeToLayer", &SdfComputeAssetPathRelativeToLayer,
         ( arg("anchor"),
@@ -562,6 +555,13 @@ void wrapLayer()
                arg("args") = boost::python::dict()),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("FindOrOpen")
+
+        .def("FindOrOpenRelativeToLayer", &_FindOrOpenRelativeToLayer,
+             ( arg("anchor"),
+               arg("identifier"),
+               arg("args") = boost::python::dict()),
+             return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
+        .staticmethod("FindOrOpenRelativeToLayer")
 
         .def("OpenAsAnonymous", This::OpenAsAnonymous,
              ( arg("filePath") = std::string(),

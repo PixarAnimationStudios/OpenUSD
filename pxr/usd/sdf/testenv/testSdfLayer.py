@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import sys, unittest
+import os, sys, unittest
 from pxr import Sdf, Tf
 
 class TestSdfLayer(unittest.TestCase):
@@ -334,6 +334,73 @@ def "Root"
 
         self.assertFalse(anonLayer.Import('bogus.sdf'))
         self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+    def test_FindRelativeToLayer(self):
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.Layer.FindRelativeToLayer(None, 'foo.sdf')
+
+        anchorLayer = Sdf.Layer.CreateNew('TestFindRelativeToLayer.sdf')
+        self.assertFalse(Sdf.Layer.FindRelativeToLayer(anchorLayer, ''))
+
+        def _TestWithRelativePath(relLayerPath):
+            absLayerPath = os.path.abspath(relLayerPath)
+            if os.path.isfile(absLayerPath):
+                os.remove(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # return an invalid layer since this layer hasn't been opened yet.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+            # Create new layer at the given path. This will also open the
+            # layer in the layer registry.
+            relLayer = Sdf.Layer.CreateNew(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # now find the new layer.
+            self.assertTrue(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertTrue(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+        _TestWithRelativePath('FindRelativeLayer.sdf')
+        _TestWithRelativePath('subdir/FindRelativeLayer.sdf')
+
+    def test_FindOrOpenRelativeToLayer(self):
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.Layer.FindOrOpenRelativeToLayer(None, 'foo.sdf')
+
+        anchorLayer = Sdf.Layer.CreateNew('TestFindOrOpenRelativeToLayer.sdf')
+        self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(anchorLayer, ''))
+
+        def _TestWithRelativePath(relLayerPath):
+            absLayerPath = os.path.abspath(relLayerPath)
+            if os.path.isfile(absLayerPath):
+                os.remove(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # return an invalid layer since this layer hasn't been opened yet.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+            # Create new layer at the given path. We use Export to create a
+            # new layer here as it does not open the new layer immediately.
+            self.assertTrue(anchorLayer.Export(absLayerPath))
+
+            # FindRelativeToLayer should fail to find the new layer since it
+            # hasn't been opened, but FindOrOpenRelativeToLayer should succeed.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertTrue(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+        _TestWithRelativePath('FindOrOpenRelativeLayer.sdf')
+        _TestWithRelativePath('subdir/FindOrOpenRelativeLayer.sdf')
+
 
 if __name__ == "__main__":
     unittest.main()
