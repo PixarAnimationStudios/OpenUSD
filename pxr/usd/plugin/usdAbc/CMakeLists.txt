@@ -23,8 +23,10 @@ pxr_plugin(usdAbc
         usd
         usdGeom
         ${ALEMBIC_LIBRARIES}
-        ${OPENEXR_Iex_LIBRARY}
-        ${OPENEXR_Half_LIBRARY}
+        ${OPENEXR_Half_LIBRARY} 
+        ${OPENEXR_Imath_LIBRARY} 
+        ${OPENEXR_Iex_LIBRARY} 
+        ${OPENEXR_IexMath_LIBRARY}
         ${optionalLibs}
 
     INCLUDE_DIRS

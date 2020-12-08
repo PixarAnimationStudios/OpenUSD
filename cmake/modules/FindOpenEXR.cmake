@@ -62,6 +62,8 @@ foreach(OPENEXR_LIB
     Imath
     IlmImf
     IlmThread
+    IlmImfUtil
+    IexMath
     )
 
     # OpenEXR libraries may be suffixed with the version number, so we search
