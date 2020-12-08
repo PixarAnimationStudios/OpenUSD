@@ -990,8 +990,7 @@ UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
     
     // Alternative way of finding whether this is a callback for the skeleton/
     // bone mesh.
-    bool isSkelPath = _skelBindingMap.find(cachePath) != _skelBindingMap.end();
-    if (isSkelPath) {
+    if (_GetSkelData(cachePath)) {
 
         TF_DEBUG(USDIMAGING_CHANGES).Msg(
                 "[SkeletonAdapter::_RemovePrim] Remove skeleton"
