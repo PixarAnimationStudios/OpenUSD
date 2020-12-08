@@ -32,6 +32,10 @@ pxr_library(usdLux
     PUBLIC_HEADERS
         api.h
 
+    PRIVATE_CLASSES
+        discoveryPlugin
+        lightDefParser
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 

@@ -139,6 +139,16 @@
                         "bases": [
                             "UsdLuxLight"
                         ]
+                    }, 
+                    "UsdLux_DiscoveryPlugin": {
+                        "bases": [
+                            "NdrDiscoveryPlugin"
+                        ]
+                    }, 
+                    "UsdLux_LightDefParserPlugin": {
+                        "bases": [
+                            "NdrParserPlugin"
+                        ]
                     }
                 }
             }, 
