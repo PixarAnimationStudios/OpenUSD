@@ -67,6 +67,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (multipleApplyAPISchemaPrefixes)
     (autoApplyAPISchemas)
 
+    (apiSchemaAutoApplyTo)
     (schemaKind)
     (nonAppliedAPI)
     (singleApplyAPI)
@@ -578,66 +579,77 @@ _CollectMultipleApplyAPISchemaNamespaces(
     return success;
 }
 
-static bool
-_CollectAutoAppliedAPISchemaNames(
-    const VtDictionary &customDataDict,
-    const TfToken::HashSet &appliedAPISchemaNames,
-    _TokenToTokenMap &multipleApplyAPISchemaNamespaces,
-    _TypeToTokenVecMap *concreteTypeToAutoAppliedAPISchemaNames)
+static TfTokenVector
+_GetApiSchemaAutoApplyToNamesFromMetadata(const JsObject &dict)
 {
-    auto it = customDataDict.find(_tokens->autoApplyAPISchemas);
-    if (it == customDataDict.end()) {
-        return true;
+    const JsValue *autoApplyToValue = 
+        TfMapLookupPtr(dict, _tokens->apiSchemaAutoApplyTo);
+    if (!autoApplyToValue) {
+        return TfTokenVector();
     }
 
-    if (!it->second.IsHolding<VtDictionary>()) {
-        TF_CODING_ERROR("Found an unexpected value type for layer "
-            "customData key '%s'; expected a dictionary. Auto apply API "
-            "schemas may be incorrect.",
-            _tokens->autoApplyAPISchemas.GetText());
-        return false;
+    if (!autoApplyToValue->IsArrayOf<std::string>()) {
+        TF_CODING_ERROR("Plugin metadata value for key '%s' does not hold a "
+                        "string array", 
+                        _tokens->apiSchemaAutoApplyTo.GetText());
+        return TfTokenVector();
     }
+    return TfToTokenVector(autoApplyToValue->GetArrayOf<std::string>());
+}
 
-    bool success = true;
+static std::vector<std::pair<TfToken, TfTokenVector>>
+_GetAutoApplyAPISchemas()
+{
+    std::vector<std::pair<TfToken, TfTokenVector>> result;
 
-    const VtDictionary &autoApplyAPISchemas = 
-        it->second.UncheckedGet<VtDictionary>();
-    for (const auto &it : autoApplyAPISchemas) {
-        const TfToken apiSchemaName(it.first);
+    // Get all types that derive UsdSchemaBase by getting the type map cache.
+    const _TypeMapCache &typeCache = _GetTypeMapCache();
 
-        if (!it.second.IsHolding<VtTokenArray>()) {
-            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
-                "the dictionary for layer customData field '%s'; expected a "
-                "token array. API schemas of type '%s' will not be auto "
-                "applied.",
-                apiSchemaName.GetText(),
-                _tokens->autoApplyAPISchemas.GetText(),
-                apiSchemaName.GetText());
-            success = false;
+    for (const auto &valuePair : typeCache.typeToName) {
+        const TfType &type = valuePair.first;
+        PlugPluginPtr plugin =
+            PlugRegistry::GetInstance().GetPluginForType(type);
+        if (!plugin) {
+            TF_CODING_ERROR("Failed to find plugin for schema type '%s'",
+                            type.GetTypeName().c_str());
             continue;
         }
-        if (!appliedAPISchemaNames.count(apiSchemaName)) {
-            TF_CODING_ERROR("Schema type '%s' is not an applied API schema "
-                "type in the generated schema file that defines it and cannot "
-                "be auto applied.",
-                apiSchemaName.GetText());
-            success = false;
+
+        // We don't load the plugin, we just use its metadata.
+        const JsObject dict = plugin->GetMetadataForType(type);
+
+        // Only single apply API schemas can be auto applied
+        if (_GetSchemaKindFromMetadata(dict) != UsdSchemaKind::SingleApplyAPI) {
             continue;
         }
-        if (multipleApplyAPISchemaNamespaces.count(apiSchemaName)) {
-            TF_CODING_ERROR("Schema type '%s' is a multiple apply API schema "
-                "and cannot be auto applied.",
-                apiSchemaName.GetText());
-            success = false;
-            continue;
+
+        TfTokenVector apiSchemaAutoApplyToNames = 
+            _GetApiSchemaAutoApplyToNamesFromMetadata(dict);
+
+        if (!apiSchemaAutoApplyToNames.empty()) {
+            result.push_back(std::make_pair(
+                valuePair.second.name, std::move(apiSchemaAutoApplyToNames)));
         }
+    }
+    return result;
+}
+
+static _TypeToTokenVecMap
+_GetConcreteTypeToAutoAppliedAPISchemaNames()
+{
+    _TypeToTokenVecMap result;
+
+    std::vector<std::pair<TfToken, TfTokenVector>> autoApplyAPISchemas =
+        _GetAutoApplyAPISchemas();
+
+    for (const auto &valuePair : autoApplyAPISchemas) {
+        const TfToken &apiSchemaName = valuePair.first;
+        const TfTokenVector &autoApplyToSchemas = valuePair.second;
 
         // Collect all the types to apply the API schema to which includes any
         // derived types of each of the listed types. 
         std::set<TfType> applyToTypes;
-        const VtTokenArray &applyToSchemas = 
-            it.second.UncheckedGet<VtTokenArray>(); 
-        for (const TfToken &schemaName : applyToSchemas) {
+        for (const TfToken &schemaName : autoApplyToSchemas) {
             // The names listed are the USD type names (not the full TfType 
             // name) so we get actual concrete TfType and its derived types.
             // 
@@ -658,8 +670,7 @@ _CollectAutoAppliedAPISchemaNames(
         // With all the apply to types collected we can add the API schema to
         // the list of applied schemas for each concrete type.
         for (const TfType &applyToType : applyToTypes) {
-            (*concreteTypeToAutoAppliedAPISchemaNames)[applyToType].push_back(
-                apiSchemaName);
+            result[applyToType].push_back(apiSchemaName);
         }
     }
 
@@ -671,11 +682,11 @@ _CollectAutoAppliedAPISchemaNames(
     // schemas have unique property names so that application order doesn't 
     // matter, but this at least gives us consistent behavior if property name 
     // collisions occur.
-    for (auto &valuePair : *concreteTypeToAutoAppliedAPISchemaNames) {
+    for (auto &valuePair : result) {
         std::sort(valuePair.second.begin(), valuePair.second.end());
     }
 
-    return success;
+    return result;
 }
 
 void
@@ -716,7 +727,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
     SdfChangeBlock block;
     TfToken::HashSet appliedAPISchemaNames = _GetAppliedAPISchemaNames();
-    _TypeToTokenVecMap concreteTypeToAutoAppliedAPISchemaNames;
+    _TypeToTokenVecMap concreteTypeToAutoAppliedAPISchemaNames =
+        _GetConcreteTypeToAutoAppliedAPISchemaNames();
 
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
@@ -736,13 +748,6 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
             if (!_CollectMultipleApplyAPISchemaNamespaces(
                     customDataDict, &_multipleApplyAPISchemaNamespaces)) {
-                hasErrors = true;
-            }
-
-            if (!_CollectAutoAppliedAPISchemaNames(
-                    customDataDict, appliedAPISchemaNames,
-                    _multipleApplyAPISchemaNamespaces,
-                    &concreteTypeToAutoAppliedAPISchemaNames)) {
                 hasErrors = true;
             }
 

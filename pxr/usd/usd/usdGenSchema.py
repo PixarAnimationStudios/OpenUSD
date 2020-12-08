@@ -447,7 +447,7 @@ class ClassInfo(object):
                 SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
             self.customData.get(PROPERTY_NAMESPACE_PREFIX)
-        self.apiAutoApply = self.customData.get(API_AUTO_APPLY, [])
+        self.apiAutoApply = self.customData.get(API_AUTO_APPLY)
 
         if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
@@ -1029,6 +1029,11 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
 
             clsDict.update({"schemaKind": cls.schemaKind})
 
+            # List any auto apply to entries for single apply schemas.
+            if cls.apiSchemaType == SINGLE_APPLY and cls.apiAutoApply:
+                clsDict.update(
+                    {"apiSchemaAutoApplyTo": list(cls.apiAutoApply)})
+
             # Write out alias/primdefs for concrete IsA schemas and API schemas
             if (cls.isConcrete or cls.isApi):
                 clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
@@ -1108,7 +1113,6 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
     allMultipleApplyAPISchemaNamespaces = {}
-    allAutoApplyAPISchemas = {}
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
@@ -1128,14 +1132,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                         "API schemas with properties", p.GetPath())
                 allAppliedAPISchemas.append(p.GetName())
             elif apiSchemaType in [None, SINGLE_APPLY]:
-                # Single apply API schemas may define typed schemas to auto
-                # apply to. These must be collected to add to the layer
-                # custom data.
                 allAppliedAPISchemas.append(p.GetName())
-                apiAutoApply = p.GetCustomDataByKey(API_AUTO_APPLY)
-                if apiAutoApply:
-                    allAutoApplyAPISchemas[p.GetName()] = \
-                        Vt.TokenArray(apiAutoApply)
             # API schema classes must not have authored metadata except for 
             # these exceptions:
             #   'documentation' - This is allowed
@@ -1171,15 +1168,10 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
     # Add the list of all applied and multiple-apply API schemas.
     if allAppliedAPISchemas or allMultipleApplyAPISchemaNamespaces:
-        customLayerData = {
+        flatLayer.customLayerData = {
             'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
             'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
-        # If necessary add the mapping of single apply schemas to the typed
-        # schemas they will be automatically applied to.
-        if allAutoApplyAPISchemas:
-            customLayerData['autoApplyAPISchemas'] = allAutoApplyAPISchemas
-        flatLayer.customLayerData = customLayerData
 
     if allFallbackSchemaPrimTypes:
         flatLayer.GetPrimAtPath('/').SetInfo(Usd.Tokens.fallbackPrimTypes, 
