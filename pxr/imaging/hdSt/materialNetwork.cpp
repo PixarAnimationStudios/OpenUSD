@@ -811,11 +811,8 @@ _MakeMaterialParamsForTexture(
             // Use the type of the filePath attribute to determine
             // whether to use the Storm texture system (for
             // SdfAssetPath/std::string/ HdStTextureIdentifier) or use
-            // the HdSceneDelegate::GetTextureResource/ID (for all
-            // other types). The
-            // HdSceneDelegate::GetTextureResource/ID path will be
-            // obsoleted and probably removed at some point.
-
+            // the render buffer associated to a draw target.
+            //
             if (v.IsHolding<HdStTextureIdentifier>()) {
                 //
                 // Clients can explicitly give an HdStTextureIdentifier for
@@ -974,12 +971,6 @@ _MakeMaterialParamsForTexture(
         1048576 *
         _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
 
-    // Given to HdSceneDelegate::GetTextureResourceID.
-    // This is equal to nodePath. With one exception: it is empty if
-    // there is no file attribute on the texture node.
-    //
-    // Unfortunately, some clients depend on this exception.
-    //
     textureDescriptors->push_back(
         { paramName,
           textureId,
@@ -987,9 +978,7 @@ _MakeMaterialParamsForTexture(
           _GetSamplerParameters(nodePath, node, sdrNode),
           memoryRequest,
           useTexturePrimToFindTexture,
-          texturePrimPathForSceneDelegate,
-          // Default value for the old texture system
-          _GetParamFallbackValue(network, downstreamNode, paramName) });
+          texturePrimPathForSceneDelegate });
 
     params->push_back(std::move(texParam));
 }

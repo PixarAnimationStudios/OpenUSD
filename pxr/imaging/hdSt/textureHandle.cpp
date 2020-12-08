@@ -82,19 +82,6 @@ HdStTextureHandle::ReallocateSamplerIfNecessary()
         _samplerObject = nullptr;
     }
 
-    // XXX:
-    // We should resolve the sampling parameters here: HdWrapUseMetadata
-    // means we need to consult the _textureObject which we should also
-    // query whether the texture supports filtering, see
-    // HdStSimpleTextureResource::GetTexelsSamplerId().
-    //
-    // Note that the above logic above must slightly change and check
-    // that the resolved sampling parameters match the exisiting sampler
-    // before bailing out.
-    //
-    // Note that _CanAggregate in volumeShader.cpp should consult the
-    // resolved sampling parameters.
-
     // Create sampler object through registry.
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry =
         _textureHandleRegistry->GetSamplerObjectRegistry();

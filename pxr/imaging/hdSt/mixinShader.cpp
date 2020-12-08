@@ -94,12 +94,6 @@ HdStMixinShader::GetShaderData() const
     return _baseShader->GetShaderData();
 }
 
-HdStShaderCode::TextureDescriptorVector
-HdStMixinShader::GetTextures() const 
-{
-    return _baseShader->GetTextures();
-}
-
 void
 HdStMixinShader::BindResources(const int program,
                                HdSt_ResourceBinder const &binder,

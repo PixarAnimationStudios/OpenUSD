@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/textureRegistry.h"
-
 #include "pxr/base/work/loops.h"
 
 #include "pxr/imaging/hd/tokens.h"
@@ -31,7 +29,6 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -606,19 +603,6 @@ HdStResourceRegistry::RegisterExtComputationDataRange(
                      HdPerfTokens->instExtComputationDataRange);
 }
 
-HdInstance<HdStTextureResourceSharedPtr>
-HdStResourceRegistry::RegisterTextureResource(TextureKey id)
-{
-    return _textureResourceRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceSharedPtr>
-HdStResourceRegistry::FindTextureResource(TextureKey id, bool *found)
-{
-    return _textureResourceRegistry.FindInstance(id, found);
-}
-
-
 HdInstance<HdSt_GeometricShaderSharedPtr>
 HdStResourceRegistry::RegisterGeometricShader(
         HdInstance<HdSt_GeometricShaderSharedPtr>::ID id)
@@ -638,20 +622,6 @@ HdStResourceRegistry::RegisterGLSLFXFile(
         HdInstance<HioGlslfxSharedPtr>::ID id)
 {
     return _glslfxFileRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceHandleSharedPtr>
-HdStResourceRegistry::RegisterTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id)
-{
-    return _textureResourceHandleRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceHandleSharedPtr>
-HdStResourceRegistry::FindTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found)
-{
-    return _textureResourceHandleRegistry.FindInstance(id, found);
 }
 
 HdInstance<HgiResourceBindingsSharedPtr>
@@ -1005,7 +975,6 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
-    _textureResourceHandleRegistry.GarbageCollect();
 
     // Cleanup Hgi resources bindings and pipelines
     _resourceBindingsRegistry.GarbageCollect();
@@ -1023,13 +992,6 @@ HdStResourceRegistry::_GarbageCollect()
 
     // Garbage collection may reallocate buffers, so we must submit blit work.
     SubmitBlitWork();
-}
-
-void
-HdStResourceRegistry::_GarbageCollectBprims()
-{
-    // Cleanup texture registries
-    _textureResourceRegistry.GarbageCollect();
 }
 
 HdBufferArrayRangeSharedPtr
@@ -1186,34 +1148,12 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         HdSt_TextureObjectRegistry *const textureObjectRegistry =
             _textureHandleRegistry->GetTextureObjectRegistry();
 
-        size_t textureResourceMemory =
+        const size_t textureResourceMemory =
             textureObjectRegistry->GetTotalTextureMemory();
 
-        for (auto const & it: _textureResourceRegistry) {
-            HdStTextureResourceSharedPtr const & texResource = it.second.value;
-            // In the event of an asset error, texture resources can be null
-            if (!texResource) {
-                continue;
-            }
-
-            textureResourceMemory += texResource->GetMemoryUsed();
-        }
         (*result)[HdPerfTokens->textureResourceMemory] = VtValue(
                                                 textureResourceMemory);
         gpuMemoryUsed += textureResourceMemory;
-    }
-
-    // Texture registry
-    {
-        GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
-        std::vector<VtDictionary> textureInfos = textureReg.GetTextureInfos();
-        size_t textureMemory = 0;
-        for (VtDictionary const &info :  textureInfos) {
-            if (VtDictionaryIsHolding<size_t>(info, "memoryUsed")) {
-                textureMemory += VtDictionaryGet<size_t>(info, "memoryUsed");
-            }
-        }
-        (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;

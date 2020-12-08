@@ -1115,55 +1115,11 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
 void
 HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
 {
-    // bind fallback values and sampler uniforms (unit#? or bindless address)
-
-    // this is bound in batches.
-    //BindBufferArray(shader->GetShaderData());
-
-    // bind textures
-    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
-    TF_FOR_ALL(it, textures) {
-        HdBinding binding = GetBinding(it->name);
-        HdBinding::Type type = binding.GetType();
-
-        if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_FIELD) {
-        } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_FIELD
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
-            // nothing? or make it resident?? but it only binds the first one.
-            // XXX: it looks like this function should take all textures in the batch.
-
-//            if (!glIsTextureHandleResidentARB(it->handle)) {
-//                glMakeTextureHandleResidentARB(it->handle);
-//            }
-        }
-    }
 }
 
 void
 HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
 {
-//    UnbindBufferArray(shader->GetShaderData());
-
-    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
-    TF_FOR_ALL(it, textures) {
-        HdBinding binding = GetBinding(it->name);
-        HdBinding::Type type = binding.GetType();
-
-        if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_FIELD) {
-        } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_FIELD
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
-                   || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
-//            if (glIsTextureHandleResidentARB(it->handle)) {
-//                glMakeTextureHandleNonResidentARB(it->handle);
-//            }
-        }
-        // XXX: unbind
-    }
 }
 
 void

@@ -41,11 +41,8 @@ class HdRenderIndex;
 
 ///
 /// Represents a Texture Buffer Prim.
-/// Texture could be a uv texture or a ptex texture.
-/// Multiple texture prims could represent the same texture buffer resource
-/// and the scene delegate is used to get a global unique id for the texture.
-/// The delegate is also used to obtain a HdTextureResource for the texture
-/// represented by that id.
+///
+/// Implements no behaviors.
 ///
 class HdStTexture : public HdTexture
 {

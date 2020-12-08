@@ -108,8 +108,6 @@ pxr_library(hdSt
         textureIdentifier
         textureObject
         textureObjectRegistry
-        textureResource
-        textureResourceHandle
         tokens
         unitTestGLDrawing
         vboMemoryManager
@@ -131,7 +129,6 @@ pxr_library(hdSt
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch
-        materialBufferSourceAndTextureHelper
         materialParam
         meshShaderKey
         meshTopology 

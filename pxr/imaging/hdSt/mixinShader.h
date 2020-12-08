@@ -70,9 +70,6 @@ public:
     HDST_API
     TfTokenVector const& GetPrimvarNames() const override;
 
-    HDST_API
-    HdStShaderCode::TextureDescriptorVector GetTextures() const override;
-
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
     HDST_API

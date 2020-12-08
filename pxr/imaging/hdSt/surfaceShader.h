@@ -82,8 +82,6 @@ public:
     HDST_API
     HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
     HDST_API
-    TextureDescriptorVector GetTextures() const override;
-    HDST_API
     NamedTextureHandleVector const & GetNamedTextureHandles() const override;
     HDST_API
     void BindResources(int program,
@@ -111,8 +109,6 @@ public:
     void SetGeometrySource(const std::string &source);
     HDST_API
     void SetParams(const HdSt_MaterialParamVector &params);
-    HDST_API
-    void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
     void SetNamedTextureHandles(const NamedTextureHandleVector &);
     HDST_API
@@ -179,10 +175,6 @@ private:
     mutable size_t              _computedTextureSourceHash;
     mutable bool                _isValidComputedTextureSourceHash;
 
-    // Old texture system
-    TextureDescriptorVector _textureDescriptors;
-
-    // New texture system
     NamedTextureHandleVector _namedTextureHandles;
 
     TfToken _materialTag;
