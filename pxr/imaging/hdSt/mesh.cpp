@@ -1032,6 +1032,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &_sharedData,
         sceneDelegate->GetRenderIndex());
 
+    if (!sources.empty() || !computations.empty()) {
+        // If sources or computations are to be queued against the resulting
+        // BAR, we expect it to be valid.
+        if (!TF_VERIFY(drawItem->GetVertexPrimvarRange()->IsValid())) {
+            return;
+        }
+    }
+
     // schedule buffer sources
     if (!sources.empty()) {
         // add sources to update queue
@@ -1065,7 +1073,11 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     HdPrimvarDescriptorVector primvars =
         HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                   HdInterpolationFaceVarying);
-    if (primvars.empty()) return;
+    if (primvars.empty() &&
+        !drawItem->GetFaceVaryingPrimvarRange())
+    {
+        return;
+    }
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(
@@ -1157,9 +1169,13 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         &_sharedData,
         sceneDelegate->GetRenderIndex());
 
-    TF_VERIFY(drawItem->GetFaceVaryingPrimvarRange()->IsValid());
 
     if (!sources.empty()) {
+        // If sources are to be queued against the resulting BAR, we expect it 
+        // to be valid.
+        if (!TF_VERIFY(drawItem->GetFaceVaryingPrimvarRange()->IsValid())) {
+            return;
+        }
         resourceRegistry->AddSources(
             drawItem->GetFaceVaryingPrimvarRange(), std::move(sources));
     }
@@ -1287,7 +1303,13 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         &_sharedData,
         sceneDelegate->GetRenderIndex());
 
-    TF_VERIFY(drawItem->GetElementPrimvarRange()->IsValid());
+    if (!sources.empty() || !computations.empty()) {
+        // If sources or computations are to be queued against the resulting
+        // BAR, we expect it to be valid.
+        if (!TF_VERIFY(drawItem->GetElementPrimvarRange()->IsValid())) {
+            return;
+        }
+    }
 
     if (!sources.empty()) {
         resourceRegistry->AddSources(

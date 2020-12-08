@@ -42,13 +42,13 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // early out for empty source
-    if (!TF_VERIFY(!bufferSpecs.empty())) {
+    if (!strategy) {
+        TF_CODING_ERROR("Aggregation strategy is set to null");
         return HdBufferArrayRangeSharedPtr();
     }
 
-    if (!strategy) {
-        TF_CODING_ERROR("Aggregation strategy is set to null");
+    // early out for empty specs
+    if (bufferSpecs.empty()) {
         return HdBufferArrayRangeSharedPtr();
     }
 

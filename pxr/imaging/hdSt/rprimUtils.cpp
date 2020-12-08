@@ -298,69 +298,88 @@ HdStUpdateDrawItemBAR(
         // Nothing to do. The draw item's BAR hasn't been changed.
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: BAR at draw coord %d is still (%p)\n",
-            id.GetText(), drawCoordIndex, (void*)curRange.get());
+            id.GetText(), drawCoordIndex, curRange.get());
+
         return;
     }
 
+    bool const curRangeValid = HdStIsValidBAR(curRange);
+    bool const newRangeValid = HdStIsValidBAR(newRange);
 
-    if (HdStIsValidBAR(curRange)) {
+    if (curRangeValid) {
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: Marking garbage collection needed to possibly reclaim BAR %p"
             " at draw coord index %d\n",
             id.GetText(), (void*)curRange.get(), drawCoordIndex);
 
-        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
-        
-        // If the new BAR is associated with a buffer array that fails the
-        // aggregation test (used during batching), we need to flag deep
-        // validation for all the batches.
-        // If we pass the aggregation test, for indirect draw batches, check
-        // if the dispatch buffer needs to be updated.
-        if (!newRange->IsAggregatedWith(curRange)) {
-            TF_DEBUG(HD_RPRIM_UPDATED).Msg(
-                "%s: Marking all batches dirty since the new BAR (%p) doesn't"
-                " aggregate with the existing BAR (%p)\n",
-                id.GetText(), (void*)newRange.get(), (void*)curRange.get());
+    }
 
-            renderIndex.GetChangeTracker().MarkBatchesDirty();
-        
-        } else if (curRange->GetElementOffset() != 
-                   newRange->GetElementOffset()) {
+    // Flag deep batch invalidation for the following scenarios:
+    // 1. Invalid <-> Valid transitions.
+    // 2. When the new range is associated with a buffer array that
+    // fails the aggregation test (used during batching).
+    // 3. When the dispatch buffer needs to be updated for MDI batches.
+    //    Note: This is needed only for indirect draw batches to update the
+    //    dispatch buffer, but we prefer to not hardcode a check for
+    //    the same.
+    bool const rebuildDispatchBuffer = curRangeValid && newRangeValid &&
+               curRange->GetElementOffset() != newRange->GetElementOffset();
 
-             TF_DEBUG(HD_RPRIM_UPDATED).Msg(
-                "%s: Marking all batches dirty since the new BAR (%p) has a"
-                " different element offset than the existing BAR (%p)\n",
-                id.GetText(), (void*)newRange.get(), (void*)curRange.get());
+    if (curRangeValid != newRangeValid ||
+        !newRange->IsAggregatedWith(curRange) ||
+        rebuildDispatchBuffer) {
+
+        renderIndex.GetChangeTracker().MarkBatchesDirty();
+
+        if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
+            if (curRangeValid != newRangeValid) {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty due to an invalid <-> valid"
+                    " transition (new BAR %p, existing BAR %p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
+
+            } else if (!newRange->IsAggregatedWith(curRange)) {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty since the new BAR (%p) "
+                    "doesn't aggregate with the existing BAR (%p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
             
-            renderIndex.GetChangeTracker().MarkBatchesDirty();
-
-            // Note: This is needed only for indirect draw batches to update the
-            // dispatch buffer, but we prefer to not hardcode a check for
-            // the same.
+            } else {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty since the new BAR (%p) "
+                    "doesn't aggregate with the existing BAR (%p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
+            }
         }
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         TfDebug::Helper().Msg(
             "%s: Updating BAR at draw coord index %d from %p to %p\n",
-            id.GetText(), drawCoordIndex, (void*)curRange.get(),
-            (void*)newRange.get());
-        TfDebug::Helper().Msg(
-            "Buffer array version for the new range is %lu\n",
-            newRange->GetVersion());
+            id.GetText(), drawCoordIndex, curRange.get(), newRange.get());
+        
+        if (newRangeValid) {
+            TfDebug::Helper().Msg(
+                "Buffer array version for the new range is %lu\n",
+                newRange->GetVersion());
+        }
 
-        if (HdStIsValidBAR(curRange)) {
-            HdBufferSpecVector oldSpecs;
+        HdBufferSpecVector oldSpecs;
+        if (curRangeValid) {
             curRange->GetBufferSpecs(&oldSpecs);
-            HdBufferSpecVector newSpecs;
+        }
+        HdBufferSpecVector newSpecs;
+        if (newRangeValid) {
             newRange->GetBufferSpecs(&newSpecs);
-            if (oldSpecs != newSpecs) {
-                TfDebug::Helper().Msg("Old buffer specs:\n");
-                HdBufferSpec::Dump(oldSpecs);
+        }
+        if (oldSpecs != newSpecs) {
+            TfDebug::Helper().Msg("Old buffer specs:\n");
+            HdBufferSpec::Dump(oldSpecs);
 
-                TfDebug::Helper().Msg("New buffer specs:\n");
-                HdBufferSpec::Dump(newSpecs);
-            }
+            TfDebug::Helper().Msg("New buffer specs:\n");
+            HdBufferSpec::Dump(newSpecs);
         }
     }
 
