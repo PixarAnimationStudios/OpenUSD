@@ -84,6 +84,7 @@ GlfHasExtensions(string const & queryExtensions)
 bool
 GlfHasLegacyGraphics()
 {
+    GlfSharedGLContextScopeHolder sharedGLContext;
     GarchGLApiLoad();
 
     // if GL loader says we don't support OpenGL 2.0,

@@ -99,7 +99,6 @@ pxr_library(glf
         wrapBaseTexture.cpp
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
-        wrapGlew.cpp
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
         wrapTexture.cpp

@@ -47,6 +47,8 @@ TF_REGISTRY_FUNCTION(TfType)
 static GLuint
 _GenName()
 {
+    GarchGLApiLoad();
+
     GLuint rval(0);
 
     glGenTextures(1, &rval);
