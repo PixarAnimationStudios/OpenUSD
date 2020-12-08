@@ -69,8 +69,13 @@ class UsdSkelBindingAPI : public UsdAPISchemaBase
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::SingleApplyAPI;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::SingleApplyAPI;
 
     /// Construct a UsdSkelBindingAPI on UsdPrim \p prim .
     /// Equivalent to UsdSkelBindingAPI::Get(prim.GetStage(), prim.GetPath())
@@ -133,11 +138,17 @@ public:
     Apply(const UsdPrim &prim);
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDSKEL_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDSKEL_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

@@ -62,7 +62,12 @@ UsdGeomMotionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdGeomMotionAPI::_GetSchemaType() const {
+UsdSchemaKind UsdGeomMotionAPI::_GetSchemaKind() const {
+    return UsdGeomMotionAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomMotionAPI::_GetSchemaType() const {
     return UsdGeomMotionAPI::schemaType;
 }
 

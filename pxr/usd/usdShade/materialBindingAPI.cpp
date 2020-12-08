@@ -62,7 +62,12 @@ UsdShadeMaterialBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdShadeMaterialBindingAPI::_GetSchemaType() const {
+UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaKind() const {
+    return UsdShadeMaterialBindingAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaType() const {
     return UsdShadeMaterialBindingAPI::schemaType;
 }
 

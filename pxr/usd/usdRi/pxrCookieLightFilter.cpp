@@ -75,7 +75,12 @@ UsdRiPxrCookieLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiPxrCookieLightFilter::_GetSchemaType() const {
+UsdSchemaKind UsdRiPxrCookieLightFilter::_GetSchemaKind() const {
+    return UsdRiPxrCookieLightFilter::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiPxrCookieLightFilter::_GetSchemaType() const {
     return UsdRiPxrCookieLightFilter::schemaType;
 }
 

@@ -75,7 +75,12 @@ UsdLuxSphereLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxSphereLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxSphereLight::_GetSchemaKind() const {
+    return UsdLuxSphereLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxSphereLight::_GetSchemaType() const {
     return UsdLuxSphereLight::schemaType;
 }
 

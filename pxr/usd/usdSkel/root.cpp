@@ -75,7 +75,12 @@ UsdSkelRoot::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdSkelRoot::_GetSchemaType() const {
+UsdSchemaKind UsdSkelRoot::_GetSchemaKind() const {
+    return UsdSkelRoot::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdSkelRoot::_GetSchemaType() const {
     return UsdSkelRoot::schemaType;
 }
 

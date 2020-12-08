@@ -75,7 +75,12 @@ UsdLuxDiskLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxDiskLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxDiskLight::_GetSchemaKind() const {
+    return UsdLuxDiskLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxDiskLight::_GetSchemaType() const {
     return UsdLuxDiskLight::schemaType;
 }
 

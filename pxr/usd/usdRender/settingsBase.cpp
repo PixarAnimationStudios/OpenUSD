@@ -56,7 +56,12 @@ UsdRenderSettingsBase::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdRenderSettingsBase::_GetSchemaType() const {
+UsdSchemaKind UsdRenderSettingsBase::_GetSchemaKind() const {
+    return UsdRenderSettingsBase::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRenderSettingsBase::_GetSchemaType() const {
     return UsdRenderSettingsBase::schemaType;
 }
 

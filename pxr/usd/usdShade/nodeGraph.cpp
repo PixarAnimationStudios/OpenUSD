@@ -75,7 +75,12 @@ UsdShadeNodeGraph::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdShadeNodeGraph::_GetSchemaType() const {
+UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const {
+    return UsdShadeNodeGraph::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdShadeNodeGraph::_GetSchemaType() const {
     return UsdShadeNodeGraph::schemaType;
 }
 

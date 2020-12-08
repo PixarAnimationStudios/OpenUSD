@@ -929,13 +929,13 @@ class TestUsdPrim(unittest.TestCase):
         self.assertTrue(Usd.CollectionAPI().IsMultipleApplyAPISchema())
 
         self.assertTrue(
-            Usd.CollectionAPI().GetSchemaType() == Usd.SchemaKind.MultipleApplyAPI)
+            Usd.CollectionAPI().GetSchemaKind() == Usd.SchemaKind.MultipleApplyAPI)
         self.assertTrue(
-            Usd.CollectionAPI().GetSchemaType() != Usd.SchemaKind.SingleApplyAPI)
+            Usd.CollectionAPI().GetSchemaKind() != Usd.SchemaKind.SingleApplyAPI)
         self.assertTrue(
-            Usd.ModelAPI().GetSchemaType() == Usd.SchemaKind.NonAppliedAPI)
+            Usd.ModelAPI().GetSchemaKind() == Usd.SchemaKind.NonAppliedAPI)
         self.assertTrue(
-            Usd.ClipsAPI().GetSchemaType() == Usd.SchemaKind.NonAppliedAPI)
+            Usd.ClipsAPI().GetSchemaKind() == Usd.SchemaKind.NonAppliedAPI)
 
         # Verify that we an exception but don't crash when applying to the 
         # null prim.

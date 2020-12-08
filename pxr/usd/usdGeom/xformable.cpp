@@ -56,7 +56,12 @@ UsdGeomXformable::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdGeomXformable::_GetSchemaType() const {
+UsdSchemaKind UsdGeomXformable::_GetSchemaKind() const {
+    return UsdGeomXformable::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomXformable::_GetSchemaType() const {
     return UsdGeomXformable::schemaType;
 }
 

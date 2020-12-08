@@ -75,7 +75,12 @@ UsdGeomPointInstancer::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomPointInstancer::_GetSchemaType() const {
+UsdSchemaKind UsdGeomPointInstancer::_GetSchemaKind() const {
+    return UsdGeomPointInstancer::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomPointInstancer::_GetSchemaType() const {
     return UsdGeomPointInstancer::schemaType;
 }
 

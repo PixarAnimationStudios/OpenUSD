@@ -62,7 +62,12 @@ UsdShadeConnectableAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdShadeConnectableAPI::_GetSchemaType() const {
+UsdSchemaKind UsdShadeConnectableAPI::_GetSchemaKind() const {
+    return UsdShadeConnectableAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdShadeConnectableAPI::_GetSchemaType() const {
     return UsdShadeConnectableAPI::schemaType;
 }
 

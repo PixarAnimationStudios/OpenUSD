@@ -91,8 +91,13 @@ class UsdGeomXformCommonAPI : public UsdAPISchemaBase
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::NonAppliedAPI;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::NonAppliedAPI;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::NonAppliedAPI;
 
     /// Construct a UsdGeomXformCommonAPI on UsdPrim \p prim .
     /// Equivalent to UsdGeomXformCommonAPI::Get(prim.GetStage(), prim.GetPath())
@@ -137,11 +142,17 @@ public:
 
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDGEOM_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDGEOM_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

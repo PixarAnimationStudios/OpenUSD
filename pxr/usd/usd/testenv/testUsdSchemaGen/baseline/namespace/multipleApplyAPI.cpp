@@ -117,7 +117,12 @@ UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
 }
 
 /* virtual */
-UsdSchemaType UsdContrivedMultipleApplyAPI::_GetSchemaType() const {
+UsdSchemaKind UsdContrivedMultipleApplyAPI::_GetSchemaKind() const {
+    return UsdContrivedMultipleApplyAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdContrivedMultipleApplyAPI::_GetSchemaType() const {
     return UsdContrivedMultipleApplyAPI::schemaType;
 }
 

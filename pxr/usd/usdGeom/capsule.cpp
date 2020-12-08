@@ -75,7 +75,12 @@ UsdGeomCapsule::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomCapsule::_GetSchemaType() const {
+UsdSchemaKind UsdGeomCapsule::_GetSchemaKind() const {
+    return UsdGeomCapsule::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomCapsule::_GetSchemaType() const {
     return UsdGeomCapsule::schemaType;
 }
 

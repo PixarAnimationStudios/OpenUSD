@@ -75,7 +75,12 @@ UsdRiRisIntegrator::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiRisIntegrator::_GetSchemaType() const {
+UsdSchemaKind UsdRiRisIntegrator::_GetSchemaKind() const {
+    return UsdRiRisIntegrator::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiRisIntegrator::_GetSchemaType() const {
     return UsdRiRisIntegrator::schemaType;
 }
 

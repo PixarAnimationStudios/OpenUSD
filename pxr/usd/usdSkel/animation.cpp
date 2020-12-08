@@ -75,7 +75,12 @@ UsdSkelAnimation::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdSkelAnimation::_GetSchemaType() const {
+UsdSchemaKind UsdSkelAnimation::_GetSchemaKind() const {
+    return UsdSkelAnimation::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdSkelAnimation::_GetSchemaType() const {
     return UsdSkelAnimation::schemaType;
 }
 

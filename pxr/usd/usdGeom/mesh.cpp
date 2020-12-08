@@ -75,7 +75,12 @@ UsdGeomMesh::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomMesh::_GetSchemaType() const {
+UsdSchemaKind UsdGeomMesh::_GetSchemaKind() const {
+    return UsdGeomMesh::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomMesh::_GetSchemaType() const {
     return UsdGeomMesh::schemaType;
 }
 

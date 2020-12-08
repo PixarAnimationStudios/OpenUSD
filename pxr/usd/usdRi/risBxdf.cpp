@@ -75,7 +75,12 @@ UsdRiRisBxdf::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiRisBxdf::_GetSchemaType() const {
+UsdSchemaKind UsdRiRisBxdf::_GetSchemaKind() const {
+    return UsdRiRisBxdf::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiRisBxdf::_GetSchemaType() const {
     return UsdRiRisBxdf::schemaType;
 }
 

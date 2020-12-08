@@ -75,7 +75,12 @@ UsdLuxCylinderLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxCylinderLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxCylinderLight::_GetSchemaKind() const {
+    return UsdLuxCylinderLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxCylinderLight::_GetSchemaType() const {
     return UsdLuxCylinderLight::schemaType;
 }
 

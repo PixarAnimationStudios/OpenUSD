@@ -483,7 +483,7 @@ class ClassInfo(object):
             self.schemaKind = "abstractTyped"
         else:
             self.schemaKind = "abstractBase"
-        self.schemaKindEnumValue = "UsdSchemaType::" + _ProperCase(self.schemaKind)
+        self.schemaKindEnumValue = "UsdSchemaKind::" + _ProperCase(self.schemaKind)
 
         if self.isConcrete and not self.isTyped:
             raise _GetSchemaDefException('Schema classes must either inherit '

@@ -75,7 +75,12 @@ UsdLuxPluginLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxPluginLightFilter::_GetSchemaType() const {
+UsdSchemaKind UsdLuxPluginLightFilter::_GetSchemaKind() const {
+    return UsdLuxPluginLightFilter::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxPluginLightFilter::_GetSchemaType() const {
     return UsdLuxPluginLightFilter::schemaType;
 }
 

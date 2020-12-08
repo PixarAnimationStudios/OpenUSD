@@ -56,7 +56,12 @@ UsdGeomGprim::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdGeomGprim::_GetSchemaType() const {
+UsdSchemaKind UsdGeomGprim::_GetSchemaKind() const {
+    return UsdGeomGprim::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomGprim::_GetSchemaType() const {
     return UsdGeomGprim::schemaType;
 }
 

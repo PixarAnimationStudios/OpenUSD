@@ -75,7 +75,12 @@ UsdRiPxrAovLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiPxrAovLight::_GetSchemaType() const {
+UsdSchemaKind UsdRiPxrAovLight::_GetSchemaKind() const {
+    return UsdRiPxrAovLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiPxrAovLight::_GetSchemaType() const {
     return UsdRiPxrAovLight::schemaType;
 }
 

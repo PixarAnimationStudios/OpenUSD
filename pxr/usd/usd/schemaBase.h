@@ -58,6 +58,11 @@ public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind in usd/common.h
+    static const UsdSchemaKind schemaKind = UsdSchemaType::AbstractBase;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
     static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractBase;
 
     /// Returns whether or not this class corresponds to a concrete instantiable
@@ -65,37 +70,48 @@ public:
     /// GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     bool IsConcrete() const {
-        return _GetSchemaType() == UsdSchemaKind::ConcreteTyped;
+        return GetSchemaKind() == UsdSchemaKind::ConcreteTyped;
     }
 
     /// Returns whether or not this class inherits from UsdTyped. Types which
     /// inherit from UsdTyped can impart a typename on a UsdPrim.
     bool IsTyped() const {
-        return _GetSchemaType() == UsdSchemaKind::ConcreteTyped
-            || _GetSchemaType() == UsdSchemaKind::AbstractTyped;
+        return GetSchemaKind() == UsdSchemaKind::ConcreteTyped
+            || GetSchemaKind() == UsdSchemaKind::AbstractTyped;
     }
 
     /// Returns whether this is an API schema or not.
     bool IsAPISchema() const {
-        return _GetSchemaType() == UsdSchemaKind::NonAppliedAPI
-            || _GetSchemaType() == UsdSchemaKind::SingleApplyAPI
-            || _GetSchemaType() == UsdSchemaKind::MultipleApplyAPI;
+        return GetSchemaKind() == UsdSchemaKind::NonAppliedAPI
+            || GetSchemaKind() == UsdSchemaKind::SingleApplyAPI
+            || GetSchemaKind() == UsdSchemaKind::MultipleApplyAPI;
     }
 
     /// Returns whether this is an applied API schema or not. If this returns
     /// true this class will have an Apply() method
     bool IsAppliedAPISchema() const {
-        return _GetSchemaType() == UsdSchemaKind::SingleApplyAPI
-            || _GetSchemaType() == UsdSchemaKind::MultipleApplyAPI;
+        return GetSchemaKind() == UsdSchemaKind::SingleApplyAPI
+            || GetSchemaKind() == UsdSchemaKind::MultipleApplyAPI;
     }
 
     /// Returns whether this is an applied API schema or not. If this returns
     /// true the constructor, Get and Apply methods of this class will take
     /// in the name of the API schema instance.
     bool IsMultipleApplyAPISchema() const {
-        return _GetSchemaType() == UsdSchemaKind::MultipleApplyAPI;
+        return GetSchemaKind() == UsdSchemaKind::MultipleApplyAPI;
     }
 
+    /// Returns the kind of schema this class is.
+    UsdSchemaKind GetSchemaKind() const {
+        // To retain backward compatibility with schemas that have not been
+        // updated yet we return the value from _GetSchemaType. Once we're 
+        // ready to retire schemaType completely, this will be updated to 
+        // return _GetSchemaKind instead.
+        return _GetSchemaType();
+    }
+
+    /// \deprecated
+    /// Use GetSchemaKind instead.
     UsdSchemaKind GetSchemaType() const {
         return _GetSchemaType();
     }
@@ -165,12 +181,20 @@ public:
     }
 
 protected:
-    /// Returns the type of schema this class is.
+    /// Returns the kind of schema this class is.
     ///
-    /// \sa UsdSchemaBase::schemaType
+    /// \sa UsdSchemaBase::schemaKind
+    virtual UsdSchemaKind _GetSchemaKind() const {
+        return schemaKind;
+    }
+
+    /// \deprecated
+    /// This has been replace with _GetSchemaKind but is around for now for 
+    /// backwards compatibility while schemas are being updated.
     virtual UsdSchemaKind _GetSchemaType() const {
         return schemaType;
     }
+
     // Helper for subclasses to get the TfType for this schema object's dynamic
     // C++ type.
     const TfType &_GetType() const {

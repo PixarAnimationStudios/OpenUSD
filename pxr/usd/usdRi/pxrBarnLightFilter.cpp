@@ -75,7 +75,12 @@ UsdRiPxrBarnLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiPxrBarnLightFilter::_GetSchemaType() const {
+UsdSchemaKind UsdRiPxrBarnLightFilter::_GetSchemaKind() const {
+    return UsdRiPxrBarnLightFilter::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiPxrBarnLightFilter::_GetSchemaType() const {
     return UsdRiPxrBarnLightFilter::schemaType;
 }
 

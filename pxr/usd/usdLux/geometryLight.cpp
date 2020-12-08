@@ -75,7 +75,12 @@ UsdLuxGeometryLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxGeometryLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxGeometryLight::_GetSchemaKind() const {
+    return UsdLuxGeometryLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxGeometryLight::_GetSchemaType() const {
     return UsdLuxGeometryLight::schemaType;
 }
 

@@ -62,7 +62,12 @@ UsdRiMaterialAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdRiMaterialAPI::_GetSchemaType() const {
+UsdSchemaKind UsdRiMaterialAPI::_GetSchemaKind() const {
+    return UsdRiMaterialAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiMaterialAPI::_GetSchemaType() const {
     return UsdRiMaterialAPI::schemaType;
 }
 

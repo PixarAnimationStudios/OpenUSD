@@ -75,7 +75,12 @@ UsdShadeMaterial::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdShadeMaterial::_GetSchemaType() const {
+UsdSchemaKind UsdShadeMaterial::_GetSchemaKind() const {
+    return UsdShadeMaterial::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdShadeMaterial::_GetSchemaType() const {
     return UsdShadeMaterial::schemaType;
 }
 

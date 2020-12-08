@@ -56,7 +56,12 @@ UsdGeomPointBased::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdGeomPointBased::_GetSchemaType() const {
+UsdSchemaKind UsdGeomPointBased::_GetSchemaKind() const {
+    return UsdGeomPointBased::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomPointBased::_GetSchemaType() const {
     return UsdGeomPointBased::schemaType;
 }
 

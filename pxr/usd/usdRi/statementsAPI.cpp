@@ -62,7 +62,12 @@ UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdRiStatementsAPI::_GetSchemaType() const {
+UsdSchemaKind UsdRiStatementsAPI::_GetSchemaKind() const {
+    return UsdRiStatementsAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiStatementsAPI::_GetSchemaType() const {
     return UsdRiStatementsAPI::schemaType;
 }
 
