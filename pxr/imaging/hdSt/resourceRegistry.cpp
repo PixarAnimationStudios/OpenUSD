@@ -1143,17 +1143,16 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         gpuMemoryUsed += size;
     }
 
-    // Texture Resources
+    // Texture Memory
     {
         HdSt_TextureObjectRegistry *const textureObjectRegistry =
             _textureHandleRegistry->GetTextureObjectRegistry();
 
-        const size_t textureResourceMemory =
+        const size_t textureMemory =
             textureObjectRegistry->GetTotalTextureMemory();
 
-        (*result)[HdPerfTokens->textureResourceMemory] = VtValue(
-                                                textureResourceMemory);
-        gpuMemoryUsed += textureResourceMemory;
+        (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
+        gpuMemoryUsed += textureMemory;
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
