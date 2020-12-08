@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -470,14 +471,16 @@ public:
     void SetIdentifier(const std::string& identifier);
 
     /// Update layer asset information. Calling this method re-resolves the
-    /// layer identifier, which updates asset information such as the layer
-    /// file revision, real path, and repository path. If \p fileVersion is
-    /// supplied, it is used as the layer version if the identifier does not
-    /// have a version or label specifier. This is typically used to tell Sd
-    /// what the version of a layer is after submitting a new revision to the
-    /// asset system.
+    /// layer identifier, which updates asset information such as the layer's
+    /// resolved path and other asset info. This may be used to update the
+    /// layer after external changes to the underlying asset system.
+#if AR_VERSION == 1
     SDF_API
     void UpdateAssetInfo(const std::string& fileVersion = std::string());
+#else
+    SDF_API
+    void UpdateAssetInfo();
+#endif
 
     /// Returns the layer's display name.
     ///

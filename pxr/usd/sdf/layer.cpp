@@ -2409,6 +2409,8 @@ SdfLayer::SetIdentifier(const string &identifier)
     }
 }
 
+#if AR_VERSION == 1
+
 void
 SdfLayer::UpdateAssetInfo(const string &fileVersion)
 {
@@ -2438,6 +2440,37 @@ SdfLayer::UpdateAssetInfo(const string &fileVersion)
             /* realPath */ std::string(), fileVersion);
     }
 }
+
+#else
+
+void
+SdfLayer::UpdateAssetInfo()
+{
+    TRACE_FUNCTION();
+    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo()\n");
+
+    // Hold open a change block to defer identifier-did-change
+    // notification until the mutex is unlocked.
+    SdfChangeBlock block;
+    {
+        // If the layer has a resolve info with a non-empty asset name, this
+        // means that the layer identifier is a search-path to a layer within
+        // an asset, which last resolved to a pinnable location. Bind the
+        // original context found in the resolve info within this block so the
+        // layer's search path identifier can be properly re-resolved within
+        // _InitializeFromIdentifier.
+        std::unique_ptr<ArResolverContextBinder> binder;
+        if (!GetAssetName().empty()) {
+            binder.reset(new ArResolverContextBinder(
+                    _assetInfo->resolverContext));
+        }    
+
+        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
+        _InitializeFromIdentifier(GetIdentifier());
+    }
+}
+
+#endif // AR_VERSION
 
 string
 SdfLayer::GetDisplayName() const
