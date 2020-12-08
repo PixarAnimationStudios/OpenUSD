@@ -58,9 +58,7 @@ HdEmbreeRenderer::HdEmbreeRenderer()
 {
 }
 
-HdEmbreeRenderer::~HdEmbreeRenderer()
-{
-}
+HdEmbreeRenderer::~HdEmbreeRenderer() = default;
 
 void
 HdEmbreeRenderer::SetScene(RTCScene scene)
@@ -87,11 +85,13 @@ HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 }
 
 void
-HdEmbreeRenderer::SetViewport(unsigned int width, unsigned int height)
+HdEmbreeRenderer::SetDataWindow(const GfRect2i &dataWindow)
 {
-    _width = width;
-    _height = height;
+    _dataWindow = dataWindow;
 
+    // Here for clients that do not use camera framing but the
+    // viewport.
+    //
     // Re-validate the attachments, since attachment viewport and
     // render viewport need to match.
     _aovBindingsNeedValidation = true;
@@ -257,21 +257,6 @@ HdEmbreeRenderer::_ValidateAovBindings()
                 _aovBindingsValid = false;
             }
         }
-
-        // make sure the attachment and render viewports match.
-        // XXX: we could possibly relax this in the future.
-        if (_aovBindings[i].renderBuffer->GetWidth() != _width ||
-            _aovBindings[i].renderBuffer->GetHeight() != _height) {
-            TF_WARN("Aov '%s' viewport (%u, %u) doesn't match render viewport"
-                    " (%u, %u)",
-                    _aovNames[i].name.GetText(),
-                    _aovBindings[i].renderBuffer->GetWidth(),
-                    _aovBindings[i].renderBuffer->GetHeight(),
-                    _width, _height);
-
-            // if the viewports don't match, we block rendering.
-            _aovBindingsValid = false;
-        }
     }
 
     return _aovBindingsValid;
@@ -367,6 +352,15 @@ HdEmbreeRenderer::GetCompletedSamples() const
     return _completedSamples.load();
 }
 
+static
+bool
+_IsContained(const GfRect2i &rect, int width, int height)
+{
+    return
+        rect.GetMinX() >= 0 && rect.GetMaxX() < width &&
+        rect.GetMinY() >= 0 && rect.GetMaxY() < height;
+}
+
 void
 HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 {
@@ -388,10 +382,39 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         return;
     }
 
+    _width  = 0;
+    _height = 0;
+
     // Map all of the attachments.
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
+        //
+        // XXX
+        //
+        // A scene delegate might specify the path to a
+        // render buffer instead of a pointer to the
+        // render buffer.
+        //
         static_cast<HdEmbreeRenderBuffer*>(
             _aovBindings[i].renderBuffer)->Map();
+
+        if (i == 0) {
+            _width  = _aovBindings[i].renderBuffer->GetWidth();
+            _height = _aovBindings[i].renderBuffer->GetHeight();
+        } else {
+            if ( _width  != _aovBindings[i].renderBuffer->GetWidth() ||
+                 _height != _aovBindings[i].renderBuffer->GetHeight()) {
+                TF_CODING_ERROR(
+                    "Embree render buffers have inconsistent sizes");
+            }
+        }
+    }
+
+    if (_width > 0 || _height > 0) {
+        if (!_IsContained(_dataWindow, _width, _height)) {
+            TF_CODING_ERROR(
+                "dataWindow is larger than render buffer");
+        
+        }
     }
 
     // Render the image. Each pass through the loop adds a sample per pixel
@@ -413,9 +436,11 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
             break;
         }
 
-        unsigned int tileSize = HdEmbreeConfig::GetInstance().tileSize;
-        const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
-        const unsigned int numTilesY = (_height + tileSize-1) / tileSize;
+        const unsigned int tileSize = HdEmbreeConfig::GetInstance().tileSize;
+        const unsigned int numTilesX =
+            (_dataWindow.GetWidth() + tileSize-1) / tileSize;
+        const unsigned int numTilesY =
+            (_dataWindow.GetHeight() + tileSize-1) / tileSize;
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
@@ -464,9 +489,25 @@ void
 HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                                size_t tileStart, size_t tileEnd)
 {
-    unsigned int tileSize =
+    const unsigned int minX = _dataWindow.GetMinX();
+    unsigned int minY = _dataWindow.GetMinY();
+    const unsigned int maxX = _dataWindow.GetMaxX() + 1;
+    unsigned int maxY = _dataWindow.GetMaxY() + 1;
+
+    // If a client does not use AOVs and we have no render buffers,
+    // _height is 0 and we shouldn't use it to flip the data window.
+    if (_height > 0) {
+        // The data window is y-Down but the image line order
+        // is from bottom to top, so we need to flip it.
+        std::swap(minY, maxY);
+        minY = _height - minY;
+        maxY = _height - maxY;
+    }
+
+    const unsigned int tileSize =
         HdEmbreeConfig::GetInstance().tileSize;
-    const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
+    const unsigned int numTilesX =
+        (_dataWindow.GetWidth() + tileSize-1) / tileSize;
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
@@ -490,12 +531,12 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
         const unsigned int tileY = tile / numTilesX;
         const unsigned int tileX = tile - tileY * numTilesX; 
         // (Above is equivalent to: tileX = tile % numTilesX)
-        const unsigned int x0 = tileX * tileSize;
-        const unsigned int y0 = tileY * tileSize;
-        // Clamp far boundaries to the viewport, in case tileSize doesn't
-        // neatly divide _width or _height.
-        const unsigned int x1 = std::min(x0+tileSize, _width);
-        const unsigned int y1 = std::min(y0+tileSize, _height);
+        const unsigned int x0 = tileX * tileSize + minX;
+        const unsigned int y0 = tileY * tileSize + minY;
+        // Clamp to data window, in case tileSize doesn't
+        // neatly divide its with and height.
+        const unsigned int x1 = std::min(x0+tileSize, maxX);
+        const unsigned int y1 = std::min(y0+tileSize, maxY);
 
         // Loop over pixels casting rays.
         for (unsigned int y = y0; y < y1; ++y) {
@@ -510,15 +551,19 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 // Un-transform the pixel's NDC coordinates through the
                 // projection matrix to get the trace of the camera ray in the
                 // near plane.
-                GfVec3f ndc = GfVec3f(2 * ((x + jitter[0]) / _width) - 1,
-                                      2 * ((y + jitter[1]) / _height) - 1,
-                                      -1);
-                GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
+                const float w(_dataWindow.GetWidth());
+                const float h(_dataWindow.GetHeight());
+
+                const GfVec3f ndc(
+                    2 * ((x + jitter[0] - minX) / w) - 1,
+                    2 * ((y + jitter[1] - minY) / h) - 1,
+                    -1);
+                const GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
 
                 GfVec3f origin;
                 GfVec3f dir;
 
-                bool isOrthographic = round(_projMatrix[3][3]) == 1;
+                const bool isOrthographic = round(_projMatrix[3][3]) == 1;
                 if (isOrthographic) {
                     // During orthographic projection: trace parallel rays
                     // from the near plane trace.
