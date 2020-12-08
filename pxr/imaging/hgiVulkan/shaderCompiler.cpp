@@ -31,9 +31,9 @@
 // The glslang header versions must match the vulkan libraries we link against.
 // The vulkan SDK (including glslang) must have been compiled with the same
 // compiler that HgiVulkan is compiled with.
-#include "glslang/Public/ShaderLang.h"
-#include "glslang/SPIRV/GlslangToSpv.h"
-#include "glslang/OGLCompilersDLL/InitializeDll.h"
+#include <glslang/Public/ShaderLang.h>
+#include <glslang/SPIRV/GlslangToSpv.h>
+#include <OGLCompilersDLL/InitializeDll.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
