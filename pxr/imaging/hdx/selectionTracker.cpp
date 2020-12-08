@@ -318,6 +318,12 @@ bool _FillPointSelOffsets(int type,
     return hasSelectedPoints;
 }
 
+namespace {
+
+constexpr int INVALID = -1;
+
+}
+
 /*virtual*/
 bool
 HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode,
@@ -326,26 +332,20 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                                           std::vector<int> *output) const
 {
 
-    SdfPathVector selectedPrims =  _selection->GetSelectedPrimPaths(mode);
-    size_t numPrims = _selection ? selectedPrims.size() : 0;
+    const SdfPathVector selectedPrims =  _selection->GetSelectedPrimPaths(mode);
+    const size_t numPrims = _selection ? selectedPrims.size() : 0;
     if (numPrims == 0) {
         TF_DEBUG(HDX_SELECTION_SETUP).Msg(
             "No selected prims for mode %d\n", mode);
         return false;
     }
 
-    // Note that numeric_limits<float>::min for is surprising, so using lowest()
-    // here instead. Doing this for <int> here to avoid copy and paste bugs.
-    int min = std::numeric_limits<int>::max(),
-        max = std::numeric_limits<int>::lowest();
-
     std::vector<int> ids;
     ids.resize(numPrims);
 
     size_t const N = 1000;
-    int const INVALID = -1;
     WorkParallelForN(numPrims/N + 1,
-       [&ids, &index, INVALID, &N, &selectedPrims](size_t begin, size_t end) mutable {
+       [&ids, index, N, &selectedPrims](size_t begin, size_t end) mutable {
         end = std::min(end*N, ids.size());
         begin = begin*N;
         for (size_t i = begin; i < end; i++) {
@@ -357,6 +357,11 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
             }
         }
     });
+
+    // Note that numeric_limits<float>::min for is surprising, so using lowest()
+    // here instead. Doing this for <int> here to avoid copy and paste bugs.
+    int min = std::numeric_limits<int>::max(),
+        max = std::numeric_limits<int>::lowest();
 
     for (int id : ids) {
         if (id == INVALID) continue;

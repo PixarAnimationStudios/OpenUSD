@@ -250,22 +250,22 @@ protected:
         /// perform compaction if necessary. If it becomes empty, release all
         /// resources and returns true
         HDST_API
-        virtual bool GarbageCollect();
+        bool GarbageCollect() override;
 
         /// Debug output
         HDST_API
-        virtual void DebugDump(std::ostream &out) const;
+        void DebugDump(std::ostream &out) const override;
 
         /// Performs reallocation.
         /// GLX context has to be set when calling this function.
         HDST_API
-        virtual void Reallocate(
+        void Reallocate(
             std::vector<HdBufferArrayRangeSharedPtr> const &ranges,
-            HdBufferArraySharedPtr const &curRangeOwner);
+            HdBufferArraySharedPtr const &curRangeOwner) override;
 
         /// Returns the maximum number of elements capacity.
         HDST_API
-        virtual size_t GetMaxNumElements() const;
+        size_t GetMaxNumElements() const override;
 
         /// Mark to perform reallocation on Reallocate()
         void SetNeedsReallocation() {
