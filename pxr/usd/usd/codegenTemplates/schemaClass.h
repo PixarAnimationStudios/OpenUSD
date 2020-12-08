@@ -80,7 +80,7 @@ public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = {{cls.schemaType }};
+    static const UsdSchemaType schemaType = {{cls.schemaKindEnumValue }};
 
 {% if cls.isMultipleApply %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim with
