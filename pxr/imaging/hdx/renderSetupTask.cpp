@@ -48,12 +48,7 @@ HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
-    , _renderPassState()
-    , _colorRenderPassShader()
-    , _idRenderPassShader()
-    , _viewport()
-    , _cameraId()
-    , _aovBindings()
+    , _viewport(0)
 {
     _colorRenderPassShader.reset(
         new HdStRenderPassShader(HdxPackageRenderPassShader()));
@@ -184,6 +179,8 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
+    _framing = params.framing;
+    _overrideWindowPolicy = params.overrideWindowPolicy;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
 
@@ -233,9 +230,16 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
     TF_VERIFY(camera);
 
-    HdRenderPassStateSharedPtr &renderPassState =
+    HdRenderPassStateSharedPtr const &renderPassState =
             _GetRenderPassState(renderIndex);
-    renderPassState->SetCameraAndViewport(camera, _viewport);
+
+    if (_framing.IsValid()) {
+        renderPassState->SetCameraAndFraming(
+            camera, _framing, _overrideWindowPolicy);
+    } else {
+        renderPassState->SetCameraAndViewport(
+            camera, _viewport);
+    }
 }
 
 void
@@ -306,10 +310,13 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.enableAlphaToCoverage << ""
         << pv.cullStyle << " "
         << pv.camera << " "
+        << pv.framing.displayWindow << " "
+        << pv.framing.dataWindow << " "
+        << pv.framing.pixelAspectRatio << " "
         << pv.viewport << " ";
-        for (auto const& a : pv.aovBindings) {
-            out << a << " ";
-        }
+    for (auto const& a : pv.aovBindings) {
+        out << a << " ";
+    }
     return out;
 }
 
@@ -350,6 +357,8 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.cullStyle               == rhs.cullStyle               &&
            lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
+           lhs.framing                 == rhs.framing                 &&
+           lhs.overrideWindowPolicy    == rhs.overrideWindowPolicy    &&
            lhs.viewport                == rhs.viewport;
 }
 

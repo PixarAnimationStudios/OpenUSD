@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
+#include "pxr/imaging/cameraUtil/framing.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/token.h"
@@ -85,7 +87,46 @@ public:
     using ClipPlanesVector = std::vector<GfVec4d>;
 
     /// Camera setter API
+    ///
+    /// Sets the camera transform (aka view inverse matrix) and physical
+    /// parameters, the framing information and a possible overide value
+    /// for the window policy used to conform the camera frustum if its
+    /// aspect ratio is not matching the display window.
+    ///
+    /// Note: using std::pair<bool, ...> here instead of std::optional<...>
+    /// since the latter is only available in C++17 or later.
+    HD_API
+    void SetCameraAndFraming(
+        HdCamera const *camera,
+        CameraUtilFraming const &framing,
+        const std::pair<bool, CameraUtilConformWindowPolicy> &
+                                            overrideWindowPolicy);
+
+    /// Get camera
+    HdCamera const *
+    GetCamera() const { return _camera; }
+
+    /// Get framing information determining how the filmback plane maps
+    /// to pixels.
+    const CameraUtilFraming &
+    GetFraming() const { return _framing; }
+
+    /// The override value for the window policy to conform the camera 
+    /// frustum that can be specified by the application.
+    const std::pair<bool, CameraUtilConformWindowPolicy> &
+    GetOverrideWindowPolicy() const { return _overrideWindowPolicy; }
+
+    /// The resolved window policy to conform the camera frustum.
+    /// This is either the override value specified by the application or
+    /// the value from the scene delegate's camera.
+    HD_API
+    CameraUtilConformWindowPolicy
+    GetWindowPolicy() const;
+
+    /// Camera setter API
     /// The view, projection and clipping plane info of the camera will be used.
+    ///
+    /// \deprecated Use the more expressive SetCameraAndFraming instead.
     HD_API
     void SetCameraAndViewport(HdCamera const *camera,
                               GfVec4d const& viewport);
@@ -116,14 +157,15 @@ public:
     HD_API
     GfMatrix4d GetProjectionMatrix() const;
 
+    /// Only use when clients did not specify a camera framing.
+    ///
+    /// \deprecated
     GfVec4f const & GetViewport() const { return _viewport; }
 
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
     GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
-
-    HdCamera const *GetCamera() const { return _camera; }
 
     // ---------------------------------------------------------------------- //
     /// \name Application rendering state
@@ -288,11 +330,19 @@ protected:
     // ---------------------------------------------------------------------- //
     HdCamera const *_camera;
     GfVec4f _viewport;
+    CameraUtilFraming _framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
     // TODO: This is only used for CPU culling, should compute it on the fly.
     GfMatrix4d _cullMatrix; 
 
+    // Used by applications setting the view matrix directly instead of
+    // using an HdCamera. Will be removed eventually.
     GfMatrix4d _worldToViewMatrix;
+    // Used by applications setting the projection matrix directly instead
+    // of using an HdCamera. Will be removed eventually.
     GfMatrix4d _projectionMatrix;
+    // Used by applications setting the clip planes directly instead
+    // of using an HdCamera. Will be removed eventually.
     ClipPlanesVector _clipPlanes;
 
     // ---------------------------------------------------------------------- //

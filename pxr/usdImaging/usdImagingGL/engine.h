@@ -167,9 +167,41 @@ public:
     /// @{
     // ---------------------------------------------------------------------
     
+    /// Scene camera API
+    /// Set the scene camera path to use for rendering.
+    USDIMAGINGGL_API
+    void SetCameraPath(SdfPath const& id);
+
+    /// Determines how the filmback of the camera is mapped into
+    /// the pixels of the render buffer and what pixels of the render
+    /// buffer will be rendered into.
+    USDIMAGINGGL_API
+    void SetFraming(CameraUtilFraming const& framing);
+
+    /// Specifies whether to force a window policy when conforming
+    /// the frustum of the camera to match the display window of
+    /// the camera framing.
+    ///
+    /// If set to {false, ...}, the window policy of the specified camera
+    /// will be used.
+    ///
+    /// Note: std::pair<bool, ...> is used instead of std::optional<...>
+    /// because the latter is only available in C++17 or later.
+    USDIMAGINGGL_API
+    void SetOverrideWindowPolicy(
+        const std::pair<bool, CameraUtilConformWindowPolicy> &policy);
+
+    /// Set the size of the render buffers baking the AOVs.
+    /// GUI applications should set this to the size of the window.
+    ///
+    USDIMAGINGGL_API
+    void SetRenderBufferSize(GfVec2i const& size);
+
     /// Set the viewport to use for rendering as (x,y,w,h), where (x,y)
     /// represents the lower left corner of the viewport rectangle, and (w,h)
     /// is the width and height of the viewport in pixels.
+    ///
+    /// \deprecated Use SetFraming and SetRenderBufferSize instead.
     USDIMAGINGGL_API
     void SetRenderViewport(GfVec4d const& viewport);
 
@@ -178,11 +210,6 @@ public:
     /// See comment in SetCameraState for the free cam.
     USDIMAGINGGL_API
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
-    
-    /// Scene camera API
-    /// Set the scene camera path to use for rendering.
-    USDIMAGINGGL_API
-    void SetCameraPath(SdfPath const& id);
 
     /// Free camera API
     /// Set camera framing state directly (without pointing to a camera on the 

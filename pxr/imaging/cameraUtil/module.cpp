@@ -30,4 +30,5 @@ TF_WRAP_MODULE
 {
     TF_WRAP(ScreenWindowParameters);
     TF_WRAP(ConformWindow);
+    TF_WRAP(Framing);
 }

@@ -273,15 +273,14 @@ UsdImagingGL_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
 }
 
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
-    _Args() : offscreen(false) {
-        clearColor[0] = 1.0f;
-        clearColor[1] = 0.5f;
-        clearColor[2] = 0.1f;
-        clearColor[3] = 1.0f;
-
-        translate[0] = 0.0;
-        translate[1] = -1000.0;
-        translate[2] = -2500.0;
+    _Args()
+      : offscreen(false)
+      , clearColor{1.0f, 0.5f, 0.1f, 1.0f}
+      , translate{0.0f, -1000.0f, -2500.0f}
+      , pixelAspectRatio(1.0f)
+      , dataWindow{0, 0, 0, 0}
+      , displayWindow{0.0f, 0.0f, 0.0f, 0.0f}
+    {
     }
 
     std::string unresolvedStageFilePath;
@@ -291,6 +290,9 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
     std::vector<double> complexities;
     float clearColor[4];
     float translate[3];
+    float pixelAspectRatio;
+    int dataWindow[4];
+    float displayWindow[4];
 };
 
 static void Die(const char* fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
@@ -384,6 +386,10 @@ static void Usage(int argc, char *argv[])
 "                      force prims of purpose 'render' to be shown or hidden\n"
 "  -proxyPurpose [show|hide]\n"
 "                      force prims of purpose 'proxy' to be shown or hidden\n"
+"  -dataWindow x y width height\n"
+"                      Specifies data window for rendering\n"
+"  -displayWindow x y width height\n"
+"                      Specifies display window for rendering\n"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -586,6 +592,24 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             args->translate[1] = (float)ParseDouble(i, argc, argv);
             args->translate[2] = (float)ParseDouble(i, argc, argv);
         }
+        else if (strcmp(argv[i], "-pixelAspectRatio") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            args->pixelAspectRatio = (float)ParseDouble(i, argc, argv);
+        }
+        else if (strcmp(argv[i], "-dataWindow") == 0) {
+            CheckForMissingArguments(i, 4, argc, argv);
+            args->dataWindow[0] = (int)ParseDouble(i, argc, argv);
+            args->dataWindow[1] = (int)ParseDouble(i, argc, argv);
+            args->dataWindow[2] = (int)ParseDouble(i, argc, argv);
+            args->dataWindow[3] = (int)ParseDouble(i, argc, argv);
+        }
+        else if (strcmp(argv[i], "-displayWindow") == 0) {
+            CheckForMissingArguments(i, 4, argc, argv);
+            args->displayWindow[0] = (float)ParseDouble(i, argc, argv);
+            args->displayWindow[1] = (float)ParseDouble(i, argc, argv);
+            args->displayWindow[2] = (float)ParseDouble(i, argc, argv);
+            args->displayWindow[3] = (float)ParseDouble(i, argc, argv);
+        }
         else if (strcmp(argv[i], "-renderSetting") == 0) {
             CheckForMissingArguments(i, 2, argc, argv);
             const char * const key = ParseString(i, argc, argv);
@@ -652,6 +676,15 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     }
     _clearColor = GfVec4f(args.clearColor);
     _translate = GfVec3f(args.translate);
+    _pixelAspectRatio = args.pixelAspectRatio;
+    _displayWindow = GfRange2f(
+        GfVec2f(args.displayWindow[0],
+                args.displayWindow[1]),
+        GfVec2f(args.displayWindow[0] + args.displayWindow[2],
+                args.displayWindow[1] + args.displayWindow[3]));
+    _dataWindow = GfRect2i(
+        GfVec2i(args.dataWindow[0], args.dataWindow[1]),
+        args.dataWindow[2], args.dataWindow[3]);
 
     _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 

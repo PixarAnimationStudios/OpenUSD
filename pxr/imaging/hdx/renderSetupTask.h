@@ -32,6 +32,8 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
+#include "pxr/imaging/cameraUtil/framing.h"
+
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
@@ -102,8 +104,12 @@ private:
     HdRenderPassStateSharedPtr _renderPassState;
     HdStRenderPassShaderSharedPtr _colorRenderPassShader;
     HdStRenderPassShaderSharedPtr _idRenderPassShader;
-    GfVec4d _viewport;
     SdfPath _cameraId;
+    CameraUtilFraming _framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    // Used when client did not specify the camera framing (more expressive
+    // and preferred).
+    GfVec4d _viewport;
     HdRenderPassAovBindingVector _aovBindings;
 
     static HdStShaderCodeSharedPtr _overrideShader;
@@ -234,6 +240,12 @@ struct HdxRenderTaskParams
 
     // RasterState index objects
     SdfPath camera;
+
+    CameraUtilFraming framing;
+
+    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
+
+    // Only used if framing is invalid.
     GfVec4d viewport;
 };
 

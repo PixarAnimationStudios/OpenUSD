@@ -38,7 +38,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 
-#include "pxr/imaging/cameraUtil/conformWindow.h"
+#include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -51,7 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderBuffer;
 
-class HdxTaskController {
+class HdxTaskController final
+{
 public:
     HDX_API
     HdxTaskController(HdRenderIndex *renderIndex,
@@ -143,15 +144,42 @@ public:
     /// -------------------------------------------------------
     /// Camera and Framing API
     
-    /// Set the viewport param on tasks.
+    /// Set the size of the render buffers baking the AOVs.
+    /// GUI applications should set this to the size of the window.
+    ///
     HDX_API
-    void SetRenderViewport(GfVec4d const& viewport);
+    void SetRenderBufferSize(const GfVec2i &size);
+
+    /// Determines how the filmback of the camera is mapped into
+    /// the pixels of the render buffer and what pixels of the render
+    /// buffer will be rendered into.
+    HDX_API
+    void SetFraming(const CameraUtilFraming &framing);
+
+    /// Specifies whether to force a window policy when conforming
+    /// the frustum of the camera to match the display window of
+    /// the camera framing.
+    ///
+    /// If set to {false, ...}, the window policy of the specified camera
+    /// will be used.
+    ///
+    /// Note: std::pair<bool, ...> is used instead of std::optional<...>
+    /// because the latter is only available in C++17 or later.
+    HDX_API
+    void SetOverrideWindowPolicy(
+        const std::pair<bool, CameraUtilConformWindowPolicy> &policy);
 
     /// -- Scene camera --
     /// Set the camera param on tasks to a USD camera path.
     HDX_API
     void SetCameraPath(SdfPath const& id);
-    
+
+    /// Set the viewport param on tasks.
+    ///
+    /// \deprecated Use SetFraming and SetRenderBufferSize instead.
+    HDX_API
+    void SetRenderViewport(GfVec4d const& viewport);
+
     /// -- Free camera --
     /// Set the view and projection matrices for the free camera.
     /// Note: The projection matrix must be pre-adjusted for the window policy.
@@ -248,8 +276,8 @@ private:
     void _CreatePresentTask();
 
     void _SetCameraParamForTasks(SdfPath const& id);
-    void _SetViewportForTasks();
-    void _UpdateAovDimensions(GfVec3i const& dimensions);
+    void _SetCameraFramingForTasks();
+    void _UpdateAovDimensions(GfVec2i const& dimensions);
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
@@ -359,6 +387,10 @@ private:
     SdfPathVector _aovBufferIds;
     TfTokenVector _aovOutputs;
     TfToken _viewportAov;
+
+    GfVec2i _renderBufferSize;
+    CameraUtilFraming _framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     GfVec4d _viewport;
 };

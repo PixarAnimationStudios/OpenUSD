@@ -369,6 +369,31 @@ UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 }
 
 void
+UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
+{
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetFraming(framing);
+    }
+}
+
+void
+UsdImagingGLEngine::SetOverrideWindowPolicy(
+    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+{
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetOverrideWindowPolicy(policy);
+    }
+}
+
+void
+UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
+{
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetRenderBufferSize(size);
+    }
+}
+
+void
 UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {

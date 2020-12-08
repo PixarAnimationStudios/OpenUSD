@@ -233,8 +233,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     const int width = GetWidth();
     const int height = GetHeight();
 
-    GfVec4d viewport(0, 0, width, height);
-
     if (GetCameraPath().empty()) {
         GfMatrix4d viewMatrix(1.0);
         viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(0, 1, 0), _rotate[0]));
@@ -258,7 +256,17 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     } else {
         _engine->SetCameraPath(SdfPath(GetCameraPath()));
     }
-    _engine->SetRenderViewport(viewport);
+
+    const CameraUtilFraming framing(
+        GetDisplayWindow(), GetDataWindow(), GetPixelAspectRatio());
+    if (framing.IsValid()) {
+        _engine->SetRenderBufferSize(GfVec2i(width, height));
+        _engine->SetFraming(framing);
+        _engine->SetOverrideWindowPolicy({true, CameraUtilFit});
+    } else {
+        const GfVec4d viewport(0, 0, width, height);
+        _engine->SetRenderViewport(viewport);
+    }
  
     bool const useAovs = !GetRendererAov().IsEmpty();
     GfVec4f fboClearColor = useAovs? GfVec4f(0.0f) : GetClearColor();

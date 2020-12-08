@@ -77,6 +77,9 @@ public:
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
     TfToken const & GetRendererAov() const { return _rendererAov; }
     std::string const &GetPerfStatsFile() const { return _perfStatsFile; }
+    float GetPixelAspectRatio() const { return _pixelAspectRatio; }
+    GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
+    GfRect2i const & GetDataWindow() const { return _dataWindow; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -133,6 +136,9 @@ private:
     bool _cullBackfaces;
     GfVec4f _clearColor;
     GfVec3f _translate;
+    float _pixelAspectRatio;
+    GfRange2f _displayWindow;
+    GfRect2i _dataWindow;
     VtDictionary _renderSettings;
     TfToken _rendererAov;
     std::string _perfStatsFile;
