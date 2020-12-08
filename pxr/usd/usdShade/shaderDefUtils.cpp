@@ -238,6 +238,40 @@ _ConformStringTypeDefaultValue(
     }
 }
 
+// Called within _GetShaderPropertyTypeAndArraySize in order to fix up the
+// default value's type if it was originally a bool type because Sdr doesn't
+// support bool types
+static
+void
+_ConformIntTypeDefaultValue(
+    const SdfValueTypeName& typeName,
+    VtValue* defaultValue)
+{
+    // If the SdrPropertyType would be int but the SdfTypeName is bool,
+    // we need to convert the default value's type from bool to int so that
+    // there is no inconsistency between the property type and the default value
+    if (defaultValue && !defaultValue->IsEmpty()) {
+        if (typeName == SdfValueTypeNames->Bool) {
+            if (defaultValue->IsHolding<bool>()) {
+                const bool& boolVal =
+                    defaultValue->UncheckedGet<bool>();
+                *defaultValue = VtValue(boolVal ? 1 : 0);
+            }
+        } else if (typeName == SdfValueTypeNames->BoolArray) {
+            if (defaultValue->IsHolding< VtArray<bool> >()) {
+                const VtArray<bool>& boolVals =
+                    defaultValue->UncheckedGet< VtArray<bool> >();
+                VtIntArray intVals;
+                intVals.reserve(boolVals.size());
+                for (const bool& boolVal : boolVals) {
+                    intVals.push_back(boolVal ? 1 : 0);
+                }
+                *defaultValue = VtValue::Take(intVals);
+            }
+        }
+    }
+}
+
 // Called within _GetShaderPropertyTypeAndArraySize in order to return the
 // correct array size as determined by the given default value
 static
@@ -274,7 +308,10 @@ _GetShaderPropertyTypeAndArraySize(
 
     // Determine SdrPropertyType from given SdfValueTypeName
     if (typeName == SdfValueTypeNames->Int ||
-        typeName == SdfValueTypeNames->IntArray) {
+        typeName == SdfValueTypeNames->IntArray ||
+        typeName == SdfValueTypeNames->Bool ||
+        typeName == SdfValueTypeNames->BoolArray) {
+        _ConformIntTypeDefaultValue(typeName, defaultValue);
         return std::make_pair(SdrPropertyTypes->Int,
                               _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->String ||
