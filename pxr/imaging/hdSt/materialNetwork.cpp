@@ -1229,7 +1229,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                                             : HdMaterialTerminalTokens->surface;
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    HdSt_ApplyMaterialXFilter(&surfaceNetwork);
+    HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId);
 #endif
 
     if (HdMaterialNode2 const* surfTerminal = 

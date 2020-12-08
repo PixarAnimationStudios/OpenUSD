@@ -16,8 +16,15 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
+set(optionalLibs "")
+set(optionalIncludeDirs "")
 set(optionalPrivateClasses "")
 if (${PXR_BUILD_MATERIALX_PLUGIN})
+    add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
+    add_definitions(-DPXR_MATERIALX_RESOURCE_DIR="${MATERIALX_RESOURCE_DIR}")
+
+    list(APPEND optionalLibs ${MATERIALX_LIBRARIES})
+    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPrivateClasses materialXFilter)
 endif()
 
@@ -32,9 +39,11 @@ pxr_library(hdSt
         tf
         trace
         ${OPENSUBDIV_LIBRARIES}
+        ${optionalLibs}
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}
+        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         basisCurves
