@@ -105,4 +105,13 @@ HdSt_ExtCompComputeShader::ComputeHash() const
     return hash;
 }
 
+SdfPath const&
+HdSt_ExtCompComputeShader::GetExtComputationId() const
+{
+    if (!TF_VERIFY(_extComp)) {
+        return SdfPath::EmptyPath();
+    }
+    return _extComp->GetId();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

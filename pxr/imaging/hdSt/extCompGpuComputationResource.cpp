@@ -123,6 +123,10 @@ HdStExtCompGpuComputationResource::Resolve()
                 
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
+
+                TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
+                    "Compiled and linked compute program for computation %s\n ",
+                    _kernel->GetExtComputationId().GetText());
             }
 
             _computeProgram = programInstance.GetValue();

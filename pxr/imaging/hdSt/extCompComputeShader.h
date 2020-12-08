@@ -83,6 +83,11 @@ public:
     HDST_API
     ID ComputeHash() const override;
 
+    // ---------------------------------------------------------------------- //
+
+    HDST_API
+    SdfPath const& GetExtComputationId() const;
+
 private:
     // No copying
     HdSt_ExtCompComputeShader(const HdSt_ExtCompComputeShader &) = delete;
