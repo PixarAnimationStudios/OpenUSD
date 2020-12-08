@@ -104,7 +104,7 @@ find_path(MATERIALX_STDLIB_DIR
 foreach(MATERIALX_LIB
     Core
     Format
-    GenGlSl
+    GenGlsl
     GenOsl
     GenShader
     Render
