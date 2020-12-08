@@ -217,9 +217,13 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             scaleMatrix.SetScale(GfVec3d(w,h,1));
             viewToWorldCorrectionMatrix = scaleMatrix;
         } else {
-            // Extract vertical FOV from hydra projection matrix after
-            // accounting for the crop window.
-            const float fov_rad = atan(1.0f / proj[1][1])*2;
+            // Extract FOV from hydra projection matrix. More precisely,
+            // use the smaller value among the horizontal and vertical FOV.
+            //
+            // This seems to match the resolution API which uses the smaller
+            // value among width and height to match to the FOV.
+            // 
+            const float fov_rad = atan(1.0f / std::max(proj[0][0], proj[1][1]))*2;
             const float fov_deg = fov_rad / M_PI * 180.0;
             cameraNode.params.SetFloat(RixStr.k_fov, fov_deg);
         }
