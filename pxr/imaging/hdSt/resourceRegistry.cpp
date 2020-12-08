@@ -395,7 +395,7 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     // Check for no-valid buffer case
     if (!sources.empty()) {
         _numBufferSourcesToResolve += sources.size();
-        const _PendingSourceList::iterator it = _pendingSources.emplace_back(
+        _pendingSources.emplace_back(
             range, std::move(sources));
 
         TF_VERIFY(range.use_count() >=2);
@@ -404,7 +404,7 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
 
 void
 HdStResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
-                              HdBufferSourceSharedPtr const &source)
+                                HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

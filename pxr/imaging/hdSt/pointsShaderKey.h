@@ -41,7 +41,7 @@ struct HdSt_PointsShaderKey : public HdSt_ShaderKey
     TfToken const &GetGlslfxFilename() const override { return glslfx; }
     TfToken const *GetVS() const override { return VS; }
     // Skip TCS, TES and GS stages
-    TfToken const *GetFS() const  { return FS; }
+    TfToken const *GetFS() const override { return FS; }
 
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
