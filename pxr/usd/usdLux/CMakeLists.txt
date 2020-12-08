@@ -5,6 +5,7 @@ pxr_library(usdLux
     LIBRARIES
         tf
         vt
+        ndr
         sdf
         usd
         usdGeom
