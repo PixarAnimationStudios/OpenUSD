@@ -39,6 +39,7 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/vt/value.h"
 
@@ -458,8 +459,13 @@ public:
     SDF_API
     std::string GetDisplayName() const;
 
-    /// Returns the file system path where this layer exists or may exist
-    /// after a call to Save.
+    /// Returns the resolved path for this layer. This is the path where
+    /// this layer exists or may exist after a call to Save().
+    SDF_API
+    const ArResolvedPath& GetResolvedPath() const;
+
+    /// Returns the resolved path for this layer. This is equivalent to
+    /// GetResolvedPath().GetPathString().
     SDF_API
     const std::string& GetRealPath() const;
 

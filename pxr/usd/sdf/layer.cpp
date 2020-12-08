@@ -1349,7 +1349,7 @@ SdfLayer::_InitializeFromIdentifier(
     // must occur prior to updating the layer registry, as the new layer
     // information is used to recompute registry indices.
     string oldIdentifier = _assetInfo->identifier;
-    string oldRealPath = _assetInfo->realPath;
+    ArResolvedPath oldResolvedPath = _assetInfo->resolvedPath;
     _assetInfo.swap(newInfo);
 
     // Update layer state delegate.
@@ -1369,7 +1369,7 @@ SdfLayer::_InitializeFromIdentifier(
             Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
                 _self, oldIdentifier);
         }
-        if (oldRealPath != GetRealPath()) {
+        if (oldResolvedPath != GetResolvedPath()) {
             Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
         }
     }
@@ -2411,10 +2411,16 @@ SdfLayer::GetDisplayName() const
     return GetDisplayNameFromIdentifier(GetIdentifier());
 }
 
+const ArResolvedPath&
+SdfLayer::GetResolvedPath() const
+{
+    return _assetInfo->resolvedPath;
+}
+
 const string&
 SdfLayer::GetRealPath() const
 {
-    return _assetInfo->realPath;
+    return _assetInfo->resolvedPath.GetPathString();
 }
 
 string

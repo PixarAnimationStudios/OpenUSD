@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/layer.h"
 
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/vt/value.h"
 
@@ -47,7 +48,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 struct Sdf_AssetInfo
 {
     std::string identifier;
-    std::string realPath;
+    ArResolvedPath resolvedPath;
     ArResolverContext resolverContext;
     ArAssetInfo assetInfo;
 };
@@ -63,19 +64,20 @@ bool Sdf_CanCreateNewLayerWithIdentifier(
     const std::string& identifier,
     std::string* whyNot);
 
-/// If \p layerPath is relative, it is first resolved anchored to the
-/// current working directory. If the file is found this way, it is returned. 
-/// If the file is not found, or \p layerPath is not relative, 
-/// the path is resolved as-is.
-std::string Sdf_ResolvePath(
+/// Returns the resolved path for \p layerPath if an asset exists at that
+/// path. Otherwise, returns an empty ArResolvedPath. Populates \p assetInfo
+/// if it's non-nullptr.
+ArResolvedPath Sdf_ResolvePath(
     const std::string& layerPath,
-    ArAssetInfo* assetInfo = 0);
+    ArAssetInfo* assetInfo = nullptr);
 
-/// Returns the resolved path for \p layerPath, or the local path if \p
-/// layerPath cannot be resolved.
-std::string Sdf_ComputeFilePath(
+/// Returns the resolved path for \p layerPath. If no asset exists at that
+/// path, returns a resolved path indicating where that asset should be
+/// created. Otherwise, returns an empty ArResolvedPath. Populates \p assetInfo
+/// if it's non-nullptr.
+ArResolvedPath Sdf_ComputeFilePath(
     const std::string& layerPath,
-    ArAssetInfo* assetInfo = 0);
+    ArAssetInfo* assetInfo = nullptr);
 
 /// Returns true if a layer can be written to \p layerPath.
 bool Sdf_CanWriteLayerToPath(const std::string& layerPath);

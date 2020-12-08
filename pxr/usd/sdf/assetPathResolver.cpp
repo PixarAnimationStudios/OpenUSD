@@ -60,7 +60,7 @@ operator==(
     const Sdf_AssetInfo& rhs)
 {
     return (lhs.identifier == rhs.identifier)
-        && (lhs.realPath == rhs.realPath)
+        && (lhs.resolvedPath == rhs.resolvedPath)
         && (lhs.resolverContext == rhs.resolverContext)
         && (lhs.assetInfo == rhs.assetInfo);
 }
@@ -86,14 +86,15 @@ Sdf_CanCreateNewLayerWithIdentifier(
     return ArGetResolver().CanCreateNewLayerWithIdentifier(identifier, whyNot);
 }
 
-string
+ArResolvedPath
 Sdf_ResolvePath(
     const string& layerPath,
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
 #if AR_VERSION == 1
-    return ArGetResolver().ResolveWithAssetInfo(layerPath, assetInfo);
+    return ArResolvedPath(
+        ArGetResolver().ResolveWithAssetInfo(layerPath, assetInfo));
 #else
     return ArGetResolver().Resolve(layerPath, assetInfo);
 #endif
@@ -107,14 +108,14 @@ Sdf_CanWriteLayerToPath(
         layerPath, /* whyNot = */ nullptr);
 }
 
-string
+ArResolvedPath
 Sdf_ComputeFilePath(
     const string& layerPath,
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
 
-    string resolvedPath = Sdf_ResolvePath(layerPath, assetInfo);  
+    ArResolvedPath resolvedPath = Sdf_ResolvePath(layerPath, assetInfo);  
     if (resolvedPath.empty()) {
 #if AR_VERSION == 1
         // If we can't resolve layerPath, it means no layer currently
@@ -129,7 +130,7 @@ Sdf_ComputeFilePath(
         // for these layers.
         ArResolver& resolver = ArGetResolver();
         if (!resolver.IsSearchPath(layerPath)) {
-            resolvedPath = resolver.ComputeLocalPath(layerPath);
+            resolvedPath = ArResolvedPath(resolver.ComputeLocalPath(layerPath));
         }
 #else
         // If we can't resolve layerPath, it means no layer currently
@@ -174,13 +175,14 @@ Sdf_ComputeAssetInfoFromIdentifier(
         if (filePath.empty()) {
             string layerPath, arguments;
             Sdf_SplitIdentifier(assetInfo->identifier, &layerPath, &arguments);
-            assetInfo->realPath = Sdf_ComputeFilePath(layerPath, &resolveInfo);
+            assetInfo->resolvedPath = 
+                Sdf_ComputeFilePath(layerPath, &resolveInfo);
         } else {
-            assetInfo->realPath = filePath;
+            assetInfo->resolvedPath = ArResolvedPath(filePath);
         }
 
         ArGetResolver().UpdateAssetInfo(
-            assetInfo->identifier, assetInfo->realPath, fileVersion,
+            assetInfo->identifier, assetInfo->resolvedPath, fileVersion,
             &resolveInfo);
     }
 
@@ -190,12 +192,12 @@ Sdf_ComputeAssetInfoFromIdentifier(
 
     TF_DEBUG(SDF_ASSET).Msg("Sdf_ComputeAssetInfoFromIdentifier:\n"
         "  assetInfo->identifier = '%s'\n"
-        "  assetInfo->realPath = '%s'\n"
+        "  assetInfo->resolvedPath = '%s'\n"
         "  assetInfo->repoPath = '%s'\n"
         "  assetInfo->assetName = '%s'\n"
         "  assetInfo->version = '%s'\n",
         assetInfo->identifier.c_str(),
-        assetInfo->realPath.c_str(),
+        assetInfo->resolvedPath.GetPathString().c_str(),
         resolveInfo.repoPath.c_str(),
         resolveInfo.assetName.c_str(),
         resolveInfo.version.c_str());

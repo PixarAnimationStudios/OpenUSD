@@ -622,11 +622,15 @@ void wrapLayer()
             &This::SetIdentifier,
             "The layer's identifier.")
 
+        .add_property("resolvedPath",
+            make_function(&This::GetResolvedPath,
+                return_value_policy<return_by_value>()),
+            "The layer's resolved path.")
+
         .add_property("realPath",
             make_function(&This::GetRealPath,
                 return_value_policy<return_by_value>()),
-            "The layer's canonical full path. This path is guaranteed to\n"
-            "be valid.")
+            "The layer's resolved path.")
 
         .add_property("fileExtension", &This::GetFileExtension,
             "The layer's file extension.")
