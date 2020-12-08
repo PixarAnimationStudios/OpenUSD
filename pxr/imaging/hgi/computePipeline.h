@@ -128,8 +128,6 @@ private:
     HgiComputePipeline(const HgiComputePipeline&) = delete;
 };
 
-/// Explicitly instantiate and define pipeline handle
-template class HgiHandle<class HgiComputePipeline>;
 using HgiComputePipelineHandle = HgiHandle<class HgiComputePipeline>;
 using HgiComputePipelineHandleVector = std::vector<HgiComputePipelineHandle>;
 

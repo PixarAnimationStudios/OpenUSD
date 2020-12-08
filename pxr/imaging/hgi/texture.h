@@ -203,8 +203,6 @@ private:
 };
 
 
-/// Explicitly instantiate and define texture handle
-template class HgiHandle<class HgiTexture>;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
 using HgiTextureHandleVector = std::vector<HgiTextureHandle>;
 
@@ -311,13 +309,8 @@ private:
     HgiTextureView(const HgiTextureView&) = delete;
 };
 
-
-/// Explicitly instantiate and define texture view handle
-template class HgiHandle<class HgiTextureView>;
 using HgiTextureViewHandle = HgiHandle<class HgiTextureView>;
 using HgiTextureViewHandleVector = std::vector<HgiTextureViewHandle>;
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

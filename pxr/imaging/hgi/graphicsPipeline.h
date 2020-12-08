@@ -340,9 +340,7 @@ private:
     HgiGraphicsPipeline(const HgiGraphicsPipeline&) = delete;
 };
 
-/// Explicitly instantiate and define pipeline handle
-template class HgiHandle<class HgiGraphicsPipeline>;
-using HgiGraphicsPipelineHandle = HgiHandle<class HgiGraphicsPipeline>;
+using HgiGraphicsPipelineHandle = HgiHandle<HgiGraphicsPipeline>;
 using HgiGraphicsPipelineHandleVector = std::vector<HgiGraphicsPipelineHandle>;
 
 

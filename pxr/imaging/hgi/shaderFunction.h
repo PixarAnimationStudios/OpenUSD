@@ -93,8 +93,6 @@ private:
     HgiShaderFunction(const HgiShaderFunction&) = delete;
 };
 
-/// Explicitly instantiate and define ShaderFunction handle
-template class HgiHandle<class HgiShaderFunction>;
 using HgiShaderFunctionHandle = HgiHandle<class HgiShaderFunction>;
 using HgiShaderFunctionHandleVector = std::vector<HgiShaderFunctionHandle>;
 

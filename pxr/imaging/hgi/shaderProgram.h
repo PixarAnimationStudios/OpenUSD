@@ -130,8 +130,6 @@ private:
     HgiShaderProgram(const HgiShaderProgram&) = delete;
 };
 
-/// Explicitly instantiate and define ShaderProgram handle
-template class HgiHandle<class HgiShaderProgram>;
 using HgiShaderProgramHandle = HgiHandle<class HgiShaderProgram>;
 using HgiShaderProgramHandleVector = std::vector<HgiShaderProgramHandle>;
 
