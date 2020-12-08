@@ -289,24 +289,6 @@ HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
 }
 
 // -----------------------------------------------------------------------//
-/// \name Texture Aspects
-// -----------------------------------------------------------------------//
-
-/*virtual*/
-HdTextureResource::ID
-HdSceneDelegate::GetTextureResourceID(SdfPath const& textureId)
-{
-    return HdTextureResource::ID();
-}
-
-/*virtual*/
-HdTextureResourceSharedPtr
-HdSceneDelegate::GetTextureResource(SdfPath const& textureId)
-{
-    return HdTextureResourceSharedPtr();
-}
-
-// -----------------------------------------------------------------------//
 /// \name Renderbuffer Aspects
 // -----------------------------------------------------------------------//
 

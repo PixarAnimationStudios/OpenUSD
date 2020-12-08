@@ -49,7 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (length)                                                \
     ((textureFile, "texture:file"))                         \
     ((textureFormat, "texture:format"))                     \
-    (textureResource)                                       \
     (width)                                                 \
     (diffuse)                                               \
     (specular)                                              \

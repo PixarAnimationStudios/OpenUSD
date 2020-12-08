@@ -488,12 +488,6 @@ HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
 }
 
 
-HdResourceRegistry::TextureKey
-HdRenderIndex::GetTextureKey(HdTextureResource::ID id) const
-{
-    return TfHash::Combine(this, id);
-}
-
 // ---------------------------------------------------------------------- //
 // Render Delegate
 // ---------------------------------------------------------------------- //

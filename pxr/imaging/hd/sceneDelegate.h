@@ -34,7 +34,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -600,28 +599,6 @@ public:
     // needed to create a material.
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
-
-    // -----------------------------------------------------------------------//
-    /// \name Texture Aspects
-    // -----------------------------------------------------------------------//
-
-    ///
-    /// \deprecated It is now the responsibility of the render delegate to load
-    /// the texture (using the file path authored on the texture node in a
-    /// material network).
-    ///
-    /// Returns the texture resource ID for a given texture ID.
-    HD_API
-    virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
-
-    ///
-    /// \deprecated It is now the responsibility of the render delegate to load
-    /// the texture (using the file path authored on the texture node in a
-    /// material network).
-    ///
-    /// Returns the texture resource for a given texture ID.
-    HD_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
     // -----------------------------------------------------------------------//
     /// \name Renderbuffer Aspects

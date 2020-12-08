@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/texture.h"
-#include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4f.h"
