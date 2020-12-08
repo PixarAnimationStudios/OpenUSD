@@ -24,6 +24,8 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
+#include "pxr/base/tf/diagnostic.h"
+
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/library.h"
 
@@ -3153,7 +3155,7 @@ static bool loadLibrary()
     libHandle = ArchLibraryOpen("opengl32.dll", 0);
     libGetProcAddress = (PFNGETPROCADDRESS) ArchLibraryGetSymbolAddress(libHandle, "wglGetProcAddress");
 #elif defined(ARCH_OS_DARWIN)
-    libHandle = ArchLibraryOpen("/System/Library/Frameworks/Versions/Current/OpenGL.framework/OpenGL", RTLD_LAZY | RTLD_LOCAL);
+    libHandle = ArchLibraryOpen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY | RTLD_LOCAL);
 #elif defined(ARCH_OS_LINUX)
     libHandle = ArchLibraryOpen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
     libGetProcAddress = (PFNGETPROCADDRESS) ArchLibraryGetSymbolAddress(libHandle, "glXGetProcAddressARB");
@@ -6396,7 +6398,7 @@ bool GarchGLApiLoad()
     if (initialized) { return true; }
     initialized = true;
 
-    return loadLibrary() && loadSymbols();
+    return TF_VERIFY(loadLibrary()) && TF_VERIFY(loadSymbols());
 }
 
 void GarchGLApiUnload()
