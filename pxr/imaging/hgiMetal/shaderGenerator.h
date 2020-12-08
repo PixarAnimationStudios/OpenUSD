@@ -70,6 +70,9 @@ public:
     HGIMETAL_API
     HgiMetalShaderSectionUniquePtrVector* GetShaderSections();
 
+    template<typename SectionType, typename ...T>
+    SectionType * CreateShaderSection(T && ...t);
+
 protected:
     HGIMETAL_API
     void _Execute(

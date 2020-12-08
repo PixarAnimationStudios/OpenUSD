@@ -27,6 +27,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+template<typename SectionType, typename ...T>
+SectionType *
+HgiMetalShaderGenerator::CreateShaderSection(T && ...t)
+{
+    std::unique_ptr<SectionType> p =
+        std::make_unique<SectionType>(std::forward<T>(t)...);
+    SectionType * const result = p.get();
+    GetShaderSections()->push_back(std::move(p));
+    return result;
+}
+
 namespace {
 
 //This is a conversion layer from descriptors into shader sections
@@ -74,37 +85,19 @@ T* _BuildStructInstance(
         return nullptr;
     }
 
-    auto shaderSections = generator->GetShaderSections();
-    shaderSections->push_back(
-        std::make_unique<HgiMetalStructTypeDeclarationShaderSection>(
-            typeName,
-            members));
+    HgiMetalStructTypeDeclarationShaderSection * const section =
+        generator->CreateShaderSection<
+            HgiMetalStructTypeDeclarationShaderSection>(
+                typeName,
+                members);
 
-    HgiMetalStructTypeDeclarationShaderSection *section =
-        static_cast<HgiMetalStructTypeDeclarationShaderSection*>(
-            shaderSections->back().get());
-        
-    if(!attribute.empty()) {
-        shaderSections->push_back(
-            std::make_unique<T>(
-                instanceName,
-                attribute,
-                std::string(),
-                addressSpace,
-                isPointer,
-                section));
-    }
-    else {
-        shaderSections->push_back(
-            std::make_unique<T>(
-                instanceName,
-                std::string(),
-                std::string(),
-                std::string(),
-                false,
-                section));
-    }
-    return static_cast<T*>(shaderSections->back().get());
+    return generator->CreateShaderSection<T>(
+        instanceName,
+        attribute,
+        /* attributeIndex = */ std::string(),
+        addressSpace,
+        isPointer,
+        section);
 }
 
 } // anonymous namespace
@@ -472,55 +465,39 @@ ShaderStageData::AccumulateParams(
 
         for(const HgiShaderFunctionParamDesc &p : params) {
             //For metal, the role is the actual attribute so far
-            uint32_t index = 0;
-            bool hasIndex = false;
+            std::string indexAsStr;
             //check if has a role
             if(!p.role.empty()) {
                 auto it = roleIndexM.find(p.role);
-                const bool isRoleMappable = it != roleIndexM.end();
-                if(isRoleMappable) {
-                    index = it->second;
-                    hasIndex = true;
+                if (it != roleIndexM.end()) {
+                    indexAsStr = std::to_string(it->second);
                     //Increment index, so that the next color
                     //or texture or vertex has a higher index
                     (it)->second += 1;
                 }
             }
 
-            const std::string indexAsStr = hasIndex
-                ? std::to_string(index) : "";
-
-            auto shaderSections = generator->GetShaderSections();
-            shaderSections->push_back(
-                std::make_unique<HgiMetalMemberShaderSection>(
-                            p.nameInShader,
-                            p.type,
-                            p.role,
-                    indexAsStr));
-
-            auto latestSection =
-                static_cast<HgiMetalShaderSection*>(
-                    shaderSections->back().get());
-
-            stageShaderSections.push_back(latestSection);
+            HgiMetalMemberShaderSection * const section =
+                generator->CreateShaderSection<
+                    HgiMetalMemberShaderSection>(
+                        p.nameInShader,
+                        p.type,
+                        p.role,
+                        indexAsStr);
+            stageShaderSections.push_back(section);
         }
     } else {
         for (size_t i = 0; i < params.size(); i++) {
             const HgiShaderFunctionParamDesc &p = params[i];
-            auto shaderSections = generator->GetShaderSections();
-            shaderSections->push_back(
-                std::make_unique<HgiMetalMemberShaderSection>(
-                    p.nameInShader,
-                    p.type,
-                    //For metal, the role is the actual attribute so far
-                    /* attribute = */ "attribute",
-                    std::to_string(i)));
-
-            auto latestSection =
-                static_cast<HgiMetalShaderSection*>(
-                    shaderSections->back().get());
-
-            stageShaderSections.push_back(latestSection);
+            HgiMetalMemberShaderSection * const section =
+                generator->CreateShaderSection<
+                    HgiMetalMemberShaderSection>(
+                        p.nameInShader,
+                        p.type,
+                        //For metal, the role is the actual attribute so far
+                        /* attribute = */ "attribute",
+                        std::to_string(i));
+            stageShaderSections.push_back(section);
         }
     }
     return stageShaderSections;
@@ -710,38 +687,34 @@ HgiMetalShaderStageEntryPoint::_Init(
     const HgiMetalShaderSectionPtrVector &stageOutputs,
     HgiMetalShaderGenerator *generator)
 {
-    static const std::string bufferattr = "buffer(0)";
-    static const std::string deviceSpace = "const device";
-
     _parameters =
         _BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
         GetConstantBufferTypeName(),
         GetConstantBufferInstanceName(),
-        bufferattr,
-        deviceSpace,
-        true,
-        stageConstantBuffers,
+        /* attribute = */ "buffer(0)",
+        /* addressSpace = */ "const device",
+        /* isPointer = */ true,
+        /* members = */ stageConstantBuffers,
         generator);
 
-    static const std::string inStage = "stage_in";
     _inputs =
         _BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
         GetInputsTypeName(),
         GetInputsInstanceName(),
-        inStage,
-        std::string(),
-        false,
-        stageInputs,
+        /* attribute = */ "stage_in",
+        /* addressSpace = */ std::string(),
+        /* isPointer = */ false,
+        /* members = */ stageInputs,
         generator);
 
     _outputs =
         _BuildStructInstance<HgiMetalStageOutputShaderSection>(
         GetOutputTypeName(),
         GetOutputInstanceName(),
-        std::string(),
-        std::string(),
-        false,
-        stageOutputs,
+        /* attribute = */ std::string(),
+        /* addressSpace = */ std::string(),
+        /* isPointer = */ false,
+        /* members = */ stageOutputs,
         generator);
 }
 
@@ -750,60 +723,47 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
     const HgiShaderFunctionDesc &descriptor)
 {
     HgiMetalShaderSectionPtrVector structMembers;
-    auto &textures = descriptor.textures;
-    auto shaderSections = GetShaderSections();
+    const std::vector<HgiShaderFunctionTextureDesc> &textures =
+        descriptor.textures;
     for (size_t i = 0; i < textures.size(); ++i) {
-        const HgiShaderFunctionTextureDesc &tex = textures[i];
         //Create the sampler shader section
-        auto &texName = tex.nameInShader;
+        const std::string &texName = textures[i].nameInShader;
 
         //Shader section vector on the generator
         // owns all sections, point to it in the vector
-        shaderSections->push_back(
-            std::make_unique<HgiMetalSamplerShaderSection>(
+        HgiMetalSamplerShaderSection * const samplerSection =
+            CreateShaderSection<HgiMetalSamplerShaderSection>(
                 texName,
                 /* samplerAttribute = */ "sampler",
-                std::to_string(i)));
-
-        auto latestShaderSectionSampGeneric = shaderSections->back().get();
-        auto latestShaderSectionAsSampler =
-            static_cast<HgiMetalSamplerShaderSection*>(
-                latestShaderSectionSampGeneric);
+                std::to_string(i));
 
         //fx texturing struct depends on the sampler
-        structMembers.push_back(latestShaderSectionAsSampler);
+        structMembers.push_back(samplerSection);
 
         //Create the actual texture shader section
-        shaderSections->push_back(
-            std::make_unique<HgiMetalTextureShaderSection>(
+        HgiMetalTextureShaderSection * const textureSection =
+            CreateShaderSection<HgiMetalTextureShaderSection>(
                 texName,
                 "texture",
                 std::to_string(i),
-                latestShaderSectionAsSampler,
-                std::string()));
+                samplerSection,
+                std::string());
 
         //fx texturing struct depends on the sampler
-        structMembers.push_back(
-            shaderSections->back().get());
+        structMembers.push_back(textureSection);
     }
 
-    //create fx texturing struct
-    shaderSections->push_back(
-            std::make_unique<HgiMetalStructTypeDeclarationShaderSection>(
-            "MSLFsTexturing", structMembers));
+    HgiMetalStructTypeDeclarationShaderSection * const structSection =
+        CreateShaderSection<HgiMetalStructTypeDeclarationShaderSection>(
+            "MSLFsTexturing", structMembers);
 
-    auto latestSectionAsStructType =
-            static_cast<HgiMetalStructTypeDeclarationShaderSection*>(
-                shaderSections->back().get());
-
-    shaderSections->push_back(
-            std::make_unique<HgiMetalArgumentBufferInputShaderSection>(
-                "fsTexturing",
-                std::string(),
-                std::string(),
-                std::string(),
-                false,
-            latestSectionAsStructType));
+    CreateShaderSection<HgiMetalArgumentBufferInputShaderSection>(
+        "fsTexturing",
+        std::string(),
+        std::string(),
+        std::string(),
+        false,
+        structSection);
 }
 
 std::unique_ptr<HgiMetalShaderStageEntryPoint>
@@ -859,13 +819,12 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
 HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     const HgiShaderFunctionDesc &descriptor,
     id<MTLDevice> device)
-    : HgiShaderGenerator(descriptor)
-    , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
+  : HgiShaderGenerator(descriptor)
+  , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
 {
-    GetShaderSections()->push_back(
-        std::make_unique<HgiMetalMacroShaderSection>(
-            _GetHeader(device),
-            "Headers"));
+    CreateShaderSection<HgiMetalMacroShaderSection>(
+        _GetHeader(device),
+        "Headers");
 }
 
 HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
@@ -873,7 +832,8 @@ HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
 void HgiMetalShaderGenerator::_Execute(
     std::ostream &ss, const std::string &originalShaderCode)
 {
-    auto shaderSections = GetShaderSections();
+    HgiMetalShaderSectionUniquePtrVector * const shaderSections =
+        GetShaderSections();
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMacros(ss);
         ss << "\n";
@@ -908,11 +868,11 @@ void HgiMetalShaderGenerator::_Execute(
 
     //write out the entry point signature
     std::stringstream returnSS;
-    auto outputs = _generatorShaderSections->GetOutputs();
-    if(outputs != nullptr) {
-        auto outputStructDecleration =
-                outputs->GetStructTypeDeclaration();
-        outputStructDecleration->WriteIdentifier(returnSS);
+    if (HgiMetalStageOutputShaderSection* const outputs =
+                        _generatorShaderSections->GetOutputs()) {
+        const HgiMetalStructTypeDeclarationShaderSection* const decl =
+            outputs->GetStructTypeDeclaration();
+        decl->WriteIdentifier(returnSS);
     }
     else {
         //handle compute
@@ -927,9 +887,7 @@ void HgiMetalShaderGenerator::_Execute(
     bool firstParam = true;
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         std::stringstream paramDecl;
-        const bool visited =
-                section->VisitEntryPointParameterDeclarations(paramDecl);
-        if(visited) {
+        if (section->VisitEntryPointParameterDeclarations(paramDecl)) {
             if(!firstParam) {
                 ss << ",\n";
             }
@@ -945,10 +903,8 @@ void HgiMetalShaderGenerator::_Execute(
     
     //Execute all code that hooks into the entry point function
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
-        const bool visited =
-            section->VisitEntryPointFunctionExecutions(
-                ss, _generatorShaderSections->GetScopeInstanceName());
-        if(visited) {
+        if (section->VisitEntryPointFunctionExecutions(
+                ss, _generatorShaderSections->GetScopeInstanceName())) {
             ss << "\n";
         }
     }
