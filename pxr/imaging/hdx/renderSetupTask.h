@@ -174,6 +174,7 @@ struct HdxRenderTaskParams
         , aovBindings()
         , resolveAovMultiSample(true)
         , camera()
+        , overrideWindowPolicy{false, CameraUtilFit}
         , viewport(0.0)
         {}
 
