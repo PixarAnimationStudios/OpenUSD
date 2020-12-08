@@ -271,33 +271,47 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertFalse(Usd.SchemaRegistry.IsTyped(clipsAPI))
         self.assertFalse(Usd.SchemaRegistry.IsTyped(collectionAPI))
 
+    def test_GetSchemaKind(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaKind(modelAPI),
+                         Usd.SchemaKind.NonAppliedAPI)
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaKind(clipsAPI),
+                         Usd.SchemaKind.NonAppliedAPI)
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaKind(collectionAPI),
+                         Usd.SchemaKind.MultipleApplyAPI)
+
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaKind("Bogus"),
+                         Usd.SchemaKind.Invalid)
+
     def test_IsConcrete(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry().IsConcrete(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry().IsConcrete(clipsAPI))
-        self.assertFalse(Usd.SchemaRegistry().IsConcrete(collectionAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(clipsAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(collectionAPI))
 
     def test_IsAppliedAPISchema(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry().IsAppliedAPISchema(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry().IsAppliedAPISchema(clipsAPI))
-        self.assertTrue(Usd.SchemaRegistry().IsAppliedAPISchema(
-                            collectionAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry.IsAppliedAPISchema(collectionAPI))
 
     def test_IsMultipleApplyAPISchema(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry().IsMultipleApplyAPISchema(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry().IsMultipleApplyAPISchema(clipsAPI))
-        self.assertTrue(Usd.SchemaRegistry().IsMultipleApplyAPISchema(
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyAPISchema(
                             collectionAPI))
 
     def test_GetTypeAndInstance(self):
