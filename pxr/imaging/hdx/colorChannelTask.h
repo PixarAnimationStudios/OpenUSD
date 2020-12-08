@@ -68,8 +68,9 @@ private:
     HdxColorChannelTask(const HdxColorChannelTask &) = delete;
     HdxColorChannelTask &operator =(const HdxColorChannelTask &) = delete;
 
-    // Utility function to create a storage buffer for the shader parameters.
-    void _CreateParameterBuffer(float screenSizeX, float screenSizeY);
+    // Utility function to update the shader uniform parameters.
+    // Returns true if the values were updated. False if unchanged.
+    bool _UpdateParameterBuffer(float screenSizeX, float screenSizeY);
 
     /// Apply the color channel filtering.
     void _ApplyColorChannel();
@@ -78,16 +79,17 @@ private:
     // Be careful to remember the std430 rules.
     struct _ParameterBuffer
     {
-        int channel;
         float screenSize[2];
+        int channel;
         bool operator==(const _ParameterBuffer& other) const {
-            return channel == other.channel;
+            return channel == other.channel &&
+                   screenSize[0] == other.screenSize[0] &&
+                   screenSize[1] == other.screenSize[1];
         }
     };
 
     std::unique_ptr<HdxFullscreenShader> _compositor;
     _ParameterBuffer _parameterData;
-    HgiBufferHandle _parameterBuffer;
 
     // The color channel to be rendered (see HdxColorChannelTokens for the
     // possible values).

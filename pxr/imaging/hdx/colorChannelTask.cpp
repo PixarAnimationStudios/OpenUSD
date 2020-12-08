@@ -53,9 +53,6 @@ HdxColorChannelTask::HdxColorChannelTask(
 
 HdxColorChannelTask::~HdxColorChannelTask()
 {
-    if (_parameterBuffer) {
-        _GetHgi()->DestroyBuffer(&_parameterBuffer);
-    }
 }
 
 void
@@ -100,8 +97,6 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->colorChannelFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    HgiShaderFunctionAddConstantParam(
-        &fragDesc, "screenSize", "vec2");
     HgiShaderFunctionAddStageInput(
         &fragDesc, "hd_Position", "vec4", "position");
     HgiShaderFunctionAddStageInput(
@@ -110,19 +105,25 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
         &fragDesc, "colorIn");
     HgiShaderFunctionAddStageOutput(
         &fragDesc, "hd_FragColor", "vec4", "color");
-    
+
+    // The order of the constant parameters has to match the order in the 
+    // _ParameterBuffer struct
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "screenSize", "vec2");
     HgiShaderFunctionAddConstantParam(
         &fragDesc, "channel", "int");
-    
+
     _compositor->SetProgram(
         HdxPackageColorChannelShader(), 
         _tokens->colorChannelFrag,
         fragDesc);
     const auto &aovDesc = aovTexture->GetDescriptor();
-    _CreateParameterBuffer(
-        static_cast<float>(aovDesc.dimensions[0]),
-        static_cast<float>(aovDesc.dimensions[1]));
-    _compositor->BindBuffer(_parameterBuffer, 0);
+    if (_UpdateParameterBuffer(
+            static_cast<float>(aovDesc.dimensions[0]),
+            static_cast<float>(aovDesc.dimensions[1]))) {
+        size_t byteSize = sizeof(_ParameterBuffer);
+        _compositor->SetShaderConstants(byteSize, &_parameterData);
+    }
 
     _compositor->BindTextures(
         {_tokens->colorIn}, 
@@ -131,8 +132,8 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     _compositor->Draw(aovTexture, /*no depth*/HgiTextureHandle());
 }
 
-void
-HdxColorChannelTask::_CreateParameterBuffer(
+bool
+HdxColorChannelTask::_UpdateParameterBuffer(
     float screenSizeX, float screenSizeY)
 {
     _ParameterBuffer pb;
@@ -151,31 +152,13 @@ HdxColorChannelTask::_CreateParameterBuffer(
     pb.screenSize[1] = screenSizeY;
 
     // All data is still the same, no need to update the storage buffer
-    if (_parameterBuffer && pb == _parameterData) {
-        return;
+    if (pb == _parameterData) {
+        return false;
     }
+
     _parameterData = pb;
 
-    if (!_parameterBuffer) {
-        // Create a new (storage) buffer for shader parameters
-        HgiBufferDesc bufDesc;
-        bufDesc.debugName = "HdxColorChannelTask parameter buffer";
-        bufDesc.usage = HgiBufferUsageStorage;
-        bufDesc.initialData = &_parameterData;
-        bufDesc.byteSize = sizeof(_parameterData);
-        _parameterBuffer = _GetHgi()->CreateBuffer(bufDesc);
-    } else {
-        // Update the existing storage buffer with new values.
-        HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
-        HgiBufferCpuToGpuOp copyOp;
-        copyOp.byteSize = sizeof(_parameterData);
-        copyOp.cpuSourceBuffer = &_parameterData;
-        copyOp.sourceByteOffset = 0;
-        copyOp.destinationByteOffset = 0;
-        copyOp.gpuDestinationBuffer = _parameterBuffer;
-        blitCmds->CopyBufferCpuToGpu(copyOp);
-        _GetHgi()->SubmitCmds(blitCmds.get());
-    }
+    return true;
 }
 
 
