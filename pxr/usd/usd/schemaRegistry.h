@@ -207,6 +207,12 @@ public:
     static std::pair<TfToken, TfToken> GetTypeAndInstance(
             const TfToken &apiSchemaName);
 
+    /// Returns the namespace prefix that is prepended to all properties of
+    /// the given \p multiApplyAPISchemaName.
+    USD_API
+    TfToken GetPropertyNamespacePrefix(
+        const TfToken &multiApplyAPISchemaName) const;
+
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
     /// it is not.

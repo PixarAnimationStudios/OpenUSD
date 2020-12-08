@@ -131,6 +131,9 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
         .staticmethod("GetTypeAndInstance")
 
+        .def("GetPropertyNamespacePrefix", &This::GetPropertyNamespacePrefix, 
+            (arg("multiApplyAPISchemaName")))
+
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,
              (arg("typeName")),

@@ -327,6 +327,19 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(typeAndInstance[0], "SingleApplyAPI")
         self.assertEqual(typeAndInstance[1], "")
 
+    def test_GetPropertyNamespacePrefix(self):
+        # CollectionAPI is a multiple apply API so it must have a property
+        # namespace prefix.
+        self.assertEqual(
+            Usd.SchemaRegistry().GetPropertyNamespacePrefix("CollectionAPI"),
+            "collection")
+        # Other schema types that are not multiple apply API will not have a 
+        # property namespace prefix.
+        self.assertEqual(
+            Usd.SchemaRegistry().GetPropertyNamespacePrefix("MetadataTest"), "")
+        self.assertEqual(
+            Usd.SchemaRegistry().GetPropertyNamespacePrefix("ClipsAPI"), "")
+
 
 if __name__ == "__main__":
     unittest.main()

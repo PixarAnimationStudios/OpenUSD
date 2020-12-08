@@ -1006,6 +1006,15 @@ UsdSchemaRegistry::GetTypeAndInstance(const TfToken &apiSchemaName)
     }
 }
 
+TfToken 
+UsdSchemaRegistry::GetPropertyNamespacePrefix(
+    const TfToken &multiApplyAPISchemaName) const
+{
+    const TfToken *prefix = TfMapLookupPtr(
+        _multipleApplyAPISchemaNamespaces, multiApplyAPISchemaName);
+    return prefix ? *prefix : TfToken();
+}
+
 std::unique_ptr<UsdPrimDefinition>
 UsdSchemaRegistry::BuildComposedPrimDefinition(
     const TfToken &primType, const TfTokenVector &appliedAPISchemas) const
