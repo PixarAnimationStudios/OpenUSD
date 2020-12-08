@@ -164,15 +164,6 @@ public:
         return ArResolverContext();
     }
 
-    virtual void UpdateAssetInfo(
-        const std::string& identifier,
-        const std::string& filePath,
-        const std::string& fileVersion,
-        ArAssetInfo* assetInfo) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(identifier), "test:"));
-    }
-
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) final

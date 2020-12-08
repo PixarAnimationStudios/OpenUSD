@@ -398,12 +398,15 @@ SdfLayer::_CreateNew(
     const string absIdentifier = 
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
+    ArAssetInfo assetInfo;
+
 #if AR_VERSION == 1
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
 #else
     // Resolve the identifier to the path where new assets should go.
-    const string localPath = resolver.ResolveForNewAsset(absIdentifier);
+    const string localPath = 
+        resolver.ResolveForNewAsset(absIdentifier, &assetInfo);
 #endif
     if (localPath.empty()) {
         TF_CODING_ERROR(
@@ -446,7 +449,7 @@ SdfLayer::_CreateNew(
         }
 
         layer = _CreateNewWithFormat(
-            fileFormat, absIdentifier, localPath, ArAssetInfo(), args);
+            fileFormat, absIdentifier, localPath, assetInfo, args);
 
         if (!TF_VERIFY(layer)) {
             return TfNullPtr;

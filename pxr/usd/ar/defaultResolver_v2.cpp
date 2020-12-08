@@ -244,20 +244,6 @@ ArDefaultResolver::_ResolveForNewAsset(
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
 
-void
-ArDefaultResolver::UpdateAssetInfo(
-    const std::string& identifier,
-    const std::string& filePath,
-    const std::string& fileVersion,
-    ArAssetInfo* resolveInfo)
-{
-    if (resolveInfo) {
-        if (!fileVersion.empty()) {
-            resolveInfo->version = fileVersion;
-        }
-    }
-}
-
 VtValue
 ArDefaultResolver::GetModificationTimestamp(
     const std::string& path,

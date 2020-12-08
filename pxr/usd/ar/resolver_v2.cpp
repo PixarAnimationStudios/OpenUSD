@@ -678,43 +678,6 @@ public:
         return resolver.ResolveForNewAsset(assetPath, assetInfo);
     };
 
-    virtual void UpdateAssetInfo(
-        const std::string& identifier,
-        const std::string& filePath,
-        const std::string& fileVersion,
-        ArAssetInfo* assetInfo) override
-    {
-        ArResolver& resolver = _GetResolver(identifier);
-        if (ArIsPackageRelativePath(identifier)) {
-            // The primary resolver is not expecting package-relative paths,
-            // so we replace the repoPath field with its outermost package
-            // path before passing it along. After the primary resolver
-            // has updated the assetInfo object, recreate the package-relative
-            // path. This matches the behavior in ResolveWithAssetInfo.
-            if (!assetInfo->repoPath.empty()) {
-                assetInfo->repoPath = ArSplitPackageRelativePathOuter(
-                    assetInfo->repoPath).first;
-            }
-
-            std::pair<std::string, std::string> resolvedPath =
-                ArSplitPackageRelativePathOuter(filePath);
-
-            resolver.UpdateAssetInfo(
-                ArSplitPackageRelativePathOuter(identifier).first,
-                resolvedPath.first,
-                fileVersion, assetInfo);
-
-            if (!assetInfo->repoPath.empty()) {
-                assetInfo->repoPath = ArJoinPackageRelativePath(
-                    assetInfo->repoPath, resolvedPath.second);
-            }
-            return;
-        }
-
-        resolver.UpdateAssetInfo(
-            identifier, filePath, fileVersion, assetInfo);
-    }
-
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) override

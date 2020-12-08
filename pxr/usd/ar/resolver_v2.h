@@ -255,16 +255,6 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Update \p assetInfo with respect to the given \p fileVersion .
-    /// \note This API is currently in flux.  In general, you should prefer
-    /// to call ResolveWithAssetInfo()
-    AR_API
-    virtual void UpdateAssetInfo(
-        const std::string& identifier,
-        const std::string& filePath,
-        const std::string& fileVersion,
-        ArAssetInfo* assetInfo) = 0;
-
     /// Returns a value representing the last time the asset identified
     /// by \p path was modified. \p resolvedPath is the resolved path
     /// of the asset.

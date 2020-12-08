@@ -120,13 +120,6 @@ public:
     virtual std::string ComputeRepositoryPath(const std::string& path) override;
 
     AR_API
-    virtual void UpdateAssetInfo(
-       const std::string& identifier,
-       const std::string& filePath,
-       const std::string& fileVersion,
-       ArAssetInfo* assetInfo) override;
-
-    AR_API
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) override;
