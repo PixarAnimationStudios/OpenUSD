@@ -375,7 +375,8 @@ def "Root"
             paths = [os.path.join(p, testLayerName) for p in paths]
             firstLayer = Sdf.Layer.FindOrOpen(paths[0])
             self.assertTrue(
-                firstLayer, "Unable to open {} (from {})".format(p, paths))
+                firstLayer,
+                "Unable to open {} (from {})".format(paths[0], paths))
 
             for p in paths:
                 testLayer = Sdf.Layer.FindOrOpen(p)
