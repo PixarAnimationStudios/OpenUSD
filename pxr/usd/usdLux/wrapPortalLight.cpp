@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdLux/lightPortal.h"
+#include "pxr/usd/usdLux/portalLight.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -50,22 +50,22 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdLuxLightPortal &self)
+_Repr(const UsdLuxPortalLight &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLux.LightPortal(%s)",
+        "UsdLux.PortalLight(%s)",
         primRepr.c_str());
 }
 
 } // anonymous namespace
 
-void wrapUsdLuxLightPortal()
+void wrapUsdLuxPortalLight()
 {
-    typedef UsdLuxLightPortal This;
+    typedef UsdLuxPortalLight This;
 
-    class_<This, bases<UsdLuxPortalLight> >
-        cls("LightPortal");
+    class_<This, bases<UsdLuxLight> >
+        cls("PortalLight");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

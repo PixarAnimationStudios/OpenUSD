@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdLux/lightPortal.h"
+#include "pxr/usd/usdLux/portalLight.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -33,68 +33,68 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLuxLightPortal,
-        TfType::Bases< UsdLuxPortalLight > >();
+    TfType::Define<UsdLuxPortalLight,
+        TfType::Bases< UsdLuxLight > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("LightPortal")
-    // to find TfType<UsdLuxLightPortal>, which is how IsA queries are
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("PortalLight")
+    // to find TfType<UsdLuxPortalLight>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdLuxLightPortal>("LightPortal");
+    TfType::AddAlias<UsdSchemaBase, UsdLuxPortalLight>("PortalLight");
 }
 
 /* virtual */
-UsdLuxLightPortal::~UsdLuxLightPortal()
+UsdLuxPortalLight::~UsdLuxPortalLight()
 {
 }
 
 /* static */
-UsdLuxLightPortal
-UsdLuxLightPortal::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLuxPortalLight
+UsdLuxPortalLight::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLuxLightPortal();
+        return UsdLuxPortalLight();
     }
-    return UsdLuxLightPortal(stage->GetPrimAtPath(path));
+    return UsdLuxPortalLight(stage->GetPrimAtPath(path));
 }
 
 /* static */
-UsdLuxLightPortal
-UsdLuxLightPortal::Define(
+UsdLuxPortalLight
+UsdLuxPortalLight::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("LightPortal");
+    static TfToken usdPrimTypeName("PortalLight");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLuxLightPortal();
+        return UsdLuxPortalLight();
     }
-    return UsdLuxLightPortal(
+    return UsdLuxPortalLight(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxLightPortal::_GetSchemaKind() const {
-    return UsdLuxLightPortal::schemaKind;
+UsdSchemaKind UsdLuxPortalLight::_GetSchemaKind() const {
+    return UsdLuxPortalLight::schemaKind;
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxLightPortal::_GetSchemaType() const {
-    return UsdLuxLightPortal::schemaType;
+UsdSchemaKind UsdLuxPortalLight::_GetSchemaType() const {
+    return UsdLuxPortalLight::schemaType;
 }
 
 /* static */
 const TfType &
-UsdLuxLightPortal::_GetStaticTfType()
+UsdLuxPortalLight::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLuxLightPortal>();
+    static TfType tfType = TfType::Find<UsdLuxPortalLight>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLuxLightPortal::_IsTypedSchema()
+UsdLuxPortalLight::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -102,18 +102,18 @@ UsdLuxLightPortal::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLuxLightPortal::_GetTfType() const
+UsdLuxPortalLight::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdLuxLightPortal::GetSchemaAttributeNames(bool includeInherited)
+UsdLuxPortalLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdLuxPortalLight::GetSchemaAttributeNames(true);
+        UsdLuxLight::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

@@ -24,6 +24,7 @@ pxr_library(usdLux
         listAPI
         pluginLight
         pluginLightFilter
+        portalLight
         rectLight
         shadowAPI
         shapingAPI
@@ -53,6 +54,7 @@ pxr_library(usdLux
         wrapListAPI.cpp
         wrapPluginLight.cpp
         wrapPluginLightFilter.cpp
+        wrapPortalLight.cpp
         wrapRectLight.cpp
         wrapShadowAPI.cpp
         wrapShapingAPI.cpp

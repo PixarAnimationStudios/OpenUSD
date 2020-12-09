@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDLUX_GENERATED_LIGHTPORTAL_H
-#define USDLUX_GENERATED_LIGHTPORTAL_H
+#ifndef USDLUX_GENERATED_PORTALLIGHT_H
+#define USDLUX_GENERATED_PORTALLIGHT_H
 
-/// \file usdLux/lightPortal.h
+/// \file usdLux/portalLight.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/portalLight.h"
+#include "pxr/usd/usdLux/light.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -46,20 +46,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// LIGHTPORTAL                                                                //
+// PORTALLIGHT                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLuxLightPortal
+/// \class UsdLuxPortalLight
 ///
-/// 
-/// \deprecated This remains for backward compatability for now but is 
-/// identical to PortalLight which should be used instead.
-/// 
 /// A rectangular portal in the local XY plane that guides sampling
 /// of a dome light.  Transmits light in the -Z direction.
 /// The rectangle is 1 unit in length.
 ///
-class UsdLuxLightPortal : public UsdLuxPortalLight
+class UsdLuxPortalLight : public UsdLuxLight
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -72,26 +68,26 @@ public:
     /// compatibility with older generated schemas.
     static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdLuxLightPortal on UsdPrim \p prim .
-    /// Equivalent to UsdLuxLightPortal::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLuxPortalLight on UsdPrim \p prim .
+    /// Equivalent to UsdLuxPortalLight::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLuxLightPortal(const UsdPrim& prim=UsdPrim())
-        : UsdLuxPortalLight(prim)
+    explicit UsdLuxPortalLight(const UsdPrim& prim=UsdPrim())
+        : UsdLuxLight(prim)
     {
     }
 
-    /// Construct a UsdLuxLightPortal on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLuxLightPortal(schemaObj.GetPrim()),
+    /// Construct a UsdLuxPortalLight on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLuxPortalLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLuxLightPortal(const UsdSchemaBase& schemaObj)
-        : UsdLuxPortalLight(schemaObj)
+    explicit UsdLuxPortalLight(const UsdSchemaBase& schemaObj)
+        : UsdLuxLight(schemaObj)
     {
     }
 
     /// Destructor.
     USDLUX_API
-    virtual ~UsdLuxLightPortal();
+    virtual ~UsdLuxPortalLight();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -100,17 +96,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLuxLightPortal holding the prim adhering to this
+    /// Return a UsdLuxPortalLight holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLuxLightPortal(stage->GetPrimAtPath(path));
+    /// UsdLuxPortalLight(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLUX_API
-    static UsdLuxLightPortal
+    static UsdLuxPortalLight
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -136,7 +132,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDLUX_API
-    static UsdLuxLightPortal
+    static UsdLuxPortalLight
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:

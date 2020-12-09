@@ -595,9 +595,21 @@ class DomeLight "DomeLight" (
     )
 }
 
-class LightPortal "LightPortal" (
-    inherits = </Xformable>
+class PortalLight "PortalLight" (
+    inherits = </Light>
     doc = """A rectangular portal in the local XY plane that guides sampling
+    of a dome light.  Transmits light in the -Z direction.
+    The rectangle is 1 unit in length."""
+) {
+}
+
+class LightPortal "LightPortal" (
+    inherits = </PortalLight>
+    doc = """
+    \\deprecated This remains for backward compatability for now but is 
+    identical to PortalLight which should be used instead.
+
+    A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
     The rectangle is 1 unit in length."""
 ) {
