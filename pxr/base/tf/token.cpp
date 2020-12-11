@@ -39,6 +39,7 @@
 
 #include <tbb/spin_mutex.h>
 
+#include <algorithm>
 #include <string>
 #include <ostream>
 #include <vector>

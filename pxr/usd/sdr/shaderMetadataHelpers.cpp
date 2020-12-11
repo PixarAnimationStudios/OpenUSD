@@ -28,6 +28,7 @@
 #include "pxr/usd/sdr/shaderProperty.h"
 
 #include <iostream>
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
