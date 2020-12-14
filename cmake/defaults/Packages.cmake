@@ -300,7 +300,9 @@ endif()
 
 if (PXR_BUILD_MATERIALX_PLUGIN)
     find_package(MaterialX REQUIRED)
-    add_definitions(-DPXR_MATERIALX_SUPPORT_ENABLED)
+    if (PXR_ENABLE_MATERIALX_IMAGING_SUPPORT)
+        add_definitions(-DPXR_MATERIALX_IMAGING_SUPPORT_ENABLED)
+    endif()
 endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
