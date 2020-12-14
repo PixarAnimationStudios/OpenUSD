@@ -38,7 +38,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         lw1 = UsdShade.Material.Define(s, "/weaker/look1")
         lw2 = UsdShade.Material.Define(s, "/weaker/look2")
         gpw = s.OverridePrim("/weaker/gprim")
-        UsdShade.MaterialBindingAPI(gpw).Bind(lw1)
+        UsdShade.MaterialBindingAPI.Apply(gpw).Bind(lw1)
         self.assertEqual(
             UsdShade.MaterialBindingAPI(gpw).GetDirectBindingRel().GetTargets(),
             [Sdf.Path("/weaker/look1")])
@@ -46,7 +46,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         ls1 = UsdShade.Material.Define(s, "/stronger/look1")
         ls2 = UsdShade.Material.Define(s, "/stronger/look2")
         gps = s.OverridePrim("/stronger/gprim")
-        UsdShade.MaterialBindingAPI(gps).Bind(ls2)
+        UsdShade.MaterialBindingAPI.Apply(gps).Bind(ls2)
         self.assertEqual(
             UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().GetTargets(), 
             [Sdf.Path("/stronger/look2")])
@@ -83,7 +83,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         gprim = stage.OverridePrim("/World/Gprim")
         self.assertTrue(gprim)
 
-        gprimBindingAPI = UsdShade.MaterialBindingAPI(gprim)
+        gprimBindingAPI = UsdShade.MaterialBindingAPI.Apply(gprim)
         self.assertFalse(gprimBindingAPI.ComputeBoundMaterial()[0])
         gprimBindingAPI.Bind(look)
         (mat, rel) = gprimBindingAPI.ComputeBoundMaterial()
@@ -102,7 +102,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         gprim = stage.DefinePrim("/World/gprim")
 
         UsdShade.MaterialBindingAPI(over).UnbindDirectBinding()
-        UsdShade.MaterialBindingAPI(gprim).Bind(look)
+        UsdShade.MaterialBindingAPI.Apply(gprim).Bind(look)
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
         self.assertFalse(UsdShade.MaterialBindingAPI(over).ComputeBoundMaterial()[0])

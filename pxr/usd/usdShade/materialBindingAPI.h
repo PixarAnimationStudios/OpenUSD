@@ -491,6 +491,12 @@ public:
     /// If \p materialPurpose is specified and isn't equal to 
     /// UsdShadeTokens->allPurpose, the binding only applies to the specified 
     /// material purpose.
+    ///
+    /// Note that UsdShadeMaterialBindingAPI is a SingleAppliedAPI schema which 
+    /// when applied updates the prim definition accordingly. This information 
+    /// on the prim definition is helpful in multiple queries and more
+    /// performant. Hence its recommended to call
+    /// UsdShadeMaterialBindingAPI::Apply() when Binding a material.
     /// 
     /// Returns true on success, false otherwise.
     USDSHADE_API
@@ -525,6 +531,12 @@ public:
     /// If \p materialPurpose is specified and isn't equal to 
     /// UsdShadeTokens->allPurpose, the binding only applies to the specified 
     /// material purpose.
+    ///
+    /// Note that UsdShadeMaterialBindingAPI is a SingleAppliedAPI schema which 
+    /// when applied updates the prim definition accordingly. This information 
+    /// on the prim definition is helpful in multiple queries and more
+    /// performant. Hence its recommended to call
+    /// UsdShadeMaterialBindingAPI::Apply() when Binding a material.
     /// 
     /// Returns true on success, false otherwise.
     USDSHADE_API

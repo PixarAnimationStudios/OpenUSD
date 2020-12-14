@@ -20,7 +20,9 @@ def Xform "Sphere" (
         )
         uniform token subsetFamily:materialBind:familyType = "partition"
 
-        def GeomSubset "subset1"
+        def GeomSubset "subset1" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
@@ -28,7 +30,9 @@ def Xform "Sphere" (
             rel material:binding = </Sphere/Materials/initialShadingGroup>
         }
 
-        def GeomSubset "subset2"
+        def GeomSubset "subset2" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
@@ -36,7 +40,9 @@ def Xform "Sphere" (
             rel material:binding = </Sphere/Materials/lambert2SG>
         }
 
-        def GeomSubset "subset3"
+        def GeomSubset "subset3" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
