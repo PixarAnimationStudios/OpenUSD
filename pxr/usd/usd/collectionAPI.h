@@ -395,25 +395,6 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
 public:
-    /// \deprecated Use UsdCollectionAPI::Apply instead.
-    /// 
-    /// Adds a new collection named \p name on the given prim, \p prim with the 
-    /// specified expansion-rule, \p expansionRule.
-    /// 
-    /// If a collection named \p name already exists, its expansion-rule is 
-    /// updated with the provided value and it is returned.
-    /// 
-    /// The name of a collection, \p name may itself be namespaced, to facilitate 
-    /// organization of collections into groups. However, the base-name of a 
-    /// collection (i.e. the last component of the collection name) should not 
-    /// be the same as one of the core collection schema properties,
-    /// i.e. should not be 'expansionRule' or 'includes' or 'excludes'.
-    USD_API
-    static UsdCollectionAPI ApplyCollection(
-        const UsdPrim& prim, 
-        const TfToken &name, 
-        const TfToken &expansionRule=UsdTokens->expandPrims);
-
     /// Returns the collection represented by the given collection path, 
     /// \p collectionPath on the given USD stage.
     USD_API

@@ -338,20 +338,6 @@ using PathExpansionRuleMap = UsdCollectionMembershipQuery::PathExpansionRuleMap;
 
 /* static */
 UsdCollectionAPI 
-UsdCollectionAPI::ApplyCollection(
-    const UsdPrim& prim, 
-    const TfToken &name, 
-    const TfToken &expansionRule /*=UsdTokens->expandPrims*/) 
-{
-    UsdCollectionAPI collection = UsdCollectionAPI::Apply(prim, name);
-    if (collection) {
-        collection.CreateExpansionRuleAttr(VtValue(expansionRule));
-    }
-    return collection;
-}
-
-/* static */
-UsdCollectionAPI 
 UsdCollectionAPI::GetCollection(const UsdStagePtr &stage, 
                                 const SdfPath &collectionPath)
 {
