@@ -213,7 +213,7 @@ struct Sdf_IsLayerMetadataField : public Sdf_IsMetadataField
 static bool
 _WriteLayer(
     const SdfLayer* l,
-    std::ostream& out,
+    Sdf_TextOutput& out,
     const string& cookie,
     const string& versionString,
     const string& commentOverride)
@@ -229,7 +229,8 @@ _WriteLayer(
     // Accumulate header metadata in a stringstream buffer,
     // as an easy way to check later if we have any layer
     // metadata to write at all.
-    std::ostringstream header;
+    std::ostringstream headerOut;
+    Sdf_TextOutput header(headerOut);
 
     // Partition this layer's fields so that all fields to write out are
     // in the range [fields.begin(), metadataFieldsEnd).
@@ -286,7 +287,7 @@ _WriteLayer(
     } // end for each field
 
     // Write header if not empty.
-    string headerStr = header.str();
+    string headerStr = headerOut.str();
     if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
         _Write(out, 0, "%s", headerStr.c_str());
@@ -330,9 +331,10 @@ SdfTextFileFormat::WriteToFile(
         return false;
     }
 
+    Sdf_TextOutput out(wrapper.GetStream());
+
     const bool ok = _WriteLayer(
-        &layer, wrapper.GetStream(), GetFileCookie(), GetVersionString(), 
-        comment);
+        &layer, out, GetFileCookie(), GetVersionString(), comment);
 
     if (ok && !wrapper.Commit(&reason)) {
         TF_RUNTIME_ERROR(reason);
@@ -366,8 +368,10 @@ SdfTextFileFormat::WriteToString(
     const std::string& comment) const
 {
     std::stringstream ostr;
+    Sdf_TextOutput out(ostr);
+
     if (!_WriteLayer(
-            &layer, ostr, GetFileCookie(), GetVersionString(), comment)) {
+            &layer, out, GetFileCookie(), GetVersionString(), comment)) {
         return false;
     }
 

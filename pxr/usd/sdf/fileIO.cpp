@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/usd/sdf/fileIO.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,16 +36,16 @@
 #include "pxr/usd/sdf/variantSpec.h"
 
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/value.h"
 
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& out, size_t indent)
+Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& o, size_t indent)
 {
+    Sdf_TextOutput out(o);
+
     const SdfSpecType type = baseSpec.GetSpecType();
 
     switch (type) {

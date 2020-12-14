@@ -26,11 +26,38 @@
 
 #include "pxr/pxr.h"
 
-#include <iosfwd>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfSpec;
+
+// Helper class for writing out strings for the text file format.
+class Sdf_TextOutput
+{
+public:
+    explicit Sdf_TextOutput(std::ostream& out) : _out(out) { }
+
+    Sdf_TextOutput(const Sdf_TextOutput&) = delete;
+    const Sdf_TextOutput& operator=(const Sdf_TextOutput&) = delete;
+
+    // Write given \p str to output.
+    bool Write(const std::string& str)
+    {
+        _out << str;
+        return true;
+    }
+
+    // Write NUL-terminated character string \p str to output.
+    bool Write(const char* str)
+    {
+        _out << str;
+        return true;
+    }
+
+private:
+    std::ostream& _out;
+};
 
 // Write the provided \a spec to \a out indented \a indent levels.
 bool Sdf_WriteToStream(const SdfSpec &spec, std::ostream& out, size_t indent);

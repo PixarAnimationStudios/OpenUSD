@@ -25,8 +25,10 @@
 // FileIO_Common.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
+
+#include "pxr/base/tf/stringUtils.h"
 
 #include <cctype>
 
@@ -141,7 +143,7 @@ struct _ListOpWriter
     {
         return true;
     }
-    static void Write(ostream& out, size_t indent, const T& item)
+    static void Write(Sdf_TextOutput& out, size_t indent, const T& item)
     {
         Sdf_FileIOUtility::Write(out, indent, "%s", TfStringify(item).c_str());
     }
@@ -155,7 +157,7 @@ struct _ListOpWriter<string>
     {
         return true;
     }
-    static void Write(ostream& out, size_t indent, const string& s)
+    static void Write(Sdf_TextOutput& out, size_t indent, const string& s)
     {
         Sdf_FileIOUtility::WriteQuotedString(out, indent, s);
     }
@@ -169,7 +171,7 @@ struct _ListOpWriter<TfToken>
     {
         return true;
     }
-    static void Write(ostream& out, size_t indent, const TfToken& s)
+    static void Write(Sdf_TextOutput& out, size_t indent, const TfToken& s)
     {
         Sdf_FileIOUtility::WriteQuotedString(out, indent, s.GetString());
     }
@@ -183,7 +185,7 @@ struct _ListOpWriter<SdfPath>
     {
         return false;
     }
-    static void Write(ostream& out, size_t indent, const SdfPath& path)
+    static void Write(Sdf_TextOutput& out, size_t indent, const SdfPath& path)
     {
         Sdf_FileIOUtility::WriteSdfPath(out, indent, path);
     }
@@ -197,7 +199,8 @@ struct _ListOpWriter<SdfReference>
     {
         return !ref.GetCustomData().empty();
     }
-    static void Write(ostream& out, size_t indent, const SdfReference& ref)
+    static void Write(
+        Sdf_TextOutput& out, size_t indent, const SdfReference& ref)
     {
         bool multiLineRefMetaData = !ref.GetCustomData().empty();
     
@@ -239,7 +242,8 @@ struct _ListOpWriter<SdfPayload>
     {
         return false;
     }
-    static void Write(ostream& out, size_t indent, const SdfPayload& payload)
+    static void Write(
+        Sdf_TextOutput& out, size_t indent, const SdfPayload& payload)
     {
         Sdf_FileIOUtility::Write(out, indent, "");
 
@@ -263,7 +267,7 @@ struct _ListOpWriter<SdfPayload>
 template <class ListOpList>
 void
 _WriteListOpList(
-    ostream& out, size_t indent,
+    Sdf_TextOutput& out, size_t indent,
     const string& name, const ListOpList& listOpList, 
     const string& op = string())
 {
@@ -300,7 +304,7 @@ _WriteListOpList(
 template <class ListOp>
 void
 _WriteListOp(
-    ostream &out, size_t indent, 
+    Sdf_TextOutput &out, size_t indent, 
     const std::string& name, const ListOp& listOp)
 {
     if (listOp.IsExplicit()) {
@@ -334,30 +338,33 @@ _WriteListOp(
 // ------------------------------------------------------------
 
 void
-Sdf_FileIOUtility::Puts(ostream &out, size_t indent, const std::string &str)
+Sdf_FileIOUtility::Puts(
+    Sdf_TextOutput &out, size_t indent, const std::string &str)
 {
-    for (size_t i=0; i < indent; ++i)
-        out << _IndentString;
+    for (size_t i = 0; i < indent; ++i) {
+        out.Write(_IndentString);
+    }
 
-    out << str;
+    out.Write(str);
 }
 
 void
-Sdf_FileIOUtility::Write(ostream &out, 
-            size_t indent, const char *fmt, ...)
+Sdf_FileIOUtility::Write(
+    Sdf_TextOutput& out, size_t indent, const char *fmt, ...)
 {
-    for (size_t i=0; i < indent; ++i)
-        out << _IndentString;
+    for (size_t i = 0; i < indent; ++i) {
+        out.Write(_IndentString);
+    }
 
     va_list ap;
     va_start(ap, fmt);
-    out << TfVStringPrintf(fmt, ap);
+    out.Write(TfVStringPrintf(fmt, ap));
     va_end(ap);
 }
 
 bool
-Sdf_FileIOUtility::OpenParensIfNeeded(ostream &out, 
-            bool didParens, bool multiLine)
+Sdf_FileIOUtility::OpenParensIfNeeded(
+    Sdf_TextOutput &out, bool didParens, bool multiLine)
 {
     if (!didParens) {
         Puts(out, 0, multiLine ? " (\n" : " (");
@@ -368,8 +375,8 @@ Sdf_FileIOUtility::OpenParensIfNeeded(ostream &out,
 }
 
 void
-Sdf_FileIOUtility::CloseParensIfNeeded(ostream &out, 
-            size_t indent, bool didParens, bool multiLine)
+Sdf_FileIOUtility::CloseParensIfNeeded(
+    Sdf_TextOutput &out, size_t indent, bool didParens, bool multiLine)
 {
     if (didParens) {
         Puts(out, multiLine ? indent : 0, ")");
@@ -377,22 +384,22 @@ Sdf_FileIOUtility::CloseParensIfNeeded(ostream &out,
 }
 
 void
-Sdf_FileIOUtility::WriteQuotedString(ostream &out, 
-            size_t indent, const string &str)
+Sdf_FileIOUtility::WriteQuotedString(
+    Sdf_TextOutput &out, size_t indent, const string &str)
 {
     Puts(out, indent, Quote(str));
 }
 
 void
 Sdf_FileIOUtility::WriteAssetPath(
-    ostream &out, size_t indent, const string &assetPath) 
+    Sdf_TextOutput &out, size_t indent, const string &assetPath) 
 {
     Puts(out, indent, _StringFromAssetPath(assetPath));
 }
 
 void
 Sdf_FileIOUtility::WriteDefaultValue(
-    std::ostream &out, size_t indent, VtValue value)
+    Sdf_TextOutput &out, size_t indent, VtValue value)
 {
     // ---
     // Special case for SdfPath value types
@@ -411,15 +418,15 @@ Sdf_FileIOUtility::WriteDefaultValue(
 }
 
 void
-Sdf_FileIOUtility::WriteSdfPath(ostream &out, 
-            size_t indent, const SdfPath &path) 
+Sdf_FileIOUtility::WriteSdfPath(
+    Sdf_TextOutput &out, size_t indent, const SdfPath &path) 
 {
     Write(out, indent, "<%s>", path.GetString().c_str());
 }
 
 template <class StrType>
 static bool
-_WriteNameVector(ostream &out, size_t indent, const vector<StrType> &vec)
+_WriteNameVector(Sdf_TextOutput &out, size_t indent, const vector<StrType> &vec)
 {
     size_t i, c = vec.size();
     if (c>1) {
@@ -438,22 +445,22 @@ _WriteNameVector(ostream &out, size_t indent, const vector<StrType> &vec)
 }
 
 bool
-Sdf_FileIOUtility::WriteNameVector(ostream &out, 
-            size_t indent, const vector<string> &vec)
+Sdf_FileIOUtility::WriteNameVector(
+    Sdf_TextOutput &out, size_t indent, const vector<string> &vec)
 {
     return _WriteNameVector(out, indent, vec);
 }
 
 bool
-Sdf_FileIOUtility::WriteNameVector(ostream &out, 
-            size_t indent, const vector<TfToken> &vec)
+Sdf_FileIOUtility::WriteNameVector(
+    Sdf_TextOutput &out, size_t indent, const vector<TfToken> &vec)
 {
     return _WriteNameVector(out, indent, vec);
 }
 
 bool
-Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
-                                    const SdfPropertySpec &prop)
+Sdf_FileIOUtility::WriteTimeSamples(
+    Sdf_TextOutput &out, size_t indent, const SdfPropertySpec &prop)
 {
     VtValue timeSamplesVal = prop.GetField(SdfFieldKeys->TimeSamples);
     if (timeSamplesVal.IsHolding<SdfTimeSampleMap>()) {
@@ -466,7 +473,7 @@ Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
             } else {
                 Puts(out, 0, StringFromVtValue( i->second ));
             }
-            out << ",\n";
+            Puts(out, 0, ",\n");
         }
     }
     else if (timeSamplesVal.IsHolding<SdfHumanReadableValue>()) {
@@ -478,9 +485,9 @@ Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
 }
 
 bool 
-Sdf_FileIOUtility::WriteRelocates(ostream &out, 
-            size_t indent, bool multiLine,
-            const SdfRelocatesMap &reloMap)
+Sdf_FileIOUtility::WriteRelocates(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    const SdfRelocatesMap &reloMap)
 {
     Write(out, indent, "relocates = %s", multiLine ? "{\n" : "{ ");
     size_t itemCount = reloMap.size();
@@ -506,10 +513,10 @@ Sdf_FileIOUtility::WriteRelocates(ostream &out,
 }
 
 void
-Sdf_FileIOUtility::_WriteDictionary(ostream &out,
-            size_t indent, bool multiLine,
-            Sdf_FileIOUtility::_OrderedDictionary &dictionary,
-            bool stringValuesOnly)
+Sdf_FileIOUtility::_WriteDictionary(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    Sdf_FileIOUtility::_OrderedDictionary &dictionary,
+    bool stringValuesOnly)
 {
     Puts(out, 0, multiLine ? "{\n" : "{ ");
     size_t counter = dictionary.size();
@@ -590,10 +597,9 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
 }
 
 void 
-Sdf_FileIOUtility::WriteDictionary(ostream &out, 
-            size_t indent, bool multiLine,
-            const VtDictionary &dictionary,
-            bool stringValuesOnly)
+Sdf_FileIOUtility::WriteDictionary(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    const VtDictionary &dictionary, bool stringValuesOnly)
 {
     // Make sure the dictionary keys are written out in order.
     _OrderedDictionary newDictionary;
@@ -605,49 +611,48 @@ Sdf_FileIOUtility::WriteDictionary(ostream &out,
 
 template <class T>
 void 
-Sdf_FileIOUtility::WriteListOp(std::ostream &out,
-                               size_t indent,
-                               const TfToken& fieldName,
-                               const SdfListOp<T>& listOp)
+Sdf_FileIOUtility::WriteListOp(
+    Sdf_TextOutput &out, size_t indent, const TfToken& fieldName,
+    const SdfListOp<T>& listOp)
 {
     _WriteListOp(out, indent, fieldName, listOp);
 }
 
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfPathListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfPayloadListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfReferenceListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfIntListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfInt64ListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfUIntListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfUInt64ListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfStringListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfTokenListOp&);
 template void
-Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+Sdf_FileIOUtility::WriteListOp(Sdf_TextOutput&, size_t, const TfToken&, 
                                const SdfUnregisteredValueListOp&);
 
 void 
-Sdf_FileIOUtility::WriteLayerOffset(ostream &out,
-            size_t indent, bool multiLine,
-            const SdfLayerOffset& layerOffset)
+Sdf_FileIOUtility::WriteLayerOffset(
+    Sdf_TextOutput &out, size_t indent, bool multiLine,
+    const SdfLayerOffset& layerOffset)
 {
     // If there's anything interesting to write, write it.
     if (layerOffset != SdfLayerOffset()) {
