@@ -65,13 +65,6 @@ public:
         return true;
     }
 
-    virtual bool IsRepositoryPath(
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return false;
-    }
-
     virtual bool IsSearchPath(
         const std::string& path) final
     {
@@ -91,13 +84,6 @@ public:
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
         return path;
-    }
-
-    virtual std::string ComputeRepositoryPath(
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return std::string();
     }
 
     virtual std::string _CreateIdentifier(

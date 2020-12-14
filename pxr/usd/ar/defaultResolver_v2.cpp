@@ -104,12 +104,6 @@ ArDefaultResolver::IsRelativePath(const std::string& path)
     return (!path.empty() && TfIsRelativePath(path));
 }
 
-bool
-ArDefaultResolver::IsRepositoryPath(const std::string& path)
-{
-    return false;
-}
-
 std::string
 ArDefaultResolver::AnchorRelativePath(
     const std::string& anchorPath, 
@@ -200,12 +194,6 @@ std::string
 ArDefaultResolver::ComputeNormalizedPath(const std::string& path)
 {
     return TfNormPath(path);
-}
-
-std::string
-ArDefaultResolver::ComputeRepositoryPath(const std::string& path)
-{
-    return std::string();
 }
 
 static ArResolvedPath

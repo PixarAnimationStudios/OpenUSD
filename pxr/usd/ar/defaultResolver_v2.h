@@ -105,9 +105,6 @@ public:
     virtual bool IsRelativePath(const std::string& path) override;
 
     AR_API
-    virtual bool IsRepositoryPath(const std::string& path) override;
-
-    AR_API
     virtual bool IsSearchPath(const std::string& path) override;
 
     AR_API
@@ -115,9 +112,6 @@ public:
 
     AR_API
     virtual std::string ComputeNormalizedPath(const std::string& path) override;
-
-    AR_API
-    virtual std::string ComputeRepositoryPath(const std::string& path) override;
 
     AR_API
     virtual VtValue GetModificationTimestamp(

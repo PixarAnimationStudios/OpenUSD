@@ -137,10 +137,6 @@ public:
     AR_API
     virtual bool IsRelativePath(const std::string& path) = 0;
 
-    /// Returns true if the given path is a repository path.
-    AR_API
-    virtual bool IsRepositoryPath(const std::string& path) = 0;
-
     /// Returns whether this path is a search path.
     AR_API
     virtual bool IsSearchPath(const std::string& path) = 0;
@@ -152,10 +148,6 @@ public:
     /// Returns a normalized version of the given \p path
     AR_API
     virtual std::string ComputeNormalizedPath(const std::string& path) = 0;
-
-    /// Returns the computed repository path using the current resolver 
-    AR_API
-    virtual std::string ComputeRepositoryPath(const std::string& path) = 0;
 
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
@@ -443,6 +435,11 @@ public:
 
     /// @}
 
+    /// \deprecated
+    /// Returns true if the given path is a repository path.
+    AR_API
+    bool IsRepositoryPath(const std::string& path);
+
 protected:
     AR_API
     ArResolver();
@@ -508,6 +505,13 @@ protected:
     AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) = 0;
+
+    /// \deprecated
+    /// Return true if the given path is a repository path, false otherwise.
+    /// Default implementation returns false.
+    AR_API
+     virtual bool _IsRepositoryPath(
+         const std::string& path);
 
     /// @}
 };

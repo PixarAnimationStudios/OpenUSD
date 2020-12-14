@@ -526,7 +526,7 @@ public:
         return resolver->IsRelativePath(path);
     }
 
-    virtual bool IsRepositoryPath(const std::string& path) override
+    virtual bool _IsRepositoryPath(const std::string& path) override
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
@@ -577,19 +577,6 @@ public:
             return ArJoinPackageRelativePath(packagePath);
         }
         return resolver.ComputeNormalizedPath(path);
-    }
-
-    virtual std::string ComputeRepositoryPath(const std::string& path) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            std::pair<std::string, std::string> packagePath =
-                ArSplitPackageRelativePathOuter(path);
-            packagePath.first = 
-                resolver.ComputeRepositoryPath(packagePath.first);
-            return ArJoinPackageRelativePath(packagePath);
-        }
-        return resolver.ComputeRepositoryPath(path);
     }
 
     // The primary resolver and the URI resolvers all participate
@@ -1359,11 +1346,25 @@ ArResolver::OpenAsset(
     return _OpenAsset(resolvedPath);
 }
 
+bool
+ArResolver::IsRepositoryPath(
+    const std::string& path)
+{
+    return _IsRepositoryPath(path);
+}
+
 ArResolverContext
 ArResolver::_CreateContextFromString(
     const std::string& contextStr)
 {
     return ArResolverContext();
+}
+
+bool
+ArResolver::_IsRepositoryPath(
+    const std::string& path)
+{
+    return false;
 }
 
 // ------------------------------------------------------------
