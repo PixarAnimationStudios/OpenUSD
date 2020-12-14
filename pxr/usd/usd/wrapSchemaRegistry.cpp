@@ -131,6 +131,10 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
         .staticmethod("GetTypeAndInstance")
 
+        .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
+             return_value_policy<TfPyMapToDictionary>())
+        .staticmethod("GetAutoApplyAPISchemas")
+
         .def("GetPropertyNamespacePrefix", &This::GetPropertyNamespacePrefix, 
             (arg("multiApplyAPISchemaName")))
 

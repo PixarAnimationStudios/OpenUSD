@@ -1006,6 +1006,17 @@ UsdSchemaRegistry::GetTypeAndInstance(const TfToken &apiSchemaName)
     }
 }
 
+/*static*/
+std::map<TfToken, TfTokenVector> 
+UsdSchemaRegistry::GetAutoApplyAPISchemas()
+{
+    std::map<TfToken, TfTokenVector> result;
+    for (auto &autoApplyToPair : _GetAutoApplyAPISchemas()) {
+        result.emplace(std::move(autoApplyToPair));
+    }
+    return result;
+}
+
 TfToken 
 UsdSchemaRegistry::GetPropertyNamespacePrefix(
     const TfToken &multiApplyAPISchemaName) const

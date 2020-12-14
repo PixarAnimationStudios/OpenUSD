@@ -207,6 +207,17 @@ public:
     static std::pair<TfToken, TfToken> GetTypeAndInstance(
             const TfToken &apiSchemaName);
 
+    /// Returns a map of the names of all registered auto apply API schemas
+    /// to the list of type names each is registered to be auto applied to.
+    ///
+    /// The list of type names to apply to will directly match what is specified
+    /// in the plugin metadata for each schema type. While auto apply schemas do
+    /// account for the existence and validity of the type names and expand to 
+    /// include derived types of the listed types, the type lists returned by 
+    /// this function do not. 
+    USD_API
+    static std::map<TfToken, TfTokenVector> GetAutoApplyAPISchemas();
+
     /// Returns the namespace prefix that is prepended to all properties of
     /// the given \p multiApplyAPISchemaName.
     USD_API

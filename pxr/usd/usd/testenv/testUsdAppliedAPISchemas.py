@@ -622,6 +622,14 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "testAttr", 
             "testRel"])
 
+        # Verify that we can get the value of the auto apply API metadata for
+        # TestSingleApplyAPI from the schema registry.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAutoApplyAPISchemas()['TestSingleApplyAPI'], 
+            ['TestTypedSchemaForAutoApply',
+             'TestTypedSchemaForAutoApplyConcreteBase',
+             'TestTypedSchemaForAutoApplyAbstractBase'])
+
     def test_ApplyRemoveAPI(self):
         """
         Tests the detail of the Apply and Remove API for API schemas.
