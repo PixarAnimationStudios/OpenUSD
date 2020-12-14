@@ -86,6 +86,10 @@ struct HdDisplayStyle {
     
     /// Is the prim displacement shaded.
     bool displacementEnabled;
+
+    /// Does the prim act "transparent" to allow occluded selection to show
+    /// through?
+    bool occludedSelectionShowsThrough;
     
     /// Creates a default DisplayStyle.
     /// - refineLevel is 0.
@@ -95,6 +99,7 @@ struct HdDisplayStyle {
         : refineLevel(0)
         , flatShadingEnabled(false)
         , displacementEnabled(true)
+        , occludedSelectionShowsThrough(false)
     { }
     
     /// Creates a DisplayStyle.
@@ -102,12 +107,16 @@ struct HdDisplayStyle {
     ///        Valid range is [0, 8].
     /// \param flatShading enables flat shading, defaults to false.
     /// \param displacement enables displacement shading, defaults to false.
+    /// \param occludedSelectionShowsThrough controls whether the prim lets
+    ///        occluded selection show through it, defaults to false.
     HdDisplayStyle(int refineLevel_,
                    bool flatShading = false,
-                   bool displacement = true)
+                   bool displacement = true,
+                   bool occludedSelectionShowsThrough_ = false)
         : refineLevel(std::max(0, refineLevel_))
         , flatShadingEnabled(flatShading)
         , displacementEnabled(displacement)
+        , occludedSelectionShowsThrough(occludedSelectionShowsThrough_)
     {
         if (refineLevel_ < 0) {
             TF_CODING_ERROR("negative refine level is not supported");
@@ -122,7 +131,9 @@ struct HdDisplayStyle {
     bool operator==(HdDisplayStyle const& rhs) const {
         return refineLevel == rhs.refineLevel
             && flatShadingEnabled == rhs.flatShadingEnabled
-            && displacementEnabled == rhs.displacementEnabled;
+            && displacementEnabled == rhs.displacementEnabled
+            && occludedSelectionShowsThrough ==
+                rhs.occludedSelectionShowsThrough;
     }
     bool operator!=(HdDisplayStyle const& rhs) const {
         return !(*this == rhs);
