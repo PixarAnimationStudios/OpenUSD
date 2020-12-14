@@ -235,54 +235,6 @@ HdStGLConversions::GetGlBlendFactor(HdBlendFactor factor)
     return HD_2_GL_BLEND_FACTOR[factor];
 }
 
-GLenum 
-HdStGLConversions::GetMinFilter(HdMinFilter filter)
-{
-    switch (filter) {
-        case HdMinFilterNearest : return GL_NEAREST;
-        case HdMinFilterLinear :  return GL_LINEAR;
-        case HdMinFilterNearestMipmapNearest : return GL_NEAREST_MIPMAP_NEAREST;
-        case HdMinFilterLinearMipmapNearest : return GL_LINEAR_MIPMAP_NEAREST;
-        case HdMinFilterNearestMipmapLinear : return GL_NEAREST_MIPMAP_LINEAR;
-        case HdMinFilterLinearMipmapLinear : return GL_LINEAR_MIPMAP_LINEAR;
-    }
-
-    TF_CODING_ERROR("Unexpected HdMinFilter type %d", filter);
-    return GL_NEAREST_MIPMAP_LINEAR; 
-}
-
-GLenum 
-HdStGLConversions::GetMagFilter(HdMagFilter filter)
-{
-    switch (filter) {
-        case HdMagFilterNearest : return GL_NEAREST;
-        case HdMagFilterLinear : return GL_LINEAR;
-    }
-
-    TF_CODING_ERROR("Unexpected HdMagFilter type %d", filter);
-    return GL_LINEAR;
-}
-
-GLenum 
-HdStGLConversions::GetWrap(HdWrap wrap)
-{
-    switch (wrap) {
-        case HdWrapClamp:
-            return GL_CLAMP_TO_EDGE;
-        case HdWrapLegacyNoOpinionFallbackRepeat:
-        case HdWrapRepeat:
-            return GL_REPEAT;
-        case HdWrapNoOpinion:
-        case HdWrapBlack:
-            return GL_CLAMP_TO_BORDER;
-        case HdWrapMirror:
-            return GL_MIRRORED_REPEAT;
-    }
-
-    TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);
-    return GL_CLAMP_TO_BORDER;
-}
-
 HioFormat
 HdStGLConversions::GetHioFormat(HdFormat inFormat)
 {

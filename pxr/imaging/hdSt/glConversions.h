@@ -57,15 +57,6 @@ public:
     static GLenum GetGlBlendFactor(HdBlendFactor factor);
 
     HDST_API
-    static GLenum GetMinFilter(HdMinFilter filter);
-
-    HDST_API
-    static GLenum GetMagFilter(HdMagFilter filter);
-
-    HDST_API
-    static GLenum GetWrap(HdWrap wrap);
-
-    HDST_API
     static HioFormat GetHioFormat(HdFormat inFormat);
 
     HDST_API
