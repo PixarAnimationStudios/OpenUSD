@@ -125,7 +125,6 @@ _FlipViewport(const GfVec4i &viewport,
                        viewport[2],
                        viewport[3]);
     } else {
-        TF_CODING_ERROR("Bad framebuffer size when flipping viewport");
         return viewport;
     }
 }
