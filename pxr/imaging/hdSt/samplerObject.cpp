@@ -198,7 +198,9 @@ _GenGlTextureHandle(const GLuint textureName,
     }
 
     const GLuint64EXT result = glGetTextureHandleARB(textureName);
-    glMakeTextureHandleResidentARB(result);
+    if (!glIsTextureHandleResidentARB(result)) {
+        glMakeTextureHandleResidentARB(result);
+    }
 
     GLF_POST_PENDING_GL_ERRORS();
 
