@@ -45,6 +45,7 @@ struct HdxPickFromRenderBufferTaskParams
         , normalBufferPath()
         , depthBufferPath()
         , cameraId()
+        , overrideWindowPolicy{false, CameraUtilFit}
         , viewport()
     {}
 
@@ -57,7 +58,14 @@ struct HdxPickFromRenderBufferTaskParams
     // The id of the camera used to generate the id buffers.
     SdfPath cameraId;
 
+    // The framing specifying how the camera frustum in mapped into the
+    // render buffers.
+    CameraUtilFraming framing;
+    // Is application overriding the window policy of the camera.
+    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
+
     // The viewport of the camera used to generate the id buffers.
+    // Only used if framing is invalid - for legacy clients.
     GfVec4d viewport;
 };
 
@@ -97,6 +105,8 @@ protected:
                        HdDirtyBits* dirtyBits) override;
 
 private:
+    GfMatrix4d _ComputeProjectionMatrix() const;
+
     HdxPickFromRenderBufferTaskParams _params;
     HdxPickTaskContextParams _contextParams;
     // We need to cache a pointer to the render index so Execute() can
