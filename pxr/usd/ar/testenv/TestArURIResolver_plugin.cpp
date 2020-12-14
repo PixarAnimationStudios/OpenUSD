@@ -233,6 +233,15 @@ protected:
         return ArResolverContext(_TestURIResolverContext(contextStr));
     };
 
+    virtual std::shared_ptr<ArWritableAsset>
+    _OpenAssetForWrite(
+        const ArResolvedPath& resolvedPath,
+        WriteMode writeMode) override
+    {
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), "test:"));
+        return nullptr;
+    }
+
 private:
     const _TestURIResolverContext* _GetCurrentContext()
     {

@@ -207,6 +207,13 @@ protected:
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) override;
 
+    /// Creates an ArFilesystemWriteableAsset for the asset at the
+    /// given \p resolvedPath.
+    AR_API
+    virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
+        const ArResolvedPath& resolvedPath,
+        WriteMode writeMode) override;
+
 private:
     struct _Cache;
     using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;

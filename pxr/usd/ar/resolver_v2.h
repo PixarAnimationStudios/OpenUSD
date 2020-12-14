@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class ArAsset;
 class ArAssetInfo;
 class ArResolverContext;
+class ArWritableAsset;
 class TfType;
 class VtValue;
 
@@ -332,6 +333,36 @@ public:
     std::shared_ptr<ArAsset> OpenAsset(
         const ArResolvedPath& resolvedPath);
 
+    /// Enumeration of write modes for OpenAssetForWrite
+    enum class WriteMode
+    {
+        /// Open asset for in-place updates. If the asset exists, its contents
+        /// will not be discarded and writes may overwrite existing data.
+        /// Otherwise, the asset will be created.
+        Update = 0, 
+
+        /// Open asset for replacement. If the asset exists, its contents will
+        /// be discarded by the time the ArWritableAsset is destroyed.
+        /// Otherwise, the asset will be created.
+        Replace
+    };
+
+    /// Returns an ArWritableAsset object for the asset located at \p
+    /// resolvedPath using the specified \p writeMode.  Returns an invalid
+    /// std::shared_ptr if object could not be created.
+    ///
+    /// The returned ArWritableAsset object provides functions for writing data
+    /// to the specified asset.
+    ///
+    /// Note that support for reading an asset through other APIs while it
+    /// is open for write is implementation-specific. For example, writes to
+    /// an asset may or may not be immediately visible to other threads or
+    /// processes depending on the implementation.
+    AR_API
+    std::shared_ptr<ArWritableAsset> OpenAssetForWrite(
+        const ArResolvedPath& resolvedPath,
+        WriteMode writeMode);
+
     /// Create path needed to write a file to the given \p path. 
     ///
     /// For example:
@@ -495,7 +526,8 @@ protected:
         const std::string& contextStr);
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
-    /// Return an invalid std::shared_ptr if object could not be created.
+    /// Return an invalid std::shared_ptr if object could not be created
+    /// (for example, if the asset at the given path could not be opened).
     ///
     /// Note that clients may still be using the data associated with 
     /// this object even after the last shared_ptr has been destroyed. For 
@@ -505,6 +537,21 @@ protected:
     AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) = 0;
+
+    /// Return an ArWritableAsset object for the asset at \p resolvedPath
+    /// using the specified \p writeMode. Return an invalid std::shared_ptr
+    /// if object could not be created (for example, if writing to the
+    /// given path is not allowed).
+    ///
+    /// Implementations should create any parent paths that are necessary
+    /// to write this asset. The returned ArWritableAsset must obey the
+    /// behaviors for the given \p writeMode, see the documentation for
+    /// the WriteMode enum for more details.
+    AR_API
+    virtual std::shared_ptr<ArWritableAsset>
+    _OpenAssetForWrite(
+        const ArResolvedPath& resolvedPath,
+        WriteMode writeMode) = 0;
 
     /// \deprecated
     /// Return true if the given path is a repository path, false otherwise.

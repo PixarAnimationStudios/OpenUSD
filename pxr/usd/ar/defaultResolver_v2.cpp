@@ -28,14 +28,18 @@
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/filesystemAsset.h"
+#include "pxr/usd/ar/filesystemWritableAsset.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
+#include "pxr/usd/ar/writableAsset.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/systemInfo.h"
-#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/safeOutputFile.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
@@ -325,6 +329,14 @@ ArDefaultResolver::_OpenAsset(
     }
 
     return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
+}
+
+std::shared_ptr<ArWritableAsset>
+ArDefaultResolver::_OpenAssetForWrite(
+    const ArResolvedPath& resolvedPath,
+    WriteMode writeMode)
+{
+    return ArFilesystemWritableAsset::Create(resolvedPath, writeMode);
 }
 
 bool

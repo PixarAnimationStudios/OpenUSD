@@ -777,6 +777,18 @@ public:
         return resolver.OpenAsset(resolvedPath);
     }
 
+    virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
+        const ArResolvedPath& resolvedPath,
+        WriteMode mode) override
+    {
+        ArResolver& resolver = _GetResolver(resolvedPath);
+        if (ArIsPackageRelativePath(resolvedPath)) {
+            TF_CODING_ERROR("Cannot open package-relative paths for write");
+            return nullptr;
+        };
+        return resolver.OpenAssetForWrite(resolvedPath, mode);
+    }
+
     virtual bool CreatePathForLayer(
         const std::string& path) override
     {
@@ -1344,6 +1356,14 @@ ArResolver::OpenAsset(
     const ArResolvedPath& resolvedPath)
 {
     return _OpenAsset(resolvedPath);
+}
+
+std::shared_ptr<ArWritableAsset>
+ArResolver::OpenAssetForWrite(
+    const ArResolvedPath& resolvedPath,
+    WriteMode mode)
+{
+    return _OpenAssetForWrite(resolvedPath, mode);
 }
 
 bool

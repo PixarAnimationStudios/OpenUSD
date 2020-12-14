@@ -47,13 +47,17 @@ if (AR_VERSION EQUAL 1)
 elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedHeaders 
          defaultResolver_v2.h
+         filesystemWritableAsset.h
          resolver_v2.h
          resolverContext_v2.h
+         writableAsset.h
     )
     list(APPEND versionedCPPFiles
          defaultResolver_v2.cpp
+         filesystemWritableAsset.cpp
          resolver_v2.cpp
          resolverContext_v2.cpp
+         writableAsset.cpp
     )
     list(APPEND versionedPrivateHeaders
          testenv/TestArURIResolver_plugin.h
