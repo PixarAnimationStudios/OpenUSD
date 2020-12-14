@@ -2545,7 +2545,7 @@ ReadLook(
     }
 
     // Make an object for binding materials.
-    auto binding = UsdShadeMaterialBindingAPI(root);
+    auto binding = UsdShadeMaterialBindingAPI::Apply(root);
 
     // Get the current (inherited) property order.
     const auto inheritedOrder = root.GetPropertyOrder();
