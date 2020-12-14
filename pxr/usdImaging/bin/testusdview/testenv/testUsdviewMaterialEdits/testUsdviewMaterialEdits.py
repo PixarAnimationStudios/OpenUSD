@@ -38,7 +38,7 @@ def _updateMeshBinding(path, appController):
 
     mesh = s.GetPrimAtPath('/Scene/Geom/Plane')
     material = UsdShade.Material(s.GetPrimAtPath(path))
-    UsdShade.MaterialBindingAPI(mesh).Bind(material)
+    UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
 
 # Test material bindings edits.
 def testUsdviewInputFunction(appController):
