@@ -323,6 +323,7 @@ std::string
 _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
                      const std::string& layerId)
 {
+#if AR_VERSION == 1
     const std::string computedLayerId = 
         SdfComputeAssetPathRelativeToLayer(anchorLayer, layerId);
     if (computedLayerId.empty()) {
@@ -345,6 +346,19 @@ _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer,
 
     canonicalPath = resolver.ComputeRepositoryPath(canonicalPath);
     return canonicalPath.empty() ? computedLayerId : canonicalPath;
+#else
+    if (SdfLayer::IsAnonymousLayerIdentifier(layerId)) {
+        return layerId;
+    }
+
+    // XXX: 
+    // We may ultimately want to use the resolved path here but that's
+    // possibly a bigger change and there are questions about what happens if
+    // the muted path doesn't resolve to an existing asset and how/when to
+    // invalidate the resolved paths stored in the Pcp_MutedLayers object.
+    return ArGetResolver().CreateIdentifier(
+        layerId, anchorLayer->GetResolvedPath());
+#endif
 }
 }
 
