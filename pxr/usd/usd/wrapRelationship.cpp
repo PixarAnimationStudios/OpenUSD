@@ -79,7 +79,6 @@ void wrapUsdRelationship()
              (arg("target"),
               arg("position")=UsdListPositionBackOfPrependList))
         .def("RemoveTarget", &UsdRelationship::RemoveTarget, arg("target"))
-        .def("BlockTargets", &UsdRelationship::BlockTargets)
         .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))
         .def("ClearTargets", &UsdRelationship::ClearTargets, arg("removeSpec"))
         .def("GetTargets", _GetTargets,

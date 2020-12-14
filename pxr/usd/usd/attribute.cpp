@@ -462,25 +462,6 @@ UsdAttribute::RemoveConnection(const SdfPath& source) const
 }
 
 bool
-UsdAttribute::BlockConnections() const
-{
-    // NOTE! Do not insert any code that modifies scene description between the
-    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
-    // code that inspects the composition graph and then does some authoring.
-    // We want that authoring to be inside the change block, but if any scene
-    // description changes are made after the block is created but before we
-    // call _CreateSpec, the composition structure may be invalidated.
-    SdfChangeBlock block;
-    SdfAttributeSpecHandle attrSpec = _CreateSpec();
-
-    if (!attrSpec)
-        return false;
-
-    attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
-    return true;
-}
-
-bool
 UsdAttribute::SetConnections(const SdfPathVector& sources) const
 {
     SdfPathVector mappedPaths;

@@ -161,14 +161,6 @@ public:
     USD_API
     bool RemoveTarget(const SdfPath& target) const;
 
-    /// \deprecated Use SetTargets(SdfPathVector()) instead.
-    ///
-    /// Clears all target edits from the current EditTarget, and makes
-    /// the opinion explicit, which means we are effectively resetting the
-    /// composed value of the targets list to empty.
-    USD_API
-    bool BlockTargets() const;
-
     /// Make the authoring layer's opinion of the targets list explicit,
     /// and set exactly to \p targets.
     ///
