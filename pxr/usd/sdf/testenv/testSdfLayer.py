@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import os, itertools, sys, unittest
+import os, platform, itertools, sys, unittest
 
 # Initialize Ar to use ArDefaultResolver unless a different implementation
 # is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
@@ -371,6 +371,10 @@ def "Root"
         self.assertFalse(anonLayer.Import('bogus.sdf'))
         self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
 
+    @unittest.skipIf(platform.system() == "Windows" and
+                     not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "This test case currently fails on Windows due to "
+                     "path canonicalization issues except with Ar 2.0.")
     def test_LayersWithEquivalentPaths(self):
         # Test that FindOrOpen and Find return the same layer when
         # given different paths that should point to the same location.
