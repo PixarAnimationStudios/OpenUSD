@@ -133,6 +133,30 @@ class TestSdfLayer(unittest.TestCase):
         l = Sdf.Layer.CreateAnonymous()
         self.assertEqual(l.GetDisplayName(), '')
 
+    def test_UpdateAssetInfo(self):
+        # Test that calling UpdateAssetInfo on a layer whose resolved
+        # path hasn't changed doesn't cause notification to be sent.
+        layer = Sdf.Layer.CreateNew('TestUpdateAssetInfo.sdf')
+        self.assertTrue(layer)
+
+        class _Listener:
+            def __init__(self):
+                self._listener = Tf.Notice.RegisterGlobally(
+                    Sdf.Notice.LayersDidChange, self._HandleNotice)
+                self.receivedNotice = False
+
+            def _HandleNotice(self, notice, sender):
+                self.receivedNotice = True
+
+        listener = _Listener()
+
+        oldResolvedPath = layer.resolvedPath
+        layer.UpdateAssetInfo()
+        newResolvedPath = layer.resolvedPath
+
+        self.assertEqual(oldResolvedPath, newResolvedPath)
+        self.assertFalse(listener.receivedNotice)
+
     def test_UpdateExternalReference(self):
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\

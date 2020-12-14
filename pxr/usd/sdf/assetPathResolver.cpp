@@ -181,6 +181,9 @@ Sdf_ComputeAssetInfoFromIdentifier(
             assetInfo->resolvedPath = ArResolvedPath(filePath);
         }
 
+        assetInfo->resolvedPath = ArResolvedPath(
+            Sdf_CanonicalizeRealPath(assetInfo->resolvedPath));
+
 #if AR_VERSION == 1
         ArGetResolver().UpdateAssetInfo(
             assetInfo->identifier, assetInfo->resolvedPath, fileVersion,

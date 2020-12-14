@@ -146,10 +146,8 @@ SdfLayer::SdfLayer(
         validateAuthoring || TfGetEnvSetting<bool>(SDF_LAYER_VALIDATE_AUTHORING))
     , _hints{/*.mightHaveRelocates =*/ false}
 {
-    const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
-
     TF_DEBUG(SDF_LAYER).Msg("SdfLayer::SdfLayer('%s', '%s')\n",
-        identifier.c_str(), realPathFinal.c_str());
+        identifier.c_str(), realPath.c_str());
 
     // If the identifier has the anonymous layer identifier prefix, it is a
     // template into which the layer address must be inserted. This ensures
@@ -166,7 +164,7 @@ SdfLayer::SdfLayer(
 
     // Initialize layer asset information.
     _InitializeFromIdentifier(
-        layerIdentifier, realPathFinal, std::string(), assetInfo);
+        layerIdentifier, realPath, std::string(), assetInfo);
 
     // A new layer is not dirty.
     _MarkCurrentStateAsClean();
@@ -222,13 +220,11 @@ SdfLayer::_CreateNewWithFormat(
     const ArAssetInfo& assetInfo,
     const FileFormatArguments& args)
 {
-    const string realPathFinal = Sdf_CanonicalizeRealPath(realPath);
-
     // This method should be called with the layerRegistryMutex already held.
 
     // Create and return a new layer with _initializationComplete set false.
     return fileFormat->NewLayer(
-        fileFormat, identifier, realPathFinal, assetInfo, args);
+        fileFormat, identifier, realPath, assetInfo, args);
 }
 
 void
