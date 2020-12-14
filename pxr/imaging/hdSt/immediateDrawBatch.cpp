@@ -139,6 +139,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdStBufferArrayRangeSharedPtr topVisBarCurrent;
     HdStBufferArrayRangeSharedPtr elementBarCurrent;
     HdStBufferArrayRangeSharedPtr vertexBarCurrent;
+    HdStBufferArrayRangeSharedPtr varyingBarCurrent;
     HdStBufferArrayRangeSharedPtr constantBarCurrent;
     HdStBufferArrayRangeSharedPtr fvarBarCurrent;
     HdStBufferArrayRangeSharedPtr instanceIndexBarCurrent;
@@ -248,6 +249,21 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             binder.UnbindBufferArray(vertexBarCurrent);
             binder.BindBufferArray(vertexBar);
             vertexBarCurrent = vertexBar;
+        }
+
+        //
+        // varying buffer data 
+        //
+        HdBufferArrayRangeSharedPtr const & varyingBar_ =
+            drawItem->GetVaryingPrimvarRange();
+
+        HdStBufferArrayRangeSharedPtr varyingBar =
+            std::static_pointer_cast<HdStBufferArrayRange>(varyingBar_);
+
+        if (varyingBar && (!varyingBar->IsAggregatedWith(varyingBarCurrent))) {
+            binder.UnbindBufferArray(varyingBarCurrent);
+            binder.BindBufferArray(varyingBar);
+            varyingBarCurrent = varyingBar;
         }
 
         //
@@ -370,14 +386,17 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
           | 5 | FVarDC        |  fvarBar     | gl_PrimitiveID |    facevarying |
           | 6 | InstanceIndex |  inst-idxBar | (gl_InstanceID)|      n/a       |
           | 7 | ShaderDC      |  shaderBar   |    uniform     |                |
-          | 8 | InstanceDC[0] |  instanceBar | (gl_InstanceID)|    constant    |
-          | 9 | InstanceDC[1] |  instanceBar | (gl_InstanceID)|    constant    |
+          | 8 | TopVisDC      |  topVisBar   |                |                |
+          | 9 | VaryingDC     |  varyingBar  |gl_BaseVertex(^)|    varying     |
+          | 10| InstanceDC[0] |  instanceBar | (gl_InstanceID)|    constant    |
+          | 11| InstanceDC[1] |  instanceBar | (gl_InstanceID)|    constant    |
           |...| ...           |  instanceBar | (gl_InstanceID)|    constant    |
           ----------------------------------------------------------------------
 
-          We put these offsets into 3 variables,
+          We put these offsets into 4 variables,
            - ivec4 drawingCoord0  {ModelDC, ConstantDC, ElementDC, PrimitiveDC}
            - ivec4 drawingCoord1  {FVarDC, InstanceIndex, ShaderDC, VertexDC}
+           - ivec2 drawingCoord2  {TopoVisibilityDC, VaryingDC}
            - int[] drawingCoordI  (InstanceDC)
           so that the shaders can access any of these aggregated data.
 
@@ -424,10 +443,13 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             _GetElementOffset(shaderBar),
             baseVertex
         };
-        int drawingCoord2 = _GetElementOffset(topVisBar);
+        int drawingCoord2[2] = {
+            _GetElementOffset(topVisBar),
+            _GetElementOffset(varyingBar),
+        };
         binder.BindUniformi(HdTokens->drawingCoord0, 4, drawingCoord0);
         binder.BindUniformi(HdTokens->drawingCoord1, 4, drawingCoord1);
-        binder.BindUniformi(HdTokens->drawingCoord2, 1, &drawingCoord2);
+        binder.BindUniformi(HdTokens->drawingCoord2, 2, drawingCoord2);
 
         // instance coordinates
         std::vector<int> instanceDrawingCoords(instancerNumLevels);
@@ -476,6 +498,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         binder.UnbindConstantBuffer(constantBarCurrent);
     if (vertexBarCurrent)
         binder.UnbindBufferArray(vertexBarCurrent);
+    if (varyingBarCurrent)
+        binder.UnbindBufferArray(varyingBarCurrent);
     if (elementBarCurrent)
         binder.UnbindBufferArray(elementBarCurrent);
     if (fvarBarCurrent)

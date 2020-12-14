@@ -309,6 +309,28 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         }
     }
 
+    // varying primvar
+    if (HdBufferArrayRangeSharedPtr varyingBar_ =
+        drawItem->GetVaryingPrimvarRange()) {
+
+        HdStBufferArrayRangeSharedPtr varyingBar =
+            std::static_pointer_cast<HdStBufferArrayRange>(varyingBar_);
+
+        for (const auto &resource : varyingBar->GetResources()) {
+            TfToken const& name = resource.first;
+            TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
+            HdBinding varyingPrimvarBinding =
+                locator.GetBinding(arrayBufferBindingType, name);
+            _bindingMap[name] = varyingPrimvarBinding;
+
+            HdTupleType valueType = resource.second->GetTupleType();
+            TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
+            metaDataOut->varyingData[varyingPrimvarBinding] =
+                MetaData::Primvar(/*name=*/glName,
+                                  /*type=*/glType);
+        }
+    }
+
     // index buffer
     if (HdBufferArrayRangeSharedPtr topologyBar_ =
         drawItem->GetTopologyRange()) {
@@ -456,7 +478,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord2] = drawingCoord2Binding;
     metaDataOut->drawingCoord2Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord2,
-                                     /*type=*/_tokens->_int,
+                                     /*type=*/_tokens->ivec2,
                                      /*binding=*/drawingCoord2Binding);
 
     if (instancerNumLevels > 0) {
@@ -1441,6 +1463,13 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     }
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, vertexData) {
+        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        Primvar const &primvar = it->second;
+        boost::hash_combine(hash, primvar.name.Hash());
+        boost::hash_combine(hash, primvar.dataType);
+    }
+    boost::hash_combine(hash, 0); // separator
+    TF_FOR_ALL (it, varyingData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
         Primvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());

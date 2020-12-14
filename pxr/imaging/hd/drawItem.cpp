@@ -67,6 +67,7 @@ TfHashAppend(HashState &h, HdDrawItem const &di)
     h.Append(_GetVersion(di.GetTopologyRange()));
     h.Append(_GetVersion(di.GetConstantPrimvarRange()));
     h.Append(_GetVersion(di.GetVertexPrimvarRange()));
+    h.Append(_GetVersion(di.GetVaryingPrimvarRange()));
     h.Append(_GetVersion(di.GetElementPrimvarRange()));
     h.Append(_GetVersion(di.GetFaceVaryingPrimvarRange()));
     h.Append(_GetVersion(di.GetTopologyVisibilityRange()));
@@ -93,6 +94,7 @@ HdDrawItem::GetElementOffsetsHash() const
         _GetElementOffset(GetTopologyRange()),
         _GetElementOffset(GetConstantPrimvarRange()),
         _GetElementOffset(GetVertexPrimvarRange()),
+        _GetElementOffset(GetVaryingPrimvarRange()),
         _GetElementOffset(GetElementPrimvarRange()),
         _GetElementOffset(GetFaceVaryingPrimvarRange()),
         _GetElementOffset(GetTopologyVisibilityRange()));
@@ -144,6 +146,11 @@ std::ostream &operator <<(std::ostream &out,
         out << "    Vertex Primvars:\n";
         out << "        numElements=" << self.GetVertexPrimvarRange()->GetNumElements() << "\n";
         out << *self.GetVertexPrimvarRange();
+    }
+    if (self.GetVaryingPrimvarRange()) {
+        out << "    Varying Primvars:\n";
+        out << "        numElements=" << self.GetVaryingPrimvarRange()->GetNumElements() << "\n";
+        out << *self.GetVaryingPrimvarRange();
     }
     if (self.GetFaceVaryingPrimvarRange()) {
         out << "    Fvar Primvars:\n";

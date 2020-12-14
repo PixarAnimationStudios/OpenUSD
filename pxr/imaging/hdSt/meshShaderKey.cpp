@@ -93,6 +93,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBezierQuadTES,       "Mesh.TessEval.BezierQuad"))
     ((mainBoxSplineTriangleTCS,"Mesh.TessControl.BoxSplineTriangle"))
     ((mainBezierTriangleTES,   "Mesh.TessEval.BezierTriangle"))
+    ((mainVaryingInterpTES,    "Mesh.TessEval.VaryingInterpolation"))
     ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
@@ -206,7 +207,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                    ? _tokens->mainBezierQuadTES
                                    : _tokens->mainBezierTriangleTES
                                : TfToken();
-    TES[2] = TfToken();
+    TES[2] = _tokens->mainVaryingInterpTES;
+    TES[3] = TfToken();
 
     // geometry shader
     uint8_t gsIndex = 0;

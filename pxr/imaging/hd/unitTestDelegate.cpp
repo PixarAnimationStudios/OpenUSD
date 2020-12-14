@@ -1262,27 +1262,16 @@ HdUnitTestDelegate::AddCurves(
     };
 
     VtVec3fArray authNormals;
-    if (authoredNormals && type == HdTokens->linear){
+    if (authoredNormals) {
         GfVec3f normals[] = {
             GfVec3f(   .0f, -.7f,  .7f ),
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f(  .0f,  .7f,  .7f ),
             GfVec3f(  .7f,  .7f,  .0f ),
-
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f( -1.0f,  .0f,  .0f ),
             GfVec3f( -1.0f,  .0f,  .0f )
-        };
-        authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
-
-    } else if (authoredNormals && type == HdTokens->cubic){
-        GfVec3f normals[] = {
-            GfVec3f(   .0f,  .0f, 1.0f ),
-            GfVec3f(   .0f,  .7f,  .7f ),
-
-            GfVec3f(   .0f,  .7f, .7f ),
-            GfVec3f(  -.7f,  .7f, .0f )
         };
         authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
     }

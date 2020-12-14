@@ -153,6 +153,14 @@ public:
             _drawingCoord.GetVertexPrimvarIndex());
     }
 
+    /// Returns a BufferArrayRange of varying primvars.
+    HD_API
+    HdBufferArrayRangeSharedPtr const &GetVaryingPrimvarRange() const {
+        return _sharedData->barContainer.Get(
+            _drawingCoord.GetVaryingPrimvarIndex());
+    }
+
+
     /// Returns a BufferArrayRange of face-varying primvars.
     HD_API
     HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimvarRange() const {

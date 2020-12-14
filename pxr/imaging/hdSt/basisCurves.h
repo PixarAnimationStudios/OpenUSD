@@ -107,6 +107,10 @@ protected:
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
+    
+    void _PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdStDrawItem *drawItem,
+                                  HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,

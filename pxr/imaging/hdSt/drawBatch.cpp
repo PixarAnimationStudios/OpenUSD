@@ -140,6 +140,8 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
                          drawItem1->GetTopologyVisibilityRange())
         && isAggregated(drawItem0->GetVertexPrimvarRange(),
                          drawItem1->GetVertexPrimvarRange())
+        && isAggregated(drawItem0->GetVaryingPrimvarRange(),
+                         drawItem1->GetVaryingPrimvarRange())
         && isAggregated(drawItem0->GetElementPrimvarRange(),
                          drawItem1->GetElementPrimvarRange())
         && isAggregated(drawItem0->GetFaceVaryingPrimvarRange(),

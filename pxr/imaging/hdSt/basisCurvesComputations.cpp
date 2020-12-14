@@ -25,9 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4i.h"
@@ -36,81 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-template <typename T> VtArray<T>
-InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wrap,
-    TfToken basis, VtArray<T> const & authoredValues)
-{
-    VtArray<T> outputValues(numVerts);
-
-    size_t srcIndex = 0;
-    size_t dstIndex = 0;
-
-    if (wrap == HdTokens->periodic) {
-        // XXX : Add support for periodic curves
-        TF_WARN("Varying data is only supported for non-periodic curves.");
-    }
-
-    TF_FOR_ALL(itVertexCount, vertexCounts) {
-        int nVerts = *itVertexCount;
-
-        // Handling for the case of potentially incorrect vertex counts 
-        if(nVerts < 1) {
-            continue;
-        }
-
-        if(basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
-            // For splines with a vstep of 1, we are doing linear interpolation 
-            // between segments, so all we do here is duplicate the first and 
-            // last outputValues. Since these are never acutally used during 
-            // drawing, it would also work just to set the to 0.
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            for (int i = 1; i < nVerts - 2; ++i){
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++dstIndex; ++srcIndex;
-            }
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; ++srcIndex;
-        }
-        else if (basis == HdTokens->bezier){
-            // For bezier splines, we map the linear values to cubic values
-            // the begin value gets mapped to the first two vertices and
-            // the end value gets mapped to the last two vertices in a segment.
-            // shaders can choose to access value[1] and value[2] when linearly
-            // interpolating a value, which happens to match up with the
-            // indexing to use for catmullRom and bSpline basis.
-            int vStep = 3;
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; // don't increment the srcIndex
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; ++ srcIndex;
-
-            // vstep - 1 control points will have an interpolated value
-            for(int i = 2; i < nVerts - 2; i += vStep) {
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++ dstIndex; // don't increment the srcIndex
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++ dstIndex; // don't increment the srcIndex
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++ dstIndex; ++ srcIndex; 
-            }
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; // don't increment the srcIndex
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; ++ srcIndex;
-        }
-        else {
-            TF_WARN("Unsupported basis: '%s'", basis.GetText());
-        }
-    }
-    TF_VERIFY(srcIndex == authoredValues.size());
-    TF_VERIFY(dstIndex == numVerts);
-    
-    return outputValues;
-}
 
 HdSt_BasisCurvesIndexBuilderComputation::HdSt_BasisCurvesIndexBuilderComputation(
     HdBasisCurvesTopology *topology, bool forceLines)
@@ -159,16 +81,16 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
     }
 
     VtVec2iArray finalIndices(indices.size());
-    VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
     // with the given indices.
-    if (curveIndices.empty())
+    if (!_topology->HasIndices())
     {
         std::copy(indices.begin(), indices.end(), finalIndices.begin());
     }
     else
     {
+        VtIntArray const &curveIndices = _topology->GetCurveIndices();
         size_t lineCount = indices.size();
         int maxIndex = curveIndices.size() - 1;
 
@@ -232,16 +154,16 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
     }
 
     VtVec2iArray finalIndices(indices.size());
-    VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
     // with the given indices.
-    if (curveIndices.empty())
+    if (!_topology->HasIndices())
     {
         std::copy(indices.begin(), indices.end(), finalIndices.begin());
     }
     else
     {
+        VtIntArray const &curveIndices = _topology->GetCurveIndices();
         size_t lineCount = indices.size();
         int maxIndex = curveIndices.size() - 1;
 
@@ -358,16 +280,16 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
     }
 
     VtVec4iArray finalIndices(indices.size());
-    VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
     // with the given indices.
-    if (curveIndices.empty())
+    if (!_topology->HasIndices())
     {
         std::copy(indices.begin(), indices.end(), finalIndices.begin());
     }
     else
     {
+        VtIntArray const &curveIndices = _topology->GetCurveIndices();
         size_t lineCount = indices.size();
         int maxIndex = curveIndices.size() - 1;
 
@@ -448,141 +370,6 @@ HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffers() const
     return { _primitiveParam };
 }
 
-// -------------------------------------------------------------------------- //
-// BasisCurves Widths Interpolater
-// -------------------------------------------------------------------------- //
-
-HdSt_BasisCurvesWidthsInterpolaterComputation::HdSt_BasisCurvesWidthsInterpolaterComputation(
-    HdBasisCurvesTopology *topology,
-    VtFloatArray authoredWidths)
- : _topology(topology)
- , _authoredWidths(authoredWidths)
-{
-}
-
-void
-HdSt_BasisCurvesWidthsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
-{
-    specs->emplace_back(HdTokens->widths, HdTupleType{HdTypeFloat, 1});
-}
-
-bool
-HdSt_BasisCurvesWidthsInterpolaterComputation::Resolve()
-{
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-    // We need to interpolate widths depending on the primvar type
-    size_t numVerts = _topology->CalculateNeededNumberOfControlPoints();
-    VtArray<float> widths(numVerts);
-    size_t size = _authoredWidths.size();
-
-    if(size <= 1) {
-        // Uniform or missing data
-        float width = size==0 ? 1.f : _authoredWidths[0];
-        for(size_t i = 0; i < numVerts; ++ i) {
-            widths[i] = width;
-        }
-    }
-    else if(size == numVerts) {
-        // Vertex data
-        widths = _authoredWidths;
-    }
-    else if(size == _topology->CalculateNeededNumberOfVaryingControlPoints()) {
-        // Varying data
-        widths = InterpolateVarying<float>
-                    (numVerts, _topology->GetCurveVertexCounts(), _topology->GetCurveWrap(),
-                    _topology->GetCurveBasis(), _authoredWidths);
-    }
-    else {
-        // Fallback
-        for(size_t i = 0; i < numVerts; ++ i) {
-            widths[i] = 1.0;
-        }
-        TF_WARN("Incorrect number of widths, using default 1.0 for rendering.");
-    }
-
-    _SetResult(HdBufferSourceSharedPtr(
-                   new HdVtBufferSource(
-                       HdTokens->widths,
-                       VtValue(widths))));
-    _SetResolved();
-    return true;
-}
-
-bool
-HdSt_BasisCurvesWidthsInterpolaterComputation::_CheckValid() const
-{
-    return true;
-}
-
-// -------------------------------------------------------------------------- //
-// BasisCurves Normals Interpolater
-// -------------------------------------------------------------------------- //
-
-HdSt_BasisCurvesNormalsInterpolaterComputation::HdSt_BasisCurvesNormalsInterpolaterComputation(
-    HdBasisCurvesTopology *topology,
-    VtVec3fArray authoredNormals)
- : _topology(topology)
- , _authoredNormals(authoredNormals)
-{
-}
-
-void
-HdSt_BasisCurvesNormalsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
-{
-    specs->emplace_back(HdTokens->normals, HdTupleType{HdTypeFloatVec3, 1});
-}
-
-bool
-HdSt_BasisCurvesNormalsInterpolaterComputation::Resolve()
-{
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-
-    // We need to interpolate normals depending on the primvar type
-    size_t numVerts = _topology->CalculateNeededNumberOfControlPoints();
-    VtVec3fArray normals(numVerts);
-    size_t size = _authoredNormals.size();
-
-    if(size == 1) {
-        // Uniform data
-        GfVec3f normal = _authoredNormals[0];
-        for(size_t i = 0; i < numVerts; ++ i) {
-            normals[i] = normal;
-        }
-    }
-    else if(size == numVerts) {
-        // Vertex data
-        normals = _authoredNormals;
-    }
-    else if(size == _topology->CalculateNeededNumberOfVaryingControlPoints()) {
-        // Varying data
-        normals = InterpolateVarying<GfVec3f>
-                    (numVerts, _topology->GetCurveVertexCounts(), _topology->GetCurveWrap(),
-                    _topology->GetCurveBasis(), _authoredNormals);
-    }
-    else {
-        // Fallback
-        GfVec3f normal(1.0,0.0,0.0);
-        for(size_t i = 0; i < numVerts; ++ i) {
-            normals[i] = normal;
-        }
-        TF_WARN("Incorrect number of normals, using default GfVec3f(1,0,0) for rendering.");
-    }
-
-    _SetResult(HdBufferSourceSharedPtr(new HdVtBufferSource(HdTokens->normals,
-                                                            VtValue(normals))));
-    _SetResolved();
-    return true;
-}
-
-bool
-HdSt_BasisCurvesNormalsInterpolaterComputation::_CheckValid() const
-{
-    return true;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

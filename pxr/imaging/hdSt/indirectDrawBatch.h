@@ -100,6 +100,7 @@ private:
         HdStBufferArrayRangeSharedPtr const& topologyVisibilityBar,
         HdStBufferArrayRangeSharedPtr const& elementBar,
         HdStBufferArrayRangeSharedPtr const& fvarBar,
+        HdStBufferArrayRangeSharedPtr const& varyingBar,
         HdStBufferArrayRangeSharedPtr const& vertexBar,
         int instancerNumLevels,
         HdStBufferArrayRangeSharedPtr const& instanceIndexBar,
