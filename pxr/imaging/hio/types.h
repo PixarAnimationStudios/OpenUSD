@@ -206,7 +206,8 @@ size_t HioGetDataSizeOfFormat(HioFormat format,
 HIO_API
 bool HioIsCompressed(HioFormat format);
 
-/// Calculate the byte size of compressed textures.
+/// Calculate the byte size of texture. If compressed, takes block size
+/// into account.
 HIO_API
 size_t HioGetDataSize(const HioFormat hioFormat, const GfVec3i &dimensions);
 

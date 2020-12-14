@@ -89,21 +89,18 @@ GlfUVTextureData::NumDimensions() const
 }
 
 // Compute required GPU memory
+static
 size_t
 GlfUVTextureData_ComputeMemory(HioImageSharedPtr const &img,
-                                bool generateMipmap)
+                               const bool generateMipmap)
 {
     // Mipmapping on GPU means we need an
     // extra 1/4 + 1/16 + 1/64 + 1/256 + ... of memory
     const double scale = generateMipmap ? 4.0 / 3 : 1.0;
 
-    if (HioIsCompressed(img->GetFormat())) {
-        return scale * HioGetDataSize(img->GetFormat(), 
-                            GfVec3i(img->GetWidth(), img->GetHeight(), 1));
-    }
-
-    const size_t numPixels = img->GetWidth() * img->GetHeight();
-    return scale * numPixels * img->GetBytesPerPixel();
+    return scale * HioGetDataSize(
+        img->GetFormat(), 
+        GfVec3i(img->GetWidth(), img->GetHeight(), 1));
 }
 
 GlfUVTextureData::_DegradedImageInput
@@ -429,8 +426,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     // and is incomplete.
     HioImage::StorageSpec commonStorageSpec;
     commonStorageSpec.format = _format;
-    commonStorageSpec.flipped = (originLocation == HioImage::OriginLowerLeft) ?
-                      (true) : (false);
+    commonStorageSpec.flipped = (originLocation == HioImage::OriginLowerLeft);
 
     std::atomic<bool> returnVal(true);
 
