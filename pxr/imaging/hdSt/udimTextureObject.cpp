@@ -23,11 +23,8 @@
 //
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 
-#include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
-#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -35,6 +32,8 @@
 
 #include "pxr/imaging/hio/image.h"
 
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -64,15 +63,15 @@ struct _MipDesc {
     HioImageSharedPtr image;
 };
 
-using _MipDescArray = std::vector<_MipDesc>;
+using _MipDescVector = std::vector<_MipDesc>;
 
 static
-_MipDescArray
+_MipDescVector
 _GetMipLevels(const TfToken& filePath,
               HioImage::SourceColorSpace sourceColorSpace)
 {
     constexpr int maxMipReads = 32;
-    _MipDescArray ret {};
+    _MipDescVector ret {};
     ret.reserve(maxMipReads);
     unsigned int prevWidth = std::numeric_limits<unsigned int>::max();
     unsigned int prevHeight = std::numeric_limits<unsigned int>::max();
@@ -96,7 +95,7 @@ _GetMipLevels(const TfToken& filePath,
 
 static
 HgiFormat
-_GetPixelFormatForImage(HioFormat hioFormat)
+_GetPixelFormatForImage(const HioFormat hioFormat)
 {
     constexpr HgiFormat hgiFormats[][4] = {
         // HioTypeUnsignedByte
@@ -134,8 +133,9 @@ _GetPixelFormatForImage(HioFormat hioFormat)
     static_assert(TfArraySize(hgiFormats) == HioTypeCount,
                   "hgiFormats to HioType enum mismatch");
 
-    uint32_t nChannels = HioGetComponentCount(hioFormat);
-    return hgiFormats[HioGetHioType(hioFormat)][nChannels - 1];
+    const uint32_t nChannels = HioGetComponentCount(hioFormat);
+    const HioType hioType = HioGetHioType(hioFormat);
+    return hgiFormats[hioType][nChannels - 1];
 }
 
 enum _ColorSpaceTransform
@@ -358,11 +358,11 @@ HdStUdimTextureObject::_DestroyTextures()
 void
 HdStUdimTextureObject::_Load()
 {
-    std::vector<std::tuple<int, TfToken>> tiles =
+    const std::vector<std::tuple<int, TfToken>> tiles =
         _FindUdimTiles(GetTextureIdentifier().GetFilePath());
-    HioImage::SourceColorSpace sourceColorSpace =
+    const HioImage::SourceColorSpace sourceColorSpace =
         _GetSourceColorSpace(GetTextureIdentifier().GetSubtextureIdentifier());
-    const _MipDescArray firstImageMips =
+    const _MipDescVector firstImageMips =
         _GetMipLevels(std::get<1>(tiles[0]), sourceColorSpace);
     const bool premultipliedAlpha =
         _GetPremultiplyAlpha(GetTextureIdentifier().GetSubtextureIdentifier());
@@ -416,12 +416,12 @@ HdStUdimTextureObject::_Load()
     } else {
         if (loadAllTiles) {
             for (_MipDesc const& mip: firstImageMips) {
-                mips.emplace_back(mip.size);
+                mips.push_back(mip.size);
             }
         } else {
             for (auto it = firstImageMips.crbegin();
                  it != firstImageMips.crend(); ++it) {
-                mips.emplace_back(it->size);
+                mips.push_back(it->size);
             }
         }
     }
@@ -470,24 +470,27 @@ HdStUdimTextureObject::_Load()
         for (size_t tileId = begin; tileId < end; ++tileId) {
             std::tuple<int, TfToken> const& tile = tiles[tileId];
             _layoutData[std::get<0>(tile)] = tileId + 1;
-            _MipDescArray images = _GetMipLevels(std::get<1>(tile),
-                                                 sourceColorSpace);
+            const _MipDescVector images = _GetMipLevels(
+                std::get<1>(tile), sourceColorSpace);
             if (images.empty()) { continue; }
             for (unsigned int mip = 0; mip < mipCount; ++mip) {
                 _TextureSize const& mipSize = mips[mip];
                 const unsigned int numBytesPerLayer =
-                mipSize.width * mipSize.height * numBytesPerPixel;
+                    mipSize.width * mipSize.height * numBytesPerPixel;
                 HioImage::StorageSpec spec;
                 spec.width = mipSize.width;
                 spec.height = mipSize.height;
                 spec.format = hioFormat;
                 spec.flipped = true;
                 spec.data = mipData[mip].data() + (tileId * numBytesPerLayer);
-                const auto it = std::find_if(images.rbegin(), images.rend(),
-                                             [&mipSize](_MipDesc const& i)
-                                             { return mipSize.width <= i.size.width &&
-                                                 mipSize.height <= i.size.height;});
-                (it == images.rend() ? images.front() : *it).image->Read(spec);
+                const auto it = std::find_if(
+                    images.rbegin(), images.rend(),
+                    [&mipSize](_MipDesc const& i) {
+                        return mipSize.width <= i.size.width &&
+                               mipSize.height <= i.size.height;});
+                const _MipDesc &mipDesc = 
+                    it == images.rend() ? images.front() : *it;
+                mipDesc.image->Read(spec);
 
                 // XXX: Unfortunately, pre-multiplication is occurring after
                 // mip generation. However, it is still worth it to pre-multiply

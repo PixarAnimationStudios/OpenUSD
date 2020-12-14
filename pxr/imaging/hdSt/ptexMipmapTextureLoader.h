@@ -34,7 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdStPtexMipmapTextureLoader {
+class HdStPtexMipmapTextureLoader final
+{
 public:
     HDST_API
     HdStPtexMipmapTextureLoader(PtexTexture *ptex,

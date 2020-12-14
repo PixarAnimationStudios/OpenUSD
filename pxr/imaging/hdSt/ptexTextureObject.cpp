@@ -23,11 +23,8 @@
 //
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 
-#include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureObjectRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
-#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -174,18 +171,18 @@ HdStPtexTextureObject::_Load()
     // Read the ptexture data and pack the texels
 
     TRACE_SCOPE("HdStPtexTextureObject::_Load() (generate texture)");
-    size_t targetMemory = GetTargetMemory();
+    const size_t targetMemory = GetTargetMemory();
 
     // This is the minimum texture layers guaranteed by OpenGL 4.5 and Metal
     const size_t maxNumPages = 2048;
 
     // maxLevels = -1 : load all mip levels
     // maxLevels = 0  : load only the highest resolution
-    int maxLevels = -1;
+    constexpr int maxLevels = -1;
     HdStPtexMipmapTextureLoader loader(
             reader.get(), maxNumPages, maxLevels, targetMemory);
 
-    Ptex::DataType type = reader->dataType();
+    const Ptex::DataType type = reader->dataType();
     if (type == Ptex::dt_float) {
         hioFormat = HioTypeFloat;
     } else if (type == Ptex::dt_half) {
@@ -283,7 +280,7 @@ HdStPtexTextureObject::_Load()
         TF_CODING_ERROR("Unsupported format");
     }
 
-    size_t texelDataSize = numPixels * _numBytesPerPixel;
+    const size_t texelDataSize = numPixels * _numBytesPerPixel;
     if (conversionFunction) {
         _texelData =
             conversionFunction(loaderTexelBuffer, numPixels);

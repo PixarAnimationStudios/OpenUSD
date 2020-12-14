@@ -77,7 +77,6 @@ public:
     ///
     /// Only valid after commit phase.
     ///
-    HDST_API
     HgiTextureHandle GetLayoutTexture() const { return _layoutTexture; }
 
     HDST_API

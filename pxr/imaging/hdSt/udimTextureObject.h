@@ -35,8 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GarchUdimTexture);
-
 enum HgiFormat : int;
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
 
@@ -101,7 +99,6 @@ private:
     HgiTextureHandle _texelTexture;
     HgiTextureHandle _layoutTexture;
 
-    HDST_API
     void _DestroyTextures();
 };
 
