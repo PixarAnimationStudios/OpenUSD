@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/ptexMipmapTextureLoader.h"
+#include "pxr/imaging/hdSt/ptexMipmapTextureLoader.h"
+
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
 
@@ -37,8 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // sample neighbor pixels and populate around blocks
 void
-GlfPtexMipmapTextureLoader::Block::guttering(
-    GlfPtexMipmapTextureLoader *loader,
+HdStPtexMipmapTextureLoader::Block::guttering(
+    HdStPtexMipmapTextureLoader *loader,
     PtexTexture *ptex, int level,
     int wid, int hei,
     unsigned char *pptr, int bpp,
@@ -47,7 +48,7 @@ GlfPtexMipmapTextureLoader::Block::guttering(
     int lineBufferSize = std::max(wid, hei) * bpp;
     unsigned char * lineBuffer = new unsigned char[lineBufferSize];
 
-    int numEdges = ptex->meshType() == Ptex::mt_triangle ? 3 : 4;  
+    int numEdges = ptex->meshType() == Ptex::mt_triangle ? 3 : 4;
 
     for (int edge = 0; edge < numEdges; edge++) {
         int len = (edge == 0 || edge == 2) ? wid : hei;
@@ -157,8 +158,8 @@ GlfPtexMipmapTextureLoader::Block::guttering(
 }
 
 void
-GlfPtexMipmapTextureLoader::Block::Generate(
-    GlfPtexMipmapTextureLoader *loader,
+HdStPtexMipmapTextureLoader::Block::Generate(
+    HdStPtexMipmapTextureLoader *loader,
     PtexTexture *ptex,
     unsigned char *destination,
     int bpp, int wid, int maxLevels)
@@ -203,8 +204,8 @@ GlfPtexMipmapTextureLoader::Block::Generate(
 }
 
 void
-GlfPtexMipmapTextureLoader::Block::SetSize(unsigned char ulog2_,
-                                           unsigned char vlog2_, bool mipmap)
+HdStPtexMipmapTextureLoader::Block::SetSize(unsigned char ulog2_,
+                                            unsigned char vlog2_, bool mipmap)
 {
     ulog2 = ulog2_;
     vlog2 = vlog2_;
@@ -224,13 +225,13 @@ GlfPtexMipmapTextureLoader::Block::SetSize(unsigned char ulog2_,
 
 // ---------------------------------------------------------------------------
 
-struct GlfPtexMipmapTextureLoader::Page
+struct HdStPtexMipmapTextureLoader::Page
 {
     struct SlotLimit
     {
         explicit SlotLimit(size_t num, uint16_t w, uint16_t h) :
             numTexels(num), width(w), height(h) { }
-        
+
         const uint32_t numTexels;
         const uint16_t width, height;
     };
@@ -318,7 +319,7 @@ struct GlfPtexMipmapTextureLoader::Page
         return false;
     }
 
-    void Generate(GlfPtexMipmapTextureLoader *loader, PtexTexture *ptex,
+    void Generate(HdStPtexMipmapTextureLoader *loader, PtexTexture *ptex,
                   unsigned char *destination,
                   int bpp, int width, int maxLevels) {
         for (BlockList::iterator it = _blocks.begin();
@@ -349,7 +350,7 @@ private:
 // ---------------------------------------------------------------------------
 
 // Utility class for Ptex corner iteration
-class GlfPtexMipmapTextureLoader::CornerIterator
+class HdStPtexMipmapTextureLoader::CornerIterator
 {
 public:
     CornerIterator(PtexTexture *ptex, int face, int edge, int8_t reslog2) :
@@ -405,7 +406,7 @@ public:
                 _currentFace = _ptex->getFaceInfo(_currentFace).adjface(2);
                 _currentEdge = 1;
                 _mid = false;
-            } else if (info.isSubface() && 
+            } else if (info.isSubface() &&
                 (!_ptex->getFaceInfo(_currentFace).isSubface()) &&
                 _currentEdge == 3) {
                 _mid = true;
@@ -435,7 +436,7 @@ public:
             }
         }
         Ptex::FaceInfo nextFaceInfo = _ptex->getFaceInfo(_currentFace);
-        if ((!_clockWise) && 
+        if ((!_clockWise) &&
             (!info.isSubface()) && (nextFaceInfo.isSubface())) {
              // needs tricky traverse for boundary subface...
              if (_currentEdge == 3) {
@@ -473,11 +474,11 @@ private:
 
 // ---------------------------------------------------------------------------
 
-GlfPtexMipmapTextureLoader::GlfPtexMipmapTextureLoader(PtexTexture *ptex,
-                                                       int maxNumPages,
-                                                       int maxLevels,
-                                                       size_t targetMemory,
-                                                       bool seamlessMipmap) :
+HdStPtexMipmapTextureLoader::HdStPtexMipmapTextureLoader(PtexTexture *ptex,
+                                                         int maxNumPages,
+                                                         int maxLevels,
+                                                         size_t targetMemory,
+                                                         bool seamlessMipmap) :
     _ptex(ptex), _maxLevels(maxLevels), _bpp(0),
     _pageWidth(0), _pageHeight(0), _texelBuffer(NULL), _layoutBuffer(NULL),
     _memoryUsage(0)
@@ -506,7 +507,7 @@ GlfPtexMipmapTextureLoader::GlfPtexMipmapTextureLoader(PtexTexture *ptex,
     generateBuffers();
 }
 
-GlfPtexMipmapTextureLoader::~GlfPtexMipmapTextureLoader()
+HdStPtexMipmapTextureLoader::~HdStPtexMipmapTextureLoader()
 {
     for (size_t i = 0; i < _pages.size(); ++i) {
         delete _pages[i];
@@ -518,10 +519,10 @@ GlfPtexMipmapTextureLoader::~GlfPtexMipmapTextureLoader()
 // resample border texels for guttering
 //
 int
-GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
-                                           unsigned char *result,
-                                           int dstLength, int bpp,
-                                           float srcStart, float srcEnd)
+HdStPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
+                                            unsigned char *result,
+                                            int dstLength, int bpp,
+                                            float srcStart, float srcEnd)
 {
     TF_VERIFY(static_cast<size_t>(face) < _blocks.size());
     Ptex::Res res(_blocks[face].ulog2, _blocks[face].vlog2);
@@ -577,7 +578,7 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
             --res.vlog2;
             srcLength /= 2;
         }
-        
+
         PtexFaceData * data = _ptex->getData(face, res);
         if (!data) {
             // XXX:validation
@@ -634,8 +635,8 @@ flipBuffer(unsigned char *buffer, int length, int bpp)
 
 // sample neighbor face's edge
 void
-GlfPtexMipmapTextureLoader::sampleNeighbor(unsigned char *border, int face,
-                                           int edge, int length, int bpp)
+HdStPtexMipmapTextureLoader::sampleNeighbor(unsigned char *border, int face,
+                                            int edge, int length, int bpp)
 {
     const Ptex::FaceInfo &fi = _ptex->getFaceInfo(face);
 
@@ -712,9 +713,9 @@ GlfPtexMipmapTextureLoader::sampleNeighbor(unsigned char *border, int face,
 // get corner pixel by traversing all adjacent faces around vertex
 //
 bool
-GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
-                                           int face, int edge,
-                                           int8_t reslog2)
+HdStPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
+                                            int face, int edge,
+                                            int8_t reslog2)
 {
     const Ptex::FaceInfo &fi = _ptex->getFaceInfo(face);
 
@@ -838,7 +839,7 @@ GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
 }
 
 int
-GlfPtexMipmapTextureLoader::getLevelDiff(int face, int edge)
+HdStPtexMipmapTextureLoader::getLevelDiff(int face, int edge)
 {
     // returns the highest mipmap level difference around the vertex
     // at face/edge
@@ -859,8 +860,8 @@ GlfPtexMipmapTextureLoader::getLevelDiff(int face, int edge)
 }
 
 void
-GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
-                                            size_t targetMemory)
+HdStPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
+                                             size_t targetMemory)
 {
     size_t numTexels = 0;
 
@@ -933,7 +934,7 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         smallestBlockWidth = std::min(smallestBlockWidth, (*it)->width);
         smallestBlockHeight = std::min(smallestBlockHeight, (*it)->height);
     }
-    
+
     // compute page size ---------------------------------------------
     {
         // page size is set to the largest edge of the largest block :
@@ -956,7 +957,7 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         if (w < minPageSize) {
             w = minPageSize;
         }
-        
+ 
         if (h < minPageSize) {
             h = minPageSize;
         }
@@ -1050,7 +1051,7 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
 }
 
 void
-GlfPtexMipmapTextureLoader::generateBuffers()
+HdStPtexMipmapTextureLoader::generateBuffers()
 {
     // ptex layout struct
     // struct Layout {

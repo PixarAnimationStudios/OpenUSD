@@ -4,11 +4,6 @@
             "Info": {
                 "ShaderResources": "shaders",
                 "Types": {
-                    "GlfPtexTexture" : {
-                        "bases": ["GlfTexture"],
-                        "textureTypes": ["ptx", "ptex"],
-                        "precedence": 1
-                    },
                     "GlfUVTexture" : {
                         "bases": ["GlfBaseTexture"],
                         "textureTypes": ["*"],

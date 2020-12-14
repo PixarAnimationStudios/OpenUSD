@@ -34,7 +34,7 @@
 
 #include "pxr/imaging/hd/material.h"
 
-#include "pxr/imaging/glf/udimTexture.h"
+#include "pxr/imaging/hdSt/udimTextureObject.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -831,7 +831,7 @@ _MakeMaterialParamsForTexture(
                        v.IsHolding<SdfAssetPath>()) {
                 const std::string filePath = _ResolveAssetPath(v);
 
-                if (GlfIsSupportedUdimTexture(filePath)) {
+                if (HdStIsSupportedUdimTexture(filePath)) {
                     texParam.textureType = HdTextureType::Udim;
                 }
                 

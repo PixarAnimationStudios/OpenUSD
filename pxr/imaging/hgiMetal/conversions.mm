@@ -314,6 +314,7 @@ struct {
     {HgiTextureType1D,           MTLTextureType1D},
     {HgiTextureType2D,           MTLTextureType2D},
     {HgiTextureType3D,           MTLTextureType3D},
+    {HgiTextureType1DArray,      MTLTextureType1DArray},
     {HgiTextureType2DArray,      MTLTextureType2DArray},
 };
 

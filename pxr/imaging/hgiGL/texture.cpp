@@ -36,9 +36,16 @@ _GlTextureStorageND(
     const GLuint texture,
     const GLsizei levels,
     const GLenum internalformat,
-    const GfVec3i &dimensions)
+    const GfVec3i &dimensions,
+    const GLsizei layerCount)
 {
     switch(textureType) {
+    case HgiTextureType1D:
+        glTextureStorage1D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0]);
+        break;
     case HgiTextureType2D:
         glTextureStorage2D(texture,
                            levels,
@@ -50,6 +57,18 @@ _GlTextureStorageND(
                            levels,
                            internalformat,
                            dimensions[0], dimensions[1], dimensions[2]);
+        break;
+    case HgiTextureType1DArray:
+        glTextureStorage2D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], layerCount);
+        break;
+    case HgiTextureType2DArray:
+        glTextureStorage3D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], dimensions[1], layerCount);
         break;
     default:
         TF_CODING_ERROR("Unsupported HgiTextureType enum value");
@@ -79,6 +98,7 @@ _GlTextureSubImageND(
                             format,
                             type,
                             pixels);
+        break;
     case HgiTextureType2D:
         glTextureSubImage2D(texture,
                             level,
@@ -93,6 +113,15 @@ _GlTextureSubImageND(
                             level,
                             offsets[0], offsets[1], offsets[2],
                             dimensions[0], dimensions[1], dimensions[2],
+                            format,
+                            type,
+                            pixels);
+        break;
+    case HgiTextureType1DArray:
+        glTextureSubImage2D(texture,
+                            level,
+                            offsets[0], offsets[1],
+                            dimensions[0], layerCount,
                             format,
                             type,
                             pixels);
@@ -249,7 +278,8 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             _textureId,
             mips,
             glInternalFormat,
-            desc.dimensions);
+            desc.dimensions,
+            desc.layerCount);
 
         // Upload texel data
         if (desc.initialData && desc.pixelsByteSize > 0) {

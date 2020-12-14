@@ -25,10 +25,12 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/ptexTextureObject.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/samplerObject.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
-#include "pxr/imaging/hdSt/samplerObject.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hgiGL/sampler.h"
@@ -332,7 +334,7 @@ public:
             binder,
             bind);
     }
-    
+
     static void Compute(
         TfToken const &name,
         HdStPtexTextureObject const &texture,
@@ -345,15 +347,26 @@ public:
 
         glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
         glBindTexture(GL_TEXTURE_2D_ARRAY,
-                      bind ? texture.GetTexelGLTextureName() : 0);
+                      bind ? texture.GetTexelTexture()->GetRawResource() : 0);
+
+        HgiSampler * const texelSampler = sampler.GetTexelsSampler().Get();
+
+        const HgiGLSampler * const glSampler =
+            bind ? dynamic_cast<HgiGLSampler*>(texelSampler) : nullptr;
+
+        if (glSampler) {
+            glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
+        } else {
+            glBindSampler(texelSamplerUnit, 0);
+        }
 
         const HdBinding layoutBinding = binder.GetBinding(
             _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
         const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
 
         glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
-        glBindTexture(GL_TEXTURE_BUFFER,
-                      bind ? texture.GetLayoutGLTextureName() : 0);
+        glBindTexture(GL_TEXTURE_1D_ARRAY,
+                      bind ? texture.GetLayoutTexture()->GetRawResource() : 0);
     }
 
     static void Compute(
@@ -368,7 +381,7 @@ public:
 
         glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
         glBindTexture(GL_TEXTURE_2D_ARRAY,
-                      bind ? texture.GetTexelGLTextureName() : 0);
+                      bind ? texture.GetTexelTexture()->GetRawResource() : 0);
 
         HgiSampler * const texelSampler = sampler.GetTexelsSampler().Get();
 
@@ -376,7 +389,7 @@ public:
             bind ? dynamic_cast<HgiGLSampler*>(texelSampler) : nullptr;
 
         if (glSampler) {
-            glBindSampler(texelSamplerUnit, glSampler->GetSamplerId());
+            glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
         } else {
             glBindSampler(texelSamplerUnit, 0);
         }
@@ -387,7 +400,7 @@ public:
 
         glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
         glBindTexture(GL_TEXTURE_1D,
-                      bind ? texture.GetLayoutGLTextureName() : 0);
+                      bind ? texture.GetLayoutTexture()->GetRawResource() : 0);
     }
 };
 

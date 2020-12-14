@@ -1346,7 +1346,7 @@ HdSt_ResourceBinder::IntrospectBindings(HgiShaderProgramHandle const & hgiProgra
             } else if (type == HdBinding::TEXTURE_PTEX_TEXEL) {
                 textureName = "sampler2darray_" + name;
             } else if (type == HdBinding::TEXTURE_PTEX_LAYOUT) {
-                textureName = "isamplerbuffer_" + name;
+                textureName = "isampler1darray_" + name;
             } else if (type == HdBinding::TEXTURE_UDIM_ARRAY) {
                 textureName = "sampler2dArray_" + name;
             } else if (type == HdBinding::TEXTURE_UDIM_LAYOUT) {

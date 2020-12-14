@@ -18,6 +18,7 @@ endif()
 
 set(optionalLibs "")
 set(optionalIncludeDirs "")
+set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
 if (${PXR_BUILD_MATERIALX_PLUGIN})
     add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
@@ -26,6 +27,11 @@ if (${PXR_BUILD_MATERIALX_PLUGIN})
     list(APPEND optionalLibs ${MATERIALX_LIBRARIES})
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPrivateClasses materialXFilter)
+endif()
+if (PXR_ENABLE_PTEX_SUPPORT)
+    list(APPEND optionalLibs ${PTEX_LIBRARY})
+    list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
+    list(APPEND optionalPublicClasses ptexMipmapTextureLoader)
 endif()
 
 pxr_library(hdSt
@@ -86,6 +92,7 @@ pxr_library(hdSt
         mixinShader
         package
         points
+        ptexTextureObject
         renderBuffer
         renderDelegate
         renderPass
@@ -109,10 +116,12 @@ pxr_library(hdSt
         textureObject
         textureObjectRegistry
         tokens
+        udimTextureObject
         unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
         volume
+        ${optionalPublicClasses}
 
     PUBLIC_HEADERS
         api.h

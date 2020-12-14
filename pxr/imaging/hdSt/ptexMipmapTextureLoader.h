@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_PTEX_MIPMAP_TEXTURE_LOADER_H
-#define PXR_IMAGING_GLF_PTEX_MIPMAP_TEXTURE_LOADER_H
+#ifndef HDST_PTEX_MIPMAP_TEXTURE_LOADER_H
+#define HDST_PTEX_MIPMAP_TEXTURE_LOADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include <Ptexture.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -34,17 +34,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GlfPtexMipmapTextureLoader {
+class HdStPtexMipmapTextureLoader {
 public:
-    GLF_API
-    GlfPtexMipmapTextureLoader(PtexTexture *ptex,
-                               int maxNumPages,
-                               int maxLevels = -1,
-                               size_t targetMemory = 0,
-                               bool seamlessMipmap = true);
+    HDST_API
+    HdStPtexMipmapTextureLoader(PtexTexture *ptex,
+                                int maxNumPages,
+                                int maxLevels = -1,
+                                size_t targetMemory = 0,
+                                bool seamlessMipmap = true);
 
-    GLF_API
-    ~GlfPtexMipmapTextureLoader();
+    HDST_API
+    ~HdStPtexMipmapTextureLoader();
 
     const unsigned char * GetLayoutBuffer() const {
         return _layoutBuffer;
@@ -108,7 +108,7 @@ private:
         uint16_t adjSizeDiffs;     // maximum tile size difference around each vertices
         int8_t   ulog2, vlog2;     // texel dimension log2 (original tile)
 
-        void Generate(GlfPtexMipmapTextureLoader *loader, PtexTexture *ptex,
+        void Generate(HdStPtexMipmapTextureLoader *loader, PtexTexture *ptex,
                       unsigned char *destination,
                       int bpp, int width, int maxLevels);
 
@@ -118,7 +118,7 @@ private:
             return width*height;
         }
 
-        void guttering(GlfPtexMipmapTextureLoader *loader, PtexTexture *ptex,
+        void guttering(HdStPtexMipmapTextureLoader *loader, PtexTexture *ptex,
                        int level, int width, int height,
                        unsigned char *pptr, int bpp, int stride);
 
@@ -163,4 +163,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_GLF_PTEX_MIPMAP_TEXTURE_LOADER_H
+#endif // HDST_PTEX_MIPMAP_TEXTURE_LOADER_H

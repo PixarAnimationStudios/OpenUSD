@@ -60,6 +60,8 @@ using HgiDeviceCapabilities = HgiBits;
 ///   A two-dimensional texture.</li>
 /// <li>HgiTextureType3D:
 ///   A three-dimensional texture.</li>
+/// <li>HgiTextureType1DArray:
+///   An array of one-dimensional textures.</li>
 /// <li>HgiTextureType2DArray:
 ///   An array of two-dimensional textures.</li>
 /// </ul>
@@ -69,6 +71,7 @@ enum HgiTextureType
     HgiTextureType1D = 0,
     HgiTextureType2D,
     HgiTextureType3D,
+    HgiTextureType1DArray,
     HgiTextureType2DArray,
 
     HgiTextureTypeCount

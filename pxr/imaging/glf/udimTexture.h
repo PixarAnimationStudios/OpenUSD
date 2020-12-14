@@ -24,6 +24,19 @@
 #ifndef PXR_IMAGING_GLF_UDIM_TEXTURE_H
 #define PXR_IMAGING_GLF_UDIM_TEXTURE_H
 
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//
+// This file is DEPRECATED.
+//
+// We are swithing to hdSt/udimTextureObject.
+// Leaving this GlfUdimTexture in place tmp
+// for third-party plugins (e.g. Maya) to
+// switch over to Storm's texture system.
+//
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 /// \file glf/udimTexture.h
 
 #include "pxr/pxr.h"

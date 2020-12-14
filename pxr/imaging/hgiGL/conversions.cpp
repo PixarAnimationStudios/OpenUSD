@@ -66,10 +66,10 @@ static const _FormatDesc FORMAT_DESC[] =
     {GL_RGB,  GL_UNSIGNED_SHORT,GL_RGB16I      }, // UInt16Vec3
     {GL_RGBA, GL_UNSIGNED_SHORT,GL_RGBA16I     }, // UInt16Vec4
 
-    {GL_RED,  GL_INT,           GL_R32I        }, // Int32
-    {GL_RG,   GL_INT,           GL_RG32I       }, // Int32Vec2
-    {GL_RGB,  GL_INT,           GL_RGB32I      }, // Int32Vec3
-    {GL_RGBA, GL_INT,           GL_RGBA32I     }, // Int32Vec4
+    {GL_RED_INTEGER,  GL_INT,   GL_R32I        }, // Int32
+    {GL_RG_INTEGER,   GL_INT,   GL_RG32I       }, // Int32Vec2
+    {GL_RGB_INTEGER,  GL_INT,   GL_RGB32I      }, // Int32Vec3
+    {GL_RGBA_INTEGER, GL_INT,   GL_RGBA32I     }, // Int32Vec4
 
     // {GL_RGB,  GL_UNSIGNED_BYTE, GL_SRGB8      }, // Unsupported by HgiFormat
     {GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8}, // UNorm8Vec4sRGB,
@@ -186,6 +186,7 @@ _textureTypeTable[HgiTextureTypeCount][2] =
     {HgiTextureType1D,      GL_TEXTURE_1D},
     {HgiTextureType2D,      GL_TEXTURE_2D},
     {HgiTextureType3D,      GL_TEXTURE_3D},
+    {HgiTextureType1DArray, GL_TEXTURE_1D_ARRAY},
     {HgiTextureType2DArray, GL_TEXTURE_2D_ARRAY}
 };
 

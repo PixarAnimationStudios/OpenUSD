@@ -14,11 +14,6 @@ endif()
 
 set(optionalLibs "")
 set(optionalIncludeDirs "")
-if (PXR_ENABLE_PTEX_SUPPORT)
-    list(APPEND optionalPublicClasses ptexMipmapTextureLoader)
-    list(APPEND optionalLibs ${PTEX_LIBRARY})
-    list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
-endif()
 
 if (PXR_ENABLE_OPENVDB_SUPPORT)
     list(APPEND optionalPublicClasses vdbTextureData)
@@ -63,7 +58,6 @@ pxr_library(glf
         glContext
         glRawContext
         info
-        ptexTexture
         simpleLight
         simpleLightingContext
         simpleMaterial
@@ -111,7 +105,6 @@ pxr_library(glf
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx
 

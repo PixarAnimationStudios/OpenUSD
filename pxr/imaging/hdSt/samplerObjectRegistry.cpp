@@ -24,7 +24,9 @@
 #include "pxr/imaging/hdSt/samplerObjectRegistry.h"
 
 #include "pxr/imaging/hdSt/samplerObject.h"
+#include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/textureObject.h"
+#include "pxr/imaging/hdSt/udimTextureObject.h"
 
 #include "pxr/base/trace/trace.h"
 

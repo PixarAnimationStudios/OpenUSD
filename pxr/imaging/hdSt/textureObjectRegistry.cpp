@@ -24,7 +24,9 @@
 
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
+#include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/textureObject.h"
+#include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
