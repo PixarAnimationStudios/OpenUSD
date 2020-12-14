@@ -208,6 +208,24 @@ def _GetUseExportAPI(layer):
 
     return _GetLibMetadata(layer).get('useExportAPI', True)
 
+def _IsDynamicSchemaLayer(layer):
+    """ Return whether the layer is defined as a dynamic schema layer."""
+
+    # This can be called on sublayers which may not necessarily have lib 
+    # metadata so we can ignore exceptions and return false.
+    try:
+        return _GetLibMetadata(layer).get('isDynamic', False)
+    except:
+        return False
+
+def _IsDynamicSchemaLib(stage):
+    """ Return whether the given stage has a dynamic schema layer that makes 
+    the schema library itself dynamic"""
+
+    for layer in stage.GetLayerStack():
+        if _IsDynamicSchemaLayer(layer):
+            return True
+    return False
     
 def _UpperCase(aString):
     return aString.upper()
@@ -697,6 +715,7 @@ def ParseUsd(usdFilePath):
             _GetTokensPrefix(sdfLayer),
             _GetUseExportAPI(sdfLayer),
             _GetLibTokens(sdfLayer),
+            _IsDynamicSchemaLib(stage),
             classes)
 
 
@@ -903,7 +922,6 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         tokensHTemplate = env.get_template('tokens.h')
         tokensCppTemplate = env.get_template('tokens.cpp')
         tokensWrapTemplate = env.get_template('wrapTokens.cpp')
-        plugInfoTemplate = env.get_template('plugInfo.json')
     except TemplateNotFound as tnf:
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
@@ -975,6 +993,20 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
 
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode, validate)
+
+def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
+
+    #
+    # Load Templates
+    #
+    Print('Loading Templates from {0}'.format(templatePath))
+    try:
+        plugInfoTemplate = env.get_template('plugInfo.json')
+    except TemplateNotFound as tnf:
+        raise RuntimeError("Template not found: {0}".format(str(tnf)))
+    except TemplateSyntaxError as tse:
+        raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
+                           .format(tse.filename, tse.lineno, tse.message))
 
     #
     # Generate plugInfo.json.
@@ -1323,6 +1355,7 @@ if __name__ == '__main__':
         tokensPrefix, \
         useExportAPI, \
         libTokens, \
+        isDynamicSchemaLib, \
         classes = ParseUsd(schemaPath)
         tokenData = GatherTokens(classes, libName, libTokens)
         
@@ -1352,10 +1385,16 @@ if __name__ == '__main__':
                               libraryPrefix=libPrefix,
                               tokensPrefix=tokensPrefix,
                               useExportAPI=useExportAPI)
-        GenerateCode(templatePath, codeGenPath, tokenData, classes, 
-                     args.validate,
-                     namespaceOpen, namespaceClose, namespaceUsing,
-                     useExportAPI, j2_env, args.headerTerminatorString)
+
+        # Don't generate code for dynamic schema libraries
+        if not isDynamicSchemaLib:
+            GenerateCode(templatePath, codeGenPath, tokenData, classes, 
+                         args.validate,
+                         namespaceOpen, namespaceClose, namespaceUsing,
+                         useExportAPI, j2_env, args.headerTerminatorString)
+        # We always generate plugInfo and generateSchema.
+        GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
+                         j2_env)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     

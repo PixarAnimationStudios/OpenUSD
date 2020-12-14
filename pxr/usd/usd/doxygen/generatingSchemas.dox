@@ -209,6 +209,7 @@ over "GLOBAL" (
                 string doc = """doc for libraryToken2"""
             }
         }
+        bool isDynamic = true
     }
 )
 {
@@ -235,6 +236,17 @@ Here's a short description of each datum in the global customData dictionary:
     provided, the "doc" string will be included in the tokens documentation.
     If provided, the "value" string will be assigned as the token's value; 
     otherwise, the token's value will be its identifier (as a TfToken).
+ 
+  - \b isDynamic - This is a bool value that, if set to true, indicates that 
+    this schema module is intended to contain dynamic schemas only and isn't 
+    expected to have any corresponding C++ classes exist for its schema classes. 
+    This flag tells schema generation that it should not generate any
+    C++ code for the classes in this module.
+    Note that if isDynamic is set to true for a schema module, then any other
+    schema module that includes it will always be treated as if it also 
+    specified isDynamic=true. This is because we don't generate C++ code for 
+    classes that would possibly inherit from a C++ class that we didn't 
+    generate.
  
 \section Usd_PerClassProperties Customizing Per-Class Properties
 

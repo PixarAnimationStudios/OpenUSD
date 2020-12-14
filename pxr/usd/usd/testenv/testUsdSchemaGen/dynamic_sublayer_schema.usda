@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    "This file is a contrived schema file."
+    subLayers = [
+        @dynamic_schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdContrived"
+        string libraryPath      = "pxr/usd/usdContrived"
+        # string libraryPrefix  = "Usd"
+        # string tokensPrefix   = "Usd"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+class "DerivedSingleApplyAPI" (
+    inherits = </SingleApplyAPI>
+    customData = {
+        token apiSchemaType = "singleApply"
+    }
+)
+{
+}
+
+class DerivedTestPxHairman "DerivedTestPxHairman" (
+    inherits = </TestPxHairman>
+    customData = {
+        string className = "DerivedTestHairman"
+    }
+)
+{
+}
