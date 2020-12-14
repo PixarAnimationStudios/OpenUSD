@@ -197,9 +197,9 @@ _GetGlslfxForTerminal(
 
 static HdMaterialNode2 const*
 _GetTerminalNode(
-    SdfPath const& id,
     HdMaterialNetwork2 const& network,
-    TfToken const & terminalName)
+    TfToken const& terminalName,
+    SdfPath * terminalNodePath)
 {
     // Get the Surface or Volume Terminal
     auto const& terminalConnIt = network.terminals.find(terminalName);
@@ -209,6 +209,7 @@ _GetTerminalNode(
     HdMaterialConnection2 const& connection = terminalConnIt->second;
     SdfPath const& terminalPath = connection.upstreamNode;
     auto const& terminalIt = network.nodes.find(terminalPath);
+    *terminalNodePath = terminalPath;
     return &terminalIt->second;
 }
 
@@ -1217,13 +1218,16 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     const TfToken &terminalName = (isVolume) ? HdMaterialTerminalTokens->volume 
                                             : HdMaterialTerminalTokens->surface;
 
-#ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId);
-#endif
-
+    SdfPath surfTerminalPath;
     if (HdMaterialNode2 const* surfTerminal = 
-            _GetTerminalNode(materialId, surfaceNetwork, terminalName)) {
+            _GetTerminalNode(surfaceNetwork, terminalName, &surfTerminalPath)) {
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        if (!isVolume) {
+            HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
+                                      *surfTerminal, surfTerminalPath);
+        }
+#endif
         // Extract the glslfx and metadata for surface/volume.
         _GetGlslfxForTerminal(_surfaceGfx, &_surfaceGfxHash,
                               surfTerminal->nodeTypeId, resourceRegistry);

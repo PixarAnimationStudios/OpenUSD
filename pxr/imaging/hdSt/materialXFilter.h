@@ -34,7 +34,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// XXX Converting MaterialX node to one with a hard-coded glslfx file
 void HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2 * hdNetwork,
-    SdfPath const& materialPath);
+    SdfPath const& materialPath,
+    HdMaterialNode2 const& terminalNode,
+    SdfPath const& terminalNodePath);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

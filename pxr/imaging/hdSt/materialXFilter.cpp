@@ -438,7 +438,6 @@ static mx::DocumentPtr
 _CreateMtlxDocumentFromHdNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNode2 const& hdMaterialXNode,
-    SdfPath const& nodePath,
     SdfPath const& materialPath,
     mx::DocumentPtr libraries)
 {
@@ -541,21 +540,10 @@ _CreateMtlxDocumentFromHdNetwork(
 void
 HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2 * hdNetwork,
-    SdfPath const& materialPath)
+    SdfPath const& materialPath,
+    HdMaterialNode2 const& terminalNode,
+    SdfPath const& terminalNodePath)
 {
-    // Get the MaterialX Node (Surface Terminal)
-    auto const& terminalIt = 
-        hdNetwork->terminals.find(HdMaterialTerminalTokens->surface);
-    if (terminalIt == hdNetwork->terminals.end()) {
-        TF_WARN("HdSt_ApplyMaterialXFilter: Surface Terminal not found in "
-                "HdMaterialNetwork2");
-        return;
-    }
-    HdMaterialConnection2 const& terminalConnection = terminalIt->second;
-    SdfPath const& terminalNodePath = terminalConnection.upstreamNode;
-    auto const& terminalNodeIt = hdNetwork->nodes.find(terminalNodePath);
-    HdMaterialNode2 const& terminalNode = terminalNodeIt->second;
-
     // Check if the Terminal is a MaterialX Node
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     const SdrShaderNodeConstPtr mtlxSdrNode = 
@@ -575,7 +563,6 @@ HdSt_ApplyMaterialXFilter(
         // Create the MaterialX Document from the HdMaterialNetwork
         mx::DocumentPtr mtlxDoc = _CreateMtlxDocumentFromHdNetwork(*hdNetwork,
                                         terminalNode,   // MaterialX HdNode
-                                        terminalNodePath,
                                         materialPath,
                                         stdLibraries);
         
@@ -595,10 +582,9 @@ HdSt_ApplyMaterialXFilter(
         HdMaterialNode2 newTerminalNode;
         newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
         newTerminalNode.inputConnections = terminalNode.inputConnections;
-        
+
         // Replace the original terminalNode with this newTerminalNode
-        hdNetwork->nodes.erase(terminalNodeIt);
-        hdNetwork->nodes.insert({terminalNodePath, newTerminalNode});
+        hdNetwork->nodes[terminalNodePath] = newTerminalNode;
     }
 }
 
