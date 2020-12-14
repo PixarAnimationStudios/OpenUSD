@@ -84,6 +84,24 @@ HdStRenderPassState::_UseAlphaMask() const
     return (_alphaThreshold > 0.0f);
 }
 
+static
+GfVec4f
+_ComputeDataWindow(
+    const CameraUtilFraming &framing,
+    const GfVec4f &fallbackViewport)
+{
+    if (framing.IsValid()) {
+        const GfRect2i &dataWindow = framing.dataWindow;
+        return GfVec4f(
+            dataWindow.GetMinX(),
+            dataWindow.GetMinY(),
+            dataWindow.GetWidth(),
+            dataWindow.GetHeight());
+    }
+
+    return fallbackViewport;
+}
+
 void
 HdStRenderPassState::Prepare(
     HdResourceRegistrySharedPtr const &resourceRegistry)
@@ -247,7 +265,9 @@ HdStRenderPassState::Prepare(
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->viewport,
-            VtValue(_viewport)));
+            VtValue(
+                _ComputeDataWindow(
+                    _framing, _viewport))));
 
     if (clipPlanes.size() > 0) {
         sources.push_back(
