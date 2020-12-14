@@ -283,20 +283,8 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     for (auto&& mtlxInput: nodeDef->getInputs()) {
         builder->AddProperty(mtlxInput, false);
     }
-    if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
-        if (type == mx::MULTI_OUTPUT_TYPE_STRING) {
-            for (auto&& mtlxOutput: nodeDef->getOutputs()) {
-                builder->AddProperty(mtlxOutput, true);
-            }
-        }
-        else if (context == SdrNodeContext->Pattern) {
-            builder->AddProperty(nodeDef, true);
-        }
-    }
-    else {
-        for (auto&& mtlxOutput: nodeDef->getOutputs()) {
-            builder->AddProperty(mtlxOutput, true);
-        }
+    for (auto&& mtlxOutput: nodeDef->getOutputs()) {
+        builder->AddProperty(mtlxOutput, true);
     }
 }
 

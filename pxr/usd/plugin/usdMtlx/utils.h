@@ -67,15 +67,6 @@ USDMTLX_LOCAL
 NdrStringVec
 UsdMtlxStandardFileExtensions();
 
-// MaterialX versions prior to 1.37.0 only allow nodes with nodeType as 
-// MULTI_OUTPUT_TYPE_STRING to provide outputs. With version 1.37 output tags
-// are mandatory for all mtlxNodes hence removing the nodeType restriction.
-// https://www.materialx.org/assets/MaterialX.v1.37REV2.Changelist.pdf
-// Checks if the MaterialX Library version is less than 1.37.0
-USDMTLX_LOCAL
-bool
-UsdMtlxOutputNodesRequireMultiOutputStringType();
-
 /// Return the (possibly cached) MaterialX document at \p resolvedUri.
 /// Return null if the document could not be read and report a
 /// warning (once per uri).  \p resolvedUri may be empty to indicate
