@@ -1143,7 +1143,6 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     primsToKeep = set(cls.usdPrimTypeName for cls in classes)
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
-    allAppliedAPISchemas = []
     allMultipleApplyAPISchemaNamespaces = {}
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
@@ -1162,9 +1161,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                     raise _GetSchemaDefException("propertyNamespacePrefix "
                         "must exist as a metadata field on multiple-apply "
                         "API schemas with properties", p.GetPath())
-                allAppliedAPISchemas.append(p.GetName())
-            elif apiSchemaType in [None, SINGLE_APPLY]:
-                allAppliedAPISchemas.append(p.GetName())
+
             # API schema classes must not have authored metadata except for 
             # these exceptions:
             #   'documentation' - This is allowed
@@ -1199,9 +1196,8 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                         ' DO NOT EDIT.'
 
     # Add the list of all applied and multiple-apply API schemas.
-    if allAppliedAPISchemas or allMultipleApplyAPISchemaNamespaces:
+    if allMultipleApplyAPISchemaNamespaces:
         flatLayer.customLayerData = {
-            'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
             'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
 
