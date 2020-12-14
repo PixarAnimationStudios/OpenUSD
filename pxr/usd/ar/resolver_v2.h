@@ -66,6 +66,47 @@ public:
     ArResolver& operator=(const ArResolver&) = delete;
 
     // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_identifier
+    /// \name Identifiers
+    ///
+    /// Identifiers are canonicalized asset paths that may be assigned
+    /// to a logical asset to facilitate comparisons and lookups. They
+    /// may be used to determine if different asset paths might refer to
+    /// the same asset without performing resolution.
+    ///
+    /// Since identifiers are just a form of asset path, they may be used
+    /// with other functions on ArResolver that require an asset path, like
+    /// Resolve.
+    ///
+    /// If two asset paths produce the same identifier, those asset paths
+    /// must refer to the same asset. However, in some cases comparing
+    /// identifiers may not be sufficient to determine if assets are equal.
+    /// For example, there could be two assets with the same identifier
+    /// but whose contents were read from different resolved paths because
+    /// different resolver contexts were bound when those assets were loaded.
+    ///
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Returns an identifier for the asset specified by \p assetPath.
+    /// If \p anchorAssetPath is not empty, it is the resolved asset path
+    /// that \p assetPath should be anchored to if it is a relative path.
+    AR_API
+    std::string CreateIdentifier(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath = ArResolvedPath());
+
+    /// Returns an identifier for a new asset specified by \p assetPath.
+    /// If \p anchorAssetPath is not empty, it is the resolved asset path
+    /// that \p assetPath should be anchored to if it is a relative path.
+    AR_API
+    std::string CreateIdentifierForNewAsset(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath = ArResolvedPath());
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
     /// \anchor ArResolver_resolution
     /// \name Path Resolution Operations
     ///
@@ -408,6 +449,29 @@ protected:
 
     /// Implementation
     /// @{
+
+    /// Return an identifier for the given \p assetPath. If \p anchorAssetPath
+    /// is non-empty, it should be used as the anchoring asset if \p assetPath
+    /// is relative.
+    ///
+    /// Two different (assetPath, anchorAssetPath) inputs should return the
+    /// same identifier only if they refer to the same asset. Identifiers may 
+    /// be compared to determine given paths refer to the same asset, so
+    /// implementations should take care to canonicalize and normalize the
+    /// returned identifier to a consistent format.
+    virtual std::string _CreateIdentifier(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) = 0;
+
+    /// Return an identifier for a new asset at the given \p assetPath.  If
+    /// \p anchorAssetPath is non-empty, it should be used as the anchoring
+    /// asset if \p assetPath is relative.
+    ///
+    /// This is similar to _CreateIdentifier but is used to create identifiers
+    /// for new assets that are being created.
+    virtual std::string _CreateIdentifierForNewAsset(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) = 0;
 
     /// Return the resolved path for the given \p assetPath or an empty
     /// ArResolvedPath if no asset exists at that path. If an asset does

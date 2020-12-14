@@ -132,6 +132,58 @@ ArDefaultResolver::AnchorRelativePath(
     return TfNormPath(anchoredPath);
 }
 
+std::string
+ArDefaultResolver::_CreateIdentifier(
+    const std::string& assetPath,
+    const ArResolvedPath& anchorAssetPath)
+{
+    if (assetPath.empty()) {
+        return assetPath;
+    }
+
+    if (!anchorAssetPath) {
+        return TfNormPath(assetPath);
+    }
+
+    // If assetPath is a search path, we want to use that as the asset's
+    // identifier instead of turning it into an absolute path by anchoring
+    // it. This ensures that resolving that identifier will always invoke
+    // the search path mechanism, so that assets that are added/removed
+    // from directories in the search path can be discovered by re-resolving
+    // the identifier.
+    //
+    // This is determined using the look-here-first scheme. For any relative
+    // path, we first look relative to the specified anchor. If an asset 
+    // exists there, we just return the anchored path. Otherwise, we return
+    // the asset path as-is.
+    const std::string anchoredAssetPath =
+        AnchorRelativePath(anchorAssetPath, assetPath);
+
+    if (IsSearchPath(assetPath) && Resolve(anchoredAssetPath).empty()) {
+        return TfNormPath(assetPath);
+    }
+
+    return TfNormPath(anchoredAssetPath);
+}
+
+std::string
+ArDefaultResolver::_CreateIdentifierForNewAsset(
+    const std::string& assetPath,
+    const ArResolvedPath& anchorAssetPath)
+{
+    if (assetPath.empty()) {
+        return assetPath;
+    }
+
+    if (IsRelativePath(assetPath)) {
+        return TfNormPath(anchorAssetPath ? 
+            AnchorRelativePath(anchorAssetPath, assetPath) :
+            TfAbsPath(assetPath));
+    }
+
+    return TfNormPath(assetPath);
+}
+
 bool
 ArDefaultResolver::IsSearchPath(const std::string& path)
 {
@@ -173,8 +225,12 @@ _ResolveAnchored(
         // and fix up all the callers to accommodate this.
         resolvedPath = TfStringCatPaths(anchorPath, path);
     }
+
+    // Use TfAbsPath to ensure we return an absolute path using the
+    // platform-specific representation (e.g. '\' as path separators
+    // on Windows.
     return TfPathExists(resolvedPath) ?
-        ArResolvedPath(std::move(resolvedPath)) : ArResolvedPath();
+        ArResolvedPath(TfAbsPath(resolvedPath)) : ArResolvedPath();
 }
 
 ArResolvedPath

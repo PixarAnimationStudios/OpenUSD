@@ -388,22 +388,26 @@ SdfLayer::_CreateNew(
 
     ArResolver& resolver = ArGetResolver();
 
+    ArAssetInfo assetInfo;
+
+#if AR_VERSION == 1
     // When creating a new layer, assume that relative identifiers are
     // relative to the current working directory.
     const bool isRelativePath = resolver.IsRelativePath(identifier);
     const string absIdentifier = 
         isRelativePath ? TfAbsPath(identifier) : identifier;
 
-    ArAssetInfo assetInfo;
-
-#if AR_VERSION == 1
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
 #else
+    const string absIdentifier =
+        resolver.CreateIdentifierForNewAsset(identifier);
+
     // Resolve the identifier to the path where new assets should go.
     const string localPath = 
         resolver.ResolveForNewAsset(absIdentifier, &assetInfo);
 #endif
+
     if (localPath.empty()) {
         TF_CODING_ERROR(
             "Failed to compute path for new layer with "
@@ -499,10 +503,15 @@ SdfLayer::New(
 
     tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
 
+#if AR_VERSION == 1
     // When creating a new layer, assume that relative identifiers are
     // relative to the current working directory.
     const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
         TfAbsPath(identifier) : identifier;
+#else
+    const string absIdentifier = 
+        ArGetResolver().CreateIdentifierForNewAsset(identifier);
+#endif
 
     SdfLayerRefPtr layer = _CreateNewWithFormat(
         fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
@@ -643,7 +652,13 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         return false;
     }
 
-    bool isAnonymous = IsAnonymousLayerIdentifier(layerPath);
+    const bool isAnonymous = IsAnonymousLayerIdentifier(layerPath);
+
+#if AR_VERSION > 1
+    if (!isAnonymous) {
+        layerPath = ArGetResolver().CreateIdentifier(layerPath);
+    }
+#endif
 
     // If we're trying to open an anonymous layer, do not try to compute the
     // real path for it.
@@ -2381,10 +2396,18 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
+#if AR_VERSION == 1
     // When changing a layer's identifier, assume that relative identifiers are
     // relative to the current working directory.
     const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
         TfAbsPath(identifier) : identifier;
+#else
+    // Create an identifier for the layer based on the desired identifier
+    // that was passed in. Since this may identifier may point to an asset
+    // that doesn't exist yet, use CreateIdentifierForNewAsset.
+    const string absIdentifier =
+        ArGetResolver().CreateIdentifierForNewAsset(identifier);
+#endif
 
     const string oldRealPath = GetRealPath();
 

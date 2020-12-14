@@ -97,6 +97,10 @@ SdfComputeAssetPathRelativeToLayer(
 
     ArResolver& resolver = ArGetResolver();
 
+    // XXX:
+    // This logic possibly wants to move into Ar so that other code
+    // that doesn't use Sdf can take advantage of it.
+
     // Relative asset paths have special behavior when anchoring to a
     // package or packaged layer: 
     // 
@@ -186,6 +190,7 @@ SdfComputeAssetPathRelativeToLayer(
         // the package, fall through to normal path resolution.
     }
 
+#if AR_VERSION == 1
     // Relative paths are resolved using the look-here-first scheme, in
     // which we first look relative to the layer, then fall back to search
     // path resolution.
@@ -197,6 +202,17 @@ SdfComputeAssetPathRelativeToLayer(
     }
     
     return finalLayerPath;
+#else
+    if (SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
+        return assetPath;
+    }
+
+    if (anchor->IsAnonymous()) {
+        return resolver.CreateIdentifier(assetPath);
+    }
+
+    return resolver.CreateIdentifier(assetPath, anchor->GetResolvedPath());
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

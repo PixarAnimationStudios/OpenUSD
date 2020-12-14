@@ -441,6 +441,73 @@ public:
         return resolver->AnchorRelativePath(anchorPath, path);
     }
 
+    virtual std::string _CreateIdentifier(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) override
+    {
+        return _CreateIdentifierHelper(
+            assetPath, anchorAssetPath,
+            [](ArResolver& resolver, const std::string& assetPath,
+               const ArResolvedPath& anchorAssetPath) {
+                return resolver.CreateIdentifier(assetPath, anchorAssetPath);
+            });
+    }
+
+    virtual std::string _CreateIdentifierForNewAsset(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) override
+    {
+        return _CreateIdentifierHelper(
+            assetPath, anchorAssetPath,
+            [](ArResolver& resolver, const std::string& assetPath,
+               const ArResolvedPath& anchorAssetPath) {
+                return resolver.CreateIdentifierForNewAsset(
+                    assetPath, anchorAssetPath);
+            });
+    }
+
+    template <class CreateIdentifierFn>
+    std::string _CreateIdentifierHelper(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath,
+        const CreateIdentifierFn& createIdentifierFn)
+    {
+        // If assetPath has a recognized URI scheme, we assume it's an absolute
+        // URI per RFC 3986 sec 4.3 and delegate to the associated URI resolver
+        // to handle this query.
+        //
+        // If path does not have a recognized URI scheme, we delegate to the
+        // resolver for the anchorAssetPath. Although we could implement URI
+        // anchoring per RFC 3986 sec 5 here, we want to give implementations
+        // the chance to do additional manipulations.
+        ArResolver* resolver = _GetURIResolver(assetPath);
+        if (!resolver) {
+            resolver = &_GetResolver(anchorAssetPath);
+        }
+
+        // XXX: 
+        // If the anchorAssetPath is a package-relative path like
+        // /foo/bar.package[baz.file], we curently just use the outer package
+        // path as the anchoring asset. It might be more consistent if we
+        // used the inner *packaged* path as the anchor instead. Since the
+        // packaged path syntax is fully under Ar's control, we might not
+        // dispatch to any other resolver in this case and just anchor
+        // the packaged path and given assetPath ourselves.
+        const ArResolvedPath anchorResolvedPath(
+            ArSplitPackageRelativePathOuter(anchorAssetPath).first);
+
+        if (ArIsPackageRelativePath(assetPath)) {
+            std::pair<std::string, std::string> packageAssetPath =
+                ArSplitPackageRelativePathOuter(assetPath);
+            packageAssetPath.first = createIdentifierFn(
+                *resolver, packageAssetPath.first, anchorResolvedPath);
+
+            return ArJoinPackageRelativePath(packageAssetPath);
+        }
+
+        return createIdentifierFn(*resolver, assetPath, anchorResolvedPath);
+    }
+
     virtual bool IsRelativePath(const std::string& path) override
     {
         // See AnchorRelativePath.
@@ -1230,6 +1297,22 @@ ArResolver::ArResolver()
 
 ArResolver::~ArResolver()
 {
+}
+
+std::string
+ArResolver::CreateIdentifier(
+    const std::string& assetPath,
+    const ArResolvedPath& anchorAssetPath)
+{
+    return _CreateIdentifier(assetPath, anchorAssetPath);
+}
+
+std::string
+ArResolver::CreateIdentifierForNewAsset(
+    const std::string& assetPath,
+    const ArResolvedPath& anchorAssetPath)
+{
+    return _CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
 ArResolvedPath

@@ -78,6 +78,117 @@ class TestArDefaultResolver(unittest.TestCase):
             r.AnchorRelativePath('/AbsoluteAnchor/ParentDir/ParentFile.txt',
                 '../Subdir/FileRel.txt'))
 
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "No CreateIdentifier API")
+    def test_CreateIdentifier(self):
+        r = Ar.GetResolver()
+
+        def _RP(path = None):
+            return Ar.ResolvedPath(os.path.abspath(path or ""))
+
+        self.assertEqual('', r.CreateIdentifier(''))
+        self.assertEqual('', r.CreateIdentifier('', _RP()))
+        self.assertEqual('', r.CreateIdentifier('', _RP('AnchorAsset.txt')))
+
+        # The identifier for an absolute path will always be that absolute
+        # path normalized.
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/AbsolutePath.txt'))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        # The identifier for a file-relative path (i.e. a relative path
+        # starting with "./" or "../" is obtained by anchoring that path
+        # to the given anchor, or the normalized file-relative path if no
+        # anchor is given.
+        self.assertPathsEqual(
+            'subdir/FileRelative.txt',
+            r.CreateIdentifier('./subdir/FileRelative.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/FileRelative.txt'),
+            r.CreateIdentifier('./subdir/FileRelative.txt', _RP('dir/A.txt')))
+
+        # Test look-here-first behavior for search-relative paths (i.e., 
+        # relative paths that do not start with "./" or "../")
+        #
+        # If an asset exists at the location obtained by anchoring the 
+        # relative path to the given anchor, the anchored path is used as
+        # the identifier.
+        if not os.path.isdir('dir/subdir'):
+            os.makedirs('dir/subdir')
+        with open('dir/subdir/Exists.txt', 'w') as f:
+            pass
+        
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/Exists.txt'),
+            r.CreateIdentifier('subdir/Exists.txt', _RP('dir/Anchor.txt')))
+
+        # Otherwise, the search path is used as the identifier.
+        self.assertPathsEqual(
+            'subdir/Bogus.txt',
+            r.CreateIdentifier('subdir/Bogus.txt', _RP('dir/Anchor.txt')))
+
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifierForNewAsset"),
+                     "No CreateIdentifierForNewAsset API")
+    def test_CreateIdentifierForNewAsset(self):
+        r = Ar.GetResolver()
+
+        def _RP(path = None):
+            return Ar.ResolvedPath(os.path.abspath(path or ""))
+
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset(''))
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset('', _RP()))
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset('', _RP('AnchorAsset.txt')))
+
+        # The identifier for an absolute path will always be that absolute
+        # path normalized.
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset('/dir/AbsolutePath.txt'))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset(
+                '/dir/AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset(
+                '/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        # The identifier for a relative path (file-relative or search-relative)
+        # will always be the anchored abolute path.
+        self.assertPathsEqual(
+            os.path.abspath('subdir/FileRelative.txt'),
+            r.CreateIdentifierForNewAsset(
+                './subdir/FileRelative.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/FileRelative.txt'),
+            r.CreateIdentifierForNewAsset(
+                './subdir/FileRelative.txt', _RP('dir/Anchor.txt')))
+
+        self.assertPathsEqual(
+            os.path.abspath('subdir/SearchRel.txt'),
+            r.CreateIdentifierForNewAsset(
+                'subdir/SearchRel.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/SearchRel.txt'),
+            r.CreateIdentifierForNewAsset(
+                'subdir/SearchRel.txt', _RP('dir/Anchor.txt')))
+
     def test_Resolve(self):
         testFileName = 'test_Resolve.txt'
         testFilePath = os.path.abspath(testFileName)

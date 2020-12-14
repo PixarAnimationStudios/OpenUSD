@@ -100,6 +100,26 @@ public:
         return std::string();
     }
 
+    virtual std::string _CreateIdentifier(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) final
+    {
+        TF_AXIOM(
+            TfStringStartsWith(TfStringToLower(assetPath), "test:") ||
+            TfStringStartsWith(TfStringToLower(anchorAssetPath), "test:"));
+        return assetPath;
+    }
+
+    virtual std::string _CreateIdentifierForNewAsset(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) final
+    {
+        TF_AXIOM(
+            TfStringStartsWith(TfStringToLower(assetPath), "test:") ||
+            TfStringStartsWith(TfStringToLower(anchorAssetPath), "test:"));
+        return assetPath;
+    }
+
     virtual ArResolvedPath _Resolve(
         const std::string& assetPath,
         ArAssetInfo* assetInfo) final

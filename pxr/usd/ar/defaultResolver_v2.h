@@ -183,6 +183,16 @@ public:
 
 protected:
     AR_API
+    virtual std::string _CreateIdentifier(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) override;
+
+    AR_API
+    virtual std::string _CreateIdentifierForNewAsset(
+        const std::string& assetPath,
+        const ArResolvedPath& anchorAssetPath) override;
+
+    AR_API
     virtual ArResolvedPath _Resolve(
         const std::string& assetPath,
         ArAssetInfo* assetInfo) override;

@@ -101,6 +101,13 @@ wrapResolver()
         .def("IsRelativePath", &This::IsRelativePath)
         .def("AnchorRelativePath", &This::AnchorRelativePath)
 
+        .def("CreateIdentifier", &This::CreateIdentifier,
+             (args("assetPath"), 
+              args("anchorAssetPath") = ArResolvedPath()))
+        .def("CreateIdentifierForNewAsset", &This::CreateIdentifierForNewAsset,
+             (args("assetPath"), 
+              args("anchorAssetPath") = ArResolvedPath()))
+
         .def("Resolve", &_Resolve,
              (args("assetPath")))
         .def("ResolveWithAssetInfo", &_ResolveWithAssetInfo,
