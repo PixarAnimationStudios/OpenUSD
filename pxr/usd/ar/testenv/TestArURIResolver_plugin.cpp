@@ -107,8 +107,7 @@ public:
     }
 
     virtual ArResolvedPath _Resolve(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) final
+        const std::string& assetPath) final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), "test:"));
 
@@ -121,10 +120,9 @@ public:
     }
 
     virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) final
+        const std::string& assetPath) final
     {
-        return _Resolve(assetPath, assetInfo);
+        return _Resolve(assetPath);
     }
 
     virtual void BindContext(

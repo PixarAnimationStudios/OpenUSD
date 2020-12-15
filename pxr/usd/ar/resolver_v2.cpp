@@ -695,42 +695,57 @@ public:
     }
 
     virtual ArResolvedPath _Resolve(
-        const std::string& assetPath, 
-        ArAssetInfo* assetInfo) override
+        const std::string& assetPath) override
     {
-        ArResolvedPath resolvedPath = _ResolveHelper(
+        return _ResolveHelper(
             assetPath, 
-            [assetInfo, this](const std::string& path) {
-                return _GetResolver(path).Resolve(path, assetInfo);
+            [this](const std::string& path) {
+                return _GetResolver(path).Resolve(path);
             });
-
-        // If path was a package-relative path, make sure the repoPath field
-        // is also a package-relative path, since the primary resolver would
-        // only have been given the outer package path.
-        if (assetInfo && !assetInfo->repoPath.empty() && 
-            ArIsPackageRelativePath(resolvedPath)) {
-            assetInfo->repoPath = ArJoinPackageRelativePath(
-                assetInfo->repoPath,
-                ArSplitPackageRelativePathOuter(resolvedPath).second);
-        }
-
-        return resolvedPath;
     }
 
     virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) override
+        const std::string& assetPath) override
     {
         ArResolver& resolver = _GetResolver(assetPath);
         if (ArIsPackageRelativePath(assetPath)) {
             std::pair<std::string, std::string> packagePath =
                 ArSplitPackageRelativePathOuter(assetPath);
-            packagePath.first = resolver.ResolveForNewAsset(
-                packagePath.first, assetInfo);
+            packagePath.first = resolver.ResolveForNewAsset(packagePath.first);
             return ArResolvedPath(ArJoinPackageRelativePath(packagePath));
         }
-        return resolver.ResolveForNewAsset(assetPath, assetInfo);
+        return resolver.ResolveForNewAsset(assetPath);
     };
+
+    virtual ArAssetInfo _GetAssetInfo(
+        const std::string& assetPath,
+        const ArResolvedPath& resolvedPath)
+    {
+        ArAssetInfo assetInfo;
+
+        ArResolver& resolver = _GetResolver(assetPath);
+        if (ArIsPackageRelativePath(assetPath)) {
+            std::pair<std::string, std::string> packageAssetPath =
+                ArSplitPackageRelativePathOuter(assetPath);
+            std::pair<std::string, std::string> packageResolvedPath =
+                ArSplitPackageRelativePathOuter(resolvedPath);                
+
+            assetInfo = resolver.GetAssetInfo(
+                packageAssetPath.first,
+                ArResolvedPath(packageResolvedPath.first));
+
+            // If resolvedPath was a package-relative path, make sure the
+            // repoPath field is also a package-relative path, since the primary
+            // resolver would only have been given the outer package path.
+            if (!assetInfo.repoPath.empty()) {
+                assetInfo.repoPath = ArJoinPackageRelativePath(
+                    assetInfo.repoPath, packageResolvedPath.second);
+            }
+
+            return assetInfo;
+        }
+        return resolver.GetAssetInfo(assetPath, resolvedPath);
+    }
 
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
@@ -1316,18 +1331,16 @@ ArResolver::CreateIdentifierForNewAsset(
 
 ArResolvedPath
 ArResolver::Resolve(
-    const std::string& assetPath,
-    ArAssetInfo* assetInfo)
+    const std::string& assetPath)
 {
-    return _Resolve(assetPath, assetInfo);
+    return _Resolve(assetPath);
 }
 
 ArResolvedPath
 ArResolver::ResolveForNewAsset(
-    const std::string& assetPath,
-    ArAssetInfo* assetInfo)
+    const std::string& assetPath)
 {
-    return _ResolveForNewAsset(assetPath, assetInfo);
+    return _ResolveForNewAsset(assetPath);
 }
 
 ArResolverContext
@@ -1349,6 +1362,14 @@ ArResolver::CreateContextFromStrings(
     const std::vector<std::pair<std::string, std::string>>& contextStrs)
 {
     return _GetResolver().CreateContextFromStrings(contextStrs);
+}
+
+ArAssetInfo
+ArResolver::GetAssetInfo(
+    const std::string& assetPath,
+    const ArResolvedPath& resolvedPath)
+{
+    return _GetAssetInfo(assetPath, resolvedPath);
 }
 
 std::shared_ptr<ArAsset>
@@ -1378,6 +1399,14 @@ ArResolver::_CreateContextFromString(
     const std::string& contextStr)
 {
     return ArResolverContext();
+}
+
+ArAssetInfo
+ArResolver::_GetAssetInfo(
+    const std::string& assetPath,
+    const ArResolvedPath& resolvedPath)
+{
+    return ArAssetInfo();
 }
 
 bool

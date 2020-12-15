@@ -404,8 +404,7 @@ SdfLayer::_CreateNew(
         resolver.CreateIdentifierForNewAsset(identifier);
 
     // Resolve the identifier to the path where new assets should go.
-    const string localPath = 
-        resolver.ResolveForNewAsset(absIdentifier, &assetInfo);
+    const string localPath = resolver.ResolveForNewAsset(absIdentifier);
 #endif
 
     if (localPath.empty()) {
@@ -449,7 +448,7 @@ SdfLayer::_CreateNew(
         }
 
         layer = _CreateNewWithFormat(
-            fileFormat, absIdentifier, localPath, assetInfo, args);
+            fileFormat, absIdentifier, localPath, ArAssetInfo(), args);
 
         if (!TF_VERIFY(layer)) {
             return TfNullPtr;

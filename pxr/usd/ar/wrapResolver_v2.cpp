@@ -39,36 +39,6 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static ArResolvedPath
-_Resolve(ArResolver& resolver, const std::string& assetPath)
-{
-    return resolver.Resolve(assetPath);
-}
-
-static tuple
-_ResolveWithAssetInfo(ArResolver& resolver, const std::string& assetPath)
-{
-    ArAssetInfo assetInfo;
-    const ArResolvedPath resolvedPath = resolver.Resolve(assetPath, &assetInfo);
-    return boost::python::make_tuple(resolvedPath, assetInfo);
-}
-
-static ArResolvedPath
-_ResolveForNewAsset(ArResolver& resolver, const std::string& assetPath)
-{
-    return resolver.ResolveForNewAsset(assetPath);
-}
-
-static tuple
-_ResolveForNewAssetWithAssetInfo(
-    ArResolver& resolver, const std::string& assetPath)
-{
-    ArAssetInfo assetInfo;
-    const ArResolvedPath resolvedPath =
-        resolver.ResolveForNewAsset(assetPath, &assetInfo);
-    return boost::python::make_tuple(resolvedPath, assetInfo);
-}
-
 void
 wrapResolver()
 {
@@ -108,17 +78,13 @@ wrapResolver()
              (args("assetPath"), 
               args("anchorAssetPath") = ArResolvedPath()))
 
-        .def("Resolve", &_Resolve,
+        .def("Resolve", &This::Resolve,
              (args("assetPath")))
-        .def("ResolveWithAssetInfo", &_ResolveWithAssetInfo,
-             (args("assetPath")))
-
-        .def("ResolveForNewAsset", &_ResolveForNewAsset,
-             (args("assetPath")))
-        .def("ResolveForNewAssetWithAssetInfo", 
-             &_ResolveForNewAssetWithAssetInfo,
+        .def("ResolveForNewAsset", &This::ResolveForNewAsset,
              (args("assetPath")))
 
+        .def("GetAssetInfo", &This::GetAssetInfo,
+             (args("assetPath"), args("resolvedPath")))
         .def("GetExtension", &This::GetExtension)
         .def("RefreshContext", &This::RefreshContext)
         ;

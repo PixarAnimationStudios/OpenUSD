@@ -265,8 +265,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
 
 ArResolvedPath
 ArDefaultResolver::_Resolve(
-    const std::string& assetPath, 
-    ArAssetInfo* assetInfo)
+    const std::string& assetPath)
 {
     if (assetPath.empty()) {
         return ArResolvedPath();
@@ -286,8 +285,7 @@ ArDefaultResolver::_Resolve(
 
 ArResolvedPath
 ArDefaultResolver::_ResolveForNewAsset(
-    const std::string& assetPath,
-    ArAssetInfo* assetInfo)
+    const std::string& assetPath)
 {
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }

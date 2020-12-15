@@ -96,7 +96,7 @@ Sdf_ResolvePath(
     return ArResolvedPath(
         ArGetResolver().ResolveWithAssetInfo(layerPath, assetInfo));
 #else
-    return ArGetResolver().Resolve(layerPath, assetInfo);
+    return ArGetResolver().Resolve(layerPath);
 #endif
 }
 
@@ -138,7 +138,7 @@ Sdf_ComputeFilePath(
         // out where this layer would go if we were to create a new
         // one. 
         ArResolver& resolver = ArGetResolver();
-        resolvedPath = resolver.ResolveForNewAsset(layerPath, assetInfo);
+        resolvedPath = resolver.ResolveForNewAsset(layerPath);
 #endif
     }
 
@@ -192,6 +192,9 @@ Sdf_ComputeAssetInfoFromIdentifier(
         ArGetResolver().UpdateAssetInfo(
             assetInfo->identifier, assetInfo->resolvedPath, fileVersion,
             &resolveInfo);
+#else
+        resolveInfo = ArGetResolver().GetAssetInfo(
+            assetInfo->identifier, assetInfo->resolvedPath);
 #endif
     }
 

@@ -188,13 +188,11 @@ protected:
 
     AR_API
     virtual ArResolvedPath _Resolve(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) override;
+        const std::string& assetPath) override;
 
     AR_API
     virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) override;
+        const std::string& assetPath) override;
 
     /// Creates an ArDefaultResolverContext from \p contextStr. This
     /// string is expected to be a list of directories delimited by

@@ -153,27 +153,19 @@ public:
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
     /// ArResolvedPath.
-    ///
-    /// If \p assetInfo is not \c nullptr, the ArAssetInfo object may be
-    /// populated with additional metadata about the asset.
     AR_API
     ArResolvedPath Resolve(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo = nullptr);
+        const std::string& assetPath);
 
     /// Returns the resolved path for the given \p assetPath that may be used
     /// to create a new asset. If such a path cannot be computed for
     /// \p assetPath, returns an empty ArResolvedPath.
     ///
-    /// If \p assetInfo is not \c nullptr, the ArAssetInfo object may be
-    /// populated with additional metadata about the asset.
-    ///
     /// Note that an asset might or might not already exist at the returned
     /// resolved path.
     AR_API
     ArResolvedPath ResolveForNewAsset(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo = nullptr);
+        const std::string& assetPath);
 
     /// @}
 
@@ -288,6 +280,14 @@ public:
     ///
     /// @{
     // --------------------------------------------------------------------- //
+
+    /// Returns an ArAssetInfo populated with additional metadata (if any)
+    /// about the asset at the given \p assetPath. \p resolvedPath is the
+    /// resolved path computed for the given \p assetPath.
+    AR_API
+    ArAssetInfo GetAssetInfo(
+        const std::string& assetPath,
+        const ArResolvedPath& resolvedPath);
 
     /// Returns a value representing the last time the asset identified
     /// by \p path was modified. \p resolvedPath is the resolved path
@@ -502,28 +502,30 @@ protected:
         const ArResolvedPath& anchorAssetPath) = 0;
 
     /// Return the resolved path for the given \p assetPath or an empty
-    /// ArResolvedPath if no asset exists at that path. If an asset does
-    /// exist at that path and \p assetInfo is not \c nullptr, populate
-    /// \p assetInfo with any additional metadata about the asset.
+    /// ArResolvedPath if no asset exists at that path.
     virtual ArResolvedPath _Resolve(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) = 0;
+        const std::string& assetPath) = 0;
 
     /// Return the resolved path for the given \p assetPath that may be used
     /// to create a new asset or an empty ArResolvedPath if such a path cannot
-    /// be computed. If a path can be computed and \p assetInfo is not nullptr,
-    /// populate \p assetInfo with any additional metadata about the asset.
-    /// If an asset already exists at the resolved path, it should be ignored
-    /// when populating \p assetInfo.
+    /// be computed.
     virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath,
-        ArAssetInfo* assetInfo) = 0;
+        const std::string& assetPath) = 0;
 
     /// Return an ArResolverContext created from the given \p contextStr.
     /// The default implementation returns an empty ArResolverContext.
     AR_API
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr);
+
+    /// Return an ArAssetInfo populated with additional metadata (if any)
+    /// about the asset at the given \p assetPath. \p resolvedPath is the
+    /// resolved path computed for the given \p assetPath.
+    /// The default implementation returns a default-constructed ArAssetInfo.
+    AR_API
+    virtual ArAssetInfo _GetAssetInfo(
+        const std::string& assetPath,
+        const ArResolvedPath& resolvedPath);
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
     /// Return an invalid std::shared_ptr if object could not be created
