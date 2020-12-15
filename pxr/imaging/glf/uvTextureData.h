@@ -39,7 +39,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureData);
 class GlfUVTextureData : public GlfBaseTextureData
 {
 public:
-    struct Params {
+    struct Params
+    {
         Params() 
             : targetMemory(0)
             , cropTop(0)
@@ -143,24 +144,11 @@ private:
         int height;
     };
 
-    // A structure keeping a down-sampled image input and floats indicating the
-    // downsample rate (e.g., if the resolution changed from 2048x1024 to
-    // 512x256, scaleX=0.25 and scaleY=0.25).
-    struct _DegradedImageInput {
-        _DegradedImageInput(double scaleX, double scaleY, 
-            HioImageSharedPtr image) : scaleX(scaleX), scaleY(scaleY)
-        { 
-            images.push_back(image);
-        }
-
-        _DegradedImageInput(double scaleX, double scaleY)
-            : scaleX(scaleX), scaleY(scaleY)
-        { }
-
-        double         scaleX;
-        double         scaleY;
-        std::vector<HioImageSharedPtr> images;
-    };
+    // Given a HioImage it will return the number of mip levels that 
+    // are actually valid to be loaded to the GPU. For instance, it will
+    // drop textures with non valid OpenGL pyramids.
+    std::vector<HioImageSharedPtr> _GetAllValidMipLevels(
+        const HioImageSharedPtr image) const;
 
     // Reads an image using HioImage. If possible and requested, it will
     // load a down-sampled version (when mipmapped .tex file) of the image.
@@ -169,21 +157,11 @@ private:
     // Otherwise, it will use the given degradeLevel.
     // When estimating the required GPU memory, it will take into account that
     // the GPU might generate MipMaps.
-    _DegradedImageInput _ReadDegradedImageInput(bool generateMipmap,
-                                                size_t targetMemory,
-                                                size_t degradeLevel);
-
-    // Helper to read degraded image chains, given a starting mip and an 
-    // ending mip it will fill the image chain.
-    _DegradedImageInput _GetDegradedImageInputChain(double scaleX, 
-                                                    double scaleY, 
-                                                    int startMip, 
-                                                    int lastMip);
-
-    // Given a HioImage it will return the number of mip levels that 
-    // are actually valid to be loaded to the GPU. For instance, it will
-    // drop textures with non valid OpenGL pyramids.
-    int _GetNumMipLevelsValid(const HioImageSharedPtr image) const;
+    std::vector<HioImageSharedPtr> _ReadDegradedImageInput(
+        const HioImageSharedPtr &fullImage,
+        bool generateMipmap,
+        size_t targetMemory,
+        size_t degradeLevel);
 
     GlfUVTextureData(std::string const &filePath, Params const &params, 
                      HioImage::SourceColorSpace sourceColorSpace);
