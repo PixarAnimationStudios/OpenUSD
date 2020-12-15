@@ -22,11 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hio/image.h"
-#include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/uvTextureData.h"
 
 #include "pxr/base/gf/vec3i.h"
-#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 
