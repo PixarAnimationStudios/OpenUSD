@@ -90,16 +90,19 @@ class TestUsdView(Usdviewq.Launcher):
     # launching Usdview and doing the initial load pass
     def _ValidateTestFile(self, filePath):
         if not os.path.exists(filePath):
-            sys.stderr.write('Invalid file supplied, does not exist')
+            sys.stderr.write('Invalid file supplied, does not exist: {}\n'
+                .format(filePath))
             sys.exit(1)
 
         if not os.access(filePath, os.R_OK):
-            sys.stderr.write('Invalid file supplied, must be readable')
+            sys.stderr.write('Invalid file supplied, must be readable: {}\n'
+                .format(filePath))
 
         # Ensure that we are passed a valid python file
         _, ext = os.path.splitext(filePath)
         if ext != '.py':
-            sys.stderr.write('Invalid file supplied, must be a python file')
+            sys.stderr.write('Invalid file supplied, must be a python file: '
+                '{}\n'.format(filePath))
             sys.exit(1)
 
         # Grab the function from the input python file
@@ -112,12 +115,12 @@ class TestUsdView(Usdviewq.Launcher):
         if not callBack:
             sys.stderr.write('Invalid file supplied, must contain a function of '
                              'the signature' + TEST_USD_VIEW_CALLBACK_IDENT +
-                             '(appController) ')
+                             '(appController): {}\n'.format(filePath))
             sys.exit(1)
 
-        errorMsg = ('Invalid function signature, '
-                    'Must be of the form: \n ' +
+        errorMsg = ('Invalid function signature, must be of the form: \n ' +
                     TEST_USD_VIEW_CALLBACK_IDENT + ' (appController)\n'
+                    'File: ' + filePath + '\n'
                     'Error: %s')
 
         if sys.version_info.major >= 3:
