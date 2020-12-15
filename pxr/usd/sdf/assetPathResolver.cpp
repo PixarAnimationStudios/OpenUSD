@@ -169,8 +169,12 @@ Sdf_ComputeAssetInfoFromIdentifier(
         // Anonymous layers do not have repository, overlay, or real paths.
         assetInfo->identifier = identifier;
     } else {
+#if AR_VERSION == 1
         assetInfo->identifier = ArGetResolver()
             .ComputeNormalizedPath(identifier);
+#else
+        assetInfo->identifier = identifier;
+#endif
 
         if (filePath.empty()) {
             string layerPath, arguments;
