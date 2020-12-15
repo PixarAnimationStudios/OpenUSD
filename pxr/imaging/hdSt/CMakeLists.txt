@@ -26,7 +26,10 @@ if (${PXR_ENABLE_MATERIALX_IMAGING_SUPPORT})
 
     list(APPEND optionalLibs ${MATERIALX_LIBRARIES})
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
-    list(APPEND optionalPrivateClasses materialXFilter)
+    list(APPEND optionalPrivateClasses
+         materialXFilter
+         materialXShaderGen
+    )
 endif()
 if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalLibs ${PTEX_LIBRARY})

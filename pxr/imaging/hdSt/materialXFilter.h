@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// MaterialX Filter
-/// XXX Converting MaterialX node to one with a hard-coded glslfx file
+/// Converting a MaterialX node to one with a generated MaterialX glslfx file
 void HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2 * hdNetwork,
     SdfPath const& materialPath,

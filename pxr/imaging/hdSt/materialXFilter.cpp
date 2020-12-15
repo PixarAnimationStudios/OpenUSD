@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/materialXFilter.h"
+#include "pxr/imaging/hdSt/materialXShaderGen.h"
 
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -39,7 +40,6 @@
 #include <MaterialXFormat/Util.h>
 #include <MaterialXGenShader/Util.h>
 #include <MaterialXGenShader/Shader.h>
-#include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXRender/Util.h>
 
 namespace mx = MaterialX;
@@ -64,51 +64,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 ////////////////////////////////////////////////////////////////////////////////
 // Shader Gen Helper Functions
 
-// XXX Generate a glslfx shader that shades everything one color based on either
-// the base_color for standard_surface nodes and diffuseColor for 
-// UsdPreviewSurface nodes
-static std::string
-_GetTempShader(std::string const& pixelShaderString, TfToken const& mxNodeType)
-{
-    // Get the appropriate color from the generated pixelShaderString
-    std::string newColor = "   vec3 newColor = vec3(1.0, 1.0, 1.0);\n";
-    std::string colorName = (mxNodeType == _tokens->standard_surface)
-                                ? "uniform vec3 base_color" 
-                                : "uniform vec3 diffuseColor";
-    std::istringstream pixelShader(pixelShaderString);
-    for (std::string line; std::getline(pixelShader, line); ) {
-
-        // search for the base_color line 
-        if (line.find(colorName) != std::string::npos) {
-            newColor = "   vec3 newColor" + line.substr(colorName.length())+"\n";
-            break;
-        }
-    }
-    
-    // Put that extracted Color value in the glslfx shader
-    std::string glslfx = std::string(
-        "-- glslfx version 0.1 \n"
-        "-- configuration \n"
-        "{\n"
-            "\"techniques\": {\n"
-            "    \"default\": {\n"
-            "        \"surfaceShader\": {\n"
-            "            \"source\": [ \"test.Surface\" ]\n"
-            "        }\n"
-            "    }\n"
-            "}\n\n"
-        "}\n"
-        
-        "-- glsl test.Surface \n\n"
-
-        "vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord) {\n"
-        + newColor + 
-        "   return vec4(FallbackLighting(Peye.xyz, Neye, newColor), 1.0);\n"
-        "};\n\n"
-    );
-    return glslfx;
-}
-
 // Generate the Glsl Pixel Shader based on the given mxContext and mxElement
 // Based on MaterialXViewer Material::generateShader()
 static const std::string &
@@ -123,9 +78,9 @@ _GenPixelShader(mx::GenContext & mxContext,
     materialContext.getOptions().hwShadowMap = 
         materialContext.getOptions().hwShadowMap && !hasTransparency;
 
-    mx::ShaderPtr hwShader = mx::createShader("Shader", materialContext, mxElem);
-    if (hwShader) {
-        return hwShader->getSourceCode(mx::Stage::PIXEL);
+    mx::ShaderPtr mxShader = mx::createShader("Shader", materialContext, mxElem);
+    if (mxShader) {
+        return mxShader->getSourceCode(mx::Stage::PIXEL);
     }
     return mx::EMPTY_STRING;
 }
@@ -137,9 +92,9 @@ _GenSourceCode(mx::DocumentPtr const& mxDoc,
                mx::FileSearchPath const& searchPath)
 {
     // Initialize the Context for shaderGen. 
-    mx::GenContext mxContext = mx::GlslShaderGenerator::create();
+    mx::GenContext mxContext = HdStMaterialXShaderGen::create();
     mxContext.registerSourceCodeSearchPath(searchPath);
-    
+
     // Find renderable elements in the Mtlx Document.
     std::vector<mx::TypedElementPtr> renderableElements;
     mx::findRenderableElements(mxDoc, renderableElements);
@@ -152,9 +107,9 @@ _GenSourceCode(mx::DocumentPtr const& mxDoc,
     }
 
     // Generate the PixelShader for the renderable element.
-    const mx::TypedElementPtr & materialElem = renderableElements.at(0);
-    mx::ElementPtr elem = mxDoc->getDescendant(materialElem->getNamePath());
-    mx::TypedElementPtr typedElem = elem ? elem->asA<mx::TypedElement>()
+    const mx::TypedElementPtr & materialElement = renderableElements.at(0);
+    mx::ElementPtr mxElem = mxDoc->getDescendant(materialElement->getNamePath());
+    mx::TypedElementPtr typedElem = mxElem ? mxElem->asA<mx::TypedElement>()
                                          : nullptr;
     if (typedElem) {
         return _GenPixelShader(mxContext, typedElem);
@@ -190,7 +145,7 @@ _IsInputVector3(std::string const& mxInputName)
     // mxInputs from UsdPreviewSurface and standard_surface nodes that are 
     // Vector3 types
     static const mx::StringSet Vector3Inputs = {"normal", 
-                                                "normal_coat", 
+                                                "coat_normal",
                                                 "tangent"};
     return Vector3Inputs.count(mxInputName) > 0;
 }
@@ -551,7 +506,7 @@ HdSt_ApplyMaterialXFilter(
                                                      _tokens->mtlx);
 
     if (mtlxSdrNode) {
-        
+
         // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
         mx::FilePathVec libraryFolders = { "libraries", };
         mx::FileSearchPath searchPath;
@@ -565,14 +520,9 @@ HdSt_ApplyMaterialXFilter(
                                         terminalNode,   // MaterialX HdNode
                                         materialPath,
                                         stdLibraries);
-        
-        // Load MaterialX Document and generate the glsl source
-        const std::string & pixelSource = _GenSourceCode(mtlxDoc, searchPath);
 
-        // Create a glslfx file from that pixel source code
-        TfToken mxType = _GetMxNodeType(terminalNode.nodeTypeId);
-        std::string glslfxSource = _GetTempShader(pixelSource, mxType);
-
+        // Load MaterialX Document and generate the glslfxSource
+        std::string glslfxSource = _GenSourceCode(mtlxDoc, searchPath);
 
         // Create a new terminal node with the new glslfxSource
         SdrShaderNodeConstPtr sdrNode = 
