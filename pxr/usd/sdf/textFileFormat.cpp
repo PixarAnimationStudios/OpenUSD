@@ -229,8 +229,7 @@ _WriteLayer(
     // Accumulate header metadata in a stringstream buffer,
     // as an easy way to check later if we have any layer
     // metadata to write at all.
-    std::ostringstream headerOut;
-    Sdf_TextOutput header(headerOut);
+    Sdf_StringOutput header;
 
     // Partition this layer's fields so that all fields to write out are
     // in the range [fields.begin(), metadataFieldsEnd).
@@ -287,7 +286,7 @@ _WriteLayer(
     } // end for each field
 
     // Write header if not empty.
-    string headerStr = headerOut.str();
+    string headerStr = header.GetString();
     if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
         _Write(out, 0, "%s", headerStr.c_str());
@@ -323,6 +322,7 @@ SdfTextFileFormat::WriteToFile(
     const std::string& comment,
     const FileFormatArguments& args) const
 {
+#if AR_VERSION == 1
     // open file
     string reason;
     TfAtomicOfstreamWrapper wrapper(filePath);
@@ -340,7 +340,26 @@ SdfTextFileFormat::WriteToFile(
         TF_RUNTIME_ERROR(reason);
         return false;
     }
+#else
+    std::shared_ptr<ArWritableAsset> asset = 
+        ArGetResolver().OpenAssetForWrite(
+            ArResolvedPath(filePath), ArResolver::WriteMode::Replace);
+    if (!asset) {
+        TF_RUNTIME_ERROR(
+            "Unable to open %s for write", filePath.c_str());
+        return false;
+    }
 
+    Sdf_TextOutput out(std::move(asset));
+
+    const bool ok = _WriteLayer(
+        &layer, out, GetFileCookie(), GetVersionString(), comment);
+
+    if (ok && !out.Close()) {
+        TF_RUNTIME_ERROR("Could not close %s", filePath.c_str());
+        return false;
+    }
+#endif
     return ok;
 }
 
@@ -367,15 +386,14 @@ SdfTextFileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    std::stringstream ostr;
-    Sdf_TextOutput out(ostr);
+    Sdf_StringOutput out;
 
     if (!_WriteLayer(
             &layer, out, GetFileCookie(), GetVersionString(), comment)) {
         return false;
     }
 
-    *str = ostr.str();
+    *str = out.GetString();
     return true;
 }
 
