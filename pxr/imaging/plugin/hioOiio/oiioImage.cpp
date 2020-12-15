@@ -86,7 +86,7 @@ public:
     bool GetMetadata(TfToken const & key, 
                              VtValue * value) const override;
     bool GetSamplerMetadata(HioAddressDimension pname,
-                                    VtValue * param) const override;
+                            HioAddressMode * param) const override;
 
     bool Read(StorageSpec const & storage) override;
     bool ReadCropped(int const cropTop,
@@ -503,20 +503,21 @@ _TranslateWrap(std::string const & wrapMode)
 
 /* virtual */
 bool
-HioOIIO_Image::GetSamplerMetadata(HioAddressDimension pname, VtValue * param) const
+HioOIIO_Image::GetSamplerMetadata(HioAddressDimension pname,
+                                  HioAddressMode * param) const
 {
     switch (pname) {
         case HioAddressDimensionU: {
-                VtValue smode = _FindAttribute(_imagespec, "s mode");
+                const VtValue smode = _FindAttribute(_imagespec, "s mode");
                 if (!smode.IsEmpty() && smode.IsHolding<std::string>()) {
-                    *param = VtValue(_TranslateWrap(smode.Get<std::string>()));
+                    *param = _TranslateWrap(smode.Get<std::string>());
                     return true;
                 }
             } return false;
         case HioAddressDimensionV: {
-                VtValue tmode = _FindAttribute(_imagespec, "t mode");
+                const VtValue tmode = _FindAttribute(_imagespec, "t mode");
                 if (!tmode.IsEmpty() && tmode.IsHolding<std::string>()) {
-                    *param = VtValue(_TranslateWrap(tmode.Get<std::string>()));
+                    *param = _TranslateWrap(tmode.Get<std::string>());
                     return true;
                 }
             } return false;

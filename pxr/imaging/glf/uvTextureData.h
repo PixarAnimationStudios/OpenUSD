@@ -36,7 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureData);
 
-class GlfUVTextureData : public GlfBaseTextureData {
+class GlfUVTextureData : public GlfBaseTextureData
+{
 public:
     struct Params {
         Params() 
@@ -186,7 +187,7 @@ private:
 
     GlfUVTextureData(std::string const &filePath, Params const &params, 
                      HioImage::SourceColorSpace sourceColorSpace);
-    virtual ~GlfUVTextureData();
+    ~GlfUVTextureData() override;
         
     const std::string _filePath;
     const Params      _params;

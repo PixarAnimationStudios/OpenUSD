@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/textureObject.h"
 
@@ -343,26 +342,21 @@ HdStUvTextureObject::_DestroyTexture()
 
 static
 HdWrap
-_GetWrapParameter(const bool hasWrapMode, const GLenum wrapMode)
+_GetWrapParameter(const std::pair<bool, HioAddressMode> &mode)
 {
-    if (hasWrapMode) {
-        switch(wrapMode) {
-        case GL_CLAMP_TO_EDGE: return HdWrapClamp;
-        case GL_REPEAT: return HdWrapRepeat;
-        case GL_CLAMP_TO_BORDER: return HdWrapBlack;
-        case GL_MIRRORED_REPEAT: return HdWrapMirror;
-        //
-        // For HioImage legacy plugins that still use the GL_CLAMP
-        // (obsoleted in OpenGL 3.0).
-        //
-        // Note that some graphics drivers produce results for GL_CLAMP
-        // that match neither GL_CLAMP_TO_BORDER not GL_CLAMP_TO_EDGE.
-        //
-        // We pick GL_CLAMP_TO_EDGE here - breaking backwards compatibility.
-        //
-        case GL_CLAMP: return HdWrapClamp;
-        default:
-            TF_CODING_ERROR("Unsupported GL wrap mode 0x%04x", wrapMode);
+    if (mode.first) {
+        switch(mode.second) {
+        case HioAddressModeClampToEdge:
+            return HdWrapClamp;
+        case HioAddressModeMirrorClampToEdge:
+            TF_WARN("Hydra does not support mirror clamp to edge wrap mode");
+            return HdWrapRepeat;
+        case HioAddressModeRepeat:
+            return HdWrapRepeat;
+        case HioAddressModeMirrorRepeat:
+            return HdWrapMirror;
+        case HioAddressModeClampToBorderColor:
+             return HdWrapBlack;
         }
     }
 
@@ -379,8 +373,8 @@ _GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
 
     const GlfBaseTextureData::WrapInfo &wrapInfo = uvTexture->GetWrapInfo();
 
-    return { _GetWrapParameter(wrapInfo.hasWrapModeS, wrapInfo.wrapModeS),
-             _GetWrapParameter(wrapInfo.hasWrapModeT, wrapInfo.wrapModeT) };
+    return { _GetWrapParameter(wrapInfo.wrapModeS),
+             _GetWrapParameter(wrapInfo.wrapModeT) };
 }
 
 // Read from the HdStAssetUvSubtextureIdentifier whether we need

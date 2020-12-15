@@ -70,7 +70,8 @@ public:
     bool IsColorSpaceSRGB() const override;
 
     bool GetMetadata(TfToken const & key, VtValue * value) const override;
-    bool GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const override;
+    bool GetSamplerMetadata(HioAddressDimension dim,
+                            HioAddressMode * param) const override;
 
     bool Read(StorageSpec const & storage) override;
     bool ReadCropped(int const cropTop,
@@ -334,7 +335,8 @@ Hio_StbImage::GetMetadata(TfToken const & key, VtValue * value) const
 
 /* virtual */
 bool
-Hio_StbImage::GetSamplerMetadata(HioAddressDimension dim, VtValue * param) const
+Hio_StbImage::GetSamplerMetadata(HioAddressDimension dim,
+                                 HioAddressMode * param) const
 {
     return false;
 }

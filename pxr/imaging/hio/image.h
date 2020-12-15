@@ -172,11 +172,8 @@ public:
 
     virtual bool GetMetadata(TfToken const & key, VtValue * value) const = 0;
 
-    template <typename T>
-    bool GetSamplerMetadata(HioAddressDimension dim, T * param) const;
-
     virtual bool GetSamplerMetadata(HioAddressDimension dim,
-                                    VtValue * param) const = 0;
+                                    HioAddressMode * param) const = 0;
 
     /// }@
 
@@ -199,18 +196,6 @@ HioImage::GetMetadata(TfToken const & key, T * value) const
         return false;
     }
     *value = any.UncheckedGet<T>();
-    return true;
-}
-
-template <typename T>
-bool
-HioImage::GetSamplerMetadata(HioAddressDimension dim, T * param) const
-{
-    VtValue any;
-    if (!GetSamplerMetadata(dim, &any) || !any.IsHolding<T>()) {
-        return false;
-    }
-    *param = any.UncheckedGet<T>();
     return true;
 }
 

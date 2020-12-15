@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/uvTextureData.h"
@@ -305,10 +303,12 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     _format = image->GetFormat();
 
     _targetMemory = _params.targetMemory;
-    _wrapInfo.hasWrapModeS =
-        image->GetSamplerMetadata(HioAddressDimensionU, &_wrapInfo.wrapModeS);
-    _wrapInfo.hasWrapModeT =
-        image->GetSamplerMetadata(HioAddressDimensionV, &_wrapInfo.wrapModeT);
+    _wrapInfo.wrapModeS.first =
+        image->GetSamplerMetadata(
+            HioAddressDimensionU, &_wrapInfo.wrapModeS.second);
+    _wrapInfo.wrapModeT.first =
+        image->GetSamplerMetadata(
+            HioAddressDimensionV, &_wrapInfo.wrapModeT.second);
     _size = 0;
     _nativeWidth = _resizedWidth = image->GetWidth();
     _nativeHeight = _resizedHeight = image->GetHeight();
