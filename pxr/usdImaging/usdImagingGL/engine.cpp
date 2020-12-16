@@ -371,6 +371,11 @@ UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 void
 UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
 {
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
     if (TF_VERIFY(_taskController)) {
         _taskController->SetFraming(framing);
     }
@@ -380,6 +385,11 @@ void
 UsdImagingGLEngine::SetOverrideWindowPolicy(
     const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
 {
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
     if (TF_VERIFY(_taskController)) {
         _taskController->SetOverrideWindowPolicy(policy);
     }
@@ -388,6 +398,11 @@ UsdImagingGLEngine::SetOverrideWindowPolicy(
 void
 UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
 {
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
     if (TF_VERIFY(_taskController)) {
         _taskController->SetRenderBufferSize(size);
     }
