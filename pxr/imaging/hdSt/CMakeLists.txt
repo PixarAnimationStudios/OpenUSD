@@ -131,6 +131,7 @@ pxr_library(hdSt
         dynamicUvTextureImplementation.h
 
     PRIVATE_CLASSES
+        assetUvTextureCpuData
         basisCurvesComputations
         basisCurvesShaderKey
         basisCurvesTopology

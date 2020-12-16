@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/textureObject.h"
 
 #include "pxr/imaging/hdSt/glfTextureCpuData.h"
+#include "pxr/imaging/hdSt/assetUvTextureCpuData.h"
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureCpuData.h"
@@ -35,7 +36,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 
-#include "pxr/imaging/glf/uvTextureData.h"
 #include "pxr/imaging/glf/fieldTextureData.h"
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 #include "pxr/imaging/glf/vdbTextureData.h"
@@ -340,43 +340,6 @@ HdStUvTextureObject::_DestroyTexture()
 ///////////////////////////////////////////////////////////////////////////////
 // Uv asset texture
 
-static
-HdWrap
-_GetWrapParameter(const std::pair<bool, HioAddressMode> &mode)
-{
-    if (mode.first) {
-        switch(mode.second) {
-        case HioAddressModeClampToEdge:
-            return HdWrapClamp;
-        case HioAddressModeMirrorClampToEdge:
-            TF_WARN("Hydra does not support mirror clamp to edge wrap mode");
-            return HdWrapRepeat;
-        case HioAddressModeRepeat:
-            return HdWrapRepeat;
-        case HioAddressModeMirrorRepeat:
-            return HdWrapMirror;
-        case HioAddressModeClampToBorderColor:
-             return HdWrapBlack;
-        }
-    }
-
-    return HdWrapNoOpinion;
-}
-
-static
-std::pair<HdWrap, HdWrap>
-_GetWrapParameters(GlfUVTextureDataRefPtr const &uvTexture)
-{
-    if (!uvTexture) {
-        return { HdWrapUseMetadata, HdWrapUseMetadata };
-    }
-
-    const GlfBaseTextureData::WrapInfo &wrapInfo = uvTexture->GetWrapInfo();
-
-    return { _GetWrapParameter(wrapInfo.wrapModeS),
-             _GetWrapParameter(wrapInfo.wrapModeT) };
-}
-
 // Read from the HdStAssetUvSubtextureIdentifier whether we need
 // to flip the image.
 //
@@ -411,35 +374,21 @@ HdStAssetUvTextureObject::_Load()
 {
     TRACE_FUNCTION();
 
-    GlfUVTextureDataRefPtr const textureData =
-        GlfUVTextureData::New(
+    std::unique_ptr<HdStAssetUvTextureCpuData> cpuData =
+        std::make_unique<HdStAssetUvTextureCpuData>(
             GetTextureIdentifier().GetFilePath(),
             GetTargetMemory(),
             /* borders */ 0, 0, 0, 0,
-            _GetSourceColorSpace(
-                GetTextureIdentifier().GetSubtextureIdentifier()));
-
-    textureData->Read(
-        /* degradeLevel = */ 0,
-        /* generateMipmap = */ false,
-        _GetImageOriginLocation(
-            GetTextureIdentifier().GetSubtextureIdentifier()));
-
-    _SetWrapParameters(_GetWrapParameters(textureData));
-
-    _SetCpuData(
-        std::make_unique<HdStGlfTextureCpuData>(
-            textureData,
-            _GetDebugName(GetTextureIdentifier()),
-            /* useOrGenerateMips = */ true,
+            /* degradeLevel = */ 0,
+            /* generateOrUseMipmap = */ true,
             _GetPremultiplyAlpha(
-                GetTextureIdentifier().GetSubtextureIdentifier())));
-
-    if (_GetCpuData()->IsValid()) {
-        if (_GetCpuData()->GetTextureDesc().type != HgiTextureType2D) {
-            TF_CODING_ERROR("Wrong texture type for uv");
-        }
-    }
+                GetTextureIdentifier().GetSubtextureIdentifier()),
+            _GetImageOriginLocation(
+                GetTextureIdentifier().GetSubtextureIdentifier()),
+            HdStTextureObject::_GetSourceColorSpace(
+                GetTextureIdentifier().GetSubtextureIdentifier()));
+    _SetWrapParameters(cpuData->GetWrapInfo());
+    _SetCpuData(std::move(cpuData));
 }
 
 void
