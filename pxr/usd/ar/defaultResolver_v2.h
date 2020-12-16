@@ -202,6 +202,10 @@ protected:
         const std::string& contextStr) override;
 
     AR_API
+    virtual bool _IsContextDependentPath(
+        const std::string& assetPath) override;
+
+    AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) override;
 

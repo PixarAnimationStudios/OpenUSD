@@ -71,6 +71,9 @@ wrapResolver()
         .def("IsRelativePath", &This::IsRelativePath)
         .def("AnchorRelativePath", &This::AnchorRelativePath)
 
+        .def("IsContextDependentPath", &This::IsContextDependentPath,
+             args("assetPath"))
+
         .def("CreateIdentifier", &This::CreateIdentifier,
              (args("assetPath"), 
               args("anchorAssetPath") = ArResolvedPath()))

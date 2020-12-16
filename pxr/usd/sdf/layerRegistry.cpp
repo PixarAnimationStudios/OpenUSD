@@ -182,6 +182,8 @@ Sdf_LayerRegistry::Find(
         foundLayer = FindByIdentifier(inputLayerPath);
     } else {
         ArResolver& resolver = ArGetResolver();
+
+#if AR_VERSION == 1
         const string layerPath = 
             resolver.ComputeNormalizedPath(inputLayerPath);
 
@@ -200,6 +202,16 @@ Sdf_LayerRegistry::Find(
         // yet, look up the layer using the normalized identifier.
         if (!foundLayer && !isRelativePath)
             foundLayer = FindByIdentifier(layerPath);
+#else
+        const string& layerPath = inputLayerPath;
+
+        // If the layer path depends on context there may be multiple
+        // layers with the same identifier but different resolved paths.
+        // In this case we need to look up the layer by resolved path.
+        if (!resolver.IsContextDependentPath(layerPath)) {
+            foundLayer = FindByIdentifier(layerPath);
+        }
+#endif
 
         // If the layer path is in repository form and we haven't yet
         // found the layer via the identifier, attempt to look up the
@@ -208,9 +220,9 @@ Sdf_LayerRegistry::Find(
         if (!foundLayer && isRepositoryPath)
             foundLayer = FindByRepositoryPath(layerPath);
 
-        // If the layer has not yet been found, this may be a search path
-        // or some other form of path that requires path resolution and
-        // lookup in the real path index in order to locate.
+        // If the layer has not yet been found, this may be some other
+        // form of path that requires path resolution and lookup in the
+        // real path index in order to locate.
         if (!foundLayer)
             foundLayer = FindByRealPath(layerPath, resolvedPath);
     }
@@ -290,10 +302,12 @@ Sdf_LayerRegistry::FindByRealPath(
         resolvedPath : Sdf_ComputeFilePath(searchPath);
     searchPath = Sdf_CreateIdentifier(searchPath, arguments);
 
+#if AR_VERSION == 1
     // Avoid ambiguity by converting the path to a platform dependent
     // path.  (On Windows this converts slashes to backslashes.)  The
     // real paths stored in the registry are in platform dependent form.
     searchPath = TfAbsPath(searchPath);
+#endif
 
     const _LayersByRealPath& byRealPath = _layers.get<by_real_path>();
     _LayersByRealPath::const_iterator realPathIt =

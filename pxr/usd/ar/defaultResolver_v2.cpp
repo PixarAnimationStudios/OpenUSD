@@ -338,6 +338,13 @@ ArDefaultResolver::_OpenAssetForWrite(
 }
 
 bool
+ArDefaultResolver::_IsContextDependentPath(
+    const std::string& assetPath)
+{
+    return IsSearchPath(assetPath);
+}
+
+bool
 ArDefaultResolver::CreatePathForLayer(
     const std::string& path)
 {

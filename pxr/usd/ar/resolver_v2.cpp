@@ -526,6 +526,17 @@ public:
         return resolver->IsRelativePath(path);
     }
 
+    virtual bool _IsContextDependentPath(
+        const std::string& assetPath)
+    {
+        ArResolver& resolver = _GetResolver(assetPath);
+        if (ArIsPackageRelativePath(assetPath)) {
+            return resolver.IsContextDependentPath(
+                ArSplitPackageRelativePathOuter(assetPath).first);
+        }
+        return resolver.IsContextDependentPath(assetPath);
+    }
+
     virtual bool _IsRepositoryPath(const std::string& path) override
     {
         ArResolver& resolver = _GetResolver(path);
@@ -1388,6 +1399,13 @@ ArResolver::OpenAssetForWrite(
 }
 
 bool
+ArResolver::IsContextDependentPath(
+    const std::string& assetPath)
+{
+    return _IsContextDependentPath(assetPath);
+}
+
+bool
 ArResolver::IsRepositoryPath(
     const std::string& path)
 {
@@ -1407,6 +1425,13 @@ ArResolver::_GetAssetInfo(
     const ArResolvedPath& resolvedPath)
 {
     return ArAssetInfo();
+}
+
+bool
+ArResolver::_IsContextDependentPath(
+    const std::string& assetPath)
+{
+    return false;
 }
 
 bool

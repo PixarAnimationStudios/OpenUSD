@@ -272,6 +272,19 @@ public:
     AR_API
     virtual ArResolverContext GetCurrentContext() = 0;
 
+    /// Returns true if \p assetPath is a context-dependent path, false
+    /// otherwise.
+    ///
+    /// A context-dependent path may result in different resolved paths
+    /// depending on what asset resolver context is bound when Resolve
+    /// is called. Assets located at the same context-dependent path may not
+    /// be the same since those assets may have been loaded from different
+    /// resolved paths. In this case, the assets' resolved paths must be
+    /// consulted to determine if they are the same.
+    AR_API
+    bool IsContextDependentPath(
+        const std::string& assetPath);
+
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -518,6 +531,15 @@ protected:
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr);
 
+    /// Return true if the result of resolving the given \p assetPath may
+    /// differ depending on the asset resolver context that is bound when
+    /// Resolve is called, false otherwise.
+    ///
+    /// The default implementation returns false.
+    AR_API
+    virtual bool _IsContextDependentPath(
+        const std::string& assetPath);
+
     /// Return an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
     /// resolved path computed for the given \p assetPath.
@@ -559,8 +581,8 @@ protected:
     /// Return true if the given path is a repository path, false otherwise.
     /// Default implementation returns false.
     AR_API
-     virtual bool _IsRepositoryPath(
-         const std::string& path);
+    virtual bool _IsRepositoryPath(
+        const std::string& path);
 
     /// @}
 };
