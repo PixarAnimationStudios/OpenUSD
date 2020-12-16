@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -92,164 +93,6 @@ _GetMipLevels(const TfToken& filePath,
     }
     return ret;
 };
-
-static
-HgiFormat
-_GetPixelFormatForImage(const HioFormat hioFormat)
-{
-    constexpr HgiFormat hgiFormats[][4] = {
-        // HioTypeUnsignedByte
-        { HgiFormatUNorm8, HgiFormatUNorm8Vec2,
-          HgiFormatUNorm8Vec4, HgiFormatUNorm8Vec4 },
-        // HioTypeUnsignedByteSRGB
-        { HgiFormatInvalid, HgiFormatInvalid,
-          HgiFormatUNorm8Vec4srgb, HgiFormatUNorm8Vec4srgb },
-        // HioTypeSignedByte
-        { HgiFormatSNorm8, HgiFormatSNorm8Vec2,
-          HgiFormatSNorm8Vec4, HgiFormatSNorm8Vec4 },
-        // HioTypeUnsignedShort
-        { HgiFormatUInt16, HgiFormatUInt16Vec2,
-          HgiFormatUInt16Vec4, HgiFormatUInt16Vec4 },
-        // HioTypeSignedShort
-        { HgiFormatInvalid, HgiFormatInvalid,
-          HgiFormatInvalid, HgiFormatInvalid },
-        // HioTypeUnsignedInt
-        { HgiFormatInvalid, HgiFormatInvalid,
-          HgiFormatInvalid, HgiFormatInvalid },
-        // HioTypeInt
-        { HgiFormatInt32, HgiFormatInt32Vec2,
-          HgiFormatInt32Vec4, HgiFormatInt32Vec4 },
-        // HioTypeHalfFloat
-        { HgiFormatFloat16, HgiFormatFloat16Vec2,
-          HgiFormatFloat16Vec4, HgiFormatFloat16Vec4 },
-        // HioTypeFloat
-        { HgiFormatFloat32, HgiFormatFloat32Vec2,
-          HgiFormatFloat32Vec4, HgiFormatFloat32Vec4 },
-        // HioTypeDouble
-        { HgiFormatInvalid, HgiFormatInvalid,
-          HgiFormatInvalid, HgiFormatInvalid },
-    };
-
-    static_assert(TfArraySize(hgiFormats) == HioTypeCount,
-                  "hgiFormats to HioType enum mismatch");
-
-    const uint32_t nChannels = HioGetComponentCount(hioFormat);
-    const HioType hioType = HioGetHioType(hioFormat);
-    return hgiFormats[hioType][nChannels - 1];
-}
-
-enum _ColorSpaceTransform
-{
-     _SRGBToLinear,
-     _LinearToSRGB
-};
-
-// Convert a [0, 1] value between color spaces
-template<_ColorSpaceTransform colorSpaceTransform>
-static
-float _ConvertColorSpace(const float in)
-{
-    float out = in;
-    if (colorSpaceTransform == _SRGBToLinear) {
-        if (in <= 0.04045) {
-            out = in / 12.92;
-        } else {
-            out = pow((in + 0.055) / 1.055, 2.4);
-        }
-    } else if (colorSpaceTransform == _LinearToSRGB) {
-        if (in <= 0.0031308) {
-            out = 12.92 * in;
-        } else {
-            out = 1.055 * pow(in, 1.0 / 2.4) - 0.055;
-        }
-    }
-
-    return GfClamp(out, 0.f, 1.f);
-}
-
-// Pre-multiply alpha function to be used for integral types
-template<typename T, bool isSRGB>
-static
-void
-_PremultiplyAlpha(
-    T * const data,
-    const GfVec3i &dimensions)
-{
-    TRACE_FUNCTION();
-
-    static_assert(std::numeric_limits<T>::is_integer, "Requires integral type");
-
-    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
-
-    // Perform all operations using floats.
-    const float max = static_cast<float>(std::numeric_limits<T>::max());
-
-    for (size_t i = 0; i < num; i++) {
-        const float alpha = static_cast<float>(data[4 * i + 3]) / max;
-
-        for (size_t j = 0; j < 3; j++) {
-            float p = static_cast<float>(data[4 * i + j]);
-
-            if (isSRGB) {
-                // Convert value from sRGB to linear.
-                p = max * _ConvertColorSpace<_SRGBToLinear>(p / max);
-            }
-
-            // Pre-multiply RGB values with alpha in linear space.
-            p *= alpha;
-
-            if (isSRGB) {
-                // Convert value from linear to sRGB.
-                p = max * _ConvertColorSpace<_LinearToSRGB>(p / max);
-            }
-
-            // Add 0.5 when converting float to integral type.
-            data[4 * i + j] = p + 0.5f;
-        }
-    }
-}
-
-// Pre-multiply alpha function to be used for floating point types
-template<typename T>
-static
-void _PremultiplyAlphaFloat(
-    T * const data,
-    const GfVec3i &dimensions)
-{
-    TRACE_FUNCTION();
-
-    static_assert(GfIsFloatingPoint<T>::value, "Requires floating point type");
-
-    const size_t num = dimensions[0] * dimensions[1] * dimensions[2];
-
-    for (size_t i = 0; i < num; i++) {
-        const float alpha = data[4 * i + 3];
-
-        // Pre-multiply RGB values with alpha.
-        for (size_t j = 0; j < 3; j++) {
-            data[4 * i + j] = data[4 * i + j] * alpha;
-        }
-    }
-}
-
-template<typename T, uint32_t alpha>
-void
-_ConvertRGBToRGBA(
-    void * const data,
-    const size_t numPixels)
-{
-    TRACE_FUNCTION();
-
-    T * const typedData = reinterpret_cast<T*>(data);
-
-    size_t i = numPixels;
-    while(i--) {
-        typedData[4 * i + 0] = typedData[3 * i + 0];
-        typedData[4 * i + 1] = typedData[3 * i + 1];
-        typedData[4 * i + 2] = typedData[3 * i + 2];
-        typedData[4 * i + 3] = T(alpha);
-    }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Udim texture
@@ -332,7 +175,6 @@ HdStUdimTextureObject::HdStUdimTextureObject(
   : HdStTextureObject(textureId, textureObjectRegistry)
   , _dimensions(0)
   , _mipCount(0)
-  , _numBytesPerPixel(0)
   , _hgiFormat(HgiFormatInvalid)
 {
 }
@@ -364,7 +206,7 @@ HdStUdimTextureObject::_Load()
         _GetSourceColorSpace(GetTextureIdentifier().GetSubtextureIdentifier());
     const _MipDescVector firstImageMips =
         _GetMipLevels(std::get<1>(tiles[0]), sourceColorSpace);
-    const bool premultipliedAlpha =
+    const bool premultiplyAlpha =
         _GetPremultiplyAlpha(GetTextureIdentifier().GetSubtextureIdentifier());
 
     if (firstImageMips.empty()) {
@@ -375,7 +217,18 @@ HdStUdimTextureObject::_Load()
     int numChannels = HioGetComponentCount(hioFormat);
     const size_t sizePerElem = HioGetDataSizeOfType(hioFormat);
 
-    _hgiFormat = _GetPixelFormatForImage(hioFormat);
+    HdStTextureUtils::ConversionFunction conversionFunction = nullptr;
+    _hgiFormat = HdStTextureUtils::GetHgiFormat(
+        hioFormat,
+        premultiplyAlpha,
+        /* avoidThreeComponentFormats = */ true,
+        &conversionFunction);
+
+    if (_hgiFormat == HgiFormatInvalid || HgiIsCompressed(_hgiFormat)) {
+        TF_WARN("Unsupported texture format for UDIM");
+        return;
+    }
+
     if (firstImageMips[0].image->IsColorSpaceSRGB()) {
         _hgiFormat = HgiFormatUNorm8Vec4srgb;
     }
@@ -394,7 +247,7 @@ HdStUdimTextureObject::_Load()
 
     size_t targetPixelCount =
         static_cast<size_t>(GetTargetMemory());
-    const bool loadAllTiles = targetPixelCount == 0;
+    const bool loadAllMips = targetPixelCount == 0;
     targetPixelCount /= _dimensions[2] * numBytesPerPixel;
 
     std::vector<_TextureSize> mips {};
@@ -410,11 +263,11 @@ HdStUdimTextureObject::_Load()
             width = std::max(1u, width / 2u);
             height = std::max(1u, height / 2u);
         }
-        if (!loadAllTiles) {
+        if (!loadAllMips) {
             std::reverse(mips.begin(), mips.end());
         }
     } else {
-        if (loadAllTiles) {
+        if (loadAllMips) {
             for (_MipDesc const& mip: firstImageMips) {
                 mips.push_back(mip.size);
             }
@@ -427,7 +280,7 @@ HdStUdimTextureObject::_Load()
     }
 
     unsigned int mipCount = mips.size();
-    if (!loadAllTiles) {
+    if (!loadAllMips) {
         mipCount = 0;
         for (auto const& mip: mips) {
             const unsigned int currentPixelCount = mip.width * mip.height;
@@ -495,54 +348,9 @@ HdStUdimTextureObject::_Load()
                 // XXX: Unfortunately, pre-multiplication is occurring after
                 // mip generation. However, it is still worth it to pre-multiply
                 // textures before texture filtering.
-                if (premultipliedAlpha && (numChannels == 4)) {
-                    switch (_hgiFormat) {
-                    case HgiFormatUNorm8Vec4srgb:
-                        _PremultiplyAlpha<unsigned char, /*isSRGB=*/ true>(
-                            reinterpret_cast<unsigned char *>(spec.data),
-                            GfVec3i(mipSize.width, mipSize.height, 1));
-                        break;
-                    case HgiFormatUNorm8Vec4:
-                        _PremultiplyAlpha<unsigned char, /*isSRGB=*/ false>(
-                            reinterpret_cast<unsigned char *>(spec.data),
-                            GfVec3i(mipSize.width, mipSize.height, 1));
-                        break;
-                    case HgiFormatFloat16Vec4:
-                        _PremultiplyAlphaFloat<GfHalf>(
-                            reinterpret_cast<GfHalf *>(spec.data),
-                            GfVec3i(mipSize.width, mipSize.height, 1));
-                        break;
-                    case HgiFormatFloat32Vec4:
-                        _PremultiplyAlphaFloat<float>(
-                            reinterpret_cast<float *>(spec.data),
-                            GfVec3i(mipSize.width, mipSize.height, 1));
-                        break;
-                    default:
-                        TF_CODING_ERROR("Unsupported format");
-                        break;
-                    }
-                } else if (convertRGBtoRGBA) {
-                    switch (_hgiFormat) {
-                    case HgiFormatUNorm8Vec4srgb:
-                    case HgiFormatUNorm8Vec4:
-                        _ConvertRGBToRGBA<unsigned char, 255>(
-                            reinterpret_cast<unsigned char *>(spec.data),
-                            mipSize.width * mipSize.height);
-                        break;
-                    case HgiFormatFloat16Vec4:
-                        _ConvertRGBToRGBA<GfHalf, 1>(
-                            reinterpret_cast<GfHalf *>(spec.data),
-                            mipSize.width * mipSize.height);
-                        break;
-                    case HgiFormatFloat32Vec4:
-                        _ConvertRGBToRGBA<float, 1>(
-                            reinterpret_cast<float *>(spec.data),
-                            mipSize.width * mipSize.height);
-                        break;
-                    default:
-                        TF_CODING_ERROR("Unsupported format");
-                        break;
-                    }
+                if (conversionFunction) {
+                    conversionFunction(
+                        spec.data, mipSize.width * mipSize.height, spec.data);
                 }
             }
         }
@@ -559,7 +367,6 @@ HdStUdimTextureObject::_Load()
     }
 
     _mipCount = mipData.size();
-    _numBytesPerPixel = numBytesPerPixel;
 }
 
 void

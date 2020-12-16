@@ -150,6 +150,7 @@ pxr_library(hdSt
         shaderKey
         subdivision
         subdivision3
+        textureUtils
         triangulate
         unitTestHelper
         volumeShader

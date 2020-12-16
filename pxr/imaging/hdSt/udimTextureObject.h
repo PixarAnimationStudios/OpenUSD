@@ -93,7 +93,6 @@ private:
 
     GfVec3i _dimensions;
     size_t _mipCount;
-    size_t _numBytesPerPixel;
     HgiFormat _hgiFormat;
 
     HgiTextureHandle _texelTexture;
