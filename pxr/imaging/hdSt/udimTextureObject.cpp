@@ -197,6 +197,29 @@ HdStUdimTextureObject::_DestroyTextures()
     }
 }
 
+// Given a list of decreasing mips (e.g., (8,8), (4,4), (2,2), (1,1)), computes
+// how many can be choosen from the left so that the total number of pixels
+// is less or equal to the given targetPixelCount.
+//
+// E.g. for targetPixelCount = 10, it would return 2, because 2x2 + 1x1 = 5
+// is less than 10 but 4x4 + 2x2 + 1x1 = 21 is larger than 10.
+
+static
+size_t
+_ComputeNumMips(const std::vector<_TextureSize> &mips, size_t targetPixelCount)
+{
+    unsigned int totalPixelCount = 0;
+    for (size_t i = 0; i < mips.size(); i++) {
+        const _TextureSize &current = mips[mips.size() - i - 1];
+        totalPixelCount += current.width * current.height;
+        if (totalPixelCount > targetPixelCount) {
+            return i;
+        }
+    }
+    // All mips fit into the targetPixelCount.
+    return mips.size();
+}
+
 void
 HdStUdimTextureObject::_Load()
 {
@@ -237,22 +260,15 @@ HdStUdimTextureObject::_Load()
     if (convertRGBtoRGBA) {
         numChannels = 4;
     }
+    const unsigned int numBytesPerPixel = sizePerElem * numChannels;
 
     const unsigned int maxTileCount =
         std::get<0>(tiles.back()) + 1;
     _dimensions[2] = static_cast<int>(tiles.size());
-    const unsigned int numBytesPerPixel = sizePerElem * numChannels;
-    const unsigned int numBytesPerPixelLayer =
-        numBytesPerPixel * _dimensions[2];
 
-    size_t targetPixelCount =
-        static_cast<size_t>(GetTargetMemory());
-    const bool loadAllMips = targetPixelCount == 0;
-    targetPixelCount /= _dimensions[2] * numBytesPerPixel;
-
-    std::vector<_TextureSize> mips {};
-    mips.reserve(firstImageMips.size());
+    std::vector<_TextureSize> mips;
     if (firstImageMips.size() == 1) {
+        // Compute the mip sizes
         unsigned int width = firstImageMips[0].size.width;
         unsigned int height = firstImageMips[0].size.height;
         while (true) {
@@ -263,46 +279,42 @@ HdStUdimTextureObject::_Load()
             width = std::max(1u, width / 2u);
             height = std::max(1u, height / 2u);
         }
-        if (!loadAllMips) {
-            std::reverse(mips.begin(), mips.end());
-        }
     } else {
-        if (loadAllMips) {
-            for (_MipDesc const& mip: firstImageMips) {
-                mips.push_back(mip.size);
-            }
-        } else {
-            for (auto it = firstImageMips.crbegin();
-                 it != firstImageMips.crend(); ++it) {
-                mips.push_back(it->size);
-            }
+        // Use mip sizes from image.
+        //
+        // Note that these mip sizes are ultimately used to compute
+        // the data passed into the HgiTextureDesc. If the mip sizes
+        // in the given file don't adhere to Hgi's convention, we get
+        // weird alignment issues.
+        //
+        mips.reserve(firstImageMips.size());
+        for (_MipDesc const& mip: firstImageMips) {
+            mips.push_back(mip.size);
         }
     }
 
-    unsigned int mipCount = mips.size();
+    const bool loadAllMips = GetTargetMemory() == 0;
     if (!loadAllMips) {
-        mipCount = 0;
-        for (auto const& mip: mips) {
-            const unsigned int currentPixelCount = mip.width * mip.height;
-            if (targetPixelCount <= currentPixelCount) {
-                break;
-            }
-            ++mipCount;
-            targetPixelCount -= currentPixelCount;
-        }
-
-        if (mipCount == 0) {
-            mips.clear();
-            mips.emplace_back(1, 1);
-            mipCount = 1;
+        // Compute how many of the mips (when starting with the smallest)
+        // fit into the given target memory.
+        const size_t targetPixelCount =
+            static_cast<size_t>(GetTargetMemory()) /
+            (_dimensions[2] * numBytesPerPixel);
+        if (size_t mipCount = _ComputeNumMips(mips, targetPixelCount)) {
+            // Use the last mipCount number of mips since they fit
+            // into memory.
+            mips = std::vector<_TextureSize>(
+                mips.end() - mipCount, mips.end());
         } else {
-            mips.resize(mipCount, {0, 0});
-            std::reverse(mips.begin(), mips.end());
+            // Can't load at any mip level with the given memory
+            // constraint, so use smallest resolution imaginable.
+            // 
+            mips = { { 1, 1 } };
         }
     }
 
-    std::vector<std::vector<uint8_t>> mipData;
-    mipData.resize(mipCount);
+    // The mip count resolved!
+    _mipCount = mips.size();
 
     _dimensions[0] = mips[0].width;
     _dimensions[1] = mips[0].height;
@@ -310,14 +322,21 @@ HdStUdimTextureObject::_Load()
     // Texture array queries will use a float as the array specifier.
     _layoutData.resize(maxTileCount, 0);
 
+    std::vector<size_t> mipDataOffsets;
+    mipDataOffsets.reserve(_mipCount);
+
+    // Compute the total texture memory for all mip levels and layers
+    // as well as the offsets into the single memory block for the
+    // concatenated mip data.
     size_t totalTextureMemory = 0;
-    for (unsigned int mip = 0; mip < mipCount; ++mip) {
-        _TextureSize const& mipSize = mips[mip];
-        const unsigned int currentMipMemory =
-        mipSize.width * mipSize.height * numBytesPerPixelLayer;
-        mipData[mip].resize(currentMipMemory, 0);
-        totalTextureMemory += currentMipMemory;
+    for (_TextureSize const& mipSize : mips) {
+        mipDataOffsets.push_back(totalTextureMemory);
+        totalTextureMemory +=
+            mipSize.width * mipSize.height * _dimensions[2] * numBytesPerPixel;
     }
+
+    // Allocate memory for the mipData, ready for upload to GPU
+    _textureData.resize(totalTextureMemory);
 
     WorkParallelForN(tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
@@ -326,7 +345,7 @@ HdStUdimTextureObject::_Load()
             const _MipDescVector images = _GetMipLevels(
                 std::get<1>(tile), sourceColorSpace);
             if (images.empty()) { continue; }
-            for (unsigned int mip = 0; mip < mipCount; ++mip) {
+            for (unsigned int mip = 0; mip < _mipCount; ++mip) {
                 _TextureSize const& mipSize = mips[mip];
                 const unsigned int numBytesPerLayer =
                     mipSize.width * mipSize.height * numBytesPerPixel;
@@ -335,7 +354,10 @@ HdStUdimTextureObject::_Load()
                 spec.height = mipSize.height;
                 spec.format = hioFormat;
                 spec.flipped = true;
-                spec.data = mipData[mip].data() + (tileId * numBytesPerLayer);
+                spec.data =
+                    _textureData.data()
+                    + mipDataOffsets[mip]
+                    + tileId * numBytesPerLayer;
                 const auto it = std::find_if(
                     images.rbegin(), images.rend(),
                     [&mipSize](_MipDesc const& i) {
@@ -355,18 +377,6 @@ HdStUdimTextureObject::_Load()
             }
         }
     }, 1);
-
-    // Concatenate mipData into single memory block, ready for upload to GPU
-    _textureData.resize(totalTextureMemory);
-    size_t writeOffset = 0;
-    for (unsigned int mip = 0; mip < mipCount; ++mip) {
-        const size_t bytesSize = mipData[mip].size();
-        memcpy(_textureData.data() + writeOffset,
-               mipData[mip].data(), bytesSize);
-        writeOffset += bytesSize;
-    }
-
-    _mipCount = mipData.size();
 }
 
 void
