@@ -96,18 +96,19 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_Context *context,
     size_t varyingPrimvarCount = 0;
     size_t facevaryingPrimvarCount = 0;
     if (curveType == HdTokens->cubic) {
+        const int vstep = (curveBasis == HdTokens->bezier) ? 3 : 1;
         for (const int &nvertices: curveVertexCounts) {
-            const int nsegs = nvertices-1;
-            varyingPrimvarCount += nsegs-nowrap;
+            const int nsegs = (curveWrap == HdTokens->periodic) ? 
+                nvertices / vstep : (nvertices - 4) / vstep + 1;
+            varyingPrimvarCount += nsegs + nowrap;
             vertexPrimvarCount += nvertices;
-            facevaryingPrimvarCount += nsegs-nowrap;
+            facevaryingPrimvarCount += nsegs + nowrap;
         }
     } else if (curveType == HdTokens->linear) {
         for (const int &nvertices: curveVertexCounts) {
-            const int nsegs = nvertices-1;
-            varyingPrimvarCount += nsegs;
-            vertexPrimvarCount += nsegs+nowrap;
-            facevaryingPrimvarCount += nsegs;
+            varyingPrimvarCount += nvertices;
+            vertexPrimvarCount += nvertices;
+            facevaryingPrimvarCount += nvertices;
         }
     } else {
         TF_CODING_ERROR("Unknown curveType %s\n", curveType.GetText());
