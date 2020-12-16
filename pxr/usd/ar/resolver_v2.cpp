@@ -584,7 +584,7 @@ public:
     // or a URI resolver.
     using _ResolverContextData = std::vector<VtValue>;
 
-    virtual void BindContext(
+    virtual void _BindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override
     {
@@ -605,7 +605,7 @@ public:
         bindingData->Swap(contextData);
     }
 
-    virtual void UnbindContext(
+    virtual void _UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override
     {
@@ -631,7 +631,7 @@ public:
         bindingData->Swap(contextData);
     }
 
-    virtual ArResolverContext CreateDefaultContext() override
+    virtual ArResolverContext _CreateDefaultContext() override
     {
         std::vector<ArResolverContext> contexts;
 
@@ -652,7 +652,7 @@ public:
         return _resolver->CreateContextFromString(str);
     }
 
-    virtual ArResolverContext CreateDefaultContextForAsset(
+    virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& filePath) override
     {
         ArResolver& resolver = _GetResolver(filePath);
@@ -663,7 +663,7 @@ public:
         return resolver.CreateDefaultContextForAsset(filePath);
     }
 
-    virtual void RefreshContext(const ArResolverContext& context) override
+    virtual void _RefreshContext(const ArResolverContext& context) override
     {
         _resolver->RefreshContext(context);
         for (const auto& entry : _uriResolvers) {
@@ -673,7 +673,7 @@ public:
         }
     }
 
-    virtual ArResolverContext GetCurrentContext() override
+    virtual ArResolverContext _GetCurrentContext() override
     {
         // XXX:
         // This assumes that when binding a context, each resolver
@@ -1341,6 +1341,35 @@ ArResolver::ResolveForNewAsset(
     return _ResolveForNewAsset(assetPath);
 }
 
+void
+ArResolver::BindContext(
+    const ArResolverContext& context,
+    VtValue* bindingData)
+{
+    _BindContext(context, bindingData);
+}
+
+void
+ArResolver::UnbindContext(
+    const ArResolverContext& context,
+    VtValue* bindingData)
+{
+    _UnbindContext(context, bindingData);
+}
+
+ArResolverContext
+ArResolver::CreateDefaultContext()
+{
+    return _CreateDefaultContext();
+}
+
+ArResolverContext
+ArResolver::CreateDefaultContextForAsset(
+    const std::string& assetPath)
+{
+    return _CreateDefaultContextForAsset(assetPath);
+}
+
 ArResolverContext
 ArResolver::CreateContextFromString(
     const std::string& contextStr)
@@ -1360,6 +1389,19 @@ ArResolver::CreateContextFromStrings(
     const std::vector<std::pair<std::string, std::string>>& contextStrs)
 {
     return _GetResolver().CreateContextFromStrings(contextStrs);
+}
+
+void
+ArResolver::RefreshContext(
+    const ArResolverContext& context)
+{
+    _RefreshContext(context);
+}
+
+ArResolverContext
+ArResolver::GetCurrentContext()
+{
+    return _GetCurrentContext();
 }
 
 ArAssetInfo
@@ -1399,9 +1441,48 @@ ArResolver::IsRepositoryPath(
     return _IsRepositoryPath(path);
 }
 
+void
+ArResolver::_BindContext(
+    const ArResolverContext& context,
+    VtValue* bindingData)
+{
+}
+
+void
+ArResolver::_UnbindContext(
+    const ArResolverContext& context,
+    VtValue* bindingData)
+{
+}
+
+ArResolverContext
+ArResolver::_CreateDefaultContext()
+{
+    return ArResolverContext();
+}
+
+ArResolverContext
+ArResolver::_CreateDefaultContextForAsset(
+    const std::string& assetPath)
+{
+    return ArResolverContext();
+}
+
 ArResolverContext
 ArResolver::_CreateContextFromString(
     const std::string& contextStr)
+{
+    return ArResolverContext();
+}
+
+void
+ArResolver::_RefreshContext(
+    const ArResolverContext& context)
+{
+}
+
+ArResolverContext
+ArResolver::_GetCurrentContext()
 {
     return ArResolverContext();
 }

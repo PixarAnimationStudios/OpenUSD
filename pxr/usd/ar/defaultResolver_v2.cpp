@@ -238,7 +238,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
         // against each directory in the specified search paths.
         if (IsSearchPath(path)) {
             const ArDefaultResolverContext* contexts[2] =
-                {_GetCurrentContext(), &_fallbackContext};
+                {_GetCurrentContextPtr(), &_fallbackContext};
             for (const ArDefaultResolverContext* ctx : contexts) {
                 if (ctx) {
                     for (const auto& searchPath : ctx->GetSearchPath()) {
@@ -363,7 +363,7 @@ ArDefaultResolver::CanCreateNewLayerWithIdentifier(
 }
 
 ArResolverContext 
-ArDefaultResolver::CreateDefaultContext()
+ArDefaultResolver::_CreateDefaultContext()
 {
     return _defaultContext;
 }
@@ -376,28 +376,23 @@ ArDefaultResolver::_CreateContextFromString(
 }
 
 ArResolverContext 
-ArDefaultResolver::CreateDefaultContextForAsset(
-    const std::string& filePath)
+ArDefaultResolver::_CreateDefaultContextForAsset(
+    const std::string& assetPath)
 {
-    if (filePath.empty()){
+    if (assetPath.empty()){
         return ArResolverContext(ArDefaultResolverContext());
     }
 
-    std::string assetDir = TfGetPathName(TfAbsPath(filePath));
+    std::string assetDir = TfGetPathName(TfAbsPath(assetPath));
     
     return ArResolverContext(ArDefaultResolverContext(
                                  std::vector<std::string>(1, assetDir)));
 }
 
-void 
-ArDefaultResolver::RefreshContext(const ArResolverContext& context)
-{
-}
-
 ArResolverContext
-ArDefaultResolver::GetCurrentContext()
+ArDefaultResolver::_GetCurrentContext()
 {
-    const ArDefaultResolverContext* ctx = _GetCurrentContext();
+    const ArDefaultResolverContext* ctx = _GetCurrentContextPtr();
     return ctx ? ArResolverContext(*ctx) : ArResolverContext();
 }
 
@@ -422,7 +417,7 @@ ArDefaultResolver::_GetCurrentCache()
 }
 
 void 
-ArDefaultResolver::BindContext(
+ArDefaultResolver::_BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
@@ -434,7 +429,7 @@ ArDefaultResolver::BindContext(
 }
 
 void 
-ArDefaultResolver::UnbindContext(
+ArDefaultResolver::_UnbindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
@@ -451,7 +446,7 @@ ArDefaultResolver::UnbindContext(
 }
 
 const ArDefaultResolverContext* 
-ArDefaultResolver::_GetCurrentContext()
+ArDefaultResolver::_GetCurrentContextPtr()
 {
     _ContextStack& contextStack = _threadContextStack.local();
     return contextStack.empty() ? nullptr : contextStack.back();

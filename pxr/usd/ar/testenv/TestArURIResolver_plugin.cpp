@@ -104,7 +104,7 @@ public:
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), "test:"));
 
-        const _TestURIResolverContext* uriContext = _GetCurrentContext();
+        const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
         if (uriContext && !uriContext->data.empty()) {
             return ArResolvedPath(assetPath + "?" + uriContext->data);
         }
@@ -118,7 +118,7 @@ public:
         return _Resolve(assetPath);
     }
 
-    virtual void BindContext(
+    virtual void _BindContext(
         const ArResolverContext& context,
         VtValue* bindingData) final
     {
@@ -126,7 +126,7 @@ public:
         contextStack.push_back(context.Get<_TestURIResolverContext>());
     }
 
-    virtual void UnbindContext(
+    virtual void _UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) final
     {
@@ -135,26 +135,21 @@ public:
         contextStack.pop_back();
     }
 
-    virtual ArResolverContext CreateDefaultContext() final
+    virtual ArResolverContext _CreateDefaultContext() final
     {
         return ArResolverContext(_TestURIResolverContext());
     }
 
-    virtual ArResolverContext CreateDefaultContextForAsset(
+    virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& filePath) final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), "test:"));
         return ArResolverContext(_TestURIResolverContext());
     }
 
-    virtual void RefreshContext(
-        const ArResolverContext& context) final
+    virtual ArResolverContext _GetCurrentContext() final
     {
-    }
-
-    virtual ArResolverContext GetCurrentContext() final
-    {
-        const _TestURIResolverContext* uriContext = _GetCurrentContext();
+        const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
         if (uriContext) {
             return ArResolverContext(*uriContext);
         }
@@ -234,7 +229,7 @@ protected:
     }
 
 private:
-    const _TestURIResolverContext* _GetCurrentContext()
+    const _TestURIResolverContext* _GetCurrentContextPtr()
     {
         const _ContextStack& contextStack = _threadContextStack.local();
         return contextStack.empty() ? nullptr : contextStack.back();

@@ -179,9 +179,9 @@ public:
     ///
     /// \see ArResolverContextBinder
     AR_API
-    virtual void BindContext(
+    void BindContext(
         const ArResolverContext& context,
-        VtValue* bindingData) = 0;
+        VtValue* bindingData);
 
     /// Unbind the given context from this resolver.
     ///
@@ -190,17 +190,21 @@ public:
     ///
     /// \see ArResolverContextBinder
     AR_API
-    virtual void UnbindContext(
+    void UnbindContext(
         const ArResolverContext& context,
-        VtValue* bindingData) = 0;
+        VtValue* bindingData);
 
-    /// Return a default ArResolverContext that may be bound to this resolver
+    /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
-    ///
-    /// This function should not automatically bind this context, but should
-    /// create one that may be used later.
     AR_API
-    virtual ArResolverContext CreateDefaultContext() = 0;
+    ArResolverContext CreateDefaultContext();
+
+    /// Return an ArResolverContext that may be bound to this resolver
+    /// to resolve the asset located at \p assetPath when no other context is
+    /// explicitly specified.
+    AR_API
+    ArResolverContext CreateDefaultContextForAsset(
+        const std::string& assetPath);
 
     /// Return an ArResolverContext created from the primary ArResolver
     /// implementation using the given \p contextStr.
@@ -247,26 +251,17 @@ public:
     AR_API
     ArResolverContext CreateContextFromStrings(
         const std::vector<std::pair<std::string, std::string>>& contextStrs);
-    
-    /// Return a default ArResolverContext that may be bound to this resolver
-    /// to resolve the asset located at \p filePath when no other context is
-    /// explicitly specified.
-    ///
-    /// This function should not automatically bind this context, but should
-    /// create one that may be used later.
-    AR_API
-    virtual ArResolverContext CreateDefaultContextForAsset(
-        const std::string& filePath) = 0;
 
     /// Refresh any caches associated with the given context.
     AR_API
-    virtual void RefreshContext(const ArResolverContext& context) = 0;
+    void RefreshContext(
+        const ArResolverContext& context);
 
-    /// Returns the currently-bound asset resolver context.
+    /// Returns the asset resolver context currently bound in this thread.
     ///
     /// \see ArResolver::BindContext, ArResolver::UnbindContext
     AR_API
-    virtual ArResolverContext GetCurrentContext() = 0;
+    ArResolverContext GetCurrentContext();
 
     /// Returns true if \p assetPath is a context-dependent path, false
     /// otherwise.
@@ -521,11 +516,82 @@ protected:
     virtual ArResolvedPath _ResolveForNewAsset(
         const std::string& assetPath) = 0;
 
+    /// Bind the given \p context to this resolver. \p bindingData may be
+    /// populated with additional information that will be kept alive while
+    /// \p context is bound. Both \p context and \p bindingData will be
+    /// passed to UnbindContext when the context is being unbound.
+    ///
+    /// Contexts may be nested; if multiple contexts are bound, the context
+    /// that was most recently bound must take precedence and block all
+    /// previously bound contexts.
+    ///
+    /// Context binding is thread-specific; contexts bound in a thread must
+    /// only affect other resolver calls in the same thread.
+    ///
+    /// The default implementation does nothing.
+    AR_API
+    virtual void _BindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData);
+
+    /// Unbind the given \p context from this resolver.
+    ///
+    /// It is an error if the context being unbound is not the currently
+    /// bound context.
+    ///
+    /// The default implementation does nothing.
+    AR_API
+    virtual void _UnbindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData);
+
+    /// Return a default ArResolverContext that may be bound to this resolver
+    /// to resolve assets when no other context is explicitly specified.
+    ///
+    /// This function should not automatically bind this context, but should
+    /// create one that may be used later.
+    ///
+    /// The default implementation returns a default-constructed
+    /// ArResolverContext.
+    AR_API
+    virtual ArResolverContext _CreateDefaultContext();
+
+    /// Return an ArResolverContext that may be bound to this resolver
+    /// to resolve the asset located at \p assetPath when no other context is
+    /// explicitly specified.
+    ///
+    /// This function should not automatically bind this context, but should
+    /// create one that may be used later.
+    ///
+    /// The default implementation returns a default-constructed
+    /// ArResolverContext.
+    AR_API
+    virtual ArResolverContext _CreateDefaultContextForAsset(
+        const std::string& assetPath);
+
     /// Return an ArResolverContext created from the given \p contextStr.
-    /// The default implementation returns an empty ArResolverContext.
+    ///
+    /// The default implementation returns a default-constructed
+    /// ArResolverContext.
     AR_API
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr);
+
+    /// Refresh any caches associated with the given context.
+    ///
+    /// The default implementation does nothing.
+    AR_API
+    virtual void _RefreshContext(
+        const ArResolverContext& context);
+
+    /// Return the currently bound context. Since context binding is 
+    /// thread-specific, this should return the context that was most recently
+    /// bound in this thread.
+    ///
+    /// The default implementation returns a default-constructed 
+    /// ArResolverContext.
+    AR_API
+    virtual ArResolverContext _GetCurrentContext();
 
     /// Return true if the result of resolving the given \p assetPath may
     /// differ depending on the asset resolver context that is bound when

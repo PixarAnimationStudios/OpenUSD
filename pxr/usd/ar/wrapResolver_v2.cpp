@@ -49,6 +49,9 @@ wrapResolver()
         .def("ConfigureResolverForAsset", &This::ConfigureResolverForAsset)
 
         .def("CreateDefaultContext", &This::CreateDefaultContext)
+        .def("CreateDefaultContextForAsset", 
+             &This::CreateDefaultContextForAsset,
+             args("assetPath"))
 
         .def("CreateContextFromString", 
              (ArResolverContext (This::*)(const std::string&))
@@ -64,8 +67,6 @@ wrapResolver()
         .def("CreateContextFromStrings", &This::CreateContextFromStrings,
              args("contextStrs"))
 
-        .def("CreateDefaultContextForAsset", 
-             &This::CreateDefaultContextForAsset)
         .def("GetCurrentContext", &This::GetCurrentContext)
 
         .def("IsRelativePath", &This::IsRelativePath)
