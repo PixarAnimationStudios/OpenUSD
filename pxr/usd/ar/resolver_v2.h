@@ -452,8 +452,8 @@ public:
     ///
     /// \see ArResolverScopedCache
     AR_API
-    virtual void BeginCacheScope(
-        VtValue* cacheScopeData) = 0;
+    void BeginCacheScope(
+        VtValue* cacheScopeData);
 
     /// Mark the end of a resolution caching scope.
     ///
@@ -465,8 +465,8 @@ public:
     ///
     /// \see ArResolverScopedCache
     AR_API
-    virtual void EndCacheScope(
-        VtValue* cacheScopeData) = 0;
+    void EndCacheScope(
+        VtValue* cacheScopeData);
 
     /// @}
 
@@ -638,6 +638,23 @@ protected:
     _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) = 0;
+
+    /// Mark the start of a resolution caching scope. 
+    ///
+    /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
+    /// also pass in a \p cacheScopeData populated by an earlier call to
+    /// BeginCacheScope to allow the resolver access to that information.
+    AR_API
+    virtual void _BeginCacheScope(
+        VtValue* cacheScopeData) = 0;
+
+    /// Mark the end of a resolution caching scope.
+    ///
+    /// \p cacheScopeData should contain the data that was populated by the
+    /// previous corresponding call to BeginCacheScope.
+    AR_API
+    virtual void _EndCacheScope(
+        VtValue* cacheScopeData) = 0;
 
     /// \deprecated
     /// Return true if the given path is a repository path, false otherwise.

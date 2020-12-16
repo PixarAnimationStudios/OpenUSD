@@ -397,14 +397,14 @@ ArDefaultResolver::_GetCurrentContext()
 }
 
 void 
-ArDefaultResolver::BeginCacheScope(
+ArDefaultResolver::_BeginCacheScope(
     VtValue* cacheScopeData)
 {
     _threadCache.BeginCacheScope(cacheScopeData);
 }
 
 void 
-ArDefaultResolver::EndCacheScope(
+ArDefaultResolver::_EndCacheScope(
     VtValue* cacheScopeData)
 {
     _threadCache.EndCacheScope(cacheScopeData);

@@ -134,14 +134,6 @@ public:
         const std::string& identifier, 
         std::string* whyNot) override;
 
-    AR_API
-    virtual void BeginCacheScope(
-        VtValue* cacheScopeData) override;
-
-    AR_API
-    virtual void EndCacheScope(
-        VtValue* cacheScopeData) override;
-
 protected:
     AR_API
     virtual std::string _CreateIdentifier(
@@ -209,6 +201,14 @@ protected:
     virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) override;
+
+    AR_API
+    virtual void _BeginCacheScope(
+        VtValue* cacheScopeData) override;
+
+    AR_API
+    virtual void _EndCacheScope(
+        VtValue* cacheScopeData) override;
 
 private:
     struct _Cache;

@@ -845,7 +845,7 @@ public:
     // package resolver.
     using _ResolverCacheData = std::vector<VtValue>;
 
-    virtual void BeginCacheScope(
+    virtual void _BeginCacheScope(
         VtValue* cacheScopeData) override
     {
         // If we've filled in cacheScopeData from a previous call to
@@ -886,7 +886,7 @@ public:
         cacheScopeData->Swap(cacheData);
     }
 
-    virtual void EndCacheScope(
+    virtual void _EndCacheScope(
         VtValue* cacheScopeData) override
     {
         if (!TF_VERIFY(cacheScopeData->IsHolding<_ResolverCacheData>())) {
@@ -1432,6 +1432,20 @@ ArResolver::IsContextDependentPath(
     const std::string& assetPath)
 {
     return _IsContextDependentPath(assetPath);
+}
+
+void
+ArResolver::BeginCacheScope(
+    VtValue* cacheScopeData)
+{
+    _BeginCacheScope(cacheScopeData);
+}
+
+void
+ArResolver::EndCacheScope(
+    VtValue* cacheScopeData)
+{
+    _EndCacheScope(cacheScopeData);
 }
 
 bool

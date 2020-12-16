@@ -202,12 +202,12 @@ public:
         return false;
     }
 
-    virtual void BeginCacheScope(
+    virtual void _BeginCacheScope(
         VtValue* cacheScopeData) final
     {
     }
 
-    virtual void EndCacheScope(
+    virtual void _EndCacheScope(
         VtValue* cacheScopeData) final
     {
     }
