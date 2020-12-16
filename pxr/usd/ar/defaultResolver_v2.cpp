@@ -189,7 +189,7 @@ ArDefaultResolver::IsSearchPath(const std::string& path)
 }
 
 std::string
-ArDefaultResolver::GetExtension(const std::string& path)
+ArDefaultResolver::_GetExtension(const std::string& path)
 {
     return TfGetExtension(path);
 }

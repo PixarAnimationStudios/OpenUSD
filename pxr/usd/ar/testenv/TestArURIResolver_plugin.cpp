@@ -72,7 +72,7 @@ public:
         return false;
     }
 
-    virtual std::string GetExtension(
+    virtual std::string _GetExtension(
         const std::string& path) final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));

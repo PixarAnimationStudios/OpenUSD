@@ -557,7 +557,7 @@ public:
         return resolver.IsSearchPath(path);
     }
 
-    virtual std::string GetExtension(const std::string& path) override
+    virtual std::string _GetExtension(const std::string& path) override
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
@@ -1403,6 +1403,13 @@ ArResolverContext
 ArResolver::GetCurrentContext()
 {
     return _GetCurrentContext();
+}
+
+std::string
+ArResolver::GetExtension(
+    const std::string& assetPath)
+{
+    return _GetExtension(assetPath);
 }
 
 ArAssetInfo

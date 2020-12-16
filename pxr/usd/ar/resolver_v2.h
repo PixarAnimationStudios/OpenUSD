@@ -142,10 +142,6 @@ public:
     AR_API
     virtual bool IsSearchPath(const std::string& path) = 0;
 
-    /// Returns the normalized extension for the given \p path. 
-    AR_API
-    virtual std::string GetExtension(const std::string& path) = 0;
-
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
     /// ArResolvedPath.
@@ -284,6 +280,12 @@ public:
     ///
     /// @{
     // --------------------------------------------------------------------- //
+
+    /// Returns the file extension for the given \p assetPath. The returned
+    /// extension does not include a "." at the beginning.
+    AR_API
+    std::string GetExtension(
+        const std::string& assetPath);
 
     /// Returns an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
@@ -597,6 +599,11 @@ protected:
     AR_API
     virtual bool _IsContextDependentPath(
         const std::string& assetPath);
+
+    /// Return the file extension for the given \p assetPath. This extension
+    /// should not include a "." at the beginning of the string.
+    virtual std::string _GetExtension(
+        const std::string& assetPath) = 0;
 
     /// Return an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
