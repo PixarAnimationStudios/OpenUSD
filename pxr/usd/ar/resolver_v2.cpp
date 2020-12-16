@@ -745,15 +745,16 @@ public:
         return resolver.GetAssetInfo(assetPath, resolvedPath);
     }
 
-    virtual VtValue GetModificationTimestamp(
+    virtual VtValue _GetModificationTimestamp(
         const std::string& path,
-        const std::string& resolvedPath) override
+        const ArResolvedPath& resolvedPath) override
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
             return resolver.GetModificationTimestamp(
                 ArSplitPackageRelativePathOuter(path).first,
-                ArSplitPackageRelativePathOuter(resolvedPath).first);
+                ArResolvedPath(
+                    ArSplitPackageRelativePathOuter(resolvedPath).first));
         }
         return resolver.GetModificationTimestamp(path, resolvedPath);
     }
@@ -1410,6 +1411,14 @@ ArResolver::GetAssetInfo(
     const ArResolvedPath& resolvedPath)
 {
     return _GetAssetInfo(assetPath, resolvedPath);
+}
+
+VtValue
+ArResolver::GetModificationTimestamp(
+    const std::string& assetPath,
+    const ArResolvedPath& resolvedPath)
+{
+    return _GetModificationTimestamp(assetPath, resolvedPath);
 }
 
 std::shared_ptr<ArAsset>

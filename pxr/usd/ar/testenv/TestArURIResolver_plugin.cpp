@@ -156,9 +156,9 @@ public:
         return ArResolverContext();
     }
 
-    virtual VtValue GetModificationTimestamp(
+    virtual VtValue _GetModificationTimestamp(
         const std::string& path,
-        const std::string& resolvedPath) final
+        const ArResolvedPath& resolvedPath) final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
         return VtValue(42);

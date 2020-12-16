@@ -89,6 +89,8 @@ wrapResolver()
 
         .def("GetAssetInfo", &This::GetAssetInfo,
              (args("assetPath"), args("resolvedPath")))
+        .def("GetModificationTimestamp", &This::GetModificationTimestamp,
+             (args("assetPath"), args("resolvedPath")))
         .def("GetExtension", &This::GetExtension)
         .def("RefreshContext", &This::RefreshContext)
         ;

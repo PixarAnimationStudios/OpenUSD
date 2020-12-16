@@ -882,7 +882,7 @@ _GetExternalAssetModificationTimes(const SdfLayer& layer)
         // asset dependencies only returns resolved paths so pass the same
         // path for both params.
         result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
-            resolvedPath, resolvedPath);
+            resolvedPath, ArResolvedPath(resolvedPath));
     }
     return result;
 }
@@ -921,15 +921,15 @@ SdfLayer::_Reload(bool force)
     } else {
         // The physical location of the file may have changed since
         // the last load, so re-resolve the identifier.
-        string oldRealPath = GetRealPath();
+        const ArResolvedPath oldResolvedPath = GetResolvedPath();
         UpdateAssetInfo();
-        string realPath = GetRealPath();
+        const ArResolvedPath resolvedPath = GetResolvedPath();
 
-        // If path resolution in UpdateAssetInfo failed, we may end
+        // If asset resolution in UpdateAssetInfo failed, we may end
         // up with an empty real path, and cannot reload the layer.
-        if (realPath.empty()) {
+        if (resolvedPath.empty()) {
             TF_RUNTIME_ERROR(
-                "Cannot determine real path for '%s', skipping reload.",
+                "Cannot determine resolved path for '%s', skipping reload.",
                 identifier.c_str());
             return _ReloadFailed;
         }
@@ -950,11 +950,11 @@ SdfLayer::_Reload(bool force)
 
         // Get the layer's modification timestamp.
         VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-            GetIdentifier(), realPath);
+            GetIdentifier(), resolvedPath);
         if (timestamp.IsEmpty()) {
             TF_CODING_ERROR(
                 "Unable to get modification time for '%s (%s)'",
-                GetIdentifier().c_str(), realPath.c_str());
+                GetIdentifier().c_str(), resolvedPath.GetPathString().c_str());
             return _ReloadFailed;
         }
 
@@ -964,20 +964,20 @@ SdfLayer::_Reload(bool force)
 
         // See if we can skip reloading.
         if (!force && !IsDirty()
-            && (realPath == oldRealPath)
+            && (resolvedPath == oldResolvedPath)
             && (timestamp == _assetModificationTime)
             && (externalAssetTimestamps == _externalAssetModificationTimes)) {
             return _ReloadSkipped;
         }
 
-        if (!_Read(GetIdentifier(), realPath, /* metadataOnly = */ false)) {
+        if (!_Read(GetIdentifier(), resolvedPath, /* metadataOnly = */ false)) {
             return _ReloadFailed;
         }
 
         _assetModificationTime.Swap(timestamp);
         _externalAssetModificationTimes = std::move(externalAssetTimestamps);
 
-        if (realPath != oldRealPath) {
+        if (resolvedPath != oldResolvedPath) {
             Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
         }
     }
@@ -2408,7 +2408,7 @@ SdfLayer::SetIdentifier(const string &identifier)
         ArGetResolver().CreateIdentifierForNewAsset(identifier);
 #endif
 
-    const string oldRealPath = GetRealPath();
+    const ArResolvedPath oldResolvedPath = GetResolvedPath();
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
@@ -2423,10 +2423,10 @@ SdfLayer::SetIdentifier(const string &identifier)
     // location, and we get an empty timestamp from the resolver. 
     // This is OK -- this means the layer hasn't been serialized to this 
     // new location yet.
-    const string newRealPath = GetRealPath();
-    if (oldRealPath != newRealPath) {
+    const ArResolvedPath newResolvedPath = GetResolvedPath();
+    if (oldResolvedPath != newResolvedPath) {
         _assetModificationTime = ArGetResolver().GetModificationTimestamp(
-            GetIdentifier(), GetRealPath());
+            GetIdentifier(), newResolvedPath);
     }
 }
 
@@ -3168,7 +3168,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     if (!info.isAnonymous) {
         // Grab modification timestamp.
         VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-            info.identifier, readFilePath);
+            info.identifier, ArResolvedPath(readFilePath));
         if (timestamp.IsEmpty()) {
             TF_CODING_ERROR(
                 "Unable to get modification timestamp for '%s (%s)'",
@@ -4389,7 +4389,7 @@ SdfLayer::_Save(bool force) const
         return false;
     }
 
-    string path(GetRealPath());
+    const ArResolvedPath path = GetResolvedPath();
     if (path.empty())
         return false;
 
@@ -4411,7 +4411,7 @@ SdfLayer::_Save(bool force) const
     if (timestamp.IsEmpty()) {
         TF_CODING_ERROR(
             "Unable to get modification timestamp for '%s (%s)'",
-            GetIdentifier().c_str(), path.c_str());
+            GetIdentifier().c_str(), path.GetPathString().c_str());
         return false;
     }
     _assetModificationTime.Swap(timestamp);

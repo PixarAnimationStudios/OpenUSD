@@ -285,15 +285,15 @@ ArDefaultResolver::_ResolveForNewAsset(
 }
 
 VtValue
-ArDefaultResolver::GetModificationTimestamp(
+ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
-    const std::string& resolvedPath)
+    const ArResolvedPath& resolvedPath)
 {
     // Since the default resolver always resolves paths to local
     // paths, we can just look at the mtime of the file indicated
     // by resolvedPath.
     double time;
-    if (ArchGetModificationTime(resolvedPath.c_str(), &time)) {
+    if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
         return VtValue(time);
     }
     return VtValue();

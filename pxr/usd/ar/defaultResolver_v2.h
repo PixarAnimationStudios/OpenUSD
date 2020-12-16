@@ -111,11 +111,6 @@ public:
     virtual std::string GetExtension(const std::string& path) override;
 
     AR_API
-    virtual VtValue GetModificationTimestamp(
-        const std::string& path,
-        const std::string& resolvedPath) override;
-
-    AR_API
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
         const std::string& resolvedPath) override;
@@ -190,6 +185,11 @@ protected:
     AR_API
     virtual bool _IsContextDependentPath(
         const std::string& assetPath) override;
+
+    AR_API
+    virtual VtValue _GetModificationTimestamp(
+        const std::string& path,
+        const ArResolvedPath& resolvedPath) override;
 
     AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(

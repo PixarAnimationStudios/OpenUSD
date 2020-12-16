@@ -293,21 +293,17 @@ public:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath);
 
-    /// Returns a value representing the last time the asset identified
-    /// by \p path was modified. \p resolvedPath is the resolved path
-    /// of the asset.
+    /// Return a value representing the last time the asset at the given 
+    /// \p assetPath was modified. \p resolvedPath is the resolved path
+    /// computed for the given \p assetPath. If a timestamp cannot be
+    /// retrieved, return an empty VtValue.
     ///
-    /// Implementations may use whatever value is most appropriate
-    /// for this timestamp. The value must be equality comparable, 
-    /// and this function must return a different timestamp whenever 
-    /// an asset has been modified. For instance, if an asset is stored 
-    /// as a file on disk, the timestamp may simply be that file's mtime. 
-    ///
-    /// If a timestamp cannot be retrieved, returns an empty VtValue.
+    /// This timestamp may be equality compared to determine if an asset
+    /// has been modified.
     AR_API
-    virtual VtValue GetModificationTimestamp(
-        const std::string& path,
-        const std::string& resolvedPath) = 0;
+    VtValue GetModificationTimestamp(
+        const std::string& assetPath,
+        const ArResolvedPath& resolvedPath);
 
     /// Fetch the asset identified by \p path to the filesystem location
     /// specified by \p resolvedPath. \p resolvedPath is the resolved path
@@ -610,6 +606,20 @@ protected:
     virtual ArAssetInfo _GetAssetInfo(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath);
+
+    /// Return a value representing the last time the asset at the given 
+    /// \p assetPath was modified. \p resolvedPath is the resolved path
+    /// computed for the given \p assetPath. If a timestamp cannot be
+    /// retrieved, return an empty VtValue.
+    ///
+    /// Implementations may use whatever value is most appropriate
+    /// for this timestamp. The value must be equality comparable, 
+    /// and this function must return a different timestamp whenever 
+    /// an asset has been modified. For instance, if an asset is stored 
+    /// as a file on disk, the timestamp may simply be that file's mtime. 
+    virtual VtValue _GetModificationTimestamp(
+        const std::string& assetPath,
+        const ArResolvedPath& resolvedPath) = 0;
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
     /// Return an invalid std::shared_ptr if object could not be created
