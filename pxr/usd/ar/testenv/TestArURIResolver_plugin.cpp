@@ -79,13 +79,6 @@ public:
         return TfGetExtension(path);
     }
 
-    virtual std::string ComputeNormalizedPath(
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return path;
-    }
-
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) final

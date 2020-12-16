@@ -111,9 +111,6 @@ public:
     virtual std::string GetExtension(const std::string& path) override;
 
     AR_API
-    virtual std::string ComputeNormalizedPath(const std::string& path) override;
-
-    AR_API
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) override;

@@ -577,19 +577,6 @@ public:
         return resolver.GetExtension(path);
     }
 
-    virtual std::string ComputeNormalizedPath(const std::string& path) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            std::pair<std::string, std::string> packagePath =
-                ArSplitPackageRelativePathOuter(path);
-            packagePath.first = 
-                resolver.ComputeNormalizedPath(packagePath.first);
-            return ArJoinPackageRelativePath(packagePath);
-        }
-        return resolver.ComputeNormalizedPath(path);
-    }
-
     // The primary resolver and the URI resolvers all participate
     // in context binding and may have context-related data to store
     // away. To accommodate this, _Resolve stores away a vector of

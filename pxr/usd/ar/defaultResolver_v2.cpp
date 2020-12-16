@@ -194,12 +194,6 @@ ArDefaultResolver::GetExtension(const std::string& path)
     return TfGetExtension(path);
 }
 
-std::string
-ArDefaultResolver::ComputeNormalizedPath(const std::string& path)
-{
-    return TfNormPath(path);
-}
-
 static ArResolvedPath
 _ResolveAnchored(
     const std::string& anchorPath,

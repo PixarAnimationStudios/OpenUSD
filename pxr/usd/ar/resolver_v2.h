@@ -146,10 +146,6 @@ public:
     AR_API
     virtual std::string GetExtension(const std::string& path) = 0;
 
-    /// Returns a normalized version of the given \p path
-    AR_API
-    virtual std::string ComputeNormalizedPath(const std::string& path) = 0;
-
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
     /// ArResolvedPath.
