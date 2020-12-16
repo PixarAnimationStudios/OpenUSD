@@ -109,6 +109,8 @@ GlfContextCaps::InitInstance()
 
     GlfContextCaps& caps = TfSingleton<GlfContextCaps>::GetInstance();
 
+    GarchGLApiLoad();
+
     caps._LoadCaps();
 }
 
