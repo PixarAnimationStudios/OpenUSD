@@ -83,10 +83,16 @@ HdxOitResolveTask::_PrepareOitBuffers(
 {
     static const int numSamples = 8; // Should match glslfx files
 
-     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+    if (!(screenSize[0] >= 0 && screenSize[1] >= 0)) {
+        TF_CODING_ERROR("Invalid screen size for OIT resolve task %s",
+                        GetId().GetText());
+        return;
+    }
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
-
+    
     const bool createOitBuffers = !_counterBar;
     if (createOitBuffers) { 
         //

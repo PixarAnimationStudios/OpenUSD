@@ -204,6 +204,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     : _index(renderIndex)
     , _controllerId(controllerId)
     , _delegate(renderIndex, controllerId)
+    , _renderBufferSize(0, 0)
     , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0, 0, 1, 1)
 {
