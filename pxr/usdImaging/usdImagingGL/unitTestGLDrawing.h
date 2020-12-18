@@ -55,7 +55,6 @@ public:
     bool IsEnabledTestLighting() const { return _testLighting; }
     bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
-    bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
     
     bool IsShowGuides() const { return _showGuides; }
@@ -80,6 +79,7 @@ public:
     float GetPixelAspectRatio() const { return _pixelAspectRatio; }
     GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
     GfRect2i const & GetDataWindow() const { return _dataWindow; }
+    UsdImagingGLCullStyle GetCullStyle() const { return _cullStyle; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -133,7 +133,7 @@ private:
 
     UsdImagingGLDrawMode _drawMode;
     bool _shouldFrameAll;
-    bool _cullBackfaces;
+    UsdImagingGLCullStyle _cullStyle;
     GfVec4f _clearColor;
     GfVec3f _translate;
     float _pixelAspectRatio;

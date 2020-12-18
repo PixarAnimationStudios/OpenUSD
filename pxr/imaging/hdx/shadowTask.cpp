@@ -284,6 +284,10 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     // Generate the actual shadow maps
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
     size_t numShadowMaps = shadows->GetNumShadowMapPasses();
+    // Should be sufficient to bind the renderPassState once
+    if (!_renderPassStates.empty()) {
+        _renderPassStates[0]->Bind();
+    }
     for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
 
         // Make sure each pass got created. Light shadow indices are supposed
@@ -304,10 +308,13 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         // Render the actual geometry in the "masked" materialTag collection
         _passes[shadowId + numShadowMaps]->Execute(
             _renderPassStates[shadowId + numShadowMaps],
-            GetRenderTags());    
-
+            GetRenderTags());
+   
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);
+    }
+    if (!_renderPassStates.empty()) {
+        _renderPassStates[0]->Unbind();
     }
 
     // restore GL states to default

@@ -232,7 +232,7 @@ public:
     HD_API
     void SetCullStyle(HdCullStyle cullStyle);
     HD_API
-    HdCullStyle GetCullStyle() { return _cullStyle; }
+    HdCullStyle GetCullStyle() const { return _cullStyle; }
 
     HD_API
     void SetAlphaThreshold(float alphaThreshold);

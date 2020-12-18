@@ -76,6 +76,11 @@ HdSt_ShaderKey::ComputeHash() const
     // Hd_GeometricShader::ComputeHash() provides consistent hash values.
     boost::hash_combine(hash, GetPrimitiveType());    
     boost::hash_combine(hash, GetCullStyle());
+    boost::hash_combine(hash, UseHardwareFaceCulling());
+    if (UseHardwareFaceCulling()) {
+        boost::hash_combine(hash, HasMirroredTransform());
+        boost::hash_combine(hash, IsDoubleSided());
+    }
     boost::hash_combine(hash, GetPolygonMode());
     boost::hash_combine(hash, IsFrustumCullingPass());
     boost::hash_combine(hash, GetLineWidth());
@@ -181,6 +186,27 @@ HdCullStyle
 HdSt_ShaderKey::GetCullStyle() const
 {
     return HdCullStyleDontCare;
+}
+
+/*virtual*/
+bool
+HdSt_ShaderKey::UseHardwareFaceCulling() const
+{
+    return false;
+}
+
+/*virtual*/
+bool
+HdSt_ShaderKey::HasMirroredTransform() const
+{
+    return false;
+}
+
+/*virtual*/
+bool
+HdSt_ShaderKey::IsDoubleSided() const
+{
+    return false;
 }
 
 /*virtual*/

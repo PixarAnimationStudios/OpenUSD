@@ -240,7 +240,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _complexity(1.0f)
     , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
-    , _cullBackfaces(false)
+    , _cullStyle(UsdImagingGLCullStyle::CULL_STYLE_NOTHING)
     , _showGuides(UsdImagingGLRenderParams().showGuides)
     , _showRender(UsdImagingGLRenderParams().showRender)
     , _showProxy(UsdImagingGLRenderParams().showProxy)
@@ -287,6 +287,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
     std::string unresolvedStageFilePath;
     bool offscreen;
     std::string shading;
+    std::string cullStyle;
     std::vector<double> clipPlaneCoords;
     std::vector<double> complexities;
     float clearColor[4];
@@ -335,7 +336,7 @@ static void Usage(int argc, char *argv[])
 "                           [-frameAll]\n"
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
-"                           [-times times1 times2 ...] [-cullBackfaces]\n"
+"                           [-times times1 times2 ...] [-cullStyle cullStyle]\n"
 "                           [-clear r g b a] [-clearOnce] [-translate x y z]\n"
 "                           [-renderSetting name type value]\n"
 "                           [-rendererAov name]\n"
@@ -369,7 +370,7 @@ static void Usage(int argc, char *argv[])
 "  -times times1 times2 ...\n"
 "                      One or more time samples, each time will produce\n"
 "                      an image [()]\n"
-"  -cullBackfaces      enable backface culling\n"
+"  -cullStyle          Set face cull style\n"
 "  -clear r g b a      clear color\n"
 "  -clearOnce          Clear the framebuffer only once at the start \n"
 "                      instead of before each render.\n"
@@ -517,8 +518,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-frameAll") == 0) {
             _shouldFrameAll = true;
         }
-        else if (strcmp(argv[i], "-cullBackfaces") == 0) {
-            _cullBackfaces = true;
+        else if (strcmp(argv[i], "-cullStyle") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            args->cullStyle = argv[++i];
         }
         else if (strcmp(argv[i], "-offscreen") == 0) {
             args->offscreen = true;
@@ -702,9 +704,23 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
-    }else if (args.shading.compare("wire") == 0 ) {
+    } else if (args.shading.compare("wire") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
-    } 
+    } else {
+        TF_WARN("Draw mode %s not supported!", args.shading.c_str());
+    }
+
+    _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+
+    if (args.cullStyle.compare("back") == 0) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
+    } else if (args.cullStyle.compare("backUnlessDoubleSided") == 0 ) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+    } else if (args.cullStyle.compare("front") == 0 ) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_FRONT;
+    } else {
+        TF_WARN("Cull style %s not supported!", args.cullStyle.c_str());
+    }
 
     if (!args.unresolvedStageFilePath.empty()) {
         _stageFilePath = args.unresolvedStageFilePath;

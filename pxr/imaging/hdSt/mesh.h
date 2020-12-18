@@ -177,7 +177,7 @@ private:
     HdType _pointsDataType;
     HdInterpolation _sceneNormalsInterpolation;
     HdCullStyle _cullStyle;
-
+    bool _hasMirroredTransform : 1;
     bool _doubleSided : 1;
     bool _flatShadingEnabled : 1;
     bool _displacementEnabled : 1;

@@ -283,9 +283,8 @@ HdStRenderPassState::Prepare(
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);
 
     // Update cull style on renderpass shader
-    // XXX: Ideanlly cullstyle should stay in renderPassState.
-    // However, geometric shader also sets cullstyle during batch
-    // execution.
+    // (Note that the geometric shader overrides the render pass's cullStyle 
+    // opinion if the prim has an opinion).
     _renderPassShader->SetCullStyle(_cullStyle);
 }
 
@@ -344,6 +343,37 @@ HdStRenderPassState::GetShaders() const
     return shaders;
 }
 
+// Note: The geometric shader may override the state set below if necessary,
+// including disabling h/w culling altogether. 
+// Disabling h/w culling is required to handle instancing wherein 
+// instanceScale/instanceTransform can flip the xform handedness.
+namespace {
+
+void
+_SetGLCullState(HdCullStyle cullstyle)
+{
+    switch (cullstyle) {
+        case HdCullStyleFront:
+        case HdCullStyleFrontUnlessDoubleSided:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+            break;
+        case HdCullStyleBack:
+        case HdCullStyleBackUnlessDoubleSided:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            break;
+        case HdCullStyleNothing:
+        case HdCullStyleDontCare:
+        default:
+            // disable culling
+            glDisable(GL_CULL_FACE);
+            break;
+    }
+}
+
+} // anonymous namespace 
+
 void
 HdStRenderPassState::Bind()
 {
@@ -388,6 +418,9 @@ HdStRenderPassState::Bind()
         glDisable(GL_STENCIL_TEST);
     }
     
+    // Face culling
+    _SetGLCullState(_cullStyle);
+
     // Line width
     if (_lineWidth > 0) {
         glLineWidth(_lineWidth);
@@ -454,6 +487,7 @@ HdStRenderPassState::Unbind()
         return;
     }
 
+    glDisable(GL_CULL_FACE);
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_ONE);

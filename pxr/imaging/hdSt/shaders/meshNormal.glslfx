@@ -153,11 +153,6 @@ vec3 GetShadingNormal(vec3 N, bool isFlipped)
     return N;
 }
 
-bool ShouldCullFaceAccordingToShading(bool frontFacing, bool isFlipped)
-{
-    return ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/false);
-}
-
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Fragment.DoubleSided
 
@@ -167,9 +162,3 @@ vec3 GetShadingNormal(vec3 N, bool isFlipped)
     // so we have to consider isFlipped here too.
     return (isFlipped ^^ gl_FrontFacing) ? N : -N;
 }
-
-bool ShouldCullFaceAccordingToShading(bool frontFacing, bool isFlipped)
-{
-    return ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/true);
-}
-

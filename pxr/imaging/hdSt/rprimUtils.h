@@ -159,6 +159,7 @@ bool HdStShouldPopulateConstantPrimvars(
 
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.
+// If transforms are dirty, updates the optional bool.
 HDST_API
 void HdStPopulateConstantPrimvars(
     HdRprim *prim,
@@ -166,7 +167,8 @@ void HdStPopulateConstantPrimvars(
     HdSceneDelegate *delegate,
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
-    HdPrimvarDescriptorVector const& constantPrimvars);
+    HdPrimvarDescriptorVector const& constantPrimvars,
+    bool *hasMirroredTransform = nullptr);
 
 // -----------------------------------------------------------------------------
 // Instancer processing utilities

@@ -279,9 +279,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.enableLighting = IsEnabledTestLighting();
     params.enableIdRender = IsEnabledIdRender();
     params.complexity = _GetComplexity();
-    params.cullStyle = IsEnabledCullBackfaces() ?
-                        UsdImagingGLCullStyle::CULL_STYLE_BACK :
-                        UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+    params.cullStyle = GetCullStyle();
     params.showGuides = IsShowGuides();
     params.showRender = IsShowRender();
     params.showProxy = IsShowProxy();

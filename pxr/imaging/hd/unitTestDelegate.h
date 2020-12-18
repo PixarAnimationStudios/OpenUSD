@@ -208,6 +208,9 @@ public:
                                 VtVec4fArray const &rotate,
                                 VtVec3fArray const &translate);
 
+    HD_API
+    void UpdateInstancer(SdfPath const& rprimId, SdfPath const& instancerId);
+
     /// Primvars
     HD_API
     void AddPrimvar(SdfPath const& id,
@@ -224,6 +227,10 @@ public:
     HD_API
     void RemovePrimvar(SdfPath const& id, TfToken const& name);
 
+    /// Transform
+    HD_API
+    void UpdateTransform(SdfPath const& id, GfMatrix4f const& mat);
+    
     /// Material
     HD_API
     void AddMaterialResource(SdfPath const &id,

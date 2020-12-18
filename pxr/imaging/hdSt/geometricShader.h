@@ -116,6 +116,9 @@ public:
     HdSt_GeometricShader(std::string const &glslfxString,
                        PrimitiveType primType,
                        HdCullStyle cullStyle,
+                       bool useHardwareFaceCulling,
+                       bool hasMirroredTransform,
+                       bool doubleSided,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        SdfPath const &debugId = SdfPath(),
@@ -197,6 +200,9 @@ public:
 private:
     PrimitiveType _primType;
     HdCullStyle _cullStyle;
+    bool _useHardwareFaceCulling;
+    bool _hasMirroredTransform;
+    bool _doubleSided;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

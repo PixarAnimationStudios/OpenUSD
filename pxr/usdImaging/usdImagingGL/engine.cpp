@@ -1224,14 +1224,12 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     }
 
     // hydra orients all geometry during topological processing so that
-    // front faces have ccw winding. We disable culling because culling
-    // is handled by fragment shader discard.
+    // front faces have ccw winding.
     if (params.flipFrontFacing) {
         glFrontFace(GL_CW); // < State is pushed via GL_POLYGON_BIT
     } else {
         glFrontFace(GL_CCW); // < State is pushed via GL_POLYGON_BIT
     }
-    glDisable(GL_CULL_FACE);
 
     if (params.applyRenderState) {
         glDisable(GL_BLEND);

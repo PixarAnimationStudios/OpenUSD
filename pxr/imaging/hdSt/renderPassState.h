@@ -70,15 +70,21 @@ public:
     /// Apply the GL states.
     /// Following states may be changed and restored to
     /// the GL default at Unbind().
+    ///   glEnable(GL_BLEND);
+    ///   glEnable(GL_CULL_FACE);
     ///   glEnable(GL_POLYGON_OFFSET_FILL)
-    ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
     ///   glEnable(GL_PROGRAM_POINT_SIZE);
+    ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
     ///   glEnable(GL_STENCIL_TEST);
     ///   glPolygonOffset()
+    ///   glBlend*()
+    ///   glColorMask()
+    ///   glCullFace()
     ///   glDepthFunc()
+    ///   glDepthMask()
+    ///   glLineWidth()
     ///   glStencilFunc()
     ///   glStencilOp()
-    ///   glLineWidth()
     HDST_API
     void Bind() override;
 

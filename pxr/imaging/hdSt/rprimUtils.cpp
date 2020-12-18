@@ -440,7 +440,8 @@ HdStPopulateConstantPrimvars(
     HdSceneDelegate* delegate,
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
-    HdPrimvarDescriptorVector const& constantPrimvars)
+    HdPrimvarDescriptorVector const& constantPrimvars,
+    bool *hasMirroredTransform)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -467,6 +468,8 @@ HdStPopulateConstantPrimvars(
                                           transform.GetInverse()));
         sources.push_back(source);
 
+        bool leftHanded = transform.IsLeftHanded();
+
         // If this is a prototype (has instancer),
         // also push the instancer transform separately.
         if (!instancerId.IsEmpty()) {
@@ -474,7 +477,6 @@ HdStPopulateConstantPrimvars(
             VtMatrix4dArray rootTransforms = 
                 prim->GetInstancerTransforms(delegate);
             VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
-            bool leftHanded = transform.IsLeftHanded();
             for (size_t i = 0; i < rootTransforms.size(); ++i) {
                 rootInverseTransforms[i] = rootTransforms[i].GetInverse();
                 // Flip the handedness if necessary
@@ -501,6 +503,10 @@ HdStPopulateConstantPrimvars(
             source.reset(new HdVtBufferSource(
                              HdTokens->isFlipped, VtValue(int(leftHanded))));
             sources.push_back(source);
+        }
+
+        if (hasMirroredTransform) {
+            *hasMirroredTransform = leftHanded;
         }
     }
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {

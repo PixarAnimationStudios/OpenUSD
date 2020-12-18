@@ -321,6 +321,21 @@ HdUnitTestDelegate::SetInstancerProperties(SdfPath const &id,
 }
 
 void
+HdUnitTestDelegate::UpdateInstancer(SdfPath const& rprimId, 
+                                    SdfPath const& instancerId)
+{
+    if(_meshes.find(rprimId) != _meshes.end()) {
+        if (!instancerId.IsEmpty()) {
+            _instancerBindings[rprimId] = instancerId;
+            _instancers[instancerId].prototypes.push_back(rprimId);
+
+            HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyInstancer);
+        }
+    }
+}
+
+void
 HdUnitTestDelegate::AddPrimvar(SdfPath const& id,
                                TfToken const& name,
                                VtValue const& value,
@@ -370,6 +385,17 @@ HdUnitTestDelegate::RemovePrimvar(SdfPath const& id, TfToken const& name)
     } else {
         TF_WARN("Rprim %s has no primvar named %s.\n",
             id.GetText(), name.GetText());
+    }
+}
+
+void
+HdUnitTestDelegate::UpdateTransform(SdfPath const& id,
+                                    GfMatrix4f const& mat)
+{
+    if(_meshes.find(id) != _meshes.end()) {
+        _meshes[id].transform = mat;
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
     }
 }
 

@@ -28,6 +28,7 @@
 --- #import $TOOLS/hdSt/shaders/mesh.glslfx
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/meshFaceCull.glslfx
 #import $TOOLS/hdSt/shaders/meshNormal.glslfx
 #import $TOOLS/hdSt/shaders/meshWire.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
@@ -701,9 +702,7 @@ void main(void)
 {
     bool isFlipped = IsFlipped();
 
-    if (ShouldCullFaceAccordingToShading(gl_FrontFacing, isFlipped)) {
-        discard;
-    }
+    DiscardBasedOnShading(gl_FrontFacing, isFlipped);
 
     DiscardBasedOnTopologicalVisibility();
 

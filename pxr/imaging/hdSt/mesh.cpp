@@ -96,6 +96,7 @@ HdStMesh::HdStMesh(SdfPath const& id)
     , _pointsDataType(HdTypeInvalid)
     , _sceneNormalsInterpolation()
     , _cullStyle(HdCullStyleDontCare)
+    , _hasMirroredTransform(false)
     , _doubleSided(false)
     , _flatShadingEnabled(false)
     , _displacementEnabled(true)
@@ -141,12 +142,18 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyMaterialId|
                       HdChangeTracker::DirtyTopology| // topological visibility
+                      HdChangeTracker::DirtyInstancer|
                       HdChangeTracker::NewRepr)) {
         updateGeometricShader = true;
     }
 
     bool displayOpacity = _displayOpacity;
+    bool hasMirroredTransform = _hasMirroredTransform;
     _UpdateRepr(delegate, reprToken, dirtyBits);
+
+    if (hasMirroredTransform != _hasMirroredTransform) {
+        updateGeometricShader = true;
+    }
 
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
@@ -1552,10 +1559,13 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdPrimvarDescriptorVector constantPrimvars =
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                         HdInterpolationConstant);
-
+        
+        bool hasMirroredTransform = _hasMirroredTransform;
         HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, 
-            drawItem, dirtyBits, constantPrimvars);
-
+            drawItem, dirtyBits, constantPrimvars,
+            &hasMirroredTransform);
+        _hasMirroredTransform = hasMirroredTransform;
+        
         // Check if normals are provided as a constant primvar
         for (const HdPrimvarDescriptor& pv : constantPrimvars) {
             if (pv.name == HdTokens->normals) {
@@ -1704,6 +1714,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     bool useCustomDisplacement = hasCustomDisplacementTerminal &&
         desc.useCustomDisplacement && _displacementEnabled;
 
+    bool hasInstancer = !GetInstancerId().IsEmpty();
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
@@ -1717,6 +1729,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  cullStyle,
                                  geomStyle,
                                  desc.lineWidth,
+                                 _hasMirroredTransform,
+                                 hasInstancer,
                                  desc.enableScalarOverride);
 
     HdStResourceRegistrySharedPtr resourceRegistry =

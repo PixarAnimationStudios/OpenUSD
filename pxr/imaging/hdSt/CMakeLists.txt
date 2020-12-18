@@ -174,6 +174,7 @@ pxr_library(hdSt
         shaders/lighting.glslfx
         shaders/lightingIntegrationShader.glslfx
         shaders/mesh.glslfx
+        shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
         shaders/points.glslfx
