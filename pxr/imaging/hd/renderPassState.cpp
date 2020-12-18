@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdRenderPassState::HdRenderPassState()
     : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
+    , _overrideWindowPolicy{false, CameraUtilFit}
     , _cullMatrix(1)
     , _worldToViewMatrix(1)
     , _projectionMatrix(1)
@@ -80,6 +81,7 @@ HdRenderPassState::HdRenderPassState()
     , _colorMaskUseDefault(true)
     , _colorMask(HdRenderPassState::ColorMaskRGBA)
     , _useMultiSampleAov(true)
+
 {
 }
 

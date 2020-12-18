@@ -48,6 +48,7 @@ HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
+    , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0)
 {
     _colorRenderPassShader.reset(
