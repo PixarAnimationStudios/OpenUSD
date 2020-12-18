@@ -299,18 +299,6 @@ ArDefaultResolver::_GetModificationTimestamp(
     return VtValue();
 }
 
-bool 
-ArDefaultResolver::FetchToLocalResolvedPath(
-    const std::string& path,
-    const std::string& resolvedPath)
-{
-    // ArDefaultResolver always resolves paths to a file on the
-    // local filesystem. Because of this, we know the asset specified 
-    // by the given path already exists on the filesystem at 
-    // resolvedPath, so no further data fetching is needed.
-    return true;
-}
-
 std::shared_ptr<ArAsset> 
 ArDefaultResolver::_OpenAsset(
     const ArResolvedPath& resolvedPath)
@@ -344,22 +332,6 @@ ArDefaultResolver::CreatePathForLayer(
 {
     const std::string layerDir = TfGetPathName(path);
     return layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir);
-}
-
-bool
-ArDefaultResolver::CanWriteLayerToPath(
-    const std::string& path,
-    std::string* whyNot)
-{
-    return true;
-}
-
-bool
-ArDefaultResolver::CanCreateNewLayerWithIdentifier(
-    const std::string& identifier, 
-    std::string* whyNot)
-{
-    return true;
 }
 
 ArResolverContext 

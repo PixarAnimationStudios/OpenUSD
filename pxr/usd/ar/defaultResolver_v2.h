@@ -108,23 +108,8 @@ public:
     virtual bool IsSearchPath(const std::string& path) override;
 
     AR_API
-    virtual bool FetchToLocalResolvedPath(
-        const std::string& path,
-        const std::string& resolvedPath) override;
-
-    AR_API
     virtual bool CreatePathForLayer(
         const std::string& path) override;
-
-    AR_API
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
-        std::string* whyNot) override;
-
-    AR_API
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot) override;
 
 protected:
     AR_API

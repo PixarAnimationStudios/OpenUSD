@@ -65,13 +65,6 @@ public:
         return true;
     }
 
-    virtual bool IsSearchPath(
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return false;
-    }
-
     virtual std::string _GetExtension(
         const std::string& path) final
     {
@@ -164,14 +157,6 @@ public:
         return VtValue(42);
     }
 
-    virtual bool FetchToLocalResolvedPath(
-        const std::string& path,
-        const std::string& resolvedPath) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return false;
-    }
-
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath)
     {
@@ -183,22 +168,6 @@ public:
         const std::string& path) final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return false;
-    }
-
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
-        std::string* whyNot) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
-        return false;
-    }
-
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(identifier), "test:"));
         return false;
     }
 

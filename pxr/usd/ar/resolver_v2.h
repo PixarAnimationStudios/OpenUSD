@@ -114,34 +114,6 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Configures the resolver for a given asset path
-    AR_API
-    virtual void ConfigureResolverForAsset(const std::string& path) = 0;
-
-    /// Returns the path formed by anchoring \p path to \p anchorPath.
-    ///
-    /// If \p anchorPath ends with a trailing '/', it is treated as
-    /// a directory to which \p path will be anchored. Otherwise, it
-    /// is treated as a file and \p path will be anchored to its
-    /// containing directory.
-    ///
-    /// If \p anchorPath is empty, \p path will be returned as-is.
-    ///
-    /// If \p path is empty or not a relative path, it will be 
-    /// returned as-is.
-    AR_API
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) = 0; 
-
-    /// Returns true if the given path is a relative path.
-    AR_API
-    virtual bool IsRelativePath(const std::string& path) = 0;
-
-    /// Returns whether this path is a search path.
-    AR_API
-    virtual bool IsSearchPath(const std::string& path) = 0;
-
     /// Returns the resolved path for the asset identified by the given \p
     /// assetPath if it exists. If the asset does not exist, returns an empty
     /// ArResolvedPath.
@@ -307,25 +279,6 @@ public:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath);
 
-    /// Fetch the asset identified by \p path to the filesystem location
-    /// specified by \p resolvedPath. \p resolvedPath is the resolved path
-    /// that results from calling Resolve or ResolveWithAssetInfo on 
-    /// \p path.
-    ///
-    /// This method provides a way for consumers that expect assets 
-    /// to exist as physical files on disk to retrieve data from 
-    /// systems that store data in external data stores, e.g. databases,
-    /// etc. 
-    ///
-    /// Returns true if the asset was successfully fetched to the specified
-    /// \p resolvedPath or if no fetching was required. If \p resolvedPath 
-    /// is not a local path or the asset could not be fetched to that path, 
-    /// returns false.
-    AR_API
-    virtual bool FetchToLocalResolvedPath(
-        const std::string& path,
-        const std::string& resolvedPath) = 0;
-
     /// Returns an ArAsset object for the asset located at \p resolvedPath. 
     /// Returns an invalid std::shared_ptr if object could not be created.
     ///
@@ -364,47 +317,6 @@ public:
     std::shared_ptr<ArWritableAsset> OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode);
-
-    /// Create path needed to write a file to the given \p path. 
-    ///
-    /// For example:
-    /// - A filesystem-based resolver might create the directories specified
-    ///   in \p path.
-    /// - A database-based resolver might create a new table, or it might
-    ///   ignore this altogether.
-    ///
-    /// In practice, when writing a layer, CanWriteLayerToPath will be called
-    /// first to check if writing is permitted. If this returns true, then
-    /// CreatePathForLayer will be called before writing the layer out.
-    ///
-    /// Returns true on success, false otherwise.
-    AR_API
-    virtual bool CreatePathForLayer(
-        const std::string& path) = 0;
-
-    /// Returns true if a file may be written to the given \p path, false
-    /// otherwise. 
-    ///
-    /// In practice, when writing a layer, CanWriteLayerToPath will be called
-    /// first to check if writing is permitted. If this returns true, then
-    /// CreatePathForLayer will be called before writing the layer out.
-    /// 
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    AR_API
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
-        std::string* whyNot) = 0;
-
-    /// Returns true if a new file may be created using the given
-    /// \p identifier, false otherwise.
-    ///
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    AR_API
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot) = 0;
 
     /// @}
 
@@ -468,16 +380,146 @@ public:
 
     /// @}
 
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_deprecated
+    /// \name Deprecated APIs
+    ///
+    /// The functions in this section are deprecated in Ar 2.0 and slated
+    /// for removal. Most have default implementations to allow subclasses
+    /// to ignore them completely.
+    ///
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Configures the resolver for a given asset path
+    /// Default implementation does nothing.
+    /// \deprecated
+    AR_API
+    virtual void ConfigureResolverForAsset(const std::string& path);
+
+    /// Returns the path formed by anchoring \p path to \p anchorPath.
+    ///
+    /// If \p anchorPath ends with a trailing '/', it is treated as
+    /// a directory to which \p path will be anchored. Otherwise, it
+    /// is treated as a file and \p path will be anchored to its
+    /// containing directory.
+    ///
+    /// If \p anchorPath is empty, \p path will be returned as-is.
+    ///
+    /// If \p path is empty or not a relative path, it will be 
+    /// returned as-is.
+    ///
+    /// \deprecated Planned for removal in favor of CreateIdentifier.
+    AR_API
+    virtual std::string AnchorRelativePath(
+        const std::string& anchorPath, 
+        const std::string& path) = 0; 
+
+    /// Returns true if the given path is a relative path.
+    /// \deprecated
+    AR_API
+    virtual bool IsRelativePath(const std::string& path) = 0;
+
+    /// Returns whether this path is a search path.
+    /// The default implementation returns false.
+    /// \deprecated
+    AR_API
+    virtual bool IsSearchPath(const std::string& path);
+
     /// \deprecated
     /// Returns true if the given path is a repository path.
     AR_API
     bool IsRepositoryPath(const std::string& path);
 
+    /// Fetch the asset identified by \p path to the filesystem location
+    /// specified by \p resolvedPath. \p resolvedPath is the resolved path
+    /// that results from calling Resolve or ResolveWithAssetInfo on 
+    /// \p path.
+    ///
+    /// This method provides a way for consumers that expect assets 
+    /// to exist as physical files on disk to retrieve data from 
+    /// systems that store data in external data stores, e.g. databases,
+    /// etc. 
+    ///
+    /// Returns true if the asset was successfully fetched to the specified
+    /// \p resolvedPath or if no fetching was required. If \p resolvedPath 
+    /// is not a local path or the asset could not be fetched to that path, 
+    /// returns false.
+    ///
+    /// The default implementation assumes no fetching is required and returns
+    /// true.
+    ///
+    /// \deprecated Planned for removal in favor or using OpenAsset to read
+    /// data instead of requiring assets to be fetched to disk.
+    AR_API
+    virtual bool FetchToLocalResolvedPath(
+        const std::string& path,
+        const std::string& resolvedPath);
+
+    /// Create path needed to write a file to the given \p path. 
+    ///
+    /// For example:
+    /// - A filesystem-based resolver might create the directories specified
+    ///   in \p path.
+    /// - A database-based resolver might create a new table, or it might
+    ///   ignore this altogether.
+    ///
+    /// In practice, when writing a layer, CanWriteLayerToPath will be called
+    /// first to check if writing is permitted. If this returns true, then
+    /// CreatePathForLayer will be called before writing the layer out.
+    ///
+    /// Returns true on success, false otherwise.
+    ///
+    /// \deprecated Planned for removal in favor of making OpenAssetForWrite
+    /// responsible for creating any intemediate path that might be needed.
+    AR_API
+    virtual bool CreatePathForLayer(
+        const std::string& path) = 0;
+
+    /// Returns true if a file may be written to the given \p path, false
+    /// otherwise. 
+    ///
+    /// In practice, when writing a layer, CanWriteLayerToPath will be called
+    /// first to check if writing is permitted. If this returns true, then
+    /// CreatePathForLayer will be called before writing the layer out.
+    /// 
+    /// If this function returns false and \p whyNot is not \c nullptr,
+    /// it will be filled in with an explanation.
+    ///
+    /// The default implementation returns true.
+    ///
+    /// \deprecated Planned for removal in favor of making OpenAssetForWrite
+    /// responsible for determining if a layer can be written to a given path.
+    AR_API
+    virtual bool CanWriteLayerToPath(
+        const std::string& path,
+        std::string* whyNot);
+
+    /// Returns true if a new file may be created using the given
+    /// \p identifier, false otherwise.
+    ///
+    /// If this function returns false and \p whyNot is not \c nullptr,
+    /// it will be filled in with an explanation.
+    ///
+    /// The default implementation returns true.
+    ///
+    /// \deprecated Planned for removal in favor of using ResolveForNewAsset
+    /// to determine if a new layer can be created with a given identifier.
+    AR_API
+    virtual bool CanCreateNewLayerWithIdentifier(
+        const std::string& identifier, 
+        std::string* whyNot);
+
+    /// @}
+
 protected:
     AR_API
     ArResolver();
 
-    /// Implementation
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_implementation
+    /// \name Implementation
+    ///
     /// @{
 
     /// Return an identifier for the given \p assetPath. If \p anchorAssetPath

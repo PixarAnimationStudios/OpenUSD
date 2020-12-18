@@ -1464,6 +1464,19 @@ ArResolver::EndCacheScope(
     _EndCacheScope(cacheScopeData);
 }
 
+void
+ArResolver::ConfigureResolverForAsset(
+    const std::string& path)
+{
+}
+
+bool
+ArResolver::IsSearchPath(
+    const std::string& path)
+{
+    return false;
+}
+
 bool
 ArResolver::IsRepositoryPath(
     const std::string& path)
@@ -1476,6 +1489,30 @@ ArResolver::_BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
+}
+
+bool
+ArResolver::FetchToLocalResolvedPath(
+    const std::string& path,
+    const std::string& resolvedPath)
+{
+    return true;
+}
+
+bool
+ArResolver::CanWriteLayerToPath(
+    const std::string& path,
+    std::string* whyNot)
+{
+    return true;
+}
+
+bool
+ArResolver::CanCreateNewLayerWithIdentifier(
+    const std::string& identifier, 
+    std::string* whyNot)
+{
+    return true;
 }
 
 void
