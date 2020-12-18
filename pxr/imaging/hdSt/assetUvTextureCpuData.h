@@ -48,12 +48,6 @@ public:
     HdStAssetUvTextureCpuData(
         std::string const &filePath,
         size_t targetMemory,
-        unsigned int cropTop,
-        unsigned int cropBottom,
-        unsigned int cropLeft,
-        unsigned int cropRight,
-        int degradeLevel, 
-        bool generateOrUseMipmap,
         bool premultiplyAlpha,
         HioImage::ImageOriginLocation originLocation,
         HioImage::SourceColorSpace sourceColorSpace);
@@ -70,61 +64,17 @@ public:
     HDST_API
     bool IsValid() const override;
 
+    /// The wrap info extracted from the image file.
     HDST_API
     const std::pair<HdWrap, HdWrap> &GetWrapInfo() const {
         return _wrapInfo;
     }
 
 private:
-    // A structure that keeps the mips loaded from disk in the format
-    // that the gpu needs.
-    struct Mip {
-        Mip() 
-            : size(0), offset(0), width(0), height(0)
-        { }
+    void _SetWrapInfo(HioImageSharedPtr const &image);
 
-        size_t size;
-        size_t offset;
-        int width;
-        int height;
-    };
-
-    bool _Read(int degradeLevel, bool useMipmap,
-               HioImage::ImageOriginLocation originLocation);
-
-    // Given a HioImage it will return the number of mip levels that 
-    // are actually valid to be loaded to the GPU. For instance, it will
-    // drop textures with non valid OpenGL pyramids.
-    std::vector<HioImageSharedPtr> _GetAllValidMipLevels(
-        const HioImageSharedPtr image) const;
-
-    // Reads an image using HioImage. If possible and requested, it will
-    // load a down-sampled version (when mipmapped .tex file) of the image.
-    // If targetMemory is > 0, it will iterate through the down-sampled version
-    // until the estimated required GPU memory is smaller than targetMemory.
-    // Otherwise, it will use the given degradeLevel.
-    // When estimating the required GPU memory, it will take into account that
-    // the GPU might generate MipMaps.
-    std::vector<HioImageSharedPtr> _ReadDegradedImageInput(
-        const HioImageSharedPtr &fullImage,
-        bool useMipmap,
-        size_t targetMemory,
-        size_t degradeLevel);
-
-    const std::string _filePath;
-    unsigned int _cropTop, _cropBottom, _cropLeft, _cropRight;
-    size_t _targetMemory;
-    GfVec3i _dimensions;
-
-    HioFormat _hioFormat;
-    size_t _hioSize;
-
-    std::pair<HdWrap, HdWrap> _wrapInfo;
-
+    // Pointer to the potentially converted data.
     std::unique_ptr<unsigned char[]> _rawBuffer;
-    std::vector<Mip> _rawBufferMips;
-
-    HioImage::SourceColorSpace _sourceColorSpace;
 
     // The result, including a pointer to the potentially
     // converted texture data in _textureDesc.initialData.
@@ -133,6 +83,9 @@ private:
     // If true, initialData only contains mip level 0 data
     // and the GPU is supposed to generate the other mip levels.
     bool _generateMipmaps;
+
+    // Wrap modes
+    std::pair<HdWrap, HdWrap> _wrapInfo;
 };
 
 

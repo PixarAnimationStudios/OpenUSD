@@ -378,9 +378,6 @@ HdStAssetUvTextureObject::_Load()
         std::make_unique<HdStAssetUvTextureCpuData>(
             GetTextureIdentifier().GetFilePath(),
             GetTargetMemory(),
-            /* borders */ 0, 0, 0, 0,
-            /* degradeLevel = */ 0,
-            /* generateOrUseMipmap = */ true,
             _GetPremultiplyAlpha(
                 GetTextureIdentifier().GetSubtextureIdentifier()),
             _GetImageOriginLocation(
