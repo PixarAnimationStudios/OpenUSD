@@ -1076,7 +1076,10 @@ def InstallOpenVDB(context, force, buildArgs):
         # OpenVDB needs Half type from IlmBase
         extraArgs.append('-DILMBASE_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
-        
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
+
         RunCMake(context, force, extraArgs)
 
 OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
