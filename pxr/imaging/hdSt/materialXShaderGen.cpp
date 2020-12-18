@@ -359,8 +359,10 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLineBreak(mxStage);
 
     // Initialize the textures:
+    emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
     emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
     emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize variables that were used for the HdPrefilter Texture
