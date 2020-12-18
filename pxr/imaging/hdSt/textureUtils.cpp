@@ -53,12 +53,13 @@ _ConvertRGBToRGBA(
 
     size_t i = numTexels;
     // Going backward so that we can convert in place.
-    while (i--) {
-        typedDst[4 * i + 0] = typedSrc[3 * i + 0];
-        typedDst[4 * i + 1] = typedSrc[3 * i + 1];
-        typedDst[4 * i + 2] = typedSrc[3 * i + 2];
+    do {
+        i--;
         typedDst[4 * i + 3] = _OpaqueAlpha<T>();
-    }
+        typedDst[4 * i + 2] = typedSrc[3 * i + 2];
+        typedDst[4 * i + 1] = typedSrc[3 * i + 1];
+        typedDst[4 * i + 0] = typedSrc[3 * i + 0];
+    } while(i);
 }
 
 enum _ColorSpaceTransform
