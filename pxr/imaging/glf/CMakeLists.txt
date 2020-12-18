@@ -36,13 +36,11 @@ pxr_library(glf
         sdf
         ${Boost_PYTHON_LIBRARY}
         ${OPENGL_gl_LIBRARY}
-        ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
         ${optionalLibs}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
-        ${GLEW_INCLUDE_DIR}
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
@@ -54,7 +52,6 @@ pxr_library(glf
         diagnostic
         drawTarget
         field3DTextureDataBase
-        glew
         glContext
         glRawContext
         info
