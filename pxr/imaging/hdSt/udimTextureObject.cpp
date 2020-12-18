@@ -47,55 +47,9 @@ bool HdStIsSupportedUdimTexture(std::string const& imageFilePath)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Helpers
+// Udim texture
 
 namespace {
-
-struct _TextureSize {
-    _TextureSize(uint32_t w, uint32_t h) : width(w), height(h) { }
-    uint32_t width;
-    uint32_t height;
-};
-
-struct _MipDesc {
-    _MipDesc(const _TextureSize& s, HioImageSharedPtr&& i) :
-        size(s), image(std::move(i)) { }
-    _TextureSize size;
-    HioImageSharedPtr image;
-};
-
-using _MipDescVector = std::vector<_MipDesc>;
-
-static
-_MipDescVector
-_GetMipLevels(const TfToken& filePath,
-              HioImage::SourceColorSpace sourceColorSpace)
-{
-    constexpr int maxMipReads = 32;
-    _MipDescVector ret {};
-    ret.reserve(maxMipReads);
-    unsigned int prevWidth = std::numeric_limits<unsigned int>::max();
-    unsigned int prevHeight = std::numeric_limits<unsigned int>::max();
-    for (unsigned int mip = 0; mip < maxMipReads; ++mip) {
-        HioImageSharedPtr image = HioImage::OpenForReading(filePath, 0, mip,
-                                                           sourceColorSpace);
-        if (image == nullptr) {
-            break;
-        }
-        const unsigned int currHeight = std::max(1, image->GetWidth());
-        const unsigned int currWidth = std::max(1, image->GetHeight());
-        if (currWidth < prevWidth &&
-            currHeight < prevHeight) {
-            prevWidth = currWidth;
-            prevHeight = currHeight;
-            ret.push_back({{currWidth, currHeight}, std::move(image)});
-        }
-    }
-    return ret;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-// Udim texture
 
 static const char UDIM_PATTERN[] = "<UDIM>";
 static const int UDIM_START_TILE = 1001;
@@ -197,27 +151,26 @@ HdStUdimTextureObject::_DestroyTextures()
     }
 }
 
-// Given a list of decreasing mips (e.g., (8,8), (4,4), (2,2), (1,1)), computes
-// how many can be choosen from the left so that the total number of pixels
-// is less or equal to the given targetPixelCount.
-//
-// E.g. for targetPixelCount = 10, it would return 2, because 2x2 + 1x1 = 5
-// is less than 10 but 4x4 + 2x2 + 1x1 = 21 is larger than 10.
+static
+const HioImageSharedPtr &
+_GetSmallestImageLargerThan(
+    const std::vector<HioImageSharedPtr> &images,
+    const GfVec3i &dimensions)
+{
+    for (auto it = images.rbegin(); it != images.rend(); ++it) {
+        if ( dimensions[0] <= (*it)->GetWidth() &&
+             dimensions[1] <= (*it)->GetHeight()) {
+            return *it;
+        }
+    }
+    return images.front();
+}
 
 static
 size_t
-_ComputeNumMips(const std::vector<_TextureSize> &mips, size_t targetPixelCount)
+_ComputeSize(const GfVec3i &dimensions)
 {
-    unsigned int totalPixelCount = 0;
-    for (size_t i = 0; i < mips.size(); i++) {
-        const _TextureSize &current = mips[mips.size() - i - 1];
-        totalPixelCount += current.width * current.height;
-        if (totalPixelCount > targetPixelCount) {
-            return i;
-        }
-    }
-    // All mips fit into the targetPixelCount.
-    return mips.size();
+    return dimensions[0] * dimensions[1] * dimensions[2];
 }
 
 void
@@ -225,25 +178,28 @@ HdStUdimTextureObject::_Load()
 {
     const std::vector<std::tuple<int, TfToken>> tiles =
         _FindUdimTiles(GetTextureIdentifier().GetFilePath());
-    const HioImage::SourceColorSpace sourceColorSpace =
-        _GetSourceColorSpace(GetTextureIdentifier().GetSubtextureIdentifier());
-    const _MipDescVector firstImageMips =
-        _GetMipLevels(std::get<1>(tiles[0]), sourceColorSpace);
-    const bool premultiplyAlpha =
-        _GetPremultiplyAlpha(GetTextureIdentifier().GetSubtextureIdentifier());
+    if (tiles.empty()) {
+        return;
+    }
 
+    const HdStSubtextureIdentifier * const subId =
+        GetTextureIdentifier().GetSubtextureIdentifier();
+
+    const HioImage::SourceColorSpace sourceColorSpace =
+        _GetSourceColorSpace(subId);
+    const std::vector<HioImageSharedPtr> firstImageMips =
+        HdStTextureUtils::GetAllMipImages(
+            std::get<1>(tiles[0]), sourceColorSpace);
     if (firstImageMips.empty()) {
         return;
     }
 
-    const HioFormat hioFormat = firstImageMips[0].image->GetFormat();
-    int numChannels = HioGetComponentCount(hioFormat);
-    const size_t sizePerElem = HioGetDataSizeOfType(hioFormat);
-
+    // Determine Hio and corresponding Hgi format from first tile.
+    const HioFormat hioFormat = firstImageMips[0]->GetFormat();
     HdStTextureUtils::ConversionFunction conversionFunction = nullptr;
     _hgiFormat = HdStTextureUtils::GetHgiFormat(
         hioFormat,
-        premultiplyAlpha,
+        _GetPremultiplyAlpha(subId),
         /* avoidThreeComponentFormats = */ true,
         &conversionFunction);
 
@@ -252,127 +208,56 @@ HdStUdimTextureObject::_Load()
         return;
     }
 
-    if (firstImageMips[0].image->IsColorSpaceSRGB()) {
-        _hgiFormat = HgiFormatUNorm8Vec4srgb;
-    }
+    _tileCount = static_cast<int>(tiles.size());
 
-    const bool convertRGBtoRGBA = numChannels == 3;
-    if (convertRGBtoRGBA) {
-        numChannels = 4;
-    }
-    const unsigned int numBytesPerPixel = sizePerElem * numChannels;
-
-    const unsigned int maxTileCount =
-        std::get<0>(tiles.back()) + 1;
-    _dimensions[2] = static_cast<int>(tiles.size());
-
-    std::vector<_TextureSize> mips;
-    if (firstImageMips.size() == 1) {
-        // Compute the mip sizes
-        unsigned int width = firstImageMips[0].size.width;
-        unsigned int height = firstImageMips[0].size.height;
-        while (true) {
-            mips.emplace_back(width, height);
-            if (width == 1 && height == 1) {
-                break;
-            }
-            width = std::max(1u, width / 2u);
-            height = std::max(1u, height / 2u);
-        }
-    } else {
-        // Use mip sizes from image.
-        //
-        // Note that these mip sizes are ultimately used to compute
-        // the data passed into the HgiTextureDesc. If the mip sizes
-        // in the given file don't adhere to Hgi's convention, we get
-        // weird alignment issues.
-        //
-        mips.reserve(firstImageMips.size());
-        for (_MipDesc const& mip: firstImageMips) {
-            mips.push_back(mip.size);
-        }
-    }
-
-    const bool loadAllMips = GetTargetMemory() == 0;
-    if (!loadAllMips) {
-        // Compute how many of the mips (when starting with the smallest)
-        // fit into the given target memory.
-        const size_t targetPixelCount =
-            static_cast<size_t>(GetTargetMemory()) /
-            (_dimensions[2] * numBytesPerPixel);
-        if (size_t mipCount = _ComputeNumMips(mips, targetPixelCount)) {
-            // Use the last mipCount number of mips since they fit
-            // into memory.
-            mips = std::vector<_TextureSize>(
-                mips.end() - mipCount, mips.end());
-        } else {
-            // Can't load at any mip level with the given memory
-            // constraint, so use smallest resolution imaginable.
-            // 
-            mips = { { 1, 1 } };
-        }
-    }
-
-    // The mip count resolved!
-    _mipCount = mips.size();
-
-    _dimensions[0] = mips[0].width;
-    _dimensions[1] = mips[0].height;
+    _dimensions =
+        HdStTextureUtils::ComputeDimensionsFromTargetMemory(
+            firstImageMips, _hgiFormat, _tileCount, GetTargetMemory());
 
     // Texture array queries will use a float as the array specifier.
-    _layoutData.resize(maxTileCount, 0);
+    const unsigned int maxTileId = std::get<0>(tiles.back()) + 1;
+    _layoutData.resize(maxTileId, 0);
 
-    std::vector<size_t> mipDataOffsets;
-    mipDataOffsets.reserve(_mipCount);
-
-    // Compute the total texture memory for all mip levels and layers
-    // as well as the offsets into the single memory block for the
-    // concatenated mip data.
-    size_t totalTextureMemory = 0;
-    for (_TextureSize const& mipSize : mips) {
-        mipDataOffsets.push_back(totalTextureMemory);
-        totalTextureMemory +=
-            mipSize.width * mipSize.height * _dimensions[2] * numBytesPerPixel;
-    }
+    // Use Hgi to compute the mip sizes from the dimensions
+    const std::vector<HgiMipInfo> mipInfos =
+        HgiGetMipInfos(_hgiFormat, _dimensions, _tileCount);
+    _mipCount = mipInfos.size();
 
     // Allocate memory for the mipData, ready for upload to GPU
-    _textureData.resize(totalTextureMemory);
+    _textureData.resize(
+        mipInfos.back().byteOffset + _tileCount * mipInfos.back().byteSize);
 
     WorkParallelForN(tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
             std::tuple<int, TfToken> const& tile = tiles[tileId];
             _layoutData[std::get<0>(tile)] = tileId + 1;
-            const _MipDescVector images = _GetMipLevels(
-                std::get<1>(tile), sourceColorSpace);
-            if (images.empty()) { continue; }
-            for (unsigned int mip = 0; mip < _mipCount; ++mip) {
-                _TextureSize const& mipSize = mips[mip];
-                const unsigned int numBytesPerLayer =
-                    mipSize.width * mipSize.height * numBytesPerPixel;
+            const std::vector<HioImageSharedPtr> images =
+                HdStTextureUtils::GetAllMipImages(
+                    std::get<1>(tile), sourceColorSpace);
+            if (images.empty()) {
+                continue;
+            }
+            for (const HgiMipInfo &mipInfo : mipInfos) {
                 HioImage::StorageSpec spec;
-                spec.width = mipSize.width;
-                spec.height = mipSize.height;
+                spec.width = mipInfo.dimensions[0];
+                spec.height = mipInfo.dimensions[1];
                 spec.format = hioFormat;
                 spec.flipped = true;
                 spec.data =
                     _textureData.data()
-                    + mipDataOffsets[mip]
-                    + tileId * numBytesPerLayer;
-                const auto it = std::find_if(
-                    images.rbegin(), images.rend(),
-                    [&mipSize](_MipDesc const& i) {
-                        return mipSize.width <= i.size.width &&
-                               mipSize.height <= i.size.height;});
-                const _MipDesc &mipDesc = 
-                    it == images.rend() ? images.front() : *it;
-                mipDesc.image->Read(spec);
+                    + mipInfo.byteOffset
+                    + tileId * mipInfo.byteSize;
+                HioImageSharedPtr const &image =
+                    _GetSmallestImageLargerThan(images, mipInfo.dimensions);
+                image->Read(spec);
 
                 // XXX: Unfortunately, pre-multiplication is occurring after
                 // mip generation. However, it is still worth it to pre-multiply
                 // textures before texture filtering.
                 if (conversionFunction) {
-                    conversionFunction(
-                        spec.data, mipSize.width * mipSize.height, spec.data);
+                    conversionFunction(spec.data,
+                                       _ComputeSize(mipInfo.dimensions),
+                                       spec.data);
                 }
             }
         }
@@ -400,8 +285,8 @@ HdStUdimTextureObject::_Commit()
         HgiTextureDesc texDesc;
         texDesc.debugName = _GetDebugName(GetTextureIdentifier());
         texDesc.type = HgiTextureType2DArray;
-        texDesc.dimensions = GfVec3i(_dimensions[0], _dimensions[1], 1);
-        texDesc.layerCount = _dimensions[2];
+        texDesc.dimensions = _dimensions;
+        texDesc.layerCount = _tileCount;
         texDesc.format = _hgiFormat;
         texDesc.mipLevels = _mipCount;
         texDesc.initialData = _textureData.data();

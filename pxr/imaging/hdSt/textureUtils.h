@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/imaging/hio/types.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hgi/types.h"
 
 #include <memory>
@@ -57,11 +58,34 @@ public:
     /// If avoidThreeComponentFormats is true, never return a type
     /// with three components.
     HDST_API
-    static HgiFormat GetHgiFormat(
-        const HioFormat hioFormat,
-        const bool premultiplyAlpha,
-        const bool avoidThreeComponentFormats,
+    static
+    HgiFormat GetHgiFormat(
+        HioFormat hioFormat,
+        bool premultiplyAlpha,
+        bool avoidThreeComponentFormats,
         ConversionFunction * conversionFunction);
+
+    /// Get all mip levels from a file.
+    HDST_API
+    static
+    std::vector<HioImageSharedPtr> GetAllMipImages(
+        const std::string &filePath,
+        HioImage::SourceColorSpace sourceColorSpace);
+
+    // Compute dimensions so that all tiles fit into the given target memory.
+    // First by traversing the given images and then by computing a mip chain
+    // starting with the lowest resolution image.
+    // Optionally, can also give the index of the image in mips that was used
+    // to compute the dimensions.
+    HDST_API
+    static
+    GfVec3i
+    ComputeDimensionsFromTargetMemory(
+        const std::vector<HioImageSharedPtr> &mips,
+        HgiFormat targetFormat,
+        size_t tileCount,
+        size_t targetMemory,
+        size_t * mipIndex = nullptr);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

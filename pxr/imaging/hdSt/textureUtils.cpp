@@ -380,4 +380,108 @@ HdStTextureUtils::GetHgiFormat(
     return HgiFormatInvalid;
 }
 
+std::vector<HioImageSharedPtr>
+HdStTextureUtils::GetAllMipImages(
+    const std::string &filePath,
+    const HioImage::SourceColorSpace sourceColorSpace)
+{
+    TRACE_FUNCTION();
+
+    constexpr int maxMipReads = 32;
+    std::vector<HioImageSharedPtr> result;
+
+    unsigned int prevWidth = std::numeric_limits<unsigned int>::max();
+    unsigned int prevHeight = std::numeric_limits<unsigned int>::max();
+
+    // Ignoring image->GetNumMipLevels() since it can be unreliable.
+    for (int mip = 0; mip < maxMipReads; ++mip) {
+        HioImageSharedPtr const image =
+            HioImage::OpenForReading(
+                filePath, /* subimage = */ 0, mip, sourceColorSpace);
+
+        if (!image) {
+            break;
+        }
+
+        const unsigned int currHeight = image->GetWidth();
+        const unsigned int currWidth = image->GetHeight();
+        if (!(currWidth < prevWidth || currHeight < prevHeight)) {
+            break;
+        }
+
+        result.push_back(std::move(image));
+
+        prevWidth = currWidth;
+        prevHeight = currHeight;
+    }
+
+    return result;
+};
+
+static
+GfVec3i
+_GetDimensions(HioImageSharedPtr const &image)
+{
+    return GfVec3i(image->GetWidth(), image->GetHeight(), 1);
+}
+
+GfVec3i
+HdStTextureUtils::ComputeDimensionsFromTargetMemory(
+    const std::vector<HioImageSharedPtr> &mips,
+    const HgiFormat targetFormat,
+    const size_t tileCount,
+    const size_t targetMemory,
+    size_t * const mipIndex)
+{
+    TRACE_FUNCTION();
+
+    // Return full resolution of image if no target memory given.
+    if (targetMemory == 0) {
+        if (mipIndex) {
+            *mipIndex = 0;
+        }
+        return _GetDimensions(mips.front());
+    }
+
+    // Iterate through mips until one is found that fits into the target
+    // memory.
+    for (size_t i = 0; i < mips.size(); i++) {
+        HioImageSharedPtr const &image = mips[i];
+        const GfVec3i dim = _GetDimensions(image);
+        // The factor of 4/3 = 1 + 1/4 + 1/16 + ... accounts for all the
+        // lower mipmaps.
+        const size_t totalMem = 
+            HgiGetDataSize(targetFormat, dim) * tileCount * 4 / 3;
+        if (totalMem <= targetMemory) {
+            if (mipIndex) {
+                *mipIndex = i;
+            }
+            return dim;
+        }
+    }
+
+    if (mipIndex) {
+        *mipIndex = mips.size() - 1;
+    }
+
+    // If none of the mips fit, take the last one and compute
+    // mip chain from it.
+    const GfVec3i dim = _GetDimensions(mips.back());
+    const std::vector<HgiMipInfo> mipInfos =
+        HgiGetMipInfos(targetFormat, dim, tileCount);
+
+    // Iterate through mip chain until one is found that fits into the
+    // target memory.
+    for (const HgiMipInfo &mipInfo : mipInfos) {
+        // The factor of 4/3 = 1 + 1/4 + 1/16 + ... accounts for all the
+        // lower mipmaps.
+        if (mipInfo.byteSize * tileCount * 4 / 3 <= targetMemory) {
+            return mipInfo.dimensions;
+        }
+    }
+
+    // Last resort, should be just (1,1,1).
+    return mipInfos.back().dimensions;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

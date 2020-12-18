@@ -92,6 +92,7 @@ private:
     std::vector<float> _layoutData;
 
     GfVec3i _dimensions;
+    size_t _tileCount;
     size_t _mipCount;
     HgiFormat _hgiFormat;
 
