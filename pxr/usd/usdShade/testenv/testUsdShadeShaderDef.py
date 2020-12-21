@@ -63,10 +63,9 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         nodeDefAPI.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
 
         # Create the files referenced by the sourceAsset attributes.
-        osoPath = os.path.normpath(os.path.join(os.path.realpath(os.curdir), 
-                                                './primvar_2.oso'))
-        glslfxPath = os.path.normpath(os.path.join(os.path.realpath(os.curdir), 
-                                                './primvar_2.glslfx'))
+        osoPath = os.path.normpath(os.path.join(os.getcwd(), 'primvar_2.oso'))
+        glslfxPath = os.path.normpath(
+            os.path.join(os.getcwd(), 'primvar_2.glslfx'))
 
         # Create the files referenced by the sourceAsset attributes.
         # These files need to exist for node discovery to succeed.
@@ -144,9 +143,13 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                  'someColor', 'someVector'])
             self.assertEqual(n.GetOutputNames(), ['result', 'result2'])
             if n.GetSourceType() == "OSL":
-                self.assertEqual(n.GetResolvedImplementationURI(), osoPath)
+                self.assertEqual(
+                    os.path.normcase(n.GetResolvedImplementationURI()),
+                    os.path.normcase(osoPath))
             elif n.GetSourceType() == "glslfx":
-                self.assertEqual(n.GetResolvedImplementationURI(), glslfxPath)
+                self.assertEqual(
+                    os.path.normcase(n.GetResolvedImplementationURI()),
+                    os.path.normcase(glslfxPath))
 
         # Clean-up files.
         os.remove(stage.GetRootLayer().realPath)
