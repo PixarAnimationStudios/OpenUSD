@@ -1705,8 +1705,7 @@ class StageView(QtOpenGL.QGLWidget):
                 renderer.SetRenderViewport(viewport)
                 renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
-            renderBufferSize = Gf.Vec2i(
-                self.size().width(), self.size().height())
+            renderBufferSize = Gf.Vec2i(self.computeWindowSize())
 
             renderer.SetRenderBufferSize(
                 renderBufferSize)
