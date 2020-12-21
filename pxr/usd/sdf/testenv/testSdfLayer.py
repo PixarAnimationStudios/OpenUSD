@@ -133,6 +133,10 @@ class TestSdfLayer(unittest.TestCase):
         l = Sdf.Layer.CreateAnonymous()
         self.assertEqual(l.GetDisplayName(), '')
 
+    @unittest.skipIf(platform.system() == "Windows" and
+                     not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "This test case currently fails on Windows due to "
+                     "path canonicalization issues except with Ar 2.0.")
     def test_UpdateAssetInfo(self):
         # Test that calling UpdateAssetInfo on a layer whose resolved
         # path hasn't changed doesn't cause notification to be sent.
