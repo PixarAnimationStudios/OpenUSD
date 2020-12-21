@@ -26,3 +26,19 @@ pxr_plugin(rmanOslParser
     RESOURCE_FILES
         plugInfo.json
 )
+
+# Need to set RMANTREE environment variable when running tests.
+get_filename_component(RMANTREE_PATH "${RENDERMAN_INCLUDE_DIR}/.." ABSOLUTE)
+
+pxr_test_scripts(
+    testenv/testRmanOslParser.py
+)
+
+pxr_register_test(testRmanOslParser
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testRmanOslParser"
+    EXPECTED_RETURN_CODE 0
+    ENV
+      RMANTREE="${RMANTREE_PATH}"
+)
+
