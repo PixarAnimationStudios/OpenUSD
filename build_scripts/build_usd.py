@@ -952,42 +952,6 @@ def InstallOpenEXR(context, force, buildArgs):
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
 ############################################################
-# GLEW
-
-if Windows():
-    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
-else:
-    # Important to get source package from this URL and NOT github. This package
-    # contains pre-generated code that the github repo does not.
-    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0.tgz"
-
-def InstallGLEW(context, force, buildArgs):
-    if Windows():
-        InstallGLEW_Windows(context, force)
-    elif Linux() or MacOS():
-        InstallGLEW_LinuxOrMacOS(context, force, buildArgs)
-
-def InstallGLEW_Windows(context, force):
-    with CurrentWorkingDirectory(DownloadURL(GLEW_URL, context, force)):
-        # On Windows, we install headers and pre-built binaries per
-        # https://glew.sourceforge.net/install.html
-        # Note that we are installing just the shared library. This is required
-        # by the USD build; if the static library is present, that one will be
-        # used and that causes errors with USD and OpenSubdiv.
-        CopyFiles(context, "bin\\Release\\x64\\glew32.dll", "bin")
-        CopyFiles(context, "lib\\Release\\x64\\glew32.lib", "lib")
-        CopyDirectory(context, "include\\GL", "include\\GL")
-
-def InstallGLEW_LinuxOrMacOS(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(GLEW_URL, context, force)):
-        Run('make GLEW_DEST="{instDir}" -j{procs} {buildArgs} install'
-            .format(instDir=context.instDir,
-                    procs=context.numJobs,
-                    buildArgs=" ".join(buildArgs)))
-
-GLEW = Dependency("GLEW", InstallGLEW, "include/GL/glew.h")
-
-############################################################
 # Ptex
 
 PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.28.zip"
@@ -1952,7 +1916,7 @@ if context.buildImaging:
     if context.enablePtex:
         requiredDependencies += [PTEX]
 
-    requiredDependencies += [GLEW, OPENSUBDIV]
+    requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
         requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]

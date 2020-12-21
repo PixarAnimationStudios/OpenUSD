@@ -20,7 +20,6 @@ Our test machines have the following software versions installed
 | Boost         | 1.61.0, 1.70.0       | 1.61.0, 1.70.0               | 1.61.0, 1.70.0                 |
 | Intel TBB     | 2017 Update 6        | 2017 Update 6                | 2017 Update 6                  |
 | OpenSubdiv    | 3.4.3                | 3.4.3                        | 3.4.3                          |
-| GLEW          | 2.0.0                | 2.0.0                        | 2.0.0                          |
 | OpenImageIO   | 2.1.16.0             | 2.1.16.0                     | 2.1.16.0                       |
 | OpenColorIO   | 1.0.9                | 1.1.0                        | 1.1.0                          |
 | OSL           | 1.8.12               |                              |                                |

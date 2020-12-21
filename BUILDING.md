@@ -104,7 +104,7 @@ Support for Python can optionally be disabled by specifying the cmake flag
 Support for Python 3 can be enabled by specifying the cmake flag
 ```PXR_USE_PYTHON_3=ON```.
 
-##### OpenGL and GLEW
+##### OpenGL
 
 Support for OpenGL can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_GL_SUPPORT=FALSE```.  This will skip components and libraries

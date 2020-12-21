@@ -69,7 +69,6 @@ The following dependencies are required:
 
 The following dependencies are optional:
 
- - [GLEW](http://glew.sourceforge.net/)
  - [OpenEXR](http://www.openexr.com)
  - [OpenImageIO](https://sites.google.com/site/openimageio/home)
  - [OpenColorIO](http://opencolorio.org/)

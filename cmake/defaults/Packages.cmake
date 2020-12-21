@@ -204,7 +204,6 @@ if (PXR_BUILD_IMAGING)
             cmake_policy(SET CMP0072 OLD)
         endif()
         find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)
