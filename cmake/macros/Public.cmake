@@ -364,8 +364,17 @@ function(pxr_setup_python)
     # Install a pxr __init__.py with an appropriate __all__
     _get_install_dir(lib/python/pxr installPrefix)
 
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
-         "__all__ = [${pyModulesStr}]\n")
+    if(WIN32)
+        install(
+            FILES ${PROJECT_SOURCE_DIR}/extras/windows_check.py
+            DESTINATION ${installPrefix}
+        )
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+            "import pxr.windows_check\n\n")
+    endif()
+
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+        "__all__ = [${pyModulesStr}]\n")
 
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
