@@ -1302,6 +1302,8 @@ function(_pxr_library NAME)
         set(docBuildDir ${CMAKE_BINARY_DIR}/docs/${headerInstallPrefix})
         set(doxygenFiles "${args_PUBLIC_HEADERS};${args_DOXYGEN_FILES}")
 
+        set(files_copied "")
+
         foreach(doxygenFile ${doxygenFiles})
             add_custom_command(
                 OUTPUT ${docBuildDir}/${doxygenFile}
@@ -1315,7 +1317,19 @@ function(_pxr_library NAME)
                     ${CMAKE_CURRENT_SOURCE_DIR}/${doxygenFile}
                 VERBATIM
             )
+
+            list(APPEND files_copied ${docBuildDir}/${doxygenFile})
         endforeach()
+
+        add_custom_target(${NAME}_docfiles
+            DEPENDS ${files_copied}
+        )
+        add_dependencies(${NAME} ${NAME}_docfiles)
+
+        set_target_properties(${NAME}_docfiles
+            PROPERTIES
+                FOLDER "docs"
+        )
     endif()
 
     # XXX -- May want some plugins to be baked into monolithic.
