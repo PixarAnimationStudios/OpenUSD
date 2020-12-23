@@ -27,8 +27,15 @@ pxr_plugin(rmanOslParser
         plugInfo.json
 )
 
-# Need to set RMANTREE environment variable when running tests.
+# Need to set RMANTREE and RMAN_SHADERPATH environment variable when running
+# tests.
+#
+# XXX: RMAN_SHADERPATH is only necessary for the monolithic build; in all
+# other cases, the shaders accessed by the test are automatically found
+# relative to libHdPrmanLoader. We may be able to remove this if we made
+# it so this library wasn't embedded in the monolithic library.
 get_filename_component(RMANTREE_PATH "${RENDERMAN_INCLUDE_DIR}/.." ABSOLUTE)
+get_filename_component(RMANSHADER_PATH "${CMAKE_INSTALL_PREFIX}/plugin/usd/resources/shaders" ABSOLUTE)
 
 pxr_test_scripts(
     testenv/testRmanOslParser.py
@@ -39,6 +46,7 @@ pxr_register_test(testRmanOslParser
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testRmanOslParser"
     EXPECTED_RETURN_CODE 0
     ENV
-      RMANTREE="${RMANTREE_PATH}"
+      RMANTREE=${RMANTREE_PATH}
+      RMAN_SHADERPATH=${RMANSHADER_PATH}
 )
 
