@@ -66,7 +66,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // Generate the Glsl Pixel Shader based on the given mxContext and mxElement
 // Based on MaterialXViewer Material::generateShader()
-static const std::string &
+static std::string
 _GenPixelShader(mx::GenContext & mxContext, 
                 mx::TypedElementPtr const& mxElem)
 {
@@ -87,7 +87,7 @@ _GenPixelShader(mx::GenContext & mxContext,
 
 // Use the given mxDocument to generate the corresponding glsl source code
 // Based on MaterialXViewer Viewer::loadDocument()
-static const std::string &
+static std::string
 _GenSourceCode(mx::DocumentPtr const& mxDoc,
                mx::FileSearchPath const& searchPath)
 {
