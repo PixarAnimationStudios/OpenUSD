@@ -4,7 +4,7 @@ import sys
 
 if platform.system() == 'Windows':
     """
-    Since python 3.8 we need to explicitely set
+    Since python 3.8 we need to explicitly set
     the dll search path on windows
     """
     major = sys.version_info[0]
