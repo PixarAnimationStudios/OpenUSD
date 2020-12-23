@@ -409,6 +409,12 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
             self.assertEqual(invalid.GetInstanceCount(
                 Usd.TimeCode.EarliestTime()), 0)
 
+    def test_InstancerInVis(self):
+        stage = Usd.Stage.CreateInMemory()
+        instancer = UsdGeom.PointInstancer.Define(stage, '/Instance')
+        instancer.InvisId(1, Usd.TimeCode.Default())
+        self.assertEqual(stage.GetRootLayer().GetAttributeAtPath(
+            '/Instance.invisibleIds').default, [1])
         
 if __name__ == '__main__':
     unittest.main()
