@@ -30,6 +30,8 @@ jobs:
   - script: |
       # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
       unset SYSTEM
+      # Update PATH to ensure that pyside2-uic can be found
+      export PATH=/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
       /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
       sudo pip install pyside2 ;
       sudo pip install PyOpenGL ;
