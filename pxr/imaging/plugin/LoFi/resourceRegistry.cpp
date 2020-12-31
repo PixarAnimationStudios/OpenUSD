@@ -4,9 +4,9 @@
 // Unlicensed
 //
 #include <iostream>
-#include "pxr/imaging/plugin/Lofi/debugCodes.h"
-#include "pxr/imaging/plugin/Lofi/resourceRegistry.h"
-#include "pxr/imaging/plugin/Lofi/timer.h"
+#include "pxr/imaging/plugin/LoFi/debugCodes.h"
+#include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
+#include "pxr/imaging/plugin/LoFi/timer.h"
 
 #include "pxr/imaging/plugin/LoFi/shader.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
@@ -18,7 +18,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-LoFiResourceRegistry::LoFiResourceRegistry()
+LoFiResourceRegistry::LoFiResourceRegistry(Hgi* hgi)
+  : _hgi(hgi)
 {
 }
 
@@ -43,6 +44,21 @@ VtDictionary
 LoFiResourceRegistry::GetResourceAllocation() const
 {
     return VtDictionary();
+}
+
+Hgi*
+LoFiResourceRegistry::GetHgi()
+{
+    return _hgi;
+}
+
+HgiBlitCmds*
+LoFiResourceRegistry::GetGlobalBlitCmds()
+{
+    if (!_blitCmds) {
+        _blitCmds = _hgi->CreateBlitCmds();
+    }
+    return _blitCmds.get();
 }
 
 template <typename ID, typename T>

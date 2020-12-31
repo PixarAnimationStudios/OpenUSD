@@ -9,7 +9,7 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
@@ -61,7 +61,7 @@ private:
 
   // draw items are organized by glsl program
   std::map<TfToken, LoFiGLSLProgramSharedPtr>    _programs;
-  typedef std::map<TfToken, LoFiDrawItemPtrSet> _ProgramDrawItemsMap;
+  typedef std::map<TfToken, LoFiDrawItemPtrSet>  _ProgramDrawItemsMap;
   _ProgramDrawItemsMap                           _programDrawItemsMap;
 
   // -----------------------------------------------------------------------

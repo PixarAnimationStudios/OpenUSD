@@ -235,8 +235,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
 
     WorkParallelForEach(datas.begin(), datas.end(), _BuildStrokes);
 
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    //_ComputeOutputGeometry(outputBuffers, valueCache, cachePath);
+    UsdImagingPrimvarDescCache* valueCache = _GetPrimvarDescCache();
     _ComputeOutputGeometry(strokeGraphs, valueCache, cachePath);
   }
 }
@@ -291,7 +290,7 @@ UsdImagingContourAdapter::_PopulateStrokeParams(UsdPrim const& prim, UsdNprStrok
 
 void
 UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
-  UsdImagingValueCache* valueCache, SdfPath const& cachePath) const
+  UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
 {
   
   size_t numPoints = 0;
@@ -305,7 +304,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
 
   VtArray<int> faceVertexCounts(numCounts);
   VtArray<int> faceVertexIndices(numIndices);
-  VtArray<GfVec3f> points(numPoints);
+  _points.resize(numPoints);
 
   size_t pointsIndex = 0;
   size_t countsIndex = 0;
@@ -314,7 +313,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
   for(const auto& buffer: buffers) {
     size_t numPoints =  buffer.points.size();
     if(numPoints) {
-      memcpy(&points[pointsIndex], &buffer.points[0], 
+      memcpy(&_points[pointsIndex], &buffer.points[0], 
         numPoints * sizeof(GfVec3f));
       pointsIndex += numPoints;
     }
@@ -334,18 +333,15 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
     }
   }
 
-  HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
-                          UsdGeomTokens->rightHanded,
-                          faceVertexCounts,
-                          faceVertexIndices);
-  
-  valueCache->GetTopology(cachePath) = VtValue(topology);
-  valueCache->GetPoints(cachePath) = VtValue(points);
+  _topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
+                             UsdGeomTokens->rightHanded,
+                             faceVertexCounts,
+                             faceVertexIndices);
 }
 
 void
 UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
-  UsdImagingValueCache* valueCache, SdfPath const& cachePath) const
+  UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
 {
   
   size_t numPoints = 0;
@@ -365,7 +361,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
   for(int i=0;i<numCounts;++i)faceVertexCounts[i] = 4;
 
   VtArray<int> faceVertexIndices(numIndices);
-  VtArray<GfVec3f> points(numPoints);
+  _points.resize(numPoints);
 
   size_t pointsIndex = 0;
   size_t indicesIndex = 0;
@@ -379,7 +375,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
       if(numNodes >1) {
         size_t numPoints =  numNodes * 2;
         if(numPoints) {
-          stroke.ComputeOutputPoints( mesh, viewPoint, &points[pointsIndex]);
+          stroke.ComputeOutputPoints( mesh, viewPoint, &_points[pointsIndex]);
         }
         pointsIndex += numPoints;
         
@@ -397,14 +393,36 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
     }
   }
 
-  HdMeshTopology topology(PxOsdOpenSubdivTokens->none,
-                          UsdGeomTokens->rightHanded,
-                          faceVertexCounts,
-                          faceVertexIndices);
-  
-  valueCache->GetTopology(cachePath) = VtValue(topology);
-  valueCache->GetPoints(cachePath) = VtValue(points);
-  
+  _topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
+                             UsdGeomTokens->rightHanded,
+                             faceVertexCounts,
+                             faceVertexIndices);
+}
+
+/*virtual*/ 
+VtValue
+UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdTimeCode time) const
+{
+  return VtValue(_topology);
+}
+
+/*virtual*/
+VtValue
+UsdImagingContourAdapter::Get(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           TfToken const &key,
+                           UsdTimeCode time) const
+{
+  TRACE_FUNCTION();
+  HF_MALLOC_TAG_FUNCTION();
+
+  if (key == HdTokens->points) {
+    return VtValue(_points);
+  }
+
+  return BaseAdapter::Get(prim, cachePath, key, time);
 }
 
 

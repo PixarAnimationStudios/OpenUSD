@@ -27,7 +27,7 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/plugin/LoFi/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

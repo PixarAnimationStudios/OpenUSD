@@ -3,7 +3,7 @@
 //
 // Unlicensed
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/topology.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"

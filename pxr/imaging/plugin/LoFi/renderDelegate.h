@@ -15,6 +15,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class LoFiRenderParam;
+class Hgi;
 
 #define LOFI_RENDER_SETTINGS_TOKENS \
     (enableLights)                  \
@@ -46,6 +47,9 @@ public:
   /// Render delegate destructor.
   virtual ~LoFiRenderDelegate();
 
+  LOFI_API
+  virtual void SetDrivers(HdDriverVector const& drivers) override;
+
   /// Supported types
   const TfTokenVector &GetSupportedRprimTypes() const override;
   const TfTokenVector &GetSupportedSprimTypes() const override;
@@ -67,13 +71,11 @@ public:
     HdRprimCollection const& collection) override;
 
   HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
-                                        SdfPath const& id,
-                                        SdfPath const& instancerId) override;
+                                        SdfPath const& id) override;
   void DestroyInstancer(HdInstancer *instancer) override;
 
   HdRprim *CreateRprim(TfToken const& typeId,
-                                SdfPath const& rprimId,
-                                SdfPath const& instancerId) override;
+                                SdfPath const& rprimId) override;
   void DestroyRprim(HdRprim *rPrim) override;
 
   HdSprim *CreateSprim(TfToken const& typeId,
@@ -89,6 +91,11 @@ public:
   void CommitResources(HdChangeTracker *tracker) override;
 
   //HdRenderParam* GetRenderParam() const override;
+
+  // Returns Hydra graphics interface
+  LOFI_API
+  Hgi* GetHgi();
+
 
 private:
   static const TfTokenVector SUPPORTED_RPRIM_TYPES;
@@ -115,6 +122,9 @@ private:
   // This class does not support copying.
   LoFiRenderDelegate(const LoFiRenderDelegate &) = delete;
   LoFiRenderDelegate &operator =(const LoFiRenderDelegate &) = delete;
+
+  // hydra graphic interface
+  Hgi* _hgi;
 };
 
 

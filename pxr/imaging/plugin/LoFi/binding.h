@@ -10,6 +10,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/plugin/LoFi/api.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
+#include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -32,6 +34,18 @@ enum LoFiBindingType {
   TBO,
   TEXTURE
 };
+
+/// Suffixes appended to material param names for a binding name.
+///
+#define LOFI_BINDING_SUFFIX_TOKENS              \
+    ((fallback, "_fallback"))                   \
+    ((samplingTransform, "_samplingTransform")) \
+    ((layout, "_layout"))                       \
+    ((texture, "_texture"))                     \
+    ((valid, "_valid"))
+
+TF_DECLARE_PUBLIC_TOKENS(LoFiBindingSuffixTokens,
+                         LOFI_BINDING_SUFFIX_TOKENS);
 
 /// \struct LoFiBinding
 ///
@@ -68,6 +82,9 @@ public:
   };
 
   void Bind();
+  const LoFiBinding& GetUniformBinding(const TfToken& name) const;
+  const LoFiBinding& GetTextureBinding(const TfToken& name) const;
+  const LoFiBinding& GetAttributeBinding(const TfToken& name) const;
 
 private:
   LoFiBindingList           _uniformBindings;

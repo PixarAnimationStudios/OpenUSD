@@ -36,8 +36,7 @@ public:
     ///   \param id The unique id of this instancer.
     ///   \param parentInstancerId The unique id of the parent instancer,
     ///                            or an empty id if not applicable.
-    LoFiInstancer(HdSceneDelegate* delegate, SdfPath const& id,
-                      SdfPath const &parentInstancerId);
+    LoFiInstancer(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Destructor.
     ~LoFiInstancer();

@@ -8,7 +8,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/hash.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2d.h"

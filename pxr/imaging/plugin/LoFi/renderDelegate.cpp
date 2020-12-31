@@ -4,7 +4,7 @@
 // Unlicensed
 //
 #include <iostream>
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/renderDelegate.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
@@ -23,6 +23,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -51,8 +53,82 @@ std::mutex LoFiRenderDelegate::_mutexResourceRegistry;
 std::atomic_int LoFiRenderDelegate::_counterResourceRegistry;
 LoFiResourceRegistrySharedPtr LoFiRenderDelegate::_resourceRegistry;
 
+using LoFiResourceRegistryWeakPtr =  std::weak_ptr<LoFiResourceRegistry>;
+
+namespace {
+
+//
+// Map from Hgi instances to resource registries.
+//
+// An entry is kept alive until the last shared_ptr to a resource
+// registry is dropped.
+//
+class _HgiToResourceRegistryMap final
+{
+public:
+    // Map is a singleton.
+    static _HgiToResourceRegistryMap &GetInstance()
+    {
+        static _HgiToResourceRegistryMap instance;
+        return instance;
+    }
+
+    // Look-up resource registry by Hgi instance, create resource
+    // registry for the instance if it didn't exist.
+    LoFiResourceRegistrySharedPtr GetOrCreateRegistry(Hgi * const hgi)
+    {
+        std::lock_guard<std::mutex> guard(_mutex);
+
+        // Previous entry exists, use it.
+        auto it = _map.find(hgi);
+        if (it != _map.end()) {
+            LoFiResourceRegistryWeakPtr const &registry = it->second;
+            return LoFiResourceRegistrySharedPtr(registry);
+        }
+
+        // Create resource registry, custom deleter to remove corresponding
+        // entry from map.
+        LoFiResourceRegistrySharedPtr const result(
+            new LoFiResourceRegistry(hgi),
+            [this](LoFiResourceRegistry *registry) {
+                this->_Destroy(registry); });
+
+        // Insert into map.
+        _map.insert({hgi, result});
+
+        // Also register with HdPerfLog.
+        //
+        HdPerfLog::GetInstance().AddResourceRegistry(result.get());
+
+        return result;
+    }
+
+private:
+    void _Destroy(LoFiResourceRegistry * const registry)
+    {
+        TRACE_FUNCTION();
+
+        std::lock_guard<std::mutex> guard(_mutex);
+
+        HdPerfLog::GetInstance().RemoveResourceRegistry(registry);
+        
+        _map.erase(registry->GetHgi());
+        delete registry;
+    }
+
+    using _Map = std::unordered_map<Hgi*, LoFiResourceRegistryWeakPtr>;
+
+    _HgiToResourceRegistryMap() = default;
+
+    std::mutex _mutex;
+    _Map _map;
+};
+
+}
+
 LoFiRenderDelegate::LoFiRenderDelegate()
   : HdRenderDelegate()
+  , _hgi(nullptr)
 {
   _Initialize();
 }
@@ -60,6 +136,7 @@ LoFiRenderDelegate::LoFiRenderDelegate()
 LoFiRenderDelegate::LoFiRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
     : HdRenderDelegate(settingsMap)
+    , _hgi(nullptr)
 {
   _Initialize();
 }
@@ -74,7 +151,7 @@ LoFiRenderDelegate::_Initialize()
   
   if (_counterResourceRegistry.fetch_add(1) == 0) {
     _resourceRegistry.reset( new LoFiResourceRegistry() );
-    HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
+    HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry.get());
   } 
 
   // Create the RenderPassState object
@@ -93,6 +170,20 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
       _resourceRegistry.reset();
     }
   }
+}
+
+void
+LoFiRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+{
+    // For LoFi we want to use the Hgi driver, so extract it.
+    for (HdDriver* hdDriver : drivers) {
+        if (hdDriver->name == HgiTokens->renderDriver &&
+            hdDriver->driver.IsHolding<Hgi*>()) {
+            _hgi = hdDriver->driver.UncheckedGet<Hgi*>();
+            break;
+        }
+    }
+    TF_VERIFY(_hgi, "LoFi requires Hgi HdDriver");
 }
 
 void 
@@ -148,16 +239,15 @@ LoFiRenderDelegate::CreateRenderPass(
 
 HdRprim *
 LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
-                                    SdfPath const& rprimId,
-                                    SdfPath const& instancerId)
+                                    SdfPath const& rprimId)
 {
   std::cout << "LOFI DELEGATE CREATE RPRIM !" << std::endl;
   if (typeId == HdPrimTypeTokens->mesh) {
-    return new LoFiMesh(rprimId, instancerId);
+    return new LoFiMesh(rprimId);
   } else if(typeId == HdPrimTypeTokens->points) {
-    return new LoFiPoints(rprimId, instancerId);
+    return new LoFiPoints(rprimId);
   } else if(typeId == HdPrimTypeTokens->basisCurves) {
-    return new LoFiCurves(rprimId, instancerId);
+    return new LoFiCurves(rprimId);
   } else {
     TF_CODING_ERROR("Unknown Rprim type=%s id=%s", 
       typeId.GetText(), 
@@ -236,16 +326,21 @@ LoFiRenderDelegate::DestroyBprim(HdBprim *bPrim)
 HdInstancer *
 LoFiRenderDelegate::CreateInstancer(
   HdSceneDelegate *delegate,
-  SdfPath const& id,
-  SdfPath const& instancerId)
+  SdfPath const& id)
 {
-  return new LoFiInstancer(delegate, id, instancerId);
+  return new LoFiInstancer(delegate, id);
 }
 
 void 
 LoFiRenderDelegate::DestroyInstancer(HdInstancer *instancer)
 {
   delete instancer;
+}
+
+Hgi*
+LoFiRenderDelegate::GetHgi()
+{
+    return _hgi;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

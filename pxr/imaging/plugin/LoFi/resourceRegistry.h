@@ -6,9 +6,11 @@
 #ifndef PXR_IMAGING_PLUGIN_LOFI_RESOURCE_REGISTRY_H
 #define PXR_IMAGING_PLUGIN_LOFI_RESOURCE_REGISTRY_H
 
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/tokens.h"
+
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,12 +45,12 @@ class LoFiResourceRegistry : public HdResourceRegistry {
 public:
     HF_MALLOC_TAG_NEW("new LoFiResourceRegistry");
 
-    LoFiResourceRegistry();
+    LoFiResourceRegistry(Hgi* hgi=nullptr);
 
     virtual ~LoFiResourceRegistry();
 
     /// Invalidate any shaders registered with this registry.
-    virtual void InvalidateShaderRegistry();
+    virtual void InvalidateShaderRegistry() override;
 
     /// Generic method to inform RenderDelegate a resource needs to be reloaded.
     /// This method can be used by the application to inform the renderDelegate
@@ -58,11 +60,11 @@ public:
     /// path found for textures during HdMaterial::Sync.
     virtual void ReloadResource(
         TfToken const& resourceType,
-        std::string const& path);
+        std::string const& path) override;
 
     /// Returns a report of resource allocation by role in bytes and
     /// a summary total allocation of GPU memory in bytes for this registry.
-    virtual VtDictionary GetResourceAllocation() const;
+    virtual VtDictionary GetResourceAllocation() const override;
 
     /// Register a vertex array object
     HdInstance<LoFiVertexArraySharedPtr>
@@ -133,6 +135,18 @@ public:
     FindTextureResourceHandle(
         HdInstance<LoFiTextureResourceHandleSharedPtr>::ID id, bool *found);
 
+    /// Returns Hgi used to create/destroy GPU resources.
+    LOFI_API
+    Hgi* GetHgi();
+
+    /// Returns the global hgi blit command queue for recording blitting work.
+    /// When using this global cmd instead of creating a new HgiBlitCmds we
+    /// reduce the number of command buffers being created.
+    /// The returned pointer should not be held onto by the client as it is
+    /// only valid until the HgiBlitCmds has been submitted.
+    LOFI_API
+    HgiBlitCmds* GetGlobalBlitCmds();
+
 
 protected:
     virtual void _Commit() override;
@@ -145,22 +159,32 @@ private:
     LoFiResourceRegistry& operator=(const LoFiResourceRegistry&) = delete;
 
     // vaos
-    HdInstanceRegistry<LoFiVertexArraySharedPtr> _vertexArrayRegistry;
+    HdInstanceRegistry<LoFiVertexArraySharedPtr> 
+      _vertexArrayRegistry;
 
     // vbos
-    HdInstanceRegistry<LoFiVertexBufferSharedPtr> _vertexBufferRegistry;
+    HdInstanceRegistry<LoFiVertexBufferSharedPtr> 
+      _vertexBufferRegistry;
 
     // glsl shader registry
-    HdInstanceRegistry<LoFiGLSLShaderSharedPtr> _glslShaderRegistry;
+    HdInstanceRegistry<LoFiGLSLShaderSharedPtr> 
+      _glslShaderRegistry;
 
     // glsl program registry
-    HdInstanceRegistry<LoFiGLSLProgramSharedPtr> _glslProgramRegistry;
+    HdInstanceRegistry<LoFiGLSLProgramSharedPtr> 
+      _glslProgramRegistry;
 
     // texture resource registry
-    HdInstanceRegistry<LoFiTextureResourceSharedPtr> _textureResourceRegistry;
+    HdInstanceRegistry<LoFiTextureResourceSharedPtr> 
+      _textureResourceRegistry;
 
      // texture resource handle registry
-    HdInstanceRegistry<LoFiTextureResourceHandleSharedPtr> _textureResourceHandleRegistry;
+    HdInstanceRegistry<LoFiTextureResourceHandleSharedPtr>
+      _textureResourceHandleRegistry;
+
+    // hydra graphic interface
+    Hgi* _hgi;
+    HgiBlitCmdsUniquePtr _blitCmds;
 
 };
 

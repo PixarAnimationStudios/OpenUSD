@@ -12,6 +12,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// generic tokens
+#define LOFI_TOKENS                             \
+    (packedSmoothNormals)                       \
+    (smoothNormals)                             \
+    (packedFlatNormals)                         \
+    (flatNormals)                               \
+    (scale)                                     \
+    (bias)                                      \
+    (rotation)                                  \
+    (translation)                               \
+    (sRGB)                                      \
+    (raw)                                       \
+    ((colorSpaceAuto, "auto"))
+
 // registry tokens
 #define LOFI_REGISTRY_TOKENS        \
     (elementBuffer)                 \
@@ -78,6 +92,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (geometry)                      \
     (fragment)                      \
 
+TF_DECLARE_PUBLIC_TOKENS(LoFiTokens, LOFI_API, LOFI_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiRegistryTokens, LOFI_API, LOFI_REGISTRY_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiGLTokens, LOFI_API, LOFI_GL_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(LoFiBufferTokens, LOFI_API, LOFI_BUFFER_TOKENS);

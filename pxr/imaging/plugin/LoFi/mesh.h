@@ -34,7 +34,7 @@ public:
     HF_MALLOC_TAG_NEW("new LoFiMesh");
 
     /// LoFiMesh constructor
-    LoFiMesh(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    LoFiMesh(SdfPath const& id);
 
     /// LoFiMesh destructor.
     ~LoFiMesh() override = default;

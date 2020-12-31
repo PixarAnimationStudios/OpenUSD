@@ -3,7 +3,7 @@
 //
 // Unlicensed
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/plugin/LoFi/instancer.h"
 
@@ -22,9 +22,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 LoFiInstancer::LoFiInstancer(HdSceneDelegate* delegate,
-                                     SdfPath const& id,
-                                     SdfPath const &parentId)
-    : HdInstancer(delegate, id, parentId)
+                                     SdfPath const& id)
+    : HdInstancer(delegate, id)
 {
 }
 

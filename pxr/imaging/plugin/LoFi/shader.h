@@ -7,7 +7,7 @@
 
 #include "pxr/imaging/plugin/LoFi/debugCodes.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -90,8 +90,8 @@ public:
   GLuint Get(){return _pgm;};
 
   /// this object is non-copyable
-  //LoFiGLSLProgram(const LoFiGLSLProgram&) = delete;
-  //LoFiGLSLProgram(LoFiGLSLProgram&&) = delete;
+  LoFiGLSLProgram(const LoFiGLSLProgram&) = delete;
+  LoFiGLSLProgram(LoFiGLSLProgram&&) = delete;
 
 private:
   LoFiGLSLShader*         _vert;

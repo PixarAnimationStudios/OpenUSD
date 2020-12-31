@@ -3,7 +3,7 @@
 //
 // Unlicensed
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/plugin/LoFi/mesh.h"
 #include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
@@ -25,8 +25,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-LoFiMesh::LoFiMesh(SdfPath const& id, SdfPath const& instancerId)
-  : HdMesh(id, instancerId)
+LoFiMesh::LoFiMesh(SdfPath const& id)
+  : HdMesh(id)
   , _vertexArray(nullptr)
 {
 }

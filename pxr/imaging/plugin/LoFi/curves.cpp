@@ -3,7 +3,7 @@
 //
 // Unlicensed
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/plugin/LoFi/curves.h"
 #include "pxr/imaging/plugin/LoFi/instancer.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
@@ -23,8 +23,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-LoFiCurves::LoFiCurves(SdfPath const& id, SdfPath const& instancerId)
-  : HdBasisCurves(id, instancerId)
+LoFiCurves::LoFiCurves(SdfPath const& id)
+  : HdBasisCurves(id)
   , _vertexArray(nullptr)
 {
 }

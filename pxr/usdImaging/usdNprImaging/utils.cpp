@@ -1,4 +1,4 @@
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/usdImaging/usdNprImaging/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

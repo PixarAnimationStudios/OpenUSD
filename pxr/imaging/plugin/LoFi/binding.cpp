@@ -13,6 +13,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(LoFiBindingSuffixTokens,
+                        LOFI_BINDING_SUFFIX_TOKENS);
+
 void LoFiBinder::Clear()
 {
   _uniformBindings.clear();
@@ -117,6 +120,33 @@ void LoFiBinder::Bind()
       }
     }
   }
+}
+
+const LoFiBinding& LoFiBinder::GetUniformBinding(const TfToken& name) const
+{
+  for(const auto& binding: _uniformBindings)
+  {
+    if(binding.name == name)return binding;
+  }
+  return LoFiBinding();
+}
+
+const LoFiBinding& LoFiBinder::GetTextureBinding(const TfToken& name) const
+{
+  for(const auto& binding: _textureBindings)
+  {
+    if(binding.name == name)return binding;
+  }
+  return LoFiBinding();
+}
+
+const LoFiBinding& LoFiBinder::GetAttributeBinding(const TfToken& name) const
+{
+  for(const auto& binding: _attributeBindings)
+  {
+    if(binding.name == name)return binding;
+  }
+  return LoFiBinding();
 }
 
 

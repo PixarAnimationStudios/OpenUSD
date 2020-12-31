@@ -28,28 +28,42 @@ pxr_plugin(LoFi
         debugCodes
         tokens
         glConversions
+        hgiConversions
         shaderCode
         binding
         codeGen
         shader
         topology
-        textureResource
-        textureResourceHandle
         vertexBuffer
         vertexArray
         drawItem
         drawTarget
-        drawTargetTextureResource
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
         drawTargetRenderPassState
         resourceRegistry
+        samplerObject 
+        samplerObjectRegistry
+        texture
+        textureBinder
+        textureCpuData
+        glfTextureCpuData
+        assetUvTextureCpuData
+        textureUtils
+        textureHandle
+        textureHandleRegistry 
+        textureIdentifier 
+        subtextureIdentifier
+        textureObject
+        textureObjectRegistry
+        ptexTextureObject
+        udimTextureObject
+        dynamicUvTextureObject
+        field 
+        fieldSubtextureIdentifier
         utils
         mesh
         points
         instancer
         curves
-        sceneDelegate
         renderDelegate
         renderPass
         rendererPlugin
@@ -61,6 +75,8 @@ pxr_plugin(LoFi
         shader.h
         renderParam.h
         debugCodes.h
+        ptexTextureObject.h
+        dynamicUvTextureImplementation.h
 
     RESOURCE_FILES
         plugInfo.json

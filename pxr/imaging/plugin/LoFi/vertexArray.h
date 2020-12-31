@@ -7,7 +7,7 @@
 #define PXR_IMAGING_PLUGIN_LOFI_VERTEX_ARRAY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/plugin/LoFi/topology.h"
 #include "pxr/imaging/plugin/LoFi/vertexBuffer.h"
