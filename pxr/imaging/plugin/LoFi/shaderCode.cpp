@@ -31,5 +31,12 @@ LoFiShaderCode::GetSource(const TfToken& key)
   return _glslfx->GetSource(key);
 }
 
+/* virtual */
+LoFiShaderCode::NamedTextureHandleVector const &
+LoFiShaderCode::GetNamedTextureHandles() const
+{
+    static LoFiShaderCode::NamedTextureHandleVector empty;
+    return empty;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

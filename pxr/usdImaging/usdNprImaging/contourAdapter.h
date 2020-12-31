@@ -129,17 +129,33 @@ public:
     void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;          
+                           UsdImagingIndexProxy* index) override;   
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+    USDNPRIMAGING_API
+    VtValue GetTopology(UsdPrim const& prim,
+                        SdfPath const& cachePath,
+                        UsdTimeCode time) const override;
+
+    USDNPRIMAGING_API
+    VtValue Get(UsdPrim const& prim,
+                SdfPath const& cachePath,
+                TfToken const& key,
+                UsdTimeCode time) const override;       
        
 private:
   void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
   void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
-    UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
+    UsdImagingPrimvarDescCache* valueCache, SdfPath const& cachePath) const;
 
   void _ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
-    UsdImagingValueCache* valueCache, SdfPath const& cachePath) const;
+    UsdImagingPrimvarDescCache* valueCache, SdfPath const& cachePath) const;
 
   UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
+  mutable VtArray<GfVec3f>        _points;
+  mutable HdMeshTopology          _topology;
 };
 
 // ---------------------------------------------------------------------- //

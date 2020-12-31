@@ -36,7 +36,7 @@ public:
     HF_MALLOC_TAG_NEW("new LoFiCurves");
 
     /// LoFiCurves constructor
-    LoFiCurves(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    LoFiCurves(SdfPath const& id);
 
     /// LoFiCurves destructor.
     ~LoFiCurves() override = default;

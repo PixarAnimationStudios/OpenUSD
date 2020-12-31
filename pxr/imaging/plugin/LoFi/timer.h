@@ -1,3 +1,5 @@
+#ifndef PXR_IMAGING_PLUGIN_LOFI_TIMER_H
+#define PXR_IMAGING_PLUGIN_LOFI_TIMER_H
 #pragma once
 
 #if defined(__linux)
@@ -16,7 +18,7 @@
 	#include <windows.h>
 #endif
 
-static uint64_t ns() {
+static inline uint64_t ns() {
   static uint64_t is_init = 0;
 #if defined(__APPLE__)
     static mach_timebase_info_data_t info;
@@ -79,3 +81,5 @@ template <class R, class... Args>
 ExecutionTimer<R(Args ...)> TIMER_DECORATOR(R (*f)(Args ...)) {
     return ExecutionTimer<R(Args...)>(std::function<R(Args...)>(f));    
 }
+
+#endif // PXR_IMAGING_PLUGIN_LOFI_TIMER_H

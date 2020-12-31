@@ -10,6 +10,7 @@
 #include "pxr/imaging/plugin/LoFi/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hio/types.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,16 +39,7 @@ public:
     static GLenum GetGlBlendFactor(HdBlendFactor factor);
 
     LOFI_API
-    static GLenum GetMinFilter(HdMinFilter filter);
-
-    LOFI_API
-    static GLenum GetMagFilter(HdMagFilter filter);
-
-    LOFI_API
-    static GLenum GetWrap(HdWrap wrap);
-
-    LOFI_API
-    static void GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat);
+    static HioFormat GetHioFormat(HdFormat inFormat);
 
     LOFI_API
     static int GetGLAttribType(HdType type);
@@ -65,3 +57,4 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_IMAGING_PLUGIN_LOFI_GL_CONVERSIONS_H
+

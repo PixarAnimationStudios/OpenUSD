@@ -33,7 +33,7 @@ public:
     HF_MALLOC_TAG_NEW("new LoFiPoints");
 
     /// LoFiPoints constructor
-    LoFiPoints(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    LoFiPoints(SdfPath const& id);
 
     /// LoFiPoints destructor.
     ~LoFiPoints() override = default;

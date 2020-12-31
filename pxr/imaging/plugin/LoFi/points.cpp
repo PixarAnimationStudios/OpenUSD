@@ -3,7 +3,7 @@
 //
 // Unlicensed
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/plugin/LoFi/points.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
@@ -24,8 +24,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-LoFiPoints::LoFiPoints(SdfPath const& id, SdfPath const& instancerId)
-  : HdPoints(id, instancerId)
+LoFiPoints::LoFiPoints(SdfPath const& id)
+  : HdPoints(id)
   , _vertexArray(nullptr)
 {
   std::cout << "CREATE LOFI POINT PRIMITIVE :D" << std::endl;
