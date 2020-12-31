@@ -168,6 +168,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         UsdImagingInstancerContext const* 
                                         instancerContext) const
 {
+  std::cout << "CONTOUR UPDATE FOR TIME!!!" << std::endl;
   if (requestedBits & HdChangeTracker::DirtyTopology) {
     UsdNprContour contour(prim);
     std::vector<UsdPrim> contourSurfaces = contour.GetContourSurfaces();
@@ -203,7 +204,8 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     for(const UsdPrim& contourSurface: contourSurfaces)
     {
       SdfPath contourSurfacePath = contourSurface.GetPath();
-      UsdNprHalfEdgeMeshMap::const_iterator it = _halfEdgeMeshes.find(contourSurfacePath);
+      UsdNprHalfEdgeMeshMap::const_iterator it = 
+        _halfEdgeMeshes.find(contourSurfacePath);
 
       if(it != _halfEdgeMeshes.end())
       {
@@ -211,7 +213,9 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         char varyingBits = halfEdgeMesh->GetVaryingBits();
 
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
-          halfEdgeMesh->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurface));
+          halfEdgeMesh->SetMatrix(
+            xformCache.GetLocalToWorldTransform(contourSurface));
+        else std::cout << contourSurface.GetPath() << "NOT TRANSFORM VARYING" << std::endl;
 
         _ContourAdapterComputeDatas* threadData = &datas[index];
         threadData->prim = &contourSurface;
@@ -250,7 +254,8 @@ UsdImagingContourAdapter::ProcessPropertyChange(
   const TfToken& propertyName)
 {
   std::cout << "USD NPR PROCESS PROPERTY CHANGE : " << propertyName.GetText() << std::endl;
-  return HdChangeTracker::Clean;
+  // Allow base class to handle change processing.
+  return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
 void
@@ -399,6 +404,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& st
                              faceVertexIndices);
 }
 
+
 /*virtual*/ 
 VtValue
 UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
@@ -424,6 +430,7 @@ UsdImagingContourAdapter::Get(UsdPrim const& prim,
 
   return BaseAdapter::Get(prim, cachePath, key, time);
 }
+
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

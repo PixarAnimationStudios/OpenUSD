@@ -63,7 +63,7 @@ struct UsdNprHalfEdge
 class UsdNprHalfEdgeMesh
 {
 public:
-  UsdNprHalfEdgeMesh(const SdfPath& path, char varyingBits);
+  UsdNprHalfEdgeMesh(const SdfPath& path, const HdDirtyBits& varyingBits);
   void Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   void Update(const UsdGeomMesh& mesh, const UsdTimeCode& timeCode);
   const std::vector<UsdNprHalfEdge>& GetHalfEdges() const {return _halfEdges;};
