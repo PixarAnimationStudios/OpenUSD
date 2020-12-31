@@ -15,6 +15,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 // convert varying bits
 static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
 {
+  std::cout << "CONVERT VARYING BITS " << varyingBits << std::endl;
+  std::cout << "DIRTY TRANSFORM BIT :" << HdChangeTracker::DirtyTransform << std::endl;
+  std::cout << "DIRTY TOPOLOGY BIT :" << HdChangeTracker::DirtyTopology << std::endl;
   char outVaryingBits = 0;
   if(varyingBits & HdChangeTracker::DirtyTopology)
   {
@@ -26,6 +29,7 @@ static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
   }
   if(varyingBits & HdChangeTracker::DirtyTransform)
   {
+    std::cout << "VARYING TRANSFORM!!! " << std::endl;
     outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM;
   }
   if(varyingBits & HdChangeTracker::DirtyVisibility)
@@ -123,14 +127,16 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
     GetTriangleNormal(positions, tn1);
     twin->GetTriangleNormal(positions, tn2);
     */
-    if(GfAbs(GfDot(normals[GetTriangleIndex()], normals[twin->GetTriangleIndex()])) < creaseValue)
+    if(GfAbs(GfDot(normals[GetTriangleIndex()], 
+                   normals[twin->GetTriangleIndex()])) < creaseValue)
       flags |= EDGE_CREASE;
   }
 
   return flags;
 }
 
-UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, char varyingBits)
+UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, 
+  const HdDirtyBits& varyingBits)
   :_varyingBits(_ConvertVaryingBits(varyingBits))
   , _sdfPath(path)
 {
@@ -283,8 +289,11 @@ inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const Gf
   };
 }
 
-void UsdNprHalfEdgeMesh::ComputeOutputGeometry(const std::vector<const UsdNprHalfEdge*>& silhouettes,
-  const GfVec3f& viewPoint, VtArray<GfVec3f>& points, VtArray<int>& faceVertexCounts,
+void UsdNprHalfEdgeMesh::ComputeOutputGeometry(
+  const std::vector<const UsdNprHalfEdge*>& silhouettes,
+  const GfVec3f& viewPoint, 
+  VtArray<GfVec3f>& points, 
+  VtArray<int>& faceVertexCounts,
   VtArray<int>& faceVertexIndices)
 {
   size_t numEdges = silhouettes.size();// + _creases.size() + _boundaries.size();

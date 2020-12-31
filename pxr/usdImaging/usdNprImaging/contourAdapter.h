@@ -143,7 +143,7 @@ public:
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
-                UsdTimeCode time) const override;       
+                UsdTimeCode time) const override;      
        
 private:
   void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
@@ -153,7 +153,7 @@ private:
   void _ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
     UsdImagingPrimvarDescCache* valueCache, SdfPath const& cachePath) const;
 
-  UsdNprHalfEdgeMeshMap   _halfEdgeMeshes;
+  UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
   mutable VtArray<GfVec3f>        _points;
   mutable HdMeshTopology          _topology;
 };
