@@ -70,19 +70,20 @@ struct UsdNprStrokeNode {
   GfVec3f position;
   GfVec3f color;
 
-  UsdNprStrokeNode(UsdNprHalfEdge* e, float w):
-    edge(e), width(w), weight(0.5){};
+  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight):
+    edge(e), width(width), weight(weight){};
 
-  UsdNprStrokeNode(UsdNprHalfEdge* e, float w, const GfVec3f& p):
-    edge(e), width(w), position(p){};
+  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight, const GfVec3f& p):
+    edge(e), width(width), weight(weight), position(p){};
 };
 
 typedef std::vector<UsdNprStrokeNode> UsdNprStrokeNodeList;
-
+class UsdNprStrokeGraph;
 class UsdNprStrokeChain {
 public:
-  void Init(UsdNprHalfEdge* edge, short type, float width);
-  void Build(std::vector<short>& edgeClassification, short type);
+  void Init(UsdNprHalfEdge* edge, short type, float width, float weight=0.5f);
+  void Build(const UsdNprStrokeGraph* graph, 
+    std::vector<short>& edgeClassification, short type);
   
   void ComputeOutputPoints( const UsdNprHalfEdgeMesh* mesh, 
     const GfVec3f& viewPoint, GfVec3f* points) const;
@@ -116,10 +117,13 @@ public:
   UsdNprHalfEdgeMesh* GetMesh() {return _mesh;};
   const UsdNprHalfEdgeMesh* GetMesh() const {return _mesh;};
   const std::vector<const UsdNprHalfEdge*>& GetSilhouettes(){return _silhouettes;};
+  const std::vector<float>& GetSilhouetteWeights(){return _silhouetteWeights;};
 
   size_t GetNumStrokes() const {return _strokes.size();};
   size_t GetNumNodes() const;
   GfVec3f GetViewPoint() const;
+
+  float GetSilhouetteWeight(int index) const;
 
 private:
   GfMatrix4f                         _viewMatrix;
@@ -129,6 +133,8 @@ private:
   UsdNprStrokeChainList              _strokes;
 
   std::vector<const UsdNprHalfEdge*> _silhouettes;
+  std::vector<float>                 _silhouetteWeights;
+  std::map<int, int>                 _silhouetteWeightsMap;
   std::vector<const UsdNprHalfEdge*> _boundaries;
   std::vector<const UsdNprHalfEdge*> _creases;
   std::vector<short>                 _allFlags;

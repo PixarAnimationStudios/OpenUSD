@@ -15,9 +15,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // convert varying bits
 static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
 {
-  std::cout << "CONVERT VARYING BITS " << varyingBits << std::endl;
-  std::cout << "DIRTY TRANSFORM BIT :" << HdChangeTracker::DirtyTransform << std::endl;
-  std::cout << "DIRTY TOPOLOGY BIT :" << HdChangeTracker::DirtyTopology << std::endl;
   char outVaryingBits = 0;
   if(varyingBits & HdChangeTracker::DirtyTopology)
   {
@@ -29,7 +26,6 @@ static char _ConvertVaryingBits(const HdDirtyBits& varyingBits)
   }
   if(varyingBits & HdChangeTracker::DirtyTransform)
   {
-    std::cout << "VARYING TRANSFORM!!! " << std::endl;
     outVaryingBits |= UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM;
   }
   if(varyingBits & HdChangeTracker::DirtyVisibility)
@@ -123,10 +119,6 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
 
   if(creaseValue >= 0.0) {
     GfVec3f tn1, tn2;
-    /*
-    GetTriangleNormal(positions, tn1);
-    twin->GetTriangleNormal(positions, tn2);
-    */
     if(GfAbs(GfDot(normals[GetTriangleIndex()], 
                    normals[twin->GetTriangleIndex()])) < creaseValue)
       flags |= EDGE_CREASE;
@@ -134,6 +126,23 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
 
   return flags;
 }
+
+float UsdNprHalfEdge::GetWeight(const GfVec3f* positions, const GfVec3f* normals, 
+  const GfVec3f& v) const
+{
+  GfVec3f normal1, normal2;
+  GetVertexNormal(normals, normal1);
+  next->GetVertexNormal(normals, normal2);
+
+  GfVec3f dir1 = (positions[vertex] - v).GetNormalized();
+  GfVec3f dir2 = (positions[next->vertex] - v).GetNormalized();
+
+  float dot1 = GfDot(normal1, dir1);
+  float dot2 = GfDot(normal2, dir2);
+
+  return GfAbs(dot2)/(GfAbs(dot1)+GfAbs(dot2));
+}
+
 
 UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, 
   const HdDirtyBits& varyingBits)
@@ -248,15 +257,6 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
                         samples);
 
   UsdNprComputeTriangleNormals(_positions, samples, _normals);
-  /*
-  UsdNprComputeVertexNormals(
-    _positions,
-    faceVertexCounts,
-    faceVertexIndices,
-    samples,
-    _normals
-  );
-  */
 }
 
 
