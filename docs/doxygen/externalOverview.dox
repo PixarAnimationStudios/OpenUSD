@@ -194,6 +194,12 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   of the schema classes are produced entirely via the \em usdGenSchema code
   generator included with the core.
 
+- \ref usdPhysics_page_front : The primary physics-supporting schema module, 
+  UsdPhysics provides physics description of the USD prims (rigid bodies, 
+  joints, scenes, collisions, etc.). The majority
+  of the schema classes are produced entirely via the \em usdGenSchema code
+  generator included with the core.
+
 - \ref usdShade_page_front Schema module that defines Looks, Shaders,
   connectible Parameters, with API for building shading networks and
   user-facing "Look Interfaces" that allow shading networks to be shared (via
@@ -201,7 +207,7 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   \em bound to Looks.  With just the objects in UsdShade one can encode
   completely generic shading; however, it also allows renderer-specific
   shading schemas to be built on top of it, and a Look can host the network
-  "terminals" for any number of renderer schemas.
+  "terminals" for any number of renderer schemas.  
 
 - \ref usdRi_page_front module for data targeted at Pixar's
   RenderMan specification.  Includes shading schemas for both RSL and RIS

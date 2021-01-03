@@ -17,6 +17,7 @@ set(DIRS
     usdSkel
     usdUI
     usdUtils
+    usdPhysics
     plugin
 )
 
