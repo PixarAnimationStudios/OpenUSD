@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/selection.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"

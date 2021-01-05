@@ -86,7 +86,6 @@ pxr_library(hd
         sprim
         strategyBase
         task
-        texture
         timeSampleArray
         tokens
         topology

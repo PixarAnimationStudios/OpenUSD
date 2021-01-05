@@ -110,7 +110,6 @@ pxr_library(hdSt
         smoothNormals
         subtextureIdentifier
         surfaceShader
-        texture
         textureBinder
         textureCpuData
         textureHandle

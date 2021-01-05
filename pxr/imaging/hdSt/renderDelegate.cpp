@@ -38,7 +38,6 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hdSt/texture.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/volume.h"
@@ -261,7 +260,6 @@ TfTokenVector
 _ComputeSupportedBprimTypes()
 {
     TfTokenVector result;
-    result.push_back(HdPrimTypeTokens->texture);
     result.push_back(HdPrimTypeTokens->renderBuffer);
 
     for (const TfToken &primType : HdStField::GetSupportedBprimTypes()) {
@@ -413,9 +411,7 @@ HdBprim *
 HdStRenderDelegate::CreateBprim(TfToken const& typeId,
                                 SdfPath const& bprimId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdStTexture(bprimId);
-    } else if (HdStField::IsSupportedBprimType(typeId)) {
+    if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(bprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_resourceRegistry.get(), bprimId);
@@ -429,9 +425,7 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
 HdBprim *
 HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdStTexture(SdfPath::EmptyPath());
-    } else if (HdStField::IsSupportedBprimType(typeId)) {
+    if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_resourceRegistry.get(),

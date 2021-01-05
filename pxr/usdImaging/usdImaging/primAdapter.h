@@ -34,7 +34,6 @@
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/selection.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
