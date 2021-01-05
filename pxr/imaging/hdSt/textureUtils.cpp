@@ -475,7 +475,7 @@ HdStTextureUtils::ComputeDimensionsFromTargetMemory(
     for (const HgiMipInfo &mipInfo : mipInfos) {
         // The factor of 4/3 = 1 + 1/4 + 1/16 + ... accounts for all the
         // lower mipmaps.
-        if (mipInfo.byteSize * tileCount * 4 / 3 <= targetMemory) {
+        if (mipInfo.byteSizePerLayer * tileCount * 4 / 3 <= targetMemory) {
             return mipInfo.dimensions;
         }
     }

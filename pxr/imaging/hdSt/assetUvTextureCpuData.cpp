@@ -142,7 +142,8 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     // Compute how much memory we need to allocate to upload the
     // desirable mips.
     const HgiMipInfo &lastMipInfo = mipInfos[numUsableMips - 1];
-    const size_t memSize = lastMipInfo.byteOffset + lastMipInfo.byteSize;
+    const size_t memSize =
+        lastMipInfo.byteOffset + lastMipInfo.byteSizePerLayer;
     {
         TRACE_FUNCTION_SCOPE("allocating memory");
         _rawBuffer =

@@ -223,9 +223,11 @@ HdStUdimTextureObject::_Load()
         HgiGetMipInfos(_hgiFormat, _dimensions, _tileCount);
     _mipCount = mipInfos.size();
 
+    const HgiMipInfo &lastMipInfo = mipInfos.back();
+
     // Allocate memory for the mipData, ready for upload to GPU
     _textureData.resize(
-        mipInfos.back().byteOffset + _tileCount * mipInfos.back().byteSize);
+        lastMipInfo.byteOffset + _tileCount * lastMipInfo.byteSizePerLayer);
 
     WorkParallelForN(tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
@@ -246,7 +248,7 @@ HdStUdimTextureObject::_Load()
                 spec.data =
                     _textureData.data()
                     + mipInfo.byteOffset
-                    + tileId * mipInfo.byteSize;
+                    + tileId * mipInfo.byteSizePerLayer;
                 HioImageSharedPtr const &image =
                     _GetSmallestImageLargerThan(images, mipInfo.dimensions);
                 image->Read(spec);

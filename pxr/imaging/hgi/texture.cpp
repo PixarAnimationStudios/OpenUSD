@@ -54,7 +54,8 @@ HgiTexture::_GetByteSizeOfResource(const HgiTextureDesc &descriptor)
 
     // mipInfo.byteOffset is the sum of all mip levels prior
     // to the last mip level actually used.
-    return mipInfo.byteOffset + mipInfo.byteSize;
+    return
+        mipInfo.byteOffset + descriptor.layerCount * mipInfo.byteSizePerLayer;
 
 }
 

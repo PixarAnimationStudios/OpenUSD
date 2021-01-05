@@ -144,7 +144,7 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
     const HgiMipInfo &mipInfo = mipInfos[numGivenMipmaps - 1];
 
     // Size of initial data.
-    _textureDesc.pixelsByteSize = mipInfo.byteOffset + mipInfo.byteSize;
+    _textureDesc.pixelsByteSize = mipInfo.byteOffset + mipInfo.byteSizePerLayer;
 
     if (conversionFunction) {
         const size_t numPixels = 
