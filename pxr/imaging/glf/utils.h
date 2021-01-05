@@ -53,12 +53,6 @@ GLenum GlfGetBaseFormat(int numComponents);
 GLF_API 
 int GlfGetNumElements(GLenum format);
 
-/// Number of elements.
-///
-/// Returns the number of elements (channels) in a given HioFormat.
-GLF_API 
-int GlfGetNumElements(HioFormat format);
-
 /// Byte size of a GL type.
 ///
 /// Returns the size in bytes of a given GL type.
@@ -67,12 +61,6 @@ int GlfGetNumElements(HioFormat format);
 /// GL_SHORT, GL_FLOAT, GL_DOUBLE
 GLF_API
 int GlfGetElementSize(GLenum type);
-
-/// Byte size of the element type of a given HioFormat.
-///
-/// Returns the size in bytes for an element in the given hioFormat. 
-GLF_API
-int GlfGetElementSize(HioFormat hioFormat);
 
 
 /// GL type.

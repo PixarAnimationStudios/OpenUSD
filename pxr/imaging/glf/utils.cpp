@@ -164,12 +164,6 @@ GlfGetNumElements(GLenum format)
 }
 
 int
-GlfGetNumElements(HioFormat hioFormat)
-{
-    return GlfGetNumElements(GlfGetGLFormat(hioFormat));
-}
-
-int
 GlfGetElementSize(GLenum type)
 {
     switch (type) {
@@ -189,12 +183,6 @@ GlfGetElementSize(GLenum type)
             TF_CODING_ERROR("Unsupported type");
             return sizeof(GLfloat);
     }
-}
-
-int
-GlfGetElementSize(HioFormat hioFormat)
-{
-    return GlfGetElementSize(GlfGetGLType(hioFormat));
 }
 
 GLenum

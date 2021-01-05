@@ -120,7 +120,7 @@ constexpr bool _CompileTimeValidateHgiFormatTable() {
 static_assert(_CompileTimeValidateHgiFormatTable(), 
               "_FormatDesc array out of sync with HgiFormat enum");
 
-HioFormat GetHioFormat(HgiFormat hgiFormat)
+HioFormat HdxGetHioFormat(HgiFormat hgiFormat)
 {
     return FORMAT_DESC[hgiFormat];
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,44 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_TYPES_H
-#define PXR_IMAGING_HDX_TYPES_H
+#ifndef PXR_IMAGING_HD_ST_HIO_CONVERSIONS_H
+#define PXR_IMAGING_HD_ST_HIO_CONVERSIONS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/types.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hio/types.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
-
-#include "pxr/imaging/hd/enums.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// Struct used to send shader inputs from Presto and send them to Hydra
-struct HdxShaderInputs {
-    VtDictionary parameters;
-    VtDictionary textures;
-    VtDictionary textureFallbackValues;
-    TfTokenVector attributes;
-    VtDictionary metaData;
+class HdStHioConversions 
+{
+public:
+    HDST_API
+    static HioFormat GetHioFormat(HdFormat inFormat);
 };
 
-HDX_API
-bool operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs);
-HDX_API
-bool operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs);
-HDX_API
-std::ostream& operator<<(std::ostream& out, const HdxShaderInputs& pv);
-
-/// Returns the HioFormat for the given HgiFormat
-HDX_API
-HioFormat HdxGetHioFormat(HgiFormat hgiFormat);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //PXR_IMAGING_HDX_TYPES_H
+#endif // PXR_IMAGING_HD_ST_HIO_CONVERSIONS_H

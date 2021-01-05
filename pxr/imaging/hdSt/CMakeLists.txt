@@ -84,6 +84,7 @@ pxr_library(hdSt
         glslProgram
         glUtils
         hgiConversions
+        hioConversions
         imageShaderRenderPass
         instancer
         interleavedMemoryManager
