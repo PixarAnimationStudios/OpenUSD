@@ -166,13 +166,6 @@ _GetSmallestImageLargerThan(
     return images.front();
 }
 
-static
-size_t
-_ComputeSize(const GfVec3i &dimensions)
-{
-    return dimensions[0] * dimensions[1] * dimensions[2];
-}
-
 void
 HdStUdimTextureObject::_Load()
 {
@@ -196,12 +189,11 @@ HdStUdimTextureObject::_Load()
 
     // Determine Hio and corresponding Hgi format from first tile.
     const HioFormat hioFormat = firstImageMips[0]->GetFormat();
-    HdStTextureUtils::ConversionFunction conversionFunction = nullptr;
+    const bool premultiplyAlpha = _GetPremultiplyAlpha(subId);
     _hgiFormat = HdStTextureUtils::GetHgiFormat(
         hioFormat,
-        _GetPremultiplyAlpha(subId),
-        /* avoidThreeComponentFormats = */ true,
-        &conversionFunction);
+        premultiplyAlpha,
+        /* avoidThreeComponentFormats = */ true);
 
     if (_hgiFormat == HgiFormatInvalid || HgiIsCompressed(_hgiFormat)) {
         TF_WARN("Unsupported texture format for UDIM");
@@ -240,27 +232,16 @@ HdStUdimTextureObject::_Load()
                 continue;
             }
             for (const HgiMipInfo &mipInfo : mipInfos) {
-                HioImage::StorageSpec spec;
-                spec.width = mipInfo.dimensions[0];
-                spec.height = mipInfo.dimensions[1];
-                spec.format = hioFormat;
-                spec.flipped = true;
-                spec.data =
-                    _textureData.data()
-                    + mipInfo.byteOffset
-                    + tileId * mipInfo.byteSizePerLayer;
                 HioImageSharedPtr const &image =
                     _GetSmallestImageLargerThan(images, mipInfo.dimensions);
-                image->Read(spec);
-
-                // XXX: Unfortunately, pre-multiplication is occurring after
-                // mip generation. However, it is still worth it to pre-multiply
-                // textures before texture filtering.
-                if (conversionFunction) {
-                    conversionFunction(spec.data,
-                                       _ComputeSize(mipInfo.dimensions),
-                                       spec.data);
-                }
+                HdStTextureUtils::ReadAndConvertImage(
+                    image,
+                    /* flipped = */ true,
+                    premultiplyAlpha,
+                    /* avoidThreeComponentFormats = */ true,
+                    mipInfo,
+                    tileId,
+                    _textureData.data());
             }
         }
     }, 1);

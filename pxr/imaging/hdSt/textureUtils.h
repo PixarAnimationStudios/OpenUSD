@@ -42,16 +42,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStTextureUtils
 {
 public:
-    /// Converts given number of texels. src and dst are pointers to
-    /// the source and destination buffer which can be equal for conversion
-    /// in place.
+    /// Converts given number of texels.
+    ///
+    /// Conversion can be in-place if the ends of the source and destination
+    /// buffers align.
     using ConversionFunction =
         void(*)(const void * src,
                 size_t numTexels,
                 void * dst);
 
-    /// Get the Hgi format suitable for a given Hio format. Also
-    /// return the conversion function if necessary.
+    /// Get the Hgi format suitable for a given Hio format.
     ///
     /// Premultiply alpha indicates whether a conversion function
     /// multiplying RGB with alpha should be created.
@@ -62,8 +62,18 @@ public:
     HgiFormat GetHgiFormat(
         HioFormat hioFormat,
         bool premultiplyAlpha,
-        bool avoidThreeComponentFormats,
-        ConversionFunction * conversionFunction);
+        bool avoidThreeComponentFormats);
+
+    /// Returns the conversion function to return a HioFormat
+    /// to the corresponding HgiFormat given by GetHgiFormat.
+    ///
+    /// Returns nullptr if no conversion necessary.
+    HDST_API
+    static
+    ConversionFunction GetHioToHgiConversion(
+        HioFormat hioFormat,
+        bool premultiplyAlpha,
+        bool avoidThreeComponentFormats);
 
     /// Get all mip levels from a file.
     HDST_API
@@ -86,6 +96,25 @@ public:
         size_t tileCount,
         size_t targetMemory,
         size_t * mipIndex = nullptr);
+
+    // Read given HioImage and convert it to corresponding Hgi format.
+    // Returns false if reading the HioImage failed.
+    //
+    // bufferStart is assumed to point at the beginning of a mip chain
+    // with mipInfo describing what mip level of the mip chain to be
+    // filled. layer gives the layer number if the mip chain is for an
+    // array texture.
+    HDST_API
+    static
+    bool
+    ReadAndConvertImage(
+        HioImageSharedPtr const &image,
+        bool flipped,
+        bool premultiplyAlpha,
+        bool avoidThreeComponentFormats,
+        const HgiMipInfo &mipInfo,
+        size_t layer,
+        void * bufferStart);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -96,12 +96,15 @@ HdStGlfTextureCpuData::HdStGlfTextureCpuData(
 
     const HioFormat hioFormat = textureData->GetFormat();
 
-    HdStTextureUtils::ConversionFunction conversionFunction = nullptr;
     _textureDesc.format = HdStTextureUtils::GetHgiFormat(
         hioFormat,
         premultiplyAlpha,
-        /* avoidThreeComponentFormats = */ false,
-        &conversionFunction);
+        /* avoidThreeComponentFormats = */ false);
+    const HdStTextureUtils::ConversionFunction conversionFunction =
+        HdStTextureUtils::GetHioToHgiConversion(
+            hioFormat,
+            premultiplyAlpha,
+            /* avoidThreeComponentFormats = */ false);
 
     // Handle grayscale textures by expanding value to green and blue.
     if (HgiGetComponentCount(_textureDesc.format) == 1) {
