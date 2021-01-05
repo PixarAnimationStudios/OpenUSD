@@ -207,7 +207,7 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   \em bound to Looks.  With just the objects in UsdShade one can encode
   completely generic shading; however, it also allows renderer-specific
   shading schemas to be built on top of it, and a Look can host the network
-  "terminals" for any number of renderer schemas.  
+  "terminals" for any number of renderer schemas.
 
 - \ref usdRi_page_front module for data targeted at Pixar's
   RenderMan specification.  Includes shading schemas for both RSL and RIS
