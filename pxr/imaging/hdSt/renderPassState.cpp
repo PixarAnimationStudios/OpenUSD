@@ -372,6 +372,30 @@ _SetGLCullState(HdCullStyle cullstyle)
     }
 }
 
+void
+_SetColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
+{
+    bool colorMask[4] = {true, true, true, true};
+    switch (mask)
+    {
+        case HdStRenderPassState::ColorMaskNone:
+            colorMask[0] = colorMask[1] = colorMask[2] = colorMask[3] = false;
+            break;
+        case HdStRenderPassState::ColorMaskRGB:
+            colorMask[3] = false;
+            break;
+        default:
+            ; // no-op
+    }
+
+    if (drawBufferIndex == -1) {
+        glColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+    } else {
+        glColorMaski((uint32_t) drawBufferIndex,
+                     colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+    }
+}
+
 } // anonymous namespace 
 
 void
@@ -462,17 +486,17 @@ HdStRenderPassState::Bind()
         glEnable(GL_CLIP_DISTANCE0 + i);
     }
 
-    if (!_colorMaskUseDefault) {
-        switch(_colorMask) {
-            case HdStRenderPassState::ColorMaskNone:
-                glColorMask(false, false, false, false);
-                break;
-            case HdStRenderPassState::ColorMaskRGB:
-                glColorMask(true, true, true, false);
-                break;
-            case HdStRenderPassState::ColorMaskRGBA:
-                glColorMask(true, true, true, true);
-                break;
+    if (_colorMaskUseDefault) {
+        // Enable color writes for all components for all attachments.
+        _SetColorMask(-1, ColorMaskRGBA);
+    } else {
+        if (_colorMasks.size() == 1) {
+            // Use the same color mask for all attachments.
+            _SetColorMask(-1, _colorMasks[0]);
+        } else {
+            for (size_t i = 0; i < _colorMasks.size(); i++) {
+                _SetColorMask(i, _colorMasks[i]);
+            }
         }
     }
 }

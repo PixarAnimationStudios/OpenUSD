@@ -321,8 +321,8 @@ public:
     };
 
     HD_API
-    void SetColorMask(ColorMask const& mask);
-    ColorMask GetColorMask() const { return _colorMask; }
+    void SetColorMasks(std::vector<ColorMask> const& masks);
+    std::vector<ColorMask> const& GetColorMasks() const { return _colorMasks; }
 
 protected:
     // ---------------------------------------------------------------------- //
@@ -403,7 +403,7 @@ protected:
     bool _alphaToCoverageEnabled;
 
     bool _colorMaskUseDefault;
-    ColorMask _colorMask;
+    std::vector<ColorMask> _colorMasks;
 
     HdRenderPassAovBindingVector _aovBindings;
     bool _useMultiSampleAov;

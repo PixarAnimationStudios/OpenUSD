@@ -115,7 +115,7 @@ HdxPickTask::_Init(GfVec2i const& size)
     // XXX: This is a hacky alternative to using a different shader mixin to
     // accomplish the same thing.
     _occluderRenderPassState->SetColorMaskUseDefault(false);
-    _occluderRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
+    _occluderRenderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.

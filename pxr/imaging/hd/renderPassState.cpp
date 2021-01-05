@@ -79,7 +79,6 @@ HdRenderPassState::HdRenderPassState()
     , _blendEnabled(false)
     , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
-    , _colorMask(HdRenderPassState::ColorMaskRGBA)
     , _useMultiSampleAov(true)
 
 {
@@ -392,9 +391,10 @@ HdRenderPassState::SetColorMaskUseDefault(bool useDefault)
 }
 
 void
-HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
+HdRenderPassState::SetColorMasks(
+    std::vector<HdRenderPassState::ColorMask> const& masks)
 {
-    _colorMask = mask;
+    _colorMasks = masks;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
