@@ -161,8 +161,7 @@ _PremultiplyAlphaFloat(
 std::pair<HgiFormat, HdStTextureUtils::ConversionFunction>
 _GetHgiFormatAndConversion(
     const HioFormat hioFormat,
-    const bool premultiplyAlpha,
-    const bool avoidThreeComponentFormats)
+    const bool premultiplyAlpha)
 {
     // Format dispatch, mostly we can just use the CPU buffer from
     // the texture data provided.
@@ -210,9 +209,6 @@ _GetHgiFormatAndConversion(
         case HioFormatFloat16Vec2:
             return {HgiFormatFloat16Vec2, nullptr };
         case HioFormatFloat16Vec3:
-            if (avoidThreeComponentFormats) {
-                return { HgiFormatFloat16Vec4, _ConvertRGBToRGBA<GfHalf> };
-            }
             return { HgiFormatFloat16Vec3, nullptr };
         case HioFormatFloat16Vec4:
             return {
@@ -227,9 +223,6 @@ _GetHgiFormatAndConversion(
         case HioFormatFloat32Vec2:
             return { HgiFormatFloat32Vec2, nullptr };
         case HioFormatFloat32Vec3:
-            if (avoidThreeComponentFormats) {
-                return { HgiFormatFloat32Vec4, _ConvertRGBToRGBA<float> };
-            }
             return { HgiFormatFloat32Vec3, nullptr };
         case HioFormatFloat32Vec4:
             return {
@@ -252,9 +245,6 @@ _GetHgiFormatAndConversion(
         case HioFormatUInt16Vec2:
             return { HgiFormatUInt16Vec2, nullptr };
         case HioFormatUInt16Vec3:
-            if (avoidThreeComponentFormats) {
-                return { HgiFormatUInt16Vec4, _ConvertRGBToRGBA<uint16_t> };
-            }
             return { HgiFormatUInt16Vec3, nullptr };
         case HioFormatUInt16Vec4:
             // Pre-multiplying only makes sense for RGBA colors and
@@ -294,11 +284,6 @@ _GetHgiFormatAndConversion(
         case HioFormatInt32Vec2:
             return { HgiFormatInt32Vec2, nullptr };
         case HioFormatInt32Vec3:
-            if (avoidThreeComponentFormats) {
-                return {
-                    HgiFormatInt32Vec4,
-                    _ConvertRGBToRGBA<int32_t> };
-            }
             return { HgiFormatInt32Vec3, nullptr };
         case HioFormatInt32Vec4:
             // Pre-multiplying only makes sense for RGBA colors and
@@ -367,27 +352,23 @@ _GetHgiFormatAndConversion(
 HgiFormat
 HdStTextureUtils::GetHgiFormat(
     HioFormat hioFormat,
-    const bool premultiplyAlpha,
-    const bool avoidThreeComponentFormats)
+    const bool premultiplyAlpha)
 {
     return
         _GetHgiFormatAndConversion(
             hioFormat,
-            premultiplyAlpha,
-            avoidThreeComponentFormats).first;
+            premultiplyAlpha).first;
 }
 
 HdStTextureUtils::ConversionFunction
 HdStTextureUtils::GetHioToHgiConversion(
     HioFormat hioFormat,
-    const bool premultiplyAlpha,
-    const bool avoidThreeComponentFormats)
+    const bool premultiplyAlpha)
 {
     return
         _GetHgiFormatAndConversion(
             hioFormat,
-            premultiplyAlpha,
-            avoidThreeComponentFormats).second;
+            premultiplyAlpha).second;
 }
 std::vector<HioImageSharedPtr>
 HdStTextureUtils::GetAllMipImages(
@@ -498,7 +479,6 @@ HdStTextureUtils::ReadAndConvertImage(
     HioImageSharedPtr const &image,
     const bool flipped,
     const bool premultiplyAlpha,
-    const bool avoidThreeComponentFormats,
     const HgiMipInfo &mipInfo,
     const size_t layer,
     void * const bufferStart)
@@ -507,8 +487,7 @@ HdStTextureUtils::ReadAndConvertImage(
 
     const ConversionFunction conversionFunction =
         GetHioToHgiConversion(image->GetFormat(),
-                              premultiplyAlpha,
-                              avoidThreeComponentFormats);
+                              premultiplyAlpha);
 
     // Given the start of the buffer containing all mips
     // and layers, compute where the desired mip and layer

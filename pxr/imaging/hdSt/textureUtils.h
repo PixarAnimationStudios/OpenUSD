@@ -55,14 +55,11 @@ public:
     ///
     /// Premultiply alpha indicates whether a conversion function
     /// multiplying RGB with alpha should be created.
-    /// If avoidThreeComponentFormats is true, never return a type
-    /// with three components.
     HDST_API
     static
     HgiFormat GetHgiFormat(
         HioFormat hioFormat,
-        bool premultiplyAlpha,
-        bool avoidThreeComponentFormats);
+        bool premultiplyAlpha);
 
     /// Returns the conversion function to return a HioFormat
     /// to the corresponding HgiFormat given by GetHgiFormat.
@@ -72,8 +69,7 @@ public:
     static
     ConversionFunction GetHioToHgiConversion(
         HioFormat hioFormat,
-        bool premultiplyAlpha,
-        bool avoidThreeComponentFormats);
+        bool premultiplyAlpha);
 
     /// Get all mip levels from a file.
     HDST_API
@@ -111,7 +107,6 @@ public:
         HioImageSharedPtr const &image,
         bool flipped,
         bool premultiplyAlpha,
-        bool avoidThreeComponentFormats,
         const HgiMipInfo &mipInfo,
         size_t layer,
         void * bufferStart);

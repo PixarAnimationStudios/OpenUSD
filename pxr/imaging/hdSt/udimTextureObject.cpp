@@ -192,8 +192,7 @@ HdStUdimTextureObject::_Load()
     const bool premultiplyAlpha = _GetPremultiplyAlpha(subId);
     _hgiFormat = HdStTextureUtils::GetHgiFormat(
         hioFormat,
-        premultiplyAlpha,
-        /* avoidThreeComponentFormats = */ true);
+        premultiplyAlpha);
 
     if (_hgiFormat == HgiFormatInvalid || HgiIsCompressed(_hgiFormat)) {
         TF_WARN("Unsupported texture format for UDIM");
@@ -238,7 +237,6 @@ HdStUdimTextureObject::_Load()
                     image,
                     /* flipped = */ true,
                     premultiplyAlpha,
-                    /* avoidThreeComponentFormats = */ true,
                     mipInfo,
                     tileId,
                     _textureData.data());

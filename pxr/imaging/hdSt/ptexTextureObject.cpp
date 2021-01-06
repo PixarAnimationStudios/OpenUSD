@@ -207,14 +207,12 @@ HdStPtexTextureObject::_Load()
     // premultiplyAlpha = false since Ptex cache already premultiplied.
     _format = HdStTextureUtils::GetHgiFormat(
         hioFormat,
-        /* premultiplyAlpha = */ false,
-        /* avoidThreeComponentFormats = */ true);
+        /* premultiplyAlpha = */ false);
 
     const HdStTextureUtils::ConversionFunction conversionFunction =
         HdStTextureUtils::GetHioToHgiConversion(
             hioFormat,
-            /* premultiplyAlpha = */ false,
-            /* avoidThreeComponentFormats = */ true);
+            /* premultiplyAlpha = */ false);
 
     _texelDataSize =
         _texelLayers * HgiGetDataSize(_format, _texelDimensions);

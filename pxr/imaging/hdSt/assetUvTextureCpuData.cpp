@@ -80,8 +80,7 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     // RED/RGBA) and give function to convert data if necessary.
     _textureDesc.format = HdStTextureUtils::GetHgiFormat(
         hioFormat,
-        premultiplyAlpha,
-        /* avoidThreeComponentFormats = */ false);
+        premultiplyAlpha);
 
     if (_textureDesc.format == HgiFormatInvalid) {
         TF_WARN("Unsupported texture format for UV texture");
@@ -151,7 +150,6 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
                     mips[firstMip + i],
                     /* flipped = */ originLocation == HioImage::OriginLowerLeft,
                     premultiplyAlpha,
-                    /* avoidThreeComponentFormats = */ false,
                     mipInfos[i],
                     /* layer = */ 0,
                     _rawBuffer.get())) {
