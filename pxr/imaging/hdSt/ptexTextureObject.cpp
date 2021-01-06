@@ -183,17 +183,10 @@ HdStPtexTextureObject::_Load()
     const size_t numFaces = loader.GetNumFaces();
 
     // Layout data in memory buffer after load
-    constexpr size_t maxTextureSize = 16384;
-    const size_t layoutNumInt16 = numFaces * 6; // 6 uint16_t per face
-    const size_t layoutNumInt32Vec3 = layoutNumInt16 / 6; // 1 ivec3 per texel
-    constexpr size_t layoutNumInt32Vec3PerLayer = maxTextureSize;
-    const size_t layoutNumLayers =
-        (size_t) ceil((float)layoutNumInt32Vec3 / layoutNumInt32Vec3PerLayer);
-
-    const size_t layoutNumInt32Vec3ToAlloc =
-        layoutNumLayers * layoutNumInt32Vec3PerLayer;
-    _layoutDimensions = GfVec2i(layoutNumInt32Vec3PerLayer,
-                                layoutNumLayers);
+    constexpr size_t maxTextureWidth = 16384;
+    _layoutDimensions = GfVec2i(
+        maxTextureWidth,
+        (numFaces + maxTextureWidth - 1) / maxTextureWidth);
 
     const unsigned char * const loaderTexelBuffer = loader.GetTexelBuffer();
     if (!loaderTexelBuffer) {
@@ -236,10 +229,13 @@ HdStPtexTextureObject::_Load()
         memcpy(_texelData.get(), loaderTexelBuffer, _texelDataSize);
     }
 
-    _layoutDataSize = layoutNumInt32Vec3ToAlloc * 3 * sizeof(uint32_t);
+    static const size_t bytesPerFace =
+        HgiGetDataSizeOfFormat(HgiFormatInt32Vec3);
+
+    _layoutDataSize =
+        _layoutDimensions[0] * _layoutDimensions[1] * bytesPerFace;
     _layoutData = std::make_unique<uint8_t[]>(_layoutDataSize);
-    memcpy(_layoutData.get(), loaderLayoutBuffer,
-           layoutNumInt16 * sizeof(uint16_t));
+    memcpy(_layoutData.get(), loaderLayoutBuffer, numFaces * bytesPerFace);
 #endif
 }
 
