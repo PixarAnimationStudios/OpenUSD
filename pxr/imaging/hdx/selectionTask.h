@@ -43,8 +43,10 @@ class HdSceneDelegate;
 struct HdxSelectionTaskParams
 {
     bool enableSelection;
-    GfVec4f selectionColor;
-    GfVec4f locateColor;
+    float occludedSelectionOpacity; // lerp factor when blending 
+                                    // occluded selection
+    GfVec4f selectionColor; // "active" selection color
+    GfVec4f locateColor; // "rollover" selection color
 };
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;

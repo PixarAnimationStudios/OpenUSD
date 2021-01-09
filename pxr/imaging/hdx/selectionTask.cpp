@@ -48,7 +48,7 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     : HdTask(id)
     , _lastVersion(-1)
     , _hasSelection(false)
-    , _params({false, GfVec4f(), GfVec4f()})
+    , _params({false, 0.5, GfVec4f(), GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
     , _selPointColorsBar(nullptr)
@@ -132,6 +132,8 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                                       HdTupleType { HdTypeFloatVec4, 1 });
             uniformSpecs.emplace_back(HdxTokens->selLocateColor,
                                       HdTupleType { HdTypeFloatVec4, 1 });
+            uniformSpecs.emplace_back(HdxTokens->occludedSelectionOpacity,
+                                      HdTupleType { HdTypeFloat, 1 });
             _selUniformBar = 
                 hdStResourceRegistry->AllocateUniformBufferArrayRange(
                     /*role*/HdxTokens->selection,
@@ -161,7 +163,10 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                     VtValue(_params.selectionColor)),
                 std::make_shared<HdVtBufferSource>(
                     HdxTokens->selLocateColor,
-                    VtValue(_params.locateColor))
+                    VtValue(_params.locateColor)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->occludedSelectionOpacity,
+                    VtValue(_params.occludedSelectionOpacity))
             });
 
         //
