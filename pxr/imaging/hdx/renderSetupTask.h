@@ -116,8 +116,9 @@ private:
 
     static void _CreateOverrideShader();
 
-    void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
-                                 HdStRenderPassState *renderPassState);
+    void _SetRenderpassAndOverrideShadersForStorm(
+        HdxRenderTaskParams const& params,
+        HdStRenderPassState *renderPassState);
 
     HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
 
@@ -139,6 +140,7 @@ struct HdxRenderTaskParams
         // Global Params
         : overrideColor(0.0)
         , wireframeColor(0.0)
+        , pointColor(GfVec4f(0,0,0,1))
         , pointSize(3.0)
         , enableLighting(false)
         , enableIdRender(false)
@@ -148,7 +150,6 @@ struct HdxRenderTaskParams
         // Selection/Masking params
         , maskColor(1.0f, 0.0f, 0.0f, 1.0f)
         , indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
-        , pointColor(GfVec4f(0,0,0,1))
         , pointSelectedSize(3.0)
         // Storm render pipeline state
         , depthBiasUseDefault(true)
@@ -188,6 +189,7 @@ struct HdxRenderTaskParams
     // "Global" parameters while rendering.
     GfVec4f overrideColor;
     GfVec4f wireframeColor;
+    GfVec4f pointColor;
     float pointSize;
     bool enableLighting;
     bool enableIdRender;
@@ -198,7 +200,6 @@ struct HdxRenderTaskParams
     // Selection/Masking params
     GfVec4f maskColor;
     GfVec4f indicatorColor;
-    GfVec4f pointColor;
     float pointSelectedSize;
 
     // AOVs to render to
