@@ -184,9 +184,12 @@ HdStPtexTextureObject::_Load()
 
     // Layout data in memory buffer after load
     constexpr size_t maxTextureWidth = 16384;
+    constexpr size_t layoutTexelsPerFace = 3;
+    constexpr size_t maxFacesPerLayer = maxTextureWidth / layoutTexelsPerFace;
+
     _layoutDimensions = GfVec2i(
-        maxTextureWidth,
-        (numFaces + maxTextureWidth - 1) / maxTextureWidth);
+        maxFacesPerLayer * layoutTexelsPerFace,
+        (numFaces + maxFacesPerLayer - 1) / maxFacesPerLayer);
 
     const unsigned char * const loaderTexelBuffer = loader.GetTexelBuffer();
     if (!loaderTexelBuffer) {
@@ -227,13 +230,14 @@ HdStPtexTextureObject::_Load()
         memcpy(_texelData.get(), loaderTexelBuffer, _texelDataSize);
     }
 
-    static const size_t bytesPerFace =
-        HgiGetDataSizeOfFormat(HgiFormatInt32Vec3);
+    static const size_t layoutBytesPerTexel =
+        HgiGetDataSizeOfFormat(HgiFormatUInt16Vec2);
 
     _layoutDataSize =
-        _layoutDimensions[0] * _layoutDimensions[1] * bytesPerFace;
+        _layoutDimensions[0] * _layoutDimensions[1] * layoutBytesPerTexel;
     _layoutData = std::make_unique<uint8_t[]>(_layoutDataSize);
-    memcpy(_layoutData.get(), loaderLayoutBuffer, numFaces * bytesPerFace);
+    memcpy(_layoutData.get(), loaderLayoutBuffer,
+           numFaces * layoutTexelsPerFace * layoutBytesPerTexel);
 #endif
 }
 
@@ -287,7 +291,7 @@ HdStPtexTextureObject::_Commit()
         texDesc.type = HgiTextureType1DArray;
         texDesc.dimensions = GfVec3i(_layoutDimensions[0], 1, 1);
         texDesc.layerCount = _layoutDimensions[1];
-        texDesc.format = HgiFormatInt32Vec3;
+        texDesc.format = HgiFormatUInt16Vec2;
         texDesc.mipLevels = 1;
         texDesc.initialData = _layoutData.get();
         texDesc.pixelsByteSize = _layoutDataSize;
