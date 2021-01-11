@@ -269,12 +269,15 @@ public:
                 }
             }
         }
-        // Aliases cannot conflict with typeNames, either.
-        if (_typeNameToTypeMap.count(alias) != 0) {
+        // Aliases cannot conflict with typeNames that are derived from the
+        // same base, either.
+        const auto it = _typeNameToTypeMap.find(alias);
+        if (it != _typeNameToTypeMap.end() &&
+            it->second->canonicalTfType._IsAImpl(base->canonicalTfType)) {
             *errMsg = TfStringPrintf(
-                "There already is a type named '%s'; cannot "
-                "create an alias of the same name.",
-                alias.c_str());
+                "There already is a type named '%s' derived from base "
+                "type '%s'; cannot create an alias of the same name.",
+                alias.c_str(), base->typeName.c_str());
             return;
         }
 
