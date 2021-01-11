@@ -415,24 +415,6 @@ vec4 ComputeSelectionOffset()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Selection.RenderUnselected
-
-void DiscardBasedOnSelection(bool isSelected)
-{
-    // Nothing to do. 
-}
-
---- --------------------------------------------------------------------------
--- glsl Selection.DiscardUnselected
-
-void DiscardBasedOnSelection(bool isSelected)
-{
-    if (!isSelected) {
-        discard;
-    }
-}
-
---- --------------------------------------------------------------------------
 -- glsl Selection.ComputeColor
 
 #if defined(HD_HAS_hdxSelectionBuffer)
@@ -502,8 +484,6 @@ vec4 ApplySelectionColor(vec4 color)
         }
     } // for each highlight mode
     
-    DiscardBasedOnSelection(isSelected);
-
 #endif
     return color;
 }

@@ -82,7 +82,6 @@ pxr_library(hdx
         shaders/fullscreen.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
-        shaders/renderPassDiscardUnselectedShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassPickingShader.glslfx
         shaders/renderPassShadowShader.glslfx
