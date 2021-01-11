@@ -1,5 +1,185 @@
 # Change Log
 
+## [21.02] - 2021-01-18
+
+### Build
+- Added build and packaging scripts for PyPI packages. Thanks to Nvidia for
+  their work on this project!
+- Updated documentation build to fix several issues and no longer require 
+  Python. (Issue #718)
+- GLEW is no longer required for building imaging components.
+
+- Various fixes and changes to build_usd.py:
+  - Fixed command-line args not being respected for OpenVDB. (PR #1406)
+  - Updated boost to 1.70 on macOS for both Python 2 and 3. (Issue #1369)
+  - Updated MaterialX to 1.37.3 with shared libraries on Linux.
+
+- Fixed various linking issues with OpenEXR. (PR #1398)
+
+### USD
+- Allow setting malloc hook functions if they were previously set to malloc/etc.
+- Fixed handling of symbolic links and mount points on Windows. (PR #1378)
+- Fixed incorrect handling of non-existent variables in TfEnvSetting in Python.
+- Updated GfRect2i API to use function and argument names that are agnostic
+  to the direction of the Y axis.
+- Updated ilmbase half embedded in Gf to OpenEXR v2.5.3. (Issue #1354)
+- Added VtArray::AsConst, cfront, and cback methods to help avoid inadvertent
+  copy-on-writes and thread-safety issues.
+
+- Fixes for variety of issues with VtArray conversions in Python, including
+  conversion from Python sequences if all elements are convertible and a
+  bug with inadvertent copy-on-writes. (Issue #1138)
+
+- Initial implementation of Ar 2.0. This includes new features like support
+  for URI resolvers and many changes to the ArResolver interface. For more
+  details see https://graphics.pixar.com/usd/docs/668045551.html.
+
+  Work on Ar 2.0 is not yet complete and will continue through the next few
+  releases. Ar 2.0 is disabled by default but can be enabled for preview and
+  initial testing by specifying `PXR_USD_AR_2=ON` when running CMake.
+
+- Moved SdfFindOrOpenRelativeToLayer to SdfLayer::FindOrOpenRelativeToLayer.
+- Fixed SdfLayer::FindRelativeToLayer to use the same anchoring logic as
+  SdfLayer::FindOrOpenRelativeToLayer.
+- Fixed string encoding issue in .usda file writer. (Issue #1331)
+- Improved behavior when hitting hard-coded composition graph limits in Pcp.
+- Fixed incorrect native instancing behavior with sub-root references.
+
+- Added support for auto-apply API schemas. This allows single-apply API
+  schemas to be automatically applied to prims using one of a list of
+  associated concrete schema types instead of requiring the user to manually
+  apply the API schema.
+
+- Renamed UsdSchemaType to UsdSchemaKind to disambiguate between the schema
+  type (e.g. UsdGeomSphere) and kind (e.g. non-applied, single-apply, etc).
+- Deprecated functions using the "schema type" terminology in favor of
+  "schema kind".
+- Added UsdVariantSet::BlockVariantSelection. (Issue #1319, PR #1340)
+- Removed deprecated UsdAttribute::BlockConnections.
+- Removed deprecated UsdRelationship::BlockTargets.
+- Removed deprecated UsdCollectionAPI::ApplyCollection.
+- Added "container" concept to UsdShadeConnectableAPI.
+- Added support for connecting multiple sources to UsdShadeConnectableAPI.
+- Deprecated API for connecting to single sources in favor of the more
+  general multiple-source API on UsdShadeConnectableAPI.
+
+- Deprecated UsdConnectableAPI::IsShader and IsNodeGraph in favor of
+  IsContainer API. Warnings are emitted on first use unless the environment
+  setting `USD_SHADE_EMIT_CONNECTABLE_API_DEPRECATION_WARNING` is set to 0.
+
+- Updated various clients to apply the UsdShadeMaterialBindingAPI schema
+  before binding materials.
+- Fixed Python binding for UsdShade.CoordSysAPI.HasLocalBindings. (PR #1360)
+- Fixed Python binding for UsdSkel.SkinningQuery.ComputeExtentsPadding.
+  (Issue #1375)
+- Added UsdLuxPluginLight and UsdLuxPluginLightFilter schemas that allow for
+  defining a light or light filter via an SdrShaderNode.
+- UsdLuxLight and UsdLuxLightFilter schemas now publish an associated
+  SdrShaderNode based on their built-in properties.
+- Input attributes for UsdLuxLight and UsdLuxLightFilter schemas are now
+  connectable and have been renamed to include the "inputs:" prefix.
+- Deprecated UsdLuxLightPortal schema in favor of new UsdLuxPortalLight schema.
+
+### Imaging
+- Added new GL Loading Library (GLApi) to replace GLEW. GLEW is no longer 
+  required.
+- Added HioImage, removed GlfImage.
+- Added new camera framing API. Introduces the display and data window and 
+  storage size to separate these concepts. Updated Storm, HdPrman, and HdEmbree.
+- Added support for normal buffers to HdxPickFromRenderBufferTask.
+- Added standard prim API to HdInstancer and HdSceneDelegate::GetInstancerId.
+- Added support for animated extents when using draw modes. (PR #1365)
+- Improved Hydra camera to better support physically based attributes.
+- Extended HdDisplayStyle to house more advanced selection behaviors.
+- Changed renderParams timeCode default values from Default to EarliestValue.
+- Changed UsdImagingDelegate to map HdLightTokens to the new input attribute 
+  names in queries through GetLightParamValue.
+- Merged tokens textureResourceMemory into textureMemory for better performance 
+  tracking.
+- Renamed UsdImagingValueCache to UsdImagingPrimvarDescCache, it only stores 
+  primvar descriptors.
+- Removed implementations of deprecated HdSceneDelegate::GetTextureResource.
+- Removed HwFieldReader volume material node in favor of typed nodes.
+- Fixed bug in pick targets when resolving unique hits. (Issue #1343)
+- Fixed UsdSkel instance drawing at origin bug. (Issue #1347)
+- Fixed UsdImaging to discard coord sys bindings to non-existent xforms. 
+  (Issue #1346)
+- Fixed UsdSkelImagingSkeletonAdapter to forward GetMaterialId and 
+  GetDoubleSided calls to skinned mesh primadapter. (Issue #1384)
+- Fixed an issue where UsdSkelImagingSkeletonAdapter::_RemovePrim() failed to 
+  remove skeletons that did not have any bindings to skinned prims. 
+  (Issue #1228, #1248)
+- Fixed some display crashes after resyncing skeletons. (PR #1397)
+- Fixed dome light preview surface. (PR #1392)
+- Fixed links to OpenEXR for Alembic and OpenImageIO plugins. (PR #1398)
+
+### Storm
+- Added support for varying interpolation of any basis curves primvar. 
+  (Issue #1308)
+- Added support for HdStResourceRegistry::ReloadResource to allow clients to 
+  explicitly force textures to be reloaded by file path. (Issue #1352)
+- Added a new HdMaterialNetwork2 to combine (and then replace) 
+  HdStMaterialNetwork and MatFiltNetwork.
+- Added step to convert 3 channel textures to 4 channel to support Hgi backends 
+  with 4 channel requirements.
+- Added Resize() to barContainer.
+- Added fieldTextureMemory render setting to specify the target memory of 
+  volume textures.
+- Added experimental MaterialXFilter to process a material network and convert 
+  it into a MaterialX network. Also, added a first pass on a MaterialX 
+  shadergen.
+- Enabled bindless textures by default.
+- Several improvements to volume rendering including a step size relative to the 
+  sample distance so that the quality of the rendered volume does not depend on 
+  the scale.
+- Optimized HdStRenderBuffer performance by only allocating when the descriptor 
+  changes.
+- Optimized computations by avoiding copying the compute kernel for GPU 
+  computations.
+- Refactored face culling to remove fragment shader discards when possible.
+- Refactored geometric shaders such that only prims with the "masked" material 
+  tag can use alpha threshold based discards.
+- Switched Storm over to using the "translucent" material tag rather than 
+  "additive" as the default translucency state.
+- Fixed handling of valid to invalid BAR transitions due to Scene graph 
+  operations on primvars or primvar filtering. (Issue #1182)
+- Fixed GPU memory leak of certain buffers never getting garbage collected.
+- Fixed fullscreen pass to preserve alpha.
+- Removed instance primvar filtering.
+- Various improvements to Hgi :
+  - Added initial version of the Hgi codegen to be able to produce 
+    GLSL/MetalSL/others from glslfx.
+  - Added the first push of our experimental, incomplete, HgiVulkan backend, 
+    which does not yet build by default.
+  - Added memory barriers to Hgi.
+  - Added CopyTextureToBuffer and CopyBufferToTexture to HgiBlitCmds.
+  - Added 2D_ARRAY support to Hgi.
+  - Moved Ptex and Udim loading from Glf to Hgi and Storm.
+  - Added UINT16 format as prep work for Ptex support.
+  - Fixed obj-c autorelease issue, and simplification of secondary command 
+    buffer in HgiMetal compute encoder.
+  - Fixed HgiTexture::GetByteSizeOfResource to take the mip levels into account.
+  - Fixed for missing include. (PR #1359)
+
+### usdview
+- Fixed StageView.pickObject when doubles are small or out of image-bounds. 
+  (PR #1296)
+
+### MaterialX Plugin
+- Removed deprecated support for MaterialX 1.36.
+
+### Embree Hydra Plugin
+- Added support for new camera framing API and HdCamera API.
+
+### RenderMan Hydra Plugin
+- Bumped version requirement to RenderMan 23.5 or greater.
+- Improved calculation of vertex, varying, and face-varying primvar counts in 
+  BasisCurves to better match RenderMan.
+- Added support for new camera framing API and HdCamera API.
+- Added support for material node int array inputs. (Issue #1294)
+- Fixed issue that caused parameters from a shader to be incorrectly carried 
+  over to the next shader that was parsed. (Issue #1396)
+
 ## [20.11] - 2020-10-14
 
 ### Build
