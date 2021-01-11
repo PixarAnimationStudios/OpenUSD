@@ -91,43 +91,42 @@ struct _TypeMapCache {
         const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
 
         auto _MapDerivedTypes = [this, &schemaBaseType](
-            const TfType &baseType, bool isConcrete) 
+            const TfType &baseType, bool isTyped) 
         {
             set<TfType> types;
             PlugRegistry::GetAllDerivedTypes(baseType, &types);
             for (const TfType &type : types) {
                 // The USD type name is the type's alias under UsdSchemaBase. 
-                // Only concrete typed and API schemas should have a type name 
-                // alias.
+                // All schemas should have a type name alias.
                 const vector<string> aliases = schemaBaseType.GetAliases(type);
                 if (aliases.size() == 1) {
                     TfToken typeName(aliases.front(), TfToken::Immortal);
                     nameToType.insert(std::make_pair(
-                        typeName, TypeInfo(type, isConcrete)));
+                        typeName, TypeInfo(type, isTyped)));
                     typeToName.insert(std::make_pair(
-                        type, TypeNameInfo(typeName, isConcrete)));
+                        type, TypeNameInfo(typeName, isTyped)));
                 }
             }
         };
 
-        _MapDerivedTypes(TfType::Find<UsdTyped>(), /*isConcrete=*/true);
-        _MapDerivedTypes(TfType::Find<UsdAPISchemaBase>(), /*isConcrete=*/false);
+        _MapDerivedTypes(TfType::Find<UsdTyped>(), /*isTyped=*/true);
+        _MapDerivedTypes(TfType::Find<UsdAPISchemaBase>(), /*isTyped=*/false);
     }
 
     // For each type and type name mapping we also want to store if it's a 
     // concrete prim type vs an API schema type. 
     struct TypeInfo {
         TfType type;
-        bool isConcrete;
-        TypeInfo(const TfType &type_, bool isConcrete_) 
-            : type(type_), isConcrete(isConcrete_) {}
+        bool isTyped;
+        TypeInfo(const TfType &type_, bool isTyped_) 
+            : type(type_), isTyped(isTyped_) {}
     };
 
     struct TypeNameInfo {
         TfToken name;
-        bool isConcrete;
-        TypeNameInfo(const TfToken &name_, bool isConcrete_) 
-            : name(name_), isConcrete(isConcrete_) {}
+        bool isTyped;
+        TypeNameInfo(const TfToken &name_, bool isTyped_) 
+            : name(name_), isTyped(isTyped_) {}
     };
 
     TfHashMap<TfToken, TypeInfo, TfHash> nameToType;
@@ -139,64 +138,6 @@ struct _TypeMapCache {
 static const _TypeMapCache &_GetTypeMapCache() {
     static _TypeMapCache typeCache;
     return typeCache;
-}
-
-/*static*/
-TfToken 
-UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    return it != typeMapCache.typeToName.end() ? it->second.name : TfToken();
-}
-
-/*static*/
-TfToken 
-UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    return it != typeMapCache.typeToName.end() && it->second.isConcrete ? 
-        it->second.name : TfToken();
-}
-
-/*static*/
-TfToken 
-UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    return it != typeMapCache.typeToName.end() && !it->second.isConcrete ? 
-        it->second.name : TfToken();
-}
-
-/*static*/
-TfType 
-UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    return it != typeMapCache.nameToType.end() ? it->second.type : TfType();
-}
-
-/*static*/
-TfType 
-UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    return it != typeMapCache.nameToType.end() && it->second.isConcrete ? 
-        it->second.type : TfType();
-}
-
-/*static*/
-TfType 
-UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName) 
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    return it != typeMapCache.nameToType.end() && !it->second.isConcrete ? 
-        it->second.type : TfType();
 }
 
 static bool 
@@ -259,6 +200,72 @@ _GetSchemaKindFromPlugin(const TfType &schemaType)
     }
 
     return _GetSchemaKindFromMetadata(plugin->GetMetadataForType(schemaType));
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    return it != typeMapCache.typeToName.end() ? it->second.name : TfToken();
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    if (it != typeMapCache.typeToName.end() &&
+        it->second.isTyped && 
+        _IsConcreteSchemaKind(_GetSchemaKindFromPlugin(schemaType))) {
+        return it->second.name;
+    }
+    return TfToken();
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.typeToName.find(schemaType);
+    return it != typeMapCache.typeToName.end() && !it->second.isTyped ? 
+        it->second.name : TfToken();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    return it != typeMapCache.nameToType.end() ? it->second.type : TfType();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    if (it != typeMapCache.nameToType.end() && 
+        it->second.isTyped && 
+        _IsConcreteSchemaKind(_GetSchemaKindFromPlugin(it->second.type))) {
+        return it->second.type; 
+    }
+    return TfType();
+}
+
+/*static*/
+TfType 
+UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName) 
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    return it != typeMapCache.nameToType.end() && !it->second.isTyped ? 
+        it->second.type : TfType();
 }
 
 // This result struct is useful for handling the fact that we're going to 
@@ -498,7 +505,7 @@ _GetAppliedAPISchemaNames()
         const TfType &type = valuePair.first;
         const TfToken &typeName = valuePair.second.name;
 
-        if (!valuePair.second.isConcrete &&
+        if (!valuePair.second.isTyped &&
             _IsAppliedAPISchemaKind(_GetSchemaKind(type).schemaKind)) {
             result.insert(typeName);
         }

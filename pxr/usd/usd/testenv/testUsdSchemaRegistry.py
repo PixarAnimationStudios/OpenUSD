@@ -126,29 +126,53 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_GetUsdSchemaTypeName(self):
-        testType = Tf.Type.FindByName("TestUsdSchemaRegistryMetadataTest")
+        abstractTest = Tf.Type.FindByName("TestUsdSchemaRegistryAbstractTest")
+        concreteTest = Tf.Type.FindByName("TestUsdSchemaRegistryMetadataTest")
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
         # Test getting a schema type name from a TfType for a concrete typed
         # schema. 
         self.assertEqual(
-            Usd.SchemaRegistry.GetSchemaTypeName(testType), 
+            Usd.SchemaRegistry.GetSchemaTypeName(concreteTest), 
             "MetadataTest")
         self.assertEqual(
-            Usd.SchemaRegistry.GetConcreteSchemaTypeName(testType),
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(concreteTest),
             "MetadataTest")
         self.assertEqual(
-            Usd.SchemaRegistry.GetAPISchemaTypeName(testType), 
+            Usd.SchemaRegistry.GetAPISchemaTypeName(concreteTest), 
             "")
 
         # Test the reverse of getting the TfType for concrete typed schema name.
         self.assertEqual(
             Usd.SchemaRegistry.GetTypeFromSchemaTypeName("MetadataTest"),
-            testType)
+            concreteTest)
         self.assertEqual(
             Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("MetadataTest"),
-            testType)
+            concreteTest)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("MetadataTest"), 
+            Tf.Type.Unknown)
+
+        # Test getting a schema type name from a TfType for an abstract typed
+        # schema. 
+        self.assertEqual(
+            Usd.SchemaRegistry.GetSchemaTypeName(abstractTest), 
+            "AbstractTest")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(abstractTest),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(abstractTest), 
+            "")
+
+        # Test the reverse of getting the TfType for abastract typed schema name.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetTypeFromSchemaTypeName("AbstractTest"),
+            abstractTest)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("AbstractTest"),
+            Tf.Type.Unknown)
         self.assertEqual(
             Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("MetadataTest"), 
             Tf.Type.Unknown)

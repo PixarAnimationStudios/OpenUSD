@@ -1067,7 +1067,7 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
                     {"apiSchemaAutoApplyTo": list(cls.apiAutoApply)})
 
             # Write out alias/primdefs for concrete IsA schemas and API schemas
-            if (cls.isConcrete or cls.isApi):
+            if (cls.isTyped or cls.isApi):
                 clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
 
             types[cls.cppClassName] = clsDict
