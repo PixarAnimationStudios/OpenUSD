@@ -425,7 +425,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
             thisShader),
         HdStComputeQueueZero);
     
-    static const GLuint numPrefilterLevels = 5;
+    constexpr unsigned int numPrefilterLevels = 5;
 
     // Prefilter map computations. mipLevel = 0 allocates texture.
     for (unsigned int mipLevel = 0; mipLevel < numPrefilterLevels; ++mipLevel) {
