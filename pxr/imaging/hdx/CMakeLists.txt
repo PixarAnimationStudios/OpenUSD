@@ -80,17 +80,17 @@ pxr_library(hdx
         shaders/colorChannel.glslfx
         shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx
+        shaders/oitResolveImageShader.glslfx
+        shaders/outline.glslfx
         shaders/renderPass.glslfx
-        shaders/renderPassShader.glslfx
+        shaders/renderPassColorShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassPickingShader.glslfx
-        shaders/renderPassShadowShader.glslfx
-        shaders/selection.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
         shaders/renderPassOitVolumeShader.glslfx
-        shaders/oitResolveImageShader.glslfx
-        shaders/outline.glslfx
+        shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
         textures/StinsonBeach.exr
 
     DOXYGEN_FILES

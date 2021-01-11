@@ -63,9 +63,9 @@ HdxPackageFullscreenShader()
 }
 
 TfToken
-HdxPackageRenderPassShader()
+HdxPackageRenderPassColorShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassShader.glslfx");
+    static TfToken shader = _GetShaderPath("renderPassColorShader.glslfx");
     return shader;
 }
 

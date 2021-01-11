@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 TfToken HdxPackageFullscreenShader();
-TfToken HdxPackageRenderPassShader();
+TfToken HdxPackageRenderPassColorShader();
 TfToken HdxPackageRenderPassIdShader();
 TfToken HdxPackageRenderPassPickingShader();
 TfToken HdxPackageRenderPassShadowShader();

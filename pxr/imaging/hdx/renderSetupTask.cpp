@@ -52,7 +52,7 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _viewport(0)
 {
     _colorRenderPassShader.reset(
-        new HdStRenderPassShader(HdxPackageRenderPassShader()));
+        new HdStRenderPassShader(HdxPackageRenderPassColorShader()));
     _idRenderPassShader.reset(
         new HdStRenderPassShader(HdxPackageRenderPassIdShader()));
 }
