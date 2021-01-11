@@ -54,8 +54,8 @@ int main(int argc, char** argv)
     ArchLogPostMortem("Test Crashing");
 
     // test crashing with and without spawning
-    ArchTestCrash(ArchTestCrashMode::CorruptMemory);
-    ArchTestCrash(ArchTestCrashMode::CorruptMemoryWithThread);
+    ArchTestCrash(ArchTestCrashMode::ReadInvalidAddresses);
+    ArchTestCrash(ArchTestCrashMode::ReadInvalidAddressesWithThread);
 
     // test GetStackTrace
     std::vector<std::string> stackTrace = ArchGetStackTrace(20);
