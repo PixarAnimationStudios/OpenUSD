@@ -44,16 +44,18 @@ HdRenderPassState::HdRenderPassState()
 
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
-    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
-    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
-    , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
+
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
+    , _pointSelectedSize(3.0)
 
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
     , _drawRange(0.9, -1.0)
+
     , _depthBiasUseDefault(true)
     , _depthBiasEnabled(false)
     , _depthBiasConstantFactor(0.0f)
