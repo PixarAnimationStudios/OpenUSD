@@ -68,11 +68,6 @@ class SdfAssetPath;
 /// 
 /// Linking is specified as a collection (UsdCollectionAPI) which can
 /// be accessed via GetFilterLinkCollection().
-/// Note however that there are extra semantics in how UsdLuxLightFilter
-/// uses its collection: if a collection is empty, the filter is treated
-/// as linked to <i>all</i> geometry for the respective purpose.
-/// UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
-/// of this filter-specific interpretation.
 /// 
 ///
 class UsdLuxLightFilter : public UsdGeomXformable
