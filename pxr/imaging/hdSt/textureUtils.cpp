@@ -209,7 +209,10 @@ _GetHgiFormatAndConversion(
         case HioFormatFloat16Vec2:
             return {HgiFormatFloat16Vec2, nullptr };
         case HioFormatFloat16Vec3:
-            return { HgiFormatFloat16Vec3, nullptr };
+            // HgiFormatFloat16Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatFloat16Vec4, _ConvertRGBToRGBA<GfHalf> };
         case HioFormatFloat16Vec4:
             return {
                 HgiFormatFloat16Vec4,
@@ -223,7 +226,10 @@ _GetHgiFormatAndConversion(
         case HioFormatFloat32Vec2:
             return { HgiFormatFloat32Vec2, nullptr };
         case HioFormatFloat32Vec3:
-            return { HgiFormatFloat32Vec3, nullptr };
+            // HgiFormatFloat32Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatFloat32Vec4, _ConvertRGBToRGBA<float> };
         case HioFormatFloat32Vec4:
             return {
                 HgiFormatFloat32Vec4,
@@ -245,7 +251,10 @@ _GetHgiFormatAndConversion(
         case HioFormatUInt16Vec2:
             return { HgiFormatUInt16Vec2, nullptr };
         case HioFormatUInt16Vec3:
-            return { HgiFormatUInt16Vec3, nullptr };
+            // HgiFormatUInt16Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatUInt16Vec4, _ConvertRGBToRGBA<uint16_t> };
         case HioFormatUInt16Vec4:
             // Pre-multiplying only makes sense for RGBA colors and
             // the signed integers do not make sense for RGBA.
@@ -284,7 +293,10 @@ _GetHgiFormatAndConversion(
         case HioFormatInt32Vec2:
             return { HgiFormatInt32Vec2, nullptr };
         case HioFormatInt32Vec3:
-            return { HgiFormatInt32Vec3, nullptr };
+            // HgiFormatInt32Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatInt32Vec4, _ConvertRGBToRGBA<int32_t> };
         case HioFormatInt32Vec4:
             // Pre-multiplying only makes sense for RGBA colors and
             // the signed integers do not make sense for RGBA.
