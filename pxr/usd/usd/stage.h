@@ -1891,7 +1891,7 @@ private:
     template <class T>
     void _Recompose(const PcpChanges &changes, T *pathsToRecompose);
     template <class T>
-    void _RecomposePrims(const PcpChanges &changes, T *pathsToRecompose);
+    void _RecomposePrims(T *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
