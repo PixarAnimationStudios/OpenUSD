@@ -642,9 +642,11 @@ _GetAutoApplyAPISchemas()
 }
 
 static _TypeToTokenVecMap
-_GetConcreteTypeToAutoAppliedAPISchemaNames()
+_GetTypeToAutoAppliedAPISchemaNames()
 {
     _TypeToTokenVecMap result;
+
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
 
     std::vector<std::pair<TfToken, TfTokenVector>> autoApplyAPISchemas =
         _GetAutoApplyAPISchemas();
@@ -658,31 +660,25 @@ _GetConcreteTypeToAutoAppliedAPISchemaNames()
         std::set<TfType> applyToTypes;
         for (const TfToken &schemaName : autoApplyToSchemas) {
             // The names listed are the USD type names (not the full TfType 
-            // name) so we get actual concrete TfType and its derived types.
-            // 
-            // XXX: We want to be able to include all derived types of an 
-            // abstract schema types by including the abstract type name in 
-            // the list, but we don't have aliased type names for abstract 
-            // schemas yet. There is an upcoming task to address the lack 
-            // of abstract type aliases and this code can be updated to accept
-            // abstract types once that happens.
-            const TfType schemaType = 
-                UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(schemaName);
-            if (!schemaType.IsUnknown()) {
+            // name) for abstract and concrete Typed schemas, so we need to get 
+            // the actual TfType of the schema and its derived types.
+            const auto it = typeMapCache.nameToType.find(schemaName);
+            if (it != typeMapCache.nameToType.end() && it->second.isTyped) {
+                const TfType &schemaType = it->second.type;
                 applyToTypes.insert(schemaType);
                 schemaType.GetAllDerivedTypes(&applyToTypes);
             }
         }
 
         // With all the apply to types collected we can add the API schema to
-        // the list of applied schemas for each concrete type.
+        // the list of applied schemas for each Typed schema type.
         for (const TfType &applyToType : applyToTypes) {
             result[applyToType].push_back(apiSchemaName);
         }
     }
 
-    // Finally, with every concrete type mapped to all of its auto applied API
-    // scheemas, we sort the auto-applied API schemas in each list by name.
+    // Finally, with every type mapped to all of its auto applied API
+    // schemas, we sort the auto-applied API schemas in each list by name.
     // This ordering is arbitrary but necessary to ensure we get a consistent 
     // strength ordering for auto applied schemas every time. In practice, 
     // schema writers should be careful to make sure that auto applied API 
@@ -734,8 +730,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
     SdfChangeBlock block;
     TfToken::HashSet appliedAPISchemaNames = _GetAppliedAPISchemaNames();
-    _TypeToTokenVecMap concreteTypeToAutoAppliedAPISchemaNames =
-        _GetConcreteTypeToAutoAppliedAPISchemaNames();
+    _TypeToTokenVecMap typeToAutoAppliedAPISchemaNames =
+        _GetTypeToAutoAppliedAPISchemaNames();
 
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
@@ -852,7 +848,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 // metadata defined API schemas so that auto applied APIs are
                 // weaker.
                 if (const TfTokenVector *autoAppliedAPIs = 
-                        TfMapLookupPtr(concreteTypeToAutoAppliedAPISchemaNames, 
+                        TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, 
                                        valuePair.second.type)) {
                     apiSchemasToApply.insert(apiSchemasToApply.end(), 
                                              autoAppliedAPIs->begin(),

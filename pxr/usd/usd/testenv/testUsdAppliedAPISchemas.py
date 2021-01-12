@@ -600,16 +600,19 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "testAttr", 
             "testRel"])
 
-        # TODO: TestSingleApplyAPI is currently set up to apply to the abstract
-        # base class of this derived class type. However, we don't currently 
-        # support schema type names for the abstract schema classes
-        # so TestSingleApplyAPI is NOT applied to this derived type. There
-        # is a future task that will add schema type names for abstract classes
-        # that will allow us to auto apply API schemas to abstract classes.
+        # Add a concrete typed prim which receives an auto applied API schema
+        # because it is derived from a base class type that does.
+        # TestSingleApplyAPI comes from the base class of this type, 
+        # TestTypedSchemaForAutoApplyAbstractBase, being listed in 
+        # TestSingleApplyAPI's apiSchemaAutoApplyTo data. This is different 
+        # from case above in that the base class is an abstract type and cannot
+        # be instantiated as a prim type, but API schemas can still be 
+        # designated to auto apply to abstract types to have the API applied
+        # to prims of all derived types.
         typedPrim.SetTypeName("TestDerivedTypedSchemaForAutoApplyAbstractBase")
         self.assertEqual(typedPrim.GetTypeName(), 
                          'TestDerivedTypedSchemaForAutoApplyAbstractBase')
-        self.assertEqual(typedPrim.GetAppliedSchemas(), [])
+        self.assertEqual(typedPrim.GetAppliedSchemas(), ['TestSingleApplyAPI'])
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
                          'TestDerivedTypedSchemaForAutoApplyAbstractBase')
         # Note that prim type info does NOT contain the auto applied API
@@ -617,8 +620,11 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         # of the type identity.
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
 
-        self.assertFalse(typedPrim.HasAPI(self.SingleApplyAPIType))
+        self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
+            "single:bool_attr",
+            "single:relationship", 
+            "single:token_attr", 
             "testAttr", 
             "testRel"])
 
