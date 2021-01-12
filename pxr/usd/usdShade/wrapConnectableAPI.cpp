@@ -240,8 +240,6 @@ WRAP_CUSTOM {
         .def(init<UsdShadeShader const &>(arg("shader")))
         .def(init<UsdShadeNodeGraph const&>(arg("nodeGraph")))
 
-        .def("IsShader", &UsdShadeConnectableAPI::IsShader)
-        .def("IsNodeGraph", &UsdShadeConnectableAPI::IsNodeGraph)
         .def("IsContainer", &UsdShadeConnectableAPI::IsContainer)
 
         .def("CanConnect", CanConnect_Input,

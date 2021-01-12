@@ -52,12 +52,10 @@ class TestUsdShadeConnectability(unittest.TestCase):
         nodeGraph = UsdShade.NodeGraph.Define(usdStage, NodeGraphPath)
         self.assertTrue(nodeGraph)
         self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsContainer())
-        self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsNodeGraph())
 
         shader = UsdShade.Shader.Define(usdStage, ShaderPath)
         self.assertTrue(shader)
         self.assertFalse(UsdShade.ConnectableAPI(shader).IsContainer())
-        self.assertTrue(UsdShade.ConnectableAPI(shader).IsShader())
 
         nestedShader = UsdShade.Shader.Define(usdStage, NestedShaderPath)
         self.assertTrue(nestedShader)

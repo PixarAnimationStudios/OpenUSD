@@ -192,32 +192,6 @@ public:
         UsdShadeConnectableAPI(nodeGraph.GetPrim())
     { }
 
-    /// Returns true if the prim is a shader.
-    ///
-    /// \deprecated This API is deprecated, and will be removed in a future
-    /// USD release.  On first usage, a warning will be emitted unless
-    /// the environment variable 
-    /// USD_SHADE_EMIT_CONNECTABLE_API_DEPRECATION_WARNING
-    /// is set to zero.  Calls this to this function can be replaced
-    /// with the equivalent GetPrim().IsA<UsdShadeShader>(), but
-    /// IsContainer() may also be of interest.
-    ///
-    USDSHADE_API
-    bool IsShader() const;
-
-    /// Returns true if the prim is a node-graph.
-    ///
-    /// \deprecated This API is deprecated, and will be removed in a future
-    /// USD release.  On first usage, a warning will be emitted unless
-    /// the environment variable 
-    /// USD_SHADE_EMIT_CONNECTABLE_API_DEPRECATION_WARNING
-    /// is set to zero.  Calls this to this function can be replaced
-    /// with the equivalent GetPrim().IsA<UsdShadeShader>(), but
-    /// IsContainer() may also be of interest.
-    ///
-    USDSHADE_API
-    bool IsNodeGraph() const;
-
     /// Returns true if the prim is a container.
     ///
     /// The underlying prim type may provide runtime behavior
