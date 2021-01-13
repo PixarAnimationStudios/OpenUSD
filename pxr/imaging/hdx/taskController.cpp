@@ -910,10 +910,17 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 
     // Get default AOV descriptors from the render delegate.
     HdAovDescriptorList outputDescs;
-    outputDescs.resize(localOutputs.size());
-    for (size_t i = 0; i < localOutputs.size(); ++i) {
-        outputDescs[i] = GetRenderIndex()->GetRenderDelegate()->
-            GetDefaultAovDescriptor(localOutputs[i]);
+    for (auto it = localOutputs.begin(); it != localOutputs.end();) {
+        HdAovDescriptor desc = GetRenderIndex()->GetRenderDelegate()->
+            GetDefaultAovDescriptor(*it);
+        if (desc.format == HdFormatInvalid) {
+            // The backend doesn't support this AOV, so skip it.
+            it = localOutputs.erase(it);
+        } else {
+            // Otherwise, stash the desc and move forward.
+            outputDescs.push_back(desc);
+            ++it;
+        }
     }
 
     // Add the new renderbuffers. _GetAovPath returns ids of the form
