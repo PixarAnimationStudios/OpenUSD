@@ -169,28 +169,7 @@ class GlfTextureFactoryBase : public TfType::FactoryBase {
 public:
     virtual GlfTextureRefPtr New(const TfToken& texturePath,
                         HioImage::ImageOriginLocation originLocation) const = 0;
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                        HioImage::ImageOriginLocation originLocation) const = 0;
 };
-
-template <class T>
-class GlfTextureFactory : public GlfTextureFactoryBase {
-public:
-    virtual GlfTextureRefPtr New(const TfToken& texturePath, 
-                                 HioImage::ImageOriginLocation originLocation = 
-                                                HioImage::OriginUpperLeft) const
-    {
-        return T::New(texturePath);
-    }
-
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                                 HioImage::ImageOriginLocation originLocation = 
-                                                HioImage::OriginUpperLeft) const
-    {
-        return TfNullPtr;
-    }
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

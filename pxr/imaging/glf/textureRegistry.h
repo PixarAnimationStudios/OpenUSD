@@ -59,11 +59,7 @@ public:
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture,
                                   HioImage::ImageOriginLocation originLocation = 
-                                                     HioImage::OriginUpperLeft);
-    GLF_API
-    GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures,
-                                  HioImage::ImageOriginLocation originLocation = 
-                                                     HioImage::OriginUpperLeft);
+                                            HioImage::OriginUpperLeft);
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
     GLF_API
@@ -103,9 +99,6 @@ private:
 
     GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
                                   HioImage::ImageOriginLocation originLocation);
-    GlfTextureHandleRefPtr _CreateTexture(const TfTokenVector &textures,
-                                          const size_t numTextures,
-                                  HioImage::ImageOriginLocation originLocation);
     GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
                                   HioImage::ImageOriginLocation originLocation,
                                   const GlfTextureFactoryBase *textureFactory);
@@ -122,9 +115,6 @@ private:
 
         // Collect metadata for a texture.
         explicit _TextureMetadata(const TfToken &texture);
-
-        // Collect metadata for a texture array.
-        explicit _TextureMetadata(const TfTokenVector &textures);
 
         // Compares metadata (but not handles) to see if two _TextureMetadatas
         // are the same (i.e. they are very likely to be the same on disk.)

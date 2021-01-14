@@ -89,43 +89,6 @@ GlfTextureRegistry::GetTextureHandle(const TfToken &texture,
 }
 
 GlfTextureHandleRefPtr
-GlfTextureRegistry::GetTextureHandle(const TfTokenVector &textures,
-                                   HioImage::ImageOriginLocation originLocation)
-{
-    if (textures.empty()) {
-        TF_WARN("Attempting to register arrayTexture with empty token vector.");
-        return GlfTextureHandlePtr();
-    }
-
-    const size_t numTextures = textures.size();
-    // We register an array texture with the
-    // path of the first texture in the array
-    TfToken texture = textures[0];
-    GlfTextureHandleRefPtr textureHandle;
-
-    _TextureMetadata md(textures);
-
-    // look into exisiting textures
-    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
-             _TextureMetadata>::iterator it =
-        _textureRegistry.find(std::make_pair(texture, originLocation));
-    
-    if (it != _textureRegistry.end() && it->second.IsMetadataEqual(md)) {
-        textureHandle = it->second.GetHandle();
-    } else {
-        // if not exists, create it
-        textureHandle = _CreateTexture(textures, numTextures,
-                                       originLocation);
-        if (textureHandle) {
-            md.SetHandle(textureHandle);
-            _textureRegistry[std::make_pair(texture, originLocation)] = md;
-        }
-    }
-
-    return textureHandle;
-}
-
-GlfTextureHandleRefPtr
 GlfTextureRegistry::GetTextureHandle(GlfTextureRefPtr texture)
 {
     GlfTextureHandleRefPtr textureHandle;
@@ -205,24 +168,6 @@ GlfTextureRegistry::_CreateTexture(const TfToken &texture,
             TF_CODING_ERROR("[PluginLoad] Cannot construct texture for "
                             "type '%s'\n",
                             TfStringGetSuffix(texture).c_str());
-        }
-    }
-    return result ? GlfTextureHandle::New(result) : TfNullPtr;
-}
-
-GlfTextureHandleRefPtr
-GlfTextureRegistry::_CreateTexture(const TfTokenVector &textures,
-                                   const size_t numTextures,
-                                   HioImage::ImageOriginLocation originLocation)
-{
-    GlfTextureRefPtr result;
-    TfToken filename = textures.empty() ? TfToken() : textures.front();
-    if (GlfTextureFactoryBase* factory = _GetTextureFactory(filename)) {
-        result = factory->New(textures, originLocation);
-        if (!result) {
-            TF_CODING_ERROR("[PluginLoad] Cannot construct texture for "
-                            "type '%s'\n",
-                            TfStringGetSuffix(filename).c_str());
         }
     }
     return result ? GlfTextureHandle::New(result) : TfNullPtr;
@@ -410,11 +355,6 @@ GlfTextureRegistry::_TextureMetadata::_TextureMetadata()
 GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
     const TfToken &texture)
     : _TextureMetadata(&texture, 1)
-{}
-
-GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
-    const TfTokenVector &textures)
-    : _TextureMetadata(textures.data(), textures.size())
 {}
 
 GlfTextureRegistry::_TextureMetadata::_TextureMetadata(

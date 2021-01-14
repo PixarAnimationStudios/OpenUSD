@@ -44,7 +44,6 @@ pxr_library(glf
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
-        arrayTexture
         baseTexture
         baseTextureData
         bindingMap

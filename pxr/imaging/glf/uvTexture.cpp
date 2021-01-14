@@ -27,7 +27,6 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hio/image.h"
-#include "pxr/imaging/glf/arrayTexture.h"
 #include "pxr/imaging/glf/uvTexture.h"
 #include "pxr/imaging/glf/uvTextureData.h"
 #include "pxr/imaging/glf/utils.h"
@@ -50,19 +49,6 @@ public:
                                  /*cropLeft*/ 0,
                                  /*cropRight*/ 0,
                                  originLocation);
-    }
-
-    virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                                 HioImage::ImageOriginLocation originLocation = 
-                                                HioImage::OriginUpperLeft) const
-    {
-        return GlfArrayTexture::New(texturePaths, 
-                                    texturePaths.size(), 
-                                    /*cropTop*/ 0,
-                                    /*cropBottom*/ 0,
-                                    /*cropLeft*/ 0,
-                                    /*cropRight*/ 0,
-                                    originLocation);
     }
 };
 
