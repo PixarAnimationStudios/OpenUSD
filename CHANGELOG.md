@@ -36,7 +36,7 @@
 
   Work on Ar 2.0 is not yet complete and will continue through the next few
   releases. Ar 2.0 is disabled by default but can be enabled for preview and
-  initial testing by specifying `PXR_USD_AR_2=ON` when running CMake.
+  initial testing by specifying `PXR_USE_AR_2=ON` when running CMake.
 
 - Moved SdfFindOrOpenRelativeToLayer to SdfLayer::FindOrOpenRelativeToLayer.
 - Fixed SdfLayer::FindRelativeToLayer to use the same anchoring logic as
