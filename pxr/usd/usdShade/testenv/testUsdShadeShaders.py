@@ -106,14 +106,16 @@ class TestUsdShadeShaders(unittest.TestCase):
         self.assertTrue(not usdShadeInput.HasConnectedSource())
         
         usdShadeInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, 'Fout', Output))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(),
+            'Fout', Output))
         self.assertTrue(usdShadeInput.HasConnectedSource())
 
         self.assertEqual(usdShadeInput.GetAttr().GetConnections(),
                 [whiterPale.GetPath().AppendProperty("outputs:Fout")])
 
         self.assertEqual(usdShadeInput.GetConnectedSources()[0],
-                [UsdShade.ConnectionSourceInfo(whiterPale, 'Fout', Output)])
+                [UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(),
+                'Fout', Output)])
         usdShadeInput.ClearSources()
         self.assertTrue(not usdShadeInput.HasConnectedSource())
         self.assertEqual(usdShadeInput.GetConnectedSources()[0], [])
@@ -122,16 +124,16 @@ class TestUsdShadeShaders(unittest.TestCase):
         inheritedInput = shaderClass.CreateInput('myFloatInput', 
                                                  Sdf.ValueTypeNames.Float)
         inheritedInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, 'Fout', Output))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), 'Fout', Output))
         # note we're now testing the inheritING prim's parameter
         self.assertTrue(usdShadeInput.HasConnectedSource())
         self.assertTrue(usdShadeInput.GetConnectedSources()[0],
-            [UsdShade.ConnectionSourceInfo(whiterPale, 'Fout', Output)])
+            [UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), 'Fout', Output)])
         # clearing no longer changes anything
         usdShadeInput.ClearSources()
         self.assertTrue(usdShadeInput.HasConnectedSource())
         self.assertTrue(usdShadeInput.GetConnectedSources()[0],
-            [UsdShade.ConnectionSourceInfo(whiterPale, 'Fout', Output)])
+            [UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), 'Fout', Output)])
         # but disconnecting should
         usdShadeInput.DisconnectSource()
         self.assertTrue(not usdShadeInput.HasConnectedSource())
@@ -160,7 +162,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f)
         self.assertTrue(colInput)
         self.assertTrue(colInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, 'colorOut', Output)))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), 'colorOut', Output)))
         outputAttr = whiterPale.GetPrim().GetAttribute("outputs:colorOut")
         self.assertTrue(outputAttr)
         self.assertEqual(outputAttr.GetTypeName(), Sdf.ValueTypeNames.Color3f)
@@ -168,12 +170,12 @@ class TestUsdShadeShaders(unittest.TestCase):
         v3fInput = pale.CreateInput("v3f1", Sdf.ValueTypeNames.Float3)
         self.assertTrue(v3fInput)
         self.assertTrue(v3fInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, "colorOut", Output)))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), "colorOut", Output)))
 
         pointInput = pale.CreateInput("point1", Sdf.ValueTypeNames.Point3f)
         self.assertTrue(pointInput)
         self.assertTrue(pointInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, "colorOut", Output)))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), "colorOut", Output)))
 
         floatInput = pale.CreateInput("float1", Sdf.ValueTypeNames.Float)
         self.assertTrue(floatInput)
@@ -185,7 +187,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         #        UsdShade.ConnectionSourceInfo(whiterPale, "colorOut", Output))
 
         self.assertTrue(floatInput.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(whiterPale, "floatInput", Input)))
+            UsdShade.ConnectionSourceInfo(whiterPale.ConnectableAPI(), "floatInput", Input)))
         outputAttr = whiterPale.GetPrim().GetAttribute("outputs:floatInput")
         self.assertFalse(outputAttr)
         outputAttr = whiterPale.GetPrim().GetAttribute("inputs:floatInput")

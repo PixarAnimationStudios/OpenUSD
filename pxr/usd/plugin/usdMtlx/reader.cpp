@@ -699,7 +699,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         // Create the interface.
         if (_mtlxNodeDef) {
             for (auto& i: _GetInheritanceStack(_mtlxNodeDef)) {
-                _CreateInterface(i, usdNodeGraph);
+                _CreateInterface(i, usdNodeGraph.ConnectableAPI());
             }
         }
     }
@@ -714,7 +714,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
     _ConnectNodes();
 
     if (isInsideNodeGraph) {
-        _ConnectTerminals(_mtlxContainer,  UsdShadeNodeGraph(usdPrim));
+        _ConnectTerminals(_mtlxContainer, UsdShadeConnectableAPI(usdPrim));
     }
     else if (outputs) {
         // Collect the outputs on the existing shader nodes.
@@ -1298,7 +1298,8 @@ _Context::BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial)
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 
             // Record the material for later variants.
-            _shaders[_Name(mtlxMaterial)][""] = usdMaterial;
+            _shaders[_Name(mtlxMaterial)][""] =
+                UsdShadeConnectableAPI(usdMaterial);
 
             // Cut over.
             _mtlxMaterial = mtlxMaterial;
@@ -1412,7 +1413,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     usdShader.GetPrim().GetReferences().AddInternalReference(shaderImplPath);
 
     // Record the referencing shader for later variants.
-    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderRef)] = usdShader;
+    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderRef)] =
+        UsdShadeConnectableAPI(usdShader);
 
     // Connect to material interface.
     for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
@@ -1433,13 +1435,14 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
 
     // Translate bindings.
     for (auto mtlxParam: mtlxShaderRef->getBindParams()) {
-        if (auto input = _AddInputWithValue(mtlxParam, _usdMaterial)) {
+        if (auto input = _AddInputWithValue(mtlxParam,
+                                            UsdShadeConnectableAPI(_usdMaterial))) {
             input.SetConnectability(UsdShadeTokens->interfaceOnly);
         }
     }
     for (auto mtlxInput: mtlxShaderRef->getBindInputs()) {
         // Simple binding.
-        _AddInputWithValue(mtlxInput, _usdMaterial);
+        _AddInputWithValue(mtlxInput, UsdShadeConnectableAPI(_usdMaterial));
 
         // Check if this input references an output.
         if (auto outputName = _Attr(mtlxInput, names.output)) {
@@ -1454,7 +1457,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
                         ? AddNodeGraph(mtlxNodeGraph)
                         : AddImplicitNodeGraph(mtlxInput->getDocument())) {
                 _BindNodeGraph(mtlxInput, _usdMaterial.GetPath(),
-                               usdShader, usdNodeGraph);
+                               UsdShadeConnectableAPI(usdShader),
+                               usdNodeGraph);
             }
         }
     }

@@ -26,6 +26,7 @@
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/sdr/shaderNode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -121,7 +121,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self._CanConnect(shaderInputColor, colorInterfaceInput)
         # Make the connection.
         self.assertTrue(shaderInputColor.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(material,
+            UsdShade.ConnectionSourceInfo(material.ConnectableAPI(),
                                           colorInterfaceInput.GetBaseName(),
                                           UsdShade.AttributeType.Input)))
 

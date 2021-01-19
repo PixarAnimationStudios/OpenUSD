@@ -57,7 +57,7 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
 
     metadata[SdrNodeMetadata->Primvars] = 
         UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-            metadata, shaderDef);
+            metadata, shaderDef.ConnectableAPI());
 
     return metadata;
 }
@@ -127,7 +127,8 @@ UsdShadeShaderDefParserPlugin::Parse(
         discoveryResult.sourceType, /* sourceType */
         nodeUriAssetPath.GetResolvedPath(),
         resolvedImplementationUri,
-        UsdShadeShaderDefUtils::GetShaderProperties(shaderDef),
+        UsdShadeShaderDefUtils::GetShaderProperties(
+            shaderDef.ConnectableAPI()),
         _GetSdrMetadata(shaderDef, discoveryResult.metadata),
         discoveryResult.sourceCode
     ));

@@ -32,8 +32,10 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/nodeGraph.h"
+#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/types.h"
 
 #include "pxr/base/vt/value.h"
@@ -175,23 +177,6 @@ protected:
     bool _IsCompatible() const override;
     
 public:
-
-    /// Constructor that takes a UsdShadeShader.
-    /// Allow implicit (auto) conversion of UsdShadeShader to 
-    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
-    /// that accepts a ConnectableAPI.
-    UsdShadeConnectableAPI(const UsdShadeShader &shader):
-        UsdShadeConnectableAPI(shader.GetPrim())
-    { }
-
-    /// Constructor that takes a UsdShadeNodeGraph.
-    /// Allow implicit (auto) conversion of UsdShadeNodeGraph to 
-    /// UsdShadeConnectableAPI, so that a nodegraph can be passed into any function
-    /// that accepts a ConnectableAPI.
-    UsdShadeConnectableAPI(const UsdShadeNodeGraph &nodeGraph):
-        UsdShadeConnectableAPI(nodeGraph.GetPrim())
-    { }
-
     /// Returns true if the prim is a container.
     ///
     /// The underlying prim type may provide runtime behavior
