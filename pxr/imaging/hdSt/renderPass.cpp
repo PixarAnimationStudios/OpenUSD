@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -62,6 +63,16 @@ _ExecuteDraw(
 {
     cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
+
+unsigned
+_GetDrawBatchesVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return stRenderParam->GetDrawBatchesVersion();
+}
+
 
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
@@ -293,8 +304,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
     // We know what must be drawn and that the stream needs to be updated,
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-    const int batchVersion = tracker.GetBatchVersion();
+    const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
 
     // It is optional for a render task to call RenderPass::Prepare() to
     // update the drawItems during the prepare phase. We ensure our drawItems

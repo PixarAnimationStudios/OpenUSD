@@ -57,7 +57,6 @@ HdChangeTracker::HdChangeTracker()
     , _sceneStateVersion(1)
     , _visChangeCount(1)
     , _renderTagVersion(1)
-    , _batchVersion(1)
 {
     /*NOTHING*/
 }
@@ -934,18 +933,6 @@ unsigned
 HdChangeTracker::GetVisibilityChangeCount() const
 {
     return _visChangeCount;
-}
-
-void
-HdChangeTracker::MarkBatchesDirty()
-{
-    ++_batchVersion;
-}
-
-unsigned
-HdChangeTracker::GetBatchVersion() const
-{
-    return _batchVersion;
 }
 
 void

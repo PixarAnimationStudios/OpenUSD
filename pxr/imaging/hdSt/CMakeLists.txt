@@ -147,6 +147,7 @@ pxr_library(hdSt
         meshTopology 
         pointsShaderKey
         quadrangulate
+        renderParam
         resourceBinder
         shaderKey
         subdivision

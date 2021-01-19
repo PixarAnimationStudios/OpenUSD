@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdChangeTracker;
 class HdDrawItem;
 class HdRenderIndex;
+class HdRenderParam;
 class HdRprim;
 struct HdRprimSharedData;
 class HdStDrawItem;
@@ -53,6 +54,12 @@ using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<HdStResourceRegistry>;
+
+// -----------------------------------------------------------------------------
+// Draw invalidation utility
+// -----------------------------------------------------------------------------
+HDST_API
+void HdStMarkDrawBatchesDirty(HdRenderParam *renderParam);
 
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities
@@ -74,8 +81,13 @@ HdStGetInstancerPrimvarDescriptors(
     HdSceneDelegate * delegate);
 
 // -----------------------------------------------------------------------------
-// Material shader utility
+// Material processing utilities
 // -----------------------------------------------------------------------------
+HDST_API
+void HdStSetMaterialId(HdSceneDelegate *delegate,
+                       HdRenderParam *renderParam,
+                       HdRprim *rprim);
+
 // Resolves the material shader for the given prim (using a fallback
 // material as necessary), including optional mixin shader source code.
 HDST_API
@@ -136,7 +148,8 @@ void HdStUpdateDrawItemBAR(
     HdBufferArrayRangeSharedPtr const& newRange,
     int drawCoordIndex,
     HdRprimSharedData *sharedData,
-    HdRenderIndex &renderIndex);
+    HdRenderParam *renderParam,
+    HdChangeTracker *changeTracker);
 
 // Returns true if primvar with primvarName exists within primvar descriptor 
 // vector primvars and primvar has a valid value
@@ -165,6 +178,7 @@ void HdStPopulateConstantPrimvars(
     HdRprim *prim,
     HdRprimSharedData *sharedData,
     HdSceneDelegate *delegate,
+    HdRenderParam *renderParam,
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
     HdPrimvarDescriptorVector const& constantPrimvars,
@@ -178,6 +192,7 @@ void HdStPopulateConstantPrimvars(
 HDST_API
 void HdStUpdateInstancerData(
     HdRenderIndex &renderIndex,
+    HdRenderParam *renderParam,
     HdRprim *prim,
     HdStDrawItem *drawItem,
     HdRprimSharedData *sharedData,
@@ -204,6 +219,7 @@ void HdStProcessTopologyVisibility(
     int numTotalPoints,
     HdRprimSharedData *sharedData,
     HdStDrawItem *drawItem,
+    HdRenderParam *renderParam,
     HdChangeTracker *changeTracker,
     HdStResourceRegistrySharedPtr const &resourceRegistry,
     SdfPath const& rprimId);

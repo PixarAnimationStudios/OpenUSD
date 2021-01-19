@@ -65,17 +65,14 @@ HdStPoints::Sync(HdSceneDelegate *delegate,
                  HdDirtyBits     *dirtyBits,
                  TfToken const   &reprToken)
 {
-    TF_UNUSED(renderParam);
-
     bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
-                       delegate->GetMaterialId(GetId()));
+        HdStSetMaterialId(delegate, renderParam, this);
         updateMaterialTag = true;
     }
 
     bool displayOpacity = _displayOpacity;
-    _UpdateRepr(delegate, reprToken, dirtyBits);
+    _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
@@ -109,6 +106,7 @@ HdStPoints::_GetMaterialTag(const HdRenderIndex &renderIndex) const
 
 void
 HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                            HdRenderParam *renderParam,
                             HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits)
 {
@@ -130,8 +128,13 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
-    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-            this, drawItem, &_sharedData, *dirtyBits);
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                                renderParam,
+                                this,
+                                drawItem,
+                                &_sharedData,
+                                *dirtyBits);
+
     _displayOpacity = _displayOpacity ||
             HdStIsInstancePrimvarExistentAndValid(
             sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
@@ -142,8 +145,13 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                     HdInterpolationConstant);
 
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, 
-            drawItem, dirtyBits, constantPrimvars);
+        HdStPopulateConstantPrimvars(this,
+                                     &_sharedData,
+                                     sceneDelegate,
+                                     renderParam,
+                                     drawItem,
+                                     dirtyBits,
+                                     constantPrimvars);
         
         _displayOpacity = _displayOpacity ||
             HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
@@ -159,7 +167,8 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateVertexPrimvars(
+            sceneDelegate, renderParam, drawItem, dirtyBits);
     }
 
     // VertexPrimvar may be null, if there are no points in the prim.
@@ -169,6 +178,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                        HdRenderParam *renderParam,
                         TfToken const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
@@ -194,7 +204,8 @@ HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 curRepr->GetDrawItem(drawItemIndex++));
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
-                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
+                _UpdateDrawItem(
+                    sceneDelegate, renderParam, drawItem, dirtyBits);
             }
         }
     }
@@ -204,6 +215,7 @@ HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                    HdRenderParam *renderParam,
                                     HdStDrawItem *drawItem,
                                     HdDirtyBits *dirtyBits)
 {
@@ -296,7 +308,8 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
     if (!sources.empty() || !computations.empty()) {
         // If sources or computations are to be queued against the resulting

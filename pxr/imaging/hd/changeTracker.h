@@ -508,15 +508,6 @@ public:
         return _varyingStateVersion;
     }
 
-    /// Marks all batches dirty, meaning they need to be validated and
-    /// potentially rebuilt.
-    HD_API
-    void MarkBatchesDirty();
-
-    /// Returns the current batch version.
-    HD_API
-    unsigned GetBatchVersion() const;
-
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Render Index Versioning
@@ -665,9 +656,6 @@ private:
 
     // Used to detect changes to the set of active render tags
     unsigned _renderTagVersion;
-
-    // Used to validate draw batches.
-    std::atomic_uint _batchVersion;
 };
 
 

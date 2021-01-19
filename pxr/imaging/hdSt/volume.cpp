@@ -125,16 +125,12 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
                  HdDirtyBits     *dirtyBits,
                  TfToken const   &reprToken)
 {
-    TF_UNUSED(renderParam);
-
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
-                       delegate->GetMaterialId(GetId()));
-
+        HdStSetMaterialId(delegate, renderParam, this);
         _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
     }
 
-    _UpdateRepr(delegate, reprToken, dirtyBits);
+    _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
     // doesn't have pending dirty bits that add it to the dirty list every
@@ -152,6 +148,7 @@ HdStVolume::_GetMaterialTag(const HdRenderIndex &renderIndex) const
 
 void
 HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                        HdRenderParam *renderParam,
                         TfToken const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
@@ -168,7 +165,7 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         curRepr->GetDrawItem(0));
 
     if (HdChangeTracker::IsDirty(*dirtyBits)) {
-        _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
+        _UpdateDrawItem(sceneDelegate, renderParam, drawItem, dirtyBits);
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
@@ -492,6 +489,7 @@ _GetCubeTriangleIndices()
 
 void
 HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                            HdRenderParam *renderParam,
                             HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits)
 {
@@ -506,8 +504,13 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         const HdPrimvarDescriptorVector constantPrimvars =
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                       HdInterpolationConstant);
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate,
-                                     drawItem, dirtyBits, constantPrimvars);
+        HdStPopulateConstantPrimvars(this,
+                                     &_sharedData,
+                                     sceneDelegate,
+                                     renderParam,
+                                     drawItem,
+                                     dirtyBits,
+                                     constantPrimvars);
     }
         
     if ((*dirtyBits) & HdChangeTracker::DirtyMaterialId) {

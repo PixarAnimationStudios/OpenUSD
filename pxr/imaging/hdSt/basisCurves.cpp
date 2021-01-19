@@ -72,12 +72,9 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                       HdDirtyBits     *dirtyBits,
                       TfToken const   &reprToken)
 {
-    TF_UNUSED(renderParam);
-
     bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
-                       delegate->GetMaterialId(GetId()));
+        HdStSetMaterialId(delegate, renderParam, this);
         updateMaterialTag = true;
     }
 
@@ -98,7 +95,7 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     }
 
     bool displayOpacity = _displayOpacity;
-    _UpdateRepr(delegate, reprToken, dirtyBits);
+    _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
@@ -106,7 +103,7 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     }
 
     if (updateMaterialShader || updateGeometricShader) {
-        _UpdateShadersForAllReprs(delegate,
+        _UpdateShadersForAllReprs(delegate, renderParam,
                                   updateMaterialShader, updateGeometricShader);
     }
 
@@ -137,6 +134,7 @@ HdStBasisCurves::_GetMaterialTag(const HdRenderIndex &renderIndex) const
 
 void
 HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                                 HdRenderParam *renderParam,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  const HdBasisCurvesReprDesc &desc)
@@ -163,7 +161,12 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
     HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-            this, drawItem, &_sharedData, *dirtyBits);
+                            renderParam,
+                            this,
+                            drawItem,
+                            &_sharedData,
+                            *dirtyBits);
+
     _displayOpacity = _displayOpacity ||
             HdStIsInstancePrimvarExistentAndValid(
             sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
@@ -174,8 +177,13 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                     HdInterpolationConstant);
 
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate,
-            drawItem, dirtyBits, constantPrimvars);
+        HdStPopulateConstantPrimvars(this,
+                                     &_sharedData,
+                                     sceneDelegate,
+                                     renderParam,
+                                     drawItem,
+                                     dirtyBits,
+                                     constantPrimvars);
 
         _displayOpacity = _displayOpacity ||
             HdStIsPrimvarExistentAndValid(this, sceneDelegate, 
@@ -190,7 +198,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                     | DirtyIndices
                     | DirtyHullIndices
                     | DirtyPointsIndices)) {
-        _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
+        _PopulateTopology(
+            sceneDelegate, renderParam, drawItem, dirtyBits, desc);
     }
 
     /* PRIMVAR */
@@ -200,9 +209,12 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         // primvars, so we need to see refined dirty for updating coarse
         // vertex primvars if there is only refined reprs being updated.
         // we'll fix the change tracking in order to address this craziness.
-        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits);
-        _PopulateVaryingPrimvars(sceneDelegate, drawItem, dirtyBits);
-        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateVertexPrimvars(
+            sceneDelegate, renderParam, drawItem, dirtyBits);
+        _PopulateVaryingPrimvars(
+            sceneDelegate, renderParam, drawItem, dirtyBits);
+        _PopulateElementPrimvars(
+            sceneDelegate, renderParam, drawItem, dirtyBits);
     }
 
     // When we have multiple drawitems for the same prim we need to clean the
@@ -237,6 +249,7 @@ HdSt_PrimTypeToString(HdSt_GeometricShader::PrimitiveType type) {
 void
 HdStBasisCurves::_UpdateDrawItemGeometricShader(
         HdSceneDelegate *sceneDelegate,
+        HdRenderParam *renderParam,
         HdStDrawItem *drawItem,
         const HdBasisCurvesReprDesc &desc)
 {
@@ -346,7 +359,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
 
         // If the gometric shader changes, we need to do a deep validation of
         // batches, so they can be rebuilt if necessary.
-        renderIndex.GetChangeTracker().MarkBatchesDirty();
+        HdStMarkDrawBatchesDirty(renderParam);
 
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: Marking all batches dirty to trigger deep validation because"
@@ -422,6 +435,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 
 void
 HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             HdRenderParam *renderParam,
                              TfToken const &reprToken,
                              HdDirtyBits *dirtyBits)
 {
@@ -458,7 +472,8 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
                 curRepr->GetDrawItem(drawItemIndex++));
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
-                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc);
+                _UpdateDrawItem(sceneDelegate, renderParam,
+                                drawItem, dirtyBits, desc);
             } 
         }
     }
@@ -469,6 +484,7 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                           HdRenderParam *renderParam,
                                            bool updateMaterialShader,
                                            bool updateGeometricShader)
 {
@@ -498,8 +514,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 drawItem->SetMaterialShader(materialShader);
             }
             if (updateGeometricShader) {
-                _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
-                    descs[descIdx]);
+                _UpdateDrawItemGeometricShader(
+                    sceneDelegate, renderParam, drawItem, descs[descIdx]);
             }
         }
     }
@@ -507,6 +523,7 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
+                                   HdRenderParam *renderParam,
                                    HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
                                    const HdBasisCurvesReprDesc &desc)
@@ -518,6 +535,8 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
+    HdChangeTracker &changeTracker =
+        sceneDelegate->GetRenderIndex().GetChangeTracker();
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
         _refineLevel = GetDisplayStyle(sceneDelegate).refineLevel;
@@ -541,7 +560,8 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 srcTopology.CalculateNeededNumberOfControlPoints(),
                 &_sharedData,
                 drawItem,
-                &(sceneDelegate->GetRenderIndex().GetChangeTracker()),
+                renderParam,
+                &changeTracker,
                 resourceRegistry,
                 id);
         }
@@ -632,7 +652,8 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             newRange,
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             &_sharedData,
-            sceneDelegate->GetRenderIndex());
+            renderParam,
+            &changeTracker);
     }
 }
 
@@ -725,6 +746,7 @@ void ProcessVertexOrVaryingPrimvar(
 
 void
 HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                         HdRenderParam *renderParam,
                                          HdStDrawItem *drawItem,
                                          HdDirtyBits *dirtyBits)
 {
@@ -829,7 +851,8 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
     if (!sources.empty() || !computations.empty()) {
         // If sources or computations are to be queued against the resulting
@@ -860,6 +883,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                          HdRenderParam *renderParam,
                                           HdStDrawItem *drawItem,
                                           HdDirtyBits *dirtyBits)
 {
@@ -944,7 +968,8 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetVaryingPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
     // add sources to update queue
     if (!sources.empty()) {
@@ -958,6 +983,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
+                                          HdRenderParam *renderParam,
                                           HdStDrawItem *drawItem,
                                           HdDirtyBits *dirtyBits)
 {
@@ -1019,7 +1045,8 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetElementPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
 
     if (!sources.empty()) {

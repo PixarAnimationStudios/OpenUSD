@@ -96,23 +96,28 @@ protected:
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
                      TfToken const &reprToken,
                      HdDirtyBits *dirtyBitsState);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                 HdRenderParam *renderParam,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
     
     void _PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
@@ -145,15 +150,18 @@ private:
     const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
     
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam,
                                         HdStDrawItem *drawItem,
                                         const HdBasisCurvesReprDesc &desc);
     
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                   HdRenderParam *renderParam,
                                    bool updateMaterialShader,
                                    bool updateGeometricShader);
 

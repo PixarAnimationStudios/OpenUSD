@@ -174,6 +174,12 @@ HdRprim::SetPrimId(int32_t primId)
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
 }
 
+void 
+HdRprim::SetMaterialId(SdfPath const& materialId)
+{
+    _materialId = materialId;
+}
+
 bool
 HdRprim::IsDirty(HdChangeTracker &changeTracker) const
 {
@@ -239,19 +245,6 @@ HdRprim::_UpdateInstancer(HdSceneDelegate* delegate,
             tracker.AddInstancerRprimDependency(instancerId, GetId());
         }
         _instancerId = instancerId;
-    }
-}
-
-void 
-HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
-                        SdfPath const& materialId)
-{
-    if (_materialId != materialId) {
-        _materialId = materialId;
-
-        // The batches need to be verified and rebuilt, since a changed shader
-        // may change aggregation.
-        changeTracker.MarkBatchesDirty();
     }
 }
 

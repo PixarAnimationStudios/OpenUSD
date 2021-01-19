@@ -38,6 +38,7 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/volume.h"
@@ -167,6 +168,7 @@ HdStRenderDelegate::HdStRenderDelegate()
 HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : HdRenderDelegate(settingsMap)
     , _hgi(nullptr)
+    , _renderParam(std::make_unique<HdStRenderParam>())
 {
     // Initialize the settings and settings descriptors.
     _settingDescriptors = {
@@ -279,7 +281,7 @@ HdStRenderDelegate::GetSupportedBprimTypes() const
 HdRenderParam *
 HdStRenderDelegate::GetRenderParam() const
 {
-    return nullptr;
+    return _renderParam.get();
 }
 
 HdResourceRegistrySharedPtr

@@ -119,12 +119,9 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                HdDirtyBits     *dirtyBits,
                TfToken const   &reprToken)
 {
-    TF_UNUSED(renderParam);
-
     bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
-                       delegate->GetMaterialId(GetId()));
+        HdStSetMaterialId(delegate, renderParam, this);
         updateMaterialTag = true;
     }
 
@@ -149,7 +146,7 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 
     bool displayOpacity = _displayOpacity;
     bool hasMirroredTransform = _hasMirroredTransform;
-    _UpdateRepr(delegate, reprToken, dirtyBits);
+    _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
     if (hasMirroredTransform != _hasMirroredTransform) {
         updateGeometricShader = true;
@@ -162,7 +159,9 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 
     if (updateMaterialShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate,
-                                  updateMaterialShader, updateGeometricShader);
+                                  renderParam,
+                                  updateMaterialShader,
+                                  updateGeometricShader);
     }
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
@@ -208,6 +207,7 @@ HdStMesh::_GetRefineLevelForDesc(const HdMeshReprDesc &desc) const
 
 void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
+                            HdRenderParam *renderParam,
                             HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits,
                             const HdMeshReprDesc &desc)
@@ -219,6 +219,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
+    HdChangeTracker &changeTracker =
+        sceneDelegate->GetRenderIndex().GetChangeTracker();
 
     // note: there's a potential optimization if _topology is already registered
     // and it's not shared across prims, it can be updated without inserting new
@@ -260,7 +262,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 meshTopology.GetNumPoints(),
                 &_sharedData,
                 drawItem,
-                &(sceneDelegate->GetRenderIndex().GetChangeTracker()),
+                renderParam,
+                &changeTracker,
                 resourceRegistry,
                 id);    
         }
@@ -451,7 +454,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             newRange,
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             &_sharedData,
-            sceneDelegate->GetRenderIndex());
+            renderParam,
+            &changeTracker);
 
     }  // Release regLock
 }
@@ -600,6 +604,7 @@ _RefineOrQuadrangulateVertexAndVaryingPrimvars(
 
 void
 HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   bool requireSmoothNormals)
@@ -1037,7 +1042,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(renderIndex.GetChangeTracker()));
 
     if (!sources.empty() || !computations.empty()) {
         // If sources or computations are to be queued against the resulting
@@ -1069,6 +1075,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                       HdRenderParam *renderParam,
                                        HdStDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
                                        const HdMeshReprDesc &desc)
@@ -1174,8 +1181,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetFaceVaryingPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
-
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
     if (!sources.empty()) {
         // If sources are to be queued against the resulting BAR, we expect it 
@@ -1190,6 +1197,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
+                                   HdRenderParam *renderParam,
                                    HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
                                    bool requireFlatNormals)
@@ -1308,7 +1316,8 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         range,
         drawItem->GetDrawingCoord()->GetElementPrimvarIndex(),
         &_sharedData,
-        sceneDelegate->GetRenderIndex());
+        renderParam,
+        &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
 
     if (!sources.empty() || !computations.empty()) {
         // If sources or computations are to be queued against the resulting
@@ -1472,6 +1481,7 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
 
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                          HdRenderParam *renderParam,
                           HdStDrawItem *drawItem,
                           HdDirtyBits *dirtyBits,
                           const HdMeshReprDesc &desc,
@@ -1505,7 +1515,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                      | DirtyIndices
                                      | DirtyHullIndices
                                      | DirtyPointsIndices)) {
-        _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
+        _PopulateTopology(sceneDelegate,
+                          renderParam,
+                          drawItem,
+                          dirtyBits,
+                          desc);
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyDoubleSided) {
@@ -1549,7 +1563,12 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
     HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-            this, drawItem, &_sharedData, *dirtyBits);
+                            renderParam,
+                            this,
+                            drawItem,
+                            &_sharedData,
+                            *dirtyBits);
+    
     _displayOpacity = _displayOpacity ||
             HdStIsInstancePrimvarExistentAndValid(
             sceneDelegate->GetRenderIndex(), this, HdTokens->displayOpacity);
@@ -1561,9 +1580,15 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                         HdInterpolationConstant);
         
         bool hasMirroredTransform = _hasMirroredTransform;
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, 
-            drawItem, dirtyBits, constantPrimvars,
-            &hasMirroredTransform);
+        HdStPopulateConstantPrimvars(this,
+                                     &_sharedData,
+                                     sceneDelegate,
+                                     renderParam, 
+                                     drawItem,
+                                     dirtyBits,
+                                     constantPrimvars,
+                                     &hasMirroredTransform);
+
         _hasMirroredTransform = hasMirroredTransform;
         
         // Check if normals are provided as a constant primvar
@@ -1583,18 +1608,30 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* VERTEX PRIMVARS */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits, requireSmoothNormals);
+        _PopulateVertexPrimvars(sceneDelegate,
+                                renderParam,
+                                drawItem,
+                                dirtyBits,
+                                requireSmoothNormals);
     }
 
     /* FACEVARYING PRIMVARS */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateFaceVaryingPrimvars(sceneDelegate, drawItem, dirtyBits, desc);
+        _PopulateFaceVaryingPrimvars(sceneDelegate,
+                                     renderParam,
+                                     drawItem,
+                                     dirtyBits,
+                                     desc);
     }
 
     /* ELEMENT PRIMVARS */
     if ((requireFlatNormals && (*dirtyBits & DirtyFlatNormals)) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits, requireFlatNormals);
+        _PopulateElementPrimvars(sceneDelegate,
+                                 renderParam,
+                                 drawItem,
+                                 dirtyBits,
+                                 requireFlatNormals);
     }
 
     // When we have multiple drawitems for the same mesh we need to clean the
@@ -1610,6 +1647,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                         HdRenderParam *renderParam,
                                          HdStDrawItem *drawItem,
                                          const HdMeshReprDesc &desc)
 {
@@ -1748,7 +1786,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
         // If the gometric shader changes, we need to do a deep validation of
         // batches, so they can be rebuilt if necessary.
-        renderIndex.GetChangeTracker().MarkBatchesDirty();
+        HdStMarkDrawBatchesDirty(renderParam);
 
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: Marking all batches dirty to trigger deep validation because"
@@ -1891,6 +1929,7 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 
 void
 HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam *renderParam,
                       TfToken const &reprToken,
                       HdDirtyBits *dirtyBits)
 {
@@ -1937,8 +1976,13 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
             curRepr->GetDrawItem(drawItemIndex++));
 
         if (HdChangeTracker::IsDirty(*dirtyBits)) {
-            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
-                requireSmoothNormals, requireFlatNormals);
+            _UpdateDrawItem(sceneDelegate,
+                            renderParam,
+                            drawItem,
+                            dirtyBits,
+                            desc,
+                            requireSmoothNormals,
+                            requireFlatNormals);
         }
     }
 
@@ -1947,6 +1991,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                    HdRenderParam *renderParam,
                                     bool updateMaterialShader,
                                     bool updateGeometricShader)
 {
@@ -1979,8 +2024,8 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 drawItem->SetMaterialShader(materialShader);
             }
             if (updateGeometricShader) {
-                _UpdateDrawItemGeometricShader(sceneDelegate,
-                    drawItem, descs[descIdx]);
+                _UpdateDrawItemGeometricShader(sceneDelegate, renderParam,
+                                               drawItem, descs[descIdx]);
             }
         }
     }

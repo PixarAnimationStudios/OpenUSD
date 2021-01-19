@@ -44,7 +44,9 @@
 // 34 -> 35: HdRepr is using std::unique_ptr<HdDrawItem>
 // 35 -> 36: InsertRprim/InsertInstancer no longer take instancerId,
 //           HdSceneDelegate now has GetInstancerId
-#define HD_API_VERSION 36
+// 36 -> 37: Renamed HdRprim::_SetMaterialId to SetMaterialId. It no longer
+//           takes changeTracker.
+#define HD_API_VERSION 37
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
