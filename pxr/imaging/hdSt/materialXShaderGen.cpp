@@ -203,6 +203,15 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
 
     // Emit lighting and shadowing code
     if (lighting) {
+
+        // XXX Emitting missing include for sampling the Prefilter Texture.
+        // Can remove this when using MaterialX v1.38
+        if (mxContext.getOptions().hwSpecularEnvironmentMethod == 
+            mx::HwSpecularEnvironmentMethod::SPECULAR_ENVIRONMENT_PREFILTER) {
+
+            emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE
+                + "/lib/mx_microfacet_specular.glsl", mxContext, mxStage);
+        }
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
@@ -358,16 +367,15 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
                                  mx::ShaderGenerator::COMMA, mxStage);
     emitLineBreak(mxStage);
 
-    // Initialize the textures:
+    // Initialize the Indirect Light Textures
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
     emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
-    emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
-    emitLine("#endif", mxStage, false);
-    emitLineBreak(mxStage);
 
-    // Initialize variables that were used for the HdPrefilter Texture
-    emitLine("u_envRadianceMips = 4", mxStage);
-    emitLine("u_envRadianceSamples = 1024", mxStage);
+    emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
+
+    emitLine("u_albedoTable = HdGetSampler_domeLightBRDF()", mxStage);
+    emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize the transformation matrix for the environment map
@@ -460,11 +468,12 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
     // Mx variables that need to be initialized with Hd Values
     static const mx::StringSet MxHdVariables = {
         mx::HW::T_VIEW_POSITION, 
-        mx::HW::T_ENV_IRRADIANCE,
-        mx::HW::T_ENV_RADIANCE,
+        mx::HW::T_ENV_IRRADIANCE,   // Irradiance texture
+        mx::HW::T_ENV_RADIANCE,     // Environment map OR prefilter texture
         mx::HW::T_ENV_MATRIX,
         mx::HW::T_ENV_RADIANCE_MIPS,
-        mx::HW::T_ENV_RADIANCE_SAMPLES
+        mx::HW::T_ENV_RADIANCE_SAMPLES,
+        mx::HW::T_ALBEDO_TABLE      // BRDF texture
     };
 
     for (size_t i = 0; i < block.size(); ++i)

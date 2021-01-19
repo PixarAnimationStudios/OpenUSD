@@ -77,6 +77,13 @@ _GenPixelShader(mx::GenContext & mxContext,
     materialContext.getOptions().hwTransparency = hasTransparency;
     materialContext.getOptions().hwShadowMap = 
         materialContext.getOptions().hwShadowMap && !hasTransparency;
+    
+    // Use the domeLightPrefilter texture instead of sampling the Environment Map
+    materialContext.getOptions().hwSpecularEnvironmentMethod =
+        mx::HwSpecularEnvironmentMethod::SPECULAR_ENVIRONMENT_PREFILTER;
+    // Use of the domelightBRDF texture
+    materialContext.getOptions().hwDirectionalAlbedoMethod = 
+        mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE;
 
     mx::ShaderPtr mxShader = mx::createShader("Shader", materialContext, mxElem);
     if (mxShader) {
