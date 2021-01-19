@@ -151,7 +151,7 @@ HdRprim::GetDrawItems(TfToken const& reprToken) const
 
     static HdRepr::DrawItemUniquePtrVector empty;
 
-    TF_CODING_ERROR("Rprim has draw items for repr %s", reprToken.GetText());
+    TF_CODING_ERROR("Rprim has no draw items for repr %s", reprToken.GetText());
 
     return empty;
 }
