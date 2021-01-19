@@ -181,24 +181,29 @@ void
 HdStSetMaterialTag(HdSceneDelegate *delegate,
                    HdRenderParam *renderParam,
                    HdRprim *rprim,
-                   bool hasDisplayOpacityPrimvar)
+                   bool hasDisplayOpacityPrimvar,
+                   bool occludedSelectionShowsThrough)
 {
     TfToken prevMaterialTag = rprim->GetMaterialTag();
     TfToken newMaterialTag;
 
-    // Use the bound material's tag opinion if possible.
-    const HdStMaterial *material =
-        static_cast<const HdStMaterial *>(
-                delegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material,
-                                                    rprim->GetMaterialId()));
-    if (material) {
-        newMaterialTag = material->GetMaterialTag();
+    // Opinion precedence:
+    //   Show occluded selection > Material opinion > displayOpacity primvar
+
+    if (occludedSelectionShowsThrough) {
+        newMaterialTag = HdStMaterialTagTokens->translucentToSelection;
     } else {
-        // In the absence of a material binding, bucket the prim in the default
-        // (opaque) queue if it doesn't have a displayOpacity primvar opinion.
-        newMaterialTag = hasDisplayOpacityPrimvar?
-            HdStMaterialTagTokens->masked :
-            HdMaterialTagTokens->defaultMaterialTag;
+        const HdStMaterial *material =
+            static_cast<const HdStMaterial *>(
+                    delegate->GetRenderIndex().GetSprim(
+                        HdPrimTypeTokens->material, rprim->GetMaterialId()));
+        if (material) {
+            newMaterialTag = material->GetMaterialTag();
+        } else {
+            newMaterialTag = hasDisplayOpacityPrimvar?
+                HdStMaterialTagTokens->masked :
+                HdMaterialTagTokens->defaultMaterialTag;
+        }
     }
 
     if (prevMaterialTag != newMaterialTag) {

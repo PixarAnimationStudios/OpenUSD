@@ -104,6 +104,7 @@ HdStMesh::HdStMesh(SdfPath const& id)
     , _sceneNormals(false)
     , _hasVaryingTopology(false)
     , _displayOpacity(false)
+    , _occludedSelectionShowsThrough(false)
 {
     /*NOTHING*/
 }
@@ -122,6 +123,9 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
+        updateMaterialTag = true;
+    }
+    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
         updateMaterialTag = true;
     }
 
@@ -155,7 +159,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) {
 
-         HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity);
+         HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
+                            _occludedSelectionShowsThrough);
     }
 
     if (updateMaterialShader || updateGeometricShader) {
@@ -250,6 +255,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         _flatShadingEnabled = displayStyle.flatShadingEnabled;
         _displacementEnabled = displayStyle.displacementEnabled;
+        _occludedSelectionShowsThrough =
+            displayStyle.occludedSelectionShowsThrough;
 
         HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 

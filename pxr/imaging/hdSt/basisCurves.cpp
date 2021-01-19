@@ -59,6 +59,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)
     , _displayOpacity(false)
+    , _occludedSelectionShowsThrough(false)
 {
     /*NOTHING*/
 }
@@ -75,6 +76,9 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     bool updateMaterialTag = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
+        updateMaterialTag = true;
+    }
+    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
         updateMaterialTag = true;
     }
 
@@ -100,7 +104,8 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
 
-        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity);
+        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
+                           _occludedSelectionShowsThrough);
     }
 
     if (updateMaterialShader || updateGeometricShader) {
@@ -523,7 +528,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetChangeTracker();
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
-        _refineLevel = GetDisplayStyle(sceneDelegate).refineLevel;
+        HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
+        _refineLevel = ds.refineLevel;
+        _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
     }
 
     // XXX: is it safe to get topology even if it's not dirty?

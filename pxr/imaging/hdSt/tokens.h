@@ -68,9 +68,19 @@ PXR_NAMESPACE_OPEN_SCOPE
     (volumeRaymarchingStepSizeLighting)         \
     (volumeMaxTextureMemoryPerField)
 
+// Material tags help bucket prims into different queues for draw submission.
+// The tags supported by Storm are:
+//    defaultMaterialTag : opaque geometry
+//    masked : opaque geometry that uses cutout masks (e.g., foliage)
+//    translucentToSelection: opaque geometry that allows occluded selection
+//                            to show through
+//    additive : transparent geometry (cheap OIT solution w/o sorting)
+//    translucent: transparent geometry (OIT solution w/ sorted fragment lists)
+//    volume : transparent geoometry (raymarched)
 #define HDST_MATERIAL_TAG_TOKENS                \
     (defaultMaterialTag)                        \
     (masked)                                    \
+    (translucentToSelection)                    \
     (additive)                                  \
     (translucent)                               \
     (volume)

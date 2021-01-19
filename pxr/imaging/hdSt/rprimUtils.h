@@ -95,8 +95,8 @@ HDST_API
 void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         HdRenderParam *renderParam,
                         HdRprim *rprim,
-                        bool hasDisplayOpacityPrimvar);
-
+                        bool hasDisplayOpacityPrimvar,
+                        bool occludedSelectionShowsThrough);
 // Resolves the material shader for the given prim (using a fallback
 // material as necessary), including optional mixin shader source code.
 HDST_API

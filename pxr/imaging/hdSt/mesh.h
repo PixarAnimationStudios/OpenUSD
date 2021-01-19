@@ -192,6 +192,7 @@ private:
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
     bool _displayOpacity : 1;
+    bool _occludedSelectionShowsThrough : 1;
 };
 
 

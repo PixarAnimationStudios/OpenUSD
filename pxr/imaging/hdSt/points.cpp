@@ -77,7 +77,8 @@ HdStPoints::Sync(HdSceneDelegate *delegate,
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) {
 
-        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity);
+        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
+                           /*occludedSelectionShowsThrough = */false);
     }
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
