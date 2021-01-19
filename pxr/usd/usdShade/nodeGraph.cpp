@@ -385,34 +385,8 @@ UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
     const UsdAttribute &source,
     std::string *reason)
 {
-    // Nodegraphs allow connections to their outputs, but only from
-    // internal nodes.
-    if (!output.IsDefined()) {
-        if (reason) {
-            *reason = TfStringPrintf("Invalid output");
-        }
-        return false;
-    }
-    if (!source) {
-        if (reason) {
-            *reason = TfStringPrintf("Invalid source");
-        }
-        return false;
-    }
-    // Ensure that the source prim is a descendent of the node-graph owning 
-    // the output.
-    const SdfPath sourcePrimPath = source.GetPrim().GetPath();
-    const SdfPath outputPrimPath = output.GetPrim().GetPath();
-    if (!sourcePrimPath.HasPrefix(outputPrimPath)) {
-        if (reason) {
-            *reason = TfStringPrintf("Source of output '%s' on node-graph "
-                "at path <%s> is outside the node-graph: <%s>",
-                source.GetName().GetText(), outputPrimPath.GetText(),
-                sourcePrimPath.GetText());
-        }
-        return false;
-    }
-    return true;
+    return UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
+            output, source, reason);
 }
 
 bool

@@ -171,8 +171,8 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(lightOutput.CanConnect(filterGraphOutput))
 
         # From the custom behavior, light inputs can only be connected to 
-        # sources from the light or its descendant (encapsultated) prims.
-        self.assertTrue(lightInput.CanConnect(lightOutput))
+        # sources from immediate descendants (encapsultated) prims of the light.
+        self.assertFalse(lightInput.CanConnect(lightOutput))
         self.assertTrue(lightInput.CanConnect(lightGraphOutput))
         self.assertFalse(lightInput.CanConnect(filterGraphOutput))
 
@@ -181,8 +181,9 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(filterOutput.CanConnect(filterGraphOutput))
 
         # From the custom behavior, light filter inputs can only be connected to 
-        # sources from the light filter or its descendant (encapsultated) prims.
-        self.assertTrue(filterInput.CanConnect(filterOutput))
+        # sources from immediate descendants (encapsultated) prims of the light 
+        # filter.
+        self.assertFalse(filterInput.CanConnect(filterOutput))
         self.assertTrue(filterInput.CanConnect(filterGraphOutput))
         self.assertFalse(filterInput.CanConnect(lightGraphOutput))
 

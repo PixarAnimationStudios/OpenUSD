@@ -79,11 +79,12 @@ generally used in isolation.
 Shading networks can be organized into coherent packaged units
 (UsdShadeNodeGraph), with their own public parameters exposed and connected
 to the internal nodes.  In this scenario, the UsdShadeNodeGraph is a parent or
-ancestor prim to all of the UsdShadeShader prims in the network, and serves
-as the point of encapsulation - the UsdShadeNodeGraph prim can then be 
-__referenced__ into other, larger networks as a building block, with its entire
-network intact.  When referenced into larger networks, NodeGraphs can also
-be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing)
+ancestor prim (UsdShadeNodeGraph can be nested) to all of the UsdShadeShader 
+prims in the network, and serves as the point of encapsulation - the 
+UsdShadeNodeGraph prim can then be __referenced__ into other, larger networks 
+as a building block, with its entire network intact.  When referenced into 
+larger networks, NodeGraphs can also be 
+[instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing)
 so that they appear as a single prim in the network, and can be processed
 more efficiently when referenced from multiple locations.
 
@@ -179,6 +180,35 @@ UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
         }
     }
 ~~~~~~~~~~~~~
+
+# Connectability Rules for UsdShade Types {#UsdShadeConnectability}
+
+As noted above, encapsulation is critical to UsdShade connectability rules, with
+different UsdShade nodes providing appropriate connectivity rules described
+below:
+
+- UsdShadeShader:
+  Inputs can be connected to any Input or Output of any other shader or 
+  NodeGraph encapsulated by the same nearest-in-namespace encapsulating 
+  NodeGraph or Nodegraph-derived container. Outputs cannot be connected.
+
+- UsdShadeNodeGraph:
+  Inputs follow the same rule as Shaders.  Outputs can be connected to any 
+  Output on a prim (Shader or NodeGraph) encapsulated by the NodeGraph itself, 
+  or to an Input of the same NodeGraph itself, creating a "pass through" 
+  connection.
+
+- Default behavior for NodeGraph-derived Types (e.g. UsdShadeMaterial)
+  Inputs and Outputs follow the same rule, which is that they can be connected 
+  to any Output on a prim  (Shader or NodeGraph) encapsulated by the Material 
+  itself. Note that "pass through" connections are not allowed for 
+  Nodegraph-derived container nodes.
+
+  Sub-classes of UsdShadeNodeGraph can override UsdShadeConnectableAPIBehavior
+  interface to provide a different implementation.
+
+Note that interface-only connections can only happen between inputs and source 
+which have "interfaceOnly" connectivity.
 
 # Connections and Dataflow in UsdShade {#UsdShadeConnections}
 

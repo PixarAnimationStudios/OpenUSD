@@ -698,19 +698,25 @@ UsdShadeMaterial::ComputeVolumeSource(
             sourceName, sourceType);
 }
 
-class UsdShadeMaterial_ConnectableAPIBehavior : public UsdShadeNodeGraph::ConnectableAPIBehavior
+class UsdShadeMaterial_ConnectableAPIBehavior : 
+    public UsdShadeNodeGraph::ConnectableAPIBehavior
 {
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
                             std::string *reason) override
     {
-        // TODO: In the future we will only allows connections whose path
-        // contains the Material's path as a prefix (i.e. encapsulation)
-        // Note that UsdLuxLight and UsdLuxLightFilter already implement
-        // this behavior so this should be reimplemented as a shared behavior
-        // that can be used by any connectables that need it.
-        return true;
+        return _CanConnectInputToSource(input, source, reason, 
+                ConnectableNodeTypes::DerivedContainerNodes);
+    }
+
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason)
+    {
+        return _CanConnectOutputToSource(output, source, reason,
+                ConnectableAPIBehavior::DerivedContainerNodes);
     }
 
     bool IsContainer() const

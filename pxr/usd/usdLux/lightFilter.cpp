@@ -161,28 +161,19 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
                             const UsdAttribute &source,
                             std::string *reason) override
     {     
-        // Check the base class CanConnect first.
-        if (!UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
-            input, source, reason)) {
-            return false;
-        }
+        return _CanConnectInputToSource(input, source, reason, 
+                ConnectableNodeTypes::DerivedContainerNodes);
+    }
 
-        // Only allow inputs to connect to sources whose path
-        // contains the light's path as a prefix (i.e. encapsulation)
-        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
-        const SdfPath inputPrimPath = input.GetPrim().GetPath();
-        if (!sourcePrimPath.HasPrefix(inputPrimPath)) {
-            if (reason) {
-                *reason = TfStringPrintf(
-                    "Proposed source <%s> of input '%s' on light filter at "
-                    "path <%s> must be a descendant of the light filter.",
-                    sourcePrimPath.GetText(), input.GetFullName().GetText(), 
-                    inputPrimPath.GetText());
-            }
-            return false;
-        }
+    bool IsContainer() const
+    {
         return true;
     }
+
+    // Note that LightFilter's outputs are not connectable (different from
+    // UsdShadeNodeGraph default behavior) as there are no known use-case for 
+    // these right now.
+
 };
 
 
