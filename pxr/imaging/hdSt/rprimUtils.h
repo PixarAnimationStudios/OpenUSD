@@ -56,10 +56,13 @@ using HdStResourceRegistrySharedPtr =
     std::shared_ptr<HdStResourceRegistry>;
 
 // -----------------------------------------------------------------------------
-// Draw invalidation utility
+// Draw invalidation utilities
 // -----------------------------------------------------------------------------
 HDST_API
 void HdStMarkDrawBatchesDirty(HdRenderParam *renderParam);
+
+HDST_API
+void HdStMarkMaterialTagsDirty(HdRenderParam *renderParam);
 
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities
@@ -87,6 +90,12 @@ HDST_API
 void HdStSetMaterialId(HdSceneDelegate *delegate,
                        HdRenderParam *renderParam,
                        HdRprim *rprim);
+
+HDST_API
+void HdStSetMaterialTag(HdSceneDelegate *delegate,
+                        HdRenderParam *renderParam,
+                        HdRprim *rprim,
+                        bool hasDisplayOpacityPrimvar);
 
 // Resolves the material shader for the given prim (using a fallback
 // material as necessary), including optional mixin shader source code.

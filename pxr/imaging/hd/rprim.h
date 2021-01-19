@@ -201,6 +201,10 @@ public:
     /// into different collections so they can be rendered seperately.
     TfToken const& GetMaterialTag() const { return _sharedData.materialTag; }
 
+    /// Sets the material tag used by the rprim.
+    HD_API
+    void SetMaterialTag(TfToken const& materialTag);
+
     HdReprSelector const& GetReprSelector() const {
         return _authoredReprSelector;
     }

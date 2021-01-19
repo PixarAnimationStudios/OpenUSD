@@ -53,8 +53,17 @@ public:
     HDST_API
     unsigned int GetDrawBatchesVersion() const;
 
+    /// Marks material tags dirty, meaning that the draw items associated with
+    /// the collection of a render pass need to be re-gathered.
+    HDST_API
+    void MarkMaterialTagsDirty();
+
+    HDST_API
+    unsigned int GetMaterialTagsVersion() const;
+
 private:
     std::atomic_uint _drawBatchesVersion;
+    std::atomic_uint _materialTagsVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

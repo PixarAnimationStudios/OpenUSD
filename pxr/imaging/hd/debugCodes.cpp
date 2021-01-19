@@ -44,9 +44,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_CACHE_HITS, "Report every cache hit");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_CACHE_MISSES, "Report every cache miss");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_COLLECTION_CHANGED,
-        "Report when cached collections change");
-    
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_COUNTER_CHANGED,
         "Report values when counters change");
 

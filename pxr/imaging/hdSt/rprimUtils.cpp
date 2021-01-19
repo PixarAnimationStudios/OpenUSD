@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
@@ -69,6 +70,16 @@ HdStMarkDrawBatchesDirty(HdRenderParam *renderParam)
         HdStRenderParam *stRenderParam =
             static_cast<HdStRenderParam*>(renderParam);
         stRenderParam->MarkDrawBatchesDirty();
+    }
+}
+
+void
+HdStMarkMaterialTagsDirty(HdRenderParam *renderParam)
+{
+    if (TF_VERIFY(renderParam)) {
+        HdStRenderParam *stRenderParam =
+            static_cast<HdStRenderParam*>(renderParam);
+        stRenderParam->MarkMaterialTagsDirty();
     }
 }
 
@@ -163,6 +174,37 @@ HdStSetMaterialId(HdSceneDelegate *delegate,
         // The batches need to be validated and rebuilt since a changed shader
         // may change aggregation.
         HdStMarkDrawBatchesDirty(renderParam);
+    }
+}
+
+void
+HdStSetMaterialTag(HdSceneDelegate *delegate,
+                   HdRenderParam *renderParam,
+                   HdRprim *rprim,
+                   bool hasDisplayOpacityPrimvar)
+{
+    TfToken prevMaterialTag = rprim->GetMaterialTag();
+    TfToken newMaterialTag;
+
+    // Use the bound material's tag opinion if possible.
+    const HdStMaterial *material =
+        static_cast<const HdStMaterial *>(
+                delegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material,
+                                                    rprim->GetMaterialId()));
+    if (material) {
+        newMaterialTag = material->GetMaterialTag();
+    } else {
+        // In the absence of a material binding, bucket the prim in the default
+        // (opaque) queue if it doesn't have a displayOpacity primvar opinion.
+        newMaterialTag = hasDisplayOpacityPrimvar?
+            HdStMaterialTagTokens->masked :
+            HdMaterialTagTokens->defaultMaterialTag;
+    }
+
+    if (prevMaterialTag != newMaterialTag) {
+        rprim->SetMaterialTag(newMaterialTag);
+        // Trigger invalidation of the draw items cache of the render pass(es).
+        HdStMarkMaterialTagsDirty(renderParam);
     }
 }
 

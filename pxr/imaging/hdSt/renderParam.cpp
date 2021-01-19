@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStRenderParam::HdStRenderParam()
     : _drawBatchesVersion(1)
+    , _materialTagsVersion(1)
 {
 }
 
@@ -45,6 +46,20 @@ HdStRenderParam::GetDrawBatchesVersion() const
     // Can use relaxed ordering because render passes are expected to
     // only read the value, and that too in a single threaded fashion.
     return _drawBatchesVersion.load(std::memory_order_relaxed);
+}
+
+void
+HdStRenderParam::MarkMaterialTagsDirty()
+{
+    ++_materialTagsVersion; // uses std::memory_order_seq_cst 
+}
+
+unsigned int
+HdStRenderParam::GetMaterialTagsVersion() const
+{
+    // Can use relaxed ordering because render passes are expected to
+    // only read the value, and that too in a single threaded fashion.
+    return _materialTagsVersion.load(std::memory_order_relaxed);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

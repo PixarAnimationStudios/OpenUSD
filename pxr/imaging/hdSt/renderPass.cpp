@@ -64,13 +64,22 @@ _ExecuteDraw(
     cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
-unsigned
+unsigned int
 _GetDrawBatchesVersion(HdRenderIndex *renderIndex)
 {
     HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
         renderIndex->GetRenderDelegate()->GetRenderParam());
 
     return stRenderParam->GetDrawBatchesVersion();
+}
+
+unsigned int
+_GetMaterialTagsVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return stRenderParam->GetMaterialTagsVersion();
 }
 
 
@@ -80,6 +89,7 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     , _lastSettingsVersion(0)
     , _useTinyPrimCulling(false)
     , _collectionVersion(0)
+    , _materialTagsVersion(0)
     , _collectionChanged(false)
     , _drawItemCount(0)
     , _drawItemsChanged(false)
@@ -267,20 +277,40 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
     const int renderTagVersion =
         tracker.GetRenderTagVersion();
 
+    const unsigned int materialTagsVersion =
+        _GetMaterialTagsVersion(GetRenderIndex());
+
     const bool collectionChanged = _collectionChanged ||
         (_collectionVersion != collectionVersion);
 
     const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
 
-    if (collectionChanged || renderTagsChanged) {
+    const bool materialTagsChanged =
+        _materialTagsVersion != materialTagsVersion;
+
+    if (collectionChanged || renderTagsChanged || materialTagsChanged) {
         HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-        TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
-                                            "(repr = %s)"
-                                            "version: %d -> %d\n",
-                                             collection.GetName().GetText(),
-                                             collection.GetReprSelector().GetText(),
-                                             _collectionVersion,
-                                             collectionVersion);
+
+        if (TfDebug::IsEnabled(HDST_DRAW_ITEM_GATHER)) {
+            if (collectionChanged) {
+                TfDebug::Helper::Msg(
+                    "CollectionChanged: %s (repr = %s, version = %d -> %d)\n",
+                        collection.GetName().GetText(),
+                        collection.GetReprSelector().GetText(),
+                        _collectionVersion,
+                        collectionVersion);
+            }
+
+            if (renderTagsChanged) {
+                TfDebug::Helper::Msg("RenderTagsChanged (version = %d -> %d)\n",
+                        _renderTagVersion, renderTagVersion);
+            }
+            if (materialTagsChanged) {
+                TfDebug::Helper::Msg(
+                    "MaterialTagsChanged (version = %d -> %d)\n",
+                    _materialTagsVersion, materialTagsVersion);
+            }
+        }
 
         _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
         _drawItemCount = _drawItems.size();
@@ -290,6 +320,7 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
         _collectionChanged = false;
 
         _renderTagVersion = renderTagVersion;
+        _materialTagsVersion = materialTagsVersion;
     }
 }
 

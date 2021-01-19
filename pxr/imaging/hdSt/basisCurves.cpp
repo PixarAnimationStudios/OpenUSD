@@ -99,7 +99,8 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
 
     if (updateMaterialTag || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
-        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+
+        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity);
     }
 
     if (updateMaterialShader || updateGeometricShader) {
@@ -113,23 +114,6 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
     // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
-}
-
-const TfToken&
-HdStBasisCurves::_GetMaterialTag(const HdRenderIndex &renderIndex) const
-{
-    const HdStMaterial *material =
-        static_cast<const HdStMaterial *>(
-                renderIndex.GetSprim(HdPrimTypeTokens->material,
-                                     GetMaterialId()));
-
-    if (material) {
-        return material->GetMaterialTag();
-    }
-
-    // A material may have been unbound, we should clear the old tag
-    return _displayOpacity ? HdStMaterialTagTokens->masked :
-                             HdMaterialTagTokens->defaultMaterialTag;
 }
 
 void

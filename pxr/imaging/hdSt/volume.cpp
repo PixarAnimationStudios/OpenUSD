@@ -127,7 +127,7 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 {
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+        SetMaterialTag(HdStMaterialTagTokens->volume);
     }
 
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
@@ -138,12 +138,6 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
     // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
     // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
-}
-
-const TfToken&
-HdStVolume::_GetMaterialTag(const HdRenderIndex &renderIndex) const
-{
-    return HdStMaterialTagTokens->volume;
 }
 
 void

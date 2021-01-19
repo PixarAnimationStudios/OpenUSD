@@ -73,8 +73,6 @@ protected:
                      HdDirtyBits *dirtyBitsState);
 
 private:
-    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
