@@ -1,0 +1,15 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./s.sdf@ (offset = 10; scale = 2.0),
+        @./s_48tcps.sdf@ (offset = 10; scale = 2.0),
+        @./s_24tcps_12fps.sdf@ (offset = 10; scale = 2.0),
+        @./s_12fps.sdf@ (offset = 10; scale = 2.0)
+    ]
+    timeCodesPerSecond = 24
+    framesPerSecond = 12
+)
+
+def "Root" 
+{
+}

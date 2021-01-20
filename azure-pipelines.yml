@@ -1,0 +1,63 @@
+trigger:
+- release
+- dev
+
+jobs:
+- job: Linux
+  timeoutInMinutes: 90
+  pool:
+    vmImage: 'Ubuntu-18.04'
+  steps:
+  - script: |
+      sudo apt-get -qq update;
+      sudo pip install --upgrade pip
+      sudo apt-get install python-setuptools;
+      sudo apt-get install libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev;
+      sudo pip install PySide2 ;
+      sudo pip install PyOpenGL ;
+      sudo python build_scripts/build_usd.py --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-linux'
+      targetPath: "/home/vsts/USDinst"
+
+- job: macOS
+  timeoutInMinutes: 90
+  pool:
+    vmImage: 'macOS-10.14'
+  steps:
+  - script: |
+      # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
+      unset SYSTEM
+      /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+      sudo pip install pyside2 ;
+      sudo pip install PyOpenGL ;
+      python build_scripts/build_usd.py --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-macOS'
+      targetPath: "/Users/runner/USDinst"
+
+- job: Windows
+  timeoutInMinutes: 90
+  pool:
+    vmImage: 'VS2017-Win2016'
+  steps:
+  - script: |
+      call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\2.7.18\x64
+      call set PYTHONBIN=%PYTHONLOCATION%\python.exe
+      call set PATH=%PYTHONLOCATION%;%PYTHONLOCATION%\Scripts;%PATH%
+      call set BOOST_ROOT=
+      call %PYTHONBIN% --version
+      call %PYTHONBIN% -m pip install --upgrade pip
+      call %PYTHONBIN% -m pip install PySide
+      call %PYTHONBIN% -m pip install PyOpenGL
+      call %PYTHONBIN% build_scripts/build_usd.py --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-win64'
+      targetPath: "D:/USDinst"

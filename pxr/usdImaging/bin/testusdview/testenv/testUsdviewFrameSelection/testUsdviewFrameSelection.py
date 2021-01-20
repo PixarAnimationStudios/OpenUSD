@@ -34,11 +34,6 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.selHighlightMode = (
         SelectionHighlightModes.NEVER)
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 def _emitFrameAction(appController):
     appController._frameSelection()
 
@@ -54,24 +49,24 @@ def _testFrameSelection(appController):
     appController._dataModel.selection.setPrimPath("/frontSphere", ALL_INSTANCES)
     _emitFrameAction(appController)
 
-    _takeShot(appController, "framed.png")
+    appController._takeShot("framed.png")
 
     # Toggle back to the start camera.
 
     _emitToggleFrameAction(appController)
-    _takeShot(appController, "toggleToStart.png")
+    appController._takeShot("toggleToStart.png")
 
     # Rotate the start camera.
 
     appController._dataModel.viewSettings.freeCamera.rotTheta = 90
     appController._stageView.updateGL()
 
-    _takeShot(appController, "rotatedStart.png")
+    appController._takeShot("rotatedStart.png")
 
     # Toggle back to the framed camera, and make sure it did not rotate as well.
 
     _emitToggleFrameAction(appController)
-    _takeShot(appController, "toggleToFramed.png")
+    appController._takeShot("toggleToFramed.png")
 
 # Test that selection highlighting works properly in usdview
 def testUsdviewInputFunction(appController):

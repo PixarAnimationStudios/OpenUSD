@@ -1,0 +1,61 @@
+Loading @SubrootReferenceAndVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+
+------------------------------------------------------------------------
+Results for composing </SubrootRef>
+
+Prim Stack:
+    root.sdf             /SubrootRef
+    group.sdf            /Group{v=y}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/SubrootRef.a:
+    group.sdf            /Group{v=y}Model.a
+
+------------------------------------------------------------------------
+Results for composing </RootRef>
+
+Prim Stack:
+    root.sdf             /RootRef
+    model.sdf            /Model
+    model.sdf            /Model{v=x}
+
+Variant Selections:
+    {v = x}
+
+Child names:
+     ['Child']
+
+Property names:
+     ['modelAttr']
+
+Property stacks:
+/RootRef.modelAttr:
+    model.sdf            /Model{v=x}.modelAttr
+
+------------------------------------------------------------------------
+Results for composing </RootRef/Child>
+
+Prim Stack:
+    root.sdf             /RootRef/Child
+    group.sdf            /Group{v=y}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/RootRef/Child.a:
+    group.sdf            /Group{v=y}Model.a
+

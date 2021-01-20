@@ -16,7 +16,7 @@ MaterialX | USD | Notes
 --------- | --- | -----
 parameter | UsdShadeInput | Connectability is interfaceOnly
 input | UsdShadeInput | .
-output | UsdShadeOutput | A default output is named "result"
+output | UsdShadeOutput | A default output is named "out"
 material | UsdShadeMaterial | .
 nodegraph | UsdShadeNodeGraph | .
 collection | UsdCollectionAPI | See below

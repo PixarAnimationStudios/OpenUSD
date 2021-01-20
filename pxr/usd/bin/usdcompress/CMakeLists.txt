@@ -61,8 +61,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressPropertyOpinionsOneCustom
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeOneCustomOpinion.usda \
-            -o out.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeOneCustomOpinion.usda -o out.usda"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -76,8 +75,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressPropertyOpinionsMultiple
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda \
-            -o out.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda -o out.usda"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -91,8 +89,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressPropertyOpinionsIgnoreErrors
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda \
-    -o CubeMultipleOpinionsCompressed.usda --ignore_opinion_errors"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda -o CubeMultipleOpinionsCompressed.usda --ignore_opinion_errors"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeMultipleOpinionsCompressed.usda
     DIFF_COMPARE CubeMultipleOpinionsCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -108,8 +105,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressComplexSet
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress ComplexSet.usda \
-            -o ComplexSetCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress ComplexSet.usda -o ComplexSetCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE ComplexSetCompressed.usda
     DIFF_COMPARE ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesFill_CubesFillGeom101.drc
@@ -134,8 +130,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressTriangles
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithTriangles.usda \
-            -o CubeWithTrianglesCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithTriangles.usda -o CubeWithTrianglesCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithTrianglesCompressed.usda
     DIFF_COMPARE CubeWithTrianglesCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -151,8 +146,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressQuads
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithQuads.usda \
-            -o CubeWithQuadsCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithQuads.usda -o CubeWithQuadsCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithQuadsCompressed.usda
     DIFF_COMPARE CubeWithQuadsCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -168,8 +162,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressDiscardQuads
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithQuads.usda \
-            -o CubeWithQuadsCompressedDiscarded.usda --preserve_polygons 0"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithQuads.usda -o CubeWithQuadsCompressedDiscarded.usda --preserve_polygons 0"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithQuadsCompressedDiscarded.usda
     DIFF_COMPARE CubeWithQuadsCompressedDiscarded.usda.draco/Cube_Geom_Cube.drc
@@ -186,9 +179,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressGenericPrimvars
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithGenericPrimvars.usda \
-            -o CubeWithGenericPrimvarsCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithGenericPrimvars.usda -o CubeWithGenericPrimvarsCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithGenericPrimvarsCompressed.usda
     DIFF_COMPARE CubeWithGenericPrimvarsCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -205,9 +196,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressVertexColor
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithVertexColor.usda -o CubeWithVertexColorCompressed.usda \
-            --discard_subdivision 1"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithVertexColor.usda -o CubeWithVertexColorCompressed.usda --discard_subdivision 1"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithVertexColorCompressed.usda
     DIFF_COMPARE CubeWithVertexColorCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -224,10 +213,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressVertexColorPreservePositionOrder
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithVertexColor.usda \
-            -o CubeWithVertexColorCompressedWithPositionOrder.usda \
-            --discard_subdivision 0"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithVertexColor.usda -o CubeWithVertexColorCompressedWithPositionOrder.usda --discard_subdivision 0"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithVertexColorCompressedWithPositionOrder.usda
     DIFF_COMPARE CubeWithVertexColorCompressedWithPositionOrder.usda.draco/Cube_Geom_Cube.drc
@@ -244,8 +230,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressCornerColor
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithCornerColor.usda -o CubeWithCornerColorCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithCornerColor.usda -o CubeWithCornerColorCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithCornerColorCompressed.usda
     DIFF_COMPARE CubeWithCornerColorCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -262,10 +247,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressCornerColorPreservePositionOrder
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithCornerColor.usda \
-            -o CubeWithCornerColorCompressedWithPositionOrder.usda \
-            --discard_subdivision 0"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithCornerColor.usda -o CubeWithCornerColorCompressedWithPositionOrder.usda --discard_subdivision 0"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithCornerColorCompressedWithPositionOrder.usda
     DIFF_COMPARE CubeWithCornerColorCompressedWithPositionOrder.usda.draco/Cube_Geom_Cube.drc
@@ -281,8 +263,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressHoles
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithHoles.usda -o CubeWithHolesCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithHoles.usda -o CubeWithHolesCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithHolesCompressed.usda
     DIFF_COMPARE CubeWithHolesCompressed.usda.draco/Cube_Geom_Cube.drc
@@ -298,9 +279,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressDiscardHoles
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithHoles.usda -o CubeWithHolesCompressedDiscarded.usda \
-            --discard_subdivision 1"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithHoles.usda -o CubeWithHolesCompressedDiscarded.usda --discard_subdivision 1"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithHolesCompressedDiscarded.usda
     DIFF_COMPARE CubeWithHolesCompressedDiscarded.usda.draco/Cube_Geom_Cube.drc
@@ -316,8 +295,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressCreases
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            MeshWithCreases.usda -o MeshWithCreasesCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress MeshWithCreases.usda -o MeshWithCreasesCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE MeshWithCreasesCompressed.usda
     DIFF_COMPARE MeshWithCreasesCompressed.usda.draco/xform_bottomPanel.drc
@@ -333,9 +311,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressDiscardCreases
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            MeshWithCreases.usda -o MeshWithCreasesCompressedDiscarded.usda \
-            --discard_subdivision 1"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress MeshWithCreases.usda -o MeshWithCreasesCompressedDiscarded.usda --discard_subdivision 1"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE MeshWithCreasesCompressedDiscarded.usda
     DIFF_COMPARE MeshWithCreasesCompressedDiscarded.usda.draco/xform_bottomPanel.drc
@@ -351,8 +327,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCompressTimeSample
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress \
-            CubeWithTimeSample.usda -o CubeWithTimeSampleCompressed.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeWithTimeSample.usda -o CubeWithTimeSampleCompressed.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE CubeWithTimeSampleCompressed.usda
     DIFF_COMPARE CubeWithTimeSampleCompressed.usda.draco/Cube_Geom_Cube.drc

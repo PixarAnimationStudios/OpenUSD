@@ -1,0 +1,554 @@
+#usda 1.0
+
+def Xform "RootMulti" (
+    UsdExample_argDict = {
+        dictionary Bar = {
+            double UsdExample_height = 5
+        }
+        dictionary Foo = {
+            int UsdExample_depth = 3
+            int UsdExample_num = 4
+        }
+    }
+    UsdExample_depth = 3
+    UsdExample_num = 3
+    UsdExample_radius = 25
+)
+{
+    def Cone "geom"
+    {
+        def Sphere "sphere"
+        {
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+        }
+    }
+
+    def Xform "Xform_Bar_2_0" (
+        UsdExample_depth = 2
+        UsdExample_height = 5
+        UsdExample_num = 3
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (25, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "geom"
+        {
+            def Sphere "sphere"
+            {
+                color3f[] primvars:displayColor = [(0, 0, 1)]
+            }
+        }
+
+        def Xform "Xform_Bar_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.249999999999997, 10.825317547305485, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.250000000000005, -10.82531754730548, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+    }
+
+    def Xform "Xform_Bar_2_1" (
+        UsdExample_depth = 2
+        UsdExample_height = 5
+        UsdExample_num = 3
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (-12.499999999999995, 21.65063509461097, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "geom"
+        {
+            def Sphere "sphere"
+            {
+                color3f[] primvars:displayColor = [(0, 0, 1)]
+            }
+        }
+
+        def Xform "Xform_Bar_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.249999999999997, 10.825317547305485, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.250000000000005, -10.82531754730548, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+    }
+
+    def Xform "Xform_Bar_2_2" (
+        UsdExample_depth = 2
+        UsdExample_height = 5
+        UsdExample_num = 3
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (-12.50000000000001, -21.65063509461096, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "geom"
+        {
+            def Sphere "sphere"
+            {
+                color3f[] primvars:displayColor = [(0, 0, 1)]
+            }
+        }
+
+        def Xform "Xform_Bar_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.249999999999997, 10.825317547305485, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+
+        def Xform "Xform_Bar_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 5
+            UsdExample_num = 3
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-6.250000000000005, -10.82531754730548, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "geom"
+            {
+                def Sphere "sphere"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+        }
+    }
+
+    def Xform "Xform_Foo_2_0" (
+        UsdExample_depth = 2
+        UsdExample_height = 0
+        UsdExample_num = 4
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (25, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cone "geom"
+        {
+        }
+
+        def Xform "Xform_Foo_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (7.654042494670958e-16, 12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-12.5, 1.5308084989341915e-15, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_3" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-2.296212748401287e-15, -12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+    }
+
+    def Xform "Xform_Foo_2_1" (
+        UsdExample_depth = 2
+        UsdExample_height = 0
+        UsdExample_num = 4
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (1.5308084989341915e-15, 25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cone "geom"
+        {
+        }
+
+        def Xform "Xform_Foo_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (7.654042494670958e-16, 12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-12.5, 1.5308084989341915e-15, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_3" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-2.296212748401287e-15, -12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+    }
+
+    def Xform "Xform_Foo_2_2" (
+        UsdExample_depth = 2
+        UsdExample_height = 0
+        UsdExample_num = 4
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (-25, 3.061616997868383e-15, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cone "geom"
+        {
+        }
+
+        def Xform "Xform_Foo_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (7.654042494670958e-16, 12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-12.5, 1.5308084989341915e-15, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_3" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-2.296212748401287e-15, -12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+    }
+
+    def Xform "Xform_Foo_2_3" (
+        UsdExample_depth = 2
+        UsdExample_height = 0
+        UsdExample_num = 4
+        UsdExample_radius = 12.5
+    )
+    {
+        double3 xformOp:translate = (-4.592425496802574e-15, -25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cone "geom"
+        {
+        }
+
+        def Xform "Xform_Foo_1_0" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (12.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_1" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (7.654042494670958e-16, 12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_2" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-12.5, 1.5308084989341915e-15, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+
+        def Xform "Xform_Foo_1_3" (
+            UsdExample_depth = 1
+            UsdExample_height = 0
+            UsdExample_num = 4
+            UsdExample_radius = 6.25
+        )
+        {
+            double3 xformOp:translate = (-2.296212748401287e-15, -12.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cone "geom"
+            {
+            }
+        }
+    }
+}
+

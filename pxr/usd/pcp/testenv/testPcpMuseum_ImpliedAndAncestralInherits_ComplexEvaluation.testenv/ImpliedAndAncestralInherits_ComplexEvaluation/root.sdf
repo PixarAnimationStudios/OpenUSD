@@ -1,0 +1,125 @@
+#sdf 1.4.32
+
+# This is a minimal example of a complex nested inherits case that requires Pcp 
+# composition to care about the order in which it evaluates multiple queued 
+# implied inherits tasks. 
+#  
+# Overview of the prim structure 
+# Prim /Root inherits Class /_X 
+# /_X/B (child of class _X) inherits local class /_X/_Y (also child of _X) 
+# /_X/_Y has a reference to another prim /Ref (in ref.sdf)
+# /Ref/C (child of ref prim Ref) inherits global class /_G 
+# /Ref/C/D (child of /Ref/C) inherits local class /Ref/C/_Z 
+#  
+# The multiple EvalImpliedClasses tasks that require correct ordering manifests 
+# when computing the prim index for /Root/B/C/D
+# We'll start with the initial graph at /Root/B/C/D before any composition tasks 
+# are processed which is just the already computed graph for /Root/B/C with D 
+# appended. 
+#  
+#                     /Root/B/C/D 
+#     +---------------+   |
+#     | imp inh           | /Root inh /X
+#     |                   |
+#     v                   v
+# /Root/_Y/C/D        /_X/B/C/D
+#     |                   |
+#     | imp inh           | /_X/B inh /_X/_Y
+#     |                   |
+#     v                   v
+# /_G/D               /_X/_Y/C/D
+#           +---------+   |
+#           | imp inh     | /_X/_Y ref /Ref
+#           |             |
+#           v             v
+#         /_G/D       /Ref/C/D
+#                         |
+#                         | /Ref/C inh /_G
+#                         |
+#                         v
+#                     /_G/D
+#  
+# When we process the direct inherit from /Ref/C/D to /Ref/C/_Z, the end of the 
+# node graph, before implied classes start being evaluated, becomes: 
+#  
+#                     /Ref/C/D
+#                         |    +----------------------+              
+#                         | /Ref/C/D inh /Ref/C/_Z    | /Ref/C inh /_G 
+#                         |                           |              
+#                         v                           v              
+#                     /Ref/C/_Z                     /_G/D           
+#                         |
+#                         | /Ref/C inh /_G
+#                         |
+#                         v
+#                     /_G/_Z
+#  
+# Because this new inherit arc was added, we start evaluating implied inherits 
+# at /Ref/C/D and we propagate its two inherit chains /Ref/C/_Z and /_G/D up the 
+# graph. The ordering problem occurs once we add these implied inherit chains 
+# under the /_X/B/C/D inherit node and determine what the top of the class 
+# hierarchy is for the EvalImpliedClasses task we need to add to continue the 
+# propagation. 
+#  
+# First, the /Ref/C/_Z class chain is added as the implied inherit /_X/B/C/_Z 
+# under /_X/B/C/D. An EvalImpliedClasses task is added for this new implied 
+# inherit arc for the top of its class chain which is determined to be /X/B/C/D 
+# via the function _FindStartingNodeForImpliedClasses (pcp/primIndex.cpp). 
+#  
+# Second, the /_G/D class is added as the implied inherit /_G/D (maps to the 
+# same path) under /_X/B/C/D as well, and an EvalImpliedClasses task is also 
+# added. However the to top of class chain that contains /_G/D is determined to 
+# be /Root/B/C/D by _FindStartingNodeForImpliedClasses so we have another 
+# EvalImpliedClasses task using a different node than the previous add task. 
+#  
+# The order in which we process these two EvalImpliedClasses tasks now matters 
+# because /_X/B/C/D is a child of /Root/B/C/D and in order to correctly 
+# propagate implied classes from /Root/B/C/D we need to have already composed 
+# all implied classes for its children. In the exact case displayed above this 
+# ordering # actually won't matter because /Root/B/C/D is the graph's root and 
+# EvalImpliedClasses doesn't need do anything at the root. However, if you have 
+# a prim that references /Root, such as /RefToRoot below, then it does matter 
+# that all of the /_X/B/C/D implied classes are propagated before we propagate 
+# /Root/B/C/D across the reference. 
+
+def "Root" (
+    inherits = </_X>
+)
+{
+    over "B"
+    {
+        over "C"
+        {
+            over "_Z"
+            {
+                string prop = "weak"
+            }
+
+            over "D"
+            {
+                string prop = "strong"
+            }
+        }
+    }
+}
+
+class "_X"
+{
+    class "_Y" (
+        add references = @ref.sdf@</Ref>
+    )
+    {
+    }
+
+    def "B" (
+        add inherits = <../_Y>
+    )
+    {
+    }
+}
+
+def "RefToRoot" (
+    references = </Root>
+)
+{
+}

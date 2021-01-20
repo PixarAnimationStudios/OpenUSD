@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import os
-os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
+os.environ['PXR_USDMTLX_STDLIB_SEARCH_PATHS'] = os.getcwd()
 
 from pxr import Tf, Sdr
 import unittest
@@ -50,11 +50,7 @@ class TestParser(unittest.TestCase):
             self.assertEqual(node.GetSourceType(), "OSL")
             self.assertEqual(node.GetFamily(), "UsdMtlxTestNode")
             self.assertEqual(sorted(node.GetInputNames()), ["in", "note"])
-            if node.GetName() == 'nd_surface':
-                # XXX -- Should shader semantic nodes have a named output?
-                self.assertEqual(node.GetOutputNames(), [])
-            else:
-                self.assertEqual(node.GetOutputNames(), ["result"])
+            self.assertEqual(node.GetOutputNames(), ['out'])
 
         # Verify converted types.
         typeNameMap = {
@@ -64,7 +60,8 @@ class TestParser(unittest.TestCase):
             'integer': 'int',
             'string': 'string',
             'surface': 'string',
-            'vector': 'vector',
+            'vector': 'float',   # vector actually becomes a float[3], but the
+                                 # array size is not represented in the Type
         }
         for node in nodes:
             # Strip leading nd_ from name.

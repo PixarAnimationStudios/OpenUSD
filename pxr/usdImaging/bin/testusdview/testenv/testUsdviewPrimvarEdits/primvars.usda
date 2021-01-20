@@ -1,0 +1,79 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+over "Collections" (
+    prepend apiSchemas = ["CollectionAPI:material:MainMaterial"]
+)
+{
+    uniform token collection:material:MainMaterial:expansionRule = "expandPrims"
+    rel collection:material:MainMaterial:includes = </Scene/Geom>
+}
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    rel material:binding:collection:preview:MainMaterial = [
+        </Collections.collection:material:MainMaterial>,
+        </Scene/Looks/MainMaterial>,
+    ]
+
+    def Scope "Looks"
+    {
+        def Material "MainMaterial"
+        {
+            token outputs:displacement.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:displacement>
+            token outputs:surface.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                float inputs:clearcoat = 0
+                color3f inputs:diffuseColor = (1, 0, 0)
+                color3f inputs:diffuseColor.connect = </Scene/Looks/MainMaterial/Primvar.outputs:result>
+
+                # Outputs available in this shader
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                # Fallback to blue
+                float3 inputs:fallback = (0, 0, 1)
+                string inputs:varname = "myColor"
+                float3 outputs:result
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane"
+        {
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-2, -2, -2), (2, -2, -2), (2, 2, -2), (-2, 2, -2)]
+            # Display color authored as red
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+            # Authored normals are valid only for polygonal meshes
+            uniform token subdivisionScheme = "none"
+
+            # Use an arbitrary direction that isn't the actual normal.
+            # This makes smooth<->flat shading evident for a plane.
+            float3[] primvars:normals = [(0.0, 0.5, 0.8)] (
+                interpolation = "constant"
+            )
+        }
+    }
+}
+

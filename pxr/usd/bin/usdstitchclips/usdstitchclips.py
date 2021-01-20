@@ -22,6 +22,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+
 import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 
 
@@ -56,6 +59,10 @@ parser.add_argument('--clipSet', action='store',
                     help='specify a named clipSet in which to author clip metadata, so that multiple sets of clips can be applied on the same prim.')
 parser.add_argument('--activeOffset', action='store', required=False,
                     help='specify an offset for template-based clips, offsetting the frame number of each clip file.')
+parser.add_argument('--interpolateMissingClipValues', action='store_true',
+                    help=('specify whether values for clips without authored '
+                          'samples are interpolated from surrounding clips '
+                          'if no default value is authored in any clip.'))
 # useful for debugging with diffs
 parser.add_argument('-n', '--noComment', action='store_true',
                     help='do not write a comment specifying how the usd file was generated')
@@ -67,7 +74,7 @@ assert results.clipPath is not None, "must specify a clip path(--clipPath)"
 assert results.usdFiles is not None, "must specify clip files"
 
 if os.path.isfile(results.out):
-    print "Warning: merging with current result layer"
+    print("Warning: merging with current result layer")
 
 outLayerGenerated = False
 topologyLayerGenerated = False
@@ -117,6 +124,7 @@ try:
                                      results.endTimeCode,
                                      results.stride,
                                      results.activeOffset,
+                                     results.interpolateMissingClipValues,
                                      results.clipSet)
     else:
         if results.templatePath:
@@ -131,6 +139,7 @@ try:
 
         UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
                              results.startTimeCode, results.endTimeCode,
+                             results.interpolateMissingClipValues,
                              results.clipSet)
 
 

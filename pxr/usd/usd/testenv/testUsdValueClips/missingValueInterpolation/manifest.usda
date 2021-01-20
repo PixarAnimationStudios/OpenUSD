@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "Model"
+{
+    double attrNotInFirstClip
+    double attrNotInMiddleClips
+    double attrNotInLastClip
+    double attrNotInAnyClip
+}

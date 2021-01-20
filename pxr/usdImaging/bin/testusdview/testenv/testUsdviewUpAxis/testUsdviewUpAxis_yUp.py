@@ -23,8 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr.Usdviewq.qt import QtWidgets
-
 # Remove any unwanted visuals from the view, and enable autoClip
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
@@ -32,12 +30,7 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test that setting the upAxis to "Y" properly changes the view.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
-    _takeShot(appController, "yUp.png")
+    appController._takeShot("yUp.png")

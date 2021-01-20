@@ -22,18 +22,18 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
-#include "pxr/imaging/hdEmbree/config.h"
-#include "pxr/imaging/hdEmbree/instancer.h"
-#include "pxr/imaging/hdEmbree/renderParam.h"
-#include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/plugin/hdEmbree/config.h"
+#include "pxr/imaging/plugin/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/renderParam.h"
+#include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/mesh.h"
 //XXX: Add other Rprim types later
 #include "pxr/imaging/hd/camera.h"
 //XXX: Add other Sprim types later
@@ -65,27 +65,26 @@ std::atomic_int HdEmbreeRenderDelegate::_counterResourceRegistry;
 HdResourceRegistrySharedPtr HdEmbreeRenderDelegate::_resourceRegistry;
 
 /* static */
-void
-HdEmbreeRenderDelegate::HandleRtcError(const RTCError code, const char* msg)
+void HdEmbreeRenderDelegate::HandleRtcError (void* userPtr, RTCError code, const char* msg)
 {
     // Forward RTC error messages through to hydra logging.
     switch (code) {
-        case RTC_UNKNOWN_ERROR:
+        case RTC_ERROR_UNKNOWN:
             TF_CODING_ERROR("Embree unknown error: %s", msg);
             break;
-        case RTC_INVALID_ARGUMENT:
+        case RTC_ERROR_INVALID_ARGUMENT:
             TF_CODING_ERROR("Embree invalid argument: %s", msg);
             break;
-        case RTC_INVALID_OPERATION:
+        case RTC_ERROR_INVALID_OPERATION:
             TF_CODING_ERROR("Embree invalid operation: %s", msg);
             break;
-        case RTC_OUT_OF_MEMORY:
+        case RTC_ERROR_OUT_OF_MEMORY:
             TF_CODING_ERROR("Embree out of memory: %s", msg);
             break;
-        case RTC_UNSUPPORTED_CPU:
+        case RTC_ERROR_UNSUPPORTED_CPU:
             TF_CODING_ERROR("Embree unsupported CPU: %s", msg);
             break;
-        case RTC_CANCELLED:
+        case RTC_ERROR_CANCELLED:
             TF_CODING_ERROR("Embree cancelled: %s", msg);
             break;
         default:
@@ -137,14 +136,7 @@ HdEmbreeRenderDelegate::_Initialize()
     _rtcDevice = rtcNewDevice(nullptr);
 
     // Register our error message callback.
-    rtcDeviceSetErrorFunction(_rtcDevice, HandleRtcError);
-
-    // Embree has an internal cache for subdivision surface computations.
-    // HdEmbree exposes the size as an environment variable.
-    unsigned int subdivisionCache =
-        HdEmbreeConfig::GetInstance().subdivisionCache;
-    rtcDeviceSetParameter1i(_rtcDevice, RTC_SOFTWARE_CACHE_SIZE,
-        subdivisionCache);
+    rtcSetDeviceErrorFunction(_rtcDevice,HandleRtcError,NULL);
 
     // Create the top-level scene.
     //
@@ -154,8 +146,18 @@ HdEmbreeRenderDelegate::_Initialize()
     // and querying them with rtcInterpolate.
     //
     // XXX: Investigate ray packets.
-    _rtcScene = rtcDeviceNewScene(_rtcDevice, RTC_SCENE_DYNAMIC,
-        RTC_INTERSECT1 | RTC_INTERPOLATE);
+    _rtcScene = rtcNewScene(_rtcDevice);
+
+    // RTC_SCENE_FLAG_DYNAMIC: Provides better build performance for dynamic
+    // scenes (but also higher memory consumption).
+    rtcSetSceneFlags(_rtcScene, RTC_SCENE_FLAG_DYNAMIC);
+
+    // RTC_BUILD_QUALITY_LOW: Create lower quality data structures,
+    // e.g. for dynamic scenes. A two-level spatial index structure is built
+    // when enabling this mode, which supports fast partial scene updates,
+    // and allows for setting a per-geometry build quality through
+    // the rtcSetGeometryBuildQuality function.
+    rtcSetSceneBuildQuality(_rtcScene, RTC_BUILD_QUALITY_LOW);
 
     // Store top-level embree objects inside a render param that can be
     // passed to prims during Sync(). Also pass a handle to the render thread.
@@ -176,7 +178,7 @@ HdEmbreeRenderDelegate::_Initialize()
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
 
     if (_counterResourceRegistry.fetch_add(1) == 0) {
-        _resourceRegistry.reset( new HdResourceRegistry() );
+        _resourceRegistry = std::make_shared<HdResourceRegistry>();
     }
 }
 
@@ -194,8 +196,8 @@ HdEmbreeRenderDelegate::~HdEmbreeRenderDelegate()
 
     // Destroy embree library and scene state.
     _renderParam.reset();
-    rtcDeleteScene(_rtcScene);
-    rtcDeleteDevice(_rtcDevice);
+    rtcReleaseScene(_rtcScene);
+    rtcReleaseDevice (_rtcDevice);
 }
 
 HdRenderSettingDescriptorList
@@ -250,7 +252,7 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
                                VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-    } else if (name == HdAovTokens->linearDepth) {
+    } else if (name == HdAovTokens->cameraDepth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
     } else if (name == HdAovTokens->primId ||
                name == HdAovTokens->instanceId ||

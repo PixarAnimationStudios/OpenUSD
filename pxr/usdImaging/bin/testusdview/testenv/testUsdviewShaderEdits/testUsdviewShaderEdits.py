@@ -32,16 +32,6 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    # Wait until the image is converged
-    while not appController._stageView._renderer.IsConverged():
-        QtWidgets.QApplication.processEvents()
-
-    # Save to disk
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 def _bugStep1(s):
     # Make a Material that contains a UsdPreviewSurface
     material = UsdShade.Material.Define(s, '/Scene/Looks/NewMaterial')
@@ -87,18 +77,19 @@ def testUsdviewInputFunction(appController):
     s.SetEditTarget(l)
 
     _bugStep1(s)
-    # Wait for usdview to catch up with changes
-    for i in range(5):
-        QtWidgets.QApplication.processEvents()
+    # Wait for usdview to catch up with changes, and since we are not interested
+    # in the final image at this point, we are fine not waiting for convergence
+    appController._processEvents()
 
     _bugStep2(s)
-    # Wait for usdview to catch up with changes
-    for i in range(5):
-        QtWidgets.QApplication.processEvents()
+    # Wait for usdview to catch up with changes, and since we are not interested
+    # in the final image at this point, we are fine not waiting for convergence
+    appController._processEvents()
 
     _bugStep3(s)
-    # Wait for usdview to catch up with changes
-    for i in range(5):
-        QtWidgets.QApplication.processEvents()
+    # Wait for usdview to catch up with changes, and since we are not interested
+    # in the final image at this point, we are fine not waiting for convergence
+    appController._processEvents()
 
-    _takeShot(appController, "0.png")
+    # wait for renderer to converge - before capturing the shot
+    appController._takeShot("0.png", waitForConvergence=True)

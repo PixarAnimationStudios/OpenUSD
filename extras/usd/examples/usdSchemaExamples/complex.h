@@ -154,10 +154,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: somethingComplex
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `string complexString = "somethingComplex"` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
     USDSCHEMAEXAMPLES_API
     UsdAttribute GetComplexStringAttr() const;
 

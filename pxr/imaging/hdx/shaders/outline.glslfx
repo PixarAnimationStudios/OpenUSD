@@ -1,0 +1,328 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2020 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "OutlineFragment": {
+                "source": [ "Outline.Fragment" ]
+            }
+        },
+        "Metal": {
+            "OutlineFragment": {
+                "source": [ 
+                    "Outline.Metal.Fragment"
+                ]
+            }
+        }
+    }
+}
+
+-- glsl Outline.Fragment
+#version 450
+
+#define EPSILON 0.0001
+#define LARGE 100000
+
+layout(location = 0) in vec2 uv;
+
+// The color texture with the highlighted areas.
+layout (binding = 0) uniform sampler2D colorIn;
+
+layout (std430, binding = 0) buffer ParameterBuffer
+{
+    // Size of a colorIn texel - to iterate adjacent texels.
+    vec2 texelSize;
+    // Draws outline when enabled, or color overlay when disabled.
+    int enableOutline;
+    // The outline radius (thickness). 
+    int radius;
+};
+
+// Given a delta x and y in relation to the current texel coordinates, check if
+// the colorIn texture has a non-black texel and its distance^2 to the current
+// texel is smaller than the one passed as dist2. The color of that texel will
+// be returned in the color output var.
+void testTexel(int x, int y, inout float dist2, inout vec4 color)
+{
+    vec2 texCoords = uv + vec2(x, y) * texelSize;
+    vec4 c = texture(colorIn, texCoords);
+
+    if ( c.r > EPSILON || c.g > EPSILON || c.b > EPSILON) {
+        float d = float(x * x + y * y );
+        if (d < dist2) {
+            dist2 = d;
+            color = c;
+        }
+    }
+}
+
+// Used by testOctants() to scan each horizontal line in the circle.
+// Returns the distance^2 and color of the non-black texel that is closest to
+// the current texel.
+void testHLine(int x0, int x1, int y, inout float dist2, inout vec4 color) {
+    for (int x = x0; x < x1; x++) {
+        testTexel(x, y, dist2, color);
+    }
+}
+
+// Part of the Bresenham algorithm: mirror the circle octant edge coords to
+// obtain a half circle and then mirror them horizontally to obtain the
+// horizontal lines that define the circle and its interior.
+// Returns the distance^2 and color of the non-black texel that is closest to
+// the current texel.
+void testOctants(int x, int y, inout float dist2, inout vec4 color) {
+    testHLine(-x, x,  y, dist2, color);
+    testHLine(-x, x, -y, dist2, color);
+    testHLine(-y, y,  x, dist2, color);
+    testHLine(-y, y, -x, dist2, color);
+}
+
+// Find the color and distance^2 to the closest texel in colorIn that is not
+// black and that is within a circle defined by the specified radius, centered
+// in the current texel. (Note: distance^2 is used to avoid sqrt).
+// This uses the Bresenham circle algorithm to discover the texels inside that
+// circle, to avoid having to read the colorIn texels outside of it.
+void testCircle(int r, inout float dist2, inout vec4 color) {
+    if (r < 0) { r = 0; }
+
+    int d = 3 - (2 * r);
+    int x = 0;
+    int y = r;
+
+    testOctants(x, y, dist2, color);
+
+    while (x < y) {
+        x++;
+
+        if (d > 0) {
+            y--;
+            d = d + 4 * (x - y) + 10;
+        } else {
+            d = d + 4 * x + 6;           
+        }
+
+        testOctants(x, y, dist2, color);
+    }
+}
+
+// If radius is 0 then render colorIn as is. If radius > 0 then render only the
+// outline of the non-black areas in colorIn. The radius will define the
+// thickness of the outline. The color of each texel in the outline will be
+// defined by the closest color in colorIn, fading out when the distance to that
+// colorIn texel equals the radius. This will allow colorIn to potentially hold
+// several colors that will be respected by the outline.
+
+void main()
+{
+    gl_FragColor = vec4(0, 0, 0, 1);
+
+    // Check if the current texel is not black - meaning that we are inside an
+    // area of colorId that has been highlighted.
+    vec4 color = texture(colorIn, uv);
+    bool isInside = color.r > EPSILON || color.g > EPSILON || color.b > EPSILON;
+
+    if (enableOutline==0) { 
+        if (isInside) {
+            // Inside the highlighted areas in colorIn : render colorIn.
+            gl_FragColor = color;
+        }
+    } else {
+        
+        if (!isInside) {
+            // Outside the highlighted area: render the outline
+            float r2 = float(radius * radius);
+            float dist2 = LARGE;
+
+            // Check if there are any highlighted texels around the current one
+            // inside the specified radius.
+            testCircle(radius, dist2, color);
+
+            // Check if the distance^2 to the closest highlighted texel is within
+            // radius^2.
+            if (dist2 <= r2) {
+                // Attenuate the texel color using the distance^2 to it.
+                float factor = (r2 - dist2 ) / r2;
+                factor *= factor;
+                
+                gl_FragColor = color * factor;
+                gl_FragColor.a = 1;
+            }
+        }
+    }
+}
+
+-- glsl Outline.Metal.Fragment
+
+struct Interpolated {
+    float4 position [[position]];
+    float2 uv;
+};
+
+
+#define EPSILON 0.0001
+#define LARGE 100000
+
+constexpr sampler texSampler(address::clamp_to_edge);
+
+struct ParameterBuffer {
+    // Size of a colorIn texel - to iterate adjacent texels.
+    vec2 texelSize;
+    // Draws outline when enabled, or color overlay when disabled.
+    int enableOutline;
+    // The outline radius (thickness). 
+    int radius;
+};
+
+// Given a delta x and y in relation to the current texel coordinates, check if
+// the colorIn texture has a non-black texel and its distance^2 to the current
+// texel is smaller than the one passed as dist2. The color of that texel will
+// be returned in the color output var.
+void testTexel(vec2 texelSize, vec2 uv, texture2d<float> colorIn,
+    int x, int y, float thread &dist2, vec4 thread &color)
+{
+    vec2 texCoords = uv + vec2(x, y) * texelSize;
+    vec4 c = colorIn.sample(texSampler, texCoords);
+
+    if ( c.r > EPSILON || c.g > EPSILON || c.b > EPSILON) {
+        float d = float(x * x + y * y );
+        if (d < dist2) {
+            dist2 = d;
+            color = c;
+        }
+    }
+}
+
+// Used by testOctants() to scan each horizontal line in the circle.
+// Returns the distance^2 and color of the non-black texel that is closest to
+// the current texel.
+void testHLine(
+    vec2 texelSize, vec2 uv, texture2d<float> colorIn,
+    int x0, int x1, int y, float thread &dist2, vec4 thread &color) {
+    for (int x = x0; x < x1; x++) {
+        testTexel(texelSize, uv, colorIn, x, y, dist2, color);
+    }
+}
+
+// Part of the Bresenham algorithm: mirror the circle octant edge coords to
+// obtain a half circle and then mirror them horizontally to obtain the
+// horizontal lines that define the circle and its interior.
+// Returns the distance^2 and color of the non-black texel that is closest to
+// the current texel.
+void testOctants(vec2 texelSize, vec2 uv, texture2d<float> colorIn,
+    int x, int y, float thread &dist2, vec4 thread &color) {
+    testHLine(texelSize, uv, colorIn, -x, x,  y, dist2, color);
+    testHLine(texelSize, uv, colorIn, -x, x, -y, dist2, color);
+    testHLine(texelSize, uv, colorIn, -y, y,  x, dist2, color);
+    testHLine(texelSize, uv, colorIn, -y, y, -x, dist2, color);
+}
+
+// Find the color and distance^2 to the closest texel in colorIn that is not
+// black and that is within a circle defined by the specified radius, centered
+// in the current texel. (Note: distance^2 is used to avoid sqrt).
+// This uses the Bresenham circle algorithm to discover the texels inside that
+// circle, to avoid having to read the colorIn texels outside of it.
+void testCircle(vec2 texelSize, vec2 uv, texture2d<float> colorIn,
+    int r, float thread &dist2, vec4 thread &color) {
+    if (r < 0) { r = 0; }
+
+    int d = 3 - (2 * r);
+    int x = 0;
+    int y = r;
+
+    testOctants(texelSize, uv, colorIn, x, y, dist2, color);
+
+    while (x < y) {
+        x++;
+
+        if (d > 0) {
+            y--;
+            d = d + 4 * (x - y) + 10;
+        } else {
+            d = d + 4 * x + 6;           
+        }
+
+        testOctants(texelSize, uv, colorIn, x, y, dist2, color);
+    }
+}
+
+// If radius is 0 then render colorIn as is. If radius > 0 then render only the
+// outline of the non-black areas in colorIn. The radius will define the
+// thickness of the outline. The color of each texel in the outline will be
+// defined by the closest color in colorIn, fading out when the distance to that
+// colorIn texel equals the radius. This will allow colorIn to potentially hold
+// several colors that will be respected by the outline.
+
+fragment vec4 fragmentEntryPoint(
+    Interpolated input[[stage_in]],
+    texture2d<float> colorIn[[texture(0)]],
+    ParameterBuffer device *buffer[[buffer(0)]])
+{
+    vec4 gl_FragColor = vec4(0, 0, 0, 1);
+
+    // The UVs provided by application are in GL-space.
+    // This would cause the selection highlight to draw up-side-down.
+    vec2 flipUV = vec2(input.uv.x, 1-input.uv.y);
+
+    // Check if the current texel is not black - meaning that we are inside an
+    // area of colorId that has been highlighted.
+    vec4 color = colorIn.sample(texSampler, flipUV);
+    bool isInside = color.r > EPSILON || color.g > EPSILON || color.b > EPSILON;
+
+    if (buffer->enableOutline==0) { 
+        if (isInside) {
+            // Inside the highlighted areas in colorIn : render colorIn.
+            gl_FragColor = color;
+        }
+    } else {
+        
+        if (!isInside) {
+            // Outside the highlighted area: render the outline
+            float r2 = float(buffer->radius * buffer->radius);
+            float dist2 = LARGE;
+
+            // Check if there are any highlighted texels around the current one
+            // inside the specified radius.
+            testCircle(buffer->texelSize, input.uv, colorIn, 
+                buffer->radius, dist2, color);
+
+            // Check if the distance^2 to the closest highlighted texel is within
+            // radius^2.
+            if (dist2 <= r2) {
+                // Attenuate the texel color using the distance^2 to it.
+                float factor = (r2 - dist2 ) / r2;
+                factor *= factor;
+                
+                gl_FragColor = color * factor;
+                gl_FragColor.a = 1;
+            }
+        }
+    }
+
+    return gl_FragColor;
+}
+

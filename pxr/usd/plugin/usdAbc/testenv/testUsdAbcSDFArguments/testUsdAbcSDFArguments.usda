@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    endTimeCode = 0
+    startTimeCode = 0
+)
+
+def Xform "AlembicRoot" (
+    references = @./testUsdAbcSDFArgumentsMesh.abc:SDF_FORMAT_ARGS:abcReRoot=AlembicRoot&abcLayers=./testUsdAbcSDFArgumentsUV.abc@
+)
+{
+    
+}

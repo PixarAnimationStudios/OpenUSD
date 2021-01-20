@@ -1,0 +1,31 @@
+#usda 1.0
+def Xform "foo"
+{
+    token visibility = "invisible"
+
+    def Xform "bar1"
+    {
+        token visibility = "invisible"
+
+        def Sphere "thing1"
+        {
+            token visibility = "invisible"
+        }
+
+        def Sphere "thing2"
+        {
+            token visibility = "invisible"
+        }
+    }
+
+    def Xform "bar2"
+    {
+        token visibility = "invisible"
+
+        def Sphere "thing"
+        {
+            token visibility = "invisible"
+        }
+    }
+}
+

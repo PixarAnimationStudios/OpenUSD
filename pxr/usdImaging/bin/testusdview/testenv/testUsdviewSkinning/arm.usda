@@ -75,4 +75,36 @@ def SkelRoot "Model" {
         # Baking the extents so the prim isn't clipped due to skinning.
         float3[] extent = [(-1, -2, -1), (1, 2, 1)]
     }
+
+    # While we can view the mesh as points (via the shading mode), this is to
+    # test if the points prim can be skinned.
+    def Points "ArmPoints" {
+ 
+        point3f[] points = [
+            (0.5, -0.5, 4), (-0.5, -0.5, 4), (0.5, 0.5, 4), (-0.5, 0.5, 4),
+            (-0.5, -0.5, 0), (0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0),
+            (-0.5, 0.5, 2), (0.5, 0.5, 2), (0.5, -0.5, 2), (-0.5, -0.5, 2)
+        ]
+        float[] widths = [0.1] (
+            interpolation = "constant"
+        )
+        float3[] primvars:displayColor = [(0.5, 0.0, 0.0)] (
+            interpolation = "constant"
+        )
+
+        int[] primvars:skel:jointIndices = [
+            2,2,2,2, 0,0,0,0, 1,1,1,1
+        ] (
+            interpolation = "vertex"
+            elementSize = 1
+        )
+        float[] primvars:skel:jointWeights = [
+            1,1,1,1, 1,1,1,1, 1,1,1,1
+            ] (
+            interpolation = "vertex"
+            elementSize = 1
+        )
+        # translate by 2.0 units on the X-axis.
+        matrix4d primvars:skel:geomBindTransform = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(2,0,0,1))
+    }
 }

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_CONFIG_H
-#define HDEMBREE_CONFIG_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
@@ -65,12 +65,6 @@ public:
     /// Override with *HDEMBREE_AMBIENT_OCCLUSION_SAMPLES*.
     unsigned int ambientOcclusionSamples;
 
-    /// How many bytes should we allocate for the embree subdivision
-    /// surface cache?
-    ///
-    /// Override with *HDEMBREE_SUBDIVISION_CACHE*.
-    unsigned int subdivisionCache;
-
     /// Should the renderpass jitter camera rays for antialiasing?
     ///
     /// Override with *HDEMBREE_JITTER_CAMERA*. Integer values greater than
@@ -105,4 +99,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_CONFIG_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H

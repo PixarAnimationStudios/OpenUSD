@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDDRACO_FLAG_H
-#define USDDRACO_FLAG_H
+#ifndef PXR_USD_PLUGIN_USD_DRACO_FLAG_H
+#define PXR_USD_PLUGIN_USD_DRACO_FLAG_H
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,4 +56,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // USDDRACO_FLAG_H
+#endif  // PXR_USD_PLUGIN_USD_DRACO_FLAG_H

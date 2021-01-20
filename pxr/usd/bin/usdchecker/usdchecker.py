@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 import argparse
 import itertools
 import sys
@@ -44,7 +45,7 @@ def _Stream(path, *args, **kwargs):
             yield fp
 
 def _Print(stream, msg):
-    print >>stream, msg
+    print(msg, file=stream)
 
 def _Err(msg):
     sys.stderr.write(TermColors.FAIL + msg + TermColors.END + '\n')
@@ -114,10 +115,10 @@ def main():
                 if outFile == '-':
                     msg = TermColors.FAIL + msg  + TermColors.END
                 _Print(ofp, msg)
-        print "Failed!"
+        print("Failed!")
         return 1
 
-    print "Success!"
+    print("Success!")
     return 0
 
 if __name__ == '__main__':

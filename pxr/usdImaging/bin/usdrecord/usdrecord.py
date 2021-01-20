@@ -94,8 +94,7 @@ def main():
 
     UsdAppUtils.cameraArgs.AddCmdlineArgs(parser)
     UsdAppUtils.framesArgs.AddCmdlineArgs(parser)
-    UsdAppUtils.complexityArgs.AddCmdlineArgs(parser,
-        defaultValue=UsdAppUtils.complexityArgs.RefinementComplexities.HIGH)
+    UsdAppUtils.complexityArgs.AddCmdlineArgs(parser)
     UsdAppUtils.colorArgs.AddCmdlineArgs(parser)
     UsdAppUtils.rendererArgs.AddCmdlineArgs(parser)
 

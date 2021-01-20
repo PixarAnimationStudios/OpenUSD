@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "materials"
+{
+    def Material "main_mtl"
+    {
+        token outputs:surface.connect = </materials/main_mtl/usdpreviewsurface1.outputs:surface>
+
+        def Shader "usdpreviewsurface1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
+    }
+}
+

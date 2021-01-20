@@ -14,7 +14,7 @@ def Scope "Scene" (
     {
         def Material "MainMaterial_1"
         {
-            token inputs:coords = "st"
+            string inputs:coords = "st"
             token outputs:surface.connect = </Scene/Looks/MainMaterial_1/PbrPreview.outputs:surface>
 
             def Shader "PbrPreview"
@@ -36,14 +36,14 @@ def Scope "Scene" (
             def Shader "Primvar"
             {
                 uniform token info:id = "UsdPrimvarReader_float2"
-                token inputs:varname.connect = </Scene/Looks/MainMaterial_1.inputs:coords>
+                string inputs:varname.connect = </Scene/Looks/MainMaterial_1.inputs:coords>
                 float2 outputs:result
             }
 
             def Shader "ColorPrimvar"
             {
                 uniform token info:id = "UsdPrimvarReader_float3"
-                token inputs:varname = "displayColor"
+                string inputs:varname = "displayColor"
                 float3 outputs:result
             }
         }

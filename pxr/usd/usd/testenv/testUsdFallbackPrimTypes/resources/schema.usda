@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    "Test schema file for testUsdFallbackPrimTypes"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdFallbackPrimTypes"
+        string libraryPath      = "pxr/usd/usd"
+    }
+)
+{
+}
+
+class ValidType_1 "ValidType_1" (
+    inherits = </Typed>
+    doc = "A valid type"
+    customData = {
+        token[] fallbackTypes = ["FallbackType_1"]
+    }
+)
+{
+    uniform double ValidType1Double = 1.0
+}
+
+class ValidType_2 "ValidType_2" (
+    inherits = </Typed>
+    doc = "Another valid type"
+    customData = {
+        token[] fallbackTypes = ["FallbackType_2", "FallbackType_1"]
+    }
+)
+{
+    int ValidType2Int = 0
+}

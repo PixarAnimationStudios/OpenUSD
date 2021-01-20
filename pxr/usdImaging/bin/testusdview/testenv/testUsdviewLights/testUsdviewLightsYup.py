@@ -38,20 +38,15 @@ def _setLights(appController, ambientChecked, domeChecked):
 
     appController._stageView.updateGL()
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # Test with only the dome light.
 def _testDomeLight(appController):
     _setLights(appController, False, True)
-    _takeShot(appController, "domeYup.png")
+    appController._takeShot("domeYup.png")
 
 # Test with only the dome and camera lights.
 def _testBothLights(appController):
     _setLights(appController, True, True)
-    _takeShot(appController, "bothLightsYup.png")
+    appController._takeShot("bothLightsYup.png")
 
 # Test that lights work properly in usdview.
 def testUsdviewInputFunction(appController):

@@ -1,0 +1,31 @@
+#usda 1.0
+
+def Points "UnsetPoints"
+{
+}
+
+def Points "BlockedPoints"
+{
+    point3f[] points = None
+}
+
+def Points "EmptyPoints"
+{
+    point3f[] points = []
+}
+
+def Points "TimeSampledPoints"
+{
+    point3f[] points.timeSamples = {
+        1: [(1, 2, 3), (3, 4, 5), (5, 6, 7)]
+    }
+}
+
+def Points "TimeSampledAndDefaultPoints"
+{
+    point3f[] points = [
+        (1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12)]
+    point3f[] points.timeSamples = {
+        1: [(1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12), (13, 14, 15)]
+    }
+}

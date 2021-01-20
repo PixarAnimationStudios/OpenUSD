@@ -21,13 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDABC_ALEMBICREADER_H
-#define USDABC_ALEMBICREADER_H
+#ifndef PXR_USD_PLUGIN_USD_ABC_ALEMBIC_READER_H
+#define PXR_USD_PLUGIN_USD_ABC_ALEMBIC_READER_H
 
 /// \file usdAbc/alembicReader.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/token.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -54,7 +55,8 @@ public:
 
     /// Open a file.  Returns \c true on success;  errors are reported by
     /// \c GetErrors().
-    bool Open(const std::string& filePath);
+    bool Open(const std::string& filePath, 
+              const SdfFileFormat::FileFormatArguments&);
 
     /// Close the file.
     void Close();

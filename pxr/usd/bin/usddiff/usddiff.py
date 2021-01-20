@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 import difflib, os, sys
 from subprocess import call
 
@@ -208,7 +209,7 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
 
             if baselineData != comparisonData:
                 if brief:
-                    print "Files %s and %s differ" % (baseline, comparison)
+                    print("Files %s and %s differ" % (baseline, comparison))
                 else:
                     # Generate unified diff and output if there are any differences.
                     diff = list(difflib.unified_diff(
@@ -216,7 +217,7 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
                         tempBaseline.name, tempComparison.name, n=0))
                     # Skip the file names.
                     for line in diff[2:]:
-                        print line,
+                        print(line, end='')
                 diffResult = 1
 
         tempBaselineChanged = ( 
@@ -360,10 +361,10 @@ def main():
 
         mismatchMsg = 'No corresponding file found for %s, skipping.'
         for b in baselineOnly:
-            print mismatchMsg % b
+            print(mismatchMsg % b)
 
         for c in comparisonOnly:
-            print mismatchMsg % c
+            print(mismatchMsg % c)
 
     except ValueError as err:
         _exit(str(err), ERROR_EXIT_CODE)

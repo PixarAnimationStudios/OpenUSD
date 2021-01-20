@@ -1,0 +1,25 @@
+#usda 1.0
+
+def "Ref"
+{
+    double a = 0.0
+    double b = 0.0
+    double g = 0.0
+    double h = 0.0
+    double z = 0.0
+}
+
+def "Model" (
+    clips = {
+        dictionary default = {
+            double2[] active = [(0, 0), (2, 1), (4, 0)]
+            asset[] assetPaths = [@./clip_1.usda@, @./clip_2.usda@]
+            string primPath = "/Clip/A"
+            double2[] times = [(0, 0), (1, 1), (1, 0), (2, 1), (2, 0), (3, 1)]
+        }
+    }
+
+    references = </Ref>
+)
+{
+}

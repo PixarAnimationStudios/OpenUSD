@@ -19,6 +19,7 @@
 - HdEmbreeRenderDelegate
 - HdEmbreeRenderParam
 - HdEmbreeRenderPass
+- HdEmbreeRenderer
 
 ## Overview
 
@@ -56,9 +57,8 @@ delegate also supports a basic camera type, HdCamera.
 After updating the render index, but before running tasks, HdEngine::Execute()
 calls the render delegate's CommitResources(). This gives the renderer a chance
 to commit the results of the sync phase, e.g. by copying buffers to the GPU or
-doing a final rebuild of intersection datastructures. HdEmbree calls rtcCommit
-here, which does a multithreaded rebuild of the embree bounding volume
-hierarchy.
+doing a final rebuild of intersection datastructures.  HdEmbree doesn't use
+this, instead deferring bvh rebuilds to the next Render() call.
 
 ## Executing tasks
 
@@ -67,14 +67,16 @@ schedulable callbacks that can be used to render, to maintain scene state,
 or to interleave execution with other renderers or libraries.
 
 Hydra provides HdxRenderTask as a way to simply render a scene. HdxRenderTask
-takes collections and render parameters as inputs, and maps them to a set of
-render passes, created by the render delegate. Collections specify which parts
+takes a collection and render parameters as inputs, and maps them to a
+render pass, created by the render delegate. Collections specify which parts
 of the scene to draw (by include/exclude paths), and how to draw them (via the
 repr token).
 
 HdEmbree provides HdEmbreeRenderPass, which draws by raycasting into the embree
 scene that's been populated by HdEmbree prim objects. The raycasting is done
-in a parallel for loop, and the results are blitted to the GL framebuffer.
+in the helper HdEmbreeRenderer class.  Outputs are written into HdRenderBuffer
+objects, which represent image data.  Typically, auxiliary tasks in hdx will
+blit these into the GL framebuffer.
 
 Note: HdEmbreeRenderPass currently doesn't support collection include/exclude
 paths, so it draws everything in every renderpass. Rendering with multiple
@@ -92,8 +94,8 @@ create instances of HdEmbreeRenderDelegate.
 The embree scene that renderpasses raycast against lives in
 HdEmbreeRenderDelegate. Because of this, each render index should have a
 distinct render delegate. The scene is passed to prims during Sync() via the
-HdEmbreeRenderParam object, and the scene is passed to renderpasses through the
-constructor.
+HdEmbreeRenderParam object, and the scene is passed to the renderer object on
+creation; the renderpass, in turn, gets a handle to the renderer on creation.
 
 ## Configuration
 

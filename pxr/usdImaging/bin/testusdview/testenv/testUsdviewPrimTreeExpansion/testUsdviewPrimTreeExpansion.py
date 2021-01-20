@@ -61,6 +61,13 @@ def _selectAndSetActive(appController, active, paths):
     else:
         appController.deactivateSelectedPrims()
 
+def _manualSetActive(appController, active, path):
+    prim = appController._dataModel.stage.GetPrimAtPath(path)
+    assert prim
+    prim.SetActive(active)
+    QtWidgets.QApplication.processEvents()
+        
+
 # Select one or more prim paths, then load or unload those prims.
 def _selectAndLoad(appController, load, paths):
     selection = appController._dataModel.selection
@@ -114,7 +121,8 @@ def _expandPrims(appController, paths):
         item = appController._primToItemMap.get(prim)
         item.setExpanded(True)
     
-# Test that the expanded tree stays the same after deactivating, unloading, and changing a variant set
+# Test that the expanded tree stays the same after deactivating, unloading, 
+# and changing a variant set
 def _testAllExpanded(appController):
     # select a variant
     _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], FIRST_VARIANT)
@@ -141,7 +149,33 @@ def _testAllExpanded(appController):
     _selectAndLoad(appController, False, ["/C2"])
     expandedPrims = _getExpandedPrims(appController)
     assert initialExpandedPrims == expandedPrims
-
+    
+    # If we have a selected prim, and the stage mutates such that that prim 
+    # no longer exists on the stage, it should be safely pruned from the 
+    # selection, which should revert to the pseudoroot iff there are no other
+    # remaining selected prims
+    _expandPrims(appController, ["/spheres", "/A", "/A/B", "/A/B/C"])
+    _selectAndSetActive(appController, True, ["/A/B/C"])
+    assert appController._dataModel.selection.getPrimPaths() == ["/A/B/C"]
+    # It's non-ideal that RuntimeError exceptions do not cause a test failure...
+    # catch and fail explicitly.
+    try:
+        _manualSetActive(appController, False, "/A")
+    except RuntimeError:
+        assert False, "RuntimeError deactivating ancestor of selected prim"
+    assert appController._dataModel.selection.getPrimPaths() == ["/"]
+    
+    # Now test with multiple prims selected
+    _manualSetActive(appController, True, "/A")
+    _expandPrims(appController, ["/spheres", "/A", "/A/B", "/A/B/C"])
+    _selectAndSetActive(appController, True, ["/spheres", "/A/B/C"])
+    assert appController._dataModel.selection.getPrimPaths() == ["/spheres", "/A/B/C"]
+    try:
+        _manualSetActive(appController, False, "/A")
+    except RuntimeError:
+        assert False, "RuntimeError deactivating ancestor of selected prim"
+    assert appController._dataModel.selection.getPrimPaths() == ["/spheres"]
+ 
 
 # Test tree expansion
 def testUsdviewInputFunction(appController):

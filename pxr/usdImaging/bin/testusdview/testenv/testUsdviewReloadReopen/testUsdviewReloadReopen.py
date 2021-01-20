@@ -41,11 +41,6 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.selHighlightMode = (
         SelectionHighlightModes.NEVER)
 
-# Take a shot of the viewport and save it to a file.
-def _takeShot(appController, fileName):
-    viewportShot = appController.GrabViewportShot()
-    viewportShot.save(fileName, "PNG")
-
 # We use framing in this test both to test that reloading preserves
 # camera position, and because it will trigger a redraw after stage
 # mutations, which do not (yet).
@@ -81,20 +76,20 @@ def _testReloadReopen(appController):
     # Finally, clear selection so the red really shows
     appController._dataModel.selection.clear()
 
-    _takeShot(appController, "coloredAndFramed.png")
+    appController._takeShot("coloredAndFramed.png")
 
     #
     # Reloading should set the sphere back to gray (because we authored into
     # its root layer), but otherwise not change the view
     #
     _emitReload_All_LayersAction(appController)
-    _takeShot(appController, "reloaded.png")
+    appController._takeShot("reloaded.png")
 
     #
     # Reopening the stage should completely reset the view
     #
     _emitReopen_StageAction(appController)
-    _takeShot(appController, "reopened.png")
+    appController._takeShot("reopened.png")
 
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)

@@ -25,9 +25,14 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
+# Require C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     include(clangdefaults)
 elseif(MSVC)
     include(msvcdefaults)
@@ -39,18 +44,15 @@ _add_define(GLX_GLXEXT_PROTOTYPES)
 # Python bindings for tf require this define.
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 
-# Maya seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    _add_define(LINUX)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()
 
 # Set plugin path environment variable name
+set(PXR_PLUGINPATH_NAME PXR_PLUGINPATH_NAME)
 if (PXR_OVERRIDE_PLUGINPATH_NAME)
-    _add_define("PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}")
+    set(PXR_PLUGINPATH_NAME ${PXR_OVERRIDE_PLUGINPATH_NAME})
+    _add_define("PXR_PLUGINPATH_NAME=${PXR_PLUGINPATH_NAME}")
 endif()
 
 set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
@@ -87,13 +89,9 @@ else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
 
-# XXX: This is a workaround for an issue in which Python headers unequivocally
-# redefine macros defined in standard library headers. This behavior 
-# prevents users from running strict builds with PXR_STRICT_BUILD_MODE
-# as the redefinition warnings would cause build failures.
-#
-# The python official docs call this out here:
-# https://docs.python.org/2/c-api/intro.html#include-files
-#
-# The long term plan is to adhere to the required behavior.
-include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})
+# Set safety/performance configuration
+if (PXR_PREFER_SAFETY_OVER_SPEED)
+   set(PXR_PREFER_SAFETY_OVER_SPEED "1")
+else()
+   set(PXR_PREFER_SAFETY_OVER_SPEED "0")
+endif()

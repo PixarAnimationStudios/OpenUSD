@@ -54,5 +54,5 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     color.rgb = HdGet_displayColor().rgb;
     float a = checker(gl_FragCoord.xy, 0.05);
     color.a = min(a+0.5, 1.0);
-    return color;
+    return vec4(color.rgb * color.a, color.a);
 }

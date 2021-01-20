@@ -27,32 +27,46 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
+#if defined(ARCH_OS_DARWIN)
+#include <mach/mach_time.h>
+#endif
+#if defined(ARCH_OS_LINUX)
+#include <x86intrin.h>
+#endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cfloat>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <functional>
-#include <inttypes.h>
+#include <initializer_list>
 #include <iosfwd>
 #include <iterator>
+#include <limits>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -60,6 +74,7 @@
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
+#include <thread>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -67,20 +82,19 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/call_traits.hpp>
-#include <boost/function.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/front.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/mpl/and.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/remove.hpp>
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/or.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
-#include <boost/optional.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -105,8 +119,20 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
-#include <boost/scoped_ptr.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include <boost/python/object_fwd.hpp>
+#include <boost/python/object_operators.hpp>
+#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
+#undef tolower
+#undef toupper
+#endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/shared_ptr.hpp>
+#include <boost/type_traits/decay.hpp>
+#include <boost/type_traits/has_trivial_assign.hpp>
+#include <boost/type_traits/has_trivial_constructor.hpp>
+#include <boost/type_traits/has_trivial_copy.hpp>
+#include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
@@ -116,3 +142,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/weak_ptr.hpp>
 #include <tbb/atomic.h>
+#include <tbb/cache_aligned_allocator.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/spin_mutex.h>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pySafePython.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED

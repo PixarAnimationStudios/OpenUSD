@@ -1,0 +1,9 @@
+#sdf 1.4.32
+(
+    timeCodesPerSecond = 24
+    framesPerSecond = 12
+)
+
+over "Root" 
+{
+}

@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "payload"
+{
+    def "mtl" (
+        instanceable = true
+        prepend references = @./materials.usda@</materials>
+    )
+    {
+    }
+}
+

@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "Model"
+{
+    double attrNotInFirstClip.timeSamples = {
+        0: None
+    }
+    double attrNotInMiddleClips.timeSamples = {
+        2: None,
+        4: None
+    }
+    double attrNotInLastClip.timeSamples = {
+        6: None
+    }
+    double attrNotInAnyClip.timeSamples = {
+        0: None,
+        2: None,
+        4: None,
+        6: None
+    }
+}

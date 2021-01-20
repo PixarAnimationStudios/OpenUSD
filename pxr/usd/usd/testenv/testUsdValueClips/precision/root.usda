@@ -1,0 +1,27 @@
+#usda 1.0
+(
+    endTimeCode = 103
+    startTimeCode = 101
+)
+
+def "World" (
+    add references = @./root.topology.usda@</World>
+)
+{
+    over "fx"
+    {
+        over "Particles_Splash" (
+            clips = {
+                dictionary default = {
+                    double2[] active = [(101, 0), (102, 1), (103, 2)]
+                    asset[] assetPaths = [@./p101.usda@, @./p102.usda@, @./p103.usda@]
+                    asset manifestAssetPath = @./root.topology.usda@
+                    string primPath = "/World/fx/Particles_Splash"
+                    double2[] times = [(101, 101), (101.99, 101), (102, 102), (103, 103)]
+                }
+            }
+        )
+        {
+        }
+    }
+}

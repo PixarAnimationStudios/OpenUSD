@@ -1,0 +1,154 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2018 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "ColorCorrectionVertex": {
+                "source": [ "ColorCorrection.Vertex" ]
+            },
+            "ColorCorrectionFragment": {
+                "source": [ "ColorCorrection.Fragment" ]
+            }
+        },
+        "Metal": {
+            "ColorCorrectionVertex": {
+                "source": [ 
+                    "ColorCorrection.Metal.Common",
+                    "ColorCorrection.Metal.Vertex"
+                ]
+            },
+            "ColorCorrectionFragment": {
+                "source": [
+                    "ColorCorrection.Metal.Common",
+                    "ColorCorrection.Metal.Fragment"
+                ]
+            }
+        }
+    }
+}
+
+-- glsl ColorCorrection.Vertex
+
+layout(location = 0) in vec4 position;
+
+void main(void)
+{
+    gl_Position = position;
+}
+
+-- glsl ColorCorrection.Fragment
+
+layout (binding=0) uniform sampler2D colorIn;
+layout (binding=1) uniform sampler3D LUT3dIn;
+
+// Similar to D3DX_DXGIFormatConvert.inl, but branchless
+// https://www.shadertoy.com/view/wds3zM
+vec3 FloatToSRGB(vec3 val)
+{
+    val = mix((val * 12.92),
+              (1.055 * pow(val, vec3(1.0/2.4)) - 0.055),
+              step(0.0031308, val));
+    return val;
+}
+
+// Forward declare because C++ code will append the OCIO fn at end of shader
+#if defined(GLSLFX_USE_OCIO)
+    vec4 OCIODisplay(in vec4 inPixel, const sampler3D lut3d);
+#endif
+
+layout(location = 0) out vec4 outputColor;
+
+void main(void)
+{
+    vec4 color = texelFetch(colorIn, ivec2(gl_FragCoord.xy), 0);
+
+    #if defined(GLSLFX_USE_OCIO)
+        color = OCIODisplay(color, LUT3dIn);
+    #else
+        // Only color, not alpha is gamma corrected!
+        color.rgb = FloatToSRGB(color.rgb);
+    #endif
+
+    outputColor = color;
+}
+
+-- glsl ColorCorrection.Metal.Common
+
+typedef struct {
+    float4 position [[position]];
+} Interpolated;
+
+-- glsl ColorCorrection.Metal.Vertex
+
+typedef struct {
+    float4 position [[attribute(0)]];
+} Vertex;
+
+// Vertex shader function
+vertex Interpolated vertexEntryPoint(Vertex v [[stage_in]])
+{
+    Interpolated out;
+    
+    out.position = v.position;
+
+    return out;
+}
+
+-- glsl ColorCorrection.Metal.Fragment
+
+// Similar to D3DX_DXGIFormatConvert.inl, but branchless
+// https://www.shadertoy.com/view/wds3zM
+vec3 FloatToSRGB(vec3 val)
+{
+    val = mix((val * 12.92),
+              (1.055 * pow(val, vec3(1.0/2.4)) - 0.055),
+              step(0.0031308, val));
+    return val;
+}
+
+// Forward declare because C++ code will append the OCIO fn at end of shader
+#if defined(GLSLFX_USE_OCIO)
+vec4 OCIODisplay(vec4 inPixel, texture3d<float> lut3d);
+#endif
+
+fragment half4 fragmentEntryPoint(
+    Interpolated input[[stage_in]],
+    texture2d<float> colorIn[[texture(0)]],
+    texture3d<float> LUT3dIn[[texture(1)]])
+{
+    vec4 color = colorIn.read(uint2(input.position.xy));
+
+    #if defined(GLSLFX_USE_OCIO)
+        color = OCIODisplay(color, LUT3dIn);
+    #else
+        // Only color, not alpha is gamma corrected!
+        color.rgb = FloatToSRGB(color.rgb);
+    #endif
+
+    return half4(color.xyzw);
+}

@@ -23,4 +23,5 @@ pxr_plugin(usdShaders
         shaders/previewSurface.glslfx
         shaders/uvTexture.glslfx
         shaders/primvarReader.glslfx
+        shaders/transform2d.glslfx
 )

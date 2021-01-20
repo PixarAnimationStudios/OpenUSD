@@ -1,0 +1,559 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/volume.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl Volume.Vertex
+
+out VertexData
+{
+    // Relying on perspectively correct interpolation.
+    vec3 Peye;
+} outData;
+
+void main(void)
+{
+    // Bounding box vertex in local spce
+    const vec4 point = vec4(HdGet_points().xyz, 1);
+
+    const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+
+    // Bounding box vertex in eye space.
+    const vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
+
+    outData.Peye = pointEye.xyz / pointEye.w;
+
+    gl_Position = vec4(GetProjectionMatrix() * pointEye);
+
+    ProcessPrimvars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Volume.Fragment
+
+// Quality knobs, should eventually be configurable.
+//
+// We also might have different values for the raymarch
+// integrating the pixel value and for the raymarch doing
+// the lighting computation.
+
+const int maxNumSteps = 10000;
+
+// Min transmittance (ray marching stops when underrun)
+const float minTransmittance = 0.002;
+
+// Minimal scattering amount to ray march to light
+const float minScattering = 0.002;
+
+in VertexData
+{
+    vec3 Peye;
+} inData;
+
+// Transform a point by a 4x4 matrix
+vec3
+transformPoint(MAT4 m, vec3 point)
+{
+    const vec4 result = vec4(m * vec4(point, 1.0));
+    return result.xyz / result.w;
+}
+
+// Transform a direction by a 4x4 matrix
+vec3
+transformDir(MAT4 m, vec3 dir)
+{
+    const vec4 result = m * vec4(dir, 0.0);
+    return result.xyz;
+}
+
+// Is point (in local coordinates) in bounding box.
+bool
+inBoundingBox(vec3 p)
+{
+    const vec3 pVol = transformPoint(MAT4(HdGet_volumeBBoxInverseTransform()),
+                                     p);
+
+    // Bounding box
+    const vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
+    const vec3 localMax = vec3(HdGet_volumeBBoxLocalMax().xyz);
+
+    return
+        all(lessThanEqual(localMin, pVol)) &&
+        all(lessThanEqual(pVol, localMax));
+}
+
+// Matrix to go from eye space to local space.
+// Used frequently per ray-marching step in both volumeIntegrator
+// and accumulatedTransmittance, so computed only once in main.
+//
+MAT4 instanceModelViewInverse;
+
+vec3
+eyeToLocal(vec3 p)
+{
+    return transformPoint(instanceModelViewInverse, p);
+}
+
+#if NUM_LIGHTS == 0
+
+vec3
+lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
+{
+    return vec3(0.0);
+}
+
+#else
+
+// Compute how the transmittance of volume from Peye to a
+// light source in the given direction rayDirection.
+// This integrates the density from Peye to the boundary of
+// the volume. The assumption is that the light source is
+// out of the volume.
+float
+accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
+{
+    const float stepSize = HdGet_stepSizeLighting();
+    int i = 1;
+    
+    float totalExtinction = 0.0;
+    
+    while(i < maxNumSteps) {
+        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPoint = eyeToLocal(rayPointEye);
+
+        if (!inBoundingBox(rayPoint)) {
+            break;
+        }
+
+        totalExtinction += extinctionFunction(rayPoint);
+
+        i+=1;
+    }
+
+    return exp(-totalExtinction * stepSize);
+}
+
+// Computes amount of light arriving at point Peye
+// taking attenuation (e.g., by inverse-square law), shadows,
+// transmittance by volume into account.
+vec3
+lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
+{
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+
+        const vec4 Plight = lightSource[i].position;
+
+        const vec3 lightDirectionEye = normalize(
+            (Plight.w == 0.0) ? Plight.xyz : Plight.xyz - rayPointEye);
+
+        const float atten =
+            lightDistanceAttenuation(vec4(rayPointEye,1), i) *
+            lightSpotAttenuation(lightDirectionEye, i);
+
+// For now, not using shadows for volumes.
+#if USE_SHADOWS && 0
+        const float shadow = (lightSource[i].hasShadow) ?
+            shadowing(/*lightIndex=*/i, rayPointEye) : 1.0;
+#else
+        const float shadow = 1.0;
+#endif
+
+        if (shadow > 0.0001) {
+            result +=
+                shadow *
+                atten *
+                // Assuming that light source is outside of volume's
+                // bounding box (might integrate extinction along ray
+                // beyond light source).
+                accumulatedTransmittance(rayPointEye, lightDirectionEye) *
+                phaseFunction(-rayDirectionEye, lightDirectionEye) *
+                lightSource[i].diffuse.rgb;
+        }
+    }
+
+    return result;
+}
+
+#endif
+
+// Result of integrating volume along a ray
+struct VolumeContribution
+{
+    // Coordinates where ray marching hit the first non-empty voxel
+    // in eye space. 0 indicates the ray hit only empty voxels.
+    vec3 firstHitPeye;
+
+    // Integrated color
+    vec3 color;
+
+    // Integrated transmittance, i.e., what fraction of light from
+    // geometry behind the volume is still visible.
+    float transmittance;
+};
+
+VolumeContribution
+volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
+{
+    const float stepSize = HdGet_stepSize();
+    int i = 1;
+
+    VolumeContribution result;
+    result.firstHitPeye = vec3(0.0);
+    result.color = vec3(0.0);
+    result.transmittance = 1.0;
+
+    const int numSteps = int(floor(min(maxNumSteps, rayLength / stepSize)));
+
+    // integrate transmittance and light along ray for bounding box
+    while(i < numSteps) {
+        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPoint = eyeToLocal(rayPointEye);
+
+        // Evaluate volume shader functions to determine extinction,
+        // scattering, and emission.
+        const float extinctionValue = extinctionFunction(rayPoint);
+        const float scatteringValue = scatteringFunction(rayPoint);
+        const vec3 emissionValue = emissionFunction(rayPoint);
+
+        // If this is the first time the ray is hitting a non-empty voxel,
+        // record the coordinates.
+        if (result.firstHitPeye == vec3(0.0)) {
+            if (  extinctionValue > 0 ||
+                  scatteringValue > 0 ||
+                  any(greaterThan(emissionValue, vec3(0)))) {
+                result.firstHitPeye = rayPointEye;
+            }
+        }
+
+        // In scattering contribution, lighting only computed if scattering
+        // is non-trivial.
+        const vec3 inScattering =
+            (scatteringValue >= minScattering) ?
+                (scatteringValue *
+                 lightingComputation(rayPointEye, rayDirectionEye))
+            : vec3(0.0);
+
+        // In scattering and emission contribution
+        result.color += 
+            (stepSize * result.transmittance) *
+            (inScattering + emissionValue);
+
+        // Update transmittance
+        result.transmittance *= exp(-extinctionValue * stepSize);
+
+        // Stop when the volume has become close to opaque.
+        if (result.transmittance < minTransmittance) {
+            break;
+        }
+
+        i+=1;
+    }
+
+    return result;
+}
+
+// Is camera orthographic?
+bool
+isCameraOrthographic()
+{
+    return abs(GetProjectionMatrix()[3][3] - 1.0) < 1e-5;
+}
+
+// Compute time when a ray starting at pos with direction dir
+// exits the axis-aligned box with vertices lMin and lMax.
+//
+// Assumes that dir.x isn't close to zero.
+float
+timeRayExitsBoxPreferX(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
+{
+    // Compute the time when the ray exists the region
+    // R1 = [xMin, xMax] x [-inf,inf] x [-inf,inf].
+
+    // Depending on whether the the ray is going left or right, compute
+    // the time when the ray is intersecting the plane containing the
+    // left or right face of the box.
+    float result = (((dir.x > 0.0) ? lMax.x : lMin.x) - pos.x) / dir.x;
+
+    // Compute the time when the ray exists the region
+    // R2 = [xMin, xMax] x [yMin,yMax] x [-inf,inf].
+
+    // We can compute the intersection where the ray left R1 as
+    // pos + dir * result.
+    // If this intersection is above or below the box, we know that there
+    // is an earlier intersection of the ray with the plane containing
+    // the top or bottom face of the box, compute that intersection time.
+    const float y = pos.y + dir.y * result;
+    if (y < lMin.y) {
+        result = (lMin.y - pos.y) / dir.y;
+    }
+    if (y > lMax.y) {
+        result = (lMax.y - pos.y) / dir.y;
+    }
+
+    // Compute the time when the ray exists the region
+    // R3 = [xMin, xMax] x [yMin,yMax] x [zMin,zMax].
+    
+    // Analogous procedure to above.
+    const float z = pos.z + dir.z * result;
+    if (z < lMin.z) {
+        result = (lMin.z - pos.z) / dir.z;
+    }
+    if (z > lMax.z) {
+        result = (lMax.z - pos.z) / dir.z;
+    }
+    
+    return result;
+}
+
+// Compute time when a ray starting at pos with direction dir
+// exits the axis-aligned box with vertices lMin and lMax.
+//
+// Assumes that dir is normalized.
+float
+timeRayExitsBox(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
+{
+    // Uses timeRayExitsBoxPreferX after permuting the coordinates
+    // to make sure that x is not close to zero.
+    //
+    // Note that because dir has unit length, at least one of its entries
+    // has absolute value larger 1/2 ( (1/2)^2 + (1/2)^2 + (1/2)^2 < 1^2).
+
+    vec3 abs_dir = abs(dir);
+    if (abs_dir.x > 0.5) {
+        return timeRayExitsBoxPreferX(
+            pos    , dir    , lMin    , lMax    );
+    }
+    if (abs_dir.y > 0.5) {
+        return timeRayExitsBoxPreferX(
+            pos.yzx, dir.yzx, lMin.yzx, lMax.yzx);
+    }
+    
+    return timeRayExitsBoxPreferX(
+            pos.zxy, dir.zxy, lMin.zxy, lMax.zxy);
+}
+
+// Convert depth value z in [-1,1] to depth in eye space [-near, -far].
+float
+NDCtoEyeZ(float z)
+{
+    const MAT4 m = inverse(GetProjectionMatrix());
+    return (m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]);
+}
+
+// Compute the z-value of the near clipping plane in eye space.
+// Negative by OpenGL convention
+float
+computeNearZ()
+{
+    return NDCtoEyeZ(-1.0);
+}
+
+// Compute the near clipping distance. Always returns a positive value.
+float
+computeNearDistance()
+{
+    return abs(computeNearZ());
+}
+
+// Consider the ray from the eye to a given point in eye space.
+// Computes the direction of this ray in both cases where the
+// camera is orthographic or perspective.
+vec3
+computeRayDirectionEye(vec3 rayPointEye)
+{
+    // In NDC space, the ray is always pointing into the z-direction (0,0,1).
+    // In clip space, this corresponds to (0,0,1,0).
+    // We need to multiply (0,0,1,0) by the inverse projection matrix to
+    // get to homogeneous eye space.
+    // Or alternatively, we can get the direction in homogeneous eye space
+    // by taking the respective column of the inverse projection matrix:
+    const vec4 dir = inverse(GetProjectionMatrix())[2];
+
+    // To compute the corresponding direction in non-homogeneous eye space,
+    // compute the position of the ray after time dt << 1:
+    //     vec4 pHomogeneous = vec4(rayPointEye, 1.0) + dt * dir;
+    //     vec3 p = pHomogeneous.xyz / pHomogeneous.w;
+    //
+    // Or equivalently:
+    //     vec3 p = (rayPointEye + dt * dir.xyz) / (1.0 + dir.w * dt);
+    // And since dt << 1, we have
+    //     vec3 p = (rayPointEye + dt * dir.xyz) * (1.0 - dir.w * dt);
+    // And dropping higher order terms:
+    //     vec3 p = rayPointEye + dt * (dir.xyz - rayPointEye * dir.w);
+    // So the new direction is given by:
+    //     vec3 d = dir.xyz - rayPointEye * dir.w;
+
+    // Normalize direction in eye space.
+    return normalize(dir.xyz - rayPointEye * dir.w);
+}
+
+// Given a ray in eye space, compute the time when it entered the volume
+// (assuming rayDirectionEye is normalized).
+// Note that it is assumed that the ray point is in the volume and the result
+// is negative.
+float
+timeRayEntersVolume(vec3 rayEndEye, vec3 rayDirectionEye)
+{
+    // Eye space to volume bounding box space
+
+    const MAT4 eyeToBBox =
+        MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse;
+
+    // Transform ray to volume bounding box space
+    const vec3 rayEndBBox       = transformPoint(eyeToBBox, rayEndEye);
+    const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
+
+    // Compute when reversed ray is leaving the volume bounding box
+    return - timeRayExitsBox(rayEndBBox,
+                             -rayDirectionBBox,
+                             vec3(HdGet_volumeBBoxLocalMin().xyz),
+                             vec3(HdGet_volumeBBoxLocalMax().xyz));
+}
+
+// Given where the ray is about to leave the volume, compute where we
+// should start ray marching: this is either the point where the ray
+// would have entered the volume or the intersection with the near
+// clipping plane or a sphere about the eye (in the perspective case).
+//
+vec3
+computeRayStartEye(vec3 rayEndEye, vec3 rayDirectionEye)
+{
+    // Time where ray would have entered volume (negative).
+    const float startTime = timeRayEntersVolume(rayEndEye, rayDirectionEye);
+
+    if (isCameraOrthographic()) {
+        // Time where ray would have intersected near plane
+        const float nearTime =
+            (computeNearZ() - rayEndEye.z)
+            / rayDirectionEye.z;
+        // Take the latter of the two times for getting the start point
+        return rayEndEye + max(startTime, nearTime) * rayDirectionEye;
+    }
+     
+    // Note that we intersect the ray with sphere about the eye with
+    // radius equal to the near distance in the perspective case rather
+    // than just the above intersection with the near plane.
+    // 
+    // The motivation is that the distance between the eye and the
+    // near plane is non-constant across the image. Thus, ray-marching
+    // would skip more volume away from the center of the image making
+    // the image darker there - so we see opposite vignetting.  To
+    // avoid this bias, we use a sphere about the eye.
+    //
+    // Note that we can use points in front of the near plane
+    // since OIT resolution makes no assumptions about the
+    // depth value.
+    //
+
+    // Compute point where ray would have entered volume
+    const vec3 rayStartEye = rayEndEye + startTime * rayDirectionEye;
+    // If this point is behind the eye or in the sphere about the eye, ...
+    if (rayStartEye.z > 0.0 || length(rayStartEye) < computeNearDistance()) {
+        // ... use point on sphere.
+        return normalize(rayDirectionEye) * computeNearDistance();
+    }
+
+    return rayStartEye;
+}
+
+// The depth at which we hit opaque geometry in eye space (negative
+// value by OpenGL convention).
+float
+sampleZBuffer(vec2 fragcoord)
+{
+#ifdef HD_HAS_depthReadback
+    // Sample the z-Buffer at the frag coordinate.
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(fragcoord),
+                                       /* lod = */ 0).z;
+#else
+    // Assume far-plane if we cannot sample the z-Buffer.
+    const float bufferVal = 1.0;
+#endif
+
+    return NDCtoEyeZ(2.0 * bufferVal - 1.0);
+}
+
+// Compute how much length we need to ray march.
+// 
+// The ray is encoded through it start point and direction. Its end will be
+// determined from two things:
+// - the eye space coordinates of this fragment which is part of the back-faces
+//   of the volume.
+// - the z-Value of the opaque geometry (since we want to stop raymarching
+//   one the ray has hit opaque geometry)
+float
+computeRayLength(vec3 rayStartEye, vec3 rayDirectionEye, vec3 rayEndEye,
+                 float opaqueZ)
+{
+    // Recall that the camera is looking down the minus z-direction by
+    // OpenGL conventions so we need to take the max to get the closer
+    // point.
+    const float rayEndZ = max(opaqueZ, rayEndEye.z);
+    return (rayEndZ - rayStartEye.z) / rayDirectionEye.z;
+}
+
+void main(void)
+{
+    instanceModelViewInverse =
+        ApplyInstanceTransformInverse(HdGet_transformInverse()) *
+        GetWorldToViewInverseMatrix();
+
+    // Discard front faces - ray marching stops at fragment eye position
+    // and starts at the intersection of ray with volume bounding box or
+    // near plane.
+    if (gl_FrontFacing ^^ (determinant(instanceModelViewInverse) < 0.0)) {
+        discard;
+    }
+
+    // camera facing.
+    const vec3 Neye = vec3(0, 0, 1);
+
+    // compute ray for ray marching
+    const vec3 rayDirectionEye = computeRayDirectionEye(inData.Peye);
+    const vec3 rayStartEye = computeRayStartEye(inData.Peye, rayDirectionEye);
+
+    // Use z-value from depth buffer to compute length for ray marching
+    const float opaqueZ = sampleZBuffer(gl_FragCoord.xy);
+    const float rayLength = computeRayLength(
+        rayStartEye, rayDirectionEye, inData.Peye, opaqueZ);
+
+    const VolumeContribution volumeContribution =
+        volumeIntegrator(rayStartEye, rayDirectionEye, rayLength);
+    const float alpha = 1 - volumeContribution.transmittance;
+    const vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
+
+    const vec4 patchCoord = vec4(0.0);
+
+    RenderOutput(vec4(volumeContribution.firstHitPeye, 1),
+                 Neye, color, patchCoord);
+}

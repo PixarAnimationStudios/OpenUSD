@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_SAMPLER_H
-#define HDEMBREE_SAMPLER_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_SAMPLER_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_SAMPLER_H
 
 #include "pxr/pxr.h"
 #include <cstddef>
@@ -182,4 +182,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_SAMPLER_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_SAMPLER_H

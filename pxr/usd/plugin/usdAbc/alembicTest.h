@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDABC_ALEMBICTEST_H
-#define USDABC_ALEMBICTEST_H
+#ifndef PXR_USD_PLUGIN_USD_ABC_ALEMBIC_TEST_H
+#define PXR_USD_PLUGIN_USD_ABC_ALEMBIC_TEST_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/api.h"
+#include "pxr/usd/plugin/usdAbc/api.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,4 +43,4 @@ bool UsdAbc_WriteAlembic(const std::string& srcPathname,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDABC_ALEMBICTEST_H
+#endif // PXR_USD_PLUGIN_USD_ABC_ALEMBIC_TEST_H

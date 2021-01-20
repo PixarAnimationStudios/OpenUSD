@@ -1,0 +1,7 @@
+#usda 1.0
+
+def "Model"
+{
+    asset assetPath = @./manifest.usda@
+    asset[] assetPathArray = [@./manifest.usda@]
+}

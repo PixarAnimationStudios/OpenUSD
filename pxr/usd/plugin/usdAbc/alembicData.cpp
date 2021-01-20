@@ -24,10 +24,10 @@
 /// \file alembicData.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicData.h"
-#include "pxr/usd/usdAbc/alembicReader.h"
-#include "pxr/usd/usdAbc/alembicUtil.h"
-#include "pxr/usd/usdAbc/alembicWriter.h"
+#include "pxr/usd/plugin/usdAbc/alembicData.h"
+#include "pxr/usd/plugin/usdAbc/alembicReader.h"
+#include "pxr/usd/plugin/usdAbc/alembicUtil.h"
+#include "pxr/usd/plugin/usdAbc/alembicWriter.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
@@ -108,9 +108,9 @@ typedef std::set<double> UsdAbc_TimeSamples;
 
 #define XXX_UNSUPPORTED(M) TF_RUNTIME_ERROR("Alembic file " #M "() not supported")
 
-UsdAbc_AlembicData::UsdAbc_AlembicData()
+UsdAbc_AlembicData::UsdAbc_AlembicData(SdfFileFormat::FileFormatArguments args)
+    : _arguments(std::move(args))
 {
-    // Do nothing
 }
 
 UsdAbc_AlembicData::~UsdAbc_AlembicData()
@@ -119,9 +119,9 @@ UsdAbc_AlembicData::~UsdAbc_AlembicData()
 }
 
 UsdAbc_AlembicDataRefPtr
-UsdAbc_AlembicData::New()
+UsdAbc_AlembicData::New(SdfFileFormat::FileFormatArguments args)
 {
-    return TfCreateRefPtr(new UsdAbc_AlembicData);
+    return TfCreateRefPtr(new UsdAbc_AlembicData(std::move(args)));
 }
 
 bool
@@ -148,7 +148,7 @@ UsdAbc_AlembicData::Open(const std::string& filePath)
     //_reader->SetFlag(UsdAbc_AlembicContextFlagNames->verbose);
 
     // Open the archive.
-    if (_reader->Open(filePath)) {
+    if (_reader->Open(filePath, _arguments)) {
         return true;
     }
 

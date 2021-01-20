@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdEmbree/rendererPlugin.h"
+#include "pxr/imaging/plugin/hdEmbree/rendererPlugin.h"
 
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

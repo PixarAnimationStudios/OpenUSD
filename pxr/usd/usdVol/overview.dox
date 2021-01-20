@@ -1,0 +1,126 @@
+/*!
+\page usdVol_page_front UsdVol : USD Volume Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdVol : USD Volume Schema
+\publicLib
+\endif
+
+\section usdVol_overview Overview
+
+UsdVol provides schemas for representing volumes (smoke, fire, etc). UsdVol can be used
+directly for representing OpenVDB and Field3d assets, or extended to support other volume formats.
+
+\section usdVol_schemas Volume Schemas
+
+\subsection Volume
+
+UsdVolVolume schema describes a volume composed of multiple fields.
+A field is a "grid" in OpenVDB terminology. Volume is a UsdGeomGprim, so it is transformable,
+renderable, can have a material binding, etc.
+
+A Volume has one or more named relationships to FieldBase prims.
+
+\subsection FieldBase
+
+UsdVolFieldBase is an abstract schema representing a single volume field. This schema
+should be inherited by any schema representing a volume field.
+
+\subsection FieldAsset
+
+UsdVolFieldAsset inherits from FieldBase and is an abstract schema representing
+a single volume field that
+is stored as an asset separately from the layer or stage. USD does not support data types
+required to represent volumetric data directly, so volumes are generally stored using
+purpose-built file formats such as OpenVDB. This schema should be inherited by any schema
+representing a volume field stored as an asset outside of USD.
+
+\subsection OpenVDBAsset
+
+UsdVolOpenVDBAsset inherits from FieldAsset and is a concrete schema representing
+a single volume field stored as an OpenVDB asset.
+
+Learn about OpenVDB at [https://www.openvdb.org/](https://www.openvdb.org/).
+
+\subsection Field3DAsset
+
+UsdVolField3DAsset inherits from FieldAsset and is a concrete schema representing
+a single volume field stored as a Field3D asset.
+
+Learn about Field3D at [https://sites.google.com/site/field3d/](https://sites.google.com/site/field3d/)
+
+\section usdVol_example Example Usage
+
+Here's a simple example of a Volume prim, representing a static wisp of smoke:
+
+    def Volume "wisp"
+    {
+        float3[] extent = [(-57, -91, -44), (57, 31, -23)]
+
+        rel field:density = </wisp/density>
+
+        def OpenVDBAsset "density"
+        {
+            asset filePath = @./wisp_01.vdb@
+            token fieldName = "density"
+        }
+    }
+
+Volumes are generally not static. For volumes with OpenVDBAsset fields, volume
+animation is represented by setting time samples on the filePath attribute:
+
+    def Volume "wisp"
+    {
+        float3[] extent = [(-57, -91, -44), (57, 31, -23)]
+
+        rel field:density = </wisp/density>
+
+        def OpenVDBAsset "density"
+        {
+            asset filePath.timeSamples = {
+                101: @./wisp_01.101.vdb@,
+                102: @./wisp_01.102.vdb@,
+                103: @./wisp_01.103.vdb@,
+                104: @./wisp_01.104.vdb@,
+            }
+            token fieldName = "density"
+        }
+    }
+
+\section usdVol_usage Usage Notes
+
+FieldAsset describes a single field that can be loaded from an external asset.
+FieldAsset has a **filePath** attribute that specifies an asset path where a
+volume file can be found.
+
+OpenVDBAsset adds a **fieldName** attribute that describes which field / grid
+from the VDB file should be loaded to represent the specific field that the
+OpenVDBAsset prim describes. This is necessary because a single OpenVDB
+file may contain multiple fields / grids, but an OpenVDBAsset prim only
+describes a single field.
+
+Field prims are not required to be children of the Volume prim.
+But in most cases the Volume and its Fields are conceptually inseparable,
+so Field prims are generally created as children of the Volume prim for
+organization purposes and ease of use.
+
+The Volume prim must establish named relationships to its Fields using
+the UsdVolVolume::CreateFieldRelationship() method. This is how the "field:density"
+relationship is created on the Volume prim in the examples above.
+
+The naming of the field relationship on the Volume prim and setting
+a fieldName on the OpenVDBAsset may seem redundant, but it is not. The intention
+is to allow a Volume to define fields by the names appropriate for the
+Volume and/or pipeline, without tying these to the VDB grid name.
+For example, a Volume might want a "velocity" field for the purposes of
+shader parameters, but you have a VDB with a grid named "vel". Defining
+field:velocity on the Volume prim would accomplish that. You can also re-use
+Fields for multiple volume fields in this way.
+
+Why isn't OpenVDBAsset a FileFormat plugin? USD doesn't have a way to describe
+volumetric data structures. This is similar to how textures aren't FileFormat
+plugins either - USD doesn't have data structures to represent image data.
+In both cases, It can be argued that USD *shouldn't* do this. A VDB can be thought of
+as a 3D texture for this purpose, so the OpenVDBAsset schema describes an asset path
+where it can be discovered for someone else (Hydra, your renderer, etc) to interpret.
+
+*/

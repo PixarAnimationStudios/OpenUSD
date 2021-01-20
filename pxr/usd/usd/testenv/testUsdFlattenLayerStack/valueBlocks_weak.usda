@@ -1,0 +1,15 @@
+#usda 1.0
+
+def Xform "Human" (
+    kind = "char"
+)
+{
+    int[] a = None
+    int[] b = [1]
+    int c = 123
+    int c.timeSamples = {
+        0: 456,
+        1: 789
+    }
+    int d = None
+}

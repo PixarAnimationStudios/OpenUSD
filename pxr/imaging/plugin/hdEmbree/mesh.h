@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_MESH_H
-#define HDEMBREE_MESH_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -30,10 +30,10 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/base/gf/matrix4f.h"
 
-#include "pxr/imaging/hdEmbree/meshSamplers.h"
+#include "pxr/imaging/plugin/hdEmbree/meshSamplers.h"
 
-#include <embree2/rtcore.h>
-#include <embree2/rtcore_ray.h>
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_ray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,11 +54,8 @@ class HdEmbreeInstanceContext;
 ///
 /// Sync() is passed a set of dirtyBits, indicating which scene buffers are
 /// dirty. It uses these to pull all of the new scene data and constructs
-/// updated embree geometry objects.  Rebuilding the acceleration datastructures
-/// is deferred to HdEmbreeRenderDelegate::CommitResources(), which runs after
-/// all prims have been updated. After running Sync() for each prim and
-/// HdEmbreeRenderDelegate::CommitResources(), the scene should be ready for
-/// rendering via ray queries.
+/// updated embree geometry objects.  Rebuilding the top-level acceleration
+/// datastructures is deferred to the start of HdEmbreeRender::Render().
 ///
 /// An rprim's state is lazily populated in Sync(); matching this, Finalize()
 /// does the heavy work of releasing state (such as handles into the top-level
@@ -185,12 +182,12 @@ private:
                                bool refined);
 
     // Utility function to call rtcNewSubdivisionMesh and populate topology.
-    void _CreateEmbreeSubdivMesh(RTCScene scene);
+    RTCGeometry _CreateEmbreeSubdivMesh(RTCScene scene, RTCDevice device);
     // Utility function to call rtcNewTriangleMesh and populate topology.
-    void _CreateEmbreeTriangleMesh(RTCScene scene);
+    RTCGeometry _CreateEmbreeTriangleMesh(RTCScene scene, RTCDevice device);
 
     // An embree intersection filter callback, for doing backface culling.
-    static void _EmbreeCullFaces(void *userData, RTCRay &ray);
+    static void _EmbreeCullFaces(const RTCFilterFunctionNArguments* args);
 
 private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
@@ -249,6 +246,18 @@ private:
     // primvars.
     HdEmbreeRTCBufferAllocator _embreeBufferAllocator;
 
+    // Embree recommends after creating one should hold onto the geometry
+    //
+    //      "However, it is generally recommended to store the geometry handle
+    //       inside the application's geometry representation and look up the
+    //       geometry handle from that representation directly.""
+    //
+    // found this to be necessary in the case where multiple threads were
+    // commiting to the scene at the same time, and a geometry needed to be
+    // referenced again while other threads were committing
+    RTCGeometry _geometry;
+    std::vector<RTCGeometry> _rtcInstanceGeometries;
+
     // This class does not support copying.
     HdEmbreeMesh(const HdEmbreeMesh&)             = delete;
     HdEmbreeMesh &operator =(const HdEmbreeMesh&) = delete;
@@ -256,4 +265,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_MESH_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H

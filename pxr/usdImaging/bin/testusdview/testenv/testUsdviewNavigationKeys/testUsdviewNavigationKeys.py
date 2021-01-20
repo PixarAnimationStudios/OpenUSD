@@ -31,26 +31,27 @@ from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets
 
 def _emitCollapseAllAction(appController):
     appController._ui.actionCollapse_All.triggered.emit() 
-    QtWidgets.QApplication.processEvents()
+    appController._processEvents()
 
 def _popupViewMenu(appController):
     appController._ui.menuView.exec_()
-    QtWidgets.QApplication.processEvents()
+    appController._processEvents()
 
-def _postAndProcessKeyEvent(key, widget):
+def _postAndProcessKeyEvent(key, widget, appController):
     event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
                             key,
                             QtCore.Qt.NoModifier)
     QtWidgets.QApplication.postEvent(widget, event)
-    QtWidgets.QApplication.processEvents()
+    appController._processEvents()
 
 class EscapeSender(QtCore.QObject):
     def __init__(self, receiver):
         QtCore.QObject.__init__(self)
         self._receiver = receiver
 
-    def doIt(self):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Escape, self._receiver)
+    def doIt(self, appController):
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Escape, self._receiver, 
+                appController)
 
 def _testBasic(appController):
     from pxr import Sdf
@@ -77,17 +78,18 @@ def _testBasic(appController):
     # chain, so it takes two "move right" actions to select each level of
     # path hierarchy
     path = Sdf.Path("/World/sets/setModel")
-    for i in xrange(2 * path.pathElementCount):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
+    for i in range(2 * path.pathElementCount):
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
-    assert selectionDataModel.getFocusPrim().GetPrimPath() == path
+    assert selectionDataModel.getFocusPrim().GetPrimPath() == path, \
+        "Expected <%s>, got <%s>" % (path, selectionDataModel.getFocusPrim().GetPrimPath())
 
     # Now roll it all back up
-    for i in xrange(1, 2 * path.pathElementCount):
+    for i in range(1, 2 * path.pathElementCount):
         # Send the event to mainWindow to ensure our app filter reroutes it
         # to the focusWidget.
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
+        _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().IsPseudoRoot()
@@ -98,10 +100,10 @@ def _testBasic(appController):
     appController._mainWindow.setFocus()
     assert appController._dataModel.currentFrame == startFrame
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
+    _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame + 1
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
+    _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame
 
     # Regression tests for bugs #154716, 154665: Make sure we don't try
@@ -111,7 +113,7 @@ def _testBasic(appController):
     # If the filter is still active (FAILURE), then the test will not
     # terminate, and eventually be killed.
     escSender = EscapeSender(appController._ui.menuView)
-    QtCore.QTimer.singleShot(500, escSender, QtCore.SLOT("doIt()"))
+    QtCore.QTimer.singleShot(500, lambda: escSender.doIt(appController))
     _popupViewMenu(appController)
     
     # Modal dialogs won't receive events sent to the application object,
@@ -120,7 +122,7 @@ def _testBasic(appController):
     # return you a widget.
     fileDlg = QtWidgets.QFileDialog(appController._mainWindow)
     escSender = EscapeSender(fileDlg)
-    QtCore.QTimer.singleShot(500, escSender, QtCore.SLOT("doIt()"))
+    QtCore.QTimer.singleShot(500, lambda: escSender.doIt(appController))
     # Causes a modal dialog to pop up
     fileDlg.exec_()
 

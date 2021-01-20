@@ -1,0 +1,84 @@
+Loading @SubrootInheritsAndVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+    root.sdf             /Group{v=z}
+
+Variant Selections:
+    {v = z}
+
+Child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model>
+
+Prim Stack:
+    root.sdf             /Group{v=z}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/Group/Model.a:
+    root.sdf             /Group{v=z}Model.a
+
+------------------------------------------------------------------------
+Results for composing </SubrootInheritRef>
+
+Prim Stack:
+    root.sdf             /SubrootInheritRef
+    root.sdf             /Group{v=z}Model
+    group.sdf            /SubrootInherit
+    group.sdf            /Group{v=y}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/SubrootInheritRef.a:
+    root.sdf             /Group{v=z}Model.a
+    group.sdf            /Group{v=y}Model.a
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    model.sdf            /Model
+    model.sdf            /Model{v=x}
+
+Variant Selections:
+    {v = x}
+
+Child names:
+     ['Child']
+
+Property names:
+     ['modelAttr']
+
+Property stacks:
+/Root.modelAttr:
+    model.sdf            /Model{v=x}.modelAttr
+
+------------------------------------------------------------------------
+Results for composing </Root/Child>
+
+Prim Stack:
+    root.sdf             /Root/Child
+    root.sdf             /Group{v=z}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/Root/Child.a:
+    root.sdf             /Group{v=z}Model.a
+

@@ -1,0 +1,55 @@
+#usda 1.0
+(
+    customLayerData = {
+        asset baseAsset = @./base_a.usd@
+        asset nonExistentAsset = @./base_nonexist.usd@
+    }
+    subLayers = [
+        @./sub_a.usd@,
+        @./sub_nonexist.usd@,
+    ]
+)
+
+def "foo" (
+    assetInfo = {
+        asset meta_a = @./meta_a.usd@
+        asset meta_a_2 = @./meta_a_nonexist.usd@
+        asset[] meta_b = [@./meta_b.usd@, @./meta_nonexist.usd@]
+    }
+    payload = [@./payload_a.usd@, @./payload_nonexist.usd@]
+    variantSets = "standin"
+)
+{
+    asset attr_a = @./attr_a.txt@
+    asset attr_a_2 = @./attr_a_nonexist.txt@
+    asset[] attr_b = [@./attr_b.usd@, @./attr_nonexist.usd@]
+
+    def "bar" (
+        references = [
+            @./ref_a.usd@,
+            @./ref_nonexist.usd@
+        ]
+        clips = {
+            dictionary default = {
+                string templateAssetPath = "./clip.###.usd"
+            }
+        }
+    )
+    {
+    }
+
+    variantSet "standin" = {
+        "full" (
+            assetInfo = {
+                asset v_meta_a = @./v_meta_a.usd@
+                asset v_meta_a_2 = @./v_meta_a_nonexist.usd@
+                asset[] v_meta_b = [@./v_meta_b.usd@, @./v_meta_nonexist.usd@]
+            }
+            references = @./v_ref_a.usd@
+        ) {
+              asset v_attr_a = @./v_attr_a.txt@
+              asset v_attr_a_2 = @./v_attr_a_nonexist.txt@
+              asset[] v_attr_b = [@./v_attr_b.usd@, @./v_attr_nonexist.usd@]
+        }
+    }
+}

@@ -54,11 +54,11 @@ def Shader "UsdPreviewSurface" (
     float inputs:metallic = 0.0 (
         doc = """Used only in the metalness workflow.
             1 for metallic surfaces and 0 for non-metallic.
-            - If metallic is 1, then F0 (reflectivity at 0 degree incidence)
-            will be derived from ior ( (1-ior)/(1+ior) )^2, then multiplied by Albedo;
-            while edge F90 reflectivity will simply be the Albedo.
-            (As an option, you can put ior to 0 such that F0 comes equal to F90 and thus the Albedo).
-            - If metallic is 0, then Albedo is ignored; F0 is derived from ior and F90 is white.
+            - If metallic is 1, then both F0 (reflectivity at 0 degree 
+            incidence) and edge F90 reflectivity will simply be the Albedo.
+            - If metallic is 0, then Albedo is ignored in the calculation of F0
+            and F90; F0 is derived from ior via ( (1-ior)/(1+ior) )^2 and F90 is
+            white. 
             In between, we interpolate."""
     )
  
@@ -79,6 +79,18 @@ def Shader "UsdPreviewSurface" (
  
     float inputs:opacity = 1.0 (
         doc = """Opacity of the material."""
+    )
+
+    float inputs:opacityThreshold = 0.0 (
+        connectability = "interfaceOnly"
+        doc = """Threshold used to determine opacity values that will be
+        considered fully transparent. A value of 0.0 indicates that no masking
+        is applied to the opacity input, while a value greater than 0.0 indicates
+        that rendering of the surface is limited to the areas where the opacity
+        is greater or equal to that value. Note that when opacityThreshold is
+        greater than zero, the opacity values less than the opacityThreshold will
+        not be rendered, and the opacity values greater than or equal to the
+        opacityThreshold will be fully visible."""
     )
 
     float inputs:ior = 1.5 (
@@ -110,19 +122,20 @@ def Shader "UsdPreviewSurface" (
 def Shader "UsdUVTexture" (
     doc = """Texture Node Specification represents a node that can be used to 
     read UV textures, including tiled textures such as Mari UDIM's.
-    
-    Reads from a texture file and outputs one or more values. If the texture has 
+     
+    Reads from a texture file and outputs one or more values. If the texture has
     8 bits per component, [0, 255] values will first be converted to floating 
     point in the range [0, 1] and then any transformations (bias, scale) 
     indicated  are applied. Otherwise any indicated transformation (bias, 
     scale) is just applied. If a single-channel texture is fed into a 
-    UsdUVTexture, the r, g, and b  components of the rgb and rgba outputs will
-    repeat the channel's value, while both the single 'a' output and the 'a' 
-    component of the rgba outputs will be set to 1.0.  If a two-channel texture 
-    is fed into a UsdUVTexture, the r, g, and b components of the rgb and rgba
-    outputs will repeat the first channel's value, while both the single "a" 
-    output and the "a" component of the rgba outputs will be set to the second
-    channel's value.
+    UsdUVTexture, the r, g, and b components of the rgb output will repeat the 
+    channel's value, while the single 'a' output will be set to 1.0. If a 
+    two-channel texture is fed into a UsdUVTexture, the r, g, and b components 
+    of the rgb output will repeat the first channel's value, while the single 
+    'a' output will be set to the second channel's value. If a three-channel 
+    texture is fed into a UsdUVTexture, the r, g, and b components of the rgb 
+    outputs will contain the assigned texture channel's value, while the single 
+    'a' output will be set to 1.0.
 """
     sdrMetadata = {
         token role = "texture"
@@ -173,28 +186,46 @@ def Shader "UsdUVTexture" (
                  value * scale + bias)"""
     )
 
+    token inputs:sourceColorSpace = "auto" (
+        connectability = "interfaceOnly"
+        allowedTokens = ["raw", "sRGB", "auto"]
+        doc = """<options> raw, sRGB, auto. Flag indicating the color
+                 space in which the source texture is encoded."""
+    )
+
     float outputs:r ( 
         doc = "Outputs the red channel."
+        sdrMetadata = {
+            token swizzle = "x"
+        }
     )
 
     float outputs:g (
         doc = "Outputs the green channel."
+        sdrMetadata = {
+            token swizzle = "y"
+        }
     )
 
     float outputs:b (
         doc = "Outputs the blue channnel."
+        sdrMetadata = {
+            token swizzle = "z"
+        }
     )
 
     float outputs:a (
         doc = "Outputs the alpha channnel."
+        sdrMetadata = {
+            token swizzle = "w"
+        }
     )
 
     float3 outputs:rgb (
         doc = "Outputs the red, green and blue channels."
-    )
-
-    float4 outputs:rgba (
-        doc = "Outputs all 4 channels (red, green, blue and alpha)."
+        sdrMetadata = {
+            token swizzle = "xyz"
+        }
     )
 }
 
@@ -206,7 +237,7 @@ class "UsdPrimvarReader" (
 {
     uniform token info:implementationSource = "sourceAsset"
     uniform asset info:glslfx:sourceAsset = @./primvarReader.glslfx@
-    token inputs:varname = "" (
+    string inputs:varname = "" (
         connectability = "interfaceOnly"
         doc = """Name of the primvar to be fetched from the geometry."""
         sdrMetadata = {
@@ -373,4 +404,45 @@ def Shader "UsdPrimvarReader_matrix" (
     )
 
     matrix4d outputs:result
+}
+
+def Shader "UsdTransform2d" (
+    doc = """Transform 2d represents a node that can be used to
+    transform 2d data (for instance, texture coordinates).
+    The node applies the following transformation :
+    in * scale * rotate + translation"""
+    sdrMetadata = {
+        token role = "math"
+    }
+)
+{
+    uniform token info:id = "UsdTransform2d"
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./transform2d.glslfx@
+ 
+    float2 inputs:in = (0.0, 0.0) (
+        doc = """This input provides the data. It is usually
+                connected to a UsdPrimvarReader_float2 that
+                will provide the data."""
+    )
+
+    float inputs:rotation = 0.0 (
+        connectability = "interfaceOnly"
+        doc = """Counter-clockwise rotation in degrees around the origin to be applied
+        to all components of the data."""
+    )
+
+    float2 inputs:scale = (1.0, 1.0) (
+        connectability = "interfaceOnly"
+        doc = """Scale around the origin to be applied to all components of the data."""
+    )
+
+    float2 inputs:translation = (0.0, 0.0) (
+        connectability = "interfaceOnly"
+        doc = """Translation to be applied to all components of the data."""
+    )
+
+    float2 outputs:result (
+        doc = "Outputs transformed float2 values."
+    )
 }
