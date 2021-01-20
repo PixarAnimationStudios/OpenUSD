@@ -138,6 +138,10 @@ public:
         UsdPrim const& usdPrim,
         SdfPath const& cachePath) const override;
 
+    SdfPathVector GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const override;
+
     GfMatrix4d GetTransform(UsdPrim const& prim, 
                             SdfPath const& cachePath,
                             UsdTimeCode time,

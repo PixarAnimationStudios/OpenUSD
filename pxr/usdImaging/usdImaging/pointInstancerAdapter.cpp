@@ -1457,6 +1457,32 @@ UsdImagingPointInstancerAdapter::GetInstancerId(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPointInstancerAdapter::GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const
+{
+    HD_TRACE_FUNCTION();
+
+    if (IsChildPath(cachePath)) {
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetInstancerPrototypes(protoPrim, cachePath);
+    } else {
+        SdfPathVector prototypes;
+        if (const _InstancerData* instancerData =
+                TfMapLookupPtr(_instancerData, cachePath)) {
+            for (_ProtoPrimMap::const_iterator i =
+                    instancerData->protoPrimMap.cbegin();
+                    i != instancerData->protoPrimMap.cend(); ++i) {
+                prototypes.push_back(i->first);
+            }
+        }
+        return prototypes;
+    }
+}
+
+/*virtual*/
 size_t
 UsdImagingPointInstancerAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,

@@ -185,6 +185,10 @@ public:
         UsdPrim const& usdPrim,
         SdfPath const& cachePath) const override;
 
+    SdfPathVector GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const override;
+
     size_t SampleInstancerTransform(UsdPrim const& instancerPrim,
                                     SdfPath const& instancerPath,
                                     UsdTimeCode time,

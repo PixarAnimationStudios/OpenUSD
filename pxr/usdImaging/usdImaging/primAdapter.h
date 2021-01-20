@@ -294,6 +294,12 @@ public:
         UsdPrim const& usdPrim,
         SdfPath const& cachePath) const;
 
+    /// Return the list of known prototypes of this prim.
+    USDIMAGING_API
+    virtual SdfPathVector GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const;
+
     /// Sample the primvar for the given prim.
     /// \see HdSceneDelegate::SamplePrimvar()
     USDIMAGING_API

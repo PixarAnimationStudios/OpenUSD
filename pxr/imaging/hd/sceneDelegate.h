@@ -586,6 +586,13 @@ public:
     HD_API
     virtual SdfPath GetInstancerId(SdfPath const& primId);
 
+    /// Returns a list of prototypes of this instancer. The intent is to let
+    /// renderers cache instance indices by giving them a complete set of prims
+    /// to call GetInstanceIndices(instancer, prototype) on.
+    /// XXX: This is currently unused, but may be used in the future.
+    HD_API
+    virtual SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId);
+
     // -----------------------------------------------------------------------//
     /// \name Path Translation
     // -----------------------------------------------------------------------//

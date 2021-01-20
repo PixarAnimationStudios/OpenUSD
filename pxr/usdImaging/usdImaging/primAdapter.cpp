@@ -299,6 +299,15 @@ UsdImagingPrimAdapter::GetInstancerId(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPrimAdapter::GetInstancerPrototypes(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath) const
+{
+    return SdfPathVector();
+}
+
+/*virtual*/
 size_t
 UsdImagingPrimAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,

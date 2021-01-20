@@ -2555,6 +2555,25 @@ UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
     return ConvertCachePathToIndexPath(pathValue);
 }
 
+/*virtual*/
+SdfPathVector
+UsdImagingDelegate::GetInstancerPrototypes(SdfPath const &instancerId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    SdfPathVector protos;
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        protos =
+            primInfo->adapter->GetInstancerPrototypes(primInfo->usdPrim, cachePath);
+    }
+
+    for (size_t i = 0; i < protos.size(); ++i) {
+        protos[i] = ConvertCachePathToIndexPath(protos[i]);
+    }
+    return protos;
+}
+
 /*virtual*/ 
 SdfPath 
 UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)

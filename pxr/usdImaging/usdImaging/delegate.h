@@ -350,6 +350,9 @@ public:
     USDIMAGING_API
     virtual SdfPath GetInstancerId(SdfPath const &primId) override;
 
+    USDIMAGING_API
+    virtual SdfPathVector GetInstancerPrototypes(SdfPath const &instancerId) override;
+
     // Motion samples
     USDIMAGING_API
     virtual size_t
