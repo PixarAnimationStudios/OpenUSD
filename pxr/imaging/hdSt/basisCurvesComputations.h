@@ -177,7 +177,6 @@ public:
 {}
         
     virtual bool Resolve() override {
-    
         if (!_TryLock()) return false;
 
         HD_TRACE_FUNCTION();
@@ -189,7 +188,10 @@ public:
         VtArray<T> primvars(numVerts);
         const size_t size = _authoredPrimvar.size();
 
-        if (_interpolation == HdInterpolationVertex) {    
+        // Special handling for when points is size 0
+        if (size == 0 && _name == HdTokens->points) {
+            primvars = _authoredPrimvar;
+        } else if (_interpolation == HdInterpolationVertex) {
             if (size == 1) {
                 for (size_t i = 0; i < numVerts; i++) {
                     primvars[i] = _authoredPrimvar[0];

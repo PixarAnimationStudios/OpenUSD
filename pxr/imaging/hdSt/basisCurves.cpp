@@ -657,12 +657,13 @@ AddVertexOrVaryingPrimvarSource(const TfToken &name,
     HdSt_BasisCurvesTopologySharedPtr topology, 
     HdBufferSourceSharedPtrVector *sources, T fallbackValue) {
     VtArray<T> array = value.Get<VtArray<T>>();
-    if (!array.empty()) {
+    // Empty primvar arrays are ignored, except for points
+    if (!array.empty() || name == HdTokens->points) {
         sources->push_back(HdBufferSourceSharedPtr(
             std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<T>>(
                 topology, array, name, interpolation, fallbackValue, 
                 HdGetValueTupleType(VtValue(array)).type)));
-    } 
+    }
 }
 
 void ProcessVertexOrVaryingPrimvar(
@@ -781,33 +782,25 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // TODO: We don't need to pull primvar metadata every time a value
         // changes, but we need support from the delegate.
 
+        // Having a null topology is possible, but shouldn't happen when there
+        // are points
+        if (!_topology) {
+            if (primvar.name == HdTokens->points) {
+                TF_CODING_ERROR("No topology set for BasisCurve %s",
+                                id.GetName().c_str());
+                break;
+            }
+            continue;
+        } 
+
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            if (primvar.name == HdTokens->points) {
-                // We want to validate the topology by making sure the number of
-                // verts is equal or greater than the number of verts the topology
-                // references
-                if (!_topology) {
-                    TF_CODING_ERROR("No topology set for BasisCurve %s",
-                                    id.GetName().c_str());
-                } else if(!value.IsHolding<VtVec3fArray>() ||
-                        (!_topology->HasIndices() &&
-                        value.Get<VtVec3fArray>().size() != 
-                        _topology->CalculateNeededNumberOfControlPoints())) {
-                    TF_WARN("Topology and vertices do not match for "
-                            "BasisCurve %s",id.GetName().c_str());
-                }
+            ProcessVertexOrVaryingPrimvar(primvar.name, HdInterpolationVertex, 
+                value, _topology, &sources);
 
-                sources.push_back(HdBufferSourceSharedPtr(
-                        new HdVtBufferSource(primvar.name, value)));
-            } else {
-                ProcessVertexOrVaryingPrimvar(primvar.name, 
-                    HdInterpolationVertex, value, _topology, &sources);
-
-                if (primvar.name == HdTokens->displayOpacity) {
-                    _displayOpacity = true;
-                }
+            if (primvar.name == HdTokens->displayOpacity) {
+                _displayOpacity = true;
             }
         }
     }
